@@ -1,0 +1,62 @@
+"""Run the gates for one trial and apply or roll back the change.
+
+Every gate writes a `gate.result` event. If all pass, `apply()` is called
+and `action.applied` is written. If any fails, `revert()` is called and
+`action.rolled_back` is written. Quality runs first; the p99 gate still
+runs after a quality fail so the log shows the full picture.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass
+
+from wattnot.gates.fixed import fixed_checks
+from wattnot.gates.latency import p99_gate
+from wattnot.gates.result import GateResult
+from wattnot.runner.trial import TrialResult
+from wattnot.runner.workload import WorkloadItem
+
+
+@dataclass(frozen=True)
+class Decision:
+    trial_id: str
+    passed: bool
+    results: tuple[GateResult, ...]
+
+    @property
+    def failed(self) -> list[str]:
+        return [r.gate for r in self.results if not r.passed]
+
+
+def decide(base: TrialResult, cand: TrialResult, base_outputs: Mapping[str, str],
+           cand_outputs: Mapping[str, str], items: list[WorkloadItem], *,
+           slack: float = 0.10, sla_s: float | None = None, max_drop_pts: float = 1.0,
+           emit=None) -> Decision:
+    results = (
+        fixed_checks(base_outputs, cand_outputs, items, max_drop_pts=max_drop_pts),
+        p99_gate(base, cand, slack=slack, sla_s=sla_s),
+    )
+    if emit is not None:
+        for r in results:
+            emit.emit("gate.result", r.event_data(cand.trial_id),
+                      step_id=f"gate:{cand.trial_id}:{r.gate}")
+    return Decision(cand.trial_id, all(r.passed for r in results), results)
+
+
+def guarded_apply(decision: Decision, *, apply: Callable[[], None],
+                  revert: Callable[[], None], change: dict, emit=None) -> bool:
+    """Apply the change only on a full pass. Returns True when applied."""
+
+    step = f"action:{decision.trial_id}"
+    if decision.passed:
+        apply()
+        if emit is not None:
+            emit.emit("action.applied", {"trial_id": decision.trial_id, "change": change},
+                      step_id=step)
+        return True
+    revert()
+    if emit is not None:
+        emit.emit("action.rolled_back", {"trial_id": decision.trial_id, "change": change,
+                                         "failed_gates": decision.failed}, step_id=step)
+    return False
