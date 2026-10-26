@@ -1,0 +1,13 @@
+# Public replay set v1 (placeholder). Hand-written, open prompts only (CC0).
+# TODO: replace with a sample drawn from a public, no-login dataset
+# (e.g. a permissively licensed open prompt set) via scripts/gen_workloads.py,
+# then record the source and license per item in the "source"/"license" fields.
+# Format: one JSON object per line; required keys id, prompt, max_tokens.
+{"id": "replay-0001", "prompt": "Summarize the water cycle in two sentences.", "max_tokens": 96, "source": "handwritten-sample", "license": "CC0", "tags": ["summarize"]}
+{"id": "replay-0002", "prompt": "List three common causes of slow database queries.", "max_tokens": 128, "source": "handwritten-sample", "license": "CC0", "tags": ["qa"]}
+{"id": "replay-0003", "prompt": "Explain what a hash function is to someone new to programming.", "max_tokens": 160, "source": "handwritten-sample", "license": "CC0", "tags": ["explain"]}
+{"id": "replay-0004", "prompt": "Rewrite this sentence to be more concise: The meeting that we had on Tuesday was one in which we discussed many different topics.", "max_tokens": 64, "source": "handwritten-sample", "license": "CC0", "tags": ["rewrite"]}
+{"id": "replay-0005", "prompt": "What is the difference between latency and throughput? Answer in plain language.", "max_tokens": 128, "source": "handwritten-sample", "license": "CC0", "tags": ["qa"]}
+{"id": "replay-0006", "prompt": "Give step-by-step instructions for making a cup of tea.", "max_tokens": 160, "source": "handwritten-sample", "license": "CC0", "tags": ["instructions"]}
+{"id": "replay-0007", "prompt": "Translate the phrase 'good morning' into French, Spanish and German.", "max_tokens": 48, "source": "handwritten-sample", "license": "CC0", "tags": ["translate"]}
+{"id": "replay-0008", "prompt": "Describe the plot of a classic fairy tale in three sentences.", "max_tokens": 128, "source": "handwritten-sample", "license": "CC0", "tags": ["summarize"]}

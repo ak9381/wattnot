@@ -1,0 +1,11 @@
+# Muse Code task set v1 (placeholder). Hand-written short coding tasks.
+# TODO: regenerate the real v1 set once with scripts/gen_workloads.py under a
+# maintainer-run scripted task (WATTNOT_LIVE=1), then commit the result and log
+# the tiny test spend. Keep every prompt public; never add private tasks here.
+# Format: one JSON object per line; required keys id, prompt, max_tokens.
+{"id": "code-0001", "prompt": "Write a Python function that returns the nth Fibonacci number using iteration.", "max_tokens": 256, "language": "python", "kind": "function", "source": "placeholder"}
+{"id": "code-0002", "prompt": "Write a Python function is_palindrome(s) that ignores case and non-alphanumeric characters.", "max_tokens": 256, "language": "python", "kind": "function", "source": "placeholder"}
+{"id": "code-0003", "prompt": "Given a list of integers, write Python code to return the two numbers that sum to a target, or None.", "max_tokens": 320, "language": "python", "kind": "function", "source": "placeholder"}
+{"id": "code-0004", "prompt": "Write a SQL query that returns the top 5 customers by total order amount from an orders table with columns customer_id and amount.", "max_tokens": 192, "language": "sql", "kind": "query", "source": "placeholder"}
+{"id": "code-0005", "prompt": "Write a JavaScript function that debounces a callback by a given number of milliseconds.", "max_tokens": 256, "language": "javascript", "kind": "function", "source": "placeholder"}
+{"id": "code-0006", "prompt": "Explain and fix the bug in this Python code: def avg(xs): return sum(xs) / len(xs) when xs is empty.", "max_tokens": 256, "language": "python", "kind": "debug", "source": "placeholder"}
