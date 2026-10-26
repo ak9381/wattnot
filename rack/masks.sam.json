@@ -1,0 +1,7 @@
+{
+  "source": "sam3.1",
+  "image": "rack.jpg",
+  "objects": [],
+  "iou_vs_manual": 0.0,
+  "status": "cut"
+}
