@@ -4,7 +4,7 @@ import json
 
 from wattnot.sam import load_manual_overlay, validate_masks
 from wattnot.sam.pick import pick_masks
-from wattnot.sam.sam_parse import box_polygon, build_document, parse_boxes
+from wattnot.sam.sam_parse import box_polygon, build_document, parse_boxes, parse_by_object
 from wattnot.sam.segment import repo_root
 
 RACK = repo_root() / "rack"
@@ -53,10 +53,38 @@ def test_recorded_empty_output_falls_back():
     raw = {k: (RACK / "sam-raw" / f"{k}.txt").read_text() for k in ("rack", "slot", "pdu")}
     doc = build_document(raw, load_manual_overlay())
     assert doc["status"] == "cut" and doc["objects"] == []
-    picked, fallback = pick_masks()
+    picked, fallback = pick_masks(directory=RACK)
     assert fallback and picked["source"] == "manual"
 
 
 def test_spend_log_stays_inside_the_call_cap():
     spend = json.loads((RACK / "sam.spend.json").read_text())
     assert spend["model"] == "sam-3.1" and spend["calls"] <= 5
+
+
+REAL = RACK / "real"
+
+
+def test_real_photo_layout_and_attribution():
+    from wattnot.sam import load_masks
+
+    doc = load_masks(REAL / "masks.manual.json")
+    assert sorted(o["id"] for o in doc["objects"] if o["kind"] == "slot") == [
+        "slot-0", "slot-1", "slot-2", "slot-3"]
+    note = (REAL / "ATTRIBUTION.md").read_text()
+    assert "CC BY 2.0" in note and "Jemimus" in note and "wikimedia.org" in note
+
+
+def test_recorded_real_photo_attempt_is_cut_and_falls_back():
+    from wattnot.sam import load_masks
+
+    points = parse_by_object((REAL / "sam-raw" / "points.txt").read_text())
+    assert sorted(points) == [1, 2]
+    raw = {"slot": (REAL / "sam-raw" / "server.txt").read_text(),
+           "rack": points[1], "pdu": points[2]}
+    doc = build_document(raw, load_masks(REAL / "masks.manual.json"))
+    assert doc["status"] == "cut" and doc["iou_vs_manual"] < 0.8
+    picked, fallback = pick_masks()
+    assert fallback and picked["source"] == "manual"
+    spend = json.loads((REAL / "sam.spend.json").read_text())
+    assert spend["calls"] <= 2
