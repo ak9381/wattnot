@@ -81,5 +81,255 @@
         }
       }
     }
+  },
+  "after_fail": {
+    "summary": {
+      "cap_w": 300,
+      "range_w": [
+        200,
+        700
+      ],
+      "step_w": 25,
+      "p99_ms": 1290,
+      "p99_budget_ms": 1320,
+      "p99_headroom_pct": 2.3,
+      "wh_per_req": 0.0398,
+      "wh_saved_pct": 17.1,
+      "last_gates": [
+        {
+          "cap_w": 300,
+          "knob": null,
+          "passed": true,
+          "failed": []
+        },
+        {
+          "cap_w": 275,
+          "knob": null,
+          "passed": false,
+          "failed": [
+            "p99"
+          ]
+        }
+      ],
+      "knobs": {
+        "max_num_seqs": 256,
+        "enable_prefix_caching": true,
+        "quantization": "none"
+      },
+      "allowed_knobs": {
+        "max_num_seqs": [
+          64,
+          128,
+          256,
+          512
+        ],
+        "enable_prefix_caching": [
+          true,
+          false
+        ],
+        "enable_chunked_prefill": [
+          true,
+          false
+        ],
+        "quantization": [
+          "none",
+          "fp8"
+        ],
+        "gpu_mem_util": [
+          0.8,
+          0.85,
+          0.9,
+          0.95
+        ]
+      }
+    },
+    "response": {
+      "id": "chatcmpl-01a17993-f9bc-75dc-93b6-7b667c9e686b",
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "message": {
+            "content": "{\"kind\":\"knob\",\"knob\":\"quantization\",\"power_cap_w\":300,\"reason\":\"wh 0.0398 still high, try fp8 for energy saving\",\"value\":\"fp8\"}",
+            "refusal": null,
+            "role": "assistant"
+          },
+          "logprobs": null
+        }
+      ],
+      "created": 1793041103,
+      "model": "muse-spark-1.3",
+      "object": "chat.completion",
+      "usage": {
+        "completion_tokens": 336,
+        "prompt_tokens": 402,
+        "total_tokens": 738,
+        "completion_tokens_details": {
+          "reasoning_tokens": 286
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    }
+  },
+  "tight": {
+    "summary": {
+      "cap_w": 350,
+      "range_w": [
+        200,
+        700
+      ],
+      "step_w": 25,
+      "p99_ms": 1300,
+      "p99_budget_ms": 1320,
+      "p99_headroom_pct": 1.5,
+      "wh_per_req": 0.044,
+      "wh_saved_pct": 8.3,
+      "last_gates": [
+        {
+          "cap_w": 350,
+          "knob": null,
+          "passed": true,
+          "failed": []
+        }
+      ],
+      "knobs": {
+        "max_num_seqs": 256,
+        "enable_prefix_caching": false,
+        "quantization": "none"
+      },
+      "allowed_knobs": {
+        "max_num_seqs": [
+          64,
+          128,
+          256,
+          512
+        ],
+        "enable_prefix_caching": [
+          true,
+          false
+        ],
+        "enable_chunked_prefill": [
+          true,
+          false
+        ],
+        "quantization": [
+          "none",
+          "fp8"
+        ],
+        "gpu_mem_util": [
+          0.8,
+          0.85,
+          0.9,
+          0.95
+        ]
+      }
+    },
+    "response": {
+      "id": "chatcmpl-01a17994-01dd-722a-8e8a-d4c72113da73",
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "message": {
+            "content": "{\"kind\":\"knob\",\"knob\":\"enable_prefix_caching\",\"power_cap_w\":null,\"reason\":\"p99 1300ms headroom only 1.5% vs 1320ms budget, caching cuts Wh 0.044\",\"value\":true}",
+            "refusal": null,
+            "role": "assistant"
+          },
+          "logprobs": null
+        }
+      ],
+      "created": 1793041105,
+      "model": "muse-spark-1.3",
+      "object": "chat.completion",
+      "usage": {
+        "completion_tokens": 385,
+        "prompt_tokens": 381,
+        "total_tokens": 766,
+        "completion_tokens_details": {
+          "reasoning_tokens": 321
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    }
+  },
+  "start": {
+    "summary": {
+      "cap_w": 700,
+      "range_w": [
+        200,
+        700
+      ],
+      "step_w": 25,
+      "p99_ms": 1200,
+      "p99_budget_ms": 1320,
+      "p99_headroom_pct": 9.1,
+      "wh_per_req": 0.048,
+      "wh_saved_pct": 0.0,
+      "last_gates": [],
+      "knobs": {
+        "max_num_seqs": 256,
+        "enable_prefix_caching": true,
+        "quantization": "none"
+      },
+      "allowed_knobs": {
+        "max_num_seqs": [
+          64,
+          128,
+          256,
+          512
+        ],
+        "enable_prefix_caching": [
+          true,
+          false
+        ],
+        "enable_chunked_prefill": [
+          true,
+          false
+        ],
+        "quantization": [
+          "none",
+          "fp8"
+        ],
+        "gpu_mem_util": [
+          0.8,
+          0.85,
+          0.9,
+          0.95
+        ]
+      }
+    },
+    "response": {
+      "id": "chatcmpl-01a17994-085f-77ae-965d-cd624b97151f",
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "message": {
+            "content": "{\"kind\":\"cap\",\"knob\":null,\"power_cap_w\":675,\"reason\":\"p99 1200ms 9.1% under 1320ms budget, lower cap 700W to 675W\",\"value\":null}",
+            "refusal": null,
+            "role": "assistant"
+          },
+          "logprobs": null
+        }
+      ],
+      "created": 1793041106,
+      "model": "muse-spark-1.3",
+      "object": "chat.completion",
+      "usage": {
+        "completion_tokens": 260,
+        "prompt_tokens": 363,
+        "total_tokens": 623,
+        "completion_tokens_details": {
+          "reasoning_tokens": 201
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    }
   }
 }

@@ -10,7 +10,7 @@ Recorded Oct 27 2026: the first four calls used reasoning effort "low" and a
 400-token cap, ran out of tokens while reasoning and returned no content
 (kept in truncated.json; they test the fallback). The planner now asks for
 "minimal" effort with a 600-token cap; the headroom scenario was re-recorded
-with that.
+with that, and the other three were recorded the same way in a later run.
 """
 
 from __future__ import annotations
