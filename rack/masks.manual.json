@@ -1,0 +1,44 @@
+{
+  "source": "manual",
+  "image": "rack.jpg",
+  "objects": [
+    {
+      "id": "rack-1",
+      "kind": "rack",
+      "polygon": [[160, 50], [470, 50], [470, 910], [160, 910]],
+      "gpu_indices": [0, 1, 2, 3]
+    },
+    {
+      "id": "slot-0",
+      "kind": "slot",
+      "polygon": [[190, 110], [430, 110], [430, 250], [190, 250]],
+      "gpu_indices": [0]
+    },
+    {
+      "id": "slot-1",
+      "kind": "slot",
+      "polygon": [[190, 280], [430, 280], [430, 420], [190, 420]],
+      "gpu_indices": [1]
+    },
+    {
+      "id": "slot-2",
+      "kind": "slot",
+      "polygon": [[190, 450], [430, 450], [430, 590], [190, 590]],
+      "gpu_indices": [2]
+    },
+    {
+      "id": "slot-3",
+      "kind": "slot",
+      "polygon": [[190, 620], [430, 620], [430, 760], [190, 760]],
+      "gpu_indices": [3]
+    },
+    {
+      "id": "pdu-1",
+      "kind": "pdu",
+      "polygon": [[490, 110], [560, 110], [560, 820], [490, 820]],
+      "gpu_indices": []
+    }
+  ],
+  "iou_vs_manual": 1,
+  "status": "ok"
+}
