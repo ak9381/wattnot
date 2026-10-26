@@ -124,3 +124,40 @@ def test_planned_loop_reverts_on_gate_fail_and_restores(tmp_path):
 def test_decision_line_for_fallback():
     d = Decision(Choice("stop"), "p99 headroom only 2%", "fallback")
     assert d.line() == "Fallback policy chose to stop because p99 headroom only 2%"
+
+
+def _decide(name):
+    rec = _load("decisions.json")[name]
+    return DecisionMaker(_replay(rec["response"])).decide(rec["summary"]), rec["summary"]
+
+
+def test_all_recorded_scenarios_parse_as_model_decisions():
+    assert set(_load("decisions.json")) == {"headroom", "after_fail", "tight", "start"}
+    for name in ("headroom", "after_fail", "tight", "start"):
+        d, s = _decide(name)
+        assert d.model.startswith("muse-spark"), name
+        assert 0 < len(d.reason) <= 200 and not d.clamped
+        if d.choice.kind == "cap":
+            lo, hi = s["range_w"]
+            assert lo <= d.choice.power_cap_w <= hi
+            assert abs(d.choice.power_cap_w - s["cap_w"]) <= s["step_w"]
+        else:
+            assert d.choice.knob in s["allowed_knobs"]
+
+
+def test_after_fail_does_not_lower_the_cap_again():
+    d, s = _decide("after_fail")
+    assert d.choice.kind != "cap" or d.choice.power_cap_w >= s["cap_w"]
+
+
+def test_tight_headroom_does_not_cut_power():
+    d, s = _decide("tight")
+    assert d.choice.kind != "cap" or d.choice.power_cap_w >= s["cap_w"]
+    if d.choice.kind == "knob":
+        assert s["knobs"].get(d.choice.knob) != d.choice.value  # an actual change
+
+
+def test_start_steps_down_one_notch():
+    d, s = _decide("start")
+    assert d.choice.kind == "cap" and d.choice.power_cap_w == s["cap_w"] - s["step_w"]
+
