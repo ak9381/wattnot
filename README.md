@@ -18,6 +18,8 @@ Built during the Meta Global AI Developer Hackathon, Oct 26 – Nov 4 2026. Befo
 
 Per-request energy is split by token share with a per-request cap, following the method Neuralwatt describes. See `src/wattnot/meter/attribution.py`.
 
+The default rack image in `rack/ai/` is an AI-generated illustration, not a photo of a real rack. The real Cisco photo in `rack/cisco/` is kept as a fallback.
+
 ## License
 
 MIT, see `LICENSE`.

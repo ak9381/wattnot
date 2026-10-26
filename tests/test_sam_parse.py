@@ -112,8 +112,28 @@ def test_recorded_cisco_sam_output_passes_and_is_the_default():
     assert doc["status"] == "ok" and doc["iou_vs_manual"] >= 0.8
     validate_masks(doc, image_path=CISCO / "rack.jpg")
     assert doc == json.loads((CISCO / "masks.sam.json").read_text())
+    picked, fallback = pick_masks(directory=CISCO)
+    assert not fallback and picked["source"] == "sam3.1"
+
+
+AI = RACK / "ai"
+
+
+def test_ai_rack_sam_output_passes_and_is_the_default():
+    from wattnot.sam import load_masks
+    from wattnot.sam.pick import image_note, photo_dir
+
+    pts = parse_by_object((AI / "sam-raw" / "points.txt").read_text())
+    raw = {"rack": (AI / "sam-raw" / "rack_server.txt").read_text(),
+           "slot": "".join(pts[i] for i in range(1, 11))}
+    doc = build_document(raw, load_masks(AI / "masks.manual.json"))
+    assert doc["status"] == "ok" and doc["iou_vs_manual"] >= 0.8
+    validate_masks(doc, image_path=AI / "rack.jpg")
+    assert doc == json.loads((AI / "masks.sam.json").read_text())
+    assert photo_dir() == AI and image_note(AI) == "AI-generated illustration"
     picked, fallback = pick_masks()
     assert not fallback and picked["source"] == "sam3.1"
+    assert "AI-generated" in (AI / "ATTRIBUTION.md").read_text()
 
 
 def test_multirun_log_stays_inside_the_budget():

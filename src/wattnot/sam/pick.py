@@ -1,7 +1,7 @@
 """Choose which mask document the rack view shows.
 
-The first photo set present wins: `rack/cisco/` (the SAM-friendly photo),
-then `rack/real/`, then `rack/`.
+The first photo set present wins: `rack/ai/` (an AI-generated illustration),
+then `rack/cisco/` (a real photo, the fallback), then `rack/real/`, then `rack/`.
 SAM masks win only when `masks.sam.json` exists, passes every check and
 has status `ok`. Anything else falls back to the manual layout.
 """
@@ -16,11 +16,17 @@ from wattnot.sam.segment import MasksError, load_masks, repo_root
 
 def photo_dir(root: Path | None = None) -> Path:
     root = root or repo_root()
-    for name in ("cisco", "real"):
+    for name in ("ai", "cisco", "real"):
         d = root / "rack" / name
         if (d / "masks.manual.json").is_file():
             return d
     return root / "rack"
+
+
+def image_note(directory: Path) -> str | None:
+    """Caption note for a photo set that is an illustration, not a real photo."""
+
+    return "AI-generated illustration" if directory.name == "ai" else None
 
 
 def pick_masks(root: Path | None = None, *, directory: Path | None = None
