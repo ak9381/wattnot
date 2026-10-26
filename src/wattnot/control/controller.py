@@ -17,6 +17,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from wattnot import recommend
 from wattnot.control.nvml_ctl import CapGuard
 
 
@@ -34,27 +35,34 @@ def _emit(emit, kind: str, data: dict, step: str) -> None:
 
 def step_down(guard: CapGuard, *, start_w: int, floor_w: int, step_w: int,
               trial: Callable[[int], object], gate: Callable[[object], object],
-              emit=None) -> tuple[int, list[StepOutcome]]:
+              emit=None, baseline=None, metrics: Callable[[object], tuple] | None = None,
+              rec_opts: dict | None = None, on_recommend=None) -> tuple[int, list[StepOutcome]]:
     """Return the lowest cap that passed every gate, and every step tried.
 
     `trial(cap_w)` runs the workload at that cap. `gate(result)` returns an
     object with `.passed` and `.failed` (a `Decision`). The GPU is left at
     the returned cap.
+
+    If `baseline` (wh_per_req, p99_s) and `metrics(result) -> (wh_per_req, p99_s)`
+    are given, a `recommendations` event closes the run and `on_recommend` gets
+    the `Recommendations` object.
     """
 
     if step_w <= 0:
         raise ValueError("step_w must be positive")
     best = guard.set_cap_w(start_w)
     outcomes: list[StepOutcome] = []
-    cap = best
+    cap = start = best
+    best_result = None
     while cap - step_w >= max(floor_w, guard.min_w):
         cap = guard.set_cap_w(cap - step_w)
-        decision = gate(trial(cap))
+        result = trial(cap)
+        decision = gate(result)
         step = f"cap:{cap}"
         if decision.passed:
             outcomes.append(StepOutcome(cap, True))
             _emit(emit, "action.applied", {"change": {"power_cap_w": cap}}, step)
-            best = cap
+            best, best_result = cap, result
             continue
         failed = tuple(decision.failed)
         outcomes.append(StepOutcome(cap, False, failed))
@@ -63,6 +71,16 @@ def step_down(guard: CapGuard, *, start_w: int, floor_w: int, step_w: int,
               {"change": {"power_cap_w": cap}, "restored_cap_w": best,
                "failed_gates": list(failed)}, step)
         break
+    if baseline is not None and metrics is not None:
+        b_wh, b_p99 = baseline
+        f_wh, f_p99 = metrics(best_result) if best_result is not None else (b_wh, b_p99)
+        rec = recommend.with_summary(recommend.for_run(
+            start_cap_w=start, final_cap_w=best, gate_passed=best_result is not None,
+            base_wh_per_req=b_wh, final_wh_per_req=f_wh, base_p99_ms=b_p99 * 1000,
+            final_p99_ms=f_p99 * 1000, **(rec_opts or {})), None)
+        recommend.emit(emit, rec)
+        if on_recommend is not None:
+            on_recommend(rec)
     return best, outcomes
 
 

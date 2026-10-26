@@ -2,7 +2,9 @@
 
 Subcommands:
   impact   scale a measured Wh-per-request saving to monthly kWh, dollars
-           and litres of water (all labelled ESTIMATE)
+           and litres of water (all labelled ESTIMATE), then recommendations
+  recommend  print "what this means for your data centre" from a run report
+             JSON (start/final cap, Wh/request, p99)
 """
 
 from __future__ import annotations
@@ -12,6 +14,7 @@ from collections.abc import Sequence
 
 from wattnot import __version__
 from wattnot import impact as _impact
+from wattnot import recommend as _rec
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -41,7 +44,28 @@ def build_parser() -> argparse.ArgumentParser:
                      help="facility overhead (default %(default)s, GPU energy only)")
     imp.add_argument("--days", type=float, default=_impact.DAYS,
                      help="period length (default %(default)s)")
+    rec = sub.add_parser("recommend", help="recommendations from a run report JSON")
+    rec.add_argument("report", help="run report JSON (see tests/fixtures/runs/example_report.json)")
+    rec.add_argument("--json", action="store_true", help="print the recommendations as JSON")
     return parser
+
+
+def _run_recommend(a: argparse.Namespace) -> int:
+    import json
+
+    with open(a.report, encoding="utf-8") as f:
+        r = json.load(f)
+    keys = ("start_cap_w", "final_cap_w", "gate_passed", "base_wh_per_req",
+            "final_wh_per_req", "base_p99_ms", "final_p99_ms", "knob")
+    rec = _rec.with_summary(_rec.for_run(**{k: r[k] for k in keys if k in r},
+                                         **r.get("assumptions", {})), None)
+    if a.json:
+        print(json.dumps(rec.to_dict(), indent=2))
+    else:
+        if r.get("label"):
+            print(f"[{r['label']}]")
+        print("\n".join(rec.lines()))
+    return 0
 
 
 def _run_impact(a: argparse.Namespace) -> int:
@@ -49,6 +73,8 @@ def _run_impact(a: argparse.Namespace) -> int:
                          tariff_usd_per_kwh=a.tariff_usd_per_kwh, wue_l_per_kwh=a.wue_l_per_kwh,
                          pue=a.pue, days=a.days)
     print("\n".join(_impact.report(i, gpus=a.gpus, days=a.days)))
+    print()
+    print("\n".join(_rec.for_impact(i, gpus=a.gpus, days=a.days).lines()))
     return 0
 
 
@@ -60,6 +86,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_impact(args)
         except ValueError as e:
             parser.error(str(e))
+    if args.cmd == "recommend":
+        try:
+            return _run_recommend(args)
+        except (OSError, KeyError, TypeError, ValueError) as e:
+            parser.error(f"bad report: {e}")
     parser.print_help()
     return 0
 

@@ -42,6 +42,7 @@
         "action.applied",
         "action.rolled_back",
         "receipt.signed",
+        "recommendations",
         "run.finished",
         "error"
       ]
