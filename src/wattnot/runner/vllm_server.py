@@ -19,9 +19,10 @@ from typing import Protocol
 
 from wattnot.runner.workload import WorkloadItem
 
-# Default served model: Meta's open-weights Llama 3.1 8B Instruct. Fits one
-# 24 GB+ GPU in bf16, and FP8 trials make sense on it.
-DEFAULT_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
+# Default served model: Meta's open-weights Muse Glimmer 30B (Apache 2.0). Fits one
+# H100 80GB in bf16, and FP8 trials make sense on it. Llama 3.1 8B is the comparison
+# model. See wattnot.models.
+DEFAULT_MODEL = "meta-models/Muse-Glimmer-30B"
 
 QUANTIZATIONS = {"none", "fp8", "awq", "gptq", "bitsandbytes"}
 
@@ -76,6 +77,7 @@ class Completion:
     latency_s: float
     completion_tokens: int
     prompt_tokens: int
+    text: str = ""
 
 
 class Client(Protocol):
@@ -87,15 +89,18 @@ class OpenAIClient:
 
     def __init__(self, base_url: str, model: str = DEFAULT_MODEL, *, timeout_s: float = 120.0,
                  clock: Callable[[], float] = time.perf_counter,
-                 api_key: str | None = None) -> None:
-        self.url = base_url.rstrip("/") + "/completions"
+                 api_key: str | None = None, chat: bool = False) -> None:
+        self.chat = chat
+        self.url = base_url.rstrip("/") + ("/chat/completions" if chat else "/completions")
         self.model = model
         self.timeout_s = timeout_s
         self._clock = clock
         self._api_key = api_key
 
     def complete(self, item: WorkloadItem) -> Completion:
-        body = json.dumps({"model": self.model, "prompt": item.prompt,
+        msg = ({"messages": [{"role": "user", "content": item.prompt}]} if self.chat
+               else {"prompt": item.prompt})
+        body = json.dumps({"model": self.model, **msg,
                            "max_tokens": item.max_tokens, "temperature": 0}).encode()
         headers = {"Content-Type": "application/json"}
         if self._api_key:
@@ -106,5 +111,7 @@ class OpenAIClient:
             payload = json.loads(resp.read())
         latency = self._clock() - t0
         usage = payload.get("usage") or {}
+        choice = (payload.get("choices") or [{}])[0]
+        text = (choice.get("message") or {}).get("content") if self.chat else choice.get("text")
         return Completion(item.id, latency, int(usage.get("completion_tokens", 0)),
-                          int(usage.get("prompt_tokens", 0)))
+                          int(usage.get("prompt_tokens", 0)), text or "")

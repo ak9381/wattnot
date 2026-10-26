@@ -102,6 +102,16 @@ def _record(arm: ArmResult, p: dict, o: Outcome, budget_s: float, target: float,
         arm.wh_to_best = round(sum(t["_wh"] for t in arm.trials), 4)
 
 
+def _rescore(arm: ArmResult, target: float, tol: float) -> None:
+    arm.trials_to_best = arm.seconds_to_best = arm.wh_to_best = None
+    for i, t in enumerate(arm.trials, 1):
+        if t["feasible"] and t["wh_per_req"] <= target * (1 + tol):
+            arm.trials_to_best = i
+            arm.seconds_to_best = round(sum(x["_s"] for x in arm.trials[:i]), 2)
+            arm.wh_to_best = round(sum(x["_wh"] for x in arm.trials[:i]), 4)
+            return
+
+
 def _run_optuna(name: str, seeds: Sequence[Proposal], obj: Objective, bounds: Bounds,
                 budget: int, budget_s: float, target: float, tol: float, seed: int) -> ArmResult:
     arm = ArmResult(name)
@@ -120,10 +130,17 @@ def _run_optuna(name: str, seeds: Sequence[Proposal], obj: Objective, bounds: Bo
 def ablation(budget_trials: int, arms: Sequence[str] = ("cold", "warm", "grid"), *,
              proposals: Sequence[Proposal] = (), spark: dict | None = None,
              objective: Objective | None = None, bounds: Bounds | None = None,
-             p99_budget_s: float = 1.3, tol: float = 0.01, seed: int = 7) -> AblationReport:
+             p99_budget_s: float = 1.3, tol: float = 0.01, seed: int = 7,
+             target_mode: str = "grid", label: str = "ESTIMATE") -> AblationReport:
+    """`target_mode="grid"` sweeps the whole grid first to find the true best (cheap on the
+    synthetic objective). `"best_seen"` is for a real GPU: the target is the best feasible
+    point any arm found, so no extra trials are spent; hits are scored after the arms run.
+    """
     bounds = bounds or Bounds()
     obj = objective or synthetic_objective()
-    target = _feasible_best(obj, bounds, p99_budget_s)
+    if target_mode not in ("grid", "best_seen"):
+        raise ValueError("target_mode must be 'grid' or 'best_seen'")
+    target = _feasible_best(obj, bounds, p99_budget_s) if target_mode == "grid" else -1.0
     out: dict[str, ArmResult] = {}
     for name in arms:
         if name == "cold":
@@ -139,8 +156,13 @@ def ablation(budget_trials: int, arms: Sequence[str] = ("cold", "warm", "grid"),
             out[name] = arm
         else:
             raise ValueError(f"unknown arm {name!r}")
+    if target_mode == "best_seen":
+        seen = [t["wh_per_req"] for a in out.values() for t in a.trials if t["feasible"]]
+        target = min(seen) if seen else float("nan")
+        for a in out.values():
+            _rescore(a, target, tol)
     for a in out.values():
         for t in a.trials:
             t.pop("_s", None)
             t.pop("_wh", None)
-    return AblationReport(target, tol, budget_trials, out, spark or {"calls": 0})
+    return AblationReport(target, tol, budget_trials, out, spark or {"calls": 0}, label)

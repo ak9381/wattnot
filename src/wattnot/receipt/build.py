@@ -120,7 +120,8 @@ def build_from_dir(run_dir: str | Path, out_dir: str | Path, **kw) -> Path:
         if ev_path.exists() else []
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    prev = sorted(out_dir.glob("rcpt_*.json"))
+    prev = sorted(p for p in out_dir.glob("rcpt_*.json")
+                  if not p.name.endswith(".sigstore.json"))  # skip signature bundles
     if "prev_sha256" not in kw and prev:
         kw["prev_sha256"] = json.loads(prev[-1].read_text())["integrity"]["sha256"]
     r = build_receipt(run, events=events, **kw)

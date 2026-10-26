@@ -20,10 +20,10 @@ from wattnot.meter.base import Window
 from wattnot.receipt.build import build_from_dir
 from wattnot.receipt.sign import sign
 from wattnot.runner.trial import run_trial
-from wattnot.runner.vllm_server import Completion, TrialParams
+from wattnot.runner.vllm_server import DEFAULT_MODEL, Completion, TrialParams
 from wattnot.runner.workload import Workload, load_replay_set
 
-MODEL = "meta-llama/Llama-3.1-8B-Instruct"
+MODEL = DEFAULT_MODEL
 BASELINE = TrialParams()
 CANDIDATE = TrialParams(quantization="fp8", max_num_seqs=512)
 
@@ -70,7 +70,7 @@ class FakeBackend:
     def client(self, params: TrialParams):
         return _FakeClient(self.rng, params)
 
-    def outputs(self, items) -> dict[str, str]:
+    def outputs(self, items, params=None) -> dict[str, str]:
         return {i.id: "ok" for i in items}
 
     def meter(self, params: TrialParams):
@@ -99,6 +99,39 @@ class HeadlineResult:
 def safe_headline(backend, *, root: str | Path, key_path: str | Path, run_id: str,
                   reps: int = 5, n_items: int | None = None,
                   workload: Workload | None = None) -> HeadlineResult:
+    """T15: baseline vs FP8 + 2x batch, no power cap."""
+
+    return gated_compare(backend, baseline=BASELINE, candidate=CANDIDATE, root=root,
+                         key_path=key_path, run_id=run_id, reps=reps, n_items=n_items,
+                         workload=workload,
+                         reason="safe headline: FP8 weights plus 2x batch, no power cap")
+
+
+def _outputs(backend, items, params) -> dict[str, str]:
+    try:
+        return backend.outputs(items, params)
+    except TypeError:  # older backends answer the same for every arm
+        return backend.outputs(items)
+
+
+def measurement_label(backend, windows) -> str:
+    """SIMULATED on the fake backend; MEASURED only when every window read the energy counter."""
+
+    if backend.provider == "fake":
+        return "SIMULATED"
+    return "MEASURED" if windows and all(w.label == "MEASURED" for w in windows) else "ESTIMATE"
+
+
+def gated_compare(backend, *, baseline: TrialParams, candidate: TrialParams,
+                  root: str | Path, key_path: str | Path, run_id: str, reps: int = 5,
+                  n_items: int | None = None, workload: Workload | None = None,
+                  reason: str = "", concurrency: int = 1,
+                  idle_w: float | None = None) -> HeadlineResult:
+    """Baseline vs candidate, `reps` vs `reps` -> gates -> receipt -> offline signature.
+
+    `backend` gives client(params), meter(params), outputs(items[, params]), provider, gpu.
+    """
+
     root = Path(root)
     wl = workload or load_replay_set()
     if n_items:
@@ -108,42 +141,44 @@ def safe_headline(backend, *, root: str | Path, key_path: str | Path, run_id: st
             replace(i, meta={**i.meta, "checks": [{"type": "contains", "value": "ok"}]})
             for i in wl.items), wl.version)
     items = list(wl)
+    fake = backend.provider == "fake"
     em = Emitter(run_id, root=root)
     em.emit("run.started", {"mode": "container", "model": MODEL, "workload": wl.name,
                             "host": {"provider": backend.provider, "gpu": backend.gpu},
-                            "label": "SIMULATED" if backend.provider == "fake" else "MEASURED",
+                            "label": "SIMULATED" if fake else "MEASURED",
                             "compare_to": None})
-    arms = {}
-    for tid, params in (("baseline", BASELINE), ("candidate", CANDIDATE)):
+    arms, outs = {}, {}
+    for tid, params in (("baseline", baseline), ("candidate", candidate)):
         arms[tid] = run_trial(params, wl, backend.meter(params), backend.client(params),
-                              reps=reps, emit=em, trial_id=tid, warmup=min(20, len(items)))
+                              reps=reps, emit=em, trial_id=tid, warmup=min(20, len(items)),
+                              concurrency=concurrency)
+        outs[tid] = _outputs(backend, items, params)
     base, cand = arms["baseline"], arms["candidate"]
-    outputs = backend.outputs(items)
     base_wh = [r.wh_per_request for r in base.reps]
     cand_wh = [r.wh_per_request for r in cand.reps]
-    dec = decide(base, cand, outputs, outputs, items, base_wh=base_wh, cand_wh=cand_wh, emit=em)
+    dec = decide(base, cand, outs["baseline"], outs["candidate"], items,
+                 base_wh=base_wh, cand_wh=cand_wh, emit=em)
     em.emit("action.applied" if dec.passed else "action.rolled_back",
-            {"trial_id": "candidate", "params": asdict(CANDIDATE), "failed": dec.failed})
+            {"trial_id": "candidate", "params": asdict(candidate), "failed": dec.failed})
     em.emit("run.finished", {"status": "ok", "applied": dec.passed})
     em.close()
 
+    windows = [r.window for r in (*base.reps, *cand.reps)]
     run_dir = root / "runs" / run_id
     run = {
         "run_id": run_id,
         "subject": {"model": MODEL, "host": {"provider": backend.provider, "gpu": backend.gpu,
-                                             "driver": "simulated"},
-                    "mode": "container",
+                                             "driver": getattr(backend, "driver", "simulated")},
+                    "mode": getattr(backend, "mode", "container"),
                     "workload": {"name": wl.name, "version": str(wl.version),
                                  "n_requests": len(items), "sha256": "0" * 64}},
         "baseline": _arm(base, base_wh), "candidate": _arm(cand, cand_wh),
-        "measurement": {"meter": "simulated", "hz": 10,
-                        "label": "SIMULATED" if backend.provider == "fake" else "ESTIMATE",
-                        "idle_w": None,
-                        "csv": [{"path": r.window.csv_path, "sha256": r.window.sha256}
-                                for r in (*base.reps, *cand.reps)]},
+        "measurement": {"meter": "simulated" if fake else getattr(backend, "meter_name", "nvml"),
+                        "hz": 10, "label": measurement_label(backend, windows),
+                        "idle_w": idle_w,
+                        "csv": [{"path": w.csv_path, "sha256": w.sha256} for w in windows]},
         "planner_trace": [{"trial_no": 1, "source": "fixed", "model": None,
-                           "params": asdict(CANDIDATE),
-                           "reason": "safe headline: FP8 weights plus 2x batch, no power cap"}],
+                           "params": asdict(candidate), "reason": reason}],
     }
     (run_dir / "run.json").write_text(json.dumps(run, indent=2) + "\n", encoding="utf-8")
     receipt = build_from_dir(run_dir, root / "receipts")
