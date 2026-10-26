@@ -1,3 +1,4 @@
+import { attribute, waterfall, ASSUME } from "./savings.js";
 import { GROUPS, NODES, EDGES, NODE_W, NODE_H, initialState, reduce, capPath, route, groupBounds } from "./state.js";
 import { buildChecklist, loadDone, toggle, progress, actionPayload } from "./checklist.js";
 import { icon } from "./vendor/icons/icons.js";
@@ -11,6 +12,7 @@ const store = (() => { try { localStorage.setItem("_t", "1"); return localStorag
 // ---------- data / playback ----------
 let events = [], idx = 0, state = initialState(), playing = false, timer = null;
 let selected = q.get("node"), showResults = false;
+let sav = attribute([]), unit = q.get("unit") || "wh", hoverNode = null, showSavings = q.get("savings") !== "0";
 const layout = NODES.map((n) => ({ ...n }));
 const byId = () => Object.fromEntries(layout.map((n) => [n.id, n]));
 
@@ -53,7 +55,7 @@ function worldBounds() {
 }
 function fit() {
   const b = worldBounds(), r = vp.getBoundingClientRect();
-  const padB = 72; // keep clear of the legend and controls
+  const padB = 104; // keep clear of the legend and controls
   view.k = Math.min(1.25, Math.min((r.width - 64) / b.w, (r.height - 48 - padB) / b.h));
   view.x = (r.width - b.w * view.k) / 2 - b.x * view.k;
   view.y = 24 + (r.height - padB - 24 - b.h * view.k) / 2 - b.y * view.k;
@@ -104,8 +106,11 @@ vp.addEventListener("pointerup", () => {
   drag = null; vp.classList.remove("panning");
 });
 
+vp.addEventListener("pointerleave", () => { if (hoverNode) { hoverNode = null; renderSavings(); } });
 function hover(e) {
   const el = e.target.closest(".node"), tip = $("tip");
+  const hn = el ? el.dataset.id : null;
+  if (hn !== hoverNode) { hoverNode = hn; renderSavings(); }
   if (!el) { tip.hidden = true; return; }
   const n = NODES.find((x) => x.id === el.dataset.id), st = state.nodes[n.id];
   tip.innerHTML = `<b>${esc(n.title)}</b><span class="mono">${esc(st.sub || "waiting for this step")}</span><em>${esc(HINT[n.id] || "")} · click for details · drag to move</em>`;
@@ -161,7 +166,7 @@ function renderCanvas() {
     }
     const pills = [...st.pills, ...(n.id === "receipt" ? ["ESTIMATE"] : [])].filter((v, i, a) => a.indexOf(v) === i);
     return `<div class="${cls}" data-id="${n.id}" style="left:${n.x}px;top:${n.y}px;width:${n.w || NODE_W}px;min-height:${n.h || NODE_H}px">
-      <div class="nh">${icon(n.icon, 16)}<span class="nt">${esc(n.title)}</span></div>${body}
+      <div class="nh">${icon(n.icon, 16)}<span class="nt">${esc(n.title)}</span>${chipFor(n.id)}</div>${body}
       ${pills.length ? `<div class="pills">${pills.map(pill).join("")}</div>` : ""}</div>`;
   }).join("");
 
@@ -194,8 +199,105 @@ function renderCanvas() {
   renderMinimap();
 }
 
+// ---------- live savings ----------
+const pct = (wh) => (sav.base ? (100 * wh) / sav.base.wh : 0);
+const signed = (x, d) => (x > 0 ? "−" : x < 0 ? "+" : "±") + Math.abs(x).toFixed(d);
+function barFor(id) {
+  const bs = sav.bars;
+  if (id === "revert") return bs.find((b) => b.outcome === "reverted") || null;
+  if (["cap", "prompts", "quality", "latency", "verdict", "choice", "reason", "knob"].includes(id)) return bs[bs.length - 1] || null;
+  if (id === "kept") return [...bs].reverse().find((b) => b.outcome === "kept") || null;
+  return null;
+}
+function chipFor(id) {
+  if (!sav.base) return "";
+  if (id === "revert") { const b = barFor("revert"); return b ? `<span class="schip rv" title="saved, then given back by the revert">${signed(pct(b.triedWh), 1)}% → 0</span>` : ""; }
+  if (id === "prompts" || id === "verdict") { const b = barFor(id); return b ? `<span class="schip${b.outcome === "reverted" ? " rv" : ""}">${signed(pct(b.triedWh), 1)}% Wh</span>` : ""; }
+  if (["cap", "kept", "receipt"].includes(id) && sav.totalWh) return `<span class="schip on">${signed(pct(sav.totalWh), 1)}% Wh</span>`;
+  return "";
+}
+function spark(vals) {
+  if (vals.length < 2) return `<svg class="spk" viewBox="0 0 96 24"></svg>`;
+  const lo = Math.min(...vals), hi = Math.max(...vals), r = hi - lo || 1;
+  const pts = vals.map((v, i) => `${(i / (vals.length - 1)) * 94 + 1},${22 - ((v - lo) / r) * 20}`).join(" ");
+  return `<svg class="spk" viewBox="0 0 96 24"><polyline points="${pts}" fill="none" stroke="#22C7D9" stroke-width="1.5"/></svg>`;
+}
+const UNITS = {
+  wh: { tab: "Wh/req", f: (x) => `${signed(x, 4)} Wh` },
+  usd: { tab: "$/mo", f: (x) => `${x < 0 ? "+" : "−"}$${Math.abs(x).toFixed(2)}` },
+  water: { tab: "L/mo", f: (x) => `${signed(x, 0)} L` },
+  w: { tab: "W", f: (x) => `${signed(x, 0)} W` },
+};
+function renderSavings() {
+  const el = $("savings");
+  el.hidden = !showSavings;
+  document.body.classList.toggle("nosav", !showSavings);
+  $("toSavings").classList.toggle("on", showSavings);
+  if (!showSavings) return;
+  const c = sav.counters;
+  const card = (name, k, v, unitTxt, d, deltaTxt) => `<div class="cnt"><div class="ch"><span>${name}</span>${pill(k.label)}</div>
+    <b class="mono">${v}<small> ${unitTxt}</small></b><div class="cd mono${d > 0 ? " good" : ""}">${deltaTxt}</div>${spark(sav.hist[name === "Power" ? "power" : name === "Energy" ? "wh" : name === "Cost" ? "usd" : "water"])}</div>`;
+  let h = `<div class="sh"><span>LIVE SAVINGS</span><small>vs baseline · updates per event</small></div>`;
+  if (!c) h += `<p class="sempty">Counters start once the baseline is measured.</p>`;
+  else {
+    const dW = c.power.base - c.power.v, dWh = c.wh.base - c.wh.v, dU = c.usd.base - c.usd.v, dL = c.water.base - c.water.v;
+    h += `<div class="cnts">
+      ${card("Power", c.power, c.power.v, "W cap", dW, `${signed(dW, 0)} W vs ${c.power.base} W`)}
+      ${card("Energy", c.wh, c.wh.v.toFixed(4), "Wh/req", dWh, `${signed(dWh, 4)} · ${signed(pct(dWh), 1)}%`)}
+      ${card("Cost", c.usd, "$" + c.usd.v.toFixed(2), "/mo", dU, `${dU > 0 ? "−" : "+"}$${Math.abs(dU).toFixed(2)} vs $${c.usd.base.toFixed(2)}`)}
+      ${card("Water", c.water, c.water.v.toFixed(0), "L/mo", dL, `${signed(dL, 0)} L vs ${c.water.base.toFixed(0)} L`)}
+    </div>
+    <div class="eff"><div><span>Efficiency</span>${c.tokPerWh ? pill("MEASURED") : ""}</div>${c.tokPerWh
+      ? `<b class="mono">${Math.round(c.tokPerWh.v).toLocaleString()} <small>tok/Wh</small></b><span class="mono good">+${(100 * (c.tokPerWh.v / c.tokPerWh.base - 1)).toFixed(1)}%</span>
+         <p>Same ${c.tokPerWh.tok} tokens per answer at every cap. The gain is less energy per answer, not fewer tokens.</p>`
+      : `<b class="mono muted">– <small>tok/Wh</small></b><p>This stream does not report tokens per answer.</p>`}</div>
+    <p class="assume">Cost and water: ${ASSUME.gpus} GPUs × ${(ASSUME.reqPerGpuDay / 1000).toFixed(0)}k req/day × ${ASSUME.days} d, $${ASSUME.tariff}/kWh, ${ASSUME.wue} L/kWh, PUE ${ASSUME.pue.toFixed(1)}.</p>`;
+  }
+  const wf = waterfall(sav.bars, unit);
+  h += `<div class="wfh"><span>SAVING BY STEP</span><div class="tabs" role="tablist">${Object.entries(UNITS).map(([k, u]) =>
+    `<button role="tab" data-unit="${k}" class="${k === unit ? "on" : ""}">${u.tab}</button>`).join("")}</div></div>`;
+  if (!wf.length) h += `<p class="sempty">Each try adds a bar here once it is measured.</p>`;
+  else {
+    const span = Math.max(1e-12, ...wf.map((b) => Math.max(b.end, b.start + Math.max(b.v.tried, 0))));
+    const X = (v) => `${Math.max(0, (v / span) * 100)}%`;
+    const hb = hoverNode ? barFor(hoverNode) : null;
+    h += `<ol class="wf">${wf.map((b) => {
+      const rv = b.outcome === "reverted";
+      const seg = rv
+        ? `<i class="gb" style="left:${X(b.start)};width:${X(b.v.tried)}"></i><i class="gbk" style="left:${X(b.start)};width:${X(b.v.tried)}"></i>`
+        : `<i class="${b.outcome}" style="left:${X(b.start)};width:${X(b.v.net)}"></i>`;
+      const cls = [rv ? "rv" : "", b.top ? "top" : "", b.outcome === "pending" ? "pend" : "", hb && hb.step === b.step ? "hl" : ""].join(" ");
+      return `<li class="${cls}" data-node="${b.node}" data-step="${esc(b.step)}" tabindex="0">
+        <div class="wr"><span class="mono wl">${b.cap} W</span><div class="trk">${seg}</div>
+        <span class="mono wv">${rv ? "net 0" : UNITS[unit].f(b.v.net)}</span></div>
+        <div class="why">${b.top ? `<em>biggest saver</em> ` : ""}${esc(b.why)}</div></li>`;
+    }).join("")}</ol>
+    <div class="wtot mono"><span>kept total</span><b>${UNITS[unit].f(wf[wf.length - 1].end)}</b></div>`;
+  }
+  el.innerHTML = h;
+  const hl = el.querySelector(".wf li.hl");
+  if (hl) hl.scrollIntoView({ block: "nearest" });
+}
+function focusNode(id) {
+  const n = layout.find((x) => x.id === id), r = vp.getBoundingClientRect();
+  if (!n) return;
+  view.x = r.width / 2 - (n.x + (n.w || NODE_W) / 2) * view.k;
+  view.y = r.height / 2 - (n.y + (n.h || NODE_H) / 2) * view.k;
+  applyView();
+  selected = id; showResults = showResults === true ? "dismissed" : showResults;
+  render();
+}
+$("savings").addEventListener("click", (e) => {
+  const t = e.target.closest("[data-unit]");
+  if (t) { unit = t.dataset.unit; renderSavings(); return; }
+  const li = e.target.closest("li[data-node]");
+  if (li) focusNode(li.dataset.node);
+});
+$("savings").addEventListener("keydown", (e) => { const li = e.target.closest("li[data-node]"); if (li && e.key === "Enter") focusNode(li.dataset.node); });
+$("toSavings").onclick = () => { showSavings = !showSavings; renderSavings(); fit(); };
+
 function renderMinimap() {
-  const mm = $("minimap"), b = worldBounds(), W = 208, H = 128;
+  const mm = $("minimap"), b = worldBounds(), W = 160, H = 96;
   const k = Math.min((W - 16) / b.w, (H - 16) / b.h), ox = 8 - b.x * k + ((W - 16) - b.w * k) / 2, oy = 8 - b.y * k + ((H - 16) - b.h * k) / 2;
   const r = vp.getBoundingClientRect();
   const vx = (-view.x / view.k) * k + ox, vy = (-view.y / view.k) * k + oy, vw = (r.width / view.k) * k, vh = (r.height / view.k) * k;
@@ -314,7 +416,7 @@ function renderHeader() {
   const m = state.meta;
   $("metacalls").innerHTML = m.calls ? `META · ${m.calls} call${m.calls > 1 ? "s" : ""} · ${m.input + m.output} tok` : "META · 0 calls · fallback rules";
 }
-function render() { renderHeader(); renderCanvas(); renderDrawer(); renderTimeline(); renderResults(); }
+function render() { sav = attribute(events.slice(0, idx)); renderHeader(); renderSavings(); renderCanvas(); renderDrawer(); renderTimeline(); renderResults(); }
 
 // ---------- wiring ----------
 $("zin").innerHTML = icon("zoom-in", 16); $("zout").innerHTML = icon("zoom-out", 16); $("fit").innerHTML = icon("maximize", 16);
@@ -330,6 +432,7 @@ window.addEventListener("keydown", (e) => {
   if (e.target.closest && e.target.closest("select,input[type=checkbox]")) return;
   if (e.code === "Space") { e.preventDefault(); play(); }
   else if (e.key === "f" || e.key === "F") fit();
+  else if (e.key === "s" || e.key === "S") { showSavings = !showSavings; renderSavings(); fit(); }
   else if (e.key === "ArrowRight") { play(false); seek(idx + 1); }
   else if (e.key === "ArrowLeft") { play(false); seek(idx - 1); }
   else if (e.key === "+" || e.key === "=") zoomAt(1.2, ...centre());
@@ -348,6 +451,7 @@ if (run) {
   const text = await (await fetch(q.get("src") || "demo-events.jsonl")).text();
   events = text.trim().split("\n").map((l) => JSON.parse(l));
 }
+renderSavings();
 fit();
 if (q.has("results") && q.get("results") === "0") showResults = "dismissed";
 seek(q.has("at") ? Number(q.get("at")) : 0);

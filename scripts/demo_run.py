@@ -28,6 +28,7 @@ from wattnot.planner import DecisionMaker, SparkClient  # noqa: E402
 RUN = "run_20261027_090000_e0a3b1"
 RUN_LIVE = "run_20261027_091500_5a7c2e"
 BASE_P99, BASE_WH = 1.000, 0.0480
+TOKENS_PER_REQ = 212  # output tokens per answer; the cap does not change the answers
 PROMPTS = ["Summarise this 2k-token support ticket", "Write a SQL query for monthly churn",
            "Explain this Python traceback", "Translate a product FAQ to Spanish"]
 
@@ -76,7 +77,8 @@ def main(out: Path, live: bool = False) -> Path:
                     step_id="baseline")
         em.emit("trial.measured", {"trial_no": 0, "cap_w": 700, "wh_per_req": {"mean": BASE_WH},
                                    "p99_ms": BASE_P99 * 1000, "pass_rate": 0.95,
-                                   "n_prompts": len(PROMPTS), "label": "MEASURED"},
+                                   "n_prompts": len(PROMPTS), "tokens_per_req": TOKENS_PER_REQ,
+                                   "label": "MEASURED"},
                 step_id="baseline")
         n = {"i": 0, "last_cap": 700}
 
@@ -105,7 +107,8 @@ def main(out: Path, live: bool = False) -> Path:
             em.emit("trial.measured", {"trial_no": i, "cap_w": cap, "wh_per_req": {"mean": wh},
                                        "p99_ms": round(p99 * 1000),
                                        "pass_rate": 0.95 - (700 - cap) / 25000,
-                                       "n_prompts": len(PROMPTS), "label": "MEASURED"},
+                                       "n_prompts": len(PROMPTS),
+                                       "tokens_per_req": TOKENS_PER_REQ, "label": "MEASURED"},
                     step_id=s)
             return SimpleNamespace(cap=cap, p99=p99, wh=wh, step=s, i=i)
 
