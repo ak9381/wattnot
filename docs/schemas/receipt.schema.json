@@ -1,0 +1,366 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wattnot.receipt/1",
+  "type": "object",
+  "required": [
+    "spec",
+    "receipt_id",
+    "created_at",
+    "run_id",
+    "subject",
+    "baseline",
+    "candidate",
+    "result",
+    "measurement",
+    "planner_trace",
+    "grade",
+    "integrity"
+  ],
+  "properties": {
+    "spec": {
+      "const": "wattnot.receipt/1"
+    },
+    "receipt_id": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "object",
+      "required": [
+        "model",
+        "host",
+        "mode",
+        "workload"
+      ]
+    },
+    "baseline": {
+      "type": "object",
+      "required": [
+        "params",
+        "reps",
+        "wh_per_req",
+        "p99_ms",
+        "quality"
+      ],
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "max_num_seqs": {},
+            "enable_chunked_prefill": {},
+            "enable_prefix_caching": {},
+            "block_size": {},
+            "quantization": {},
+            "gpu_mem_util": {},
+            "power_cap_w": {},
+            "sm_clock_mhz": {}
+          }
+        },
+        "reps": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "wh_per_req": {
+          "type": "object",
+          "required": [
+            "mean",
+            "sd"
+          ],
+          "properties": {
+            "mean": {
+              "type": "number"
+            },
+            "sd": {
+              "type": "number"
+            },
+            "samples": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "usd_per_req": {
+          "type": "object",
+          "required": [
+            "mean",
+            "sd"
+          ],
+          "properties": {
+            "mean": {
+              "type": "number"
+            },
+            "sd": {
+              "type": "number"
+            },
+            "samples": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "p99_ms": {
+          "type": "number"
+        },
+        "quality": {
+          "type": "object",
+          "properties": {
+            "fixed_pass_rate": {
+              "type": "number"
+            },
+            "judge_score": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "required": [
+        "params",
+        "reps",
+        "wh_per_req",
+        "p99_ms",
+        "quality"
+      ],
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "max_num_seqs": {},
+            "enable_chunked_prefill": {},
+            "enable_prefix_caching": {},
+            "block_size": {},
+            "quantization": {},
+            "gpu_mem_util": {},
+            "power_cap_w": {},
+            "sm_clock_mhz": {}
+          }
+        },
+        "reps": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "wh_per_req": {
+          "type": "object",
+          "required": [
+            "mean",
+            "sd"
+          ],
+          "properties": {
+            "mean": {
+              "type": "number"
+            },
+            "sd": {
+              "type": "number"
+            },
+            "samples": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "usd_per_req": {
+          "type": "object",
+          "required": [
+            "mean",
+            "sd"
+          ],
+          "properties": {
+            "mean": {
+              "type": "number"
+            },
+            "sd": {
+              "type": "number"
+            },
+            "samples": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "p99_ms": {
+          "type": "number"
+        },
+        "quality": {
+          "type": "object",
+          "properties": {
+            "fixed_pass_rate": {
+              "type": "number"
+            },
+            "judge_score": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "required": [
+        "saving_pct",
+        "welch",
+        "billable",
+        "billed_saving_pct"
+      ]
+    },
+    "measurement": {
+      "type": "object",
+      "required": [
+        "meter",
+        "hz",
+        "csv",
+        "label"
+      ],
+      "properties": {
+        "label": {
+          "enum": [
+            "MEASURED",
+            "ESTIMATE"
+          ]
+        }
+      }
+    },
+    "attribution": {
+      "type": "object"
+    },
+    "planner_trace": {
+      "type": "array"
+    },
+    "estimates": {
+      "type": "object",
+      "properties": {
+        "water_ml_per_req": {
+          "type": "object",
+          "required": [
+            "value",
+            "label"
+          ],
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "label": {
+              "const": "ESTIMATE"
+            },
+            "method": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
+            }
+          },
+          "description": "Candidate water per request, mL. Always ESTIMATE."
+        },
+        "baseline_water_ml_per_req": {
+          "type": "object",
+          "required": [
+            "value",
+            "label"
+          ],
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "label": {
+              "const": "ESTIMATE"
+            },
+            "method": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
+            }
+          },
+          "description": "Optional. Baseline water per request, mL, same method as candidate. Always ESTIMATE. If absent, UI derives it as ESTIMATE."
+        },
+        "sci_gco2e_per_req": {
+          "type": "object"
+        }
+      }
+    },
+    "grade": {
+      "enum": [
+        "VALID",
+        "ESTIMATE",
+        "UNVERIFIABLE",
+        "NOISE"
+      ]
+    },
+    "integrity": {
+      "type": "object",
+      "required": [
+        "canonicalization",
+        "sha256"
+      ],
+      "properties": {
+        "canonicalization": {
+          "const": "JCS RFC 8785"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "prev_sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "signer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rekor": {
+          "type": [
+            "object",
+            "null"
+          ]
+        }
+      }
+    },
+    "compare_to": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^run_[0-9]{8}_[0-9]{6}_[0-9a-f]{6}$",
+      "description": "Optional. run_id of the baseline run, so the UI can load the real before canvas. If absent, UI rebuilds the before canvas from the receipt baseline."
+    }
+  },
+  "not": {
+    "anyOf": [
+      {
+        "required": [
+          "prompts"
+        ]
+      },
+      {
+        "required": [
+          "outputs"
+        ]
+      },
+      {
+        "required": [
+          "prompt"
+        ]
+      }
+    ]
+  }
+}

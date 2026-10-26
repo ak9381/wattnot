@@ -1,0 +1,334 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wattnot.dev/schemas/ui-view.schema.json",
+  "title": "WattNot UI view (derived, unsigned)",
+  "description": "UI-only blocks DERIVED from run events (run-event.schema.json) and receipts (receipt.schema.json). Never signed, never written into a receipt, and NOT part of the receipt sha256/JCS hash. Safe to recompute at any time.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "spec",
+    "derived",
+    "matrix_cards",
+    "planner_reasons"
+  ],
+  "properties": {
+    "spec": {
+      "const": "wattnot.ui-view/1"
+    },
+    "derived": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from",
+        "signed",
+        "in_receipt_hash"
+      ],
+      "properties": {
+        "from": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "run_events",
+              "receipts"
+            ]
+          },
+          "minItems": 1
+        },
+        "signed": {
+          "const": false
+        },
+        "in_receipt_hash": {
+          "const": false
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source_run_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/run_id"
+          }
+        }
+      }
+    },
+    "matrix_cards": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/matrix_card"
+      }
+    },
+    "planner_reasons": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/planner_reason"
+      }
+    }
+  },
+  "$defs": {
+    "run_id": {
+      "type": "string",
+      "pattern": "^run_[0-9]{8}_[0-9]{6}_[0-9a-f]{6}$"
+    },
+    "labelled_number": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "label"
+      ],
+      "properties": {
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "label": {
+          "enum": [
+            "MEASURED",
+            "ESTIMATE"
+          ]
+        },
+        "derived": {
+          "type": "boolean",
+          "description": "true when the UI computed it (e.g. water from Wh x factor)"
+        }
+      }
+    },
+    "before_after": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "before": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "after": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      }
+    },
+    "matrix_card": {
+      "type": "object",
+      "description": "One per-tier comparison row (Comparison matrix tab / compare screen).",
+      "additionalProperties": false,
+      "required": [
+        "tier",
+        "model",
+        "wh_per_req",
+        "usd_per_req",
+        "p99_ms",
+        "quality",
+        "labels",
+        "run_id"
+      ],
+      "properties": {
+        "tier": {
+          "type": "string",
+          "description": "e.g. Simple | Complex | Agentic (data.json compare[].tier)"
+        },
+        "desc": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string",
+          "description": "receipt subject.model"
+        },
+        "wh_per_req": {
+          "$ref": "#/$defs/before_after",
+          "description": "baseline/candidate wh_per_req.mean"
+        },
+        "usd_per_req": {
+          "$ref": "#/$defs/before_after"
+        },
+        "p99_ms": {
+          "$ref": "#/$defs/before_after"
+        },
+        "quality": {
+          "$ref": "#/$defs/before_after",
+          "description": "quality.fixed_pass_rate"
+        },
+        "water_ml_per_req": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "before": {
+              "$ref": "#/$defs/labelled_number"
+            },
+            "after": {
+              "$ref": "#/$defs/labelled_number"
+            }
+          }
+        },
+        "saving_pct": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "mean": {
+              "type": "number"
+            },
+            "ci_low": {
+              "type": "number"
+            },
+            "ci_high": {
+              "type": "number"
+            }
+          }
+        },
+        "billable": {
+          "type": "boolean"
+        },
+        "grade": {
+          "enum": [
+            "VALID",
+            "ESTIMATE",
+            "UNVERIFIABLE",
+            "NOISE"
+          ]
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "MEASURED",
+              "ESTIMATE",
+              "NOISE",
+              "BLOCKED",
+              "NULL_RESULT",
+              "UNVERIFIABLE"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "receipt_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "run_id": {
+          "$ref": "#/$defs/run_id"
+        },
+        "compare_to": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/run_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "planner_reason": {
+      "type": "object",
+      "description": "One planner proposal, from receipt planner_trace[] and trial/action events.",
+      "additionalProperties": false,
+      "required": [
+        "trial_id",
+        "proposer",
+        "reason",
+        "outcome"
+      ],
+      "properties": {
+        "trial_id": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "= trial_no in events/receipts"
+        },
+        "run_id": {
+          "$ref": "#/$defs/run_id"
+        },
+        "proposer": {
+          "enum": [
+            "spark",
+            "optuna",
+            "grid",
+            "baseline",
+            "human"
+          ],
+          "description": "planner_trace[].source"
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "e.g. muse-spark-1.3"
+        },
+        "params": {
+          "type": "object"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "Short planner rationale; numbers/settings only, no prompt or output text"
+        },
+        "expected_effect": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "wh_per_req_delta_pct": {
+              "type": "number"
+            },
+            "p99_ms_delta_pct": {
+              "type": "number"
+            },
+            "quality_delta": {
+              "type": "number"
+            },
+            "note": {
+              "type": "string",
+              "maxLength": 200
+            }
+          }
+        },
+        "outcome": {
+          "enum": [
+            "pending",
+            "on_front",
+            "dominated",
+            "failed_quality",
+            "noise",
+            "rolled_back",
+            "best"
+          ]
+        },
+        "measured": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "wh_per_req": {
+              "type": "number"
+            },
+            "p99_ms": {
+              "type": "number"
+            },
+            "quality": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    }
+  }
+}
