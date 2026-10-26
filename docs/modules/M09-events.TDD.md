@@ -33,3 +33,8 @@ Rules: no Meta API credits for building (recorded fixtures in tests); nothing co
 - `GET /api/runs/{run_id}/events` → SSE replay of the same log using the frame above; honours `Last-Event-ID` (resume after that seq) and `?speed=` (replay pacing, default 1, `0` = as fast as possible). Live runs keep streaming; finished runs close after `run.finished`.
 - Frontend uses these when `compare_to` is set (receipt top-level or `run.started` `data.compare_to`); if the baseline run 404s it falls back to rebuilding from receipt `baseline`.
 - Tests: fixture `demo_run` + a baseline fixture → `GET /api/runs/{id}` events validate against run-event schema and receipt against receipt schema; events identical (byte-for-byte JSON) to SSE replay frames; unknown id → 404, bad id → 400; resume from Last-Event-ID yields only seq > N.
+
+## Progress (T06)
+- Done: event emitter + JSONL writer (`wattnot/events/{emitter,schema}.py`), schema check on every event before write, seq strictly increasing from 0, fsync per line, reopen-and-append; 22 tests in `tests/test_events.py`, all green with the demo fixture.
+- Not done: the FastAPI read-only API and SSE/replay (that is T26).
+- Next: T26 builds `wattnot/api/app.py` on this emitter and the committed fixture.
