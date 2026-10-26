@@ -66,7 +66,7 @@ def main(out: Path, live: bool = False) -> Path:
         em.emit("run.started", {"mode": "demo", "label": "EXAMPLE",
                                 "host": {"provider": "fake", "gpu": "H100 (fake)",
                                          "gpu_index": 0, "cap_range_w": [200, 700]},
-                                "model": "meta-llama/Llama-3.1-8B-Instruct",
+                                "model": "meta-models/Muse-Glimmer-30B",
                                 "workload": "demo-prompts-v1"})
         em.emit("telemetry.sample", {"gpu_index": 0, "power_w": 612, "source": "estimate",
                                      "label": "EXAMPLE"})
@@ -147,7 +147,7 @@ def main(out: Path, live: bool = False) -> Path:
 def _start(em):
     em.emit("run.started", {"mode": "demo", "label": "EXAMPLE",
                             "host": {"provider": "fake", "gpu": "H100 (fake)"},
-                            "model": "meta-llama/Llama-3.1-8B-Instruct",
+                            "model": "meta-models/Muse-Glimmer-30B",
                             "workload": "demo-prompts-v1"})
     em.emit("telemetry.sample", {"gpu_index": 0, "power_w": 612, "source": "estimate",
                                  "label": "EXAMPLE"})

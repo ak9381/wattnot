@@ -14,6 +14,7 @@ from __future__ import annotations
 import math
 import statistics
 from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass
 
 from wattnot.meter.attribution import split_wh
@@ -76,10 +77,21 @@ class TrialResult:
         }
 
 
+def _complete_all(client: Client, items: list, concurrency: int) -> list[Completion]:
+    if concurrency <= 1:
+        return [client.complete(item) for item in items]
+    with ThreadPoolExecutor(max_workers=concurrency) as pool:
+        return list(pool.map(client.complete, items))
+
+
 def run_trial(params: TrialParams, workload: Workload, meter: Meter, client: Client, *,
               reps: int = 5, emit=None, trial_id: str = "t0",
-              warmup: int = WARMUP_REQUESTS) -> TrialResult:
-    """Run one trial against an already-started server. `emit` is an Emitter or None."""
+              warmup: int = WARMUP_REQUESTS, concurrency: int = 1) -> TrialResult:
+    """Run one trial against an already-started server. `emit` is an Emitter or None.
+
+    `concurrency` > 1 sends that many requests at once (a thread pool), so vLLM's
+    batching knobs actually matter; 1 keeps the old one-at-a-time behaviour.
+    """
 
     if reps < 1:
         raise ValueError("reps must be >= 1")
@@ -103,7 +115,7 @@ def run_trial(params: TrialParams, workload: Workload, meter: Meter, client: Cli
         for rep in range(1, reps + 1):
             meter.start(f"{trial_id}-rep{rep}")
             try:
-                done: list[Completion] = [client.complete(item) for item in items]
+                done: list[Completion] = _complete_all(client, items, concurrency)
             finally:
                 window = meter.stop()
             lats = [c.latency_s for c in done]
