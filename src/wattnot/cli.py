@@ -54,14 +54,24 @@ def build_parser() -> argparse.ArgumentParser:
     rb = rsub.add_parser("build", help="build a receipt from runs/<id>/run.json")
     rb.add_argument("--run", required=True, help="run directory (runs/<id>)")
     rb.add_argument("--out", default="receipts", help="output directory (default %(default)s)")
+    rs = rsub.add_parser("sign", help="sign a receipt (use --no-rekor for an offline test key)")
+    rs.add_argument("receipt", help="receipts/<id>.json")
+    rs.add_argument("--no-rekor", action="store_true",
+                    help="offline: sign with a local test key, no upload (grade max ESTIMATE)")
+    rs.add_argument("--key", help="Ed25519 PEM test key for --no-rekor")
     return parser
 
 
 def _run_receipt(a: argparse.Namespace) -> int:
     from wattnot.receipt import build_from_dir
 
+    if a.receipt_cmd == "sign":
+        from wattnot.receipt.sign import sign
+        out = sign(a.receipt, no_rekor=a.no_rekor, key_path=a.key)
+        print(f"{out}  ({'offline, no Rekor' if a.no_rekor else 'Rekor'})")
+        return 0
     if a.receipt_cmd != "build":
-        raise ValueError("use: wattnot receipt build --run runs/<id>")
+        raise ValueError("use: wattnot receipt build|sign")
     path = build_from_dir(a.run, a.out)
     r = json.loads(Path(path).read_text())
     print(f"{path}  grade {r['grade']}  sha256 {r['integrity']['sha256'][:16]}...")
