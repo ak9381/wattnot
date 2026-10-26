@@ -30,5 +30,5 @@ Scale a measured Wh-per-request saving from a receipt to a monthly figure:
 wattnot impact --wh-delta 0.01 --requests-per-gpu-per-day 100000 --gpus 8
 ```
 
-Defaults: tariff 8 INR/kWh, WUE 1.8 L/kWh, PUE 1.0, 30 days. All are flags.
+Defaults: tariff 0.12 USD/kWh (an assumption), WUE 1.8 L/kWh, PUE 1.0, 30 days. All are flags.
 Every output line is labelled ESTIMATE; only the Wh delta is measured.
