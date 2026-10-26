@@ -1,6 +1,6 @@
-"""M3 vLLM knob runner: workload sets, trial loop and host adapters.
+"""M3 vLLM knob runner: workload sets, trial loop and host adapters."""
 
-Only the workload format and loader land in the T08 offline part; the trial
-loop (``trial.py``) and vLLM/host adapters (``vllm_server.py``) follow in later
-tasks.
-"""
+from wattnot.runner.trial import TrialResult, percentile, run_trial
+from wattnot.runner.vllm_server import OpenAIClient, TrialParams, server_args
+
+__all__ = ["OpenAIClient", "TrialParams", "TrialResult", "percentile", "run_trial", "server_args"]
