@@ -1,0 +1,6 @@
+{
+  "note": "Signers the verifier accepts. The offline key is a public TEST key for the sample vectors; it proves nothing about real runs.",
+  "keys": [
+    {"signer": "offline:56475aa75463474c", "kind": "ed25519-test", "source": "verifier/samples/test-key.pem"}
+  ]
+}
