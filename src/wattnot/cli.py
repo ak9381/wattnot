@@ -10,7 +10,9 @@ Subcommands:
 from __future__ import annotations
 
 import argparse
+import json
 from collections.abc import Sequence
+from pathlib import Path
 
 from wattnot import __version__
 from wattnot import impact as _impact
@@ -47,7 +49,23 @@ def build_parser() -> argparse.ArgumentParser:
     rec = sub.add_parser("recommend", help="recommendations from a run report JSON")
     rec.add_argument("report", help="run report JSON (see tests/fixtures/runs/example_report.json)")
     rec.add_argument("--json", action="store_true", help="print the recommendations as JSON")
+    rc = sub.add_parser("receipt", help="build receipts from finished runs")
+    rsub = rc.add_subparsers(dest="receipt_cmd")
+    rb = rsub.add_parser("build", help="build a receipt from runs/<id>/run.json")
+    rb.add_argument("--run", required=True, help="run directory (runs/<id>)")
+    rb.add_argument("--out", default="receipts", help="output directory (default %(default)s)")
     return parser
+
+
+def _run_receipt(a: argparse.Namespace) -> int:
+    from wattnot.receipt import build_from_dir
+
+    if a.receipt_cmd != "build":
+        raise ValueError("use: wattnot receipt build --run runs/<id>")
+    path = build_from_dir(a.run, a.out)
+    r = json.loads(Path(path).read_text())
+    print(f"{path}  grade {r['grade']}  sha256 {r['integrity']['sha256'][:16]}...")
+    return 0
 
 
 def _run_recommend(a: argparse.Namespace) -> int:
@@ -91,6 +109,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_recommend(args)
         except (OSError, KeyError, TypeError, ValueError) as e:
             parser.error(f"bad report: {e}")
+    if args.cmd == "receipt":
+        try:
+            return _run_receipt(args)
+        except (OSError, KeyError, TypeError, ValueError) as e:
+            parser.error(f"receipt: {e}")
     parser.print_help()
     return 0
 

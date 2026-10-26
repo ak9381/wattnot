@@ -1,0 +1,5 @@
+{"in": {"numbers": [333333333.3333333, 1e+30, 4.5, 0.002, 1e-27]}, "out": "{\"numbers\":[333333333.3333333,1e+30,4.5,0.002,1e-27]}"}
+{"in": {"string": "\u20ac$\u000f\nA'B\"\\\\\"/"}, "out": "{\"string\":\"\u20ac$\\u000f\\nA'B\\\"\\\\\\\\\\\"/\"}"}
+{"in": {"literals": [null, true, false]}, "out": "{\"literals\":[null,true,false]}"}
+{"in": {"\u20ac": "Euro Sign", "\r": "Carriage Return", "\ufb33": "Hebrew Letter Dalet With Dagesh", "1": "One", "\ud83d\ude00": "Emoji: Grinning Face", "\u0080": "Control", "\u00f6": "Latin Small Letter O With Diaeresis"}, "out": "{\"\\r\":\"Carriage Return\",\"1\":\"One\",\"\u0080\":\"Control\",\"\u00f6\":\"Latin Small Letter O With Diaeresis\",\"\u20ac\":\"Euro Sign\",\"\ud83d\ude00\":\"Emoji: Grinning Face\",\"\ufb33\":\"Hebrew Letter Dalet With Dagesh\"}"}
+{"in": {"n": [-0.0, 1e+21, 1e+20, 123.456, -1.5e-07, 5e-324, 1.7976931348623157e+308, 100, 0.1]}, "out": "{\"n\":[0,1e+21,100000000000000000000,123.456,-1.5e-7,5e-324,1.7976931348623157e+308,100,0.1]}"}
