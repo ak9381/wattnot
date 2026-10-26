@@ -10,17 +10,21 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 
 from wattnot import schemas
+from wattnot.api import app as api_app
 from wattnot.events import schema
 from wattnot.events.emitter import Emitter, new_run_id
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = REPO_ROOT / "tests" / "fixtures" / "runs" / "demo_run" / "events.jsonl"
+FIXTURE_ROOT = REPO_ROOT / "tests" / "fixtures"
 RUN_ID = "run_20261027_101500_a1b2c3"
 
 
@@ -279,3 +283,160 @@ def test_schema_exposes_frozen_event_types():
 def test_schema_check_event_rejects_bad_event():
     with pytest.raises(schemas.ValidationError):
         schema.check_event({"type": "nope"})
+
+
+# --- the read-only API over the log (T26) -----------------------------------
+#
+# These exercise FR-EVT-02…05 against the committed demo fixture: summaries,
+# a full run fetch, SSE replay (byte-for-byte with the JSON view, Last-Event-ID
+# resume, pacing) and the receipt/pareto reads. The TestClient drives the ASGI
+# app in-process, so nothing listens on a socket.
+
+
+def fixture_client() -> TestClient:
+    """A client rooted at the committed fixtures (runs/demo_run)."""
+
+    return TestClient(api_app.create_app(root=FIXTURE_ROOT))
+
+
+def _canonical(event: dict) -> str:
+    return json.dumps(event, ensure_ascii=False, separators=(",", ":"))
+
+
+def parse_sse(text: str) -> list[dict]:
+    """Split a text/event-stream body into ``{id, event, data}`` frames."""
+
+    frames = []
+    for block in text.split("\n\n"):
+        block = block.strip("\n")
+        if not block:
+            continue
+        frame: dict[str, str] = {}
+        for line in block.split("\n"):
+            field, _, value = line.partition(": ")
+            frame[field] = value
+        frames.append(frame)
+    return frames
+
+
+def test_list_runs_summarises_the_fixture():
+    client = fixture_client()
+    runs = client.get("/api/runs").json()
+    assert any(r["run_id"] == RUN_ID for r in runs)
+    demo = next(r for r in runs if r["run_id"] == RUN_ID)
+    assert demo == {
+        "run_id": RUN_ID,
+        "started_at": "2026-10-27T10:15:00Z",
+        "mode": "container",
+        "model": "meta-models/muse-spark-open-1026",
+        "status": "ok",
+        "best_saving_pct": 21.8,
+    }
+
+
+def test_get_run_returns_summary_events_and_null_receipt():
+    client = fixture_client()
+    body = client.get(f"/api/runs/{RUN_ID}").json()
+    assert body["run_id"] == RUN_ID
+    assert body["summary"]["status"] == "ok"
+    # No receipts/ dir under the fixture root, so the receipt is null.
+    assert body["receipt"] is None
+    # Events come back in seq order and every one validates against the schema.
+    seqs = [e["seq"] for e in body["events"]]
+    assert seqs == list(range(len(seqs)))
+    for event in body["events"]:
+        schemas.validate_event(event)
+
+
+def test_get_run_unknown_id_is_404():
+    client = fixture_client()
+    resp = client.get("/api/runs/run_20200101_000000_ffffff")
+    assert resp.status_code == 404
+    assert resp.json() == {"code": "run_not_found"}
+
+
+def test_get_run_malformed_id_is_400():
+    client = fixture_client()
+    resp = client.get("/api/runs/not-a-run-id")
+    assert resp.status_code == 400
+    assert resp.json() == {"code": "bad_run_id"}
+
+
+def test_sse_frames_match_the_json_events_byte_for_byte():
+    client = fixture_client()
+    events = client.get(f"/api/runs/{RUN_ID}").json()["events"]
+    # speed=0 streams as fast as possible so the test never sleeps.
+    stream = client.get(f"/api/runs/{RUN_ID}/events?speed=0")
+    assert stream.headers["content-type"].startswith("text/event-stream")
+    frames = parse_sse(stream.text)
+    assert [int(f["id"]) for f in frames] == [e["seq"] for e in events]
+    assert [f["event"] for f in frames] == [e["type"] for e in events]
+    assert [f["data"] for f in frames] == [_canonical(e) for e in events]
+
+
+def test_sse_closes_after_run_finished():
+    client = fixture_client()
+    frames = parse_sse(client.get(f"/api/runs/{RUN_ID}/events?speed=0").text)
+    assert frames[-1]["event"] == "run.finished"
+
+
+def test_sse_resume_from_last_event_id_header():
+    client = fixture_client()
+    resp = client.get(
+        f"/api/runs/{RUN_ID}/events?speed=0", headers={"Last-Event-ID": "15"}
+    )
+    seqs = [int(f["id"]) for f in parse_sse(resp.text)]
+    assert seqs and min(seqs) == 16  # only seq > 15
+    assert seqs == list(range(16, 22))
+
+
+def test_sse_resume_via_query_param():
+    client = fixture_client()
+    resp = client.get(f"/api/runs/{RUN_ID}/events?speed=0&last_event_id=20")
+    seqs = [int(f["id"]) for f in parse_sse(resp.text)]
+    assert seqs == [21]
+
+
+def test_delay_seconds_scales_by_speed():
+    # One second apart in the log → half a second at 2× and nothing at speed 0.
+    a, b = "2026-10-27T10:15:00Z", "2026-10-27T10:15:01Z"
+    assert api_app._delay_seconds(a, b, 1.0) == pytest.approx(1.0)
+    assert api_app._delay_seconds(a, b, 2.0) == pytest.approx(0.5)
+    assert api_app._delay_seconds(a, b, 0) == 0.0
+    # Out-of-order stamps never block the stream.
+    assert api_app._delay_seconds(b, a, 1.0) == 0.0
+
+
+def test_pareto_endpoint_returns_latest_front():
+    client = fixture_client()
+    body = client.get(f"/api/pareto/{RUN_ID}").json()
+    assert body["run_id"] == RUN_ID
+    assert any(p["on_front"] for p in body["points"])
+    assert client.get("/api/pareto/run_20200101_000000_ffffff").status_code == 404
+    assert client.get("/api/pareto/nope").status_code == 400
+
+
+def test_receipt_endpoint_and_run_receipt(tmp_path):
+    # Build a root with the demo log plus the receipt it points at.
+    run_dir = tmp_path / "runs" / RUN_ID
+    run_dir.mkdir(parents=True)
+    shutil.copy(FIXTURE, run_dir / "events.jsonl")
+    receipt_id = "rcpt_20261027_101627_a1b2c3"
+    receipts = tmp_path / "receipts"
+    receipts.mkdir()
+    receipt = {"receipt_id": receipt_id, "grade": "VALID"}
+    (receipts / f"{receipt_id}.json").write_text(json.dumps(receipt))
+
+    client = TestClient(api_app.create_app(root=tmp_path))
+    assert client.get(f"/api/receipts/{receipt_id}").json() == receipt
+    # The run fetch now resolves the signed receipt from disk.
+    assert client.get(f"/api/runs/{RUN_ID}").json()["receipt"] == receipt
+    # Unknown and traversal-shaped ids are rejected, not read off disk.
+    assert client.get("/api/receipts/rcpt_does_not_exist").status_code == 404
+
+
+def test_api_is_read_only():
+    client = fixture_client()
+    # Writes are not part of the surface: the methods simply are not allowed.
+    assert client.post("/api/runs").status_code == 405
+    assert client.delete(f"/api/runs/{RUN_ID}").status_code == 405

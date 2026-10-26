@@ -38,3 +38,8 @@ Rules: no Meta API credits for building (recorded fixtures in tests); nothing co
 - Done: event emitter + JSONL writer (`wattnot/events/{emitter,schema}.py`), schema check on every event before write, seq strictly increasing from 0, fsync per line, reopen-and-append; 22 tests in `tests/test_events.py`, all green with the demo fixture.
 - Not done: the FastAPI read-only API and SSE/replay (that is T26).
 - Next: T26 builds `wattnot/api/app.py` on this emitter and the committed fixture.
+
+## Progress (T26)
+- Done: read-only FastAPI (`wattnot/api/app.py`) — `GET /api/runs`, `/api/runs/{id}`, `/api/runs/{id}/events` (SSE replay, `Last-Event-ID` resume, `?speed=` pacing, closes after `run.finished`), `/api/receipts/{id}`, `/api/pareto/{id}`; SSE `data` frames are byte-for-byte the events the JSON view returns; run lookup resolves by the `run_id` in the log so the `demo_run` fixture works. fastapi/uvicorn added as deps, httpx as dev dep. New API tests in `tests/test_events.py` via `TestClient` (no socket); `make lint`/`make test` green (65 tests).
+- Not done: live file tailing (current stream replays the recorded log and closes); this read-only surface never starts GPU work.
+- Next: frontend consumes these to render the fixture run in live and replay mode.
