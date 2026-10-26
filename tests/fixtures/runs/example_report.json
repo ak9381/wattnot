@@ -1,0 +1,12 @@
+{
+  "label": "EXAMPLE: demo numbers, not from a real GPU run",
+  "start_cap_w": 700,
+  "final_cap_w": 550,
+  "gate_passed": true,
+  "base_wh_per_req": 0.0480,
+  "final_wh_per_req": 0.0410,
+  "base_p99_ms": 1000,
+  "final_p99_ms": 1070,
+  "knob": {"knob": "enable_prefix_caching", "value": true, "applied": false},
+  "assumptions": {"requests_per_gpu_per_day": 100000, "gpus": 8, "gpus_per_rack": 8}
+}

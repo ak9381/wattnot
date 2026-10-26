@@ -23,7 +23,8 @@ def test_cli_every_line_is_estimate(capsys):
     assert main(["impact", "--wh-delta", "0.01", "--requests-per-gpu-per-day", "100000",
                  "--gpus", "8"]) == 0
     lines = capsys.readouterr().out.strip().splitlines()
-    assert len(lines) == 4 and all(x.startswith("ESTIMATE") for x in lines)
+    assert all(x.startswith("ESTIMATE") for x in lines[:4])
+    assert "Recommended actions:" in lines
     assert "240.0 kWh" in lines[0] and "$28.80" in lines[1] and "432 L" in lines[2]
 
 

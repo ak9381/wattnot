@@ -118,7 +118,7 @@ def test_planned_loop_reverts_on_gate_fail_and_restores(tmp_path):
     types = [json.loads(x)["type"] for x in
              (tmp_path / "runs" / RUN / "events.jsonl").read_text().splitlines()]
     assert types == ["decision", "action.applied", "decision", "action.rolled_back",
-                     "decision"]
+                     "decision", "recommendations"]
 
 
 def test_decision_line_for_fallback():

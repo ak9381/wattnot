@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
+from wattnot import recommend
 from wattnot.control.nvml_ctl import CapGuard
 from wattnot.planner import Decision, DecisionMaker, summarize
 
@@ -27,13 +28,18 @@ class LoopResult:
     knobs: dict
     decisions: list[Decision] = field(default_factory=list)
     gates: list[dict] = field(default_factory=list)
+    recommendations: object = None  # wattnot.recommend.Recommendations
 
 
 def planned_loop(guard: CapGuard, maker: DecisionMaker, *, baseline: Measured,
                  trial: Callable[[int, dict], Measured],
                  gate: Callable[[Measured], object], knobs: dict, step_w: int = 25,
-                 slack: float = 0.10, max_steps: int = 6, emit=None) -> LoopResult:
+                 slack: float = 0.10, max_steps: int = 6, emit=None,
+                 rec_opts: dict | None = None, summarizer=None) -> LoopResult:
+    """`rec_opts` are passed to `recommend.for_run` (traffic, rack budget, tariff)."""
+
     cap = guard.cap_w()
+    start_cap = cap
     knobs = dict(knobs)
     current = baseline
     out = LoopResult(cap, knobs)
@@ -71,5 +77,14 @@ def planned_loop(guard: CapGuard, maker: DecisionMaker, *, baseline: Measured,
                                                  "restored_cap_w": cap,
                                                  "failed_gates": record["failed"]},
                           step_id=step)
+    rec = recommend.for_run(start_cap_w=start_cap, final_cap_w=cap,
+                            gate_passed=any(g["passed"] for g in out.gates),
+                            base_wh_per_req=baseline.wh_per_req,
+                            final_wh_per_req=current.wh_per_req,
+                            base_p99_ms=baseline.p99_s * 1000, final_p99_ms=current.p99_s * 1000,
+                            knob=recommend.spark_knob(out.decisions, out.gates),
+                            **(rec_opts or {}))
+    out.recommendations = recommend.with_summary(rec, summarizer)
+    recommend.emit(emit, out.recommendations)
     out.cap_w, out.knobs = cap, knobs
     return out
