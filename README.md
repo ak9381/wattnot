@@ -14,6 +14,10 @@ Built during the Meta Global AI Developer Hackathon, Oct 26 – Nov 4 2026. Befo
 - `docs/FRONTEND-SECTIONS.md`: the four app screens
 - `docs/TASKS.md`: ordered build list
 
+## Credits
+
+Per-request energy is split by token share with a per-request cap, following the method Neuralwatt describes. See `src/wattnot/meter/attribution.py`.
+
 ## License
 
 MIT, see `LICENSE`.
