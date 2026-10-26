@@ -19,6 +19,10 @@ from typing import Protocol
 
 from wattnot.runner.workload import WorkloadItem
 
+# Default served model: Meta's open-weights Llama 3.1 8B Instruct. Fits one
+# 24 GB+ GPU in bf16, and FP8 trials make sense on it.
+DEFAULT_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
+
 QUANTIZATIONS = {"none", "fp8", "awq", "gptq", "bitsandbytes"}
 
 
@@ -44,8 +48,11 @@ class TrialParams:
             raise ValueError("gpu_mem_util must be in (0, 1]")
 
 
-def server_args(model: str, params: TrialParams, *, port: int = 8000) -> list[str]:
+def server_args(model: str = DEFAULT_MODEL, params: TrialParams | None = None, *,
+                port: int = 8000) -> list[str]:
     """The `vllm serve` argv for one trial."""
+
+    params = params or TrialParams()
 
     args = [
         "vllm", "serve", model,
@@ -78,7 +85,7 @@ class Client(Protocol):
 class OpenAIClient:
     """Blocking `/v1/completions` client. Temperature 0 so reps are comparable."""
 
-    def __init__(self, base_url: str, model: str, *, timeout_s: float = 120.0,
+    def __init__(self, base_url: str, model: str = DEFAULT_MODEL, *, timeout_s: float = 120.0,
                  clock: Callable[[], float] = time.perf_counter,
                  api_key: str | None = None) -> None:
         self.url = base_url.rstrip("/") + "/completions"
