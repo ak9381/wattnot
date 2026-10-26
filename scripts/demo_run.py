@@ -78,7 +78,7 @@ def main(out: Path, live: bool = False) -> Path:
         em.emit("trial.measured", {"trial_no": 0, "cap_w": 700, "wh_per_req": {"mean": BASE_WH},
                                    "p99_ms": BASE_P99 * 1000, "pass_rate": 0.95,
                                    "n_prompts": len(PROMPTS), "tokens_per_req": TOKENS_PER_REQ,
-                                   "label": "MEASURED"},
+                                   "label": "SIMULATED"},
                 step_id="baseline")
         n = {"i": 0, "last_cap": 700}
 
@@ -108,7 +108,7 @@ def main(out: Path, live: bool = False) -> Path:
                                        "p99_ms": round(p99 * 1000),
                                        "pass_rate": 0.95 - (700 - cap) / 25000,
                                        "n_prompts": len(PROMPTS),
-                                       "tokens_per_req": TOKENS_PER_REQ, "label": "MEASURED"},
+                                       "tokens_per_req": TOKENS_PER_REQ, "label": "SIMULATED"},
                     step_id=s)
             return SimpleNamespace(cap=cap, p99=p99, wh=wh, step=s, i=i)
 
@@ -127,7 +127,7 @@ def main(out: Path, live: bool = False) -> Path:
 
         step_down(g, start_w=700, floor_w=400, step_w=50, trial=trial, gate=gate, emit=em,
                   baseline=(BASE_WH, BASE_P99), metrics=lambda r: (r.wh, r.p99),
-                  rec_opts={"requests_per_gpu_per_day": 100_000, "gpus": 8})
+                  rec_opts={"requests_per_gpu_per_day": 100_000, "gpus": 8, "simulated": True})
         # comparison: a plain fixed cap at the driver floor, no gate (EXAMPLE)
         p99, wh = toy(500)
         em.emit("pareto.updated", {"label": "EXAMPLE", "compare": {
@@ -154,7 +154,7 @@ def _start(em):
     em.emit("step.started", {"kind": "baseline", "label": "Measure baseline"},
             step_id="baseline")
     em.emit("trial.measured", {"trial_no": 0, "cap_w": 700, "wh_per_req": {"mean": BASE_WH},
-                               "p99_ms": BASE_P99 * 1000, "label": "MEASURED"},
+                               "p99_ms": BASE_P99 * 1000, "label": "SIMULATED"},
             step_id="baseline")
 
 
@@ -179,7 +179,7 @@ def main_live(out: Path, client: SparkClient | None = None) -> Path:
             em.emit("step.started", {"kind": "prompts", "prompts": PROMPTS}, step_id=s)
             em.emit("trial.measured", {"trial_no": n["i"], "cap_w": cap,
                                        "wh_per_req": {"mean": wh},
-                                       "p99_ms": round(p99 * 1000), "label": "MEASURED"},
+                                       "p99_ms": round(p99 * 1000), "label": "SIMULATED"},
                     step_id=s)
             return Measured(p99_s=p99, wh_per_req=wh)
 
@@ -195,7 +195,7 @@ def main_live(out: Path, client: SparkClient | None = None) -> Path:
                      baseline=Measured(BASE_P99, BASE_WH), trial=trial, gate=gate,
                      knobs={"enable_prefix_caching": True}, step_w=50,
                      max_steps=LIVE_STEPS, emit=em,
-                     rec_opts={"requests_per_gpu_per_day": 100_000, "gpus": 8})
+                     rec_opts={"requests_per_gpu_per_day": 100_000, "gpus": 8, "simulated": True})
         p99, wh = toy(500)
         em.emit("pareto.updated", {"label": "EXAMPLE", "compare": {
             "name": "plain fixed cap 500 W, no gate", "cap_w": 500, "wh_per_req": wh,

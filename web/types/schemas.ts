@@ -81,7 +81,7 @@ export interface Receipt {
   };
   result: Record<string, unknown>;
   measurement: {
-    label: "MEASURED" | "ESTIMATE";
+    label: "MEASURED" | "ESTIMATE" | "SIMULATED";
   };
   attribution?: Record<string, unknown>;
   planner_trace: unknown[];
@@ -100,7 +100,7 @@ export interface Receipt {
     };
     sci_gco2e_per_req?: Record<string, unknown>;
   };
-  grade: "VALID" | "ESTIMATE" | "UNVERIFIABLE" | "NOISE";
+  grade: "VALID" | "ESTIMATE" | "SIMULATED" | "UNVERIFIABLE" | "NOISE";
   integrity: {
     canonicalization: "JCS RFC 8785";
     sha256: string;
@@ -117,7 +117,7 @@ export type RunId = string;
 
 export type LabelledNumber = {
   value: number | null;
-  label: "MEASURED" | "ESTIMATE";
+  label: "MEASURED" | "ESTIMATE" | "SIMULATED";
   derived?: boolean;
 } | null;
 
@@ -144,7 +144,7 @@ export interface MatrixCard {
     ci_high?: number;
   } | null;
   billable?: boolean;
-  grade?: "VALID" | "ESTIMATE" | "UNVERIFIABLE" | "NOISE";
+  grade?: "VALID" | "ESTIMATE" | "SIMULATED" | "UNVERIFIABLE" | "NOISE";
   labels: ("MEASURED" | "ESTIMATE" | "NOISE" | "BLOCKED" | "NULL_RESULT" | "UNVERIFIABLE")[];
   receipt_id?: string | null;
   run_id: RunId;

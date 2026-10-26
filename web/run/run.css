@@ -44,7 +44,7 @@ button{font:inherit;color:inherit}
 .ns.idle{color:#55636F}
 .pills{display:flex;gap:4px;margin-top:8px}
 .pill{font:500 10.5px "JetBrains Mono",monospace;letter-spacing:.06em;border-radius:999px;padding:1px 8px;border:1px solid}
-.pill.MEASURED{color:var(--cy);border-color:rgba(34,199,217,.5)}.pill.ESTIMATE{color:var(--mt);border-color:#3D4A55}.pill.ADVICE{color:var(--mu);border-color:#3D4A55;border-style:dashed}
+.pill.MEASURED{color:var(--cy);border-color:rgba(34,199,217,.5)}.pill.ESTIMATE{color:var(--mt);border-color:#3D4A55}.pill.SIMULATED{color:#E8A33D;border-color:rgba(232,163,61,.55);border-style:dashed}.pill.ADVICE{color:var(--mu);border-color:#3D4A55;border-style:dashed}
 .bar2{height:4px;border-radius:2px;background:#1B252D;margin-top:8px;overflow:hidden}.bar2 i{display:block;height:100%;background:var(--cy);transition:width .3s}
 .rcpt{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}.rcpt div{font-size:12px;color:var(--mu)}.rcpt b{display:block;font:500 17px "JetBrains Mono",monospace;color:var(--tx);margin-top:2px}
 .elbl{font:11.5px "JetBrains Mono",monospace;fill:#9AA6B1}.elbl.rv{fill:#FF7A73}.elbl.hot{fill:var(--cy)}

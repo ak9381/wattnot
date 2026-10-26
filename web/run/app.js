@@ -119,7 +119,7 @@ function hover(e) {
 }
 const HINT = {
   gpu: "Device under test and the cap range its driver allows",
-  power: "Board power from NVML; fake backend reports an ESTIMATE",
+  power: "Board power from NVML; the fake backend is labelled SIMULATED",
   base: "Reference run at the default cap; every try is compared to this",
   choice: "Muse Spark sees numbers only and picks one cap or one knob",
   reason: "One line from the model, quoting the number that drove it",
@@ -164,7 +164,7 @@ function renderCanvas() {
       body = `<div class="rcpt"><div>Energy<b>${r && r.wh != null ? "−" + r.wh.toFixed(4) : "–"}</b>Wh / req</div><div>Cost<b>${r && r.usd != null ? "$" + r.usd.toFixed(2) : "$ –"}</b>per 30 d</div><div>Water<b>${r && r.water != null ? r.water + " L" : "– L"}</b>per 30 d</div></div>
         <div class="ns${st.sub ? "" : " idle"}" style="margin-top:8px">${esc(st.sub || "written when the run ends")}</div>`;
     }
-    const pills = [...st.pills, ...(n.id === "receipt" ? ["ESTIMATE"] : [])].filter((v, i, a) => a.indexOf(v) === i);
+    const pills = [...st.pills, ...(n.id === "receipt" ? [state.simulated ? "SIMULATED" : "ESTIMATE"] : [])].filter((v, i, a) => a.indexOf(v) === i);
     return `<div class="${cls}" data-id="${n.id}" style="left:${n.x}px;top:${n.y}px;width:${n.w || NODE_W}px;min-height:${n.h || NODE_H}px">
       <div class="nh">${icon(n.icon, 16)}<span class="nt">${esc(n.title)}</span>${chipFor(n.id)}</div>${body}
       ${pills.length ? `<div class="pills">${pills.map(pill).join("")}</div>` : ""}</div>`;
@@ -247,7 +247,7 @@ function renderSavings() {
       ${card("Cost", c.usd, "$" + c.usd.v.toFixed(2), "/mo", dU, `${dU > 0 ? "−" : "+"}$${Math.abs(dU).toFixed(2)} vs $${c.usd.base.toFixed(2)}`)}
       ${card("Water", c.water, c.water.v.toFixed(0), "L/mo", dL, `${signed(dL, 0)} L vs ${c.water.base.toFixed(0)} L`)}
     </div>
-    <div class="eff"><div><span>Efficiency</span>${c.tokPerWh ? pill("MEASURED") : ""}</div>${c.tokPerWh
+    <div class="eff"><div><span>Efficiency</span>${c.tokPerWh ? pill(c.tokPerWh.label) : ""}</div>${c.tokPerWh
       ? `<b class="mono">${Math.round(c.tokPerWh.v).toLocaleString()} <small>tok/Wh</small></b><span class="mono good">+${(100 * (c.tokPerWh.v / c.tokPerWh.base - 1)).toFixed(1)}%</span>
          <p>Same ${c.tokPerWh.tok} tokens per answer at every cap. The gain is less energy per answer, not fewer tokens.</p>`
       : `<b class="mono muted">– <small>tok/Wh</small></b><p>This stream does not report tokens per answer.</p>`}</div>
@@ -396,7 +396,7 @@ function renderResults() {
      <p class="muted" style="font-size:12.5px;margin:16px 0 0">Buttons copy a command or download a file. Nothing runs on your servers from this page.</p></div>
    <div>
     <div class="card"><h3>BEFORE / AFTER ${state.example ? '<span class="chip ex" style="margin-left:8px">EXAMPLE</span>' : ""}</h3>
-      <table class="ba"><tr><th></th><th>Before</th><th>After</th><th>Δ</th></tr>${rows.map((x) => `<tr><td>${x[0]} ${pill("MEASURED")}</td><td class="n">${x[1]}</td><td class="n">${x[2]}</td><td class="n">${x[3]}</td></tr>`).join("")}</table>
+      <table class="ba"><tr><th></th><th>Before</th><th>After</th><th>Δ</th></tr>${rows.map((x) => `<tr><td>${x[0]} ${pill(state.simulated ? "SIMULATED" : "MEASURED")}</td><td class="n">${x[1]}</td><td class="n">${x[2]}</td><td class="n">${x[3]}</td></tr>`).join("")}</table>
       ${c ? `<div class="cmp"><div class="win"><b>WattNot, gated</b><div class="mono">${f.cap_w} W<br>${f.wh.toFixed(4)} Wh/req<br>p99 ${Math.round(f.p99_ms)} ms<br><span class="ok">gate pass</span></div></div>
         <div class="lose"><b>Plain fixed cap</b><div class="mono">${c.cap_w} W, no gate<br>${c.wh_per_req.toFixed(4)} Wh/req<br>p99 ${c.p99_ms} ms<br><span class="${c.gate_passed ? "ok" : "bad"}">${c.gate_passed ? "pass" : "p99 +" + Math.round((c.p99_ms / b.p99_ms - 1) * 100) + "%: fails"}</span></div></div></div>` : ""}
       <div class="slot">${q.get("rack") ? `<img src="${esc(q.get("rack"))}" alt="SAM 3.1 rack map: servers outlined, GPUs this run touched lit">` : "Rack map (SAM 3.1) appears here when the run includes a rack photo"}</div></div>

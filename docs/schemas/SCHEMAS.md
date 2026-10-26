@@ -26,11 +26,11 @@ Event types and `data` payloads:
 | `telemetry.sample` | `gpu_index`, `power_w`, `energy_mj` (NVML counter), `sm_clock_mhz`, `mem_clock_mhz`, `temp_c`, `util_pct`, `source` (`nvml`\|`dcgm`\|`zeus`\|`estimate`). Sent at 1 Hz downsampled on SSE; 10 Hz goes to CSV only |
 | `trial.proposed` | `trial_no`, `source` (`spark`\|`optuna`\|`grid`), `params` {max_num_seqs, enable_chunked_prefill, enable_prefix_caching, block_size, quantization (`none`\|`fp8`\|`awq`), gpu_mem_util, power_cap_w \| null, sm_clock_mhz \| null}, `reason` (≤ 200 chars) |
 | `decision` | `choice` {`kind`: `cap`\|`knob`\|`stop`, `power_cap_w` \| null, `knob` \| null, `value` \| null}, `reason` (one line, ≤ 200 chars), `model` (`muse-spark-1.3` or `fallback`), `tokens` {`input`, `output`}, `clamped` (bool) |
-| `trial.measured` | `trial_no`, `reps` (5), `wh_per_req` {mean, sd}, `usd_per_req` {mean, sd}, `p50_ms`, `p99_ms`, `ttft_ms`, `itl_ms`, `tokens_per_s`, `batch_fill`, `kv_use_pct`, `csv_path`, `label` (`MEASURED`\|`ESTIMATE`\|`ADVICE` for steps with no number) |
+| `trial.measured` | `trial_no`, `reps` (5), `wh_per_req` {mean, sd}, `usd_per_req` {mean, sd}, `p50_ms`, `p99_ms`, `ttft_ms`, `itl_ms`, `tokens_per_s`, `batch_fill`, `kv_use_pct`, `csv_path`, `label` (`MEASURED`\|`ESTIMATE`\|`SIMULATED` (fake backend)\|`ADVICE` for steps with no number) |
 | `gate.result` | `trial_no`, `check` (`fixed`\|`judge`\|`p99`\|`noise`), `passed` bool, `detail` {score, threshold, p_value, ci_low, ci_high} |
 | `pareto.updated` | `points` [{trial_no, wh_per_req, p99_ms, quality, on_front}] |
 | `action.applied` / `action.rolled_back` | `trial_no`, `params`, `reason` |
-| `recommendations` | Last event before `run.finished`. `verdict` (`change recommended`\|`no change recommended`), `applies` [string], `actions` [{`label` (`MEASURED`\|`ESTIMATE`\|`ADVICE` for steps with no number), `text`, `key`, `value`, `unit`}], `assumptions` {rack budget, traffic, tariff USD/kWh, WUE, PUE, days}, `summary`, `summary_model` (`rules` or `muse-spark-1.3`). Water and money are always `ESTIMATE`; money is USD |
+| `recommendations` | Last event before `run.finished`. `verdict` (`change recommended`\|`no change recommended`), `applies` [string], `actions` [{`label` (`MEASURED`\|`ESTIMATE`\|`SIMULATED` (fake backend)\|`ADVICE` for steps with no number), `text`, `key`, `value`, `unit`}], `assumptions` {rack budget, traffic, tariff USD/kWh, WUE, PUE, days}, `summary`, `summary_model` (`rules` or `muse-spark-1.3`). Water and money are always `ESTIMATE`; money is USD |
 | `receipt.signed` | `receipt_id`, `sha256`, `grade`, `rekor_log_index` \| null, `path` |
 | `run.finished` | `status` (`ok`\|`null_result`\|`failed`), `best_trial_no` \| null, `saving_pct` {mean, ci_low}, `billed` bool |
 | `error` | `code`, `message`, `step_id` |
@@ -44,7 +44,7 @@ One file per receipt: `receipts/<receipt_id>.json` + `.sigstore.json` bundle. Nu
 - `subject`: `model`, `host` {provider, gpu, driver}, `mode`, `workload` {name, version, n_requests, sha256 of the public replay set}
 - `baseline` / `candidate`: `params`, `reps`, `wh_per_req` {mean, sd, samples[]}, `usd_per_req`, `p99_ms`, `quality` {fixed_pass_rate, judge_score}
 - `result`: `saving_pct` {mean, ci_low, ci_high}, `welch` {t, df, p_value, alpha 0.05}, `billable` bool, `billed_saving_pct` (= ci_low if billable, else 0), `fee_share` 0.20
-- `measurement`: `meter` (`nvml`\|`dcgm`\|`zeus`), `hz` 10, `csv` [{path, sha256}], `label` (`MEASURED`\|`ESTIMATE`\|`ADVICE` for steps with no number), `idle_w` {before, after} \| null
+- `measurement`: `meter` (`nvml`\|`dcgm`\|`zeus`), `hz` 10, `csv` [{path, sha256}], `label` (`MEASURED`\|`ESTIMATE`\|`SIMULATED` (fake backend)\|`ADVICE` for steps with no number), `idle_w` {before, after} \| null
 - `attribution`: `method` `"token-share-capped (after Neuralwatt)"`, `cap`
 - `planner_trace`: [{trial_no, source, params, reason}], `judge` {model `muse-spark-1.3`, verdict, agreement_on_30}
 - `estimates`: `water_ml_per_req` {value, label `ESTIMATE`, method, source}, `sci_gco2e_per_req` {value, label, grid_factor_source}

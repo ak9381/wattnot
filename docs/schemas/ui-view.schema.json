@@ -90,7 +90,8 @@
         "label": {
           "enum": [
             "MEASURED",
-            "ESTIMATE"
+            "ESTIMATE",
+            "SIMULATED"
           ]
         },
         "derived": {
@@ -194,6 +195,7 @@
           "enum": [
             "VALID",
             "ESTIMATE",
+            "SIMULATED",
             "UNVERIFIABLE",
             "NOISE"
           ]

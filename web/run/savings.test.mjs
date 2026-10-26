@@ -45,7 +45,7 @@ test("money and water use the impact maths and are estimates", () => {
   const c = attribute(demo).counters;
   assert.equal(c.usd.label, "ESTIMATE");
   assert.equal(c.water.label, "ESTIMATE");
-  assert.equal(c.wh.label, "MEASURED");
+  assert.equal(c.wh.label, "SIMULATED");
 });
 
 test("tokens per answer stay the same; tokens/Wh rises only because Wh falls", () => {

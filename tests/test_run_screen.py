@@ -45,6 +45,6 @@ def test_demo_script_reproduces_the_same_stream(tmp_path):
 @pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
 def test_graph_state_mapping_node_tests():
     r = subprocess.run(["node", "--test", "state.test.mjs", "checklist.test.mjs",
-                        "savings.test.mjs"], cwd=RUN,
+                        "savings.test.mjs", "honesty.test.mjs"], cwd=RUN,
                        capture_output=True, text=True, timeout=60)
     assert r.returncode == 0, r.stdout + r.stderr
