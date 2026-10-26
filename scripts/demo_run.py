@@ -63,15 +63,20 @@ def main(out: Path, live: bool = False) -> Path:
     tmp = out / "_tmp"
     with Emitter(RUN, root=tmp) as em, CapGuard(DemoGPU(), 0, handle_sigterm=False) as g:
         em.emit("run.started", {"mode": "demo", "label": "EXAMPLE",
-                                "host": {"provider": "fake", "gpu": "H100 (fake)"},
+                                "host": {"provider": "fake", "gpu": "H100 (fake)",
+                                         "gpu_index": 0, "cap_range_w": [200, 700]},
                                 "model": "meta-llama/Llama-3.1-8B-Instruct",
                                 "workload": "demo-prompts-v1"})
         em.emit("telemetry.sample", {"gpu_index": 0, "power_w": 612, "source": "estimate",
                                      "label": "EXAMPLE"})
         em.emit("step.started", {"kind": "baseline", "label": "Measure baseline"},
                 step_id="baseline")
+        for k in range(4):
+            em.emit("step.progress", {"pct": 25 * (k + 1), "message": f"prompt {k + 1} of 4"},
+                    step_id="baseline")
         em.emit("trial.measured", {"trial_no": 0, "cap_w": 700, "wh_per_req": {"mean": BASE_WH},
-                                   "p99_ms": BASE_P99 * 1000, "label": "MEASURED"},
+                                   "p99_ms": BASE_P99 * 1000, "pass_rate": 0.95,
+                                   "n_prompts": len(PROMPTS), "label": "MEASURED"},
                 step_id="baseline")
         n = {"i": 0, "last_cap": 700}
 
@@ -87,11 +92,20 @@ def main(out: Path, live: bool = False) -> Path:
             em.emit("step.started", {"kind": "apply", "label": f"Set cap {cap} W",
                                      "power_cap_w": cap}, step_id=s)
             p99, wh = toy(cap)
-            em.emit("telemetry.sample", {"gpu_index": 0, "power_w": round(cap * 0.88),
-                                         "source": "estimate", "label": "EXAMPLE"}, step_id=s)
-            em.emit("step.started", {"kind": "prompts", "prompts": PROMPTS}, step_id=s)
+            em.emit("step.started", {"kind": "prompts", "prompts": PROMPTS,
+                                     "prompt_set": "demo-prompts-v1"}, step_id=s)
+            for k in range(len(PROMPTS)):
+                em.emit("telemetry.sample", {"gpu_index": 0,
+                                             "power_w": round(cap * (0.86 + 0.03 * (k % 2))),
+                                             "source": "estimate", "label": "EXAMPLE"},
+                        step_id=s)
+                em.emit("step.progress", {"pct": 25 * (k + 1),
+                                          "message": f"prompt {k + 1} of {len(PROMPTS)}"},
+                        step_id=s)
             em.emit("trial.measured", {"trial_no": i, "cap_w": cap, "wh_per_req": {"mean": wh},
-                                       "p99_ms": round(p99 * 1000), "label": "MEASURED"},
+                                       "p99_ms": round(p99 * 1000),
+                                       "pass_rate": 0.95 - (700 - cap) / 25000,
+                                       "n_prompts": len(PROMPTS), "label": "MEASURED"},
                     step_id=s)
             return SimpleNamespace(cap=cap, p99=p99, wh=wh, step=s, i=i)
 
@@ -101,8 +115,9 @@ def main(out: Path, live: bool = False) -> Path:
                                     "detail": {"score": round(r.p99 * 1000),
                                                "threshold": round(BASE_P99 * 1100)}},
                     step_id=r.step)
-            em.emit("gate.result", {"trial_no": r.i, "check": "fixed", "passed": True,
-                                    "detail": {"score": 0.4, "threshold": 1.0}}, step_id=r.step)
+            drop = round((700 - r.cap) / 250, 1)  # quality points lost vs baseline (EXAMPLE)
+            em.emit("gate.result", {"trial_no": r.i, "check": "fixed", "passed": drop <= 1.0,
+                                    "detail": {"score": drop, "threshold": 1.0}}, step_id=r.step)
             if ok:
                 n["last_cap"] = r.cap
             return SimpleNamespace(passed=ok, failed=[] if ok else ["p99"])
@@ -115,6 +130,9 @@ def main(out: Path, live: bool = False) -> Path:
         em.emit("pareto.updated", {"label": "EXAMPLE", "compare": {
             "name": "plain fixed cap 500 W, no gate", "cap_w": 500, "wh_per_req": wh,
             "p99_ms": round(p99 * 1000), "gate_passed": p99 <= BASE_P99 * 1.10}})
+        em.emit("receipt.signed", {"receipt_id": "EXAMPLE-" + RUN[-6:], "sha256": "demo",
+                                   "grade": "EXAMPLE", "rekor_log_index": None, "path": None,
+                                   "signed": False, "note": "demo run: hashed, not signed"})
         em.emit("run.finished", {"status": "ok", "label": "EXAMPLE"})
     src = tmp / "runs" / RUN / "events.jsonl"
     dst = out / "demo-events.jsonl"

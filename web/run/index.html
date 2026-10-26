@@ -3,18 +3,41 @@
 <title>WattNot · live run</title>
 <link rel="stylesheet" href="run.css">
 </head><body>
-<div class="amb"><i style="left:-10%;top:-20%"></i><i style="left:60%;top:10%;animation-delay:-4s"></i><i style="left:25%;top:60%;animation-delay:-7s"></i></div>
-<nav class="gl"><b>WattNot</b><span class="m mu">live run</span><span id="runid" class="m mu"></span>
-  <span class="sp"></span><span id="ex" class="tag ex" hidden>EXAMPLE · fake backend</span>
-  <span class="tag theme">Push the Frontier · energy</span></nav>
-<main>
-  <section class="top"><div><div class="k">Run</div><h1 id="headline">Waiting for events…</h1></div>
-    <div class="meta gl2"><div class="k">Meta API calls this run</div><div id="metacalls" class="m"></div></div></section>
-  <section class="graphwrap gl2"><svg id="graph" viewBox="0 0 1240 300" preserveAspectRatio="xMidYMid meet"></svg>
-    <div id="cappath" class="m cappath"></div></section>
-  <section class="power gl2"><div class="k">GPU power <span id="powlabel" class="lbl"></span></div><svg id="power" viewBox="0 0 1240 90" preserveAspectRatio="none"></svg></section>
-</main>
-<aside id="panel" class="gl2" hidden><button id="close" aria-label="Close">×</button><div id="pbody"></div></aside>
-<div id="results" hidden></div>
+<header class="bar">
+  <div class="ttl"><h1>WattNot · live run</h1>
+    <p>Lowers the GPU power cap one step per try. A step is kept only if quality drops ≤ 1 pt and p99 stays within +10%.</p></div>
+  <div class="bar-r">
+    <span id="metacalls" class="chip mono"></span>
+    <span id="runid" class="mono muted"></span>
+    <span id="ex" class="chip ex" hidden>EXAMPLE · fake backend</span>
+    <span class="chip theme">Push the Frontier · energy</span>
+    <button id="toResults" class="btn" hidden></button>
+  </div>
+</header>
+<div id="viewport" class="viewport" tabindex="0" aria-label="Run graph canvas">
+  <div id="world" class="world"><svg id="edges" class="edges"></svg><div id="groups"></div><div id="nodes"></div></div>
+  <div class="ctl" role="toolbar" aria-label="Canvas controls">
+    <button id="zin" title="Zoom in (+)"></button><button id="zout" title="Zoom out (−)"></button><button id="fit" title="Fit to screen (F)"></button>
+    <span id="zoomv" class="mono muted"></span>
+  </div>
+  <div class="legend"><span><i class="sw wn"></i>WattNot (we build)</span><span><i class="sw mt"></i>Meta model</span><span><i class="sw rv"></i>Revert only</span><span><i class="sw op"></i>Optional path</span></div>
+  <svg id="minimap" class="minimap" aria-label="Minimap"></svg>
+  <div id="tip" class="tip" hidden></div>
+</div>
+<aside id="drawer" class="drawer" hidden aria-label="Node details"><button id="dclose" class="x" title="Close (Esc)"></button><div id="dbody"></div></aside>
+<section id="results" class="results" hidden></section>
+<footer class="timeline">
+  <div class="tl-row">
+    <button id="back" class="ib" title="Step back (←)"></button>
+    <button id="play" class="ib primary" title="Play / pause (Space)"></button>
+    <button id="fwd" class="ib" title="Step forward (→)"></button>
+    <label class="spd mono">speed <select id="speed"><option>0.5</option><option selected>1</option><option>2</option><option>4</option></select>×</label>
+    <span id="evlabel" class="mono"></span>
+    <span class="sp"></span>
+    <span id="caps" class="mono cyan"></span>
+  </div>
+  <div class="tl-plot"><svg id="powerline" preserveAspectRatio="none"></svg>
+    <input id="scrub" type="range" min="0" value="0" aria-label="Scrub through the run"></div>
+</footer>
 <script type="module" src="app.js"></script>
 </body></html>
