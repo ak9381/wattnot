@@ -1,0 +1,9 @@
+{
+  "model": "sam-3.1",
+  "round": "ai-rack",
+  "calls": 4,
+  "images": 4,
+  "usd_estimate": 0.12,
+  "budget_calls": 15,
+  "log": "rack/sam-runs.jsonl"
+}
