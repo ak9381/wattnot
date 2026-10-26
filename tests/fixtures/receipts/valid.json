@@ -1,0 +1,162 @@
+{
+  "spec": "wattnot.receipt/1",
+  "receipt_id": "rcpt_20261028_100000_a00001",
+  "created_at": "2026-10-28T10:00:00+00:00",
+  "run_id": "run_20261028_100000_a00001",
+  "subject": {
+    "model": "meta-llama/Llama-3.1-8B-Instruct",
+    "host": {
+      "provider": "fake",
+      "gpu": "H100 (fake)",
+      "driver": "fake"
+    },
+    "mode": "container",
+    "workload": {
+      "name": "replay-v1",
+      "version": "1",
+      "n_requests": 200,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  },
+  "baseline": {
+    "params": {
+      "power_cap_w": 700,
+      "max_num_seqs": 256
+    },
+    "reps": 5,
+    "wh_per_req": {
+      "mean": 0.04802,
+      "sd": 0.000192,
+      "samples": [
+        0.048,
+        0.0478,
+        0.0483,
+        0.0481,
+        0.0479
+      ]
+    },
+    "usd_per_req": {
+      "mean": 5.7624e-06,
+      "sd": 2.31e-08,
+      "samples": [
+        5.76e-06,
+        5.736e-06,
+        5.796e-06,
+        5.772e-06,
+        5.748e-06
+      ]
+    },
+    "p99_ms": 1000,
+    "quality": {
+      "fixed_pass_rate": 0.95
+    }
+  },
+  "candidate": {
+    "params": {
+      "power_cap_w": 550,
+      "max_num_seqs": 256
+    },
+    "reps": 5,
+    "wh_per_req": {
+      "mean": 0.04322,
+      "sd": 0.000192,
+      "samples": [
+        0.0432,
+        0.043,
+        0.0435,
+        0.0431,
+        0.0433
+      ]
+    },
+    "usd_per_req": {
+      "mean": 5.1864e-06,
+      "sd": 2.31e-08,
+      "samples": [
+        5.184e-06,
+        5.16e-06,
+        5.22e-06,
+        5.172e-06,
+        5.196e-06
+      ]
+    },
+    "p99_ms": 1050,
+    "quality": {
+      "fixed_pass_rate": 0.95
+    }
+  },
+  "result": {
+    "saving_pct": {
+      "mean": 9.9958,
+      "ci_low": 9.5736,
+      "ci_high": 10.4193
+    },
+    "welch": {
+      "t": 39.455757,
+      "df": 8.0,
+      "p_value": 9.36032165123088e-11,
+      "alpha": 0.05
+    },
+    "bootstrap": {
+      "n": 10000,
+      "seed": 7,
+      "level": 0.95
+    },
+    "billable": true,
+    "billed_saving_pct": 9.5736,
+    "fee_share": 0.2,
+    "currency": "USD",
+    "tariff_usd_per_kwh": {
+      "value": 0.12,
+      "label": "ESTIMATE"
+    }
+  },
+  "measurement": {
+    "meter": "nvml",
+    "hz": 10,
+    "label": "MEASURED",
+    "idle_w": null,
+    "csv": [
+      {
+        "path": "traces/example.csv",
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    ]
+  },
+  "attribution": {
+    "method": "token-share-capped (after Neuralwatt)",
+    "cap": 1.0
+  },
+  "planner_trace": [
+    {
+      "trial_no": 1,
+      "source": "spark",
+      "model": "muse-spark-1.3",
+      "params": {
+        "power_cap_w": 550
+      },
+      "reason": "p99 1050ms is under the 1100ms budget"
+    }
+  ],
+  "estimates": {
+    "water_ml_per_req": {
+      "value": 0.077796,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh), site energy only",
+      "source": "assumed WUE 1.8 L/kWh (industry average); not measured"
+    },
+    "baseline_water_ml_per_req": {
+      "value": 0.086436,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh), site energy only",
+      "source": "assumed WUE 1.8 L/kWh (industry average); not measured"
+    }
+  },
+  "grade": "VALID",
+  "integrity": {
+    "canonicalization": "JCS RFC 8785",
+    "sha256": "0e4e8c2a88ee5f53ee4a0685cfeba441eaeea874a898cbe4c0ee7c4cbe99ff88",
+    "prev_sha256": null,
+    "signer": null,
+    "rekor": null
+  }
+}
