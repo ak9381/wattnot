@@ -71,6 +71,16 @@ def verify_receipt(receipt_path: str | Path, bundle: str | Path | None = None,
         step = Step("schema", False, {"error": f"cannot read JSON: {e}"[:200]})
         return Report(str(receipt_path), [step], "UNVERIFIABLE", None)
 
+    bpath = Path(bundle) if bundle else bundle_path(receipt_path)
+    b = json.loads(bpath.read_text(encoding="utf-8")) if bpath.exists() else None
+    return verify_document(receipt, b, trusted=trusted, path=str(receipt_path),
+                           missing=f"no bundle at {bpath.name}")
+
+
+def verify_document(receipt, bundle: dict | None, *, trusted: set[str] | None = None,
+                    path: str = "<upload>", missing: str = "no bundle given") -> Report:
+    """Verify an in-memory receipt (and bundle). Same steps as verify_receipt."""
+
     steps = [_schema_step(receipt)]
     integ = receipt.get("integrity") if isinstance(receipt, dict) else None
     integ = integ if isinstance(integ, dict) else {}
@@ -84,13 +94,13 @@ def verify_receipt(receipt_path: str | Path, bundle: str | Path | None = None,
         steps.append(Step("sha256", bool(expected) and got == expected,
                           {"expected": expected, "got": got}))
 
-    bpath = Path(bundle) if bundle else bundle_path(receipt_path)
-    if not bpath.exists():
-        steps.append(Step("signature", False, {"error": f"no bundle at {bpath.name}"}))
+    b = bundle
+    if not isinstance(b, dict):
+        steps.append(Step("signature", False, {"error": missing}))
         b = {}
     else:
-        b = json.loads(bpath.read_text(encoding="utf-8"))
-        ok, why = verify_offline_bundle(receipt, b)
+        ok, why = verify_offline_bundle(receipt, b) if isinstance(receipt, dict) \
+            else (False, "receipt is not a JSON object")
         detail = {"signer": why} if ok else {"error": why}
         if ok and integ.get("signer") not in (None, why):
             ok, detail = False, {"error": f"receipt names signer {integ.get('signer')}, "
@@ -110,7 +120,7 @@ def verify_receipt(receipt_path: str | Path, bundle: str | Path | None = None,
               rekor_ok=log_index is not None) if isinstance(receipt, dict) else "UNVERIFIABLE"
     claimed = integ.get("grade") if integ else None
     steps.append(Step("grade", g != "UNVERIFIABLE", {"grade": g, "claimed": claimed}))
-    return Report(str(receipt_path), steps, g, claimed)
+    return Report(path, steps, g, claimed)
 
 
 def format_report(r: Report) -> str:

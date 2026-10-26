@@ -16,6 +16,12 @@ Endpoints:
   ``run.finished``.
 * ``GET /api/receipts/{receipt_id}``  — a signed receipt by id.
 * ``GET /api/pareto/{run_id}``        — the latest Pareto front for a run.
+* ``GET /api/receipts``               — receipt summaries (id, run, grade, saving, label).
+* ``GET /api/receipts/{id}/verify``   — step report: schema, sha256, signature, rekor, grade.
+* ``POST /api/verify``                — same report for an uploaded ``{receipt, bundle?}``;
+  computed in memory, nothing is stored.
+* ``GET /api/receipts/{id}/report/eu`` — EU 2024/1364 fields (``?format=json|csv|html``).
+* ``GET /api/ablation``               — the cold/warm/grid planner ablation, if present.
 
 No endpoint mutates anything or starts work — runs begin from the CLI only.
 """
@@ -32,7 +38,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, StreamingResponse
 
 from wattnot import schemas
 from wattnot.events import schema as event_schema
@@ -288,6 +294,75 @@ def create_app(root: str | os.PathLike[str] = ".") -> FastAPI:
         latest = _last(events, "pareto.updated")
         points = latest["data"]["points"] if latest else []
         return {"run_id": run_id, "points": points}
+
+    @app.get("/api/receipts")
+    def list_receipts() -> list[dict]:
+        out = []
+        for p in sorted((base / "receipts").glob("rcpt_*.json")):
+            if p.name.endswith(".sigstore.json"):
+                continue
+            try:
+                r = json.loads(p.read_text(encoding="utf-8"))
+                out.append({"receipt_id": r["receipt_id"], "run_id": r.get("run_id"),
+                            "created_at": r.get("created_at"), "grade": r.get("grade"),
+                            "label": r["measurement"]["label"],
+                            "billed_saving_pct": r["result"]["billed_saving_pct"],
+                            "signed": (p.with_name(p.stem + ".sigstore.json")).is_file()})
+            except (ValueError, KeyError, TypeError):
+                continue
+        return out
+
+    @app.get("/api/receipts/{receipt_id}/verify")
+    def verify_stored(receipt_id: str) -> Any:
+        from wattnot.verify import load_trusted, verify_receipt
+
+        if not _RECEIPT_ID_RE.match(receipt_id):
+            return JSONResponse({"code": "receipt_not_found"}, status_code=404)
+        path = base / "receipts" / f"{receipt_id}.json"
+        if not path.is_file():
+            return JSONResponse({"code": "receipt_not_found"}, status_code=404)
+        rep = verify_receipt(path, trusted=load_trusted()).to_dict()
+        rep["path"] = f"receipts/{receipt_id}.json"
+        return rep
+
+    @app.post("/api/verify")
+    async def verify_upload(request: Request) -> Any:
+        from wattnot.verify import load_trusted, verify_document
+
+        raw = await request.body()
+        if len(raw) > 1_000_000:
+            return JSONResponse({"code": "too_large"}, status_code=413)
+        try:
+            body = json.loads(raw)
+        except ValueError:
+            return JSONResponse({"code": "bad_json"}, status_code=400)
+        if not isinstance(body, dict) or "receipt" not in body:
+            return JSONResponse({"code": "need_receipt"}, status_code=400)
+        return verify_document(body["receipt"], body.get("bundle"),
+                               trusted=load_trusted()).to_dict()
+
+    @app.get("/api/receipts/{receipt_id}/report/eu")
+    def eu_report(receipt_id: str, format: str = "json") -> Any:  # noqa: A002
+        from wattnot.report import eu
+
+        receipt = _load_receipt(base, receipt_id)
+        if receipt is None:
+            return JSONResponse({"code": "receipt_not_found"}, status_code=404)
+        rows = eu.fields_for(receipt)
+        if format == "csv":
+            return PlainTextResponse(eu.to_csv(rows), media_type="text/csv")
+        if format == "html":
+            return HTMLResponse(eu.to_html(rows))
+        if format != "json":
+            return JSONResponse({"code": "bad_format"}, status_code=400)
+        return {"receipt_id": receipt_id, "fields": rows}
+
+    @app.get("/api/ablation")
+    def get_ablation() -> Any:
+        p = base / "reports" / "ablation.json"
+        if not p.is_file():
+            return JSONResponse({"code": "ablation_not_found"}, status_code=404)
+        return json.loads(p.read_text(encoding="utf-8"))
 
     return app
 
