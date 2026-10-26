@@ -1,0 +1,30 @@
+{"id": "j01", "question": "What is 12 times 7?", "baseline": "12 times 7 is 84.", "candidate": "84", "label": "same"}
+{"id": "j02", "question": "Capital of France?", "baseline": "The capital of France is Paris.", "candidate": "Paris.", "label": "same"}
+{"id": "j03", "question": "How many days are in a leap year?", "baseline": "A leap year has 366 days.", "candidate": "366 days.", "label": "same"}
+{"id": "j04", "question": "Boiling point of water at sea level in Celsius?", "baseline": "100 degrees Celsius.", "candidate": "It boils at 100 C.", "label": "same"}
+{"id": "j05", "question": "What gas do plants take in for photosynthesis?", "baseline": "Carbon dioxide.", "candidate": "Plants absorb CO2.", "label": "same"}
+{"id": "j06", "question": "Square root of 144?", "baseline": "12", "candidate": "The square root of 144 is 12.", "label": "same"}
+{"id": "j07", "question": "Who wrote Romeo and Juliet?", "baseline": "William Shakespeare.", "candidate": "Shakespeare wrote it.", "label": "same"}
+{"id": "j08", "question": "How many continents are there?", "baseline": "There are seven continents.", "candidate": "7", "label": "same"}
+{"id": "j09", "question": "Reverse the string 'abc'.", "baseline": "cba", "candidate": "'cba'", "label": "same"}
+{"id": "j10", "question": "What is the chemical symbol for gold?", "baseline": "Au", "candidate": "Gold's symbol is Au.", "label": "same"}
+{"id": "j11", "question": "Convert 1 km to meters.", "baseline": "1000 meters.", "candidate": "1 km = 1000 m.", "label": "same"}
+{"id": "j12", "question": "Largest planet in the solar system?", "baseline": "Jupiter.", "candidate": "Jupiter is the largest planet.", "label": "same"}
+{"id": "j13", "question": "Python: length of [1,2,3]?", "baseline": "len([1,2,3]) is 3.", "candidate": "3", "label": "same"}
+{"id": "j14", "question": "What is 15% of 200?", "baseline": "30", "candidate": "15% of 200 equals 30.", "label": "same"}
+{"id": "j15", "question": "Freezing point of water in Fahrenheit?", "baseline": "32 F.", "candidate": "Water freezes at 32 degrees Fahrenheit.", "label": "same"}
+{"id": "j16", "question": "How many sides does a hexagon have?", "baseline": "Six.", "candidate": "A hexagon has 6 sides.", "label": "same"}
+{"id": "j17", "question": "What is the opposite of 'cold'?", "baseline": "Hot.", "candidate": "hot", "label": "same"}
+{"id": "j18", "question": "Name the primary colors of light.", "baseline": "Red, green and blue.", "candidate": "RGB: red, green, blue.", "label": "same"}
+{"id": "j19", "question": "2 to the power of 10?", "baseline": "1024", "candidate": "2^10 = 1024.", "label": "same"}
+{"id": "j20", "question": "Which language is spoken in Brazil?", "baseline": "Portuguese.", "candidate": "Brazilians speak Portuguese.", "label": "same"}
+{"id": "j21", "question": "What is 9 times 8?", "baseline": "72", "candidate": "81", "label": "worse"}
+{"id": "j22", "question": "Capital of Japan?", "baseline": "Tokyo.", "candidate": "Kyoto.", "label": "worse"}
+{"id": "j23", "question": "How many legs does a spider have?", "baseline": "Eight.", "candidate": "Six.", "label": "worse"}
+{"id": "j24", "question": "Who painted the Mona Lisa?", "baseline": "Leonardo da Vinci.", "candidate": "Michelangelo.", "label": "worse"}
+{"id": "j25", "question": "What is H2O commonly called?", "baseline": "Water.", "candidate": "Hydrogen peroxide.", "label": "worse"}
+{"id": "j26", "question": "Python: what does 'abc'.upper() return?", "baseline": "'ABC'", "candidate": "'Abc'", "label": "worse"}
+{"id": "j27", "question": "How many minutes are in an hour?", "baseline": "60", "candidate": "The answer is", "label": "worse"}
+{"id": "j28", "question": "Smallest prime number?", "baseline": "2", "candidate": "1", "label": "worse"}
+{"id": "j29", "question": "What is 100 divided by 4?", "baseline": "25", "candidate": "40", "label": "worse"}
+{"id": "j30", "question": "Translate 'gracias' to English.", "baseline": "Thank you.", "candidate": "Hello.", "label": "worse"}
