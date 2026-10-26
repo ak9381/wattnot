@@ -1,8 +1,12 @@
 """llama.cpp `llama-server` adapter for Muse Spark Open.
 
 `server_args` builds the command line. Attention and shared layers go on the
-GPU (`--n-gpu-layers 99`), experts go to host RAM (`--override-tensor exps=CPU`),
-and `--n-cpu-moe N` pulls the experts of the first 62-N layers back into VRAM.
+GPU (`--n-gpu-layers 99`). `--cpu-moe` keeps every layer's experts in host RAM;
+`--n-cpu-moe N` keeps only the first N layers' experts there, so the other 62-N
+layers' experts stay in VRAM (the hot tier). `-ub`/`-b` set the batch size that
+op offload sees (warm tier), `--no-op-offload` turns the warm tier off (CPU
+comparison), `-t` sets CPU threads for the cold tier. Flags checked against
+llama.cpp master `common/arg.cpp` (Oct 2026).
 
 `LlamaServer(dry_run=True)` never starts a process; tests and `--dry-run` use it.
 """
@@ -15,17 +19,20 @@ import urllib.request
 from collections.abc import Callable
 from pathlib import Path
 
-from wattnot.spark_open.knobs import N_LAYERS, SparkKnobs
+from wattnot.spark_open.knobs import SparkKnobs
+from wattnot.spark_open.placement import LayerPlacement, Placement
 
 
 def server_args(gguf: str | Path, knobs: SparkKnobs, *, port: int = 8090,
-                binary: str = "llama-server", ctx: int = 8192) -> list[str]:
+                binary: str = "llama-server", ctx: int = 16384,
+                placement: Placement | None = None) -> list[str]:
     args = [binary, "--model", str(gguf), "--port", str(port), "--host", "127.0.0.1",
-            "--ctx-size", str(ctx), "--n-gpu-layers", "99", "--jinja"]
-    if knobs.n_cpu_moe >= N_LAYERS:
-        args += ["--override-tensor", "exps=CPU"]
-    else:
-        args += ["--n-cpu-moe", str(knobs.n_cpu_moe)]
+            "--ctx-size", str(ctx), "--n-gpu-layers", "99", "--jinja", "--flash-attn", "on",
+            "--ubatch-size", str(knobs.ubatch), "--batch-size", str(max(knobs.ubatch, 2048)),
+            "--threads", str(knobs.threads)]
+    args += (placement or LayerPlacement()).args(knobs)
+    if not knobs.op_offload:
+        args.append("--no-op-offload")
     return args
 
 
@@ -69,7 +76,7 @@ class LlamaServer:
         log = None
         if self.log_dir:
             self.log_dir.mkdir(parents=True, exist_ok=True)
-            log = open(self.log_dir / f"llama-{knobs.quant}-{knobs.n_cpu_moe}.log", "w")  # noqa: SIM115
+            log = open(self.log_dir / f"llama-{knobs.tag}.log", "w")  # noqa: SIM115
         self._proc = self._popen(self.argv, stdout=log, stderr=subprocess.STDOUT)
         self._wait_healthy()
         return time.monotonic() - t0
