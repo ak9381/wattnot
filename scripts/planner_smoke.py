@@ -5,8 +5,13 @@ Usage: META_API_KEY=... python scripts/planner_smoke.py [--record PATH]
 """
 from __future__ import annotations
 
-import argparse, json, os, sys, time, urllib.request
-from datetime import datetime, timezone
+import argparse
+import json
+import os
+import sys
+import time
+import urllib.request
+from datetime import UTC, datetime
 
 from jsonschema import Draft202012Validator
 
@@ -106,7 +111,7 @@ def main():
         {"role": "system", "content": "You judge whether a candidate config keeps quality. "
          "Apply the rule strictly. Reply with JSON only."},
         {"role": "user", "content": json.dumps(QUALITY)}], JUDGE_VERDICT, "JudgeVerdict")
-    result = {"recorded_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    result = {"recorded_at": datetime.now(UTC).isoformat(timespec="seconds"),
               "calls": [plan, judge]}
     print(json.dumps(result, indent=2))
     if a.record:
