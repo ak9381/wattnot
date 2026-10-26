@@ -1,5 +1,6 @@
 // Run event stream -> canvas state. Pure (no DOM), unit-tested with node --test.
 // Numbers keep the label they arrived with: MEASURED, ESTIMATE or ADVICE.
+// A fake-backend run (host.provider "fake") never shows MEASURED: it becomes SIMULATED.
 
 // Graph model: groups hold nodes; edges join nodes. Positions are world px.
 export const GROUPS = [
@@ -65,7 +66,7 @@ export function initialState() {
   for (const n of NODES) nodes[n.id] = { status: "idle", sub: "", pills: [] };
   return {
     nodes, active: null, hot: [], tries: [], caps: [], power: [], loop: 0, done: false,
-    example: false, runId: null, gpu: null, range: null, seq: -1, progress: 0,
+    example: false, simulated: false, runId: null, gpu: null, range: null, seq: -1, progress: 0,
     meta: { calls: 0, input: 0, output: 0, models: [] },
     baseline: null, final: null, current: null, compare: null, recommendations: null,
     receipt: null, lastEvent: null,
@@ -81,7 +82,13 @@ function light(s, id) {
   if (id === "choice" && s.loop > 1) s.hot = ["e-loop"];
 }
 
-function set(s, id, sub, pills = []) { s.nodes[id].sub = sub; s.nodes[id].pills = pills; }
+/** True when a run.started payload comes from the fake backend (no GPU was read). */
+export function isSimulated(d) { return (d?.host?.provider || "") === "fake" || d?.label === "SIMULATED"; }
+
+/** Honest label for this run: MEASURED and ESTIMATE both become SIMULATED on a fake backend; ADVICE stays. */
+export function honest(s, l) { return s.simulated && (l === "MEASURED" || l === "ESTIMATE") ? "SIMULATED" : l; }
+
+function set(s, id, sub, pills = []) { s.nodes[id].sub = sub; s.nodes[id].pills = pills.map((l) => honest(s, l)); }
 
 function tryFor(s, step) {
   let t = s.tries.find((x) => x.step === step);
@@ -100,6 +107,7 @@ export function reduce(prev, e) {
   switch (e.type) {
     case "run.started": {
       s.example = d.label === "EXAMPLE" || d.mode === "demo";
+      s.simulated = isSimulated(d);
       s.runId = e.run_id;
       s.model = d.model || null;
       const h = d.host || {};
@@ -156,7 +164,7 @@ export function reduce(prev, e) {
     }
     case "trial.measured": {
       const wh = whOf(d);
-      const m = { cap_w: d.cap_w, wh, p99_ms: d.p99_ms, pass_rate: d.pass_rate ?? null, label: d.label || "MEASURED" };
+      const m = { cap_w: d.cap_w, wh, p99_ms: d.p99_ms, pass_rate: d.pass_rate ?? null, label: honest(s, d.label || "MEASURED") };
       if (e.step_id === "baseline" || d.trial_no === 0) {
         s.baseline = m;
         s.current = m;

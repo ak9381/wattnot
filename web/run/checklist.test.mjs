@@ -13,7 +13,7 @@ class Mem { constructor() { this.m = {}; } getItem(k) { return this.m[k] ?? null
 test("one item per recommended action, each with a label, value and primary button", () => {
   const items = buildChecklist(rec);
   assert.equal(items.length, rec.actions.length);
-  for (const i of items) assert.ok(i.button && ["MEASURED", "ESTIMATE", "ADVICE"].includes(i.label));
+  for (const i of items) assert.ok(i.button && ["MEASURED", "ESTIMATE", "SIMULATED", "ADVICE"].includes(i.label));
   const by = Object.fromEntries(items.map((i) => [i.id, i]));
   assert.equal(by.power_cap_w.button, "Apply cap");
   assert.equal(by.power_cap_w.value, "550 W");

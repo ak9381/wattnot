@@ -5,7 +5,7 @@ Steps, in order (each one is reported, even after a failure):
   sha256     JCS(receipt minus integrity) hashes to integrity.sha256
   signature  the bundle next to the receipt signs that hash (signer reported)
   rekor      a transparency-log entry (log_index); offline bundles have none
-  grade      VALID / ESTIMATE / NOISE / UNVERIFIABLE, re-derived, never trusted
+  grade      VALID / ESTIMATE / SIMULATED / NOISE / UNVERIFIABLE, re-derived, never trusted
 """
 
 from __future__ import annotations

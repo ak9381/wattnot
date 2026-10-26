@@ -3,6 +3,7 @@
 VALID        MEASURED, hash matches, signature OK and a Rekor entry found.
 ESTIMATE     integrity OK but the measurement is an ESTIMATE, or the receipt
              is signed offline (no Rekor entry), so it can't be VALID.
+SIMULATED    integrity OK but the numbers come from the fake backend, not a GPU.
 NOISE        integrity OK but Welch p >= alpha: the saving is not billed.
 UNVERIFIABLE no hash, no signature check, or not our spec.
 """
@@ -20,6 +21,8 @@ def claimed_grade(receipt: Mapping, *, rekor: bool) -> str:
     w = receipt["result"]["welch"]
     if not receipt["result"]["billable"] or w["p_value"] >= w.get("alpha", 0.05):
         return "NOISE"
+    if receipt["measurement"]["label"] == "SIMULATED":
+        return "SIMULATED"
     if receipt["measurement"]["label"] != "MEASURED" or not rekor:
         return "ESTIMATE"
     return "VALID"

@@ -1,7 +1,7 @@
 """EU data-centre reporting export (fields from Delegated Regulation (EU) 2024/1364).
 
 Only what software can fill from receipts. Every field carries value, unit,
-label (MEASURED / ESTIMATE / NOT_AVAILABLE) and source. Fields that need
+label (MEASURED / ESTIMATE / SIMULATED / NOT_AVAILABLE) and source. Fields that need
 facility data (PUE, renewable share, waste heat reuse, ...) are NOT_AVAILABLE
 with the reason. No offset or "neutral" wording anywhere.
 """
@@ -15,7 +15,7 @@ import json
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
-LABELS = ("MEASURED", "ESTIMATE", "NOT_AVAILABLE")
+LABELS = ("MEASURED", "ESTIMATE", "SIMULATED", "NOT_AVAILABLE")
 BANNED = ("neutral", "offset", "carbon-free", "carbon free", "net zero", "net-zero")
 TEMPLATE = Path(__file__).parent / "templates" / "eu.html"
 FACILITY = "needs facility data (operator meters); a GPU-level tool cannot see it"
@@ -48,7 +48,8 @@ def fields_for(receipt: Mapping, *, grid_gco2_per_kwh: float | None = None,
            f"{src}: sum over {cand['reps']} reps x {n} requests"),
         _f("energy_per_request", wh, "Wh/request", lab, src),
         _f("energy_per_request_baseline", base["wh_per_req"]["mean"], "Wh/request", lab, src),
-        _f("energy_saving_billed", res["billed_saving_pct"], "%", lab if res["billable"]
+        _f("energy_saving_billed", res["billed_saving_pct"], "%",
+           lab if res["billable"] or lab == "SIMULATED"
            else "ESTIMATE", f"{src}: lower bound of 95% bootstrap CI, Welch p="
            f"{res['welch']['p_value']:.3g}" + ("" if res["billable"] else " (not significant)")),
         (_f("idle_power", m["idle_w"], "W", lab, src) if m.get("idle_w") is not None

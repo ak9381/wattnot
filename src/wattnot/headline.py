@@ -3,7 +3,7 @@
 Pipeline: run both arms -> gates (quality, p99, Welch noise) -> applied or
 rolled back -> receipt -> offline signature. The real run needs a GPU host
 (Modal, T10); until then `FakeBackend` simulates it. Simulated energy is
-labelled ESTIMATE and the host provider is "fake", so nothing claims to be
+labelled SIMULATED and the host provider is "fake", so nothing claims to be
 measured.
 """
 
@@ -47,7 +47,7 @@ class _FakeMeter:
     def stop(self) -> Window:
         wh = self.wh * (1 + self.rng.gauss(0, self.noise))
         return Window(wh, 60.0, wh * 60, f"traces/{self.label}.csv", "0" * 64,
-                      "fake", "ESTIMATE", "simulated")
+                      "fake", "SIMULATED", "simulated")
 
     def idle(self, seconds=60):
         return 70.0
@@ -111,7 +111,8 @@ def safe_headline(backend, *, root: str | Path, key_path: str | Path, run_id: st
     em = Emitter(run_id, root=root)
     em.emit("run.started", {"mode": "container", "model": MODEL, "workload": wl.name,
                             "host": {"provider": backend.provider, "gpu": backend.gpu},
-                            "label": "ESTIMATE", "compare_to": None})
+                            "label": "SIMULATED" if backend.provider == "fake" else "MEASURED",
+                            "compare_to": None})
     arms = {}
     for tid, params in (("baseline", BASELINE), ("candidate", CANDIDATE)):
         arms[tid] = run_trial(params, wl, backend.meter(params), backend.client(params),
@@ -135,7 +136,9 @@ def safe_headline(backend, *, root: str | Path, key_path: str | Path, run_id: st
                     "workload": {"name": wl.name, "version": str(wl.version),
                                  "n_requests": len(items), "sha256": "0" * 64}},
         "baseline": _arm(base, base_wh), "candidate": _arm(cand, cand_wh),
-        "measurement": {"meter": "simulated", "hz": 10, "label": "ESTIMATE", "idle_w": None,
+        "measurement": {"meter": "simulated", "hz": 10,
+                        "label": "SIMULATED" if backend.provider == "fake" else "ESTIMATE",
+                        "idle_w": None,
                         "csv": [{"path": r.window.csv_path, "sha256": r.window.sha256}
                                 for r in (*base.reps, *cand.reps)]},
         "planner_trace": [{"trial_no": 1, "source": "fixed", "model": None,

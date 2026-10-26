@@ -17,7 +17,7 @@ If the gate never passed below the starting cap, or the saving is below
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 
 from wattnot import impact as _impact
 
@@ -26,6 +26,7 @@ GPUS_PER_RACK = 8  # assumption, e.g. one 8-GPU server per rack budget
 NO_CHANGE = "no change recommended"
 
 MEASURED, ESTIMATE = "MEASURED", "ESTIMATE"
+SIMULATED = "SIMULATED"  # fake backend: shaped like MEASURED, but no GPU was read
 ADVICE = "ADVICE"  # no number in it, so neither MEASURED nor ESTIMATE
 
 
@@ -100,7 +101,7 @@ def _reverify() -> Item:
                 "traffic change; the cap is only proven for this workload", "reverify")
 
 
-def for_run(*, start_cap_w: int, final_cap_w: int, gate_passed: bool,
+def _for_run(*, start_cap_w: int, final_cap_w: int, gate_passed: bool,
             base_wh_per_req: float, final_wh_per_req: float,
             base_p99_ms: float | None = None, final_p99_ms: float | None = None,
             requests_per_gpu_per_day: float = 100_000, gpus: int = GPUS_PER_RACK,
@@ -169,6 +170,16 @@ def for_run(*, start_cap_w: int, final_cap_w: int, gate_passed: bool,
                            _applies(cap_freed_w=freed, kwh=i.kwh, litres=i.litres,
                                     always_on=always_on, changed=True),
                            tuple(acts), assumptions)
+
+
+def for_run(*, simulated: bool = False, **kw) -> Recommendations:
+    """See `_for_run`. With `simulated=True` (fake backend) no item says MEASURED."""
+
+    rec = _for_run(**kw)
+    if not simulated:
+        return rec
+    acts = tuple(replace(a, label=SIMULATED) if a.label == MEASURED else a for a in rec.actions)
+    return replace(rec, actions=acts)
 
 
 def _knob_items(knob: Mapping | None) -> list[Item]:

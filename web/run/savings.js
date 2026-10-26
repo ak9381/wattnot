@@ -1,4 +1,5 @@
 // Live savings: running counters and a per-step attribution waterfall, built only from events.
+const isSimulated = (d) => (d?.host?.provider || "") === "fake" || d?.label === "SIMULATED";
 // Labels: power, energy and tokens/Wh are MEASURED; cost and water are ESTIMATE (impact maths).
 
 // Same defaults as src/wattnot/impact.py and recommend.py.
@@ -33,8 +34,10 @@ export function attribute(events) {
     hist.power.push(curCap); hist.wh.push(kept.wh);
     hist.usd.push(usd(kept.wh)); hist.water.push(litres(kept.wh));
   };
+  let sim = false;
   for (const e of events) {
     const d = e.data || {};
+    if (e.type === "run.started") sim = isSimulated(d);
     if (e.type === "decision" && e.step_id) {
       const t = get(e.step_id);
       t.reason = d.reason || ""; t.model = d.model || "fallback";
@@ -75,11 +78,11 @@ export function attribute(events) {
     base, kept, cap: curCap, bars, hist, totalWh,
     totalW: base && curCap != null ? base.cap - curCap : 0,
     counters: base && kept ? {
-      power: { v: curCap, base: base.cap, label: "MEASURED" },
-      wh: { v: kept.wh, base: base.wh, label: "MEASURED" },
+      power: { v: curCap, base: base.cap, label: sim ? "SIMULATED" : "MEASURED" },
+      wh: { v: kept.wh, base: base.wh, label: sim ? "SIMULATED" : "MEASURED" },
       usd: { v: usd(kept.wh), base: usd(base.wh), label: "ESTIMATE" },
       water: { v: litres(kept.wh), base: litres(base.wh), label: "ESTIMATE" },
-      tokPerWh: kept.tok != null ? { v: kept.tok / kept.wh, base: base.tok / base.wh, tok: kept.tok, label: "MEASURED" } : null,
+      tokPerWh: kept.tok != null ? { v: kept.tok / kept.wh, base: base.tok / base.wh, tok: kept.tok, label: sim ? "SIMULATED" : "MEASURED" } : null,
     } : null,
   };
 }

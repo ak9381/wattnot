@@ -37,11 +37,12 @@ test("mid-loop: Spark is active on try 3, the loop edge carries data and says th
   assert.equal(s3.nodes.cap.sub, "650 → 600 W");
 });
 
-test("labels survive: baseline MEASURED with pass rate, fake power ESTIMATE", () => {
+test("fake backend never shows MEASURED: baseline and power are SIMULATED", () => {
   const s = replay(events, idx((e) => e.type === "trial.measured" && e.step_id === "cap:650") + 1);
-  assert.deepEqual(s.nodes.base.pills, ["MEASURED"]);
+  assert.equal(s.simulated, true);
+  assert.deepEqual(s.nodes.base.pills, ["SIMULATED"]);
   assert.match(s.nodes.base.sub, /pass 95%/);
-  assert.deepEqual(s.nodes.power.pills, ["ESTIMATE"]);
+  assert.deepEqual(s.nodes.power.pills, ["SIMULATED"]);
   assert.equal(s.progress, 100);
 });
 
@@ -72,7 +73,7 @@ test("results: receipt, recommendations, comparison", () => {
   assert.equal(s.receiptView.signed, false); // demo is hashed, never claimed as signed
   assert.ok(s.receiptView.usd > 0 && s.receiptView.water > 0);
   assert.equal(s.compare.gate_passed, false);
-  for (const a of s.recommendations.actions) assert.ok(["MEASURED", "ESTIMATE", "ADVICE"].includes(a.label));
+  for (const a of s.recommendations.actions) assert.ok(["SIMULATED", "ESTIMATE", "ADVICE"].includes(a.label));
 });
 
 test("only real model calls count as Meta API calls", () => {

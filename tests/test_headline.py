@@ -17,7 +17,7 @@ def test_fake_headline_end_to_end(tmp_path):
                         run_id="run_20261028_120000_fa0001", n_items=8)
     r = json.loads(out.receipt.read_text())
     # simulated numbers are never MEASURED
-    assert r["measurement"]["label"] == "ESTIMATE"
+    assert r["measurement"]["label"] == "SIMULATED"
     assert r["subject"]["host"]["provider"] == "fake"
     assert r["candidate"]["params"]["quantization"] == "fp8"
     b, c = r["baseline"]["wh_per_req"], r["candidate"]["wh_per_req"]
@@ -25,7 +25,7 @@ def test_fake_headline_end_to_end(tmp_path):
     assert r["result"]["billable"] is True and r["result"]["billed_saving_pct"] > 0
     assert out.decision_passed
     rep = verify_receipt(out.receipt)
-    assert rep.grade == "ESTIMATE"  # offline signature, ESTIMATE label
+    assert rep.grade == "SIMULATED"  # fake backend never grades above SIMULATED
     types = [json.loads(x)["type"] for x in out.events.read_text().splitlines()]
     assert types[0] == "run.started" and types[-1] == "run.finished"
     assert types.count("gate.result") >= 3 and "action.applied" in types
