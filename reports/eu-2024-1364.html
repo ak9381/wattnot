@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>EU 2024/1364 field export</title>
+<style>
+body{font:14px/1.45 system-ui,sans-serif;margin:2rem;color:#111}
+table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:.35rem .5rem;text-align:left;vertical-align:top}
+th{background:#f3f3f3}tr.estimate td:nth-child(5){color:#8a5a00}tr.not_available td{color:#777}
+tr.measured td:nth-child(5){color:#0a6b2b;font-weight:600}
+</style></head><body>
+<h1>EU 2024/1364 field export</h1>
+<p>Fields from Commission Delegated Regulation (EU) 2024/1364 that can be filled from WattNot receipts.
+Every value is labelled MEASURED, ESTIMATE or NOT_AVAILABLE, with its source. Facility-level fields
+need the operator's own meters and are left blank with the reason. This is not a filing.</p>
+<table><thead><tr><th>receipt_id</th><th>field</th><th>value</th><th>unit</th><th>label</th><th>source</th></tr></thead><tbody>
+<tr class="measured"><td>rcpt_20261028_100000_a00001</td><td>it_energy_measured_window</td><td>0.04322</td><td>kWh</td><td>MEASURED</td><td>receipt rcpt_20261028_100000_a00001, meter nvml: sum over 5 reps x 200 requests</td></tr>
+<tr class="measured"><td>rcpt_20261028_100000_a00001</td><td>energy_per_request</td><td>0.04322</td><td>Wh/request</td><td>MEASURED</td><td>receipt rcpt_20261028_100000_a00001, meter nvml</td></tr>
+<tr class="measured"><td>rcpt_20261028_100000_a00001</td><td>energy_per_request_baseline</td><td>0.04802</td><td>Wh/request</td><td>MEASURED</td><td>receipt rcpt_20261028_100000_a00001, meter nvml</td></tr>
+<tr class="measured"><td>rcpt_20261028_100000_a00001</td><td>energy_saving_billed</td><td>9.5736</td><td>%</td><td>MEASURED</td><td>receipt rcpt_20261028_100000_a00001, meter nvml: lower bound of 95% bootstrap CI, Welch p=9.36e-11</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00001</td><td>idle_power</td><td></td><td>W</td><td>NOT_AVAILABLE</td><td>idle not measured in this run</td></tr>
+<tr class="estimate"><td>rcpt_20261028_100000_a00001</td><td>water_per_request</td><td>0.077796</td><td>mL/request</td><td>ESTIMATE</td><td>Wh/request x WUE (L/kWh), site energy only; assumed WUE 1.8 L/kWh (industry average); not measured</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00001</td><td>sci_per_request</td><td></td><td>gCO2e/request</td><td>NOT_AVAILABLE</td><td>needs a grid carbon-intensity figure with a source (--grid-gco2)</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00001</td><td>pue</td><td></td><td>ratio</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00001</td><td>renewable_energy_share</td><td></td><td>%</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00001</td><td>waste_heat_reused</td><td></td><td>kWh</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00001</td><td>total_water_input</td><td></td><td>m3</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00001</td><td>rated_it_power</td><td></td><td>kW</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="estimate"><td>rcpt_20261028_100000_a00001</td><td>heat_water_readiness</td><td>0.385</td><td>share of fields</td><td>ESTIMATE</td><td>share of this export&#x27;s fields that are filled (MEASURED or ESTIMATE); a readiness indicator, not a regulatory metric</td></tr>
+<tr class="estimate"><td>rcpt_20261028_100000_a00002</td><td>it_energy_measured_window</td><td>0.04322</td><td>kWh</td><td>ESTIMATE</td><td>receipt rcpt_20261028_100000_a00002, meter nvml: sum over 5 reps x 200 requests</td></tr>
+<tr class="estimate"><td>rcpt_20261028_100000_a00002</td><td>energy_per_request</td><td>0.04322</td><td>Wh/request</td><td>ESTIMATE</td><td>receipt rcpt_20261028_100000_a00002, meter nvml</td></tr>
+<tr class="estimate"><td>rcpt_20261028_100000_a00002</td><td>energy_per_request_baseline</td><td>0.04802</td><td>Wh/request</td><td>ESTIMATE</td><td>receipt rcpt_20261028_100000_a00002, meter nvml</td></tr>
+<tr class="estimate"><td>rcpt_20261028_100000_a00002</td><td>energy_saving_billed</td><td>9.5736</td><td>%</td><td>ESTIMATE</td><td>receipt rcpt_20261028_100000_a00002, meter nvml: lower bound of 95% bootstrap CI, Welch p=9.36e-11</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00002</td><td>idle_power</td><td></td><td>W</td><td>NOT_AVAILABLE</td><td>idle not measured in this run</td></tr>
+<tr class="estimate"><td>rcpt_20261028_100000_a00002</td><td>water_per_request</td><td>0.077796</td><td>mL/request</td><td>ESTIMATE</td><td>Wh/request x WUE (L/kWh), site energy only; assumed WUE 1.8 L/kWh (industry average); not measured</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00002</td><td>sci_per_request</td><td></td><td>gCO2e/request</td><td>NOT_AVAILABLE</td><td>needs a grid carbon-intensity figure with a source (--grid-gco2)</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00002</td><td>pue</td><td></td><td>ratio</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00002</td><td>renewable_energy_share</td><td></td><td>%</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00002</td><td>waste_heat_reused</td><td></td><td>kWh</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00002</td><td>total_water_input</td><td></td><td>m3</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00002</td><td>rated_it_power</td><td></td><td>kW</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="estimate"><td>rcpt_20261028_100000_a00002</td><td>heat_water_readiness</td><td>0.385</td><td>share of fields</td><td>ESTIMATE</td><td>share of this export&#x27;s fields that are filled (MEASURED or ESTIMATE); a readiness indicator, not a regulatory metric</td></tr>
+<tr class="measured"><td>rcpt_20261028_100000_a00003</td><td>it_energy_measured_window</td><td>0.048</td><td>kWh</td><td>MEASURED</td><td>receipt rcpt_20261028_100000_a00003, meter nvml: sum over 5 reps x 200 requests</td></tr>
+<tr class="measured"><td>rcpt_20261028_100000_a00003</td><td>energy_per_request</td><td>0.048</td><td>Wh/request</td><td>MEASURED</td><td>receipt rcpt_20261028_100000_a00003, meter nvml</td></tr>
+<tr class="measured"><td>rcpt_20261028_100000_a00003</td><td>energy_per_request_baseline</td><td>0.04802</td><td>Wh/request</td><td>MEASURED</td><td>receipt rcpt_20261028_100000_a00003, meter nvml</td></tr>
+<tr class="estimate"><td>rcpt_20261028_100000_a00003</td><td>energy_saving_billed</td><td>0</td><td>%</td><td>ESTIMATE</td><td>receipt rcpt_20261028_100000_a00003, meter nvml: lower bound of 95% bootstrap CI, Welch p=0.431 (not significant)</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00003</td><td>idle_power</td><td></td><td>W</td><td>NOT_AVAILABLE</td><td>idle not measured in this run</td></tr>
+<tr class="estimate"><td>rcpt_20261028_100000_a00003</td><td>water_per_request</td><td>0.0864</td><td>mL/request</td><td>ESTIMATE</td><td>Wh/request x WUE (L/kWh), site energy only; assumed WUE 1.8 L/kWh (industry average); not measured</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00003</td><td>sci_per_request</td><td></td><td>gCO2e/request</td><td>NOT_AVAILABLE</td><td>needs a grid carbon-intensity figure with a source (--grid-gco2)</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00003</td><td>pue</td><td></td><td>ratio</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00003</td><td>renewable_energy_share</td><td></td><td>%</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00003</td><td>waste_heat_reused</td><td></td><td>kWh</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00003</td><td>total_water_input</td><td></td><td>m3</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="not_available"><td>rcpt_20261028_100000_a00003</td><td>rated_it_power</td><td></td><td>kW</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="estimate"><td>rcpt_20261028_100000_a00003</td><td>heat_water_readiness</td><td>0.385</td><td>share of fields</td><td>ESTIMATE</td><td>share of this export&#x27;s fields that are filled (MEASURED or ESTIMATE); a readiness indicator, not a regulatory metric</td></tr>
+</tbody></table></body></html>

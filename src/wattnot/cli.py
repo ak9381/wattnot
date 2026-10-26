@@ -54,6 +54,13 @@ def build_parser() -> argparse.ArgumentParser:
     rb = rsub.add_parser("build", help="build a receipt from runs/<id>/run.json")
     rb.add_argument("--run", required=True, help="run directory (runs/<id>)")
     rb.add_argument("--out", default="receipts", help="output directory (default %(default)s)")
+    rp = sub.add_parser("report", help="exports built from receipts")
+    rpsub = rp.add_subparsers(dest="report_cmd")
+    eu = rpsub.add_parser("eu", help="EU 2024/1364 field export (CSV + HTML)")
+    eu.add_argument("--receipts", nargs="+", required=True)
+    eu.add_argument("--out", default="reports/eu-2024-1364", help="path prefix")
+    eu.add_argument("--grid-gco2", type=float, help="grid intensity g/kWh (needs --grid-source)")
+    eu.add_argument("--grid-source", help="where the grid figure comes from")
     vf = sub.add_parser("verify", help="verify receipts: schema, sha256, signature, rekor, grade")
     vf.add_argument("receipts", nargs="+", help="receipt JSON files (bundle: <id>.sigstore.json)")
     vf.add_argument("--bundle", help="bundle path (only with one receipt)")
@@ -144,6 +151,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_receipt(args)
         except (OSError, KeyError, TypeError, ValueError) as e:
             parser.error(f"receipt: {e}")
+    if args.cmd == "report":
+        try:
+            from wattnot.report.eu import export
+            if args.report_cmd != "eu":
+                raise ValueError("use: wattnot report eu --receipts ...")
+            c, h = export(args.receipts, args.out, grid_gco2_per_kwh=args.grid_gco2,
+                          grid_source=args.grid_source)
+            print(f"{c}\n{h}")
+            return 0
+        except (OSError, KeyError, ValueError) as e:
+            parser.error(f"report: {e}")
     if args.cmd == "verify":
         try:
             return _run_verify(args)
