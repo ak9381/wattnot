@@ -1,0 +1,21 @@
+{
+  "model": "muse-spark-1.3",
+  "choices": [
+    {
+      "message": {
+        "content": "{\"verdicts\": [{\"id\": \"j01\", \"verdict\": \"same\"}, {\"id\": \"j02\", \"verdict\": \"same\"}, {\"id\": \"j03\", \"verdict\": \"same\"}, {\"id\": \"j04\", \"verdict\": \"same\"}, {\"id\": \"j05\", \"verdict\": \"same\"}, {\"id\": \"j06\", \"verdict\": \"same\"}, {\"id\": \"j07\", \"verdict\": \"same\"}, {\"id\": \"j08\", \"verdict\": \"same\"}, {\"id\": \"j09\", \"verdict\": \"same\"}, {\"id\": \"j10\", \"verdict\": \"same\"}, {\"id\": \"j11\", \"verdict\": \"same\"}, {\"id\": \"j12\", \"verdict\": \"same\"}, {\"id\": \"j13\", \"verdict\": \"same\"}, {\"id\": \"j14\", \"verdict\": \"same\"}, {\"id\": \"j15\", \"verdict\": \"same\"}, {\"id\": \"j16\", \"verdict\": \"same\"}, {\"id\": \"j17\", \"verdict\": \"same\"}, {\"id\": \"j18\", \"verdict\": \"same\"}, {\"id\": \"j19\", \"verdict\": \"same\"}, {\"id\": \"j20\", \"verdict\": \"same\"}, {\"id\": \"j21\", \"verdict\": \"worse\"}, {\"id\": \"j22\", \"verdict\": \"worse\"}, {\"id\": \"j23\", \"verdict\": \"worse\"}, {\"id\": \"j24\", \"verdict\": \"worse\"}, {\"id\": \"j25\", \"verdict\": \"worse\"}, {\"id\": \"j26\", \"verdict\": \"worse\"}, {\"id\": \"j27\", \"verdict\": \"worse\"}, {\"id\": \"j28\", \"verdict\": \"worse\"}, {\"id\": \"j29\", \"verdict\": \"worse\"}, {\"id\": \"j30\", \"verdict\": \"worse\"}]}"
+      }
+    }
+  ],
+  "usage": {
+    "completion_tokens": 507,
+    "prompt_tokens": 1007,
+    "total_tokens": 1514,
+    "completion_tokens_details": {
+      "reasoning_tokens": 62
+    },
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  }
+}
