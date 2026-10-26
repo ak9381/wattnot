@@ -1,0 +1,335 @@
+{
+  "headroom": {
+    "summary": {
+      "cap_w": 300,
+      "range_w": [
+        200,
+        700
+      ],
+      "step_w": 25,
+      "p99_ms": 1135,
+      "p99_budget_ms": 1320,
+      "p99_headroom_pct": 14.0,
+      "wh_per_req": 0.0412,
+      "wh_saved_pct": 14.2,
+      "last_gates": [
+        {
+          "cap_w": 300,
+          "knob": null,
+          "passed": true,
+          "failed": []
+        }
+      ],
+      "knobs": {
+        "max_num_seqs": 256,
+        "enable_prefix_caching": true,
+        "quantization": "none"
+      },
+      "allowed_knobs": {
+        "max_num_seqs": [
+          64,
+          128,
+          256,
+          512
+        ],
+        "enable_prefix_caching": [
+          true,
+          false
+        ],
+        "enable_chunked_prefill": [
+          true,
+          false
+        ],
+        "quantization": [
+          "none",
+          "fp8"
+        ],
+        "gpu_mem_util": [
+          0.8,
+          0.85,
+          0.9,
+          0.95
+        ]
+      }
+    },
+    "response": {
+      "id": "chatcmpl-01a17990-e917-7156-8666-eb06915278ec",
+      "choices": [
+        {
+          "finish_reason": "length",
+          "index": 0,
+          "message": {
+            "content": null,
+            "refusal": null,
+            "role": "assistant"
+          },
+          "logprobs": null
+        }
+      ],
+      "created": 1793040902,
+      "model": "muse-spark-1.3",
+      "object": "chat.completion",
+      "usage": {
+        "completion_tokens": 400,
+        "prompt_tokens": 382,
+        "total_tokens": 782,
+        "completion_tokens_details": {
+          "reasoning_tokens": 398
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    }
+  },
+  "after_fail": {
+    "summary": {
+      "cap_w": 300,
+      "range_w": [
+        200,
+        700
+      ],
+      "step_w": 25,
+      "p99_ms": 1290,
+      "p99_budget_ms": 1320,
+      "p99_headroom_pct": 2.3,
+      "wh_per_req": 0.0398,
+      "wh_saved_pct": 17.1,
+      "last_gates": [
+        {
+          "cap_w": 300,
+          "knob": null,
+          "passed": true,
+          "failed": []
+        },
+        {
+          "cap_w": 275,
+          "knob": null,
+          "passed": false,
+          "failed": [
+            "p99"
+          ]
+        }
+      ],
+      "knobs": {
+        "max_num_seqs": 256,
+        "enable_prefix_caching": true,
+        "quantization": "none"
+      },
+      "allowed_knobs": {
+        "max_num_seqs": [
+          64,
+          128,
+          256,
+          512
+        ],
+        "enable_prefix_caching": [
+          true,
+          false
+        ],
+        "enable_chunked_prefill": [
+          true,
+          false
+        ],
+        "quantization": [
+          "none",
+          "fp8"
+        ],
+        "gpu_mem_util": [
+          0.8,
+          0.85,
+          0.9,
+          0.95
+        ]
+      }
+    },
+    "response": {
+      "id": "chatcmpl-01a17990-f1be-775e-b65e-0a8b9074d0e1",
+      "choices": [
+        {
+          "finish_reason": "length",
+          "index": 0,
+          "message": {
+            "content": null,
+            "refusal": null,
+            "role": "assistant"
+          },
+          "logprobs": null
+        }
+      ],
+      "created": 1793040904,
+      "model": "muse-spark-1.3",
+      "object": "chat.completion",
+      "usage": {
+        "completion_tokens": 400,
+        "prompt_tokens": 402,
+        "total_tokens": 802,
+        "completion_tokens_details": {
+          "reasoning_tokens": 398
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    }
+  },
+  "tight": {
+    "summary": {
+      "cap_w": 350,
+      "range_w": [
+        200,
+        700
+      ],
+      "step_w": 25,
+      "p99_ms": 1300,
+      "p99_budget_ms": 1320,
+      "p99_headroom_pct": 1.5,
+      "wh_per_req": 0.044,
+      "wh_saved_pct": 8.3,
+      "last_gates": [
+        {
+          "cap_w": 350,
+          "knob": null,
+          "passed": true,
+          "failed": []
+        }
+      ],
+      "knobs": {
+        "max_num_seqs": 256,
+        "enable_prefix_caching": false,
+        "quantization": "none"
+      },
+      "allowed_knobs": {
+        "max_num_seqs": [
+          64,
+          128,
+          256,
+          512
+        ],
+        "enable_prefix_caching": [
+          true,
+          false
+        ],
+        "enable_chunked_prefill": [
+          true,
+          false
+        ],
+        "quantization": [
+          "none",
+          "fp8"
+        ],
+        "gpu_mem_util": [
+          0.8,
+          0.85,
+          0.9,
+          0.95
+        ]
+      }
+    },
+    "response": {
+      "id": "chatcmpl-01a17990-f97a-71c0-b3d0-0f6fead255d3",
+      "choices": [
+        {
+          "finish_reason": "length",
+          "index": 0,
+          "message": {
+            "content": null,
+            "refusal": null,
+            "role": "assistant"
+          },
+          "logprobs": null
+        }
+      ],
+      "created": 1793040906,
+      "model": "muse-spark-1.3",
+      "object": "chat.completion",
+      "usage": {
+        "completion_tokens": 400,
+        "prompt_tokens": 381,
+        "total_tokens": 781,
+        "completion_tokens_details": {
+          "reasoning_tokens": 398
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    }
+  },
+  "start": {
+    "summary": {
+      "cap_w": 700,
+      "range_w": [
+        200,
+        700
+      ],
+      "step_w": 25,
+      "p99_ms": 1200,
+      "p99_budget_ms": 1320,
+      "p99_headroom_pct": 9.1,
+      "wh_per_req": 0.048,
+      "wh_saved_pct": 0.0,
+      "last_gates": [],
+      "knobs": {
+        "max_num_seqs": 256,
+        "enable_prefix_caching": true,
+        "quantization": "none"
+      },
+      "allowed_knobs": {
+        "max_num_seqs": [
+          64,
+          128,
+          256,
+          512
+        ],
+        "enable_prefix_caching": [
+          true,
+          false
+        ],
+        "enable_chunked_prefill": [
+          true,
+          false
+        ],
+        "quantization": [
+          "none",
+          "fp8"
+        ],
+        "gpu_mem_util": [
+          0.8,
+          0.85,
+          0.9,
+          0.95
+        ]
+      }
+    },
+    "response": {
+      "id": "chatcmpl-01a17991-00e1-7064-9e6b-0012a06fbadd",
+      "choices": [
+        {
+          "finish_reason": "length",
+          "index": 0,
+          "message": {
+            "content": null,
+            "refusal": null,
+            "role": "assistant"
+          },
+          "logprobs": null
+        }
+      ],
+      "created": 1793040908,
+      "model": "muse-spark-1.3",
+      "object": "chat.completion",
+      "usage": {
+        "completion_tokens": 400,
+        "prompt_tokens": 363,
+        "total_tokens": 763,
+        "completion_tokens_details": {
+          "reasoning_tokens": 398
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    }
+  }
+}

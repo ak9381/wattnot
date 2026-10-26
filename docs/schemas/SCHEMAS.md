@@ -25,6 +25,7 @@ Event types and `data` payloads:
 | `step.finished` | `status` (`ok`\|`failed`\|`skipped`\|`blocked`), `duration_ms`, `tokens` {in, out} \| null, `meta_cost_usd` \| null, `retry` int |
 | `telemetry.sample` | `gpu_index`, `power_w`, `energy_mj` (NVML counter), `sm_clock_mhz`, `mem_clock_mhz`, `temp_c`, `util_pct`, `source` (`nvml`\|`dcgm`\|`zeus`\|`estimate`). Sent at 1 Hz downsampled on SSE; 10 Hz goes to CSV only |
 | `trial.proposed` | `trial_no`, `source` (`spark`\|`optuna`\|`grid`), `params` {max_num_seqs, enable_chunked_prefill, enable_prefix_caching, block_size, quantization (`none`\|`fp8`\|`awq`), gpu_mem_util, power_cap_w \| null, sm_clock_mhz \| null}, `reason` (≤ 200 chars) |
+| `decision` | `choice` {`kind`: `cap`\|`knob`\|`stop`, `power_cap_w` \| null, `knob` \| null, `value` \| null}, `reason` (one line, ≤ 200 chars), `model` (`muse-spark-1.3` or `fallback`), `tokens` {`input`, `output`}, `clamped` (bool) |
 | `trial.measured` | `trial_no`, `reps` (5), `wh_per_req` {mean, sd}, `usd_per_req` {mean, sd}, `p50_ms`, `p99_ms`, `ttft_ms`, `itl_ms`, `tokens_per_s`, `batch_fill`, `kv_use_pct`, `csv_path`, `label` (`MEASURED`\|`ESTIMATE`) |
 | `gate.result` | `trial_no`, `check` (`fixed`\|`judge`\|`p99`\|`noise`), `passed` bool, `detail` {score, threshold, p_value, ci_low, ci_high} |
 | `pareto.updated` | `points` [{trial_no, wh_per_req, p99_ms, quality, on_front}] |
