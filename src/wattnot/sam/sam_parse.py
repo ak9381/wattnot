@@ -58,13 +58,43 @@ def _iou(a: Sequence, b: Sequence) -> float:
         return 0.0
 
 
+def _clip_box(inner: Sequence, outer: Sequence) -> list[list[float]]:
+    """Clip one axis-aligned box polygon to another (both from box_polygon)."""
+
+    x1 = max(inner[0][0], outer[0][0])
+    y1 = max(inner[0][1], outer[0][1])
+    x2 = min(inner[2][0], outer[2][0])
+    y2 = min(inner[2][1], outer[2][1])
+    if x2 <= x1 or y2 <= y1:
+        return [list(p) for p in inner]
+    return [[x1, y1], [x2, y1], [x2, y2], [x1, y2]]
+
+
 def build_document(raw_by_kind: Mapping[str, str], manual: Mapping[str, Any]) -> dict[str, Any]:
-    """Build a `source: sam3.1` document from raw SAM output per kind."""
+    """Build a `source: sam3.1` document from raw SAM output per kind.
+
+    A slot box that pokes a few pixels past its rack box is clipped to the
+    rack, so the overlay's slot-inside-rack check holds. Scores are taken
+    after the clip.
+    """
+
+    rack_boxes: dict[int, list[list[float]]] = {}
+    for ref in manual["objects"]:
+        if ref["kind"] != "rack":
+            continue
+        cands = [box_polygon(b) for b in parse_boxes(raw_by_kind.get("rack", ""))]
+        if cands:
+            best = max(cands, key=lambda poly: _iou(poly, ref["polygon"]))
+            for gpu in ref["gpu_indices"]:
+                rack_boxes[gpu] = best
 
     objects: list[dict[str, Any]] = []
     scores: list[float] = []
     for ref in manual["objects"]:
         candidates = [box_polygon(b) for b in parse_boxes(raw_by_kind.get(ref["kind"], ""))]
+        if ref["kind"] == "slot" and ref["gpu_indices"][0] in rack_boxes:
+            outer = rack_boxes[ref["gpu_indices"][0]]
+            candidates = [_clip_box(poly, outer) for poly in candidates]
         best, best_iou = None, 0.0
         for poly in candidates:
             score = _iou(poly, ref["polygon"])

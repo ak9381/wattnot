@@ -84,7 +84,40 @@ def test_recorded_real_photo_attempt_is_cut_and_falls_back():
            "rack": points[1], "pdu": points[2]}
     doc = build_document(raw, load_masks(REAL / "masks.manual.json"))
     assert doc["status"] == "cut" and doc["iou_vs_manual"] < 0.8
-    picked, fallback = pick_masks()
+    picked, fallback = pick_masks(directory=REAL)
     assert fallback and picked["source"] == "manual"
     spend = json.loads((REAL / "sam.spend.json").read_text())
     assert spend["calls"] <= 2
+
+
+CISCO = RACK / "cisco"
+
+
+def test_cisco_photo_attribution_and_layout():
+    from wattnot.sam import load_masks
+
+    doc = load_masks(CISCO / "masks.manual.json")
+    assert [o["id"] for o in doc["objects"] if o["kind"] == "slot"] == [
+        f"slot-{i}" for i in range(10)]
+    note = (CISCO / "ATTRIBUTION.md").read_text()
+    assert "CC BY-SA 4.0" in note and "Btrs" in note and "wikimedia.org" in note
+
+
+def test_recorded_cisco_sam_output_passes_and_is_the_default():
+    from wattnot.sam import load_masks
+
+    raw = {"slot": (CISCO / "sam-raw" / "rack_server.txt").read_text(),
+           "rack": (CISCO / "sam-raw" / "server.txt").read_text()}
+    doc = build_document(raw, load_masks(CISCO / "masks.manual.json"))
+    assert doc["status"] == "ok" and doc["iou_vs_manual"] >= 0.8
+    validate_masks(doc, image_path=CISCO / "rack.jpg")
+    assert doc == json.loads((CISCO / "masks.sam.json").read_text())
+    picked, fallback = pick_masks()
+    assert not fallback and picked["source"] == "sam3.1"
+
+
+def test_multirun_log_stays_inside_the_budget():
+    runs = [json.loads(line) for line in (RACK / "sam-runs.jsonl").read_text().splitlines()]
+    assert 0 < len(runs) <= 20
+    assert [r["n"] for r in runs] == list(range(1, len(runs) + 1))
+    assert all(r["prompt"] for r in runs)

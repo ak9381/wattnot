@@ -4,7 +4,7 @@
     python scripts/rack_map.py --watts 0=312 2=287 --out rack/rackmap.svg
 
 GPUs found in the trace (or given with --watts) are the ones the run
-touched. Uses the real photo in rack/real/ when present, and its masks.sam.json
+touched. Uses the first photo set present (rack/cisco/, then rack/real/), and its masks.sam.json
 when that exists and passed its checks,
 and the manual overlay otherwise.
 """

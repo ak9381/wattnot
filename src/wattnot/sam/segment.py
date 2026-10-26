@@ -12,6 +12,7 @@ the first point. Rings must be convex and sit inside the photo.
 An object is a ``rack`` (the cabinet, listing every GPU it holds), a ``slot``
 (one GPU bay, listing that one index), or a ``pdu`` (no GPU index). Each GPU
 index is on one rack and one slot, and each slot sits inside its rack.
+A ``pdu`` is optional: some photos show no power feed.
 
 ``source`` is ``manual`` for this file or ``sam3.1`` for a later mask in the
 same shape. A manual file is the reference, so ``iou_vs_manual`` is 1.
@@ -282,8 +283,6 @@ def _check_gpus(objects: list[dict[str, Any]]) -> None:
         raise MasksError("overlay needs at least one rack")
     if not slots:
         raise MasksError("overlay needs at least one slot")
-    if not pdus:
-        raise MasksError("overlay needs at least one pdu")
     rack_of = _one_owner(racks)
     slot_of = _one_owner(slots)
     for gpu in sorted(set(rack_of) - set(slot_of)):
