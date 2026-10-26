@@ -21,6 +21,7 @@ from wattnot.sam.compare import polygon_iou
 
 IOU_MIN = 0.8
 _BOX_RE = re.compile(r"<\|box;([^|]*)\|>")
+_REC_RE = re.compile(r"(?:^|,|<\d+f>)(\d+)<\|box;([^|]*)\|>")
 
 
 def parse_boxes(text: str) -> list[dict[str, float]]:
@@ -31,6 +32,18 @@ def parse_boxes(text: str) -> list[dict[str, float]]:
         fields = dict(part.split("=", 1) for part in match.group(1).split(";") if "=" in part)
         boxes.append({k: float(v) for k, v in fields.items()})
     return boxes
+
+
+def parse_by_object(text: str) -> dict[int, str]:
+    """Split one output line into per-object records, keyed by object id.
+
+    Used for box and point prompts, where we pick the ids ourselves.
+    """
+
+    out: dict[int, str] = {}
+    for match in _REC_RE.finditer(text):
+        out[int(match.group(1))] = f"<|box;{match.group(2)}|>"
+    return out
 
 
 def box_polygon(box: Mapping[str, float]) -> list[list[float]]:

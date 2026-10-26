@@ -1,0 +1,33 @@
+{
+  "generated_at": "2026-10-26T18:52:05+00:00",
+  "model": "sam-3.1",
+  "calls": 2,
+  "images": 2,
+  "usd_estimate": 0.005,
+  "usage": {
+    "server": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 0,
+      "images_processed": 1
+    },
+    "points": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 0,
+      "images_processed": 1
+    }
+  }
+}
