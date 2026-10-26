@@ -35,6 +35,7 @@
         "step.finished",
         "telemetry.sample",
         "trial.proposed",
+        "decision",
         "trial.measured",
         "gate.result",
         "pareto.updated",
