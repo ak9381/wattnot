@@ -100,3 +100,17 @@ def test_any_fail_reverts(tmp_path):
     assert ev[-1]["type"] == "action.rolled_back"
     assert ev[-1]["data"]["failed_gates"] == ["p99"]
     assert [e["data"]["passed"] for e in ev[:2]] == [True, False]
+
+
+def test_decide_runs_noise_gate_third_and_rolls_back_on_noise(tmp_path):
+    same = [0.048, 0.049, 0.047, 0.048, 0.050]
+    calls = []
+    with Emitter(RUN, root=tmp_path) as em:
+        d = decide(_trial("b", 1.0), _trial("t3", 1.0), GOOD, GOOD, _items(),
+                   base_wh=same, cand_wh=list(same), emit=em)
+        guarded_apply(d, apply=lambda: calls.append("a"), revert=lambda: calls.append("r"),
+                      change={"power_cap_w": 550}, emit=em)
+    ev = _events(tmp_path)
+    gates = [e["data"]["gate"] for e in ev if e["type"] == "gate.result"]
+    assert gates == ["fixed", "p99", "noise"] and d.failed == ["noise"]
+    assert calls == ["r"] and ev[-1]["type"] == "action.rolled_back"

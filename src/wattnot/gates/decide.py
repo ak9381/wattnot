@@ -13,6 +13,7 @@ from dataclasses import dataclass
 
 from wattnot.gates.fixed import fixed_checks
 from wattnot.gates.latency import p99_gate
+from wattnot.gates.noise import noise_gate
 from wattnot.gates.result import GateResult
 from wattnot.runner.trial import TrialResult
 from wattnot.runner.workload import WorkloadItem
@@ -32,11 +33,16 @@ class Decision:
 def decide(base: TrialResult, cand: TrialResult, base_outputs: Mapping[str, str],
            cand_outputs: Mapping[str, str], items: list[WorkloadItem], *,
            slack: float = 0.10, sla_s: float | None = None, max_drop_pts: float = 1.0,
+           base_wh: list[float] | None = None, cand_wh: list[float] | None = None,
            emit=None) -> Decision:
+    """With per-rep Wh lists, the noise gate runs third (Welch + bootstrap CI)."""
+
     results = (
         fixed_checks(base_outputs, cand_outputs, items, max_drop_pts=max_drop_pts),
         p99_gate(base, cand, slack=slack, sla_s=sla_s),
     )
+    if base_wh is not None and cand_wh is not None:
+        results = (*results, noise_gate(base_wh, cand_wh))
     if emit is not None:
         for r in results:
             emit.emit("gate.result", r.event_data(cand.trial_id),
