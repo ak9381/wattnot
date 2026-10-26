@@ -23,7 +23,8 @@ def test_demo_events_match_the_schema_and_are_examples():
     for e in ev:
         validate_event(e)
     assert ev[0]["data"]["label"] == "EXAMPLE"
-    assert [e["type"] for e in ev][-3:] == ["recommendations", "pareto.updated", "run.finished"]
+    assert [e["type"] for e in ev][-4:] == ["recommendations", "pareto.updated", "receipt.signed",
+                                              "run.finished"]
     caps = [e["data"]["change"]["power_cap_w"] for e in ev
             if e["type"] in ("action.applied", "action.rolled_back")]
     assert caps == [650, 600, 550, 500]
@@ -43,6 +44,6 @@ def test_demo_script_reproduces_the_same_stream(tmp_path):
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
 def test_graph_state_mapping_node_tests():
-    r = subprocess.run(["node", "--test", "state.test.mjs"], cwd=RUN, capture_output=True,
-                       text=True, timeout=60)
+    r = subprocess.run(["node", "--test", "state.test.mjs", "checklist.test.mjs"], cwd=RUN,
+                       capture_output=True, text=True, timeout=60)
     assert r.returncode == 0, r.stdout + r.stderr

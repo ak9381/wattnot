@@ -1,15 +1,32 @@
 # Run screen
 
-A live graph of one WattNot run, driven by the run event stream:
-Read telemetry → Baseline → Muse Spark decides → Apply change → Run prompts → Gate → Keep or revert → Recommendations.
+A live view of one WattNot run, drawn as a pan/zoom canvas. Plain ES modules with no build step.
 
-- `state.js` turns events into graph state (pure, tested by `state.test.mjs`).
-- `app.js` draws it. Click a node for Muse Spark's reasoning, the logged model call, the prompts and the gate verdict.
+```
+python3 -m http.server 8781        # from the repo root
+open http://127.0.0.1:8781/web/run/index.html
+```
 
-Open it from the repo root with any static server, e.g. `python -m http.server`, then:
+By default it replays `demo-events.jsonl`, an EXAMPLE stream from the fake backend
+(`scripts/demo_run.py`). Pass `?run=<id>` to stream `/api/runs/<id>/events` over SSE.
 
-- `web/run/index.html` plays `demo-events.jsonl` (EXAMPLE numbers, fake backend, no Meta call).
-- `?at=N` stops after N events, `?node=gate` opens a panel, `?rack=/rack/cisco/rackmap.sam.svg` fills the rack map slot.
-- `?run=<run_id>` streams a real run from the API (`/api/runs/<id>/events`).
+## What you see
 
-Regenerate the demo stream with `python scripts/demo_run.py`.
+- **Canvas:** eight groups (telemetry, baseline, decide, apply, workload, quality gate,
+  keep/revert, receipt). Every edge is labelled. Only the active node and the edges carrying
+  data glow. The red edge is the auto-revert path, and dashed edges are optional.
+- **Drawer:** click a node to see the decision reason, the logged model call, the prompts, the gate
+  verdict and every try. When the demo runs on fallback rules, the Meta call counter stays at 0.
+- **Timeline:** play/pause, step, scrub and speed (0.5–4×), synced to the GPU power line.
+- **Results:** a checklist built from `recommend.py`. Every item carries its label (MEASURED,
+  ESTIMATE or ADVICE) and one action button. Actions only copy a command or download a file.
+  Nothing runs on any machine. Checked items are saved in localStorage for each run.
+
+Keys: `space` play/pause, `f` fit, `←/→` step, `+/−` zoom, `Esc` close.
+URL params: `?at=N`, `?node=<id>`, `?results=0`, `?run=<id>`, `?src=<jsonl>`.
+
+## Tests
+
+`node --test state.test.mjs checklist.test.mjs`. pytest also runs these through `tests/test_run_screen.py`.
+
+Fonts: Inter and JetBrains Mono (OFL). Icons: a Lucide subset (ISC). Licences are in `vendor/`.
