@@ -1,0 +1,108 @@
+{
+  "generated_at": "2026-10-26T18:24:37+00:00",
+  "calls": 6,
+  "items": 48,
+  "totals": {
+    "prompt_tokens": 497,
+    "completion_tokens": 8641,
+    "total_tokens": 9138
+  },
+  "per_call": [
+    {
+      "model": "muse-spark-1.3",
+      "lang": "python",
+      "kind": "function",
+      "usage": {
+        "completion_tokens": 1214,
+        "prompt_tokens": 84,
+        "total_tokens": 1298,
+        "completion_tokens_details": {
+          "reasoning_tokens": 515
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    },
+    {
+      "model": "muse-spark-1.3",
+      "lang": "python",
+      "kind": "debug",
+      "usage": {
+        "completion_tokens": 1239,
+        "prompt_tokens": 83,
+        "total_tokens": 1322,
+        "completion_tokens_details": {
+          "reasoning_tokens": 515
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    },
+    {
+      "model": "muse-spark-1.3",
+      "lang": "sql",
+      "kind": "query",
+      "usage": {
+        "completion_tokens": 1613,
+        "prompt_tokens": 84,
+        "total_tokens": 1697,
+        "completion_tokens_details": {
+          "reasoning_tokens": 853
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    },
+    {
+      "model": "muse-spark-1.3",
+      "lang": "javascript",
+      "kind": "function",
+      "usage": {
+        "completion_tokens": 1863,
+        "prompt_tokens": 79,
+        "total_tokens": 1942,
+        "completion_tokens_details": {
+          "reasoning_tokens": 1290
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    },
+    {
+      "model": "muse-spark-1.3",
+      "lang": "python",
+      "kind": "tests",
+      "usage": {
+        "completion_tokens": 1444,
+        "prompt_tokens": 83,
+        "total_tokens": 1527,
+        "completion_tokens_details": {
+          "reasoning_tokens": 781
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    },
+    {
+      "model": "muse-spark-1.3",
+      "lang": "bash",
+      "kind": "script",
+      "usage": {
+        "completion_tokens": 1268,
+        "prompt_tokens": 84,
+        "total_tokens": 1352,
+        "completion_tokens_details": {
+          "reasoning_tokens": 634
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    }
+  ]
+}
