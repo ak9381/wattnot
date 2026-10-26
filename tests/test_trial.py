@@ -152,3 +152,11 @@ def test_openai_client_against_fake_server():
         assert c.latency_s == pytest.approx(0.25)
     finally:
         srv.shutdown()
+
+
+def test_default_model_is_meta_open_weights():
+    from wattnot.runner.vllm_server import DEFAULT_MODEL
+    assert DEFAULT_MODEL == "meta-llama/Llama-3.1-8B-Instruct"
+    args = server_args()
+    assert DEFAULT_MODEL in args
+    assert OpenAIClient("http://x/v1").model == DEFAULT_MODEL

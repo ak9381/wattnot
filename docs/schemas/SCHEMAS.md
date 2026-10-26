@@ -19,7 +19,7 @@ One JSON object per line (JSONL on disk at `runs/<run_id>/events.jsonl`, the sam
 Event types and `data` payloads:
 | `type` | `data` fields |
 |---|---|
-| `run.started` | `mode` (`container`\|`root`), `host` {provider, gpu, driver, cuda}, `model` (e.g. `meta-models/muse-spark-open-1026`), `workload` (`muse-code-task-set-v1`), `capabilities` (from probe) |
+| `run.started` | `mode` (`container`\|`root`), `host` {provider, gpu, driver, cuda}, `model` (e.g. `meta-llama/Llama-3.1-8B-Instruct`), `workload` (`muse-code-task-set-v1`), `capabilities` (from probe) |
 | `step.started` | `kind` (`probe`\|`baseline`\|`plan`\|`trial`\|`gate`\|`judge`\|`stats`\|`apply`\|`rollback`\|`sign`\|`publish`), `label`, `agent` (`wattnot`\|`muse-spark-1.3`\|`optuna`\|`muse-code`), `model` \| null, `effort` \| null (`low`\|`medium`\|`high`) |
 | `step.progress` | `pct` 0–100, `message` |
 | `step.finished` | `status` (`ok`\|`failed`\|`skipped`\|`blocked`), `duration_ms`, `tokens` {in, out} \| null, `meta_cost_usd` \| null, `retry` int |

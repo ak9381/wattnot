@@ -6,7 +6,7 @@ Branch: `feat/m03-knobs` · Hours: 8 · Depends on: M02, M09 schema
 @dataclass class TrialParams: max_num_seqs:int; enable_chunked_prefill:bool; enable_prefix_caching:bool; block_size:int; quantization:str; gpu_mem_util:float; power_cap_w:int|None=None; sm_clock_mhz:int|None=None
 def run_trial(params: TrialParams, workload: Workload, meter: Meter, reps:int=5, emit:Emitter) -> TrialResult
 ```
-CLI: `wattnot run --host modal --model meta-models/muse-spark-open-1026 --trials plan.json --reps 5`
+CLI: `wattnot run --host modal --model meta-llama/Llama-3.1-8B-Instruct --trials plan.json --reps 5`
 Modal app: `deploy/modal_app.py` (one GPU function, vLLM server inside); Baseten: OpenAI-compatible `https://inference.baseten.co/v1` for hosted calls (no NVML there, so ESTIMATE only).
 
 ## Data schemas
