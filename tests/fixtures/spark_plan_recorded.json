@@ -1,0 +1,21 @@
+{
+  "model": "muse-spark-1.3",
+  "usage": {
+    "completion_tokens": 305,
+    "prompt_tokens": 249,
+    "total_tokens": 554,
+    "completion_tokens_details": {
+      "reasoning_tokens": 134
+    },
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "choices": [
+    {
+      "message": {
+        "content": "{\"proposals\": [{\"max_num_seqs\": 64, \"power_cap_w\": 400, \"quantization\": \"none\", \"reason\": \"Low-power low-batch baseline to test latency headroom.\"}, {\"max_num_seqs\": 256, \"power_cap_w\": 500, \"quantization\": \"fp8\", \"reason\": \"Mid cap with FP8 for efficiency vs accuracy check.\"}, {\"max_num_seqs\": 512, \"power_cap_w\": 600, \"quantization\": \"fp8\", \"reason\": \"Max throughput batching under moderate cap.\"}, {\"max_num_seqs\": 128, \"power_cap_w\": 700, \"quantization\": \"none\", \"reason\": \"High cap anchor to measure best p99 latency.\"}]}"
+      }
+    }
+  ]
+}

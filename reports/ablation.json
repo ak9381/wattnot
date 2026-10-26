@@ -1,0 +1,41 @@
+{
+  "label": "ESTIMATE",
+  "target_wh_per_req": 0.036636,
+  "tol": 0.01,
+  "budget_trials": 20,
+  "spark": {
+    "calls": 1,
+    "input": 249,
+    "output": 305,
+    "usd": {
+      "value": 0.03,
+      "label": "ESTIMATE"
+    }
+  },
+  "arms": [
+    {
+      "arm": "cold",
+      "n_trials": 20,
+      "best_wh_per_req": 0.0374662,
+      "trials_to_best": null,
+      "seconds_to_best": null,
+      "wh_to_best": null
+    },
+    {
+      "arm": "warm",
+      "n_trials": 20,
+      "best_wh_per_req": 0.036824,
+      "trials_to_best": 6,
+      "seconds_to_best": 864.57,
+      "wh_to_best": 293.6893
+    },
+    {
+      "arm": "grid",
+      "n_trials": 20,
+      "best_wh_per_req": 0.0393981,
+      "trials_to_best": null,
+      "seconds_to_best": null,
+      "wh_to_best": null
+    }
+  ]
+}
