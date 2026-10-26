@@ -22,7 +22,8 @@ node_modules/
 .env.*
 
 # Data and large artifacts
-runs/
+# Repo-root run output only; recorded test fixtures under tests/fixtures/runs/ stay tracked.
+/runs/
 *.mp4
 *.err
 *-out.json

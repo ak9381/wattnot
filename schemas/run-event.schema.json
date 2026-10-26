@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wattnot.event/1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "run_id",
+    "seq",
+    "ts",
+    "type",
+    "data"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "wattnot.event/1"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^run_[0-9]{8}_[0-9]{6}_[0-9a-f]{6}$"
+    },
+    "seq": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "type": {
+      "enum": [
+        "run.started",
+        "step.started",
+        "step.progress",
+        "step.finished",
+        "telemetry.sample",
+        "trial.proposed",
+        "trial.measured",
+        "gate.result",
+        "pareto.updated",
+        "action.applied",
+        "action.rolled_back",
+        "receipt.signed",
+        "run.finished",
+        "error"
+      ]
+    },
+    "step_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "parent_step_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "data": {
+      "type": "object"
+    },
+    "compare_to": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^run_[0-9]{8}_[0-9]{6}_[0-9a-f]{6}$",
+      "description": "Optional. run_id of the baseline run, so the UI can load the real before canvas. If absent, UI rebuilds the before canvas from the receipt baseline. Top-level copy allowed on any event; canonical location is run.started data.compare_to."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "run.started"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "properties": {
+              "compare_to": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^run_[0-9]{8}_[0-9]{6}_[0-9a-f]{6}$",
+                "description": "Optional. run_id of the baseline run, so the UI can load the real before canvas. If absent, UI rebuilds the before canvas from the receipt baseline. Top-level copy allowed on any event; canonical location is run.started data.compare_to."
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
