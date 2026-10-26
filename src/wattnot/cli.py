@@ -54,6 +54,11 @@ def build_parser() -> argparse.ArgumentParser:
     rb = rsub.add_parser("build", help="build a receipt from runs/<id>/run.json")
     rb.add_argument("--run", required=True, help="run directory (runs/<id>)")
     rb.add_argument("--out", default="receipts", help="output directory (default %(default)s)")
+    vf = sub.add_parser("verify", help="verify receipts: schema, sha256, signature, rekor, grade")
+    vf.add_argument("receipts", nargs="+", help="receipt JSON files (bundle: <id>.sigstore.json)")
+    vf.add_argument("--bundle", help="bundle path (only with one receipt)")
+    vf.add_argument("--trust", help="trusted-keys JSON (default verifier/trusted-keys.json)")
+    vf.add_argument("--json", action="store_true", help="one JSON report per line")
     rs = rsub.add_parser("sign", help="sign a receipt (use --no-rekor for an offline test key)")
     rs.add_argument("receipt", help="receipts/<id>.json")
     rs.add_argument("--no-rekor", action="store_true",
@@ -106,6 +111,21 @@ def _run_impact(a: argparse.Namespace) -> int:
     return 0
 
 
+def _run_verify(a: argparse.Namespace) -> int:
+    import json
+
+    from wattnot.verify import format_report, load_trusted, verify_receipt
+    if a.bundle and len(a.receipts) != 1:
+        raise ValueError("--bundle works with one receipt")
+    trusted = load_trusted(a.trust)
+    bad = 0
+    for path in a.receipts:
+        r = verify_receipt(path, a.bundle, trusted=trusted)
+        bad += r.grade == "UNVERIFIABLE"
+        print(json.dumps(r.to_dict()) if a.json else format_report(r))
+    return 1 if bad else 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -124,6 +144,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_receipt(args)
         except (OSError, KeyError, TypeError, ValueError) as e:
             parser.error(f"receipt: {e}")
+    if args.cmd == "verify":
+        try:
+            return _run_verify(args)
+        except (OSError, ValueError) as e:
+            parser.error(f"verify: {e}")
     parser.print_help()
     return 0
 

@@ -1,0 +1,26 @@
+{
+  "real-measured": {
+    "grade": "ESTIMATE",
+    "why": "MEASURED, signed offline: no Rekor so not VALID"
+  },
+  "real-estimate": {
+    "grade": "ESTIMATE",
+    "why": "ESTIMATE label"
+  },
+  "real-noise": {
+    "grade": "NOISE",
+    "why": "Welch p >= 0.05: saving not billed"
+  },
+  "forged-edited": {
+    "grade": "UNVERIFIABLE",
+    "why": "billed saving edited after signing"
+  },
+  "forged-rehashed": {
+    "grade": "UNVERIFIABLE",
+    "why": "edited and re-hashed, old signature kept"
+  },
+  "forged-otherkey": {
+    "grade": "UNVERIFIABLE",
+    "why": "edited, re-hashed, re-signed by another key but still names the original signer"
+  }
+}
