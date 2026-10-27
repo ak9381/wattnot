@@ -35,6 +35,8 @@ from wattnot.proof.decisions import (
     summarize_decisions,
 )
 from wattnot.proof.planner import BisectPlanner, allowed_caps
+from wattnot.proof.profile import add_args as add_profile_args
+from wattnot.proof.profile import resolve as resolve_profile
 from wattnot.proof.rig import Rig
 from wattnot.proof.session import run_control, run_step
 from wattnot.runner.workload import load_workload, workloads_dir
@@ -210,7 +212,9 @@ def open_rig(args) -> tuple[Rig, object]:  # pragma: no cover
         rig = Rig(nvml, handle, FakeClient(nvml, delay_s=args.fake_delay,
                                         concurrency=args.concurrency), wl,
                   concurrency=args.concurrency, repeat=args.repeat, settle_s=args.settle_s,
-                  warmup=args.warmup, sleep=lambda x: time.sleep(min(x, 0.2)))
+                  warmup=args.warmup, warmup_s=args.warmup_s, burn_in=args.burn_in,
+                  counterbalance=args.counterbalance, control_blocks=args.control_blocks,
+                  sleep=lambda x: time.sleep(min(x, 0.2)))
         return rig, _NoGuard()
     from wattnot.control.nvml_ctl import CapGuard
     from wattnot.probe import open_nvml
@@ -220,7 +224,9 @@ def open_rig(args) -> tuple[Rig, object]:  # pragma: no cover
     guard.__enter__()  # puts the saved limit back on exit and on SIGTERM
     client = ChatClient(f"http://127.0.0.1:{args.port}/v1", args.model)
     rig = Rig(nvml, handle, client, wl, concurrency=args.concurrency, repeat=args.repeat,
-              settle_s=args.settle_s, warmup=args.warmup)
+              settle_s=args.settle_s, warmup=args.warmup, warmup_s=args.warmup_s,
+              burn_in=args.burn_in, counterbalance=args.counterbalance,
+              control_blocks=args.control_blocks)
     return rig, guard
 
 
@@ -244,7 +250,9 @@ def run_vm_command(a, rig: Rig) -> int:  # pragma: no cover - thin dispatch, tes
     elif a.cmd == "adaptive":
         from wattnot.moe import adaptive_topk as at
         from wattnot.proof.adaptive import VmRig, run_adaptive
-        cfg = at.AdaptiveConfig(model=a.adaptive_model, budget_s=a.adaptive_budget_s)
+        cfg = at.AdaptiveConfig(
+            model=a.adaptive_model, budget_s=a.adaptive_budget_s,
+            mass=a.adaptive_mass if a.adaptive_mass is not None else at.DEFAULT_MASS)
         if a.fake:
             backend = at.FakeMoeBackend()
         else:
@@ -253,6 +261,12 @@ def run_vm_command(a, rig: Rig) -> int:  # pragma: no cover - thin dispatch, tes
         info = run_adaptive(s, a.out / "adaptive_topk", backend, cfg)
         print("ADAPTIVE_JSON " + json.dumps(info, default=str), flush=True)
     return 0
+
+
+def prof_fields() -> tuple[str, ...]:
+    from wattnot.proof.profile import FIELDS
+
+    return FIELDS
 
 
 def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover
@@ -266,8 +280,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover
     ap.add_argument("--serve", action="store_true", help="start vLLM here (else expects it up)")
     ap.add_argument("--workload", type=Path)
     ap.add_argument("--cap", type=int, help="step: the cap to test")
-    ap.add_argument("--reps", type=int, default=3)
-    ap.add_argument("--repeat", type=int, default=2, help="workload copies per block")
+    add_profile_args(ap)
     ap.add_argument("--concurrency", type=int, default=32)
     ap.add_argument("--grid", default=",".join(map(str, DEFAULT_GRID)))
     ap.add_argument("--planner", choices=["muse", "bisect"], default="muse")
@@ -278,12 +291,16 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover
     ap.add_argument("--fake", action="store_true", help="rehearsal: fake GPU, MOCK labels")
     ap.add_argument("--fake-delay", type=float, default=0.0, help="seconds per fake request")
     ap.add_argument("--settle-s", type=float, default=4.0)
-    ap.add_argument("--warmup", type=int, default=16)
     ap.add_argument("--keep-cap", action="store_true", help="apply: leave the cap set on exit")
     ap.add_argument("--load-s", type=float, default=0, help="snap: seconds of load at stock cap")
     ap.add_argument("--adaptive-model", default="ibm-granite/granite-3.1-3b-a800m-instruct")
+    ap.add_argument("--adaptive-mass", type=float, default=None,
+                    help="adaptive top-k: share of router weight to keep (default: the tuned one)")
     ap.add_argument("--adaptive-budget-s", type=float, default=1200)
     a = ap.parse_args(argv)
+    prof = resolve_profile(a.profile, **{k: getattr(a, k) for k in prof_fields()})
+    for k, v in prof.as_dict().items():  # the resolved values, flag by flag
+        setattr(a, k, v)
     a.out.mkdir(parents=True, exist_ok=True)
     log = make_log(a.out)
     if a.cmd == "report":

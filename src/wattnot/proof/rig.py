@@ -28,12 +28,18 @@ def pooled_items(workload: Workload, copies: int) -> list[WorkloadItem]:
 class Rig:
     def __init__(self, nvml, handle, client: ChatClient, workload: Workload, *,
                  concurrency: int = 32, repeat: int = 2, settle_s: float = 4.0, warmup: int = 16,
-                 sleep: Callable[[float], None] = time.sleep,
+                 warmup_s: float = 0.0, burn_in: int = 0, counterbalance: bool = False,
+                 control_blocks: int = 0, sleep: Callable[[float], None] = time.sleep,
                  on_phase: Callable[..., None] | None = None,
                  on_sample: Callable[[dict], None] | None = None) -> None:
         self.nvml, self.handle, self.client, self.workload = nvml, handle, client, workload
         self.concurrency, self.repeat, self.settle_s, self.warmup = (
             concurrency, repeat, settle_s, warmup)
+        # noise controls (see wattnot.proof.profile): a timed warm-up before every block, one
+        # unmetered stock block before the first measurement, alternating arm order, and extra
+        # stock blocks in the gate self-check so stock-vs-stock noise is measured, not assumed
+        self.warmup_s, self.burn_in, self.counterbalance, self.control_blocks = (
+            warmup_s, burn_in, counterbalance, control_blocks)
         self._sleep = sleep
         self.on_phase, self.on_sample = on_phase, on_sample
         lo, hi = nvml.power_limit_constraints_mw(handle)
@@ -66,7 +72,15 @@ class Rig:
         for k in range(self.warmup):
             it = items[k % len(items)]
             self.client.ask(it.prompt, max(8, int(it.max_tokens * token_scale)))
-        self._ph("warmup", "end", n=self.warmup)
+        if self.warmup_s > 0:  # keep the card busy at this cap until clocks and temps settle
+            tw = time.perf_counter()
+            with ThreadPoolExecutor(max_workers=self.concurrency) as pool:
+                while time.perf_counter() - tw < self.warmup_s:
+                    list(pool.map(
+                        lambda it: self.client.ask(it.prompt, max(8, int(it.max_tokens
+                                                                         * token_scale))),
+                        items[:self.concurrency]))
+        self._ph("warmup", "end", n=self.warmup, seconds=self.warmup_s)
         reqs = [(c, it) for c in range(self.repeat) for it in items]
         samples: list[tuple[float, float, int, int]] = []
         stop = threading.Event()

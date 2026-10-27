@@ -25,6 +25,28 @@ MAX_DROP_PTS = 2.0
 P99_SLACK_PCT = 10.0
 
 
+def burn_in(rig: Rig, log=None) -> None:
+    """One unmetered stock block before the first measurement of a process, when `rig.burn_in`
+    asks for it: the first metered block after a cold start or a long idle reads differently
+    from the rest (RUN2's control: 14.6 vs 15.8 J/request for the same setting)."""
+    n = int(getattr(rig, "burn_in", 0) or 0)
+    if n <= 0 or getattr(rig, "_burned_in", False):
+        return
+    rig._burned_in = True  # type: ignore[attr-defined]
+    for i in range(n):
+        if log:
+            log("burn_in", {"set_w": rig.default_w, "n": i + 1, "of": n})
+        rig.block(rig.default_w)
+
+
+def stock_noise(stock: list[dict]) -> dict:
+    """How much stock moves against itself in this step: the coefficient of variation of J/request
+    over the stock blocks. A cap's effect has to clear this to mean anything."""
+    j = [b["j_per_req"] for b in stock]
+    m, sd = mean_sd(j)
+    return {"label": "MEASURED", "blocks": len(j), "cv_pct": (100 * sd / m) if m else float("nan")}
+
+
 def _pool(blocks: list[dict], repeat: int) -> tuple[dict, dict]:
     outs, cut = {}, {}
     for r, b in enumerate(blocks):
@@ -71,6 +93,7 @@ def summarize(cap_w: int, stock: list[dict], capped: list[dict], workload: Workl
         "p99_change_pct": {"per_pair": d_p99, "mean": p_mean, "sd": p_sd},
         "p50_change_pct": {"per_pair": d_p50, "mean": mean_sd(d_p50)[0]},
         "j_per_token_change_pct": {"mean": mean_sd(d_tok)[0]},
+        "stock_noise": stock_noise(stock),
         "p99_s": {"stock": mean_sd([s["p99_s"] for s in stock])[0],
                   "cap": mean_sd([c["p99_s"] for c in capped])[0]},
         "quality": {"stock_pct": q.detail["baseline_pct"], "cap_pct": q.detail["candidate_pct"],
@@ -106,8 +129,12 @@ def run_step(rig: Rig, cap_w: int, reps: int, out: Path, *, workload: Workload, 
     """reps x (stock block, cap block). Saves every block's replies and a step summary."""
     stock_w = rig.default_w
     stock, capped = [], []
+    burn_in(rig, log)
     for r in range(reps):
-        for arm, w in (("stock", stock_w), ("cap", cap_w)):
+        order = (("stock", stock_w), ("cap", cap_w))
+        if getattr(rig, "counterbalance", False) and r % 2:
+            order = order[::-1]  # cap first on odd rounds, so drift hits both arms alike
+        for arm, w in order:
             if log:
                 log("block_start", {"cap_w": cap_w, "arm": arm, "rep": r, "set_w": w})
             b = rig.block(w)
@@ -132,6 +159,7 @@ def run_control(rig: Rig, out: Path, *, workload: Workload, scale: float = 0.2, 
     """The gate's own test: stock vs a deliberately bad setting (answers cut to `scale` of
     their token budget). The gate must reject it; otherwise it can't tell good from bad."""
     stock_w = rig.default_w
+    burn_in(rig, log)
 
     def blk(name: str, **kw) -> dict:
         if log:
@@ -141,8 +169,12 @@ def run_control(rig: Rig, out: Path, *, workload: Workload, scale: float = 0.2, 
     a = blk("stock")
     b = blk("truncated", token_scale=scale)
     a2 = blk("stock2")  # a second stock block: how much does stock move on its own
+    extra = [blk(f"stock{i + 3}") for i in range(int(getattr(rig, "control_blocks", 0) or 0))]
     sa, sb, sa2 = (save_raw(out, f"control-{n}", x) for n, x in
                    (("stock", a), ("truncated", b), ("stock2", a2)))
+    s_extra = [save_raw(out, f"control-stock{i + 3}", x) for i, x in enumerate(extra)]
+    j_stock = [x["j_per_req"] for x in (a, a2, *extra)]
+    m_stock, sd_stock = mean_sd(j_stock)
     items = pooled_items(workload, rig.repeat)
     bad = fixed_checks(a["outputs"], b["outputs"], items, max_drop_pts=MAX_DROP_PTS,
                        base_truncated=a["cut"], cand_truncated=b["cut"])
@@ -152,7 +184,11 @@ def run_control(rig: Rig, out: Path, *, workload: Workload, scale: float = 0.2, 
            "truncated_pass_pct": b["pass_pct"], "token_scale": scale,
            "bad_setting_rejected": not bad.passed, "stock_vs_stock_accepted": same.passed,
            "stock_vs_stock_j_per_req_change_pct": pct_change(a2["j_per_req"], a["j_per_req"]),
-           "blocks": {"stock": sa, "truncated": sb, "stock2": sa2}}
+           "stock_blocks": len(j_stock), "stock_j_per_req": j_stock,
+           "stock_noise_cv_pct": (100 * sd_stock / m_stock) if m_stock else float("nan"),
+           "stock_range_pct": (100 * (max(j_stock) - min(j_stock)) / m_stock) if m_stock else None,
+           "blocks": {"stock": sa, "truncated": sb, "stock2": sa2,
+                      **({"extra_stock": s_extra} if s_extra else {})}}
     (out / "control.json").write_text(json.dumps(res, indent=1))
     if log:
         log("control", {k: v for k, v in res.items() if k != "blocks"})

@@ -150,6 +150,32 @@ class Stream:
         )
         return st
 
+    def reopen(
+        self,
+        step_id: str,
+        node: str,
+        sub: str,
+        label: str,
+        *,
+        parent: str | None = None,
+        top: str | None = None,
+    ) -> _Step:
+        """A handle for a step that was already started (in an earlier process of a resumed
+        run): same ids and base fields as `start`, but no `step.started` event is emitted, so the
+        log has one start and one finish. `duration_s` counts from the resume."""
+        st = _Step()
+        st.id, st.parent, st.label, st.t0 = step_id, parent, label, time.monotonic()
+        st.tag = self.label
+        st.base = {
+            "node": node,
+            "sub": sub,
+            "kind": f"{node}.{sub}",
+            "partners": PARTNERS.get(node, []),
+        }
+        if top:
+            st.base["step"] = top
+        return st
+
     def finish(self, st: _Step) -> None:
         self.emit(
             "step.finished",

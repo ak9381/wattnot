@@ -34,9 +34,14 @@ from pathlib import Path
 from wattnot.events import Emitter
 from wattnot.events.emitter import new_run_id
 from wattnot.proof import roomscan
+from wattnot.proof.checkpoint import Checkpoint, CheckpointError
 from wattnot.proof.events import Stream, check_labels, read_raw
 from wattnot.proof.planner import BisectPlanner
+from wattnot.proof.profile import FIELDS as PROFILE_FIELDS
+from wattnot.proof.profile import add_args as add_profile_args
+from wattnot.proof.profile import resolve as resolve_profile
 from wattnot.proof.run import best_of, history_row, write_report
+from wattnot.proof.sshutil import SshDown
 from wattnot.proof.transport import LocalTransport, Transport
 
 DEFAULT_GRID = (600, 500, 400, 350, 300)
@@ -80,19 +85,22 @@ class Live:
         self.em.close()
 
 
-def vm_line(live: Live, grabbed: dict) -> Callable[[str], None]:
-    """Line handler for a GPU-host command: EVT lines become events, `*_JSON` lines are kept."""
+def vm_line(live: Live, grabbed: dict, *, quiet: bool = False) -> Callable[[str], None]:
+    """Line handler for a GPU-host command: EVT lines become events, `*_JSON` lines are kept.
+    `quiet` is for lines that were already handled before a restart: the results are kept again
+    but no event is emitted a second time."""
 
     def on_line(line: str) -> None:
         ev = read_raw(line)
         if ev is not None:
-            live.sink(ev)
+            if not quiet:
+                live.sink(ev)
             return
         for key in ("STEP_JSON", "SNAP_JSON", "APPLY_JSON", "ADAPTIVE_JSON"):
             if line.startswith(key + " "):
                 grabbed[key] = json.loads(line[len(key) + 1 :])
                 return
-        if line.strip():
+        if line.strip() and not quiet:
             print("[vm]", line[:240], flush=True)
 
     return on_line
@@ -109,10 +117,53 @@ def workload_sha() -> str | None:
     return sha_file(p) if p.exists() else None
 
 
+def apply_profile(a) -> None:
+    """Fill every measurement field the namespace does not carry from its profile (so `drive` can
+    be called with a hand-made namespace, and `main` and `run` agree on one set of numbers)."""
+    prof = resolve_profile(
+        getattr(a, "profile", None), **{k: getattr(a, k, None) for k in PROFILE_FIELDS}
+    )
+    for k, v in prof.as_dict().items():
+        setattr(a, k, v)
+
+
+def fingerprint(a) -> dict:
+    """What must not change between a run and its resume: anything that would mix two methods
+    (measurement profile, model, planner, grid) in one result."""
+    keys = (
+        "mode", "model", "port", "concurrency", "settle_s", "load_s", "max_proposals", "planner",
+        "sam", "room", "adaptive", "adaptive_model", "adaptive_mass", "remote_out", "profile",
+        *PROFILE_FIELDS,
+    )
+    fp = {k: getattr(a, k, None) for k in keys}
+    fp["grid"] = list(getattr(a, "grid", ()) or ())
+    return json.loads(json.dumps(fp, default=str))
+
+
+class Interrupted(RuntimeError):
+    """The control side lost the GPU host; the checkpoint is intact and `--resume` carries on."""
+
+
 def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path) -> dict:
     mock = a.mode == "rehearsal"
     label = "MOCK" if mock else "MEASURED"
-    run_id = new_run_id()
+    apply_profile(a)
+    out.mkdir(parents=True, exist_ok=True)
+    fp = fingerprint(a)
+    ck_path = out / "checkpoint.json"
+    resuming = False
+    if getattr(a, "resume", False) and ck_path.exists():
+        ck = Checkpoint.load(ck_path, fp)  # CheckpointError: a different method; stop here
+        if ck.done("finished"):
+            return {"status": "ok", "run_id": ck.run_id, "already_finished": True,
+                    "best_cap_w": (ck.get("cap_sweep") or {}).get("best_cap_w")}
+        ck.resumes += 1
+        resuming = True
+    else:
+        if ck_path.exists():  # a new run: keep the old checkpoint for reference
+            ck_path.rename(ck_path.with_suffix(f".{int(time.time())}.prev"))
+        ck = Checkpoint.create(ck_path, new_run_id(), fp)
+    run_id = ck.run_id
     live = Live(run_id, a.runs_root, a.live_file, mock=mock)
     s = Stream(live.sink, label=label)
     remote_out = a.remote_out
@@ -131,16 +182,36 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
         str(a.settle_s),
         "--warmup",
         str(a.warmup),
+        "--warmup-s",
+        str(a.warmup_s),
+        "--burn-in",
+        str(a.burn_in),
+        "--counterbalance" if a.counterbalance else "--no-counterbalance",
+        "--control-blocks",
+        str(a.control_blocks),
         "--emit",
     ]
     if mock:
         vm_common += ["--fake", "--fake-delay", str(a.fake_delay)]
     grabbed: dict = {}
-    t_start = time.time()
+    t_start = time.time() - ck.elapsed_s  # elapsed time carries across restarts
 
-    def vm(cmd: str, *extra: str, timeout: float = 7200) -> int:
+    def vm(cmd: str, *extra: str, timeout: float = 7200, ident: str = "") -> int:
         grabbed.clear()
-        return transport.run([cmd, *vm_common, *extra], vm_line(live, grabbed), timeout_s=timeout)
+        key = f"{run_id[-6:]}-{cmd}{ident}"
+        return transport.run(
+            [cmd, *vm_common, *extra],
+            vm_line(live, grabbed),
+            timeout_s=timeout,
+            key=key,
+            skip=ck.cmds.get(key, 0),
+            on_skip=vm_line(live, grabbed, quiet=True),
+            progress=lambda n: ck.set_lines(key, n),
+        )
+
+    def stage_done(name: str, **payload) -> None:
+        ck.elapsed_s = time.time() - t_start
+        ck.mark(name, **payload)
 
     status, failure = "ok", None
     adaptive_info: dict | None = None
@@ -148,385 +219,462 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
     snap: dict = {}
     best = None
     try:
-        live.sink(
-            {
-                "type": "run.started",
-                "data": {
-                    "mode": "mock" if mock else "live",
-                    "label": label,
-                    "run": "RUN2",
-                    "host": {
-                        "provider": "fake" if mock else "e2e",
-                        "gpu": a.gpu_label,
-                        "gpu_index": 0,
-                        "cap_range_w": [200, 700],
+        if not resuming:
+            live.sink(
+                {
+                    "type": "run.started",
+                    "data": {
+                        "mode": "mock" if mock else "live",
+                        "label": label,
+                        "run": "RUN2",
+                        "host": {
+                            "provider": "fake" if mock else "e2e",
+                            "gpu": a.gpu_label,
+                            "gpu_index": 0,
+                            "cap_range_w": [200, 700],
+                        },
+                        "model": a.model,
+                        "workload": "proof-v1 (111 prompts: 50 math, 29 code, 32 QA)",
+                        "run_id": run_id,
+                        "started_at": datetime.now(UTC).isoformat(timespec="seconds"),
+                        "narration": {
+                            "text": (
+                                "Rehearsal on a fake GPU: nothing here is measured."
+                                if mock
+                                else "This is the real H100 run."
+                            ),
+                            "source": "template",
+                        },
                     },
-                    "model": a.model,
-                    "workload": "proof-v1 (111 prompts: 50 math, 29 code, 32 QA)",
-                    "run_id": run_id,
-                    "started_at": datetime.now(UTC).isoformat(timespec="seconds"),
-                    "narration": {
-                        "text": (
-                            "Rehearsal on a fake GPU: nothing here is measured."
-                            if mock
-                            else "This is the real H100 run."
-                        ),
-                        "source": "template",
-                    },
+                }
+            )
+        else:
+            done_names = [x for x in ("room_scan", "baseline", "quality_gate", "cap_sweep",
+                                      "adaptive_topk", "keep_rollback", "receipt") if ck.done(x)]
+            s.emit(
+                "step.progress",
+                {
+                    "node": "e2e_rig",
+                    "sub": "resume",
+                    "pct": 0,
+                    "message": f"run resumed (restart {ck.resumes}); done so far: "
+                    + (", ".join(done_names) or "nothing"),
                 },
-            }
-        )
+                step_id=None,
+                parent=None,
+            )
 
         # ------------------------------------------------------------------ 1. room scan
-        top = s.start(
-            "room_scan",
-            "sam",
-            "masks",
-            "Room scan · SAM 3.1",
-            top="room_scan",
-            inputs="the room photo; a text prompt: 'server rack'",
-            say="Scanning the room: SAM finds the racks, the H100 goes in one slot.",
-        )
-        sam_tag = "MEASURED" if a.sam == "live" else "REPLAY"
-        with s.step(
-            "room_scan.sam",
-            "sam",
-            "masks",
-            "SAM 3.1 cuts the racks out of the photo",
-            parent="room_scan",
-            inputs="photo + prompt 'server rack' ("
-            + ("a live call, about $0.0025" if a.sam == "live"
-               else "a saved raw output from a real call, replayed") + ")",
-        ) as st:
-            if scan_base is None:
-                scan_base = roomscan.build(
-                    a.room, live_sam=(a.sam == "live"), out=out / "room", scan_json=a.scan_json
-                )
-            st.tag = sam_tag
-            found = (scan_base.get("sam") or {}).get("racks_found", len(scan_base["racks"]))
-            st.outputs = f"{found} racks found"
-            st.add("racks found", found, "", sam_tag)
-        with s.step(
-            "room_scan.check",
-            "sam",
-            "check",
-            "Cross-check each rack: temperature against power",
-            parent="room_scan",
-            inputs="a thermal frame (SIMULATED) and per-GPU power (REPLAY of RUN1's trace)",
-        ) as st:
-            st.tag = "ADVICE"
-            hot = [r["id"] for r in scan_base["racks"] if r.get("decision") == "derate"]
-            st.outputs = f"hot at high power (a cap can help): {', '.join(hot) or 'none'}"
-            st.add("racks to derate", len(hot), "", "ADVICE")
-        rc = vm("snap", "--load-s", str(a.load_s))
-        snap = grabbed.get("SNAP_JSON") or {}
-        if rc != 0 or not snap:
-            raise RuntimeError("could not read the GPU (snap failed)")
-        scan = roomscan.place_h100(scan_base, snap, label=label)
-        planner_hint = roomscan.hint(scan)
-        with s.step(
-            "room_scan.draw",
-            "sam",
-            "draw",
-            "Draw the room, with the H100 in its slot",
-            parent="room_scan",
-            inputs=f"slot {scan['real_rack']} = the real card",
-        ) as st:
-            st.tag = label
-            slot = roomscan.slot_of(scan)
-            st.outputs = (
-                f"{scan['real_rack']}: {slot['before']['power_w']:.0f} W, "
-                f"{slot['before']['temp_c']} °C (GPU sensor)"
+        if not ck.done("room_scan"):
+            top = s.start(
+                "room_scan",
+                "sam",
+                "masks",
+                "Room scan · SAM 3.1",
+                top="room_scan",
+                inputs="the room photo; a text prompt: 'server rack'",
+                say="Scanning the room: SAM finds the racks, the H100 goes in one slot.",
             )
-            st.add("H100 power, stock cap", slot["before"]["power_w"], "W")
-            st.add("H100 GPU temperature", slot["before"]["temp_c"], "°C")
+            sam_tag = "MEASURED" if a.sam == "live" else "REPLAY"
+            with s.step(
+                "room_scan.sam",
+                "sam",
+                "masks",
+                "SAM 3.1 cuts the racks out of the photo",
+                parent="room_scan",
+                inputs="photo + prompt 'server rack' ("
+                + ("a live call, about $0.0025" if a.sam == "live"
+                   else "a saved raw output from a real call, replayed") + ")",
+            ) as st:
+                if scan_base is None:
+                    scan_base = roomscan.build(
+                        a.room, live_sam=(a.sam == "live"), out=out / "room", scan_json=a.scan_json
+                    )
+                st.tag = sam_tag
+                found = (scan_base.get("sam") or {}).get("racks_found", len(scan_base["racks"]))
+                st.outputs = f"{found} racks found"
+                st.add("racks found", found, "", sam_tag)
+            with s.step(
+                "room_scan.check",
+                "sam",
+                "check",
+                "Cross-check each rack: temperature against power",
+                parent="room_scan",
+                inputs="a thermal frame (SIMULATED) and per-GPU power (REPLAY of RUN1's trace)",
+            ) as st:
+                st.tag = "ADVICE"
+                hot = [r["id"] for r in scan_base["racks"] if r.get("decision") == "derate"]
+                st.outputs = f"hot at high power (a cap can help): {', '.join(hot) or 'none'}"
+                st.add("racks to derate", len(hot), "", "ADVICE")
+            rc = vm("snap", "--load-s", str(a.load_s))
+            snap = grabbed.get("SNAP_JSON") or {}
+            if rc != 0 or not snap:
+                raise RuntimeError("could not read the GPU (snap failed)")
+            scan = roomscan.place_h100(scan_base, snap, label=label)
+            planner_hint = roomscan.hint(scan)
+            with s.step(
+                "room_scan.draw",
+                "sam",
+                "draw",
+                "Draw the room, with the H100 in its slot",
+                parent="room_scan",
+                inputs=f"slot {scan['real_rack']} = the real card",
+            ) as st:
+                st.tag = label
+                slot = roomscan.slot_of(scan)
+                st.outputs = (
+                    f"{scan['real_rack']}: {slot['before']['power_w']:.0f} W, "
+                    f"{slot['before']['temp_c']} °C (GPU sensor)"
+                )
+                st.add("H100 power, stock cap", slot["before"]["power_w"], "W")
+                st.add("H100 GPU temperature", slot["before"]["temp_c"], "°C")
+                s.emit(
+                    "step.progress",
+                    {
+                        "node": "sam",
+                        "sub": "draw",
+                        "pct": 100,
+                        "message": "room drawn; the other racks are SIMULATED",
+                        **roomscan.payload(scan, "before"),
+                    },
+                    step_id="room_scan.draw",
+                    parent="room_scan",
+                )
+            top.tag = label
+            top.outputs = (
+                f"{found} racks; the H100 sits in {scan['real_rack']} "
+                f"({slot['before']['power_w']:.0f} W, {slot['before']['temp_c']} °C live)"
+            )
+            top.add("racks found", found, "", sam_tag)
+            top.add("H100 power (stock)", slot["before"]["power_w"], "W")
+            top.add("H100 temperature", slot["before"]["temp_c"], "°C")
+            s.finish(top)
+            (out / "room_scan_before.json").write_text(
+                json.dumps({k: v for k, v in scan.items() if not k.startswith("_")}, indent=1)
+            )
+            stage_done("room_scan", snap=snap, planner_hint=planner_hint)
+        else:  # resumed: the scan and the GPU snapshot were taken before the stop
+            snap = ck.get("room_scan")["snap"]
+            planner_hint = ck.get("room_scan").get("planner_hint") or {}
+            scan = json.loads((out / "room_scan_before.json").read_text())
+            slot = roomscan.slot_of(scan)
+
+        # ------------------------------------------------------------------ 2. baseline
+        if not ck.done("baseline"):
+            if vm("baseline") != 0:
+                raise RuntimeError("baseline failed")
+            stage_done("baseline")
+        # ------------------------------------------------------------------ 3. quality gate
+        if not ck.done("quality_gate"):
+            rc = vm("control")
+            if rc != 0:
+                status, failure = (
+                    "failed",
+                    "the gate did not reject the bad setting (or rejected stock)",
+                )
+                raise RuntimeError(failure)
+            stage_done("quality_gate")
+
+        # ------------------------------------------------------------------ 4. cap sweep
+        if not ck.done("cap_sweep"):
+            sws = ck.get("cap_sweep")
+            resumed_sweep = bool(sws.get("k") or sws.get("done_steps") or sws.get("pending"))
+            if resumed_sweep:
+                sw = s.reopen(
+                    "cap_sweep",
+                    "e2e_rig",
+                    "sweep",
+                    "Cap sweep: Muse Spark proposes, the gate decides",
+                    top="cap_sweep",
+                )
+            else:
+                sw = s.start(
+                    "cap_sweep",
+                    "e2e_rig",
+                    "sweep",
+                    "Cap sweep: Muse Spark proposes, the gate decides",
+                    top="cap_sweep",
+                    inputs=f"caps 300 to <700 W in 25 W steps; {a.reps} paired rounds per cap",
+                    say="Muse Spark picks a cap, the card runs it against stock, the gate decides.",
+                )
+            if hasattr(planner, "context"):
+                planner.context = planner_hint
+            done: list[dict] = list(sws.get("done_steps") or [])
+            tried: set[int] = {int(x) for x in sws.get("tried") or []}
+            deadline = (t_start + a.sweep_budget_s) if a.sweep_budget_s else None
+            k = int(sws.get("k") or 0)
+            stopped = bool(sws.get("stopped"))
+
+            def measure(cap: int, by: str, reason: str | None) -> None:
+                rc2 = vm("step", "--cap", str(cap), "--reps", str(a.reps), ident=f"-{cap}")
+                summ = grabbed.get("STEP_JSON")
+                if rc2 != 0 or not summ:
+                    raise RuntimeError(f"step {cap} W failed")
+                summ["chosen_by"], summ["planner_reason"] = by, reason
+                done.append(summ)
+                tried.add(cap)
+                ck.update("cap_sweep", done_steps=done, tried=sorted(tried), k=k, pending=None)
+                e, p = summ["energy_change_pct"], summ["p99_change_pct"]
+                s.emit(
+                    "step.progress",
+                    {
+                        "node": "e2e_rig",
+                        "sub": "sweep",
+                        "pct": min(95, int(100 * len(done) / (a.max_proposals + len(a.grid)))),
+                        "message": (
+                            f"{cap} W: {'accepted' if summ['accepted'] else 'rejected'} · "
+                            f"J/request {e['mean']:+.1f}%, p99 {p['mean']:+.1f}%"
+                        ),
+                    },
+                    step_id="cap_sweep",
+                    parent=None,
+                )
+
+            while k < a.max_proposals and not stopped:
+                if deadline and time.time() > deadline:
+                    break
+                k += 1
+                hist = [history_row(x) for x in done]
+                pid = f"cap_sweep.propose{k}"
+                pend = ck.get("cap_sweep").get("pending") or {}
+                if pend.get("k") == k and pend.get("emitted"):
+                    prop = pend["prop"]  # asked before the stop: do not ask (or pay) again
+                    by = prop.get("by", getattr(planner, "name", "planner"))
+                else:
+                    with s.step(
+                        pid,
+                        "agent",
+                        "call",
+                        "Ask Muse Spark for the next cap",
+                        parent="cap_sweep",
+                        inputs=f"the allowed caps and {len(hist)} measured trial(s) so far",
+                    ) as st:
+                        prop = planner.propose(hist)
+                        usage = getattr(planner, "last_usage", {}) or {}
+                        mname = getattr(planner, "model", "muse-spark")
+                        by = prop.get("by", getattr(planner, "name", "planner"))
+                        real = by == "muse-spark"
+                        st.tag = label if real else "ADVICE"
+                        st.outputs = (
+                            f"{prop['kind']} {prop['cap_w']} W: {prop['reason']}"
+                            if prop["kind"] == "try"
+                            else f"stop: {prop['reason']}"
+                        )
+                        st.add("input tokens", usage.get("input"), "", label)
+                        st.add("output tokens", usage.get("output"), "", label)
+                        s.emit(
+                            "trial.proposed",
+                            {
+                                "cap_w": prop.get("cap_w"),
+                                "kind": prop["kind"],
+                                "by": by,
+                                "reason": prop["reason"],
+                                "muse_error": prop.get("muse_error"),
+                            },
+                            step_id=pid,
+                            parent="cap_sweep",
+                        )
+                        s.emit(
+                            "decision",
+                            {
+                                "choice": {
+                                    "kind": "cap",
+                                    "power_cap_w": prop.get("cap_w"),
+                                    "knob": None,
+                                    "value": None,
+                                },
+                                "reason": prop["reason"],
+                                "model": mname if real else "bisect-fallback",
+                                "tokens": {
+                                    "input": usage.get("input", 0),
+                                    "output": usage.get("output", 0),
+                                },
+                                "clamped": False,
+                                "stop": prop["kind"] == "stop",
+                                "label": label,
+                            },
+                            step_id=pid,
+                            parent="cap_sweep",
+                        )
+                        s.emit(
+                            "step.progress",
+                            {
+                                "node": "agent",
+                                "sub": "parse",
+                                "pct": 100,
+                                "message": prop["reason"],
+                                "narration": {
+                                    "text": prop["reason"],
+                                    "source": "muse-spark" if real else "template",
+                                    "model": mname if real else None,
+                                },
+                            },
+                            step_id=pid,
+                            parent="cap_sweep",
+                        )
+                    ck.update(
+                        "cap_sweep", k=k, pending={"k": k, "prop": prop, "emitted": True}
+                    )
+                if prop["kind"] == "stop":
+                    ck.update("cap_sweep", k=k, stopped=True, pending=None)
+                    break
+                measure(int(prop["cap_w"]), by, prop["reason"])
+            for cap in a.grid or ():
+                if cap in tried or (deadline and time.time() > deadline):
+                    continue
+                measure(cap, "grid", None)
+            best = best_of(done)
+            sw.tag = label
+            sw.outputs = (
+                f"{len(done)} caps tested; best accepted: "
+                f"{best['cap_w']} W ({best['energy_change_pct']['mean']:+.1f}% J/request)"
+                if best
+                else f"{len(done)} caps tested; none passed all three gates"
+            )
+            sw.add("caps tested", len(done), "", label)
+            sw.add("caps accepted", sum(x["accepted"] for x in done), "", label)
+            if best:
+                sw.add("best cap", best["cap_w"], "W", label)
+                sw.add("best energy change", best["energy_change_pct"]["mean"], "%", label)
+            s.finish(sw)
+            stage_done(
+                "cap_sweep",
+                done_steps=done,
+                tried=sorted(tried),
+                k=k,
+                pending=None,
+                best_cap_w=best["cap_w"] if best else None,
+            )
+        else:  # resumed: the sweep finished before the stop
+            done = list(ck.get("cap_sweep")["done_steps"])
+            best = best_of(done)
+
+        # ------------------------------------------------------------------ 5. adaptive top-k
+        if not ck.done("adaptive_topk"):
+            if a.adaptive:
+                rc = vm(
+                    "adaptive",
+                    "--adaptive-model",
+                    a.adaptive_model,
+                    "--adaptive-budget-s",
+                    str(a.adaptive_budget_s),
+                    *(("--adaptive-mass", str(a.adaptive_mass)) if a.adaptive_mass else ()),
+                    timeout=a.adaptive_budget_s + 1800,
+                )
+                adaptive_info = grabbed.get("ADAPTIVE_JSON")
+                if rc != 0 and adaptive_info is None:
+                    adaptive_info = {"ran": False, "reason": f"the command exited {rc}"}
+            stage_done("adaptive_topk", adaptive=adaptive_info)
+        else:
+            adaptive_info = ck.get("adaptive_topk").get("adaptive")
+
+        # ------------------------------------------------------------------ 6. keep / rollback
+        if not ck.done("keep_rollback"):
+            kr = s.start(
+                "keep_rollback",
+                "apply",
+                "keep",
+                "Keep the best cap, or roll back",
+                top="keep_rollback",
+                inputs=("best accepted cap: " + (f"{best['cap_w']} W" if best else "none")),
+                say="Keep the best cap that passed every gate, or put the card back to stock.",
+            )
+            after_read = None
+            if best:
+                if vm("apply", "--cap", str(best["cap_w"]), "--keep-cap") != 0:
+                    raise RuntimeError("could not apply the chosen cap")
+                after_read = grabbed.get("APPLY_JSON")
+                kr.outputs = (
+                    f"kept {best['cap_w']} W (driver read back "
+                    f"{(after_read or {}).get('readback_w')} W)"
+                )
+                kr.add("kept cap", best["cap_w"], "W", label)
+                kr.add("energy change", best["energy_change_pct"]["mean"], "%", label)
+                kr.add("p99 change", best["p99_change_pct"]["mean"], "%", label)
+            else:
+                s.emit(
+                    "action.rolled_back",
+                    {
+                        "change": {"power_cap_w": None},
+                        "restored_cap_w": snap["idle"]["default_w"],
+                        "failed_gates": ["no cap passed quality, p99 and energy"],
+                        "label": label,
+                    },
+                    step_id="keep_rollback",
+                    parent=None,
+                )
+                kr.outputs = f"rolled back: stock {snap['idle']['default_w']} W stays"
+                kr.add("kept cap", snap["idle"]["default_w"], "W", label)
+            s.finish(kr)
+            # the room after: real stock vs chosen-cap readings of the slot
+            if best:
+                before = {
+                    "power_w": best["mean_w"]["stock"],
+                    "temp_c": best["max_temp_c_by_arm"]["stock"],
+                }
+                after = {
+                    "power_w": best["mean_w"]["cap"],
+                    "temp_c": best["max_temp_c_by_arm"]["cap"],
+                }
+                why = (
+                    f"Muse Spark proposed {best['cap_w']} W; the answer gate, p99 and energy gates "
+                    f"passed: {best['energy_change_pct']['mean']:+.1f}% J/request, "
+                    f"p99 {best['p99_change_pct']['mean']:+.1f}%"
+                )
+                scan = roomscan.finalize_h100(
+                    scan, before=before, after=after, cap_w=best["cap_w"], reason=why, label=label
+                )
+            else:
+                before = {"power_w": slot["before"]["power_w"], "temp_c": slot["before"]["temp_c"]}
+                scan = roomscan.finalize_h100(
+                    scan,
+                    before=before,
+                    after=None,
+                    cap_w=None,
+                    reason="no cap passed all three gates; stock kept",
+                    label=label,
+                )
             s.emit(
                 "step.progress",
                 {
                     "node": "sam",
                     "sub": "draw",
                     "pct": 100,
-                    "message": "room drawn; the other racks are SIMULATED",
-                    **roomscan.payload(scan, "before"),
+                    "message": "the H100's rack, after: real stock vs chosen-cap readings",
+                    **roomscan.payload(scan, "after"),
                 },
-                step_id="room_scan.draw",
-                parent="room_scan",
-            )
-        top.tag = label
-        top.outputs = (
-            f"{found} racks; the H100 sits in {scan['real_rack']} "
-            f"({slot['before']['power_w']:.0f} W, {slot['before']['temp_c']} °C live)"
-        )
-        top.add("racks found", found, "", sam_tag)
-        top.add("H100 power (stock)", slot["before"]["power_w"], "W")
-        top.add("H100 temperature", slot["before"]["temp_c"], "°C")
-        s.finish(top)
-        (out / "room_scan_before.json").write_text(
-            json.dumps({k: v for k, v in scan.items() if not k.startswith("_")}, indent=1)
-        )
-
-        # ------------------------------------------------------------------ 2. baseline
-        if vm("baseline") != 0:
-            raise RuntimeError("baseline failed")
-        # ------------------------------------------------------------------ 3. quality gate
-        rc = vm("control")
-        if rc != 0:
-            status, failure = (
-                "failed",
-                "the gate did not reject the bad setting (or rejected stock)",
-            )
-            raise RuntimeError(failure)
-
-        # ------------------------------------------------------------------ 4. cap sweep
-        sw = s.start(
-            "cap_sweep",
-            "e2e_rig",
-            "sweep",
-            "Cap sweep: Muse Spark proposes, the gate decides",
-            top="cap_sweep",
-            inputs=f"caps 300 to <700 W in 25 W steps; {a.reps} paired rounds per cap",
-            say="Muse Spark picks a cap, the card runs it against stock, the gate decides.",
-        )
-        if hasattr(planner, "context"):
-            planner.context = planner_hint
-        done: list[dict] = []
-        tried: set[int] = set()
-        deadline = (t_start + a.sweep_budget_s) if a.sweep_budget_s else None
-        k = 0
-
-        def measure(cap: int, by: str, reason: str | None) -> None:
-            rc2 = vm("step", "--cap", str(cap), "--reps", str(a.reps))
-            summ = grabbed.get("STEP_JSON")
-            if rc2 != 0 or not summ:
-                raise RuntimeError(f"step {cap} W failed")
-            summ["chosen_by"], summ["planner_reason"] = by, reason
-            done.append(summ)
-            tried.add(cap)
-            e, p = summ["energy_change_pct"], summ["p99_change_pct"]
-            s.emit(
-                "step.progress",
-                {
-                    "node": "e2e_rig",
-                    "sub": "sweep",
-                    "pct": min(95, int(100 * len(done) / (a.max_proposals + len(a.grid)))),
-                    "message": (
-                        f"{cap} W: {'accepted' if summ['accepted'] else 'rejected'} · "
-                        f"J/request {e['mean']:+.1f}%, p99 {p['mean']:+.1f}%"
-                    ),
-                },
-                step_id="cap_sweep",
+                step_id="room_scan",
                 parent=None,
             )
-
-        for _ in range(a.max_proposals):
-            if deadline and time.time() > deadline:
-                break
-            k += 1
-            hist = [history_row(x) for x in done]
-            pid = f"cap_sweep.propose{k}"
-            with s.step(
-                pid,
-                "agent",
-                "call",
-                "Ask Muse Spark for the next cap",
-                parent="cap_sweep",
-                inputs=f"the allowed caps and {len(hist)} measured trial(s) so far",
-            ) as st:
-                prop = planner.propose(hist)
-                usage = getattr(planner, "last_usage", {}) or {}
-                mname = getattr(planner, "model", "muse-spark")
-                by = prop.get("by", getattr(planner, "name", "planner"))
-                real = by == "muse-spark"
-                st.tag = label if real else "ADVICE"
-                st.outputs = (
-                    f"{prop['kind']} {prop['cap_w']} W: {prop['reason']}"
-                    if prop["kind"] == "try"
-                    else f"stop: {prop['reason']}"
-                )
-                st.add("input tokens", usage.get("input"), "", label)
-                st.add("output tokens", usage.get("output"), "", label)
-                s.emit(
-                    "trial.proposed",
-                    {
-                        "cap_w": prop.get("cap_w"),
-                        "kind": prop["kind"],
-                        "by": by,
-                        "reason": prop["reason"],
-                        "muse_error": prop.get("muse_error"),
-                    },
-                    step_id=pid,
-                    parent="cap_sweep",
-                )
-                s.emit(
-                    "decision",
-                    {
-                        "choice": {
-                            "kind": "cap",
-                            "power_cap_w": prop.get("cap_w"),
-                            "knob": None,
-                            "value": None,
-                        },
-                        "reason": prop["reason"],
-                        "model": mname if real else "bisect-fallback",
-                        "tokens": {
-                            "input": usage.get("input", 0),
-                            "output": usage.get("output", 0),
-                        },
-                        "clamped": False,
-                        "stop": prop["kind"] == "stop",
-                        "label": label,
-                    },
-                    step_id=pid,
-                    parent="cap_sweep",
-                )
-                s.emit(
-                    "step.progress",
-                    {
-                        "node": "agent",
-                        "sub": "parse",
-                        "pct": 100,
-                        "message": prop["reason"],
-                        "narration": {
-                            "text": prop["reason"],
-                            "source": "muse-spark" if real else "template",
-                            "model": mname if real else None,
-                        },
-                    },
-                    step_id=pid,
-                    parent="cap_sweep",
-                )
-            if prop["kind"] == "stop":
-                break
-            measure(int(prop["cap_w"]), by, prop["reason"])
-        for cap in a.grid or ():
-            if cap in tried or (deadline and time.time() > deadline):
-                continue
-            measure(cap, "grid", None)
-        best = best_of(done)
-        sw.tag = label
-        sw.outputs = (
-            f"{len(done)} caps tested; best accepted: "
-            f"{best['cap_w']} W ({best['energy_change_pct']['mean']:+.1f}% J/request)"
-            if best
-            else f"{len(done)} caps tested; none passed all three gates"
-        )
-        sw.add("caps tested", len(done), "", label)
-        sw.add("caps accepted", sum(x["accepted"] for x in done), "", label)
-        if best:
-            sw.add("best cap", best["cap_w"], "W", label)
-            sw.add("best energy change", best["energy_change_pct"]["mean"], "%", label)
-        s.finish(sw)
-
-        # ------------------------------------------------------------------ 5. adaptive top-k
-        if a.adaptive:
-            rc = vm(
-                "adaptive",
-                "--adaptive-model",
-                a.adaptive_model,
-                "--adaptive-budget-s",
-                str(a.adaptive_budget_s),
-                timeout=a.adaptive_budget_s + 1800,
+            (out / "room_scan_after.json").write_text(
+                json.dumps({k: v for k, v in scan.items() if not k.startswith("_")}, indent=1)
             )
-            adaptive_info = grabbed.get("ADAPTIVE_JSON")
-            if rc != 0 and adaptive_info is None:
-                adaptive_info = {"ran": False, "reason": f"the command exited {rc}"}
-
-        # ------------------------------------------------------------------ 6. keep / rollback
-        kr = s.start(
-            "keep_rollback",
-            "apply",
-            "keep",
-            "Keep the best cap, or roll back",
-            top="keep_rollback",
-            inputs=("best accepted cap: " + (f"{best['cap_w']} W" if best else "none")),
-            say="Keep the best cap that passed every gate, or put the card back to stock.",
-        )
-        after_read = None
-        if best:
-            if vm("apply", "--cap", str(best["cap_w"]), "--keep-cap") != 0:
-                raise RuntimeError("could not apply the chosen cap")
-            after_read = grabbed.get("APPLY_JSON")
-            kr.outputs = (
-                f"kept {best['cap_w']} W (driver read back "
-                f"{(after_read or {}).get('readback_w')} W)"
-            )
-            kr.add("kept cap", best["cap_w"], "W", label)
-            kr.add("energy change", best["energy_change_pct"]["mean"], "%", label)
-            kr.add("p99 change", best["p99_change_pct"]["mean"], "%", label)
+            stage_done("keep_rollback", after_read=after_read)
         else:
-            s.emit(
-                "action.rolled_back",
-                {
-                    "change": {"power_cap_w": None},
-                    "restored_cap_w": snap["idle"]["default_w"],
-                    "failed_gates": ["no cap passed quality, p99 and energy"],
-                    "label": label,
-                },
-                step_id="keep_rollback",
-                parent=None,
-            )
-            kr.outputs = f"rolled back: stock {snap['idle']['default_w']} W stays"
-            kr.add("kept cap", snap["idle"]["default_w"], "W", label)
-        s.finish(kr)
-        # the room after: real stock vs chosen-cap readings of the slot
-        if best:
-            before = {
-                "power_w": best["mean_w"]["stock"],
-                "temp_c": best["max_temp_c_by_arm"]["stock"],
-            }
-            after = {"power_w": best["mean_w"]["cap"], "temp_c": best["max_temp_c_by_arm"]["cap"]}
-            why = (
-                f"Muse Spark proposed {best['cap_w']} W; the answer gate, p99 and energy gates "
-                f"passed: {best['energy_change_pct']['mean']:+.1f}% J/request, "
-                f"p99 {best['p99_change_pct']['mean']:+.1f}%"
-            )
-            scan = roomscan.finalize_h100(
-                scan, before=before, after=after, cap_w=best["cap_w"], reason=why, label=label
-            )
-        else:
-            before = {"power_w": slot["before"]["power_w"], "temp_c": slot["before"]["temp_c"]}
-            scan = roomscan.finalize_h100(
-                scan,
-                before=before,
-                after=None,
-                cap_w=None,
-                reason="no cap passed all three gates; stock kept",
-                label=label,
-            )
-        s.emit(
-            "step.progress",
-            {
-                "node": "sam",
-                "sub": "draw",
-                "pct": 100,
-                "message": "the H100's rack, after: real stock vs chosen-cap readings",
-                **roomscan.payload(scan, "after"),
-            },
-            step_id="room_scan",
-            parent=None,
-        )
-        (out / "room_scan_after.json").write_text(
-            json.dumps({k: v for k, v in scan.items() if not k.startswith("_")}, indent=1)
-        )
+            scan = json.loads((out / "room_scan_after.json").read_text())
 
         # ------------------------------------------------------------------ 7. receipt
-        rec = finish_receipt(
-            a,
-            s,
-            live,
-            transport,
-            out,
-            label=label,
-            control=None,
-            steps=done,
-            best=best,
-            adaptive=adaptive_info,
-            scan=scan,
-            snap=snap,
-            planner=planner,
-            run_id=run_id,
-            t_start=t_start,
-        )
+        if not ck.done("receipt"):
+            rec = finish_receipt(
+                a,
+                s,
+                live,
+                transport,
+                out,
+                label=label,
+                control=None,
+                steps=done,
+                best=best,
+                adaptive=adaptive_info,
+                scan=scan,
+                snap=snap,
+                planner=planner,
+                run_id=run_id,
+                t_start=t_start,
+            )
+            stage_done("receipt", rec=rec)
+        else:
+            rec = ck.get("receipt")["rec"]
         recs = {
             "verdict": "change recommended" if best else "no change recommended",
             "applies": ["always-on inference serving where every request pays the energy cost"],
@@ -561,9 +709,29 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                 "narration": {"text": "The run finished.", "source": "template"},
             },
         )
+        stage_done("finished", best_cap_w=best["cap_w"] if best else None)
     except BaseException as e:  # noqa: BLE001 - always close the stream with a reason
         status = "failed"
         failure = failure or f"{type(e).__name__}: {str(e)[:300]}"
+        ck.update("last_failure", message=failure, at=time.time())
+        ck.elapsed_s = time.time() - t_start
+        ck.save()
+        if isinstance(e, SshDown) and getattr(a, "auto_resume", 0) > 0:
+            # not the end of the run: say so, close the log cleanly and let `main` resume
+            s.emit(
+                "step.progress",
+                {
+                    "node": "e2e_rig",
+                    "sub": "resume",
+                    "pct": 0,
+                    "message": f"lost the GPU host ({failure[:120]}); resuming from the checkpoint",
+                },
+                step_id=None,
+                parent=None,
+            )
+            live.close()
+            raise Interrupted(failure) from e
+        failure += "; the checkpoint is saved, rerun with --resume to carry on"
         with_err = {"message": failure}
         try:
             live.sink({"type": "error", "data": with_err})
@@ -588,12 +756,15 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
     transport.close()
     return {
         "status": status,
+        "resumed": resuming,
         "events": str(live.path),
         "run_id": run_id,
         "label_problems": live.problems,
         "n_events": live.count,
         "best_cap_w": best["cap_w"] if best else None,
     }
+
+
 
 
 def finish_receipt(
@@ -803,6 +974,22 @@ def finish_receipt(
     return {"path": str(rpath), "sha256": digest, "grade": grade}
 
 
+def drive_with_retries(a, *, transport: Transport, planner, out: Path, wait_s: float = 30.0):
+    """`drive`, and when it stops because the GPU host was unreachable, resume it from the
+    checkpoint (up to `a.auto_resume` times)."""
+    left = int(getattr(a, "auto_resume", 0) or 0)
+    while True:
+        try:
+            return drive(a, transport=transport, planner=planner, scan_base=None, out=out)
+        except Interrupted as e:
+            if left <= 0:  # pragma: no cover - drive only raises it when retries remain
+                raise
+            left -= 1
+            a.auto_resume, a.resume = left, True
+            print(f"[resume] {e}; {left} automatic resume(s) left", flush=True)
+            time.sleep(wait_s)
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--mode", choices=["live", "rehearsal"], default="rehearsal")
@@ -820,11 +1007,9 @@ def main(argv=None) -> int:
     ap.add_argument("--model", default=MODEL)
     ap.add_argument("--gpu-label", default="H100 80GB · E2E Networks, Delhi")
     ap.add_argument("--port", type=int, default=8000)
-    ap.add_argument("--reps", type=int, default=3)
-    ap.add_argument("--repeat", type=int, default=2)
+    add_profile_args(ap)
     ap.add_argument("--concurrency", type=int, default=32)
     ap.add_argument("--settle-s", type=float, default=4.0)
-    ap.add_argument("--warmup", type=int, default=16)
     ap.add_argument(
         "--load-s", type=float, default=30.0, help="room scan: seconds of load at stock"
     )
@@ -838,14 +1023,39 @@ def main(argv=None) -> int:
     ap.add_argument("--adaptive", action=argparse.BooleanOptionalAction, default=True)
     ap.add_argument("--adaptive-model", default="ibm-granite/granite-3.1-3b-a800m-instruct")
     ap.add_argument("--adaptive-budget-s", type=float, default=1200)
+    ap.add_argument(
+        "--adaptive-mass",
+        type=float,
+        default=None,
+        help="adaptive top-k: share of the router weight to keep (default: the tuned value)",
+    )
     ap.add_argument("--sign-key", type=Path, default=Path("receipt-offline-key.pem"))
     ap.add_argument("--fake-delay", type=float, default=0.01)
     ap.add_argument("--fresh", action="store_true", help="move an old live file aside first")
+    ap.add_argument(
+        "--resume",
+        action="store_true",
+        help="carry on from OUT/checkpoint.json (same run id and event log); starts a new run if "
+        "there is no checkpoint, so it is safe to pass on every launch",
+    )
+    ap.add_argument(
+        "--auto-resume",
+        type=int,
+        default=0,
+        metavar="N",
+        help="live: if the GPU host is unreachable for --ssh-reconnect-budget-s, resume from the "
+        "checkpoint up to N times instead of failing the run",
+    )
+    ap.add_argument("--ssh-exec-timeout-s", type=float, default=60.0)
+    ap.add_argument("--ssh-reconnect-budget-s", type=float, default=600.0)
+    ap.add_argument("--ssh-stall-s", type=float, default=240.0)
     a = ap.parse_args(argv)
     a.grid = tuple(int(x) for x in a.grid.split(",") if x)
+    apply_profile(a)
     a.out.mkdir(parents=True, exist_ok=True)
     a.runs_root = a.runs_root or a.out
-    if a.live_file and a.live_file.exists() and a.live_file.stat().st_size:
+    continuing = a.resume and (a.out / "checkpoint.json").exists()
+    if a.live_file and a.live_file.exists() and a.live_file.stat().st_size and not continuing:
         if not a.fresh:
             ap.error(f"{a.live_file} already has events; use --fresh to move it aside")
         a.live_file.rename(a.live_file.with_suffix(f".{int(time.time())}.prev"))
@@ -863,7 +1073,13 @@ def main(argv=None) -> int:
             ap.error("--mode live needs --host")
         from wattnot.proof.transport import SshTransport
 
-        transport = SshTransport(a.host, key=a.key)
+        transport = SshTransport(
+            a.host,
+            key=a.key,
+            exec_timeout_s=a.ssh_exec_timeout_s,
+            reconnect_budget_s=a.ssh_reconnect_budget_s,
+            stall_s=a.ssh_stall_s,
+        )
         if a.planner == "bisect":
             planner = BisectPlanner()
         else:
@@ -874,7 +1090,10 @@ def main(argv=None) -> int:
             if not gc.key:
                 ap.error("no Meta key on this machine (~/.config/muse/auth.json)")
             planner = MusePlanner(gc)
-    res = drive(a, transport=transport, planner=planner, scan_base=None, out=a.out)
+    try:
+        res = drive_with_retries(a, transport=transport, planner=planner, out=a.out)
+    except CheckpointError as e:
+        ap.error(str(e))
     print(json.dumps(res, indent=1))
     return 0 if res["status"] == "ok" else 1
 

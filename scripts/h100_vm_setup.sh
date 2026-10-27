@@ -7,11 +7,17 @@
 # Fails fast (before the slow installs) when: no GPU, the power cap cannot be set, the disk is
 # too small, or the Hugging Face token cannot read the gated model.
 #   SETUP_PREFLIGHT_ONLY=1   run only those checks, then stop
+# Test hooks (all default to the real run): SETUP_ROOT (default /root), SETUP_PIP_EXTRA (what to
+# install besides the kit; default "accelerate vllm"), SETUP_SKIP_MODELS=1 (no weights, no
+# server). tests/test_vm_setup.py drives them in a clean sandbox on a CPU box.
 set -euo pipefail
 MODEL="${1:-meta-llama/Llama-3.1-8B-Instruct}"
 MOE="${2:-ibm-granite/granite-3.1-3b-a800m-instruct}"
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-LOG=/root/run2
+ROOT="${SETUP_ROOT:-/root}"
+LOG="$ROOT/run2"
+VENV="$ROOT/venv"
+PIP_EXTRA="${SETUP_PIP_EXTRA-accelerate vllm}"
 MIN_FREE_GB="${MIN_FREE_GB:-60}"
 mkdir -p "$LOG"
 echo "[setup] $(date +%T) start"
@@ -49,34 +55,52 @@ fi
 [ "${SETUP_PREFLIGHT_ONLY:-0}" = 1 ] && { echo "[setup] preflight ok"; exit 0; }
 
 # --- install ------------------------------------------------------------------------------
-df -h / /root | tail -n 2
+df -h / "$ROOT" | tail -n 2
 # a venv from the system python needs ensurepip, which the stock image lacks and apt can stall
 # on a fresh VM; fall back to uv (its own python build, with headers) when it fails
-if ! python3 -m venv /root/venv >/dev/null 2>&1; then
+if ! python3 -m venv "$VENV" >/dev/null 2>&1; then
   echo "[setup] python3 -m venv failed; using uv"
-  rm -rf /root/venv
+  rm -rf "$VENV"
   export PATH="$HOME/.local/bin:$PATH"
   command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
-  uv venv --seed --python 3.12 /root/venv
+  uv venv --seed --python 3.12 "$VENV"
 fi
-/root/venv/bin/pip install -q uv
+"$VENV/bin/pip" install -q uv
 # RUN2 first-boot problems, each cost minutes: vLLM's JIT needs ninja on PATH, Triton needs
 # Python.h (the stock image has no headers), and the Hugging Face xet transfer stalled on large
 # shards while plain HTTP ran at ~200 MB/s.
-export PATH="/root/venv/bin:$HOME/.local/bin:$PATH"
+export PATH="$VENV/bin:$HOME/.local/bin:$PATH"
 export HF_HUB_DISABLE_XET=1
-if [ ! -f /usr/include/python3.12/Python.h ]; then
+# later steps start in a fresh shell that only sources the venv, so keep the xet switch there too
+grep -q HF_HUB_DISABLE_XET "$VENV/bin/activate" \
+  || echo 'export HF_HUB_DISABLE_XET=1' >> "$VENV/bin/activate"
+# Triton compiles a small C stub against the venv python's own headers. Ask the venv python where
+# they should be (not a fixed python3.12 path: the image's python may be another version) and,
+# when Python.h is missing, copy the matching headers from a uv-managed python of the same
+# major.minor.
+PYMM="$("$VENV/bin/python" -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
+PYINC="$("$VENV/bin/python" -c 'import sysconfig; print(sysconfig.get_path("include"))')"
+if [ ! -f "$PYINC/Python.h" ]; then
+  echo "[setup] no Python.h in $PYINC; fetching headers for python $PYMM"
   command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
-  uv python install 3.12 >/dev/null 2>&1 || true
-  H="$(ls -d "$HOME"/.local/share/uv/python/*/include/python3.12 2>/dev/null | head -n1)"
-  if [ -n "$H" ]; then mkdir -p /usr/include/python3.12 && cp -r "$H"/. /usr/include/python3.12/; fi
+  uv python install "$PYMM" >/dev/null 2>&1 || true
+  H="$(ls -d "$HOME"/.local/share/uv/python/*/include/python"$PYMM" 2>/dev/null | head -n1)"
+  if [ -n "$H" ]; then mkdir -p "$PYINC" && cp -r "$H"/. "$PYINC"/; fi
 fi
 export UV_LINK_MODE=copy UV_NO_CACHE=1   # no second copy of the wheels on a small disk
 # accelerate: the adaptive step loads the MoE model with device_map="cuda", which needs it
-/root/venv/bin/uv pip install -q --python /root/venv/bin/python -e "$REPO" \
-  "huggingface_hub>=0.30" accelerate vllm
+# shellcheck disable=SC2086  # PIP_EXTRA is a word list on purpose
+"$VENV/bin/uv" pip install -q --python "$VENV/bin/python" -e "$REPO" \
+  "huggingface_hub>=0.30" ninja $PIP_EXTRA
+# the three RUN2 first-boot fixes must hold before the slow part starts
+command -v ninja >/dev/null || { echo "[setup] ninja is not on PATH after install"; exit 15; }
+[ -f "$PYINC/Python.h" ] || { echo "[setup] still no Python.h in $PYINC (Triton would fail)"; exit 15; }
+"$VENV/bin/python" -c 'import huggingface_hub.constants as c, sys; sys.exit(0 if c.HF_HUB_DISABLE_XET else 1)' \
+  || { echo "[setup] Hugging Face xet transfer is still enabled"; exit 15; }
+echo "[setup] env check ok: ninja $(command -v ninja), $PYINC/Python.h, xet off"
+if [ "${SETUP_SKIP_MODELS:-0}" = 1 ]; then echo "[setup] $(date +%T) READY (models skipped)"; exit 0; fi
 echo "[setup] $(date +%T) packages installed"
-/root/venv/bin/python - > "$LOG/versions.txt" 2>&1 <<'PY' || true
+"$VENV/bin/python" - > "$LOG/versions.txt" 2>&1 <<'PY' || true
 import importlib.metadata as m
 for p in ("vllm", "torch", "transformers", "accelerate", "huggingface_hub", "tokenizers"):
     try:
@@ -106,13 +130,13 @@ else:
     sys.exit(1)
 PY
 # the MoE model for the adaptive step downloads in parallel with the main model
-/root/venv/bin/python "$LOG/dl.py" "$MOE" > "$LOG/moe_download.log" 2>&1 &
+"$VENV/bin/python" "$LOG/dl.py" "$MOE" > "$LOG/moe_download.log" 2>&1 &
 MOE_PID=$!
-/root/venv/bin/python "$LOG/dl.py" "$MODEL"
+"$VENV/bin/python" "$LOG/dl.py" "$MODEL"
 echo "[setup] $(date +%T) main weights downloaded"
 df -h / | tail -n 1
 
-nohup /root/venv/bin/vllm serve "$MODEL" --port 8000 --max-model-len 4096 \
+nohup "$VENV/bin/vllm" serve "$MODEL" --port 8000 --max-model-len 4096 \
   --gpu-memory-utilization 0.90 --max-num-seqs 64 --served-model-name "$MODEL" \
   > "$LOG/vllm.log" 2>&1 &
 for _ in $(seq 1 180); do

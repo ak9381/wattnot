@@ -1,9 +1,10 @@
 """Adaptive top-k as a step of the proof run, narrated as events.
 
 A Mixture-of-Experts model sends each token to its top-k experts. Adaptive top-k keeps only the
-experts that cover 90% of the router weight, so some tokens use fewer. Llama is dense and has no
-experts, so this step loads a small MoE model (Granite 3.1 3B-A800M) after the Llama stages. It
-is time-boxed, and when it cannot run it says so in one event and the rest of the run goes on.
+experts that cover 95% of the router weight (the default `mass`), so some tokens use fewer.
+Llama is dense and has no experts, so this step loads a small MoE model (Granite 3.1 3B-A800M)
+after the Llama stages. It is time-boxed, and when it cannot run it says so in one event and the
+rest of the run goes on.
 """
 
 from __future__ import annotations
@@ -263,6 +264,7 @@ def run_adaptive(s: Stream, out: Path, backend, cfg: at.AdaptiveConfig) -> dict:
         "ran": True,
         "label": lab,
         "model": cfg.model,
+        "mass": cfg.mass,
         "top_k": res.top_k,
         "active_experts_on": summ["on"]["active_experts"],
         "agreement_pct": res.agreement["pct"],
