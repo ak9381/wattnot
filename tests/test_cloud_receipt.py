@@ -350,3 +350,18 @@ def test_usage_403_says_when_the_metrics_key_is_the_inference_key():
     with pytest.raises(CloudError, match="same key as the inference key") as ei:
         au.fetch_usage("2026-10-27T00:00:00Z", "2026-10-27T01:00:00Z", env=env, opener=opener)
     assert "SECRETSECRET" not in str(ei.value)
+
+
+def test_empty_meter_is_unavailable_not_a_100_percent_mismatch():
+    from wattnot.cloud import audit as au
+
+    rows = [{"status": 200, "prompt_tokens": 100, "cached_tokens": 0, "completion_tokens": 50}]
+    empty = [{"start_time": "2026-10-27T04:00:00Z", "results": []}]
+    res = au.audit({"model": au.MODEL}, rows, empty)
+    assert res["status"] == "unavailable"
+    assert "no usage" in res["reason"]
+    # a meter with data still reconciles
+    full = [{"results": [{"model": au.MODEL, "request_count": 1, "input_tokens": 100,
+                          "cached_input_tokens": 0, "uncached_input_tokens": 100,
+                          "output_tokens": 50}]}]
+    assert au.audit({"model": au.MODEL}, rows, full)["status"] == "match"

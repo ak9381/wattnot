@@ -51,16 +51,40 @@ level that passes, so it lands on `low` for all five classes.
 | Judge format | Parsed fine on all 8 judge calls. |
 | Planner | At `low` it used 1.1k to 1.5k reasoning tokens on a tiny JSON task. The old 1500 cap cut it off in the smoke run, so it fell back to `low, medium, high`. Fixed with a 6000 cap; in runs 1 and 2 it proposed orders (medium first for arith, high first for logic). |
 
-## Meter audit retry (2026-10-27, after BASETEN_METRICS_KEY was set)
+## Meter audit retries (2026-10-27)
 
-Still **NOT_AVAILABLE**, no match percentage. `GET /v1/model_apis/usage` answered 403
-`PERMISSION_DENIED` with `Bearer` and with the legacy `Api-Key` scheme on all three live receipts.
-The value in `BASETEN_METRICS_KEY` is the same string as the inference key (same value, same
-prefix), so it adds no scope. The billing endpoint was not retried with it for the same reason.
-Prices therefore remain unconfirmed against Baseten's own meter. To finish: create a key of type
-`WORKSPACE_EXPORT_METRICS` (Baseten console, API keys), export it as `BASETEN_METRICS_KEY`, and
-run `wattnot cloud audit` on the three receipts in `reports/cloud-live/` (the meter keeps 92 days).
-The audit error now says when the two keys are identical.
+**Try 1** (metrics variable held the inference key): 403 `PERMISSION_DENIED`.
+
+**Try 2** (new metrics-scoped key from a file; different key from the inference key): the key
+works, but the meter has nothing. Still **NOT_AVAILABLE**, no match percentage.
+
+- `GET /v1/model_apis/usage` answered 200 for all three live receipts, with 1-minute buckets
+  filtered to the inference key's prefix, and with no filter, 1-hour and 1-day buckets for the
+  whole day, grouped by key, model, user and team. Every bucket had an empty `results` list.
+- `GET /v1/billing/model_apis` answered 200 and listed no cost for any day from Oct 20 to 27.
+- So the metrics key is probably in a different workspace from the one that served the calls
+  (the hackathon key), or the hackathon traffic is not billed to this workspace. Meter lag is
+  unlikely: the workspace shows no usage at all for the day, and the audit ran 30 minutes after
+  the last call. This is a guess; Baseten would have to confirm.
+- Our receipts hold 296 requests across the three live receipts (13, 79 and 204) and
+  about 234k tokens; the meter holds none, so there is nothing to compare.
+- First version of the audit printed this as a 100% mismatch. That was misleading, so an empty
+  meter is now reported as NOT_AVAILABLE with the reason above (test added).
+
+**Price check, from `GET /v1/model_apis`** (the key can read the catalog):
+
+| | Catalog | Our receipts | Result |
+|---|---|---|---|
+| Input per 1M | $1.25 | $1.25 | matches |
+| Output per 1M | $4.25 | $4.25 | matches |
+| Cached input per 1M | not listed | $0.15 | unconfirmed |
+
+The catalog names the model `meta-models/muse-spark-open` (no `-1026` suffix), shows a 120
+requests/min and 500k tokens/min limit for it, while our key's response headers said 100 and 2M.
+Prices are confirmed for input and output only. They are list prices from the catalog, not a bill.
+To finish the audit: use a metrics-scoped key created in the same workspace as the hackathon
+key (or ask Baseten whether hackathon usage is exposed at all), then run `wattnot cloud audit`
+on the three receipts in `reports/cloud-live/`.
 
 ## Cache
 

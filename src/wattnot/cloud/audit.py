@@ -152,7 +152,13 @@ def audit(receipt: Mapping, call_rows: Sequence[Mapping], meter_items: Sequence[
     if meter_items is None:
         return unavailable(why_unavailable or "no meter data")
     ours = totals_from_calls(call_rows)
-    res = reconcile(ours, sum_meter(meter_items, model=receipt.get("model", MODEL)),
-                    tolerance=tolerance)
+    meter = sum_meter(meter_items, model=receipt.get("model", MODEL))
+    if ours["requests"] and not any(meter.values()):
+        # An empty meter is not a 100% mismatch: the key may belong to another workspace, or
+        # the usage may not have landed yet. Say that, and do not call it a match or a gap.
+        return unavailable("the usage endpoint answered but returned no usage for this window "
+                           "or model; the metrics key is probably in a different workspace "
+                           "than the key that made the calls, or the meter has not caught up")
+    res = reconcile(ours, meter, tolerance=tolerance)
     res["model"] = receipt.get("model", MODEL)
     return res

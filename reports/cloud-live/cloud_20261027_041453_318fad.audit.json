@@ -1,6 +1,6 @@
 {
   "status": "unavailable",
-  "reason": "usage endpoint answered HTTP 403 (PERMISSION_DENIED); this key is probably inference-only. Set BASETEN_METRICS_KEY to a metrics-scoped key to run the audit",
+  "reason": "the usage endpoint answered but returned no usage for this window or model; the metrics key is probably in a different workspace than the key that made the calls, or the meter has not caught up",
   "tolerance_pct": 2.0,
   "rows": [],
   "label": "NOT_AVAILABLE"
