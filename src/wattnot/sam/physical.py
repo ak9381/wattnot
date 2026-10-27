@@ -246,8 +246,9 @@ class RackAudit:
     def limit_for(self, gpu: int) -> PhysicalLimit:
         s = self.spec
         if gpu in self.verified:
-            return PhysicalLimit(gpu, s.id, True, self.ceiling_w,
-                                 f"unit seen at slot {self.verified[gpu]}")
+            why = (f"unit seen at slot {self.verified[gpu]}" if self.sam
+                   else f"listed at slot {self.verified[gpu]} (inventory only, no photo check)")
+            return PhysicalLimit(gpu, s.id, True, self.ceiling_w, why)
         if gpu in self.unverified:
             slot = next(k for k, g in s.declared.items() if g == gpu)
             return PhysicalLimit(gpu, s.id, False, 0,

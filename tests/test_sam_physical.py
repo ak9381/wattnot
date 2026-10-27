@@ -368,3 +368,36 @@ def test_output_text_joins_parts():
     data = {"output": [{"content": [{"type": "output_text", "text": "a"},
                                     {"type": "other"}, {"type": "output_text", "text": "b"}]}]}
     assert output_text(data) == "ab"
+
+
+# ---- ablation, overlay, scripts -----------------------------------------------------------
+
+def test_ablation_shows_both_directions(specs):
+    from wattnot.sam import ablation
+    r = ablation.run(specs)
+    assert r["eligible_gpus"]["sam_on"] == list(range(12))
+    by = {p["gpu"]: p for p in r["planner_final_cap_w"]}
+    assert (by[0]["sam_off"]["cap_w"], by[0]["sam_on"]["cap_w"]) == (700, 600)   # tighter
+    assert (by[8]["sam_off"]["cap_w"], by[8]["sam_on"]["cap_w"]) == (466, 700)   # looser
+    assert "refused" in by[12]["sam_on"] and "refused" not in by[12]["sam_off"]
+    assert r["labels"]["photos_and_unit_counts"] == "MEASURED"
+
+
+def test_overlay_draws_every_unit(on, tmp_path):
+    pytest.importorskip("PIL")
+    from PIL import Image
+
+    from wattnot.sam.overlay import render
+    out = render(on.racks[1], tmp_path / "r2.jpg")
+    assert Image.open(out).size[0] > 400
+
+
+def test_audit_script_replays_without_a_key(capsys, monkeypatch):
+    import importlib.util
+    monkeypatch.delenv("META_API_KEY", raising=False)
+    spec = importlib.util.spec_from_file_location(
+        "sam_audit", Path(__file__).resolve().parents[1] / "scripts" / "sam_audit.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert mod.main([]) == 0
+    assert "eligible GPUs: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]" in capsys.readouterr().out

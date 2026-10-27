@@ -24,6 +24,9 @@ wattnot = "wattnot.cli:main"
 sign = [
   "sigstore>=3,<4",
 ]
+vision = [
+  "Pillow>=10",
+]
 dev = [
   "pytest>=8.0",
   "ruff>=0.6",
