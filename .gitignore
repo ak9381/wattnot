@@ -35,3 +35,7 @@ results/
 /cloud-demo/
 # Approvals: local proposals, audit trail and applied settings (see docs/APPROVALS.md)
 /proposals/
+
+# rehearsal signing keys are generated at run time, never committed
+*.pem
+!verifier/samples/test-key.pem
