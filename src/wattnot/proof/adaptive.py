@@ -21,7 +21,7 @@ STEP = "adaptive_topk"
 
 
 class VmRig:
-    """What `HFBackend` asks of a rig: the GPU's name, the driver, a way to free the GPU, a meter."""
+    """What `HFBackend` asks of a rig: GPU name, driver, a way to free the GPU, a meter."""
 
     def __init__(self, nvml, handle, out: Path) -> None:
         self.nvml, self.handle, self.out = nvml, handle, out
@@ -37,8 +37,10 @@ class VmRig:
 
     def meter(self, params):
         from wattnot.meter.nvml import NvmlMeter
-        return NvmlMeter(self.nvml, run_id=f"adaptive-{int(time.time())}",
-                         traces_root=self.out / "traces")
+
+        return NvmlMeter(
+            self.nvml, run_id=f"adaptive-{int(time.time())}", traces_root=self.out / "traces"
+        )
 
 
 class _Evented:
@@ -53,17 +55,29 @@ class _Evented:
         self.prepare_result: dict = {}
 
     def prepare(self, deadline, clock):
-        with self.s.step(f"{STEP}.load", "adaptive", "load",
-                         f"Load {self.cfg.model} and check the hook", parent=STEP,
-                         inputs="stops vLLM, downloads the model if needed, loads it in bf16") as st:
+        with self.s.step(
+            f"{STEP}.load",
+            "adaptive",
+            "load",
+            f"Load {self.cfg.model} and check the hook",
+            parent=STEP,
+            inputs="stops vLLM, downloads the model if needed, loads it in bf16",
+        ) as st:
             self.prepare_result = self.inner.prepare(deadline, clock)
             p = self.prepare_result
-            st.outputs = f"router top-k = {p.get('top_k')}, {p.get('layers', '?')} MoE layers"
+            st.outputs = f"router top-k = {p.get('top_k')}" + (
+                f", {p['layers']} MoE layers" if p.get("layers") else ""
+            )
             st.add("top-k (normal)", p.get("top_k"), "experts")
             st.add("MoE layers", p.get("layers"), "")
-        with self.s.step(f"{STEP}.hook", "adaptive", "hook",
-                         "Check the hooked model matches the stock one", parent=STEP,
-                         inputs="one prompt, argmax of the next token, stock vs hooked 'off'") as st:
+        with self.s.step(
+            f"{STEP}.hook",
+            "adaptive",
+            "hook",
+            "Check the hooked model matches the stock one",
+            parent=STEP,
+            inputs="one prompt, argmax of the next token, stock vs hooked 'off'",
+        ) as st:
             ok = bool(self.prepare_result.get("sanity", {}).get("hooked_off_matches_stock", True))
             st.ok = ok
             st.outputs = "same next token" if ok else "MISMATCH"
@@ -83,11 +97,15 @@ class _Evented:
         return self.inner.active_experts()
 
     def agreement(self):
-        with self.s.step(f"{STEP}.agree", "adaptive", "agree",
-                         "Does adaptive top-k pick the same next token as normal top-k?",
-                         parent=STEP,
-                         inputs=f"{self.cfg.agree_prompts} prompts × {self.cfg.agree_new_tokens} "
-                                "tokens, teacher-forced on the normal arm's own text") as st:
+        with self.s.step(
+            f"{STEP}.agree",
+            "adaptive",
+            "agree",
+            "Does adaptive top-k pick the same next token as normal top-k?",
+            parent=STEP,
+            inputs=f"{self.cfg.agree_prompts} prompts × {self.cfg.agree_new_tokens} "
+            "tokens, teacher-forced on the normal arm's own text",
+        ) as st:
             r = self.inner.agreement()
             self.agreement_result = r
             ok = r["pct"] >= self.cfg.min_agreement_pct
@@ -95,11 +113,22 @@ class _Evented:
             st.add("agreement", r["pct"], "%")
             st.add("needs at least", self.cfg.min_agreement_pct, "%", "ADVICE")
             st.extra = {"passed": ok}
-        self.s.emit("gate.result", {
-            "trial_no": 0, "check": "adaptive_agreement", "passed": ok,
-            "detail": {"score": round(r["pct"], 2), "threshold": self.cfg.min_agreement_pct,
-                       "unit": "% token agreement"}, "label": self.s.label},
-            step_id=f"{STEP}.agree", parent=STEP)
+        self.s.emit(
+            "gate.result",
+            {
+                "trial_no": 0,
+                "check": "adaptive_agreement",
+                "passed": ok,
+                "detail": {
+                    "score": round(r["pct"], 2),
+                    "threshold": self.cfg.min_agreement_pct,
+                    "unit": "% token agreement",
+                },
+                "label": self.s.label,
+            },
+            step_id=f"{STEP}.agree",
+            parent=STEP,
+        )
         return r
 
     def energy_meter(self):
@@ -117,10 +146,15 @@ class _EventedMeter:
     def start(self, label: str) -> None:
         o = self.o
         n = o._rep[o._arm]
-        self.st = o.s.start(f"{STEP}.arms.{o._arm}{n}", "adaptive", "arms",
-                            f"Metered run: adaptive top-k {o._arm.upper()}, repeat {n + 1}",
-                            parent=STEP, inputs=f"{o.cfg.n_prompts} prompts, batches of "
-                                                f"{o.cfg.batch}, {o.cfg.max_new_tokens} new tokens each")
+        self.st = o.s.start(
+            f"{STEP}.arms.{o._arm}{n}",
+            "adaptive",
+            "arms",
+            f"Metered run: adaptive top-k {o._arm.upper()}, repeat {n + 1}",
+            parent=STEP,
+            inputs=f"{o.cfg.n_prompts} prompts, batches of "
+            f"{o.cfg.batch}, {o.cfg.max_new_tokens} new tokens each",
+        )
         self.inner.start(label)
 
     def stop(self):
@@ -136,21 +170,36 @@ class _EventedMeter:
         st.add("mean power", w.mean_w, "W")
         st.add("experts used per token", k_eff, "k")
         o.s.finish(st)
-        o.s.emit("trial.measured", {
-            "trial_no": o._rep["off"] + o._rep["on"],
-            "arm": o._arm, "rep": n, "wh_per_req": {"mean": round(w.wh / o.cfg.n_prompts, 6)},
-            "j_per_req": round(j_req, 3), "active_experts": k_eff, "mean_w": round(w.mean_w, 1),
-            "label": st.tag}, step_id=f"{STEP}.arms.{o._arm}{n}", parent=STEP)
+        o.s.emit(
+            "trial.measured",
+            {
+                "trial_no": o._rep["off"] + o._rep["on"],
+                "arm": o._arm,
+                "rep": n,
+                "wh_per_req": {"mean": round(w.wh / o.cfg.n_prompts, 6)},
+                "j_per_req": round(j_req, 3),
+                "active_experts": k_eff,
+                "mean_w": round(w.mean_w, 1),
+                "label": st.tag,
+            },
+            step_id=f"{STEP}.arms.{o._arm}{n}",
+            parent=STEP,
+        )
         return w
 
 
 def run_adaptive(s: Stream, out: Path, backend, cfg: at.AdaptiveConfig) -> dict:
     """The whole step. Returns the summary (also written to out/adaptive_topk/summary.json)."""
     out.mkdir(parents=True, exist_ok=True)
-    top = s.start(STEP, "adaptive", "arms",
-                  "Adaptive top-k: fewer experts per token, same answers?",
-                  inputs=f"{cfg.model}, keep experts covering {cfg.mass:.0%} of router weight; "
-                         f"time box {cfg.budget_s:.0f} s", top=STEP)
+    top = s.start(
+        STEP,
+        "adaptive",
+        "arms",
+        "Adaptive top-k: fewer experts per token, same answers?",
+        inputs=f"{cfg.model}, keep experts covering {cfg.mass:.0%} of router weight; "
+        f"time box {cfg.budget_s:.0f} s",
+        top=STEP,
+    )
     wrapped = _Evented(backend, s, cfg)
     try:
         res = at.run_trial(wrapped, cfg)
@@ -168,12 +217,23 @@ def run_adaptive(s: Stream, out: Path, backend, cfg: at.AdaptiveConfig) -> dict:
     j_on = res_j_per_req(res, "on")
     lab = summ["label"] if summ["label"] in ("MEASURED", "ESTIMATE") else s.label
     for name, g in summ["gates"].items():
-        s.emit("gate.result", {"trial_no": 0, "check": f"adaptive_{name}", "passed": g["passed"],
-                               "detail": {k: v for k, v in g.items() if k != "passed"},
-                               "label": lab}, step_id=STEP, parent=None)
+        s.emit(
+            "gate.result",
+            {
+                "trial_no": 0,
+                "check": f"adaptive_{name}",
+                "passed": g["passed"],
+                "detail": {k: v for k, v in g.items() if k != "passed"},
+                "label": lab,
+            },
+            step_id=STEP,
+            parent=None,
+        )
     top.tag = lab
-    top.outputs = (f"agreement {res.agreement['pct']:.1f}%, J/req {j_off:.2f} → {j_on:.2f} "
-                   f"({-summ['saving_pct']:+.1f}% J/token), p99 {summ['p99_increase_pct']:+.1f}%")
+    top.outputs = (
+        f"agreement {res.agreement['pct']:.1f}%, J/req {j_off:.2f} → {j_on:.2f} "
+        f"({-summ['saving_pct']:+.1f}% J/token), p99 {summ['p99_increase_pct']:+.1f}%"
+    )
     top.summary = top.outputs
     top.add("top-k (normal)", res.top_k, "experts")
     top.add("experts used with adaptive", summ["on"]["active_experts"], "experts")
@@ -184,15 +244,25 @@ def run_adaptive(s: Stream, out: Path, backend, cfg: at.AdaptiveConfig) -> dict:
     top.add("p99 change", summ["p99_increase_pct"], "%")
     top.extra = {"all_gates_passed": summ["all_gates_passed"], "truncated": res.truncated}
     s.finish(top)
-    info = {"ran": True, "label": lab, "model": cfg.model, "top_k": res.top_k,
-            "active_experts_on": summ["on"]["active_experts"],
-            "agreement_pct": res.agreement["pct"], "j_per_req_off": j_off, "j_per_req_on": j_on,
-            "j_per_token_change_pct": -summ["saving_pct"],
-            "p99_change_pct": summ["p99_increase_pct"], "gates": summ["gates"],
-            "all_gates_passed": summ["all_gates_passed"], "truncated": res.truncated,
-            "reps": {"off": summ["off"]["reps"], "on": summ["on"]["reps"]},
-            "receipt": str(Path(w["path"]).name), "receipt_id": w["receipt"]["receipt_id"],
-            "seconds": round(res.seconds, 1)}
+    info = {
+        "ran": True,
+        "label": lab,
+        "model": cfg.model,
+        "top_k": res.top_k,
+        "active_experts_on": summ["on"]["active_experts"],
+        "agreement_pct": res.agreement["pct"],
+        "j_per_req_off": j_off,
+        "j_per_req_on": j_on,
+        "j_per_token_change_pct": -summ["saving_pct"],
+        "p99_change_pct": summ["p99_increase_pct"],
+        "gates": summ["gates"],
+        "all_gates_passed": summ["all_gates_passed"],
+        "truncated": res.truncated,
+        "reps": {"off": summ["off"]["reps"], "on": summ["on"]["reps"]},
+        "receipt": str(Path(w["path"]).name),
+        "receipt_id": w["receipt"]["receipt_id"],
+        "seconds": round(res.seconds, 1),
+    }
     (out / "summary.json").write_text(json.dumps(info, indent=1))
     return info
 

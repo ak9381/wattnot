@@ -78,6 +78,8 @@ def summarize(cap_w: int, stock: list[dict], capped: list[dict], workload: Workl
         "mean_w": {"stock": mean_sd([s["counter_mean_w"] for s in stock])[0],
                    "cap": mean_sd([c["counter_mean_w"] for c in capped])[0]},
         "max_temp_c": max(b["max_temp_c"] or 0 for b in stock + capped),
+        "max_temp_c_by_arm": {"stock": max(b["max_temp_c"] or 0 for b in stock),
+                              "cap": max(b["max_temp_c"] or 0 for b in capped)},
         "errors": sum(b["errors"] for b in stock + capped),
         "accepted": bool(q.passed and p_ok and e_ok and not any(b["errors"] for b in capped)),
         "why_not": why,

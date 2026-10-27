@@ -27,7 +27,7 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
-LABELS = ("MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "ADVICE")
+LABELS = ("MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "ADVICE", "REPLAY")
 
 # step name -> (node, sub) on the Architecture map, for the step as a whole
 STEP_NODE = {
@@ -40,17 +40,29 @@ STEP_NODE = {
     "receipt": ("receipts", "sign"),
 }
 PARTNERS = {
-    "sam": ["meta"], "agent": ["meta"], "workload": ["oss"], "telemetry": ["nvidia"],
-    "apply": ["nvidia", "e2e"], "gates": ["oss"], "e2e_rig": ["e2e"], "adaptive": ["hf"],
-    "receipts": ["sigstore"], "optimizer": ["oss"], "models": ["meta", "hf"],
+    "sam": ["meta"],
+    "agent": ["meta"],
+    "workload": ["oss"],
+    "telemetry": ["nvidia"],
+    "apply": ["nvidia", "e2e"],
+    "gates": ["oss"],
+    "e2e_rig": ["e2e"],
+    "adaptive": ["hf"],
+    "receipts": ["sigstore"],
+    "optimizer": ["oss"],
+    "models": ["meta", "hf"],
 }
 
 
 def num(label: str, v, unit: str = "", tag: str = "MEASURED") -> dict:
     """One number for a step's `numbers` list (tag is dropped when the value is missing)."""
     ok = v is not None
-    return {"label": label, "v": round(v, 4) if isinstance(v, float) else v, "unit": unit,
-            "tag": tag if ok else None}
+    return {
+        "label": label,
+        "v": round(v, 4) if isinstance(v, float) else v,
+        "unit": unit,
+        "tag": tag if ok else None,
+    }
 
 
 Sink = Callable[[dict], None]
@@ -69,6 +81,7 @@ def stdout_sink(path: Path | None = None) -> Sink:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 with path.open("a", encoding="utf-8") as f:
                     f.write(line + "\n")
+
     return sink
 
 
@@ -80,10 +93,18 @@ class Stream:
         self._n: dict[str, int] = {}
         self._lock = threading.Lock()
 
-    def emit(self, type_: str, data: dict, *, step_id: str | None = None,
-             parent: str | None = None) -> None:
-        self.sink({"type": type_, "step_id": step_id, "parent_step_id": parent,
-                   "t": round(self.clock(), 3), "data": data})
+    def emit(
+        self, type_: str, data: dict, *, step_id: str | None = None, parent: str | None = None
+    ) -> None:
+        self.sink(
+            {
+                "type": type_,
+                "step_id": step_id,
+                "parent_step_id": parent,
+                "t": round(self.clock(), 3),
+                "data": data,
+            }
+        )
 
     def sid(self, base: str) -> str:
         with self._lock:
@@ -91,28 +112,60 @@ class Stream:
             n = self._n[base]
         return base if n == 1 else f"{base}#{n}"
 
-    def start(self, step_id: str, node: str, sub: str, label: str, *, inputs: str = "",
-              parent: str | None = None, say: str | None = None, top: str | None = None) -> _Step:
+    def start(
+        self,
+        step_id: str,
+        node: str,
+        sub: str,
+        label: str,
+        *,
+        inputs: str = "",
+        parent: str | None = None,
+        say: str | None = None,
+        top: str | None = None,
+    ) -> _Step:
         """Open a step (emit `step.started`). Close it with `finish(st)`. `top` names the run-level
         step (room_scan ...) this one belongs to."""
         st = _Step()
         st.id, st.parent, st.label, st.t0 = step_id, parent, label, time.monotonic()
         st.tag = self.label
-        st.base = {"node": node, "sub": sub, "kind": f"{node}.{sub}",
-                   "partners": PARTNERS.get(node, [])}
+        st.base = {
+            "node": node,
+            "sub": sub,
+            "kind": f"{node}.{sub}",
+            "partners": PARTNERS.get(node, []),
+        }
         if top:
             st.base["step"] = top
-        self.emit("step.started", {**st.base, "label": label, "inputs": inputs,
-                                   "narration": {"text": say or label, "source": "template"}},
-                  step_id=step_id, parent=parent)
+        self.emit(
+            "step.started",
+            {
+                **st.base,
+                "label": label,
+                "inputs": inputs,
+                "narration": {"text": say or label, "source": "template"},
+            },
+            step_id=step_id,
+            parent=parent,
+        )
         return st
 
     def finish(self, st: _Step) -> None:
-        self.emit("step.finished", {
-            **st.base, "status": "ok" if st.ok else "failed", "summary": st.summary or st.label,
-            "outputs": st.outputs, "duration_s": round(time.monotonic() - st.t0, 2),
-            "label": st.tag, "numbers": st.numbers, **st.extra},
-            step_id=st.id, parent=st.parent)
+        self.emit(
+            "step.finished",
+            {
+                **st.base,
+                "status": "ok" if st.ok else "failed",
+                "summary": st.summary or st.label,
+                "outputs": st.outputs,
+                "duration_s": round(time.monotonic() - st.t0, 2),
+                "label": st.tag,
+                "numbers": st.numbers,
+                **st.extra,
+            },
+            step_id=st.id,
+            parent=st.parent,
+        )
 
     @contextlib.contextmanager
     def step(self, step_id: str, node: str, sub: str, label: str, **kw):
@@ -127,10 +180,15 @@ class Stream:
         finally:
             self.finish(st)
 
-    def progress(self, step_id: str, node: str, sub: str, pct: int, message: str,
-                 parent: str | None = None) -> None:
-        self.emit("step.progress", {"node": node, "sub": sub, "pct": pct, "message": message},
-                  step_id=step_id, parent=parent)
+    def progress(
+        self, step_id: str, node: str, sub: str, pct: int, message: str, parent: str | None = None
+    ) -> None:
+        self.emit(
+            "step.progress",
+            {"node": node, "sub": sub, "pct": pct, "message": message},
+            step_id=step_id,
+            parent=parent,
+        )
 
     def telemetry(self, **kw) -> None:
         self.emit("telemetry.sample", {"gpu_index": 0, "source": "nvml", "label": "MEASURED", **kw})
@@ -181,5 +239,3 @@ def check_labels(ev: dict) -> list[str]:
     if d.get("label") and ev["type"] == "step.finished" and d["label"] not in LABELS:
         bad.append(f"{ev['type']} label {d['label']!r}")
     return bad
-
-

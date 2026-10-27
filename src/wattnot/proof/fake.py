@@ -29,30 +29,53 @@ class FakeNvml:
         self.limit_mw, self.energy_mj, self.lock = 700_000, 0, threading.Lock()
         self.busy_until = 0.0
 
-    def device_handle(self, i): return object()
-    def device_name(self, h): return "NVIDIA H100 80GB HBM3 (FAKE)"
-    def power_limit_constraints_mw(self, h): return 200_000, 700_000
-    def power_default_limit_mw(self, h): return 700_000
-    def power_limit_mw(self, h): return self.limit_mw
-    def set_power_limit_mw(self, h, mw): self.limit_mw = mw
-    def total_energy_mj(self, h): return self.energy_mj
-    def clock_mhz(self, h, kind): return 1500 if self.limit_mw >= 500_000 else 1100
+    def device_handle(self, i):
+        return object()
+
+    def device_name(self, h):
+        return "NVIDIA H100 80GB HBM3 (FAKE)"
+
+    def power_limit_constraints_mw(self, h):
+        return 200_000, 700_000
+
+    def power_default_limit_mw(self, h):
+        return 700_000
+
+    def power_limit_mw(self, h):
+        return self.limit_mw
+
+    def set_power_limit_mw(self, h, mw):
+        self.limit_mw = mw
+
+    def total_energy_mj(self, h):
+        return self.energy_mj
+
+    def clock_mhz(self, h, kind):
+        return 1500 if self.limit_mw >= 500_000 else 1100
 
     def _busy(self) -> bool:
         return time.time() < self.busy_until
 
     def power_usage_mw(self, h):
         cap = self.limit_mw // 1000
-        return int((min(cap, 520) if self._busy() else 90) * 1000 * 0.97)
+        return int((min(cap * 0.96, 520) if self._busy() else 90) * 1000 * 0.97)
 
     def temperature_c(self, h):
         return 44 + int(0.045 * self.power_usage_mw(h) / 1000) if self._busy() else 36
 
 
 class FakeClient:
-    def __init__(self, nvml: FakeNvml, *, knee_w: int = 350, break_quality_below=None,
-                 delay_s: float = 0.0) -> None:
+    def __init__(
+        self,
+        nvml: FakeNvml,
+        *,
+        knee_w: int = 350,
+        break_quality_below=None,
+        delay_s: float = 0.0,
+        concurrency: int = 32,
+    ) -> None:
         self.nvml, self.knee, self.break_q, self.delay = nvml, knee_w, break_quality_below, delay_s
+        self.conc = concurrency
         self.n = 0
         self.wl = proof_workload()
         self.gold = gold_answers()
@@ -63,7 +86,9 @@ class FakeClient:
         it = self.by_prompt[prompt]
         with self.nvml.lock:
             self.n += 1
-            self.nvml.energy_mj += int((1000 - (700 - cap) * 0.6 + (self.n % 7)) * 1000 * 0.05)
+            scale = (1000 - (700 - cap) * 0.6 + (self.n % 7)) / 1000
+            watts = min(cap * 0.96, 540 * scale)  # what the fake card "draws" at this cap
+            self.nvml.energy_mj += int(watts * max(self.delay, 0.01) / self.conc * 1000)
             self.nvml.busy_until = time.time() + 1.5
         if self.delay:
             time.sleep(self.delay)
@@ -88,19 +113,22 @@ class FakeMeta:
         a = self.answers.pop(0)
         if isinstance(a, Exception):
             raise a
-        return {"model": "fake-muse", "choices": [{"message": {"content": json.dumps(a)}}],
-                "usage": {"prompt_tokens": 410, "completion_tokens": 38}}
+        return {
+            "model": "fake-muse",
+            "choices": [{"message": {"content": json.dumps(a)}}],
+            "usage": {"prompt_tokens": 410, "completion_tokens": 38},
+        }
 
 
 def rehearsal_planner_answers() -> list[dict]:
-    return [{"kind": "try", "cap_w": 500, "reason": "p99 has headroom at 700 W; start in the middle"},
-            {"kind": "try", "cap_w": 400, "reason": "500 W passed with energy down; push lower"},
-            {"kind": "try", "cap_w": 300, "reason": "400 W passed; probe the floor"},
-            {"kind": "stop", "cap_w": None, "reason": "300 W broke the p99 limit; 400 W is the edge"}]
+    return [
+        {"kind": "try", "cap_w": 500, "reason": "p99 has headroom at 700 W; start in the middle"},
+        {"kind": "try", "cap_w": 400, "reason": "500 W passed with energy down; push lower"},
+        {"kind": "try", "cap_w": 300, "reason": "400 W passed; probe the floor"},
+        {"kind": "stop", "cap_w": None, "reason": "300 W broke the p99 limit; 400 W is the edge"},
+    ]
 
 
 def make_rig_parts(*, delay_s: float = 0.0, **kw):
     nvml = FakeNvml()
     return nvml, FakeClient(nvml, delay_s=delay_s, **kw)
-
-

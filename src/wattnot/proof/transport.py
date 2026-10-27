@@ -32,9 +32,15 @@ class LocalTransport(Transport):
 
     def run(self, args: list[str], on_line: LineSink, *, timeout_s: float = 7200) -> int:
         cmd = [sys.executable, "-m", "wattnot.proof.run", *args]
-        p = subprocess.Popen(cmd, cwd=self.workdir, stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT, text=True, bufsize=1,
-                             env={**os.environ, **(self.env or {})})
+        p = subprocess.Popen(
+            cmd,
+            cwd=self.workdir,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            env={**os.environ, **(self.env or {})},
+        )
         t0 = time.time()
         assert p.stdout is not None
         for line in p.stdout:
@@ -47,6 +53,7 @@ class LocalTransport(Transport):
     def pull(self, remote: str, local: Path) -> None:
         if Path(remote).resolve() != Path(local).resolve():
             import shutil
+
             shutil.copytree(remote, local, dirs_exist_ok=True)
 
     def close(self) -> None:
@@ -54,9 +61,17 @@ class LocalTransport(Transport):
 
 
 class SshTransport(Transport):  # pragma: no cover - needs a real host
-    def __init__(self, host: str, *, key: str = "~/.ssh/e2e_h100", user: str = "root",
-                 repo: str = "/root/wattnot", venv: str = "/root/venv",
-                 logdir: str = "/root/run2/cmdlogs", poll_s: float = 1.5) -> None:
+    def __init__(
+        self,
+        host: str,
+        *,
+        key: str = "~/.ssh/e2e_h100",
+        user: str = "root",
+        repo: str = "/root/wattnot",
+        venv: str = "/root/venv",
+        logdir: str = "/root/run2/cmdlogs",
+        poll_s: float = 1.5,
+    ) -> None:
         self.host, self.key, self.user = host, os.path.expanduser(key), user
         self.repo, self.venv, self.logdir, self.poll_s = repo, venv, logdir, poll_s
         self._c = None
@@ -64,12 +79,21 @@ class SshTransport(Transport):  # pragma: no cover - needs a real host
 
     def _client(self):
         import paramiko
+
         if self._c is not None and self._c.get_transport() and self._c.get_transport().is_active():
             return self._c
         c = paramiko.SSHClient()
         c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        c.connect(self.host, username=self.user, key_filename=self.key, timeout=20,
-                  banner_timeout=20, auth_timeout=20, allow_agent=False, look_for_keys=False)
+        c.connect(
+            self.host,
+            username=self.user,
+            key_filename=self.key,
+            timeout=20,
+            banner_timeout=20,
+            auth_timeout=20,
+            allow_agent=False,
+            look_for_keys=False,
+        )
         c.get_transport().set_keepalive(15)
         self._c = c
         return c
@@ -89,24 +113,29 @@ class SshTransport(Transport):  # pragma: no cover - needs a real host
                 return ch.recv_exit_status(), out
             except Exception:  # noqa: BLE001 - reconnect and retry; the command is detached
                 self._c = None
-                time.sleep(min(30, 2 ** attempt))
+                time.sleep(min(30, 2**attempt))
         raise ConnectionError(f"cannot reach {self.host}")
 
     def run(self, args: list[str], on_line: LineSink, *, timeout_s: float = 7200) -> int:
         self._n += 1
         tag = f"{int(time.time())}-{self._n}"
         log, rcf = f"{self.logdir}/{tag}.log", f"{self.logdir}/{tag}.rc"
-        inner = (f"cd {shlex.quote(self.repo)} && . {shlex.quote(self.venv)}/bin/activate && "
-                 f"python -m wattnot.proof.run {' '.join(shlex.quote(a) for a in args)}"
-                 f"; echo $? > {rcf}")
-        wrapped = (f"mkdir -p {self.logdir} && cd /root && (setsid nohup bash -c "
-                   f"{shlex.quote(inner)} > {log} 2>&1 < /dev/null &) ; echo started")
+        inner = (
+            f"cd {shlex.quote(self.repo)} && . {shlex.quote(self.venv)}/bin/activate && "
+            f"python -m wattnot.proof.run {' '.join(shlex.quote(a) for a in args)}"
+            f"; echo $? > {rcf}"
+        )
+        wrapped = (
+            f"mkdir -p {self.logdir} && cd /root && (setsid nohup bash -c "
+            f"{shlex.quote(inner)} > {log} 2>&1 < /dev/null &) ; echo started"
+        )
         rc, out = self._exec(wrapped)
         if rc != 0 or b"started" not in out:
             raise RuntimeError(f"could not start the command: {out[-200:]!r}")
         offset, buf, t0 = 0, b"", time.time()
-        poll = (f"tail -c +{{off}} {log} 2>/dev/null; "
-                f"printf '\n__END__%s' \"$(cat {rcf} 2>/dev/null)\"")
+        poll = (
+            f"tail -c +{{off}} {log} 2>/dev/null; printf '\n__END__%s' \"$(cat {rcf} 2>/dev/null)\""
+        )
         while True:
             _, chunk = self._exec(poll.format(off=offset + 1))
             body, sep, rc_s = chunk.rpartition(b"\n__END__")
@@ -129,6 +158,7 @@ class SshTransport(Transport):  # pragma: no cover - needs a real host
 
     def pull(self, remote: str, local: Path) -> None:
         import stat
+
         sftp = self._client().open_sftp()
         local.mkdir(parents=True, exist_ok=True)
 
@@ -139,6 +169,7 @@ class SshTransport(Transport):  # pragma: no cover - needs a real host
                     walk(f"{r}/{e.filename}", l_ / e.filename)
                 else:
                     sftp.get(f"{r}/{e.filename}", str(l_ / e.filename))
+
         walk(remote, local)
         sftp.close()
 

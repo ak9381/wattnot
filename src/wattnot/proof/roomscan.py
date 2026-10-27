@@ -21,16 +21,25 @@ from typing import Any
 SLOT_SOURCE = "h100-run2-live"
 
 
-def build(room_id: str = "arsat", *, live_sam: bool = False, out: Path | None = None,
-          scan_json: Path | None = None, root: Path | None = None) -> dict:
+def build(
+    room_id: str = "arsat",
+    *,
+    live_sam: bool = False,
+    out: Path | None = None,
+    scan_json: Path | None = None,
+    root: Path | None = None,
+) -> dict:
     """The room scan dict (public form). Needs `wattnot.sam.room` (or a saved scan JSON)."""
     if scan_json is not None:
         import json
+
         return json.loads(Path(scan_json).read_text())
     from wattnot.sam import room
+
     client = None
     if live_sam:
         from wattnot.sam.client import SamClient
+
         client = SamClient()
     kw: dict[str, Any] = {"live_sam": client, "out": out}
     if root is not None:
@@ -55,9 +64,14 @@ def place_h100(scan: dict, snap: dict, *, label: str) -> dict:
     r["cap_w"] = snap["idle"]["cap_w"]
     r["decision"], r["reason"] = "pending", "the run is measuring this card now"
     labels = scan.setdefault("labels", {})
-    labels.update({"h100_slot_power_w": label, "h100_slot_temp_c": label,
-                   "h100_slot_temp_note": "GPU die sensor (NVML), not a camera surface reading",
-                   "h100_slot_decision": "MEASURED" if label == "MEASURED" else label})
+    labels.update(
+        {
+            "h100_slot_power_w": label,
+            "h100_slot_temp_c": label,
+            "h100_slot_temp_note": "GPU die sensor (NVML), not a camera surface reading",
+            "h100_slot_decision": "MEASURED" if label == "MEASURED" else label,
+        }
+    )
     scan["real_rack"] = r["id"]
     return scan
 
@@ -66,16 +80,23 @@ def hint(scan: dict) -> dict:
     """What the room scan says about the H100's rack, for the planner prompt (ADVICE)."""
     try:
         from wattnot.sam import room
+
         t = next(x for x in room.targets(scan) if x["rack"] == scan.get("real_rack"))
-        return {"rack": t["rack"], "action": t["action"], "camera_c": t["camera_c"],
-                "power_w": t["power_w"], "suggested_ceiling_w": t["cap_w"],
-                "label": "ADVICE (simulated thermal frame)"}
+        return {
+            "rack": t["rack"],
+            "action": t["action"],
+            "camera_c": t["camera_c"],
+            "power_w": t["power_w"],
+            "suggested_ceiling_w": t["cap_w"],
+            "label": "ADVICE (simulated thermal frame)",
+        }
     except Exception:  # noqa: BLE001 - the hint is optional
         return {}
 
 
-def finalize_h100(scan: dict, *, before: dict, after: dict | None, cap_w: int | None,
-                  reason: str, label: str) -> dict:
+def finalize_h100(
+    scan: dict, *, before: dict, after: dict | None, cap_w: int | None, reason: str, label: str
+) -> dict:
     """Fill the slot's after and decision from the measured stock vs chosen-cap blocks."""
     scan = copy.deepcopy(scan)
     r = slot_of(scan)
@@ -98,12 +119,18 @@ def _recompute(scan: dict) -> None:
     for phase in ("before", "after"):
         vals = [(x[phase] if phase in x else x["before"]) for x in scan["racks"]]
         temps = [v["temp_c"] for v in vals if v.get("temp_c") is not None]
-        scan[phase] = {**scan.get(phase, {}),
-                       "max_c": round(max(temps), 1), "mean_c": round(sum(temps) / len(temps), 1),
-                       "hot_racks": sum(t > hot for t in temps),
-                       "room_power_w": round(sum(v["power_w"] * len(x.get("gpus", [1]))
-                                                 for v, x in zip(vals, scan["racks"],
-                                                                 strict=True)))}
+        scan[phase] = {
+            **scan.get(phase, {}),
+            "max_c": round(max(temps), 1),
+            "mean_c": round(sum(temps) / len(temps), 1),
+            "hot_racks": sum(t > hot for t in temps),
+            "room_power_w": round(
+                sum(
+                    v["power_w"] * len(x.get("gpus", [1]))
+                    for v, x in zip(vals, scan["racks"], strict=True)
+                )
+            ),
+        }
     scan["after"]["saved_w"] = scan["before"]["room_power_w"] - scan["after"]["room_power_w"]
 
 
@@ -111,17 +138,30 @@ def payload(scan: dict, phase: str) -> dict:
     """The `room_scan` progress payload (same shape as `wattnot.sam.room.event_payload`)."""
     try:
         from wattnot.sam import room
+
         return room.event_payload(scan, phase)
     except Exception:  # noqa: BLE001 - module missing: build the same shape here
         after = phase == "after"
-        return {"kind": "room_scan", "phase": phase, "room_id": scan.get("room_id"),
-                "image": scan.get("image"), "labels": scan.get("labels"),
-                "racks": [{"id": r["id"], "polygon": r.get("polygon"),
-                           "temp_c": (r["after"] if after else r["before"])["temp_c"],
-                           "power_w": (r["after"] if after else r["before"])["power_w"],
-                           "gpus": [g["id"] if isinstance(g, dict) else g
-                                    for g in r.get("gpus", [])],
-                           "decision": r["decision"], "cap_w": r.get("cap_w"),
-                           "reason": r["reason"], "source": r.get("source")}
-                          for r in scan["racks"]],
-                "summary": scan["after" if after else "before"], "sam": scan.get("sam")}
+        return {
+            "kind": "room_scan",
+            "phase": phase,
+            "room_id": scan.get("room_id"),
+            "image": scan.get("image"),
+            "labels": scan.get("labels"),
+            "racks": [
+                {
+                    "id": r["id"],
+                    "polygon": r.get("polygon"),
+                    "temp_c": (r["after"] if after else r["before"])["temp_c"],
+                    "power_w": (r["after"] if after else r["before"])["power_w"],
+                    "gpus": [g["id"] if isinstance(g, dict) else g for g in r.get("gpus", [])],
+                    "decision": r["decision"],
+                    "cap_w": r.get("cap_w"),
+                    "reason": r["reason"],
+                    "source": r.get("source"),
+                }
+                for r in scan["racks"]
+            ],
+            "summary": scan["after" if after else "before"],
+            "sam": scan.get("sam"),
+        }

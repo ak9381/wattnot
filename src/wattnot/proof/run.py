@@ -176,7 +176,8 @@ def open_rig(args) -> tuple[Rig, object]:  # pragma: no cover
         from wattnot.proof.fake import FakeClient, FakeNvml
         nvml = FakeNvml()
         handle = nvml.device_handle(0)
-        rig = Rig(nvml, handle, FakeClient(nvml, delay_s=args.fake_delay), wl,
+        rig = Rig(nvml, handle, FakeClient(nvml, delay_s=args.fake_delay,
+                                        concurrency=args.concurrency), wl,
                   concurrency=args.concurrency, repeat=args.repeat, settle_s=args.settle_s,
                   warmup=args.warmup, sleep=lambda x: time.sleep(min(x, 0.2)))
         return rig, _NoGuard()
@@ -243,7 +244,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover
     ap.add_argument("--budget-s", type=float, default=0, help="stop starting new caps after this")
     ap.add_argument("--tag", default="")
     ap.add_argument("--emit", action="store_true", help="step/control: emit EVT event lines")
-    ap.add_argument("--fake", action="store_true", help="rehearsal: fake GPU and model, MOCK labels")
+    ap.add_argument("--fake", action="store_true", help="rehearsal: fake GPU, MOCK labels")
     ap.add_argument("--fake-delay", type=float, default=0.0, help="seconds per fake request")
     ap.add_argument("--settle-s", type=float, default=4.0)
     ap.add_argument("--warmup", type=int, default=16)
