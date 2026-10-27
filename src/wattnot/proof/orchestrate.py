@@ -12,6 +12,8 @@ Steps, in order (each is a step on the dashboard's Architecture map):
     cap_sweep      Muse Spark proposes a cap (real API call from this machine), the GPU host applies
                    it, a paired stock/cap measurement runs, the gate decides: repeat
     adaptive_topk  adaptive top-k vs normal top-k on a small MoE model (optional, time-boxed)
+    approve        rate the risk; low-risk goes through, a big change waits for an
+                   operator (no answer in time means reject)
     keep_rollback  keep the best accepted cap, or roll back to stock
     receipt        build, hash, sign (offline key, no public log) and verify
 
@@ -25,12 +27,18 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
+from wattnot.approvals.appliers import CallbackApplier
+from wattnot.approvals.guard import Guard
+from wattnot.approvals.risk import RiskConfig, tier_for
+from wattnot.approvals.risk import load_config as load_guard_config
+from wattnot.approvals.service import Approvals
 from wattnot.events import Emitter
 from wattnot.events.emitter import new_run_id
 from wattnot.proof import roomscan
@@ -102,6 +110,41 @@ def sha_file(p: Path) -> str:
     return hashlib.sha256(p.read_bytes()).hexdigest()
 
 
+def approvals_dir_for(a, out: Path) -> Path:
+    """Where guardrail proposals live (default: `<out>/approvals`)."""
+    return Path(getattr(a, "approvals_dir", None) or (out / "approvals"))
+
+
+def _restore_stock(vm, stock_w: int) -> None:
+    """Put the stock cap back through the same `apply --cap` path (best effort)."""
+    try:
+        vm("apply", "--cap", str(stock_w))
+    except Exception:  # noqa: BLE001 - best effort; the token still records the prior state
+        pass
+
+
+def _guardrail_block(guard: Guard | None, label: str) -> dict:
+    """The receipt's guardrail block: who approved, applied or undid what, when."""
+    if guard is None:
+        return {"spec": "wattnot.guardrail-ops/1", "source": label, "ops": []}
+    block = guard.receipt_block()
+    block["source"] = "MOCK" if label == "MOCK" else label
+    return block
+
+
+def _make_guard(a, out: Path) -> Guard:
+    root = approvals_dir_for(a, out)
+    cfg_path = getattr(a, "guardrail_config", None)
+    if cfg_path is not None and Path(cfg_path).is_file():
+        cfg = RiskConfig.from_dict(json.loads(Path(cfg_path).read_text(encoding="utf-8")))
+    elif cfg_path is not None:
+        cfg = load_guard_config(cfg_path)
+    else:
+        cfg = load_guard_config(root)
+    auto_by = "orchestrate" if getattr(a, "auto_approve", False) else None
+    return Guard(Approvals(root), cfg, auto_approve_by=auto_by)
+
+
 def workload_sha() -> str | None:
     from wattnot.runner.workload import workloads_dir
 
@@ -147,6 +190,11 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
     scan = None
     snap: dict = {}
     best = None
+    guard = _make_guard(a, out)
+    planner_info = {"name": getattr(planner, "name", "?"),
+                    "model": getattr(planner, "model", None),
+                    "partner": getattr(planner, "partner", None)}
+    tier = tier_for(guard.cfg, planner_info["name"])
     try:
         live.sink(
             {
@@ -336,8 +384,9 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                 usage = getattr(planner, "last_usage", {}) or {}
                 mname = getattr(planner, "model", "muse-spark")
                 by = prop.get("by", getattr(planner, "name", "planner"))
-                real = by == "muse-spark"
+                real = by in ("muse-spark", "muse-spark-open")
                 st.tag = label if real else "ADVICE"
+                st.extra["planner"] = dict(planner_info)
                 st.outputs = (
                     f"{prop['kind']} {prop['cap_w']} W: {prop['reason']}"
                     if prop["kind"] == "try"
@@ -353,6 +402,7 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                         "by": by,
                         "reason": prop["reason"],
                         "muse_error": prop.get("muse_error"),
+                        "planner": dict(planner_info),
                     },
                     step_id=pid,
                     parent="cap_sweep",
@@ -367,6 +417,7 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                             "value": None,
                         },
                         "reason": prop["reason"],
+                        "planner": dict(planner_info),
                         "model": mname if real else "bisect-fallback",
                         "tokens": {
                             "input": usage.get("input", 0),
@@ -388,7 +439,7 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                         "message": prop["reason"],
                         "narration": {
                             "text": prop["reason"],
-                            "source": "muse-spark" if real else "template",
+                            "source": by if real else "template",
                             "model": mname if real else None,
                         },
                     },
@@ -431,6 +482,112 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
             if rc != 0 and adaptive_info is None:
                 adaptive_info = {"ran": False, "reason": f"the command exited {rc}"}
 
+        # ------------------------------------------------------------------ 5b. approve
+        stock_w = snap["idle"]["default_w"]
+        tdp_w = snap["idle"].get("max_w") or stock_w
+        decision: str | None = None
+        ap = s.start(
+            "approve",
+            "approve",
+            "classify",
+            "Approve the change",
+            top="approve",
+            inputs=("best accepted cap: " + (f"{best['cap_w']} W" if best else "none")
+                    + f"; planner {planner_info['name']} (tier {tier})"),
+            say="Rate the risk. A small tweak goes through; a big one waits for an operator.",
+        )
+        if best:
+            cap_w = best["cap_w"]
+            saving = -best["energy_change_pct"]["mean"]
+            spec = {
+                "kind": "power_cap",
+                "source": {"applier": "orchestrate"},
+                "title": f"Cap GPU 0 at {cap_w} W",
+                "summary": (f"Lower the power cap from {stock_w} W to {cap_w} W "
+                            f"({saving:.1f}% less energy per request)."),
+                "change": {"gpu": 0, "gpus": [0],
+                           "before": {"power_cap_w": stock_w},
+                           "after": {"power_cap_w": cap_w}},
+                "savings": [{"metric": "energy per request", "value": round(saving, 2),
+                             "unit": "%", "label": label}],
+                "checks": {
+                    "quality": {"passed": True,
+                                "detail": (f"answers pass {best['quality']['cap_pct']:.1f}% vs "
+                                           f"{best['quality']['stock_pct']:.1f}% at stock")},
+                    "p99": {"passed": True,
+                            "increase_pct": best["p99_change_pct"]["mean"]},
+                },
+            }
+            with s.step(
+                "approve.classify",
+                "approve",
+                "classify",
+                "Rate the risk",
+                parent="approve",
+                inputs=f"cap {cap_w} W against stock {stock_w} W",
+            ) as st:
+                st.tag = label
+                filed = guard.submit(spec, gates_passed=True,
+                                     stock_cap_w=stock_w, tdp_w=tdp_w,
+                                     planner=planner_info)
+                pid, risk, route = (filed["proposal"]["id"], filed["risk"],
+                                    filed["route"])
+                st.outputs = f"{risk.level} risk ({route})"
+                st.add("risk level", risk.level, "", "ADVICE")
+                s.emit(
+                    "step.progress",
+                    {"node": "approve", "sub": "classify", "pct": 100,
+                     "message": f"risk {risk.level}: {'; '.join(risk.reasons)}"},
+                    step_id="approve.classify",
+                    parent="approve",
+                )
+                if route.startswith("pending"):
+                    live.sink(
+                        {
+                            "type": "proposal.created",
+                            "data": {"change_id": pid,
+                                     "risk": {"level": risk.level,
+                                              "reasons": list(risk.reasons)},
+                                     "route": route,
+                                     "planner": dict(planner_info),
+                                     "expires_at": filed["proposal"]["expires_at"]},
+                            "step_id": "approve.classify",
+                            "parent_step_id": "approve",
+                        }
+                    )
+            with s.step(
+                "approve.decide",
+                "approve",
+                "decide",
+                "Operator check",
+                parent="approve",
+                inputs="the proposal",
+            ) as st:
+                st.tag = label
+                t0 = time.time()
+                if route.startswith("pending"):
+                    decision = guard.wait(pid, timeout_s=a.approval_timeout_s,
+                                          poll_s=0.2)
+                else:
+                    decision = "approved"
+                waited = time.time() - t0
+                dec = guard.approvals.store.get(pid).get("decision") or {}
+                st.add("risk level", risk.level, "", "ADVICE")
+                st.add("planner", planner_info["name"], "", "ADVICE")
+                st.add("planner tier", tier, "", "ADVICE")
+                st.add("seconds waited", round(waited, 1), "s")
+                st.add("approved by", dec.get("by"), "")
+                st.add("approved via", dec.get("via"), "")
+                st.outputs = (f"{decision} by {dec.get('by') or '?'} "
+                              f"after {waited:.1f} s")
+            ap.tag = label
+            ap.outputs = f"{risk.level} risk: {decision}"
+            ap.add("risk level", risk.level, "", "ADVICE")
+        else:
+            ap.tag = label
+            ap.outputs = "nothing to approve"
+        s.finish(ap)
+
         # ------------------------------------------------------------------ 6. keep / rollback
         kr = s.start(
             "keep_rollback",
@@ -442,10 +599,32 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
             say="Keep the best cap that passed every gate, or put the card back to stock.",
         )
         after_read = None
-        if best:
+        if best and decision != "approved":
+            reason = ("approval timed out" if decision == "expired"
+                      else "operator rejected the change")
+            s.emit(
+                "action.rolled_back",
+                {
+                    "change": {"power_cap_w": None},
+                    "restored_cap_w": stock_w,
+                    "failed_gates": [reason],
+                    "label": label,
+                },
+                step_id="keep_rollback",
+                parent=None,
+            )
+            kr.outputs = "rolled back: no approval (stock stays)"
+            kr.add("kept cap", stock_w, "W", label)
+        elif best:
             if vm("apply", "--cap", str(best["cap_w"]), "--keep-cap") != 0:
                 raise RuntimeError("could not apply the chosen cap")
             after_read = grabbed.get("APPLY_JSON")
+            cb = CallbackApplier(
+                apply=lambda p: {"gpu": 0, "before_w": stock_w,
+                                 "after_w": best["cap_w"]},
+                rollback=lambda t: _restore_stock(vm, stock_w),
+            )
+            guard.apply(pid, applier=cb)
             kr.outputs = (
                 f"kept {best['cap_w']} W (driver read back "
                 f"{(after_read or {}).get('readback_w')} W)"
@@ -526,6 +705,7 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
             planner=planner,
             run_id=run_id,
             t_start=t_start,
+            guard=guard,
         )
         recs = {
             "verdict": "change recommended" if best else "no change recommended",
@@ -613,6 +793,7 @@ def finish_receipt(
     planner,
     run_id: str,
     t_start: float,
+    guard: Guard | None = None,
 ) -> dict:
     """Pull the results, write the report, build and sign the proof receipt, verify it."""
     from wattnot.receipt.canon import canonical_sha256
@@ -699,6 +880,9 @@ def finish_receipt(
         "planner": {
             "name": getattr(planner, "name", "?"),
             "model": getattr(planner, "model", None),
+            "partner": getattr(planner, "partner", None),
+            "tier": tier_for(guard.cfg, getattr(planner, "name", None))
+            if guard is not None else None,
         },
         "adaptive_topk": adaptive,
         "room": {
@@ -715,6 +899,7 @@ def finish_receipt(
         },
         "manifest_sha256": sha_file(rep_dir / "MANIFEST.sha256"),
         "results_sha256": sha_file(rep_dir / "results.json"),
+        "guardrail": _guardrail_block(guard, label),
         "integrity": {"sha256": None, "signer": None, "rekor": None},
     }
     with s.step(
@@ -831,7 +1016,10 @@ def main(argv=None) -> int:
     ap.add_argument("--max-proposals", type=int, default=4)
     ap.add_argument("--grid", default="", help="comma list of caps to fill in after Muse's picks")
     ap.add_argument("--sweep-budget-s", type=float, default=0)
-    ap.add_argument("--planner", choices=["muse", "bisect", "fake"], default="muse")
+    ap.add_argument("--planner", choices=["muse", "bisect", "fake", "baseten-open"],
+                    default="muse")
+    ap.add_argument("--baseten-cap-usd", type=float, default=1.0,
+                    help="spend cap for the Baseten open-weights planner (USD)")
     ap.add_argument("--sam", choices=["replay", "live"], default="replay")
     ap.add_argument("--room", default="arsat")
     ap.add_argument("--scan-json", type=Path)
@@ -839,6 +1027,15 @@ def main(argv=None) -> int:
     ap.add_argument("--adaptive-model", default="ibm-granite/granite-3.1-3b-a800m-instruct")
     ap.add_argument("--adaptive-budget-s", type=float, default=1200)
     ap.add_argument("--sign-key", type=Path, default=Path("receipt-offline-key.pem"))
+    ap.add_argument("--auto-approve", action="store_true",
+                    help="approve the kept change without waiting for an operator; "
+                         "logged as auto-approve-flag, not a person's decision")
+    ap.add_argument("--approvals-dir", type=Path, default=None,
+                    help="folder for guardrail proposals (default: <out>/approvals)")
+    ap.add_argument("--approval-timeout-s", type=float, default=600,
+                    help="how long to wait for an operator before the change is rejected")
+    ap.add_argument("--guardrail-config", type=Path, default=None,
+                    help="guardrail.json file or folder (default: the approvals dir)")
     ap.add_argument("--fake-delay", type=float, default=0.01)
     ap.add_argument("--fresh", action="store_true", help="move an old live file aside first")
     a = ap.parse_args(argv)
@@ -851,10 +1048,16 @@ def main(argv=None) -> int:
         a.live_file.rename(a.live_file.with_suffix(f".{int(time.time())}.prev"))
     if a.mode == "rehearsal":
         from wattnot.proof.fake import FakeMeta, rehearsal_planner_answers
-        from wattnot.proof.planner import MusePlanner
 
-        planner = MusePlanner(FakeMeta(rehearsal_planner_answers()))
-        planner.name = "muse-spark"  # the scripted client plays Muse; labelled MOCK in the events
+        if a.planner == "baseten-open":
+            from wattnot.proof.baseten_planner import OpenWeightsPlanner
+
+            planner = OpenWeightsPlanner(FakeMeta(rehearsal_planner_answers()))
+        else:
+            from wattnot.proof.planner import MusePlanner
+
+            planner = MusePlanner(FakeMeta(rehearsal_planner_answers()))
+            planner.name = "muse-spark"  # the scripted client plays Muse; labelled MOCK
         transport: Transport = LocalTransport(env={"PYTHONUNBUFFERED": "1"})
         a.remote_out = str(a.out / "vm")
         a.sam = "replay"
@@ -866,6 +1069,14 @@ def main(argv=None) -> int:
         transport = SshTransport(a.host, key=a.key)
         if a.planner == "bisect":
             planner = BisectPlanner()
+        elif a.planner == "baseten-open":
+            if not os.environ.get("BASETEN_API_KEY", "").strip():
+                ap.error("BASETEN_API_KEY is not set")
+            from wattnot.proof.baseten_planner import BasetenClient, OpenWeightsPlanner
+
+            planner = OpenWeightsPlanner(BasetenClient(
+                ledger_path=a.out / "baseten-ledger.json",
+                cap_usd=a.baseten_cap_usd))
         else:
             from wattnot.meta.client import GuardedClient
             from wattnot.proof.planner import MusePlanner

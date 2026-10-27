@@ -1,6 +1,7 @@
 // The architecture graph: nodes, their real sub-steps, the animation that walks through a recorded
 // or live run, and the side panel. Pure DOM + SVG; GSAP only for the height and fade tweens.
 import { esc, pill } from "./theme.js";
+import { poweredByFor, poweredByHtml } from "./partners.js";
 
 const g = () => window.gsap;
 const has = (s, w) => (s || "").split(" ").includes(w);
@@ -43,7 +44,7 @@ export class ArchView {
       if (mode === "map") { el.style.gridColumn = n.col + 1; el.style.gridRow = n.row + 1; }
       const stats = n.stats.slice(0, this.o.stats ?? 2);
       el.innerHTML = `<div class="hd"><button class="t" title="Open details for ${esc(n.title)}">${esc(n.title)}</button><span class="bd">${n.partners.map((p) => badge(d, p)).join("")}</span></div>
-        <p class="d">${esc(n.desc)}</p>
+        <p class="d">${esc(n.desc)}</p>${poweredByHtml(poweredByFor(n))}
         ${n.meta_product ? `<div class="bd" style="margin-bottom:6px"><span class="bdg mp" style="--c:var(--m)">Meta · ${esc(n.meta_product)}</span></div>` : ""}
         <div class="stl">${stats.map(statHtml).join("")}</div>
         <div class="now"></div>

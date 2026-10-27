@@ -247,6 +247,70 @@ There are no default thresholds. Each enabled kind must set `min_saving_pct` and
 `auto-policy:<first 12 characters of the policy file's hash>` in the audit trail, with the
 reasons that held, so you can tell which policy version did it.
 
+## Risk levels and the dashboard
+
+Not every change needs a click. The guardrail rates each proposal first
+(`wattnot.approvals.risk.classify`). The rules are fail-safe: anything not
+clearly low is high.
+
+- A power cap is low only when it is within `low_cap_drop_pct` (default 15) of
+  stock, not below `high_below_tdp_pct` (default 70) of the card's TDP, and it
+  touches at most `max_gpus_auto` (default 1) GPUs. Raising a cap is low.
+  Missing numbers mean high.
+- A vLLM tweak is low unless it switches quantization. Routing, shed and trial
+  grants are always high. A cloud policy is low (it touches no hardware).
+- The cutoffs live in `proposals/guardrail.json` (`wattnot.guardrail/1`, see
+  [guardrail.example.json](guardrail.example.json)). A missing file means the
+  defaults. Low-risk proposals are approved at once as `guardrail:low-risk`;
+  the rest stay `pending` for `approval_timeout_s` (default 600) seconds.
+
+Timeout is reject. A proposal nobody decides in time becomes `expired`, and an
+expired proposal cannot be approved or applied. The receipt calls this a reject
+by `system:timeout`.
+
+`--auto-approve` is for unattended demos only. High-risk changes are approved
+at once, logged as `auto-approve-flag:<name>` via `pre-approved`: visibly not
+a person's decision. The flag is on the orchestrate run, the dashboard
+(`--auto-approve`), or a `Guard(auto_approve_by=...)` you build yourself.
+
+### Autonomy tiers
+
+Each planner has a tier in `proposals/guardrail.json` (`tiers` maps a planner
+name to `standard` or `strict`; a name not listed is `strict`):
+
+- `muse-spark` and `bisect` are `standard`: the rules above apply unchanged.
+- `muse-spark-open` (the open-weights planner on Baseten) is `strict`: it may
+  only auto-apply LOW risk. Its high-risk changes stay `pending` (route
+  `pending-strict`) and `--auto-approve` does not apply to them. The audit
+  note on the proposal and the risk reasons both say so: "proposed by an
+  open-weights planner: needs a person". Low-risk changes from a strict
+  planner still auto-apply once the gates pass.
+
+The planner (`name`, `model`, `partner`, `tier`) is stored under
+`source.planner`, so it is part of the hashed content the approver sees. The
+dashboard cards (`GET /api/dash/approvals`), the receipt ops and the proof
+receipt's top-level `planner` block (`partner`, `tier` added) all carry it.
+
+One click undoes an applied change (`rollback`, or the dashboard's undo). The
+stored token puts the old cap or config file back. An undo after the receipt
+is signed cannot rewrite the signed file, so it is written beside it as
+`<proposal id>.undo.json` (`wattnot.guardrail-addendum/1`): the receipt it
+belongs to, the undo op, its own sha256, and an offline signature when a key
+is given.
+
+The dashboard serves the same store (mock caps unless `--live-apply`):
+
+```
+GET  /api/dash/approvals   pending, applied and recent cards, the config, mock or live
+POST /api/dash/approve     body {"id", "by"?, "sha256"?, "apply"?}: decide, then apply only with "apply": true
+POST /api/dash/reject      body {"id", "by"?, "note"?}
+POST /api/dash/undo/{id}   put the old setting back
+```
+
+The three POSTs need `Content-Type: application/json` (a plain cross-site form
+gets 415) and sit behind the dashboard token when one is set. Errors are
+`{"code", "message"}`: 404 unknown id, 409 wrong state.
+
 ## Local HTTP API
 
 For the future frontend. `wattnot proposals serve` runs it with FastAPI on `127.0.0.1:8781`.

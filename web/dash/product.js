@@ -6,9 +6,11 @@ import { esc, pill } from "./theme.js";
 import { livePhrase } from "./archpage.js";
 import { mountRoomScan } from "./roomnode.js";
 import { heatSvg, heatLegend, scanTag, wireHeat, pulse, recolor } from "./heat.js";
+import { GuardPanel } from "./guard.js";
+import { fillPlannerTags, loadPartners } from "./partners.js";
 
 const $ = (s, r = document) => r.querySelector(s);
-const RUN2_STAGE = { room_scan: "room", baseline: "baseline", quality_gate: "gate", cap_sweep: "sweep", adaptive_topk: "topk", keep_rollback: "keep", receipt: "receipt" };
+const RUN2_STAGE = { room_scan: "room", baseline: "baseline", quality_gate: "gate", cap_sweep: "sweep", adaptive_topk: "topk", approve: "approve", keep_rollback: "keep", receipt: "receipt" };
 const LABELS = ["MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "ADVICE"];
 const reduce = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const PCOL = { meta: "var(--m)", baseten: "var(--bt)", e2e: "var(--e2)", hf: "var(--hf)", nvidia: "var(--nv)", sigstore: "var(--sg)" };
@@ -113,7 +115,7 @@ export class Product {
     } catch (e) { err.textContent = `Could not plan this run: ${e.message}. The server may need a restart, or the story bundle needs rebuilding.`; err.hidden = false; btn.disabled = false; btn.textContent = "Start replay"; return; }
     this.live = false; this.done = false; this.screen = "run"; this.renderRail(); this.runView(false);
   }
-  destroyRun() { this.player?.stop(); this.player = null; this.es?.close(); this.es = null; this.view?.destroy?.(); this.view = null; }
+  destroyRun() { this.player?.stop(); this.player = null; this.es?.close(); this.es = null; this.guard?.stop(); this.guard = null; this.view?.destroy?.(); this.view = null; }
   runView(again) {
     this.destroyRun(); this.log = {}; this.nodeLog = {}; const live = this.live, P = this.plan;
     const events = live ? [] : P.events.map((f) => f.event);
@@ -132,11 +134,14 @@ export class Product {
       <div class="rgrid"><section class="rgraph" aria-label="live architecture graph"><div id="rg"></div></section>
         <div class="rside">${room ? `<section class="rroom" aria-label="room heat map"><h3>Room · ${esc(room.pick === "upload" ? "your picture" : "example data center")} ${scanTag(room.scan)}<span class="muted" id="roomPhase">before</span></h3><div id="roomMap"></div>${heatLegend()}<p class="cap" id="roomCap">Hover or tab to a rack for its numbers.</p></section>` : ""}<aside class="rnar" aria-label="narration"><h3>What is happening</h3><ol id="nar" aria-live="polite"></ol>
           <div class="meter" id="meter" hidden></div>
+          <section class="rguard" id="guardPanel" aria-label="operator check"></section>
           <details class="evs"><summary>Events <span id="evn">0</span> · wattnot.event/1</summary><ol id="evl"></ol></details></aside></div>
       </div><div class="rfoot"><span id="rstat" class="muted"></span><button class="btn pri" id="toRes" hidden>See the results</button></div></div>`;
     this.room = room; if (room) this.drawRoom(room.scan, false);
     this.view = new ArchView(this.$("#rg"), this.pd, { ids, chain: true, mode: "row", stats: 0, onSelect: (n, s, v) => this.D.open(n, s, v, this.runBlock(n, s)) });
     this.nar = this.$("#nar"); this.evl = this.$("#evl"); this.evCount = 0;
+    this.guard = new GuardPanel(this.$("#guardPanel"), {});
+    this.guard.start();
     this.$("#rswitch")?.addEventListener("click", () => { if (this.live) { this.destroyRun(); this.start(); } else this.startLive(); });
     this.$("#rpause").onclick = (e) => { const p = this.live ? null : this.player; if (this.live) { this.livePaused = !this.livePaused; } else p.pause(!p.paused); const on = this.live ? this.livePaused : p.paused; e.currentTarget.textContent = on ? "Resume" : "Pause"; this.view?.[on ? "pause" : "resume"](); };
     if (live) return;
@@ -157,9 +162,13 @@ export class Product {
     const d = ev.data || {}, map = this.pd.event_map[ev.type] || [], v = this.view;
     let node = d.node || map[0], sub = d.sub || map[1];
     // the RUN2 stream tags steps with architecture-map nodes (sam, e2e_rig...) and names its stages in step_id:
-    // room_scan, baseline, quality_gate, cap_sweep, adaptive_topk, keep_rollback, receipt. Those are this graph's nodes.
+    // room_scan, baseline, quality_gate, cap_sweep, adaptive_topk, approve, keep_rollback, receipt. Those are this graph's nodes.
     const stage = RUN2_STAGE[(ev.step_id || "").split(".")[0]];
     if (stage && v?.ids.has(stage) && !v.ids.has(d.node)) { node = stage; sub = ev.step_id.includes(".") ? ev.step_id.split(".").slice(1).join(".") : d.sub; }
+    if (ev.type === "proposal.created") this.guard?.kick();
+    // a step/progress event may name the planner that proposed it; the sweep node's tag resolves from that
+    const pp = d.planner && d.planner.partner;
+    if (typeof pp === "string" && pp && v) fillPlannerTags(v.root, pp);
     this.evCount++; this.$("#evn").textContent = this.evCount;
     const li = document.createElement("li"); li.innerHTML = `<code>${esc(ev.type)}</code> <span class="muted">${esc(ev.step_id || "")}</span>`; this.evl.appendChild(li); if (this.evl.children.length > 150) this.evl.firstChild.remove();
     if (ev.type === "run.started") {
@@ -271,8 +280,10 @@ export class Product {
       <p class="rnote">Recorded run <code>${esc(R.run_id)}</code>, re-evaluated against your limits: p99 may rise ${R.limits.p99_slack_pct}%, agreement at least ${R.limits.min_quality_pct}%${R.limits.strict_quality ? ", quality must be verified" : ""}. Levers are shown separately and never added together.</p>
       ${R.room ? this.roomResults(R) : ""}
       <div id="cards">${R.levers.map((L) => this.card(L)).join("")}</div>
+      <div id="partners"></div>
       <div class="resfoot"><button class="btn" id="back">Change settings</button><button class="btn" id="seeRun">See the run again</button><button class="btn" id="rerun">Run again</button><button class="btn" id="openArch">Open the Architecture map</button></div></div>`;
     if (R.room) { const b = this.$("#resB"), a = this.$("#resA"), cap = this.$("#resCap"); wireHeat(b, R.room.before, cap); wireHeat(a, R.room.after, cap); }
+    loadPartners(this.$("#partners"));
     this.$("#scale").onchange = (e) => { const v = Math.max(1, +e.target.value || 1); this.scale = v; this.$("#cards").innerHTML = R.levers.map((L) => this.card(L)).join(""); };
     this.$("#back").onclick = () => this.go("config"); this.$("#seeRun").onclick = () => this.go("run"); this.$("#rerun").onclick = () => { this.runView(false); this.screen = "run"; this.done = false; this.renderRail(); };
     this.$("#openArch").onclick = () => this.D.drawer("arch");

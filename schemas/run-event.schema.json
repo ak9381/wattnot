@@ -35,6 +35,7 @@
         "step.finished",
         "telemetry.sample",
         "trial.proposed",
+        "proposal.created",
         "decision",
         "trial.measured",
         "gate.result",

@@ -22,11 +22,23 @@ def add_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--replay-only", action="store_true",
                    help="hosted replay for judges: no GPU, no live Meta calls; "
                         "--events is the saved run (or set WATTNOT_HOSTED_REPLAY=1)")
+    p.add_argument("--approvals-dir", type=Path, default=None,
+                   help="folder for guardrail proposals "
+                        "(default: $WATTNOT_PROPOSALS_DIR or ./proposals)")
+    p.add_argument("--auto-approve", action="store_true",
+                   help="approve high-risk changes automatically, for unattended "
+                        "demos; logged as auto-approve-flag")
+    p.add_argument("--live-apply", action="store_true",
+                   help="apply power caps with nvidia-smi on this machine; off by default")
+    p.add_argument("--partners", type=Path, default=None,
+                   help="partners snapshot to serve (default: data/dash/partners.json)")
 
 
 def run(a: argparse.Namespace) -> int:
     return serve(a.host, a.port, capture=a.capture, follow=a.follow, results=a.results,
-                 token=a.token, events=a.events, replay_only=a.replay_only or None)
+                 token=a.token, events=a.events, replay_only=a.replay_only or None,
+                 approvals_dir=a.approvals_dir, auto_approve=a.auto_approve,
+                 live_apply=a.live_apply, partners=a.partners)
 
 
 def main() -> int:

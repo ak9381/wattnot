@@ -36,6 +36,7 @@ STEP_NODE = {
     "quality_gate": ("gates", "decide"),
     "cap_sweep": ("e2e_rig", "sweep"),
     "adaptive_topk": ("adaptive", "arms"),
+    "approve": ("approve", "decide"),
     "keep_rollback": ("apply", "keep"),
     "receipt": ("receipts", "sign"),
 }
@@ -45,6 +46,7 @@ PARTNERS = {
     "workload": ["oss"],
     "telemetry": ["nvidia"],
     "apply": ["nvidia", "e2e"],
+    "approve": ["oss"],
     "gates": ["oss"],
     "e2e_rig": ["e2e"],
     "adaptive": ["hf"],

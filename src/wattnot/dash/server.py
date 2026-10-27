@@ -1,6 +1,9 @@
 """The dashboard server: static pages, replay of real captures, and live following.
 
-Read only. It never applies a change; approving a proposal stays in `wattnot proposals`.
+Read-only, except the approval endpoints (`/api/dash/approve`, `/api/dash/reject`,
+`/api/dash/undo/...`), which decide, apply and undo guardrail proposals. Power
+caps are applied with a mock by default; `--live-apply` uses nvidia-smi on this
+machine instead.
 
     wattnot dash                        # replay the bundled real data on http://127.0.0.1:8765
     wattnot dash --follow cap.jsonl     # follow an expert capture while a local run writes it
@@ -41,6 +44,13 @@ from fastapi.responses import (
 )
 from fastapi.staticfiles import StaticFiles
 
+from wattnot.approvals import model as _am
+from wattnot.approvals.appliers import NvidiaSmiApplier, demo_appliers
+from wattnot.approvals.guard import Guard
+from wattnot.approvals.risk import load_config as load_guard_config
+from wattnot.approvals.service import HTTP as _VIA_HTTP
+from wattnot.approvals.service import Approvals, StateError
+from wattnot.approvals.store import NotFound, resolve_root
 from wattnot.dash import experts, gpu, runplan
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -139,7 +149,11 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
                follow: Path | None = None, results: Path | None = None,
                story: Path | None = None, token: str | None = None,
                events: Path | None = None, meta_probe=None,
-               replay_only: bool | None = None) -> FastAPI:
+               replay_only: bool | None = None,
+               approvals_dir: Path | None = None,
+               auto_approve: bool = False,
+               live_apply: bool = False,
+               partners: Path | None = None) -> FastAPI:
     app = FastAPI(title="WattNot dashboard", version="1")
     token = token or os.environ.get("WATTNOT_DASH_TOKEN") or None
     # Hosted replay-only mode (for judges): no GPU, no Meta call of any kind, saved run file only.
@@ -233,6 +247,148 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
             return runplan.plan(plan_cache["b"], body)
         except (ValueError, KeyError, TypeError) as e:
             raise HTTPException(400, str(e) if isinstance(e, ValueError) else "the run settings are not valid") from None
+
+    # ---- approve before apply ------------------------------------------------
+    adir = Path(approvals_dir) if approvals_dir is not None else resolve_root(None)
+    guard_cfg = load_guard_config(adir)
+    use_live = bool(live_apply) and not replay_only
+    if use_live:  # hosted replay mode always uses the mock, even with --live-apply
+        approvals = Approvals(adir, appliers={"power_cap": NvidiaSmiApplier()})
+    else:
+        approvals = Approvals(adir, appliers=demo_appliers())
+    guard = Guard(approvals, guard_cfg,
+                  auto_approve_by="dashboard" if auto_approve else None)
+    guard_mode = "live" if use_live else "mock"
+    app.state.guard = guard
+    app.state.approvals = approvals
+
+    def _item(p: dict) -> dict:
+        ch = p.get("change") or {}
+        risk = ch.get("risk") or {}
+        secs = None
+        if p["status"] == "pending":
+            secs = max(0.0, _am.parse_iso(p["expires_at"]) - time.time())
+        dec = p.get("decision")
+        appd = p.get("applied")
+        return {
+            "id": p["id"], "title": p.get("title"), "summary": p.get("summary"),
+            "kind": p.get("kind"), "label": p.get("label"),
+            "risk": {"level": risk.get("level"),
+                     "reasons": list(risk.get("reasons") or [])},
+            "change": {"before": ch.get("before"), "after": ch.get("after")},
+            "status": p["status"], "created_at": p.get("created_at"),
+            "expires_at": p.get("expires_at"), "seconds_left": secs,
+            "decision": ({k: (dec or {}).get(k) for k in ("by", "via", "at", "note")}
+                         if dec else None),
+            "applied": ({"at": appd.get("at"), "by": appd.get("by")}
+                        if appd else None),
+            "applies_on_approve": (p.get("source") or {}).get("applier") != "orchestrate",
+            "undo_available": p["status"] == "applied" and p.get("kind") in approvals.appliers,
+            "content_sha256": p.get("content_sha256"),
+            "planner": (p.get("source") or {}).get("planner"),
+        }
+
+    def _err(code: str, message: str, status: int) -> JSONResponse:
+        return JSONResponse({"code": code, "message": message}, status_code=status)
+
+    def _need_json(request: Request) -> JSONResponse | None:
+        ctype = request.headers.get("content-type", "").split(";")[0].strip().lower()
+        if ctype != "application/json":
+            return _err("unsupported_media_type",
+                        "send Content-Type: application/json", 415)
+        return None
+
+    @app.get("/api/dash/approvals")
+    def approvals_list() -> dict:
+        pending = [_item(p) for p in approvals.list(status="pending")]
+        applied = [_item(p) for p in approvals.list(status="applied")]
+        recent = [_item(p) for p in approvals.list()
+                  if p["status"] not in ("pending", "applied")][:20]
+        return {"pending": pending, "applied": applied, "recent": recent,
+                "config": guard_cfg.to_dict(), "auto_approve": auto_approve,
+                "mode": guard_mode, "now": _am.iso(time.time())}
+
+    @app.post("/api/dash/approve")
+    async def approvals_approve(request: Request):
+        if (refused := _need_json(request)) is not None:
+            return refused
+        try:
+            body = await request.json()
+        except ValueError:
+            return _err("bad_request", "the request body must be JSON", 400)
+        if not isinstance(body, dict) or not body.get("id"):
+            return _err("bad_request", "the request body needs an id", 400)
+        by = body.get("by") or "dashboard:operator"
+        try:
+            p = approvals.approve(body["id"], by, via=_VIA_HTTP,
+                                  note=body.get("note") or "",
+                                  expect_sha256=body.get("sha256"))
+        except NotFound:
+            return _err("not_found", f"no proposal {body['id']}", 404)
+        except StateError as e:
+            return _err("conflict", str(e), 409)
+        # a run that owns its change (orchestrate) applies it itself; applying here too would double-apply
+        if body.get("apply") is True and (p.get("source") or {}).get("applier") != "orchestrate":
+            try:
+                p = guard.apply(p["id"], by=by, via=_VIA_HTTP)
+            except StateError as e:
+                return _err("conflict", str(e), 409)
+        return _item(p)
+
+    @app.post("/api/dash/reject")
+    async def approvals_reject(request: Request):
+        if (refused := _need_json(request)) is not None:
+            return refused
+        try:
+            body = await request.json()
+        except ValueError:
+            return _err("bad_request", "the request body must be JSON", 400)
+        if not isinstance(body, dict) or not body.get("id"):
+            return _err("bad_request", "the request body needs an id", 400)
+        try:
+            p = approvals.reject(body["id"], body.get("by") or "dashboard:operator",
+                                 via=_VIA_HTTP, note=body.get("note") or "")
+        except NotFound:
+            return _err("not_found", f"no proposal {body['id']}", 404)
+        except StateError as e:
+            return _err("conflict", str(e), 409)
+        return _item(p)
+
+    @app.post("/api/dash/undo/{change_id}")
+    async def approvals_undo(change_id: str, request: Request):
+        if (refused := _need_json(request)) is not None:
+            return refused
+        try:
+            body = await request.json()
+        except ValueError:
+            body = {}
+        if not isinstance(body, dict):
+            body = {}
+        try:
+            p = guard.undo(change_id, body.get("by") or "dashboard:operator",
+                            via=_VIA_HTTP, note=body.get("note") or "")
+        except NotFound:
+            return _err("not_found", f"no proposal {change_id}", 404)
+        except StateError as e:
+            return _err("conflict", str(e), 409)
+        try:  # best effort: an undo beside a signed receipt gets a sidecar, never a failure
+            receipt = (p.get("receipt") or {})
+            if receipt.get("sha256"):
+                from pathlib import Path as _Path
+                dest = _Path(receipt["path"]).parent if receipt.get("path") else adir
+                guard.write_addendum(change_id, dest)
+        except Exception:  # noqa: BLE001 - never fail the undo
+            pass
+        return _item(p)
+
+    partners_path = Path(partners) if partners is not None else DATA / "partners.json"
+
+    @app.get("/api/dash/partners")
+    def dash_partners():
+        """Who is behind the run: a saved snapshot, so replay mode works too."""
+        if not partners_path.is_file():
+            raise HTTPException(404, "no partners snapshot yet: run scripts/build_partners.py")
+        return Response(partners_path.read_bytes(), media_type="application/json")
 
     @app.get("/api/dash/meta/health")
     def meta_health(fresh: int = 0):
@@ -416,11 +572,16 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
     return app
 
 
-def serve(host: str = "127.0.0.1", port: int = 8765, **kw) -> int:
+def serve(host: str = "127.0.0.1", port: int = 8765, *,
+          approvals_dir: Path | None = None, auto_approve: bool = False,
+          live_apply: bool = False, partners: Path | None = None, **kw) -> int:
     import uvicorn
 
-    print(f"WattNot dashboard on http://{host}:{port}  (read only)", flush=True)
-    uvicorn.run(create_app(**kw), host=host, port=port, log_level="warning")
+    print(f"WattNot dashboard on http://{host}:{port}  "
+          f"(approvals: {'live' if live_apply else 'mock'})", flush=True)
+    uvicorn.run(create_app(approvals_dir=approvals_dir, auto_approve=auto_approve,
+                           live_apply=live_apply, partners=partners, **kw),
+                 host=host, port=port, log_level="warning")
     return 0
 
 
