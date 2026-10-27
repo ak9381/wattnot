@@ -7,7 +7,9 @@ Power, Experts and Architecture one click away as deep-dive drawers. No build st
     wattnot dash                  # or: python -m wattnot.dash
     # open http://127.0.0.1:8765
 
-The server only reads. Approving a proposal still happens in `wattnot proposals`.
+The server only reads, except the Operator check endpoints (`POST /api/dash/approve`,
+`/api/dash/reject`, `/api/dash/undo/...`), which decide, apply and undo
+guardrail proposals from the Run screen.
 
 ## Power
 
@@ -82,6 +84,23 @@ Labels: MEASURED (read from a meter or a log), ESTIMATE (computed, assumption sh
 MOCK or ADVICE; a missing value is a dash. In the room, only the H100 card's GPU power is MEASURED; every
 other rack and all temperatures are SIMULATED; cooling and water are ESTIMATEs (PUE 1.56 from the Uptime
 Institute 2024 survey, 0.36 L/kWh from LBNL 2024). Levers are never added together: they come from separate runs.
+
+### Operator check
+
+The Run screen has an Operator check panel beside the narration. It polls
+`GET /api/dash/approvals` every 2 s. Each pending card shows the change as
+before → after, the risk level with its reasons, who proposed it (planner
+name and tier), the label, and a countdown. `Approve` applies the change when
+the run owns it; `Reject` turns it down. An applied card says who approved it
+and how, and offers `Undo` while the run still allows it. Recent decisions
+list who decided and when.
+
+No answer in time means reject: an expired proposal shows as timed out and
+cannot be approved. A MOCK badge marks the mock backend. Starting the server
+with `--auto-approve` auto-approves standard-tier changes and logs the flag
+as the approver, visibly not a person; a strict-tier planner (an open-weights
+planner) still needs a person for high-risk changes. Hosted replay always uses
+the mock, even with live apply.
 
 ### Event stream
 
