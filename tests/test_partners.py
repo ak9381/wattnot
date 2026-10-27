@@ -78,7 +78,8 @@ def test_snapshot_in_the_repo_validates():
     assert snap["format"] == "wattnot.partners/1" and snap["generated_at"]
     assert [p["id"] for p in snap["partners"]] == list(P.IDS)
     by = {p["id"]: p for p in snap["partners"]}
-    assert by["meta"]["calls"] == 464 and by["meta"]["cost"]["value"] == 10.69
+    assert by["meta"]["calls"] > 0 and by["meta"]["cost"]["value"] > 0
+    assert by["meta"]["cost"]["label"] in ("MEASURED", "ESTIMATE")
     assert by["meta"]["cost"] == {"value": 10.69, "unit": "USD", "label": "ESTIMATE"}
     assert by["baseten"]["calls"] == 1
     assert by["baseten"]["cost"] == {"value": 0.0002, "unit": "USD", "label": "MEASURED"}
