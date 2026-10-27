@@ -10,8 +10,12 @@ cd "$(dirname "$0")/.."
 if [ ! -d .venv ]; then python3 -m venv .venv; fi
 # shellcheck disable=SC1091
 source .venv/bin/activate
-PIP="python -m pip"; command -v uv >/dev/null && PIP="uv pip"
+# The Python that runs the proof: $PYTHON when set (tests pass the runner that
+# already has wattnot's deps), else the venv's `python`, else python3.
+PY="${PYTHON:-python}"
+command -v "$PY" >/dev/null 2>&1 || PY=python3
+PIP="$PY -m pip"; command -v uv >/dev/null && PIP="uv pip"
 $PIP install -q -e . "huggingface_hub[cli]>=0.30"
-python -c "import vllm" 2>/dev/null || $PIP install -q vllm
+"$PY" -c "import vllm" 2>/dev/null || $PIP install -q vllm
 command -v nvidia-smi >/dev/null || { echo "no nvidia-smi: not a GPU host"; exit 10; }
-exec python -m wattnot.proof.run full --serve "$@"
+exec "$PY" -m wattnot.proof.run full --serve "$@"

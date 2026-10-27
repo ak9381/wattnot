@@ -281,7 +281,8 @@ def test_cli_flag_adds_the_stage_and_checks_the_mass(tmp_path):
 
 def _sh(tmp_path, *args):
     env = {"PATH": "/usr/bin:/bin:" + str(Path(sys.executable).parent),
-           "PYTHONPATH": str(ROOT / "src"), "HOME": str(tmp_path)}
+           "PYTHONPATH": str(ROOT / "src"), "HOME": str(tmp_path),
+           "PYTHON": sys.executable}
     return subprocess.run(["bash", str(ROOT / "scripts" / "h100_oct30.sh"), *args],
                           capture_output=True, text=True, env=env, cwd=ROOT, check=False)
 

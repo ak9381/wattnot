@@ -5,8 +5,9 @@ router weight, drops the rest) and swaps in an eager expert loop that skips drop
 "off" arm runs the same hooked layers with no threshold, so both arms use identical code except
 for the threshold itself. Counters are kept on the GPU (no host sync per layer) in both arms.
 
-Only the fused-expert layout is wired: Granite MoE and Qwen3-MoE (a router called `router` or
-`gate` with `.top_k`, experts with `gate_up_proj`, `down_proj`, `act_fn`). Anything else raises `AdaptiveError` before a single watt is measured.
+Only the fused-expert layout is wired: Granite MoE and Qwen3-MoE (a router called
+`router` or `gate` with `.top_k`, experts with `gate_up_proj`, `down_proj`, `act_fn`).
+Anything else raises `AdaptiveError` before a single watt is measured.
 A one-prompt sanity check also compares the hooked "off" arm with the stock model.
 """
 
@@ -77,7 +78,8 @@ def install_hooks(model, torch) -> tuple[_State, Callable[[], None]]:
         def router_forward(h):
             out = orig(h)
             # transformers changed the router's return order between releases
-            # ((logits, weights, index) vs (index, weights, logits)); tell them apart by dtype and shape.
+            # ((logits, weights, index) vs (index, weights, logits));
+            # tell them apart by dtype and shape.
             order = _router_order(out, torch)
             logits, w, idx = (out[i] for i in order)
             n_exp = logits.shape[-1]
