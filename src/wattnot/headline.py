@@ -94,6 +94,7 @@ class HeadlineResult:
     receipt: Path
     bundle: Path
     decision_passed: bool
+    decision: object = None  # the gates' Decision (results with numbers), for proposals
 
 
 def safe_headline(backend, *, root: str | Path, key_path: str | Path, run_id: str,
@@ -183,7 +184,7 @@ def gated_compare(backend, *, baseline: TrialParams, candidate: TrialParams,
     (run_dir / "run.json").write_text(json.dumps(run, indent=2) + "\n", encoding="utf-8")
     receipt = build_from_dir(run_dir, root / "receipts")
     bundle = sign(receipt, no_rekor=True, key_path=key_path)
-    return HeadlineResult(run_dir, em.path, receipt, bundle, dec.passed)
+    return HeadlineResult(run_dir, em.path, receipt, bundle, dec.passed, dec)
 
 
 def _arm(t, wh: list[float]) -> dict:

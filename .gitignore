@@ -33,3 +33,5 @@ node_modules/
 results/
 /cloud-receipts/
 /cloud-demo/
+# Approvals: local proposals, audit trail and applied settings (see docs/APPROVALS.md)
+/proposals/

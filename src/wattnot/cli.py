@@ -5,6 +5,8 @@ Subcommands:
            and litres of water (all labelled ESTIMATE), then recommendations
   recommend  print "what this means for your data centre" from a run report
              JSON (start/final cap, Wh/request, p99)
+  proposals  review, approve, apply and roll back changes WattNot proposes
+             (see docs/APPROVALS.md)
 """
 
 from __future__ import annotations
@@ -87,6 +89,8 @@ def build_parser() -> argparse.ArgumentParser:
     _meta.add_parser(sub)
     from wattnot.flex import cli as _flex
     _flex.add_parser(sub)
+    from wattnot.approvals import cli as _props
+    _props.add_parser(sub)
     from wattnot.route import cli as _route
     _route.add_parser(sub)
     from wattnot.certificate import cli as _cert
@@ -235,6 +239,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _flex.dispatch(args)
         except (OSError, KeyError, TypeError, ValueError) as e:
             parser.error(f"flex: {e}")
+    if args.cmd == "proposals":
+        from wattnot.approvals import cli as _props
+
+        return _props.dispatch(args)
     if args.cmd == "route":
         try:
             from wattnot.route import cli as _route
