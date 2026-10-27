@@ -1,0 +1,592 @@
+{
+ "date": "2026-10-27",
+ "model": "muse-spark-1.3",
+ "note": "Real Muse Spark calls. next_knob decisions are real but run on SIMULATED surfaces; effort_ladder, coding_set and judge_calibration are measured on the live API. The first coding judge attempt hit its token cap and was rerun (both are in the spend).",
+ "next_knob": {
+  "gpu-power": {
+   "label": "SIMULATED surface, real agent decisions",
+   "final": {
+    "power_cap_w": 700,
+    "max_num_seqs": 256,
+    "enable_prefix_caching": true,
+    "quantization": "fp8"
+   },
+   "saving_pct": 12.7,
+   "trace": [
+    {
+     "round": 1,
+     "knob": "enable_prefix_caching",
+     "value": true,
+     "reason": "Expect ~25% Wh saving with 0% quality loss, safest gate pass",
+     "passed": true,
+     "saving_pct": 3.0,
+     "tokens": {
+      "input": 325,
+      "output": 721,
+      "reasoning": 676
+     }
+    },
+    {
+     "round": 2,
+     "knob": "quantization",
+     "value": "fp8",
+     "reason": "Expect ~25% Wh saving vs 3.0% from caching with p99 and quality likely within gates.",
+     "passed": true,
+     "saving_pct": 12.7,
+     "tokens": {
+      "input": 362,
+      "output": 628,
+      "reasoning": 578
+     }
+    },
+    {
+     "round": 3,
+     "knob": "power_cap_w",
+     "value": 500,
+     "reason": "fp8 saved 12.7% with -6.9% p99 headroom, power cap next biggest Wh saver",
+     "passed": false,
+     "saving_pct": 28.3,
+     "tokens": {
+      "input": 398,
+      "output": 2155,
+      "reasoning": 2102
+     }
+    },
+    {
+     "round": 4,
+     "knob": "power_cap_w",
+     "value": 600,
+     "reason": "500W saved 28.3% but p99 +34.8% failed, back off to 600W",
+     "passed": false,
+     "saving_pct": 20.8,
+     "tokens": {
+      "input": 434,
+      "output": 918,
+      "reasoning": 866
+     }
+    },
+    {
+     "round": 5,
+     "knob": "max_num_seqs",
+     "value": 512,
+     "reason": "fp8 passed with 12.7% saving and -6.9% p99; 512 batching is largest untried saver",
+     "passed": true,
+     "saving_pct": 17.9,
+     "tokens": {
+      "input": 470,
+      "output": 1372,
+      "reasoning": 1315
+     }
+    },
+    {
+     "round": 6,
+     "knob": "max_num_seqs",
+     "value": 256,
+     "reason": "512 saved 17.9% with -3.2% p99 so 256 likely saves and passes",
+     "passed": true,
+     "saving_pct": 12.7,
+     "tokens": {
+      "input": 507,
+      "output": 1686,
+      "reasoning": 1635
+     }
+    }
+   ]
+  },
+  "moe-routing": {
+   "label": "SIMULATED surface, real agent decisions",
+   "final": {
+    "expert_keep_fraction": 1.0,
+    "adaptive_top_k": "on"
+   },
+   "saving_pct": 15.0,
+   "trace": [
+    {
+     "round": 1,
+     "knob": "adaptive_top_k",
+     "value": "on",
+     "reason": "baseline 100.0% quality gives 10pp margin to 90% gate, try low-risk saver first",
+     "passed": true,
+     "saving_pct": 15.0,
+     "tokens": {
+      "input": 323,
+      "output": 1106,
+      "reasoning": 1055
+     }
+    },
+    {
+     "round": 2,
+     "knob": "expert_keep_fraction",
+     "value": 0.85,
+     "reason": "quality 92.0% leaves only 2pp margin to 90% gate, so try mildest cut 0.85 next",
+     "passed": false,
+     "saving_pct": 15.0,
+     "tokens": {
+      "input": 359,
+      "output": 1380,
+      "reasoning": 1322
+     }
+    },
+    {
+     "round": 3,
+     "kind": "stop",
+     "reason": "Best pass 15% saving at 92.0% quality; 0.85 keep alone falls to 83.7% <90% so deeper cuts unlikely to pass"
+    }
+   ]
+  },
+  "hosted-effort": {
+   "label": "SIMULATED surface, real agent decisions",
+   "final": {
+    "reasoning_effort": "medium",
+    "max_tokens_scale": 0.75,
+    "shared_prefix_first": true
+   },
+   "saving_pct": 47.6,
+   "trace": [
+    {
+     "round": 1,
+     "knob": "reasoning_effort",
+     "value": "medium",
+     "reason": "medium first: expected saving vs high while staying above 98% quality gate",
+     "passed": true,
+     "saving_pct": 36.0,
+     "tokens": {
+      "input": 325,
+      "output": 748,
+      "reasoning": 704
+     }
+    },
+    {
+     "round": 2,
+     "knob": "reasoning_effort",
+     "value": "low",
+     "reason": "medium saved 36.0% at 99.6% quality, low should save more within gates",
+     "passed": false,
+     "saving_pct": 57.6,
+     "tokens": {
+      "input": 362,
+      "output": 782,
+      "reasoning": 732
+     }
+    },
+    {
+     "round": 3,
+     "knob": "shared_prefix_first",
+     "value": true,
+     "reason": "medium passed at 99.6% quality; prefix cache adds saving with no quality risk",
+     "passed": true,
+     "saving_pct": 43.7,
+     "tokens": {
+      "input": 399,
+      "output": 1543,
+      "reasoning": 1497
+     }
+    },
+    {
+     "round": 4,
+     "knob": "max_tokens_scale",
+     "value": 0.75,
+     "reason": "best pass saves 43.7% at 99.6% quality, so 0.75 trim likely passes",
+     "passed": true,
+     "saving_pct": 47.6,
+     "tokens": {
+      "input": 435,
+      "output": 1257,
+      "reasoning": 1203
+     }
+    },
+    {
+     "round": 5,
+     "knob": "max_tokens_scale",
+     "value": 0.5,
+     "reason": "0.75 saved 47.6% at 99.1% quality, so 0.5 is best next saving",
+     "passed": false,
+     "saving_pct": 51.4,
+     "tokens": {
+      "input": 473,
+      "output": 1020,
+      "reasoning": 964
+     }
+    },
+    {
+     "round": 6,
+     "kind": "stop",
+     "reason": "low failed at 97.0% quality vs 98% gate so minimal unlikely to pass"
+    }
+   ]
+  }
+ },
+ "effort_ladder": {
+  "order_note": "Easy extract/classify/trace start minimal ascending. Arith starts low then medium. Logic longest prompts start medium then low. Minimal last for hard classes.",
+  "orders": {
+   "extract": [
+    "minimal",
+    "low",
+    "medium"
+   ],
+   "classify": [
+    "minimal",
+    "low",
+    "medium"
+   ],
+   "trace": [
+    "minimal",
+    "low",
+    "medium"
+   ],
+   "arith": [
+    "low",
+    "medium",
+    "minimal"
+   ],
+   "logic": [
+    "medium",
+    "low",
+    "minimal"
+   ]
+  },
+  "repeats": 5,
+  "classes": {
+   "extract": {
+    "reference": "high",
+    "picked": "minimal",
+    "cheapest_passing": "minimal",
+    "levels": {
+     "high": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.03869,
+      "output_tokens": 8875,
+      "reasoning_tokens": 8585,
+      "mean_latency_s": 2.15,
+      "errors": 0
+     },
+     "minimal": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.00901,
+      "output_tokens": 1890,
+      "reasoning_tokens": 1600,
+      "mean_latency_s": 0.91,
+      "errors": 0
+     },
+     "low": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.02572,
+      "output_tokens": 5823,
+      "reasoning_tokens": 5533,
+      "mean_latency_s": 1.54,
+      "errors": 0
+     },
+     "medium": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.03028,
+      "output_tokens": 6896,
+      "reasoning_tokens": 6606,
+      "mean_latency_s": 1.75,
+      "errors": 0
+     }
+    }
+   },
+   "classify": {
+    "reference": "high",
+    "picked": "minimal",
+    "cheapest_passing": "minimal",
+    "levels": {
+     "high": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.02115,
+      "output_tokens": 4798,
+      "reasoning_tokens": 4618,
+      "mean_latency_s": 1.44,
+      "errors": 0
+     },
+     "minimal": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.0053,
+      "output_tokens": 1068,
+      "reasoning_tokens": 888,
+      "mean_latency_s": 0.73,
+      "errors": 0
+     },
+     "low": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.01433,
+      "output_tokens": 3193,
+      "reasoning_tokens": 3013,
+      "mean_latency_s": 1.33,
+      "errors": 0
+     },
+     "medium": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.02111,
+      "output_tokens": 4789,
+      "reasoning_tokens": 4609,
+      "mean_latency_s": 1.6,
+      "errors": 0
+     }
+    }
+   },
+   "trace": {
+    "reference": "high",
+    "picked": "minimal",
+    "cheapest_passing": "minimal",
+    "levels": {
+     "high": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.02105,
+      "output_tokens": 4751,
+      "reasoning_tokens": 4561,
+      "mean_latency_s": 1.31,
+      "errors": 0
+     },
+     "minimal": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.00667,
+      "output_tokens": 1368,
+      "reasoning_tokens": 1178,
+      "mean_latency_s": 0.71,
+      "errors": 0
+     },
+     "low": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.01436,
+      "output_tokens": 3177,
+      "reasoning_tokens": 2987,
+      "mean_latency_s": 1.1,
+      "errors": 0
+     },
+     "medium": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.01897,
+      "output_tokens": 4263,
+      "reasoning_tokens": 4073,
+      "mean_latency_s": 1.3,
+      "errors": 0
+     }
+    }
+   },
+   "arith": {
+    "reference": "high",
+    "picked": "low",
+    "cheapest_passing": "minimal",
+    "levels": {
+     "high": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.02406,
+      "output_tokens": 5458,
+      "reasoning_tokens": 5248,
+      "mean_latency_s": 1.5,
+      "errors": 0
+     },
+     "low": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.01673,
+      "output_tokens": 3733,
+      "reasoning_tokens": 3521,
+      "mean_latency_s": 1.18,
+      "errors": 0
+     },
+     "medium": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.02114,
+      "output_tokens": 4771,
+      "reasoning_tokens": 4561,
+      "mean_latency_s": 1.3,
+      "errors": 0
+     },
+     "minimal": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.00764,
+      "output_tokens": 1595,
+      "reasoning_tokens": 1384,
+      "mean_latency_s": 1.1,
+      "errors": 0
+     }
+    }
+   },
+   "logic": {
+    "reference": "high",
+    "picked": "medium",
+    "cheapest_passing": "minimal",
+    "levels": {
+     "high": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.03801,
+      "output_tokens": 8677,
+      "reasoning_tokens": 8477,
+      "mean_latency_s": 2.18,
+      "errors": 0
+     },
+     "medium": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.03534,
+      "output_tokens": 8048,
+      "reasoning_tokens": 7848,
+      "mean_latency_s": 1.95,
+      "errors": 0
+     },
+     "low": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.02516,
+      "output_tokens": 5652,
+      "reasoning_tokens": 5452,
+      "mean_latency_s": 1.76,
+      "errors": 0
+     },
+     "minimal": {
+      "pass_rate": 100.0,
+      "n": 15,
+      "usd": 0.01175,
+      "output_tokens": 2498,
+      "reasoning_tokens": 2298,
+      "mean_latency_s": 0.81,
+      "errors": 0
+     }
+    }
+   }
+  },
+  "cost_saving_vs_reference_pct": 48.9,
+  "cost_saving_if_cheapest_passing_pct": 71.8
+ },
+ "coding_set": {
+  "reference": "high",
+  "usd_reference": 0.25084,
+  "output_tokens_reference": 57959,
+  "levels": {
+   "low": {
+    "items": 48,
+    "judge_passed": true,
+    "judge": "0/48 judged worse (0.0%, limit 5%)",
+    "judge_detail": {
+     "same": 47,
+     "better": 1,
+     "worse": 0
+    },
+    "usd": 0.17393,
+    "output_tokens": 39862,
+    "cost_saving_pct": 30.7
+   },
+   "medium": {
+    "items": 47,
+    "judge_passed": true,
+    "judge": "0/47 judged worse (0.0%, limit 5%)",
+    "judge_detail": {
+     "same": 47,
+     "better": 0,
+     "worse": 0
+    },
+    "usd": 0.2551,
+    "output_tokens": 58962,
+    "cost_saving_pct": -1.7
+   }
+  }
+ },
+ "judge_calibration": {
+  "low": {
+   "n": 30,
+   "agreement": 1.0,
+   "worse_caught": 10,
+   "worse_missed": 0,
+   "false_alarms": 0
+  },
+  "medium": {
+   "n": 30,
+   "agreement": 1.0,
+   "worse_caught": 10,
+   "worse_missed": 0,
+   "false_alarms": 0
+  }
+ },
+ "receipt_notes": {
+  "estimate": {
+   "caveat": "Saving is outside noise and statistically significant; interval is well above zero, not inside measurement noise. Meter output is labeled ESTIMATE, so billed saving uses lower bound.",
+   "estimated": [
+    "tariff_usd_per_kwh value 0.12 label ESTIMATE",
+    "water_ml_per_req value 0.077796 label ESTIMATE using assumed WUE 1.8 L/kWh",
+    "baseline_water_ml_per_req value 0.086436 label ESTIMATE using assumed WUE 1.8 L/kWh",
+    "measurement meter nvml hz 10 label ESTIMATE",
+    "grade ESTIMATE"
+   ],
+   "measured": [
+    "baseline power_cap_w 700 max_num_seqs 256 reps 5 wh_per_req mean 0.04802 sd 0.000192 p99_ms 1000 fixed_pass_rate 0.95 usd_per_req mean 5.7624e-06",
+    "candidate power_cap_w 550 max_num_seqs 256 reps 5 wh_per_req mean 0.04322 sd 0.000192 p99_ms 1050 fixed_pass_rate 0.95 usd_per_req mean 5.1864e-06",
+    "saving_pct mean 9.9958 ci_low 9.5736 ci_high 10.4193 billed_saving_pct 9.5736 fee_share 0.2",
+    "welch t 39.455757 df 8.0 p_value 9.36032165123088e-11 alpha 0.05 bootstrap n 10000"
+   ],
+   "summary": "Changed power_cap_w from 700 to 550, max_num_seqs stayed 256. Measured wh_per_req mean from 0.04802 to 0.04322, usd_per_req mean from 5.7624e-06 to 5.1864e-06, p99_ms from 1000 to 1050, fixed_pass_rate stayed 0.95. Mean saving 9.9958% ci_low 9.5736 ci_high 10.4193, billed at 9.5736%.",
+   "usage": {
+    "input": 1057,
+    "output": 3064,
+    "reasoning": 2611
+   }
+  },
+  "noise": {
+   "caveat": "Saving is inside noise. Grade is NOISE with ci_low -0.3753 to ci_high 0.4163 and p_value 0.43104594984862055; billable false and billed_saving_pct 0.",
+   "estimated": [
+    "tariff_usd_per_kwh value 0.12 label ESTIMATE",
+    "water_ml_per_req value 0.0864 label ESTIMATE",
+    "baseline_water_ml_per_req value 0.086436 label ESTIMATE"
+   ],
+   "measured": [
+    "baseline wh_per_req mean 0.04802",
+    "candidate wh_per_req mean 0.048",
+    "baseline p99_ms 1000",
+    "candidate p99_ms 1050",
+    "baseline quality fixed_pass_rate 0.95",
+    "candidate quality fixed_pass_rate 0.95",
+    "meter nvml at hz 10 label MEASURED"
+   ],
+   "summary": "Changed power_cap_w from 700 to 550, max_num_seqs stayed 256. Measured baseline 0.04802 Wh/req, p99_ms 1000 vs candidate 0.048 Wh/req, p99_ms 1050. Mean saving 0.0416 with ci_low -0.3753 to ci_high 0.4163. Grade NOISE, saving is inside noise.",
+   "usage": {
+    "input": 1057,
+    "output": 1230,
+    "reasoning": 946
+   }
+  },
+  "valid": {
+   "caveat": "Saving is not inside noise: CI 9.5736 to 10.4193 is entirely positive with Welch p 9.36032165123088e-11 at alpha 0.05. Tariff and water figures are ESTIMATE only and not used for billed saving.",
+   "estimated": [
+    "tariff_usd_per_kwh 0.12 ESTIMATE",
+    "water_ml_per_req 0.077796 ESTIMATE",
+    "baseline_water_ml_per_req 0.086436 ESTIMATE",
+    "assumed WUE 1.8 L/kWh ESTIMATE - not measured"
+   ],
+   "measured": [
+    "baseline power_cap_w 700",
+    "candidate power_cap_w 550",
+    "max_num_seqs 256",
+    "baseline wh_per_req mean 0.04802",
+    "candidate wh_per_req mean 0.04322",
+    "baseline usd_per_req mean 5.7624e-06",
+    "candidate usd_per_req mean 5.1864e-06",
+    "baseline p99_ms 1000",
+    "candidate p99_ms 1050",
+    "quality fixed_pass_rate 0.95"
+   ],
+   "summary": "Changed power_cap_w from 700 to 550 with max_num_seqs stayed at 256. Measured wh_per_req from 0.04802 to 0.04322, usd_per_req from 5.7624e-06 to 5.1864e-06, p99_ms from 1000 to 1050 with fixed_pass_rate 0.95 unchanged. Mean saving 9.9958 with CI 9.5736 to 10.4193, billed at 9.5736. Saving is outside noise with p 9.36032165123088e-11.",
+   "usage": {
+    "input": 1065,
+    "output": 2315,
+    "reasoning": 1935
+   }
+  }
+ }
+}

@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import json
 import os
-import urllib.request
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 
@@ -126,15 +125,25 @@ Transport = Callable[[dict], dict]
 
 
 class SparkClient:
-    """Chat Completions call with a strict JSON schema and a small token cap."""
+    """Chat Completions call with a strict JSON schema and a small token cap.
+
+    Every call goes through the spend guard (`wattnot.meta`): it is logged in the ledger
+    under `purpose` and refused once the $20 cap would be passed. A refusal is an
+    exception, so callers take their normal fallback path.
+    """
 
     def __init__(self, *, key: str | None = None, base: str | None = None,
-                 model: str = MODEL, max_tokens: int = 600, timeout_s: float = 30) -> None:
-        self.key = key or os.environ.get("META_API_KEY", "")
+                 model: str = MODEL, max_tokens: int = 600, timeout_s: float = 30,
+                 purpose: str = "planner", ledger=None) -> None:
+        from wattnot.meta.client import load_key
+
+        self.key = key or load_key()
         self.base = base or os.environ.get("META_BASE_URL", "https://api.meta.ai/v1")
         self.model = model
         self.max_tokens = max_tokens
         self.timeout_s = timeout_s
+        self.purpose = purpose
+        self.ledger = ledger
 
     def request_body(self, summary: Mapping) -> dict:
         return {"model": self.model, "reasoning_effort": "minimal", "max_tokens": self.max_tokens,
@@ -145,14 +154,12 @@ class SparkClient:
                     "name": "NextAction", "schema": CHOICE_SCHEMA, "strict": True}}}
 
     def __call__(self, body: dict) -> dict:
+        from wattnot.meta.client import GuardedClient
+
         if not self.key:
             raise RuntimeError("META_API_KEY is not set")
-        req = urllib.request.Request(f"{self.base}/chat/completions",
-                                     data=json.dumps(body).encode(),
-                                     headers={"Authorization": f"Bearer {self.key}",
-                                              "Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:  # noqa: S310
-            return json.loads(resp.read())
+        return GuardedClient(key=self.key, base=self.base, ledger=self.ledger,
+                             timeout_s=self.timeout_s)(body, purpose=self.purpose)
 
 
 class DecisionMaker:

@@ -99,7 +99,7 @@ def propose(ctx: PlannerContext, n: int = 4, *, transport: Callable[[dict], dict
             model: str = MODEL) -> tuple[list[Proposal], dict]:
     """Return (proposals, usage). Any failure falls back to a fixed spread."""
 
-    send = transport or SparkClient(model=model)
+    send = transport or SparkClient(model=model, purpose="propose-start")
     try:
         raw = send(propose_body(ctx, n, model))
         data = json.loads(raw["choices"][0]["message"]["content"])

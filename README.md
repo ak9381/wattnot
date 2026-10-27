@@ -16,6 +16,10 @@ wattnot cloud tune --live --budget-usd 10 --record data/cloud/recorded-run1.json
 
 What is and isn't checked yet is listed in [docs/runbooks/BASETEN.md](docs/runbooks/BASETEN.md). The bundled numbers are SIMULATED until a live run is recorded.
 
+## Meta API usage (capped at $20)
+
+Muse Spark makes WattNot's agent decisions: the next knob to try, the order of reasoning-effort levels, the judge verdicts and plain-words receipt notes. Every call goes through a spend guard that keeps a ledger (`~/.wattnot/meta_spend.json`), refuses a call that would pass **$20**, and warns at $15. `wattnot meta spend` shows the total, a per-purpose breakdown and what is left; `wattnot meta check` confirms the model answers. Details, the price used and the recorded session: [docs/runbooks/META-USAGE.md](docs/runbooks/META-USAGE.md).
+
 ## Status
 
 Built during the Meta Global AI Developer Hackathon, Oct 26 – Nov 4 2026. Before Oct 26 we had only planning docs, no code.

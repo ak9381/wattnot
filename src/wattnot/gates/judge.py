@@ -73,7 +73,7 @@ def judge(base_out: Mapping[str, str], cand_out: Mapping[str, str], items: Seque
     rows = [{"id": i["id"], "question": i["question"], "baseline": base_out[i["id"]],
              "candidate": cand_out[i["id"]]} for i in items]
     ids = [r["id"] for r in rows]
-    send = transport or SparkClient(model=model)
+    send = transport or SparkClient(model=model, purpose="judge")
     try:
         raw = send(request_body(rows, model))
         verdicts = parse_verdicts(raw, ids)
