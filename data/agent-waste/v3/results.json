@@ -1,0 +1,4465 @@
+{
+  "schema": "wattnot.agent-waste-v3/1",
+  "model": "muse-spark-1.3",
+  "j_per_token": 0.149666,
+  "j_per_token_source": "data/h100-run2/vm/baseline.json (Llama-3.1-8B-Instruct, one H100, stock 700 W)",
+  "price_source": "https://dev.meta.ai/docs/pricing-rate-limits (muse-spark-1.3, standard rates)",
+  "labels": {
+    "calls": "MEASURED",
+    "tokens": "MEASURED",
+    "wall_time": "MEASURED",
+    "success": "MEASURED",
+    "miss": "MEASURED",
+    "energy_j": "ESTIMATE",
+    "usd": "ESTIMATE"
+  },
+  "normal": {
+    "harness": {
+      "runs": 36,
+      "success": 36,
+      "success_pct": 100.0,
+      "calls": 120,
+      "calls_per_run": 3.33,
+      "prompt_tokens": 157753,
+      "completion_tokens": 10628,
+      "reasoning_tokens": 3344,
+      "total_tokens": 168381,
+      "tokens_per_run": 4677,
+      "tool_calls": 96,
+      "mutations": 24,
+      "wall_s_per_run": 2.94,
+      "usd": 0.1615,
+      "usd_per_run": 0.00449,
+      "joules": 1590.6,
+      "ended_by": {
+        "final": 24,
+        "marker": 12
+      },
+      "miss_runs": 0,
+      "nudges": 0,
+      "helpers": 0,
+      "errors": 0,
+      "n": 36
+    },
+    "harness+saver": {
+      "runs": 36,
+      "success": 36,
+      "success_pct": 100.0,
+      "calls": 120,
+      "calls_per_run": 3.33,
+      "prompt_tokens": 165691,
+      "completion_tokens": 12624,
+      "reasoning_tokens": 4913,
+      "total_tokens": 178315,
+      "tokens_per_run": 4953,
+      "tool_calls": 96,
+      "mutations": 24,
+      "wall_s_per_run": 3.84,
+      "usd": 0.1708,
+      "usd_per_run": 0.00474,
+      "joules": 1889.4,
+      "ended_by": {
+        "final": 12,
+        "marker": 12,
+        "saver-done": 12
+      },
+      "miss_runs": 0,
+      "nudges": 0,
+      "helpers": 0,
+      "errors": 0,
+      "n": 36
+    },
+    "saver_vs_harness": {
+      "calls": 0.0,
+      "total_tokens": 5.9,
+      "completion_tokens": 18.8,
+      "wall_s_per_run": 30.6,
+      "usd": 5.8,
+      "joules": 18.8,
+      "success_points": 0.0
+    }
+  },
+  "injected": {
+    "harness": {
+      "runs": 12,
+      "success": 12,
+      "success_pct": 100.0,
+      "calls": 196,
+      "calls_per_run": 16.33,
+      "prompt_tokens": 422019,
+      "completion_tokens": 30992,
+      "reasoning_tokens": 11771,
+      "total_tokens": 453011,
+      "tokens_per_run": 37751,
+      "tool_calls": 300,
+      "mutations": 0,
+      "wall_s_per_run": 25.03,
+      "usd": 0.4044,
+      "usd_per_run": 0.0337,
+      "joules": 4638.4,
+      "ended_by": {
+        "cap": 7,
+        "final": 5
+      },
+      "miss_runs": 8,
+      "nudges": 0,
+      "helpers": 23,
+      "errors": 0,
+      "n": 12
+    },
+    "harness+saver": {
+      "runs": 12,
+      "success": 12,
+      "success_pct": 100.0,
+      "calls": 94,
+      "calls_per_run": 7.83,
+      "prompt_tokens": 153826,
+      "completion_tokens": 16855,
+      "reasoning_tokens": 7311,
+      "total_tokens": 170681,
+      "tokens_per_run": 14223,
+      "tool_calls": 135,
+      "mutations": 0,
+      "wall_s_per_run": 14.15,
+      "usd": 0.186,
+      "usd_per_run": 0.0155,
+      "joules": 2522.6,
+      "ended_by": {
+        "final": 2,
+        "saver-done": 5,
+        "saver-stop": 5
+      },
+      "miss_runs": 0,
+      "nudges": 14,
+      "helpers": 15,
+      "errors": 0,
+      "n": 12
+    },
+    "saver_vs_harness": {
+      "calls": -52.0,
+      "total_tokens": -62.3,
+      "completion_tokens": -45.6,
+      "wall_s_per_run": -43.5,
+      "usd": -54.0,
+      "joules": -45.6,
+      "success_points": 0.0
+    }
+  },
+  "by_category": {
+    "normal": {
+      "harness": {
+        "runs": 36,
+        "success": 36,
+        "success_pct": 100.0,
+        "calls": 120,
+        "calls_per_run": 3.33,
+        "prompt_tokens": 157753,
+        "completion_tokens": 10628,
+        "reasoning_tokens": 3344,
+        "total_tokens": 168381,
+        "tokens_per_run": 4677,
+        "tool_calls": 96,
+        "mutations": 24,
+        "wall_s_per_run": 2.94,
+        "usd": 0.1615,
+        "usd_per_run": 0.00449,
+        "joules": 1590.6,
+        "ended_by": {
+          "final": 24,
+          "marker": 12
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 36
+      },
+      "harness+saver": {
+        "runs": 36,
+        "success": 36,
+        "success_pct": 100.0,
+        "calls": 120,
+        "calls_per_run": 3.33,
+        "prompt_tokens": 165691,
+        "completion_tokens": 12624,
+        "reasoning_tokens": 4913,
+        "total_tokens": 178315,
+        "tokens_per_run": 4953,
+        "tool_calls": 96,
+        "mutations": 24,
+        "wall_s_per_run": 3.84,
+        "usd": 0.1708,
+        "usd_per_run": 0.00474,
+        "joules": 1889.4,
+        "ended_by": {
+          "final": 12,
+          "marker": 12,
+          "saver-done": 12
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 36
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 5.9,
+        "completion_tokens": 18.8,
+        "wall_s_per_run": 30.6,
+        "usd": 5.8,
+        "joules": 18.8,
+        "success_points": 0.0
+      }
+    },
+    "noprogress": {
+      "harness": {
+        "runs": 6,
+        "success": 6,
+        "success_pct": 100.0,
+        "calls": 90,
+        "calls_per_run": 15.0,
+        "prompt_tokens": 266288,
+        "completion_tokens": 16832,
+        "reasoning_tokens": 6690,
+        "total_tokens": 283120,
+        "tokens_per_run": 47187,
+        "tool_calls": 181,
+        "mutations": 0,
+        "wall_s_per_run": 23.74,
+        "usd": 0.2329,
+        "usd_per_run": 0.03881,
+        "joules": 2519.2,
+        "ended_by": {
+          "cap": 6
+        },
+        "miss_runs": 6,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 6
+      },
+      "harness+saver": {
+        "runs": 6,
+        "success": 6,
+        "success_pct": 100.0,
+        "calls": 34,
+        "calls_per_run": 5.67,
+        "prompt_tokens": 64313,
+        "completion_tokens": 6372,
+        "reasoning_tokens": 2816,
+        "total_tokens": 70685,
+        "tokens_per_run": 11781,
+        "tool_calls": 58,
+        "mutations": 0,
+        "wall_s_per_run": 8.31,
+        "usd": 0.0714,
+        "usd_per_run": 0.01189,
+        "joules": 953.7,
+        "ended_by": {
+          "saver-done": 4,
+          "saver-stop": 2
+        },
+        "miss_runs": 0,
+        "nudges": 6,
+        "helpers": 0,
+        "errors": 0,
+        "n": 6
+      },
+      "saver_vs_harness": {
+        "calls": -62.2,
+        "total_tokens": -75.0,
+        "completion_tokens": -62.1,
+        "wall_s_per_run": -65.0,
+        "usd": -69.3,
+        "joules": -62.1,
+        "success_points": 0.0
+      }
+    },
+    "sprawl": {
+      "harness": {
+        "runs": 6,
+        "success": 6,
+        "success_pct": 100.0,
+        "calls": 106,
+        "calls_per_run": 17.67,
+        "prompt_tokens": 155731,
+        "completion_tokens": 14160,
+        "reasoning_tokens": 5081,
+        "total_tokens": 169891,
+        "tokens_per_run": 28315,
+        "tool_calls": 119,
+        "mutations": 0,
+        "wall_s_per_run": 26.32,
+        "usd": 0.1715,
+        "usd_per_run": 0.02859,
+        "joules": 2119.3,
+        "ended_by": {
+          "cap": 1,
+          "final": 5
+        },
+        "miss_runs": 2,
+        "nudges": 0,
+        "helpers": 23,
+        "errors": 0,
+        "n": 6
+      },
+      "harness+saver": {
+        "runs": 6,
+        "success": 6,
+        "success_pct": 100.0,
+        "calls": 60,
+        "calls_per_run": 10.0,
+        "prompt_tokens": 89513,
+        "completion_tokens": 10483,
+        "reasoning_tokens": 4495,
+        "total_tokens": 99996,
+        "tokens_per_run": 16666,
+        "tool_calls": 77,
+        "mutations": 0,
+        "wall_s_per_run": 19.99,
+        "usd": 0.1146,
+        "usd_per_run": 0.01911,
+        "joules": 1568.9,
+        "ended_by": {
+          "final": 2,
+          "saver-done": 1,
+          "saver-stop": 3
+        },
+        "miss_runs": 0,
+        "nudges": 8,
+        "helpers": 15,
+        "errors": 0,
+        "n": 6
+      },
+      "saver_vs_harness": {
+        "calls": -43.4,
+        "total_tokens": -41.1,
+        "completion_tokens": -26.0,
+        "wall_s_per_run": -24.1,
+        "usd": -33.2,
+        "joules": -26.0,
+        "success_points": 0.0
+      }
+    }
+  },
+  "by_harness_normal": {
+    "planner": {
+      "harness": {
+        "runs": 12,
+        "success": 12,
+        "success_pct": 100.0,
+        "calls": 40,
+        "calls_per_run": 3.33,
+        "prompt_tokens": 54711,
+        "completion_tokens": 3777,
+        "reasoning_tokens": 1331,
+        "total_tokens": 58488,
+        "tokens_per_run": 4874,
+        "tool_calls": 32,
+        "mutations": 8,
+        "wall_s_per_run": 3.26,
+        "usd": 0.0564,
+        "usd_per_run": 0.0047,
+        "joules": 565.3,
+        "ended_by": {
+          "final": 12
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 12
+      },
+      "harness+saver": {
+        "runs": 12,
+        "success": 12,
+        "success_pct": 100.0,
+        "calls": 40,
+        "calls_per_run": 3.33,
+        "prompt_tokens": 57272,
+        "completion_tokens": 4087,
+        "reasoning_tokens": 1674,
+        "total_tokens": 61359,
+        "tokens_per_run": 5113,
+        "tool_calls": 32,
+        "mutations": 8,
+        "wall_s_per_run": 3.27,
+        "usd": 0.0586,
+        "usd_per_run": 0.00489,
+        "joules": 611.7,
+        "ended_by": {
+          "final": 11,
+          "saver-done": 1
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 12
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 4.9,
+        "completion_tokens": 8.2,
+        "wall_s_per_run": 0.3,
+        "usd": 3.9,
+        "joules": 8.2,
+        "success_points": 0.0
+      }
+    },
+    "react": {
+      "harness": {
+        "runs": 12,
+        "success": 12,
+        "success_pct": 100.0,
+        "calls": 40,
+        "calls_per_run": 3.33,
+        "prompt_tokens": 51247,
+        "completion_tokens": 3530,
+        "reasoning_tokens": 1111,
+        "total_tokens": 54777,
+        "tokens_per_run": 4565,
+        "tool_calls": 32,
+        "mutations": 8,
+        "wall_s_per_run": 2.92,
+        "usd": 0.0537,
+        "usd_per_run": 0.00447,
+        "joules": 528.3,
+        "ended_by": {
+          "final": 12
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 12
+      },
+      "harness+saver": {
+        "runs": 12,
+        "success": 12,
+        "success_pct": 100.0,
+        "calls": 40,
+        "calls_per_run": 3.33,
+        "prompt_tokens": 53897,
+        "completion_tokens": 4377,
+        "reasoning_tokens": 1549,
+        "total_tokens": 58274,
+        "tokens_per_run": 4856,
+        "tool_calls": 32,
+        "mutations": 8,
+        "wall_s_per_run": 4.97,
+        "usd": 0.0536,
+        "usd_per_run": 0.00447,
+        "joules": 655.1,
+        "ended_by": {
+          "final": 1,
+          "saver-done": 11
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 12
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 6.4,
+        "completion_tokens": 24.0,
+        "wall_s_per_run": 70.2,
+        "usd": -0.2,
+        "joules": 24.0,
+        "success_points": 0.0
+      }
+    },
+    "stop": {
+      "harness": {
+        "runs": 12,
+        "success": 12,
+        "success_pct": 100.0,
+        "calls": 40,
+        "calls_per_run": 3.33,
+        "prompt_tokens": 51795,
+        "completion_tokens": 3321,
+        "reasoning_tokens": 902,
+        "total_tokens": 55116,
+        "tokens_per_run": 4593,
+        "tool_calls": 32,
+        "mutations": 8,
+        "wall_s_per_run": 2.64,
+        "usd": 0.0515,
+        "usd_per_run": 0.00429,
+        "joules": 497.0,
+        "ended_by": {
+          "marker": 12
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 12
+      },
+      "harness+saver": {
+        "runs": 12,
+        "success": 12,
+        "success_pct": 100.0,
+        "calls": 40,
+        "calls_per_run": 3.33,
+        "prompt_tokens": 54522,
+        "completion_tokens": 4160,
+        "reasoning_tokens": 1690,
+        "total_tokens": 58682,
+        "tokens_per_run": 4890,
+        "tool_calls": 32,
+        "mutations": 8,
+        "wall_s_per_run": 3.29,
+        "usd": 0.0586,
+        "usd_per_run": 0.00488,
+        "joules": 622.6,
+        "ended_by": {
+          "marker": 12
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 12
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 6.5,
+        "completion_tokens": 25.3,
+        "wall_s_per_run": 24.6,
+        "usd": 13.8,
+        "joules": 25.3,
+        "success_points": 0.0
+      }
+    }
+  },
+  "cases": {
+    "noprog-1-search-summarize": {
+      "category": "noprogress",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 30,
+        "calls_per_run": 15.0,
+        "prompt_tokens": 153768,
+        "completion_tokens": 12567,
+        "reasoning_tokens": 5930,
+        "total_tokens": 166335,
+        "tokens_per_run": 83168,
+        "tool_calls": 121,
+        "mutations": 0,
+        "wall_s_per_run": 44.39,
+        "usd": 0.16,
+        "usd_per_run": 0.07998,
+        "joules": 1880.9,
+        "ended_by": {
+          "cap": 2
+        },
+        "miss_runs": 2,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "the search ignores the query and returns the same three docs, reordered",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 14,
+        "calls_per_run": 7.0,
+        "prompt_tokens": 34846,
+        "completion_tokens": 3650,
+        "reasoning_tokens": 1387,
+        "total_tokens": 38496,
+        "tokens_per_run": 19248,
+        "tool_calls": 38,
+        "mutations": 0,
+        "wall_s_per_run": 13.04,
+        "usd": 0.0409,
+        "usd_per_run": 0.02045,
+        "joules": 546.3,
+        "ended_by": {
+          "saver-done": 2
+        },
+        "miss_runs": 0,
+        "nudges": 2,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": -53.3,
+        "total_tokens": -76.9,
+        "completion_tokens": -71.0,
+        "wall_s_per_run": -70.6,
+        "usd": -74.4,
+        "joules": -71.0,
+        "success_points": 0.0
+      }
+    },
+    "noprog-2-ticket-poll": {
+      "category": "noprogress",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 30,
+        "calls_per_run": 15.0,
+        "prompt_tokens": 58487,
+        "completion_tokens": 2115,
+        "reasoning_tokens": 304,
+        "total_tokens": 60602,
+        "tokens_per_run": 30301,
+        "tool_calls": 30,
+        "mutations": 0,
+        "wall_s_per_run": 12.77,
+        "usd": 0.0373,
+        "usd_per_run": 0.01867,
+        "joules": 316.5,
+        "ended_by": {
+          "cap": 2
+        },
+        "miss_runs": 2,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "T-105 stays blocked; every read carries a new clock value",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 14,
+        "calls_per_run": 7.0,
+        "prompt_tokens": 21549,
+        "completion_tokens": 1513,
+        "reasoning_tokens": 719,
+        "total_tokens": 23062,
+        "tokens_per_run": 11531,
+        "tool_calls": 12,
+        "mutations": 0,
+        "wall_s_per_run": 6.93,
+        "usd": 0.0214,
+        "usd_per_run": 0.01069,
+        "joules": 226.4,
+        "ended_by": {
+          "saver-done": 2
+        },
+        "miss_runs": 0,
+        "nudges": 2,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": -53.3,
+        "total_tokens": -61.9,
+        "completion_tokens": -28.5,
+        "wall_s_per_run": -45.7,
+        "usd": -42.6,
+        "joules": -28.5,
+        "success_points": 0.0
+      }
+    },
+    "noprog-3-file-poll": {
+      "category": "noprogress",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 30,
+        "calls_per_run": 15.0,
+        "prompt_tokens": 54033,
+        "completion_tokens": 2150,
+        "reasoning_tokens": 456,
+        "total_tokens": 56183,
+        "tokens_per_run": 28092,
+        "tool_calls": 30,
+        "mutations": 0,
+        "wall_s_per_run": 14.06,
+        "usd": 0.0356,
+        "usd_per_run": 0.01778,
+        "joules": 321.8,
+        "ended_by": {
+          "cap": 2
+        },
+        "miss_runs": 2,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "the file never changes",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7918,
+        "completion_tokens": 1209,
+        "reasoning_tokens": 710,
+        "total_tokens": 9127,
+        "tokens_per_run": 4564,
+        "tool_calls": 8,
+        "mutations": 0,
+        "wall_s_per_run": 4.97,
+        "usd": 0.0091,
+        "usd_per_run": 0.00453,
+        "joules": 180.9,
+        "ended_by": {
+          "saver-stop": 2
+        },
+        "miss_runs": 0,
+        "nudges": 2,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": -80.0,
+        "total_tokens": -83.8,
+        "completion_tokens": -43.8,
+        "wall_s_per_run": -64.7,
+        "usd": -74.4,
+        "joules": -43.8,
+        "success_points": 0.0
+      }
+    },
+    "normal-planner-E1": {
+      "category": "normal",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7740,
+        "completion_tokens": 501,
+        "reasoning_tokens": 225,
+        "total_tokens": 8241,
+        "tokens_per_run": 4120,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 2.62,
+        "usd": 0.0079,
+        "usd_per_run": 0.00396,
+        "joules": 75.0,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 8136,
+        "completion_tokens": 507,
+        "reasoning_tokens": 231,
+        "total_tokens": 8643,
+        "tokens_per_run": 4322,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 2.63,
+        "usd": 0.0068,
+        "usd_per_run": 0.00338,
+        "joules": 75.9,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 4.9,
+        "completion_tokens": 1.2,
+        "wall_s_per_run": 0.4,
+        "usd": -13.9,
+        "joules": 1.2,
+        "success_points": 0.0
+      }
+    },
+    "normal-planner-E4": {
+      "category": "normal",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7838,
+        "completion_tokens": 450,
+        "reasoning_tokens": 177,
+        "total_tokens": 8288,
+        "tokens_per_run": 4144,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 2.31,
+        "usd": 0.0048,
+        "usd_per_run": 0.00238,
+        "joules": 67.3,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 8245,
+        "completion_tokens": 648,
+        "reasoning_tokens": 364,
+        "total_tokens": 8893,
+        "tokens_per_run": 4446,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 2.76,
+        "usd": 0.0075,
+        "usd_per_run": 0.00375,
+        "joules": 97.0,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 7.3,
+        "completion_tokens": 44.0,
+        "wall_s_per_run": 19.5,
+        "usd": 56.3,
+        "joules": 44.1,
+        "success_points": 0.0
+      }
+    },
+    "normal-planner-N1": {
+      "category": "normal",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7844,
+        "completion_tokens": 536,
+        "reasoning_tokens": 222,
+        "total_tokens": 8380,
+        "tokens_per_run": 4190,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 4.04,
+        "usd": 0.0096,
+        "usd_per_run": 0.00479,
+        "joules": 80.2,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 8228,
+        "completion_tokens": 562,
+        "reasoning_tokens": 260,
+        "total_tokens": 8790,
+        "tokens_per_run": 4395,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 2.21,
+        "usd": 0.0103,
+        "usd_per_run": 0.00516,
+        "joules": 84.1,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 4.9,
+        "completion_tokens": 4.9,
+        "wall_s_per_run": -45.3,
+        "usd": 7.3,
+        "joules": 4.9,
+        "success_points": 0.0
+      }
+    },
+    "normal-planner-N3": {
+      "category": "normal",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7874,
+        "completion_tokens": 559,
+        "reasoning_tokens": 259,
+        "total_tokens": 8433,
+        "tokens_per_run": 4216,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 2.76,
+        "usd": 0.0086,
+        "usd_per_run": 0.0043,
+        "joules": 83.7,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 8282,
+        "completion_tokens": 615,
+        "reasoning_tokens": 309,
+        "total_tokens": 8897,
+        "tokens_per_run": 4448,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 3.42,
+        "usd": 0.0089,
+        "usd_per_run": 0.00447,
+        "joules": 92.0,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 5.5,
+        "completion_tokens": 10.0,
+        "wall_s_per_run": 23.9,
+        "usd": 3.5,
+        "joules": 9.9,
+        "success_points": 0.0
+      }
+    },
+    "normal-planner-W1": {
+      "category": "normal",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 8,
+        "calls_per_run": 4.0,
+        "prompt_tokens": 12460,
+        "completion_tokens": 1010,
+        "reasoning_tokens": 226,
+        "total_tokens": 13470,
+        "tokens_per_run": 6735,
+        "tool_calls": 10,
+        "mutations": 6,
+        "wall_s_per_run": 4.15,
+        "usd": 0.0139,
+        "usd_per_run": 0.00695,
+        "joules": 151.2,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 8,
+        "calls_per_run": 4.0,
+        "prompt_tokens": 12910,
+        "completion_tokens": 914,
+        "reasoning_tokens": 174,
+        "total_tokens": 13824,
+        "tokens_per_run": 6912,
+        "tool_calls": 10,
+        "mutations": 6,
+        "wall_s_per_run": 4.07,
+        "usd": 0.0138,
+        "usd_per_run": 0.00688,
+        "joules": 136.8,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 2.6,
+        "completion_tokens": -9.5,
+        "wall_s_per_run": -1.9,
+        "usd": -0.7,
+        "joules": -9.5,
+        "success_points": 0.0
+      }
+    },
+    "normal-planner-W4": {
+      "category": "normal",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 8,
+        "calls_per_run": 4.0,
+        "prompt_tokens": 10955,
+        "completion_tokens": 721,
+        "reasoning_tokens": 222,
+        "total_tokens": 11676,
+        "tokens_per_run": 5838,
+        "tool_calls": 6,
+        "mutations": 2,
+        "wall_s_per_run": 3.69,
+        "usd": 0.0116,
+        "usd_per_run": 0.00581,
+        "joules": 107.9,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 8,
+        "calls_per_run": 4.0,
+        "prompt_tokens": 11471,
+        "completion_tokens": 841,
+        "reasoning_tokens": 336,
+        "total_tokens": 12312,
+        "tokens_per_run": 6156,
+        "tool_calls": 6,
+        "mutations": 2,
+        "wall_s_per_run": 4.51,
+        "usd": 0.0114,
+        "usd_per_run": 0.00569,
+        "joules": 125.9,
+        "ended_by": {
+          "final": 1,
+          "saver-done": 1
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 5.4,
+        "completion_tokens": 16.6,
+        "wall_s_per_run": 22.2,
+        "usd": -1.7,
+        "joules": 16.7,
+        "success_points": 0.0
+      }
+    },
+    "normal-react-E1": {
+      "category": "normal",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7218,
+        "completion_tokens": 399,
+        "reasoning_tokens": 127,
+        "total_tokens": 7617,
+        "tokens_per_run": 3808,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 2.22,
+        "usd": 0.0077,
+        "usd_per_run": 0.00384,
+        "joules": 59.7,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7614,
+        "completion_tokens": 653,
+        "reasoning_tokens": 307,
+        "total_tokens": 8267,
+        "tokens_per_run": 4134,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 3.3,
+        "usd": 0.0098,
+        "usd_per_run": 0.0049,
+        "joules": 97.7,
+        "ended_by": {
+          "saver-done": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 8.5,
+        "completion_tokens": 63.7,
+        "wall_s_per_run": 48.6,
+        "usd": 27.3,
+        "joules": 63.7,
+        "success_points": 0.0
+      }
+    },
+    "normal-react-E4": {
+      "category": "normal",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7314,
+        "completion_tokens": 420,
+        "reasoning_tokens": 149,
+        "total_tokens": 7734,
+        "tokens_per_run": 3867,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 2.6,
+        "usd": 0.0063,
+        "usd_per_run": 0.00317,
+        "joules": 62.9,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7706,
+        "completion_tokens": 529,
+        "reasoning_tokens": 217,
+        "total_tokens": 8235,
+        "tokens_per_run": 4118,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 12.37,
+        "usd": 0.006,
+        "usd_per_run": 0.00302,
+        "joules": 79.2,
+        "ended_by": {
+          "final": 1,
+          "saver-done": 1
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 6.5,
+        "completion_tokens": 26.0,
+        "wall_s_per_run": 375.8,
+        "usd": -4.8,
+        "joules": 25.9,
+        "success_points": 0.0
+      }
+    },
+    "normal-react-N1": {
+      "category": "normal",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7294,
+        "completion_tokens": 446,
+        "reasoning_tokens": 152,
+        "total_tokens": 7740,
+        "tokens_per_run": 3870,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 2.94,
+        "usd": 0.0075,
+        "usd_per_run": 0.00377,
+        "joules": 66.8,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7708,
+        "completion_tokens": 524,
+        "reasoning_tokens": 136,
+        "total_tokens": 8232,
+        "tokens_per_run": 4116,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 3.41,
+        "usd": 0.0092,
+        "usd_per_run": 0.00461,
+        "joules": 78.4,
+        "ended_by": {
+          "saver-done": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 6.4,
+        "completion_tokens": 17.5,
+        "wall_s_per_run": 16.0,
+        "usd": 22.7,
+        "joules": 17.4,
+        "success_points": 0.0
+      }
+    },
+    "normal-react-N3": {
+      "category": "normal",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7350,
+        "completion_tokens": 501,
+        "reasoning_tokens": 203,
+        "total_tokens": 7851,
+        "tokens_per_run": 3926,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 3.08,
+        "usd": 0.0081,
+        "usd_per_run": 0.00406,
+        "joules": 75.0,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7746,
+        "completion_tokens": 887,
+        "reasoning_tokens": 517,
+        "total_tokens": 8633,
+        "tokens_per_run": 4316,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 3.15,
+        "usd": 0.0083,
+        "usd_per_run": 0.00415,
+        "joules": 132.8,
+        "ended_by": {
+          "saver-done": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 10.0,
+        "completion_tokens": 77.0,
+        "wall_s_per_run": 2.3,
+        "usd": 2.5,
+        "joules": 77.1,
+        "success_points": 0.0
+      }
+    },
+    "normal-react-W1": {
+      "category": "normal",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 8,
+        "calls_per_run": 4.0,
+        "prompt_tokens": 11762,
+        "completion_tokens": 1050,
+        "reasoning_tokens": 269,
+        "total_tokens": 12812,
+        "tokens_per_run": 6406,
+        "tool_calls": 10,
+        "mutations": 6,
+        "wall_s_per_run": 3.61,
+        "usd": 0.0137,
+        "usd_per_run": 0.00687,
+        "joules": 157.1,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 8,
+        "calls_per_run": 4.0,
+        "prompt_tokens": 12290,
+        "completion_tokens": 1087,
+        "reasoning_tokens": 234,
+        "total_tokens": 13377,
+        "tokens_per_run": 6688,
+        "tool_calls": 10,
+        "mutations": 6,
+        "wall_s_per_run": 3.68,
+        "usd": 0.0107,
+        "usd_per_run": 0.00533,
+        "joules": 162.7,
+        "ended_by": {
+          "saver-done": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 4.4,
+        "completion_tokens": 3.5,
+        "wall_s_per_run": 1.9,
+        "usd": -21.9,
+        "joules": 3.6,
+        "success_points": 0.0
+      }
+    },
+    "normal-react-W4": {
+      "category": "normal",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 8,
+        "calls_per_run": 4.0,
+        "prompt_tokens": 10309,
+        "completion_tokens": 714,
+        "reasoning_tokens": 211,
+        "total_tokens": 11023,
+        "tokens_per_run": 5512,
+        "tool_calls": 6,
+        "mutations": 2,
+        "wall_s_per_run": 3.09,
+        "usd": 0.0102,
+        "usd_per_run": 0.00512,
+        "joules": 106.9,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 8,
+        "calls_per_run": 4.0,
+        "prompt_tokens": 10833,
+        "completion_tokens": 697,
+        "reasoning_tokens": 138,
+        "total_tokens": 11530,
+        "tokens_per_run": 5765,
+        "tool_calls": 6,
+        "mutations": 2,
+        "wall_s_per_run": 3.91,
+        "usd": 0.0096,
+        "usd_per_run": 0.00478,
+        "joules": 104.3,
+        "ended_by": {
+          "saver-done": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 4.6,
+        "completion_tokens": -2.4,
+        "wall_s_per_run": 26.5,
+        "usd": -5.9,
+        "joules": -2.4,
+        "success_points": 0.0
+      }
+    },
+    "normal-stop-E1": {
+      "category": "normal",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7307,
+        "completion_tokens": 346,
+        "reasoning_tokens": 67,
+        "total_tokens": 7653,
+        "tokens_per_run": 3826,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 2.25,
+        "usd": 0.0074,
+        "usd_per_run": 0.00371,
+        "joules": 51.8,
+        "ended_by": {
+          "marker": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7718,
+        "completion_tokens": 512,
+        "reasoning_tokens": 217,
+        "total_tokens": 8230,
+        "tokens_per_run": 4115,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 3.0,
+        "usd": 0.0079,
+        "usd_per_run": 0.00397,
+        "joules": 76.6,
+        "ended_by": {
+          "marker": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 7.5,
+        "completion_tokens": 48.0,
+        "wall_s_per_run": 33.3,
+        "usd": 6.8,
+        "joules": 47.9,
+        "success_points": 0.0
+      }
+    },
+    "normal-stop-E4": {
+      "category": "normal",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7401,
+        "completion_tokens": 354,
+        "reasoning_tokens": 66,
+        "total_tokens": 7755,
+        "tokens_per_run": 3878,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 1.95,
+        "usd": 0.0071,
+        "usd_per_run": 0.00357,
+        "joules": 53.0,
+        "ended_by": {
+          "marker": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7795,
+        "completion_tokens": 352,
+        "reasoning_tokens": 63,
+        "total_tokens": 8147,
+        "tokens_per_run": 4074,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 2.37,
+        "usd": 0.0085,
+        "usd_per_run": 0.00423,
+        "joules": 52.7,
+        "ended_by": {
+          "marker": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 5.1,
+        "completion_tokens": -0.6,
+        "wall_s_per_run": 21.5,
+        "usd": 19.7,
+        "joules": -0.6,
+        "success_points": 0.0
+      }
+    },
+    "normal-stop-N1": {
+      "category": "normal",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7390,
+        "completion_tokens": 498,
+        "reasoning_tokens": 199,
+        "total_tokens": 7888,
+        "tokens_per_run": 3944,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 2.22,
+        "usd": 0.0058,
+        "usd_per_run": 0.0029,
+        "joules": 74.5,
+        "ended_by": {
+          "marker": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7798,
+        "completion_tokens": 997,
+        "reasoning_tokens": 691,
+        "total_tokens": 8795,
+        "tokens_per_run": 4398,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 3.96,
+        "usd": 0.0102,
+        "usd_per_run": 0.00512,
+        "joules": 149.2,
+        "ended_by": {
+          "marker": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 11.5,
+        "completion_tokens": 100.2,
+        "wall_s_per_run": 78.4,
+        "usd": 75.9,
+        "joules": 100.3,
+        "success_points": 0.0
+      }
+    },
+    "normal-stop-N3": {
+      "category": "normal",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7439,
+        "completion_tokens": 424,
+        "reasoning_tokens": 125,
+        "total_tokens": 7863,
+        "tokens_per_run": 3932,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 2.52,
+        "usd": 0.0086,
+        "usd_per_run": 0.0043,
+        "joules": 63.5,
+        "ended_by": {
+          "marker": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 6,
+        "calls_per_run": 3.0,
+        "prompt_tokens": 7850,
+        "completion_tokens": 711,
+        "reasoning_tokens": 404,
+        "total_tokens": 8561,
+        "tokens_per_run": 4280,
+        "tool_calls": 4,
+        "mutations": 0,
+        "wall_s_per_run": 3.39,
+        "usd": 0.0081,
+        "usd_per_run": 0.00406,
+        "joules": 106.4,
+        "ended_by": {
+          "marker": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 8.9,
+        "completion_tokens": 67.7,
+        "wall_s_per_run": 34.5,
+        "usd": -5.8,
+        "joules": 67.6,
+        "success_points": 0.0
+      }
+    },
+    "normal-stop-W1": {
+      "category": "normal",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 8,
+        "calls_per_run": 4.0,
+        "prompt_tokens": 11848,
+        "completion_tokens": 1020,
+        "reasoning_tokens": 253,
+        "total_tokens": 12868,
+        "tokens_per_run": 6434,
+        "tool_calls": 10,
+        "mutations": 6,
+        "wall_s_per_run": 3.4,
+        "usd": 0.0116,
+        "usd_per_run": 0.00582,
+        "joules": 152.7,
+        "ended_by": {
+          "marker": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 8,
+        "calls_per_run": 4.0,
+        "prompt_tokens": 12414,
+        "completion_tokens": 963,
+        "reasoning_tokens": 178,
+        "total_tokens": 13377,
+        "tokens_per_run": 6688,
+        "tool_calls": 10,
+        "mutations": 6,
+        "wall_s_per_run": 3.68,
+        "usd": 0.0139,
+        "usd_per_run": 0.00695,
+        "joules": 144.1,
+        "ended_by": {
+          "marker": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 4.0,
+        "completion_tokens": -5.6,
+        "wall_s_per_run": 8.2,
+        "usd": 19.8,
+        "joules": -5.6,
+        "success_points": 0.0
+      }
+    },
+    "normal-stop-W4": {
+      "category": "normal",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 8,
+        "calls_per_run": 4.0,
+        "prompt_tokens": 10410,
+        "completion_tokens": 679,
+        "reasoning_tokens": 192,
+        "total_tokens": 11089,
+        "tokens_per_run": 5544,
+        "tool_calls": 6,
+        "mutations": 2,
+        "wall_s_per_run": 3.51,
+        "usd": 0.0109,
+        "usd_per_run": 0.00545,
+        "joules": 101.6,
+        "ended_by": {
+          "marker": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 8,
+        "calls_per_run": 4.0,
+        "prompt_tokens": 10947,
+        "completion_tokens": 625,
+        "reasoning_tokens": 137,
+        "total_tokens": 11572,
+        "tokens_per_run": 5786,
+        "tool_calls": 6,
+        "mutations": 2,
+        "wall_s_per_run": 3.32,
+        "usd": 0.0099,
+        "usd_per_run": 0.00497,
+        "joules": 93.5,
+        "ended_by": {
+          "marker": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": 0.0,
+        "total_tokens": 4.4,
+        "completion_tokens": -8.0,
+        "wall_s_per_run": -5.4,
+        "usd": -9.2,
+        "joules": -8.0,
+        "success_points": 0.0
+      }
+    },
+    "sprawl-1-double-check": {
+      "category": "sprawl",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 23,
+        "calls_per_run": 11.5,
+        "prompt_tokens": 30158,
+        "completion_tokens": 2966,
+        "reasoning_tokens": 1174,
+        "total_tokens": 33124,
+        "tokens_per_run": 16562,
+        "tool_calls": 23,
+        "mutations": 0,
+        "wall_s_per_run": 12.53,
+        "usd": 0.0324,
+        "usd_per_run": 0.0162,
+        "joules": 443.9,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 8,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "the planner must have two helpers confirm each fact",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 20,
+        "calls_per_run": 10.0,
+        "prompt_tokens": 29178,
+        "completion_tokens": 3536,
+        "reasoning_tokens": 1726,
+        "total_tokens": 32714,
+        "tokens_per_run": 16357,
+        "tool_calls": 22,
+        "mutations": 0,
+        "wall_s_per_run": 32.13,
+        "usd": 0.0403,
+        "usd_per_run": 0.02013,
+        "joules": 529.2,
+        "ended_by": {
+          "final": 1,
+          "saver-stop": 1
+        },
+        "miss_runs": 0,
+        "nudges": 2,
+        "helpers": 8,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": -13.0,
+        "total_tokens": -1.2,
+        "completion_tokens": 19.2,
+        "wall_s_per_run": 156.4,
+        "usd": 24.4,
+        "joules": 19.2,
+        "success_points": 0.0
+      }
+    },
+    "sprawl-2-redelegate-failure": {
+      "category": "sprawl",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 52,
+        "calls_per_run": 26.0,
+        "prompt_tokens": 77878,
+        "completion_tokens": 6152,
+        "reasoning_tokens": 2451,
+        "total_tokens": 84030,
+        "tokens_per_run": 42015,
+        "tool_calls": 47,
+        "mutations": 0,
+        "wall_s_per_run": 46.54,
+        "usd": 0.079,
+        "usd_per_run": 0.03952,
+        "joules": 920.7,
+        "ended_by": {
+          "cap": 1,
+          "final": 1
+        },
+        "miss_runs": 2,
+        "nudges": 0,
+        "helpers": 7,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "service_status always answers HTTP 500; the planner re-delegates on failure",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 19,
+        "calls_per_run": 9.5,
+        "prompt_tokens": 27473,
+        "completion_tokens": 2819,
+        "reasoning_tokens": 1388,
+        "total_tokens": 30292,
+        "tokens_per_run": 15146,
+        "tool_calls": 15,
+        "mutations": 0,
+        "wall_s_per_run": 12.24,
+        "usd": 0.0298,
+        "usd_per_run": 0.01489,
+        "joules": 421.9,
+        "ended_by": {
+          "final": 1,
+          "saver-stop": 1
+        },
+        "miss_runs": 0,
+        "nudges": 2,
+        "helpers": 3,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": -63.5,
+        "total_tokens": -64.0,
+        "completion_tokens": -54.2,
+        "wall_s_per_run": -73.7,
+        "usd": -62.3,
+        "joules": -54.2,
+        "success_points": 0.0
+      }
+    },
+    "sprawl-3-recursive-split": {
+      "category": "sprawl",
+      "harness": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 31,
+        "calls_per_run": 15.5,
+        "prompt_tokens": 47695,
+        "completion_tokens": 5042,
+        "reasoning_tokens": 1456,
+        "total_tokens": 52737,
+        "tokens_per_run": 26368,
+        "tool_calls": 49,
+        "mutations": 0,
+        "wall_s_per_run": 19.91,
+        "usd": 0.0601,
+        "usd_per_run": 0.03004,
+        "joules": 754.6,
+        "ended_by": {
+          "final": 2
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 8,
+        "errors": 0,
+        "n": 2
+      },
+      "injected": "helpers may delegate again; the docs hold no such figure",
+      "harness+saver": {
+        "runs": 2,
+        "success": 2,
+        "success_pct": 100.0,
+        "calls": 21,
+        "calls_per_run": 10.5,
+        "prompt_tokens": 32862,
+        "completion_tokens": 4128,
+        "reasoning_tokens": 1381,
+        "total_tokens": 36990,
+        "tokens_per_run": 18495,
+        "tool_calls": 40,
+        "mutations": 0,
+        "wall_s_per_run": 15.61,
+        "usd": 0.0446,
+        "usd_per_run": 0.0223,
+        "joules": 617.8,
+        "ended_by": {
+          "saver-done": 1,
+          "saver-stop": 1
+        },
+        "miss_runs": 0,
+        "nudges": 4,
+        "helpers": 4,
+        "errors": 0,
+        "n": 2
+      },
+      "saver_vs_harness": {
+        "calls": -32.3,
+        "total_tokens": -29.9,
+        "completion_tokens": -18.1,
+        "wall_s_per_run": -21.6,
+        "usd": -25.8,
+        "joules": -18.1,
+        "success_points": 0.0
+      }
+    }
+  },
+  "outcome_differs": [],
+  "scenarios": [
+    {
+      "case": "sprawl-2-redelegate-failure",
+      "rep": 0,
+      "category": "sprawl",
+      "harness": "planner",
+      "prompt": "Check the status of the billing service and post it.",
+      "injected": "service_status always answers HTTP 500; the planner re-delegates on failure",
+      "arms": {
+        "harness": {
+          "success": true,
+          "calls": 22,
+          "total_tokens": 34665,
+          "wall_s": 22.976,
+          "ended_by": "final",
+          "stop_reason": null,
+          "miss": true,
+          "helpers": 3,
+          "trace": [
+            {
+              "n": 1,
+              "agent": "main",
+              "text": "I'll delegate checking the billing service to a helper.",
+              "calls": [
+                [
+                  "delegate",
+                  "{\"task\":\"Check the status of the billing service using service_status\u2026",
+                  "Checked billing service via service_status (name='billing' and 'all'): all attempts returned HTTP 500 interna\u2026"
+                ]
+              ],
+              "tokens": 1465,
+              "note": ""
+            },
+            {
+              "n": 2,
+              "agent": "helper1",
+              "text": "Checking billing service status, then posting it.",
+              "calls": [
+                [
+                  "service_status",
+                  "{\"name\":\"billing\"}",
+                  "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1037\"}"
+                ]
+              ],
+              "tokens": 1261,
+              "note": ""
+            },
+            {
+              "n": 3,
+              "agent": "helper1",
+              "text": "Direct check failed, so I'll try listing all services.",
+              "calls": [
+                [
+                  "service_status",
+                  "{\"name\":\"all\"}",
+                  "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1074\"}"
+                ]
+              ],
+              "tokens": 1354,
+              "note": ""
+            },
+            {
+              "n": 4,
+              "agent": "helper1",
+              "text": "Both attempts returned errors, so I'll retry once more.",
+              "calls": [
+                [
+                  "service_status",
+                  "{\"name\":\"billing\"}",
+                  "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1111\"}"
+                ]
+              ],
+              "tokens": 1492,
+              "note": ""
+            },
+            {
+              "n": 5,
+              "agent": "helper1",
+              "text": "",
+              "calls": [
+                [
+                  "post_message",
+                  "{\"text\":\"Billing service status check failed: service_status returned\u2026",
+                  "{\"ok\":true}"
+                ]
+              ],
+              "tokens": 1607,
+              "note": ""
+            },
+            {
+              "n": 6,
+              "agent": "helper1",
+              "text": "Checked billing service via service_status (name='billing' and 'all'): all attempts returned HTTP 500 internal server error. Posted failure notice vi\u2026",
+              "calls": [],
+              "tokens": 1657,
+              "note": ""
+            },
+            {
+              "n": 7,
+              "agent": "main",
+              "text": "The first check failed, so I'll retry with a fresh helper.",
+              "calls": [
+                [
+                  "delegate",
+                  "{\"task\":\"Check the status of the billing service. Use service_status \u2026",
+                  "[helper hit its 6-step limit] Status unavailable after retries \u2014 posting the result."
+                ]
+              ],
+              "tokens": 1726,
+              "note": ""
+            },
+            {
+              "n": 8,
+              "agent": "helper2",
+              "text": "Checking billing service status \u2014 trying direct lookup first.",
+              "calls": [
+                [
+                  "service_status",
+                  "{\"name\":\"billing\"}",
+                  "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1148\"}"
+                ]
+              ],
+              "tokens": 1284,
+              "note": ""
+            },
+            {
+              "n": 9,
+              "agent": "helper2",
+              "text": "Direct check failed, retrying.",
+              "calls": [
+                [
+                  "service_status",
+                  "{\"name\":\"billing\"}",
+                  "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1185\"}"
+                ]
+              ],
+              "tokens": 1360,
+              "note": ""
+            },
+            {
+              "n": 10,
+              "agent": "helper2",
+              "text": "",
+              "calls": [
+                [
+                  "service_status",
+                  "{\"name\":\"billing\"}",
+                  "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1222\"}"
+                ]
+              ],
+              "tokens": 1441,
+              "note": ""
+            },
+            {
+              "n": 11,
+              "agent": "helper2",
+              "text": "Direct lookups keep failing \u2014 checking all services to locate billing.",
+              "calls": [
+                [
+                  "service_status",
+                  "{\"name\":\"all\"}",
+                  "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1259\"}"
+                ]
+              ],
+              "tokens": 1568,
+              "note": ""
+            },
+            {
+              "n": 12,
+              "agent": "helper2",
+              "text": "All-services check also failed \u2014 retrying to get status.",
+              "calls": [
+                [
+                  "service_status",
+                  "{\"name\":\"all\"}",
+                  "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1296\"}"
+                ]
+              ],
+              "tokens": 1728,
+              "note": ""
+            },
+            {
+              "n": 13,
+              "agent": "helper2",
+              "text": "Status unavailable after retries \u2014 posting the result.",
+              "calls": [
+                [
+                  "post_message",
+                  "{\"text\":\"Billing service status check failed: service_status for 'bil\u2026",
+                  "{\"ok\":true}"
+                ]
+              ],
+              "tokens": 1895,
+              "note": ""
+            },
+            {
+              "n": 14,
+              "agent": "main",
+              "text": "Both attempts came back unclear, so I'll try one more helper to verify.",
+              "calls": [
+                [
+                  "delegate",
+                  "{\"task\":\"Check billing service status: call service_status with name=\u2026",
+                  "Tried service_status billing 3 times (all HTTP 500), then service_status all (also HTTP 500). Posted message \u2026"
+                ]
+              ],
+              "tokens": 1783,
+              "note": ""
+            },
+            {
+              "n": 15,
+              "agent": "helper3",
+              "text": "Checking billing service \u2014 first status attempt.",
+              "calls": [
+                [
+                  "service_status",
+                  "{\"name\":\"billing\"}",
+                  "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1333\"}"
+                ]
+              ],
+              "tokens": 1280,
+              "note": ""
+            },
+            {
+              "n": 16,
+              "agent": "helper3",
+              "text": "First check failed, retrying.",
+              "calls": [
+                [
+                  "service_status",
+                  "{\"name\":\"billing\"}",
+                  "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1370\"}"
+                ]
+              ],
+              "tokens": 1357,
+              "note": ""
+            },
+            {
+              "n": 17,
+              "agent": "helper3",
+              "text": "Second attempt failed, trying once more.",
+              "calls": [
+                [
+                  "service_status",
+                  "{\"name\":\"billing\"}",
+                  "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1407\"}"
+                ]
+              ],
+              "tokens": 1464,
+              "note": ""
+            },
+            {
+              "n": 18,
+              "agent": "helper3",
+              "text": "Billing is still down after 3 tries \u2014 checking all services for context.",
+              "calls": [
+                [
+                  "service_status",
+                  "{\"name\":\"all\"}",
+                  "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1444\"}"
+                ]
+              ],
+              "tokens": 1600,
+              "note": ""
+            },
+            {
+              "n": 19,
+              "agent": "helper3",
+              "text": "",
+              "calls": [
+                [
+                  "post_message",
+                  "{\"text\":\"Billing service status check failed after 3 retries (HTTP 50\u2026",
+                  "{\"ok\":true}"
+                ]
+              ],
+              "tokens": 1735,
+              "note": ""
+            },
+            {
+              "n": 20,
+              "agent": "helper3",
+              "text": "Tried service_status billing 3 times (all HTTP 500), then service_status all (also HTTP 500). Posted message reporting billing status failure. 5 step\u2026",
+              "calls": [],
+              "tokens": 1766,
+              "note": ""
+            },
+            {
+              "n": 21,
+              "agent": "main",
+              "text": "",
+              "calls": [
+                [
+                  "post_message",
+                  "{\"text\":\"Billing service status check: service_status for 'billing' a\u2026",
+                  "{\"ok\":true}"
+                ]
+              ],
+              "tokens": 1942,
+              "note": ""
+            },
+            {
+              "n": 22,
+              "agent": "main",
+              "text": "Billing service status unavailable (HTTP 500 on all checks) \u2013 posted to operator.",
+              "calls": [],
+              "tokens": 1900,
+              "note": ""
+            }
+          ]
+        },
+        "harness+saver": {
+          "success": true,
+          "calls": 7,
+          "total_tokens": 10612,
+          "wall_s": 6.77,
+          "ended_by": "final",
+          "stop_reason": null,
+          "miss": false,
+          "helpers": 1,
+          "trace": [
+            {
+              "n": 1,
+              "agent": "main",
+              "text": "I'll delegate checking the billing service to a helper.",
+              "calls": [
+                [
+                  "delegate",
+                  "{\"task\":\"Check the status of the billing service and post it. Use ser\u2026",
+                  "Checked billing via service_status (and fallback all) \u2013 both returned HTTP 500. Posted failure status to oper\u2026"
+                ]
+              ],
+              "tokens": 1466,
+              "note": ""
+            },
+            {
+              "n": 2,
+              "agent": "helper1",
+              "text": "Checking billing service status and posting it for you.",
+              "calls": [
+                [
+                  "service_status",
+                  "{\"name\":\"billing\"}",
+                  "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1037\"}"
+                ]
+              ],
+              "tokens": 1317,
+              "note": ""
+            },
+            {
+              "n": 3,
+              "agent": "helper1",
+              "text": "Billing check hit an error \u2014 trying a broader status lookup.",
+              "calls": [
+                [
+                  "service_status",
+                  "{\"name\":\"all\"}",
+                  "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1074\"}"
+                ]
+              ],
+              "tokens": 1414,
+              "note": ""
+            },
+            {
+              "n": 4,
+              "agent": "helper1",
+              "text": "",
+              "calls": [
+                [
+                  "post_message",
+                  "{\"text\":\"Billing service status check failed: service_status returned\u2026",
+                  "{\"ok\":true}"
+                ]
+              ],
+              "tokens": 1558,
+              "note": ""
+            },
+            {
+              "n": 5,
+              "agent": "helper1",
+              "text": "Checked billing via service_status (and fallback all) \u2013 both returned HTTP 500. Posted failure status to operator via post_message (ok:true).",
+              "calls": [],
+              "tokens": 1599,
+              "note": ""
+            },
+            {
+              "n": 6,
+              "agent": "main",
+              "text": "",
+              "calls": [
+                [
+                  "post_message",
+                  "{\"text\":\"Billing service status check: helper attempted service_statu\u2026",
+                  "{\"ok\":true}"
+                ]
+              ],
+              "tokens": 1659,
+              "note": ""
+            },
+            {
+              "n": 7,
+              "agent": "main",
+              "text": "Billing check delegated; service_status returned 500 and status posted.",
+              "calls": [],
+              "tokens": 1599,
+              "note": ""
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "before": {
+    "normal": {
+      "harness": {
+        "runs": 36,
+        "success": 36,
+        "success_pct": 100.0,
+        "calls": 120,
+        "calls_per_run": 3.33,
+        "prompt_tokens": 157728,
+        "completion_tokens": 10776,
+        "reasoning_tokens": 3506,
+        "total_tokens": 168504,
+        "tokens_per_run": 4681,
+        "tool_calls": 96,
+        "mutations": 24,
+        "wall_s_per_run": 3.12,
+        "usd": 0.1592,
+        "usd_per_run": 0.00442,
+        "joules": 1612.8,
+        "ended_by": {
+          "final": 24,
+          "marker": 12
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 36
+      },
+      "harness+saver": {
+        "runs": 36,
+        "success": 36,
+        "success_pct": 100.0,
+        "calls": 119,
+        "calls_per_run": 3.31,
+        "prompt_tokens": 164131,
+        "completion_tokens": 11505,
+        "reasoning_tokens": 4006,
+        "total_tokens": 175636,
+        "tokens_per_run": 4879,
+        "tool_calls": 95,
+        "mutations": 24,
+        "wall_s_per_run": 4.05,
+        "usd": 0.1572,
+        "usd_per_run": 0.00437,
+        "joules": 1721.9,
+        "ended_by": {
+          "final": 15,
+          "marker": 12,
+          "saver-done": 9
+        },
+        "miss_runs": 0,
+        "nudges": 0,
+        "helpers": 0,
+        "errors": 0,
+        "n": 36
+      },
+      "saver_vs_harness": {
+        "calls": -0.8,
+        "total_tokens": 4.2,
+        "completion_tokens": 6.8,
+        "wall_s_per_run": 29.8,
+        "usd": -1.3,
+        "joules": 6.8,
+        "success_points": 0.0
+      }
+    },
+    "injected": {
+      "harness": {
+        "runs": 12,
+        "success": 12,
+        "success_pct": 100.0,
+        "calls": 162,
+        "calls_per_run": 13.5,
+        "prompt_tokens": 368516,
+        "completion_tokens": 25764,
+        "reasoning_tokens": 9724,
+        "total_tokens": 394280,
+        "tokens_per_run": 32857,
+        "tool_calls": 256,
+        "mutations": 0,
+        "wall_s_per_run": 21.38,
+        "usd": 0.3208,
+        "usd_per_run": 0.02673,
+        "joules": 3856.0,
+        "ended_by": {
+          "cap": 6,
+          "final": 6
+        },
+        "miss_runs": 7,
+        "nudges": 0,
+        "helpers": 17,
+        "errors": 0,
+        "n": 12
+      },
+      "harness+saver": {
+        "runs": 12,
+        "success": 11,
+        "success_pct": 91.7,
+        "calls": 87,
+        "calls_per_run": 7.25,
+        "prompt_tokens": 140782,
+        "completion_tokens": 14695,
+        "reasoning_tokens": 5611,
+        "total_tokens": 155477,
+        "tokens_per_run": 12956,
+        "tool_calls": 133,
+        "mutations": 0,
+        "wall_s_per_run": 8.12,
+        "usd": 0.1455,
+        "usd_per_run": 0.01213,
+        "joules": 2199.3,
+        "ended_by": {
+          "final": 2,
+          "saver-done": 3,
+          "saver-stop": 7
+        },
+        "miss_runs": 0,
+        "nudges": 10,
+        "helpers": 26,
+        "errors": 0,
+        "n": 12
+      },
+      "saver_vs_harness": {
+        "calls": -46.3,
+        "total_tokens": -60.6,
+        "completion_tokens": -43.0,
+        "wall_s_per_run": -62.0,
+        "usd": -54.6,
+        "joules": -43.0,
+        "success_points": -8.3
+      }
+    },
+    "by_category": {
+      "normal": {
+        "harness": {
+          "runs": 36,
+          "success": 36,
+          "success_pct": 100.0,
+          "calls": 120,
+          "calls_per_run": 3.33,
+          "prompt_tokens": 157728,
+          "completion_tokens": 10776,
+          "reasoning_tokens": 3506,
+          "total_tokens": 168504,
+          "tokens_per_run": 4681,
+          "tool_calls": 96,
+          "mutations": 24,
+          "wall_s_per_run": 3.12,
+          "usd": 0.1592,
+          "usd_per_run": 0.00442,
+          "joules": 1612.8,
+          "ended_by": {
+            "final": 24,
+            "marker": 12
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 36
+        },
+        "harness+saver": {
+          "runs": 36,
+          "success": 36,
+          "success_pct": 100.0,
+          "calls": 119,
+          "calls_per_run": 3.31,
+          "prompt_tokens": 164131,
+          "completion_tokens": 11505,
+          "reasoning_tokens": 4006,
+          "total_tokens": 175636,
+          "tokens_per_run": 4879,
+          "tool_calls": 95,
+          "mutations": 24,
+          "wall_s_per_run": 4.05,
+          "usd": 0.1572,
+          "usd_per_run": 0.00437,
+          "joules": 1721.9,
+          "ended_by": {
+            "final": 15,
+            "marker": 12,
+            "saver-done": 9
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 36
+        },
+        "saver_vs_harness": {
+          "calls": -0.8,
+          "total_tokens": 4.2,
+          "completion_tokens": 6.8,
+          "wall_s_per_run": 29.8,
+          "usd": -1.3,
+          "joules": 6.8,
+          "success_points": 0.0
+        }
+      },
+      "noprogress": {
+        "harness": {
+          "runs": 6,
+          "success": 6,
+          "success_pct": 100.0,
+          "calls": 90,
+          "calls_per_run": 15.0,
+          "prompt_tokens": 265923,
+          "completion_tokens": 16543,
+          "reasoning_tokens": 6753,
+          "total_tokens": 282466,
+          "tokens_per_run": 47078,
+          "tool_calls": 175,
+          "mutations": 0,
+          "wall_s_per_run": 25.19,
+          "usd": 0.2262,
+          "usd_per_run": 0.03769,
+          "joules": 2475.9,
+          "ended_by": {
+            "cap": 6
+          },
+          "miss_runs": 6,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 6
+        },
+        "harness+saver": {
+          "runs": 6,
+          "success": 5,
+          "success_pct": 83.3,
+          "calls": 34,
+          "calls_per_run": 5.67,
+          "prompt_tokens": 63940,
+          "completion_tokens": 6387,
+          "reasoning_tokens": 2788,
+          "total_tokens": 70327,
+          "tokens_per_run": 11721,
+          "tool_calls": 59,
+          "mutations": 0,
+          "wall_s_per_run": 7.17,
+          "usd": 0.0632,
+          "usd_per_run": 0.01054,
+          "joules": 955.9,
+          "ended_by": {
+            "saver-done": 3,
+            "saver-stop": 3
+          },
+          "miss_runs": 0,
+          "nudges": 6,
+          "helpers": 0,
+          "errors": 0,
+          "n": 6
+        },
+        "saver_vs_harness": {
+          "calls": -62.2,
+          "total_tokens": -75.1,
+          "completion_tokens": -61.4,
+          "wall_s_per_run": -71.5,
+          "usd": -72.1,
+          "joules": -61.4,
+          "success_points": -16.7
+        }
+      },
+      "sprawl": {
+        "harness": {
+          "runs": 6,
+          "success": 6,
+          "success_pct": 100.0,
+          "calls": 72,
+          "calls_per_run": 12.0,
+          "prompt_tokens": 102593,
+          "completion_tokens": 9221,
+          "reasoning_tokens": 2971,
+          "total_tokens": 111814,
+          "tokens_per_run": 18636,
+          "tool_calls": 81,
+          "mutations": 0,
+          "wall_s_per_run": 17.57,
+          "usd": 0.0946,
+          "usd_per_run": 0.01577,
+          "joules": 1380.1,
+          "ended_by": {
+            "final": 6
+          },
+          "miss_runs": 1,
+          "nudges": 0,
+          "helpers": 17,
+          "errors": 0,
+          "n": 6
+        },
+        "harness+saver": {
+          "runs": 6,
+          "success": 6,
+          "success_pct": 100.0,
+          "calls": 53,
+          "calls_per_run": 8.83,
+          "prompt_tokens": 76842,
+          "completion_tokens": 8308,
+          "reasoning_tokens": 2823,
+          "total_tokens": 85150,
+          "tokens_per_run": 14192,
+          "tool_calls": 74,
+          "mutations": 0,
+          "wall_s_per_run": 9.08,
+          "usd": 0.0823,
+          "usd_per_run": 0.01372,
+          "joules": 1243.4,
+          "ended_by": {
+            "final": 2,
+            "saver-stop": 4
+          },
+          "miss_runs": 0,
+          "nudges": 4,
+          "helpers": 26,
+          "errors": 0,
+          "n": 6
+        },
+        "saver_vs_harness": {
+          "calls": -26.4,
+          "total_tokens": -23.8,
+          "completion_tokens": -9.9,
+          "wall_s_per_run": -48.3,
+          "usd": -13.0,
+          "joules": -9.9,
+          "success_points": 0.0
+        }
+      }
+    },
+    "cases": {
+      "noprog-1-search-summarize": {
+        "category": "noprogress",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 30,
+          "calls_per_run": 15.0,
+          "prompt_tokens": 153782,
+          "completion_tokens": 12235,
+          "reasoning_tokens": 5932,
+          "total_tokens": 166017,
+          "tokens_per_run": 83008,
+          "tool_calls": 115,
+          "mutations": 0,
+          "wall_s_per_run": 33.22,
+          "usd": 0.1585,
+          "usd_per_run": 0.07926,
+          "joules": 1831.2,
+          "ended_by": {
+            "cap": 2
+          },
+          "miss_runs": 2,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "the search ignores the query and returns the same three docs, reordered",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 14,
+          "calls_per_run": 7.0,
+          "prompt_tokens": 34453,
+          "completion_tokens": 3767,
+          "reasoning_tokens": 1442,
+          "total_tokens": 38220,
+          "tokens_per_run": 19110,
+          "tool_calls": 40,
+          "mutations": 0,
+          "wall_s_per_run": 10.4,
+          "usd": 0.0407,
+          "usd_per_run": 0.02034,
+          "joules": 563.8,
+          "ended_by": {
+            "saver-done": 1,
+            "saver-stop": 1
+          },
+          "miss_runs": 0,
+          "nudges": 2,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": -53.3,
+          "total_tokens": -77.0,
+          "completion_tokens": -69.2,
+          "wall_s_per_run": -68.7,
+          "usd": -74.3,
+          "joules": -69.2,
+          "success_points": 0.0
+        }
+      },
+      "noprog-2-ticket-poll": {
+        "category": "noprogress",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 30,
+          "calls_per_run": 15.0,
+          "prompt_tokens": 58081,
+          "completion_tokens": 2183,
+          "reasoning_tokens": 390,
+          "total_tokens": 60264,
+          "tokens_per_run": 30132,
+          "tool_calls": 30,
+          "mutations": 0,
+          "wall_s_per_run": 11.85,
+          "usd": 0.0338,
+          "usd_per_run": 0.0169,
+          "joules": 326.7,
+          "ended_by": {
+            "cap": 2
+          },
+          "miss_runs": 2,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "T-105 stays blocked; every read carries a new clock value",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 14,
+          "calls_per_run": 7.0,
+          "prompt_tokens": 21561,
+          "completion_tokens": 1577,
+          "reasoning_tokens": 763,
+          "total_tokens": 23138,
+          "tokens_per_run": 11569,
+          "tool_calls": 12,
+          "mutations": 0,
+          "wall_s_per_run": 6.44,
+          "usd": 0.0145,
+          "usd_per_run": 0.00723,
+          "joules": 236.0,
+          "ended_by": {
+            "saver-done": 2
+          },
+          "miss_runs": 0,
+          "nudges": 2,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": -53.3,
+          "total_tokens": -61.6,
+          "completion_tokens": -27.8,
+          "wall_s_per_run": -45.7,
+          "usd": -57.1,
+          "joules": -27.8,
+          "success_points": 0.0
+        }
+      },
+      "noprog-3-file-poll": {
+        "category": "noprogress",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 30,
+          "calls_per_run": 15.0,
+          "prompt_tokens": 54060,
+          "completion_tokens": 2125,
+          "reasoning_tokens": 431,
+          "total_tokens": 56185,
+          "tokens_per_run": 28092,
+          "tool_calls": 30,
+          "mutations": 0,
+          "wall_s_per_run": 30.51,
+          "usd": 0.0338,
+          "usd_per_run": 0.01692,
+          "joules": 318.0,
+          "ended_by": {
+            "cap": 2
+          },
+          "miss_runs": 2,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "the file never changes",
+        "harness+saver": {
+          "runs": 2,
+          "success": 1,
+          "success_pct": 50.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7926,
+          "completion_tokens": 1043,
+          "reasoning_tokens": 583,
+          "total_tokens": 8969,
+          "tokens_per_run": 4484,
+          "tool_calls": 7,
+          "mutations": 0,
+          "wall_s_per_run": 4.66,
+          "usd": 0.0081,
+          "usd_per_run": 0.00404,
+          "joules": 156.1,
+          "ended_by": {
+            "saver-stop": 2
+          },
+          "miss_runs": 0,
+          "nudges": 2,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": -80.0,
+          "total_tokens": -84.0,
+          "completion_tokens": -50.9,
+          "wall_s_per_run": -84.7,
+          "usd": -76.0,
+          "joules": -50.9,
+          "success_points": -50.0
+        }
+      },
+      "normal-planner-E1": {
+        "category": "normal",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7740,
+          "completion_tokens": 457,
+          "reasoning_tokens": 181,
+          "total_tokens": 8197,
+          "tokens_per_run": 4098,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.88,
+          "usd": 0.0081,
+          "usd_per_run": 0.00407,
+          "joules": 68.4,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 8136,
+          "completion_tokens": 580,
+          "reasoning_tokens": 304,
+          "total_tokens": 8716,
+          "tokens_per_run": 4358,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 3.31,
+          "usd": 0.0075,
+          "usd_per_run": 0.00375,
+          "joules": 86.8,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": 0.0,
+          "total_tokens": 6.3,
+          "completion_tokens": 26.9,
+          "wall_s_per_run": 14.9,
+          "usd": -7.4,
+          "joules": 26.9,
+          "success_points": 0.0
+        }
+      },
+      "normal-planner-E4": {
+        "category": "normal",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7846,
+          "completion_tokens": 450,
+          "reasoning_tokens": 167,
+          "total_tokens": 8296,
+          "tokens_per_run": 4148,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 3.77,
+          "usd": 0.0091,
+          "usd_per_run": 0.00454,
+          "joules": 67.3,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 8233,
+          "completion_tokens": 445,
+          "reasoning_tokens": 161,
+          "total_tokens": 8678,
+          "tokens_per_run": 4339,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 12.35,
+          "usd": 0.0098,
+          "usd_per_run": 0.00491,
+          "joules": 66.6,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": 0.0,
+          "total_tokens": 4.6,
+          "completion_tokens": -1.1,
+          "wall_s_per_run": 227.6,
+          "usd": 7.7,
+          "joules": -1.0,
+          "success_points": 0.0
+        }
+      },
+      "normal-planner-N1": {
+        "category": "normal",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7841,
+          "completion_tokens": 437,
+          "reasoning_tokens": 128,
+          "total_tokens": 8278,
+          "tokens_per_run": 4139,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.06,
+          "usd": 0.0078,
+          "usd_per_run": 0.00388,
+          "joules": 65.4,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 8236,
+          "completion_tokens": 525,
+          "reasoning_tokens": 215,
+          "total_tokens": 8761,
+          "tokens_per_run": 4380,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.91,
+          "usd": 0.0072,
+          "usd_per_run": 0.00362,
+          "joules": 78.6,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": 0.0,
+          "total_tokens": 5.8,
+          "completion_tokens": 20.1,
+          "wall_s_per_run": 41.3,
+          "usd": -7.7,
+          "joules": 20.2,
+          "success_points": 0.0
+        }
+      },
+      "normal-planner-N3": {
+        "category": "normal",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7890,
+          "completion_tokens": 658,
+          "reasoning_tokens": 349,
+          "total_tokens": 8548,
+          "tokens_per_run": 4274,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.56,
+          "usd": 0.0088,
+          "usd_per_run": 0.00438,
+          "joules": 98.5,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 5,
+          "calls_per_run": 2.5,
+          "prompt_tokens": 6800,
+          "completion_tokens": 723,
+          "reasoning_tokens": 481,
+          "total_tokens": 7523,
+          "tokens_per_run": 3762,
+          "tool_calls": 3,
+          "mutations": 0,
+          "wall_s_per_run": 2.86,
+          "usd": 0.0089,
+          "usd_per_run": 0.00447,
+          "joules": 108.2,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": -16.7,
+          "total_tokens": -12.0,
+          "completion_tokens": 9.9,
+          "wall_s_per_run": 11.7,
+          "usd": 1.1,
+          "joules": 9.8,
+          "success_points": 0.0
+        }
+      },
+      "normal-planner-W1": {
+        "category": "normal",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 8,
+          "calls_per_run": 4.0,
+          "prompt_tokens": 12382,
+          "completion_tokens": 986,
+          "reasoning_tokens": 240,
+          "total_tokens": 13368,
+          "tokens_per_run": 6684,
+          "tool_calls": 10,
+          "mutations": 6,
+          "wall_s_per_run": 5.24,
+          "usd": 0.0122,
+          "usd_per_run": 0.00608,
+          "joules": 147.6,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 8,
+          "calls_per_run": 4.0,
+          "prompt_tokens": 12910,
+          "completion_tokens": 1026,
+          "reasoning_tokens": 243,
+          "total_tokens": 13936,
+          "tokens_per_run": 6968,
+          "tool_calls": 10,
+          "mutations": 6,
+          "wall_s_per_run": 4.15,
+          "usd": 0.0148,
+          "usd_per_run": 0.0074,
+          "joules": 153.6,
+          "ended_by": {
+            "final": 1,
+            "saver-done": 1
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": 0.0,
+          "total_tokens": 4.2,
+          "completion_tokens": 4.1,
+          "wall_s_per_run": -20.8,
+          "usd": 21.3,
+          "joules": 4.1,
+          "success_points": 0.0
+        }
+      },
+      "normal-planner-W4": {
+        "category": "normal",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 8,
+          "calls_per_run": 4.0,
+          "prompt_tokens": 10926,
+          "completion_tokens": 903,
+          "reasoning_tokens": 440,
+          "total_tokens": 11829,
+          "tokens_per_run": 5914,
+          "tool_calls": 6,
+          "mutations": 2,
+          "wall_s_per_run": 4.24,
+          "usd": 0.0107,
+          "usd_per_run": 0.00534,
+          "joules": 135.1,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 8,
+          "calls_per_run": 4.0,
+          "prompt_tokens": 11490,
+          "completion_tokens": 894,
+          "reasoning_tokens": 417,
+          "total_tokens": 12384,
+          "tokens_per_run": 6192,
+          "tool_calls": 6,
+          "mutations": 2,
+          "wall_s_per_run": 13.31,
+          "usd": 0.0116,
+          "usd_per_run": 0.00581,
+          "joules": 133.8,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": 0.0,
+          "total_tokens": 4.7,
+          "completion_tokens": -1.0,
+          "wall_s_per_run": 213.9,
+          "usd": 8.4,
+          "joules": -1.0,
+          "success_points": 0.0
+        }
+      },
+      "normal-react-E1": {
+        "category": "normal",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7222,
+          "completion_tokens": 405,
+          "reasoning_tokens": 130,
+          "total_tokens": 7627,
+          "tokens_per_run": 3814,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.16,
+          "usd": 0.0055,
+          "usd_per_run": 0.00274,
+          "joules": 60.6,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7614,
+          "completion_tokens": 421,
+          "reasoning_tokens": 113,
+          "total_tokens": 8035,
+          "tokens_per_run": 4018,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.35,
+          "usd": 0.0042,
+          "usd_per_run": 0.00211,
+          "joules": 63.0,
+          "ended_by": {
+            "final": 1,
+            "saver-done": 1
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": 0.0,
+          "total_tokens": 5.3,
+          "completion_tokens": 4.0,
+          "wall_s_per_run": 8.8,
+          "usd": -23.6,
+          "joules": 4.0,
+          "success_points": 0.0
+        }
+      },
+      "normal-react-E4": {
+        "category": "normal",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7322,
+          "completion_tokens": 422,
+          "reasoning_tokens": 138,
+          "total_tokens": 7744,
+          "tokens_per_run": 3872,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.72,
+          "usd": 0.0084,
+          "usd_per_run": 0.00422,
+          "joules": 63.2,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7706,
+          "completion_tokens": 430,
+          "reasoning_tokens": 155,
+          "total_tokens": 8136,
+          "tokens_per_run": 4068,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.96,
+          "usd": 0.009,
+          "usd_per_run": 0.00448,
+          "joules": 64.4,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": 0.0,
+          "total_tokens": 5.1,
+          "completion_tokens": 1.9,
+          "wall_s_per_run": 8.8,
+          "usd": 7.1,
+          "joules": 1.9,
+          "success_points": 0.0
+        }
+      },
+      "normal-react-N1": {
+        "category": "normal",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7306,
+          "completion_tokens": 470,
+          "reasoning_tokens": 169,
+          "total_tokens": 7776,
+          "tokens_per_run": 3888,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.96,
+          "usd": 0.0079,
+          "usd_per_run": 0.00397,
+          "joules": 70.3,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7700,
+          "completion_tokens": 464,
+          "reasoning_tokens": 122,
+          "total_tokens": 8164,
+          "tokens_per_run": 4082,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.63,
+          "usd": 0.0078,
+          "usd_per_run": 0.00392,
+          "joules": 69.4,
+          "ended_by": {
+            "final": 1,
+            "saver-done": 1
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": 0.0,
+          "total_tokens": 5.0,
+          "completion_tokens": -1.3,
+          "wall_s_per_run": -11.1,
+          "usd": -1.3,
+          "joules": -1.3,
+          "success_points": 0.0
+        }
+      },
+      "normal-react-N3": {
+        "category": "normal",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7354,
+          "completion_tokens": 541,
+          "reasoning_tokens": 239,
+          "total_tokens": 7895,
+          "tokens_per_run": 3948,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.83,
+          "usd": 0.0084,
+          "usd_per_run": 0.00422,
+          "joules": 81.0,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7750,
+          "completion_tokens": 587,
+          "reasoning_tokens": 213,
+          "total_tokens": 8337,
+          "tokens_per_run": 4168,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.69,
+          "usd": 0.0087,
+          "usd_per_run": 0.00436,
+          "joules": 87.9,
+          "ended_by": {
+            "saver-done": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": 0.0,
+          "total_tokens": 5.6,
+          "completion_tokens": 8.5,
+          "wall_s_per_run": -4.9,
+          "usd": 3.6,
+          "joules": 8.5,
+          "success_points": 0.0
+        }
+      },
+      "normal-react-W1": {
+        "category": "normal",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 8,
+          "calls_per_run": 4.0,
+          "prompt_tokens": 11762,
+          "completion_tokens": 983,
+          "reasoning_tokens": 202,
+          "total_tokens": 12745,
+          "tokens_per_run": 6372,
+          "tool_calls": 10,
+          "mutations": 6,
+          "wall_s_per_run": 4.22,
+          "usd": 0.0115,
+          "usd_per_run": 0.00576,
+          "joules": 147.1,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 8,
+          "calls_per_run": 4.0,
+          "prompt_tokens": 12290,
+          "completion_tokens": 1053,
+          "reasoning_tokens": 205,
+          "total_tokens": 13343,
+          "tokens_per_run": 6672,
+          "tool_calls": 10,
+          "mutations": 6,
+          "wall_s_per_run": 3.84,
+          "usd": 0.0116,
+          "usd_per_run": 0.00582,
+          "joules": 157.6,
+          "ended_by": {
+            "saver-done": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": 0.0,
+          "total_tokens": 4.7,
+          "completion_tokens": 7.1,
+          "wall_s_per_run": -9.0,
+          "usd": 0.9,
+          "joules": 7.1,
+          "success_points": 0.0
+        }
+      },
+      "normal-react-W4": {
+        "category": "normal",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 8,
+          "calls_per_run": 4.0,
+          "prompt_tokens": 10309,
+          "completion_tokens": 681,
+          "reasoning_tokens": 179,
+          "total_tokens": 10990,
+          "tokens_per_run": 5495,
+          "tool_calls": 6,
+          "mutations": 2,
+          "wall_s_per_run": 2.91,
+          "usd": 0.0112,
+          "usd_per_run": 0.0056,
+          "joules": 101.9,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 8,
+          "calls_per_run": 4.0,
+          "prompt_tokens": 10831,
+          "completion_tokens": 701,
+          "reasoning_tokens": 142,
+          "total_tokens": 11532,
+          "tokens_per_run": 5766,
+          "tool_calls": 6,
+          "mutations": 2,
+          "wall_s_per_run": 2.66,
+          "usd": 0.0104,
+          "usd_per_run": 0.0052,
+          "joules": 104.9,
+          "ended_by": {
+            "saver-done": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": 0.0,
+          "total_tokens": 4.9,
+          "completion_tokens": 2.9,
+          "wall_s_per_run": -8.6,
+          "usd": -7.1,
+          "joules": 2.9,
+          "success_points": 0.0
+        }
+      },
+      "normal-stop-E1": {
+        "category": "normal",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7306,
+          "completion_tokens": 395,
+          "reasoning_tokens": 120,
+          "total_tokens": 7701,
+          "tokens_per_run": 3850,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 3.32,
+          "usd": 0.0071,
+          "usd_per_run": 0.00353,
+          "joules": 59.1,
+          "ended_by": {
+            "marker": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7703,
+          "completion_tokens": 403,
+          "reasoning_tokens": 127,
+          "total_tokens": 8106,
+          "tokens_per_run": 4053,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.48,
+          "usd": 0.0049,
+          "usd_per_run": 0.00247,
+          "joules": 60.3,
+          "ended_by": {
+            "marker": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": 0.0,
+          "total_tokens": 5.3,
+          "completion_tokens": 2.0,
+          "wall_s_per_run": -25.3,
+          "usd": -31.0,
+          "joules": 2.0,
+          "success_points": 0.0
+        }
+      },
+      "normal-stop-E4": {
+        "category": "normal",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7398,
+          "completion_tokens": 356,
+          "reasoning_tokens": 68,
+          "total_tokens": 7754,
+          "tokens_per_run": 3877,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.89,
+          "usd": 0.0059,
+          "usd_per_run": 0.00295,
+          "joules": 53.3,
+          "ended_by": {
+            "marker": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7795,
+          "completion_tokens": 378,
+          "reasoning_tokens": 89,
+          "total_tokens": 8173,
+          "tokens_per_run": 4086,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.77,
+          "usd": 0.0055,
+          "usd_per_run": 0.00276,
+          "joules": 56.6,
+          "ended_by": {
+            "marker": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": 0.0,
+          "total_tokens": 5.4,
+          "completion_tokens": 6.2,
+          "wall_s_per_run": -4.2,
+          "usd": -6.8,
+          "joules": 6.2,
+          "success_points": 0.0
+        }
+      },
+      "normal-stop-N1": {
+        "category": "normal",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7392,
+          "completion_tokens": 492,
+          "reasoning_tokens": 190,
+          "total_tokens": 7884,
+          "tokens_per_run": 3942,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.31,
+          "usd": 0.0076,
+          "usd_per_run": 0.00379,
+          "joules": 73.6,
+          "ended_by": {
+            "marker": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7792,
+          "completion_tokens": 724,
+          "reasoning_tokens": 420,
+          "total_tokens": 8516,
+          "tokens_per_run": 4258,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.3,
+          "usd": 0.0091,
+          "usd_per_run": 0.00453,
+          "joules": 108.4,
+          "ended_by": {
+            "marker": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": 0.0,
+          "total_tokens": 8.0,
+          "completion_tokens": 47.2,
+          "wall_s_per_run": -0.4,
+          "usd": 19.7,
+          "joules": 47.3,
+          "success_points": 0.0
+        }
+      },
+      "normal-stop-N3": {
+        "category": "normal",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7440,
+          "completion_tokens": 487,
+          "reasoning_tokens": 187,
+          "total_tokens": 7927,
+          "tokens_per_run": 3964,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.39,
+          "usd": 0.0065,
+          "usd_per_run": 0.00325,
+          "joules": 72.9,
+          "ended_by": {
+            "marker": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 6,
+          "calls_per_run": 3.0,
+          "prompt_tokens": 7836,
+          "completion_tokens": 515,
+          "reasoning_tokens": 215,
+          "total_tokens": 8351,
+          "tokens_per_run": 4176,
+          "tool_calls": 4,
+          "mutations": 0,
+          "wall_s_per_run": 2.53,
+          "usd": 0.0077,
+          "usd_per_run": 0.00384,
+          "joules": 77.1,
+          "ended_by": {
+            "marker": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": 0.0,
+          "total_tokens": 5.3,
+          "completion_tokens": 5.7,
+          "wall_s_per_run": 5.9,
+          "usd": 18.5,
+          "joules": 5.8,
+          "success_points": 0.0
+        }
+      },
+      "normal-stop-W1": {
+        "category": "normal",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 8,
+          "calls_per_run": 4.0,
+          "prompt_tokens": 11882,
+          "completion_tokens": 1015,
+          "reasoning_tokens": 231,
+          "total_tokens": 12897,
+          "tokens_per_run": 6448,
+          "tool_calls": 10,
+          "mutations": 6,
+          "wall_s_per_run": 3.71,
+          "usd": 0.0135,
+          "usd_per_run": 0.00674,
+          "joules": 151.9,
+          "ended_by": {
+            "marker": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 8,
+          "calls_per_run": 4.0,
+          "prompt_tokens": 12374,
+          "completion_tokens": 961,
+          "reasoning_tokens": 193,
+          "total_tokens": 13335,
+          "tokens_per_run": 6668,
+          "tool_calls": 10,
+          "mutations": 6,
+          "wall_s_per_run": 3.86,
+          "usd": 0.0112,
+          "usd_per_run": 0.0056,
+          "joules": 143.8,
+          "ended_by": {
+            "marker": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": 0.0,
+          "total_tokens": 3.4,
+          "completion_tokens": -5.3,
+          "wall_s_per_run": 4.0,
+          "usd": -17.0,
+          "joules": -5.3,
+          "success_points": 0.0
+        }
+      },
+      "normal-stop-W4": {
+        "category": "normal",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 8,
+          "calls_per_run": 4.0,
+          "prompt_tokens": 10410,
+          "completion_tokens": 638,
+          "reasoning_tokens": 148,
+          "total_tokens": 11048,
+          "tokens_per_run": 5524,
+          "tool_calls": 6,
+          "mutations": 2,
+          "wall_s_per_run": 2.93,
+          "usd": 0.0091,
+          "usd_per_run": 0.00453,
+          "joules": 95.5,
+          "ended_by": {
+            "marker": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 8,
+          "calls_per_run": 4.0,
+          "prompt_tokens": 10935,
+          "completion_tokens": 675,
+          "reasoning_tokens": 191,
+          "total_tokens": 11610,
+          "tokens_per_run": 5805,
+          "tool_calls": 6,
+          "mutations": 2,
+          "wall_s_per_run": 2.95,
+          "usd": 0.0071,
+          "usd_per_run": 0.00354,
+          "joules": 101.0,
+          "ended_by": {
+            "marker": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 0,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": 0.0,
+          "total_tokens": 5.1,
+          "completion_tokens": 5.8,
+          "wall_s_per_run": 0.7,
+          "usd": -22.0,
+          "joules": 5.8,
+          "success_points": 0.0
+        }
+      },
+      "sprawl-1-double-check": {
+        "category": "sprawl",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 30,
+          "calls_per_run": 15.0,
+          "prompt_tokens": 37902,
+          "completion_tokens": 3008,
+          "reasoning_tokens": 1025,
+          "total_tokens": 40910,
+          "tokens_per_run": 20455,
+          "tool_calls": 26,
+          "mutations": 0,
+          "wall_s_per_run": 13.21,
+          "usd": 0.0268,
+          "usd_per_run": 0.01341,
+          "joules": 450.2,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 12,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "the planner must have two helpers confirm each fact",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 16,
+          "calls_per_run": 8.0,
+          "prompt_tokens": 21274,
+          "completion_tokens": 2614,
+          "reasoning_tokens": 940,
+          "total_tokens": 23888,
+          "tokens_per_run": 11944,
+          "tool_calls": 23,
+          "mutations": 0,
+          "wall_s_per_run": 8.81,
+          "usd": 0.0216,
+          "usd_per_run": 0.01079,
+          "joules": 391.2,
+          "ended_by": {
+            "saver-stop": 2
+          },
+          "miss_runs": 0,
+          "nudges": 2,
+          "helpers": 17,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": -46.7,
+          "total_tokens": -41.6,
+          "completion_tokens": -13.1,
+          "wall_s_per_run": -33.3,
+          "usd": -19.4,
+          "joules": -13.1,
+          "success_points": 0.0
+        }
+      },
+      "sprawl-2-redelegate-failure": {
+        "category": "sprawl",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 25,
+          "calls_per_run": 12.5,
+          "prompt_tokens": 36747,
+          "completion_tokens": 2989,
+          "reasoning_tokens": 1166,
+          "total_tokens": 39736,
+          "tokens_per_run": 19868,
+          "tool_calls": 21,
+          "mutations": 0,
+          "wall_s_per_run": 29.45,
+          "usd": 0.0329,
+          "usd_per_run": 0.01646,
+          "joules": 447.4,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 1,
+          "nudges": 0,
+          "helpers": 3,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "service_status always answers HTTP 500; the planner re-delegates on failure",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 13,
+          "calls_per_run": 6.5,
+          "prompt_tokens": 18207,
+          "completion_tokens": 1580,
+          "reasoning_tokens": 723,
+          "total_tokens": 19787,
+          "tokens_per_run": 9894,
+          "tool_calls": 9,
+          "mutations": 0,
+          "wall_s_per_run": 6.23,
+          "usd": 0.0167,
+          "usd_per_run": 0.00834,
+          "joules": 236.5,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 2,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": -48.0,
+          "total_tokens": -50.2,
+          "completion_tokens": -47.1,
+          "wall_s_per_run": -78.8,
+          "usd": -49.2,
+          "joules": -47.1,
+          "success_points": 0.0
+        }
+      },
+      "sprawl-3-recursive-split": {
+        "category": "sprawl",
+        "harness": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 17,
+          "calls_per_run": 8.5,
+          "prompt_tokens": 27944,
+          "completion_tokens": 3224,
+          "reasoning_tokens": 780,
+          "total_tokens": 31168,
+          "tokens_per_run": 15584,
+          "tool_calls": 34,
+          "mutations": 0,
+          "wall_s_per_run": 10.06,
+          "usd": 0.0349,
+          "usd_per_run": 0.01744,
+          "joules": 482.5,
+          "ended_by": {
+            "final": 2
+          },
+          "miss_runs": 0,
+          "nudges": 0,
+          "helpers": 2,
+          "errors": 0,
+          "n": 2
+        },
+        "injected": "helpers may delegate again; the docs hold no such figure",
+        "harness+saver": {
+          "runs": 2,
+          "success": 2,
+          "success_pct": 100.0,
+          "calls": 24,
+          "calls_per_run": 12.0,
+          "prompt_tokens": 37361,
+          "completion_tokens": 4114,
+          "reasoning_tokens": 1160,
+          "total_tokens": 41475,
+          "tokens_per_run": 20738,
+          "tool_calls": 42,
+          "mutations": 0,
+          "wall_s_per_run": 12.21,
+          "usd": 0.0441,
+          "usd_per_run": 0.02203,
+          "joules": 615.7,
+          "ended_by": {
+            "saver-stop": 2
+          },
+          "miss_runs": 0,
+          "nudges": 2,
+          "helpers": 7,
+          "errors": 0,
+          "n": 2
+        },
+        "saver_vs_harness": {
+          "calls": 41.2,
+          "total_tokens": 33.1,
+          "completion_tokens": 27.6,
+          "wall_s_per_run": 21.4,
+          "usd": 26.4,
+          "joules": 27.6,
+          "success_points": 0.0
+        }
+      }
+    },
+    "source": "data/agent-waste/v2/runs.jsonl (same cases, v2 code)"
+  },
+  "fixes": [
+    "a detector stop carries the latest tool result",
+    "a stopped helper returns 'stopped: no progress, do not re-delegate'",
+    "a subtask already stopped is not handed to a new helper"
+  ],
+  "generated": "2026-10-27T17:37:36Z",
+  "reps": 2,
+  "effort": "low",
+  "caps": {
+    "react_max_iterations": 15,
+    "stop_max_rounds": 10,
+    "planner_max_iterations": 10,
+    "helper_max_iterations": 6,
+    "saver_shared_calls": 12
+  },
+  "waste_config": {
+    "max_steps": 12,
+    "max_total_tokens": 60000,
+    "repeat_limit": 2,
+    "noop_limit": 2,
+    "cycle_max_len": 4,
+    "reasoning_floor": 400,
+    "reasoning_ratio": 4.0,
+    "reasoning_hard_cap": 3000,
+    "max_nudges": 1,
+    "inject_done": true,
+    "done_tool": "done",
+    "error_limit": 3,
+    "empty_limit": 4,
+    "low_gain_window": 5,
+    "low_gain_max_new": 0.1,
+    "paraphrase_limit": 2
+  },
+  "cases_total": 24,
+  "runs": 96,
+  "errors": 0,
+  "spend_usd_own": 0.9836,
+  "spend_label": "MEASURED (Meta spend ledger)",
+  "ledger_total_after": 22.793,
+  "ledger_total_before": 21.8703,
+  "job_ceiling": 24.0,
+  "notes": [
+    "Two reps per case. The model is not deterministic, so a one-run swing (for example the harness alone going from 8.5 to 15.5 calls on sprawl-3) is noise, not a trend.",
+    "noprog-3 passes because the stop message now carries the last tool value. The stop text says 'Nothing new came back', and the success check's FAIL word list matches 'nothing', so this pass is partly check-sensitive. The check was not changed.",
+    "A saver stop message counts as operator-visible text only when the main agent was stopped. Helper stop messages go to the planner and are not counted.",
+    "Before the final run, one smoke run (noprog-3 and sprawl-2, 1 rep, both arms, about $0.06) checked the plumbing. It is not in these results but is in the spend.",
+    "The 'before' columns are the v2 runs for the same cases, from a different day and different samples."
+  ]
+}

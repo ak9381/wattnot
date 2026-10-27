@@ -257,3 +257,108 @@ real recorded run, not a new call. Nothing is running when you press Play.
 - Tests use fake clients; nothing in `tests/` calls the network. Rerun with
   `python scripts/agentwaste_v2_bench.py --reps 2` (needs a Muse login; `--summarize-only`
   rebuilds `results.json` from `runs.jsonl` with no API calls).
+
+## v3: the two weak spots, fixed and re-measured
+
+v2 found two weak spots. v3 changes the saver for both, re-runs only the affected cases
+(3 no-progress, 3 sprawl) plus all 18 normal tasks, 2 reps, both arms, Muse Spark 1.3 at
+low effort. The design was set before the final run and was not tuned after it.
+
+### What changed
+
+1. **A stop now carries a report.** When a detector stops a run, the final message includes
+   the latest tool result, for example `Latest result (from read_config): max_connections=120`.
+   Before, it said only "Stopped early". The "nothing new came back" line is added only for
+   no-progress stops, not for budget stops.
+2. **A stopped helper tells the planner to stop.** The planner gets
+   `stopped: no progress, do not re-delegate this subtask.` plus the helper's report.
+3. **Re-delegation is detected.** The shared budget (12 calls, 60,000 tokens, 4 agents,
+   planner harness only, same as v2) now remembers the subtasks of stopped helpers. A new
+   subtask with at least 60% word overlap and at least 3 words does not start a helper; the
+   planner gets the earlier report back (detector `same_task`).
+
+### Numbers (MEASURED; per run; 2 reps)
+
+| | Harness alone (v3 run) | Saver, before (v2) | Saver, after (v3) |
+|---|---|---|---|
+| noprog-1-search-summarize | 15.0 calls, 2 misses | 7.0 calls, 2/2 passed | 7.0 calls, 2/2 passed |
+| noprog-2-ticket-poll | 15.0 calls, 2 misses | 7.0 calls, 2/2 passed | 7.0 calls, 2/2 passed |
+| **noprog-3-file-poll** | 15.0 calls, 2 misses | 3.0 calls, **1/2 passed** | 3.0 calls, **2/2 passed** |
+| sprawl-1-double-check | 11.5 calls | 8.0 calls | 10.0 calls |
+| sprawl-2-redelegate-failure | 26.0 calls, 2 misses | 6.5 calls | 9.5 calls |
+| sprawl-3-recursive-split | 15.5 calls | 12.0 calls (more than v2's harness at 8.5) | 10.5 calls |
+| **All 6 cases (12 runs per arm)** | 16.33 calls, 37,751 tokens, 12/12, 8 misses | 7.25 calls, 12,956 tokens, 11/12, 0 misses* | 7.83 calls, 14,223 tokens, 12/12, 0 misses |
+
+\* v2 numbers for the same six cases. Harness alone in v2 on them: 13.5 calls, 32,857
+tokens, 12/12, 7 misses.
+
+Normal tasks (18 tasks, 36 runs per arm), harness alone → saver (v3): calls 3.33 → 3.33
+(v2: 3.33 → 3.31); tokens per run 4,677 → 4,953 (+5.9%; v2 +4.2%); completion tokens +18.8%;
+wall time mean 2.94 s → 3.84 s, median 2.80 s → 3.54 s; passed 36/36 → 36/36 (both
+arms, both versions). In 12 of the 36 saver runs the loop ended through the saver's `done`
+action rather than the harness's own stop; the calls and the result did not change.
+Estimates (ESTIMATE, same rates as v2): cost per normal run $0.00449 → $0.00474, energy
+1,590.6 J → 1,889.4 J per 36 runs (+18.8%, from completion tokens).
+
+### What this does and does not show
+
+- **No-progress report: fixed for the case it was built for.** noprog-3 passes 2/2 in the
+  saver arm (v2: 1/2), and the final message now carries the latest value. **This pass is
+  partly check-sensitive.** The success check fails a run when nothing was changed and the
+  agent's text matches a word list of "still / nothing / none / fail / not found /
+  blocked". The new stop template says "Nothing new came back, so the task was not
+  finished", which matches "nothing". We did not change the check. A different check could
+  read the same message differently. n is 2 runs.
+- **Sprawl: mixed, and only partly improved.** Compared with the harness alone in the same
+  run, the saver still saves calls on all three cases (sub-agent calls and misses down; 8
+  harness misses became 0 on the six cases). Compared with the v2 saver, sprawl-3 is better
+  (12.0 → 10.5) but sprawl-1 (8.0 → 10.0) and sprawl-2 (6.5 → 9.5) used *more* calls. With
+  2 reps each, and the harness alone moving from 8.5 to 15.5 calls on sprawl-3 between the
+  two runs, we cannot say whether the fixes helped or this is noise. Helpers started: 23
+  (harness alone) vs 15 (saver) in this run; v2 had 17 vs 26, so the saver's helper count
+  did fall, but the sample is small.
+- **Normal tasks: no regression in calls or success, a small cost in tokens and time.**
+  Calls and success are identical. Tokens, completion tokens, and wall time are higher with
+  the saver, and the wall-time median moved by about 0.7 s. We did not isolate why (the
+  extra `done` tool in every request is the likely part). The v2 note about API latency
+  spikes applies to the mean (one saver run took 21.6 s).
+- Stop text counts as operator-visible text only when the main agent was stopped. A helper's
+  stop message goes to the planner, not the operator, and is not counted.
+- One smoke run (noprog-3 and sprawl-2, 1 rep, both arms, about $0.06) checked the plumbing
+  before the final run. It is not in the numbers above, and its cost is in the spend.
+- "Before" numbers are the v2 runs of the same cases; v2 and v3 are different samples.
+
+### Spend (MEASURED, from the spend ledger)
+
+v3 own spend, smoke included: $0.98 (568 calls). Ledger total after: $22.79, under the $24
+job ceiling. Rebuild with `python scripts/agentwaste_v3_bench.py --reps 2`
+(`--summarize-only` rebuilds `results.json` from `runs.jsonl` with no API calls).
+
+### Sprawl again, 6 reps
+
+The 2-rep sprawl numbers above were too noisy to call, so we ran the three sprawl cases to
+6 reps per arm with the same v3 code and config. Reps 0 and 1 are the v3 runs above; reps 2
+to 5 are new (24 new runs). Calls and tokens are **MEASURED**; the "looks real?" column is
+**ADVICE**, our reading of a Welch t on calls, 6 runs against 6.
+
+| Case | Harness alone: calls mean (min–max, sd) | Saver v3: calls mean (min–max, sd) | Tokens mean, alone → saver | Passed | Looks real? |
+|---|---|---|---|---|---|
+| sprawl-1-double-check | 14.0 (7–16, sd 3.5) | 8.7 (8–12, sd 1.6) | 19,497 → 13,530 | 6/6, 6/6 | Yes, saver better (t ≈ 3.4) |
+| sprawl-2-redelegate-failure | 13.0 (6–30, sd 10.4), 2 misses | 9.3 (6–12, sd 2.9), 0 misses | 20,314 → 14,947 | 6/6, 6/6 | No. Harness is bimodal; its median (7) beats the saver's (9.5) (t ≈ 0.8) |
+| sprawl-3-recursive-split | 12.2 (7–17, sd 4.4) | 11.3 (9–12, sd 1.2) | 21,507 → 20,865 | 6/6, 6/6 | No difference (t ≈ 0.5) |
+
+What we read from it:
+
+- With helper agents the saver is **not worse than the harness alone on any case** by mean
+  calls, tokens or success, so the conditional fix (a helper cap per subtask and a
+  planner-level no-progress detector) was not built.
+- It is **clearly better only on sprawl-1**, where the planner double-checks done work.
+- On sprawl-2 the saver removes the two long runaway runs (22 and 30 calls) but makes the
+  short path a little longer: in 3 of 6 runs it ran into the 12-call shared budget, where the
+  harness alone often finished in 6. That is the open spot. A shared budget that fits the
+  task, or a stop that fires sooner on a repeated failing helper, may help; we have not
+  tested either.
+- On sprawl-3 the saver mainly makes runs more even (sd 1.2 vs 4.4), not cheaper.
+- Spend for this re-run: $0.40 (MEASURED, ledger purpose `agentwaste-sprawl6`).
+  Data: `data/agent-waste/sprawl6/` (`runs.jsonl`, `results.json` with a `spread` table,
+  `verdicts.json` with the ADVICE text).

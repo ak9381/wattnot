@@ -273,3 +273,8 @@ def find_paraphrase(messages: list, limit: int, sim: float = 0.6) -> Flag | None
         if all(_overlap(last[i], last[i + 1]) >= sim for i in range(len(last) - 1)):
             return Flag("paraphrase", "the last replies say the same thing again")
     return None
+
+
+def same_task(a: str, b: str, sim: float = 0.6) -> bool:
+    """True when two sub-task descriptions ask for nearly the same thing (word overlap)."""
+    return len(_words(a)) >= 3 and len(_words(b)) >= 3 and _overlap(_words(a), _words(b)) >= sim

@@ -44,6 +44,33 @@ export function categoriesHtml(cats) {
   return `<h3 class="wsub">By kind of miss ${tagOf("MEASURED")}</h3><table class="cmpt"><thead><tr><th></th><th>Calls per run</th><th>Tokens</th><th>Passed</th><th>Missed stop</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
+const passText = (a) => (a && a.runs ? `${num(a.success, 0)}/${num(a.runs, 0)}` : "–");
+const cell = (a) => (a && a.runs ? `${num(a.calls)} calls · ${num(a.tokens, 0)} tok · ${passText(a)} passed` : "–");
+
+// The 6-rep sprawl re-run: mean, spread and our reading of each case.
+const sdText = (s) => (s ? `${num(s.mean)} (${num(s.min, 0)}–${num(s.max, 0)}, sd ${num(s.sd)})` : "–");
+export function repeatHtml(rp) {
+  if (!rp || !rp.spread || !rp.spread.length) return "";
+  const arm = (a) => (a ? `${sdText(a.calls)} calls · ${num(a.tokens.mean, 0)} tok · ${num(a.success, 0)}/${num(a.runs, 0)}` : "–");
+  const rows = rp.spread.map((c) => `<tr><th scope="row">${esc(c.id)}</th><td class="num">${esc(arm(c.arms.harness))}</td><td class="num"><b>${esc(arm(c.arms["harness+saver"]))}</b></td><td>${esc((rp.verdicts || {})[c.id] || "")}</td></tr>`).join("");
+  const notes = (rp.notes || []).map((n) => `<p class="hnt">${esc(n)}</p>`).join("");
+  return `<h3 class="wsub">Sub-agent sprawl, ${num(rp.reps, 0)} reps ${tagOf("MEASURED")}</h3>
+    <table class="cmpt"><thead><tr><th></th><th>Harness alone</th><th>Saver (v3)</th><th>Does it look real? ${tagOf("ADVICE")}</th></tr></thead><tbody>${rows}</tbody></table>${notes}`;
+}
+
+// After the two fixes: same cases, harness alone, the v2 saver and the v3 saver side by side.
+export function afterFixesHtml(af) {
+  if (!af) return "";
+  const rowOf = (name, b) => `<tr><th scope="row">${esc(name)}</th><td class="num">${esc(cell(b.harness))}</td><td class="num">${esc(cell(b.saver_v2))}</td><td class="num"><b>${esc(cell(b.saver_v3))}</b></td></tr>`;
+  const rows = [rowOf("All 6 fixed-up cases", af.fixed), rowOf("All 18 normal tasks (regression check)", af.normal), ...(af.cases || []).map((c) => rowOf(c.id, c))].join("");
+  const notes = (af.notes || []).map((n) => `<p class="hnt">${esc(n)}</p>`).join("");
+  const fx = (af.fixes || []).map((f) => `<li>${esc(f)}</li>`).join("");
+  return `<h3 class="wsub">After the two fixes (v3) ${tagOf("MEASURED")}</h3>
+    <ul class="wfix">${fx}</ul>
+    <table class="cmpt"><thead><tr><th></th><th>Harness alone (v3 run)</th><th>Saver, before (v2)</th><th>Saver, after (v3)</th></tr></thead><tbody>${rows}</tbody></table>
+    ${notes}${repeatHtml(af.repeat)}<p class="hnt">${num(af.reps, 0)} reps per case. v2 numbers come from the earlier run on the same cases; the model is not deterministic, so small gaps are noise.</p>`;
+}
+
 // the steps of one arm that are visible after k steps of the replay
 export const visible = (arm, k) => ((arm && arm.trace) || []).slice(0, k);
 export const stepCount = (sc) => Math.max(0, ...ARMS.map((a) => ((sc.arms[a] || {}).trace || []).length));
@@ -88,6 +115,7 @@ export function secondLayerHtml(sl, sel = 0) {
     ${tableHtml(sl.normal || {}, `Normal tasks (should tie; ${num(sl.normal_cases, 0)} cases)`)}
     ${tableHtml(sl.injected || {}, `Injected misses (${num(sl.cases, 0)} cases)`)}
     ${categoriesHtml(sl.categories)}
+    ${afterFixesHtml(sl.after_fixes)}
     ${replay}
     <div class="wnotes">${notes}<p class="hnt">${num(sl.reps, 0)} reps per case. Spend on this benchmark: $${num(sl.spend_usd, 2)} ${tagOf("ESTIMATE")}</p></div></div>`;
 }

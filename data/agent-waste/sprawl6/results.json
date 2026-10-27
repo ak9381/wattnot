@@ -1,0 +1,1313 @@
+{
+ "schema": "wattnot.agent-waste-v3/1",
+ "model": "muse-spark-1.3",
+ "j_per_token": 0.149666,
+ "j_per_token_source": "data/h100-run2/vm/baseline.json (Llama-3.1-8B-Instruct, one H100, stock 700 W)",
+ "price_source": "https://dev.meta.ai/docs/pricing-rate-limits (muse-spark-1.3, standard rates)",
+ "labels": {
+  "calls": "MEASURED",
+  "tokens": "MEASURED",
+  "wall_time": "MEASURED",
+  "success": "MEASURED",
+  "miss": "MEASURED",
+  "energy_j": "ESTIMATE",
+  "usd": "ESTIMATE"
+ },
+ "normal": {
+  "harness": {
+   "runs": 0,
+   "miss_runs": 0,
+   "nudges": 0,
+   "helpers": 0,
+   "errors": 0,
+   "n": 0
+  },
+  "harness+saver": {
+   "runs": 0,
+   "miss_runs": 0,
+   "nudges": 0,
+   "helpers": 0,
+   "errors": 0,
+   "n": 0
+  },
+  "saver_vs_harness": {}
+ },
+ "injected": {
+  "harness": {
+   "runs": 18,
+   "success": 18,
+   "success_pct": 100.0,
+   "calls": 235,
+   "calls_per_run": 13.06,
+   "prompt_tokens": 336395,
+   "completion_tokens": 31511,
+   "reasoning_tokens": 11041,
+   "total_tokens": 367906,
+   "tokens_per_run": 20439,
+   "tool_calls": 269,
+   "mutations": 0,
+   "wall_s_per_run": 17.62,
+   "usd": 0.3663,
+   "usd_per_run": 0.02035,
+   "joules": 4716.1,
+   "ended_by": {
+    "cap": 1,
+    "final": 17
+   },
+   "miss_runs": 2,
+   "nudges": 0,
+   "helpers": 57,
+   "errors": 0,
+   "n": 18
+  },
+  "harness+saver": {
+   "runs": 18,
+   "success": 18,
+   "success_pct": 100.0,
+   "calls": 176,
+   "calls_per_run": 9.78,
+   "prompt_tokens": 265344,
+   "completion_tokens": 30711,
+   "reasoning_tokens": 12315,
+   "total_tokens": 296055,
+   "tokens_per_run": 16448,
+   "tool_calls": 242,
+   "mutations": 0,
+   "wall_s_per_run": 18.27,
+   "usd": 0.3216,
+   "usd_per_run": 0.01787,
+   "joules": 4596.4,
+   "ended_by": {
+    "final": 5,
+    "saver-done": 2,
+    "saver-stop": 11
+   },
+   "miss_runs": 0,
+   "nudges": 20,
+   "helpers": 46,
+   "errors": 0,
+   "n": 18
+  },
+  "saver_vs_harness": {
+   "calls": -25.1,
+   "total_tokens": -19.5,
+   "completion_tokens": -2.5,
+   "wall_s_per_run": 3.7,
+   "usd": -12.2,
+   "joules": -2.5,
+   "success_points": 0.0
+  }
+ },
+ "by_category": {
+  "sprawl": {
+   "harness": {
+    "runs": 18,
+    "success": 18,
+    "success_pct": 100.0,
+    "calls": 235,
+    "calls_per_run": 13.06,
+    "prompt_tokens": 336395,
+    "completion_tokens": 31511,
+    "reasoning_tokens": 11041,
+    "total_tokens": 367906,
+    "tokens_per_run": 20439,
+    "tool_calls": 269,
+    "mutations": 0,
+    "wall_s_per_run": 17.62,
+    "usd": 0.3663,
+    "usd_per_run": 0.02035,
+    "joules": 4716.1,
+    "ended_by": {
+     "cap": 1,
+     "final": 17
+    },
+    "miss_runs": 2,
+    "nudges": 0,
+    "helpers": 57,
+    "errors": 0,
+    "n": 18
+   },
+   "harness+saver": {
+    "runs": 18,
+    "success": 18,
+    "success_pct": 100.0,
+    "calls": 176,
+    "calls_per_run": 9.78,
+    "prompt_tokens": 265344,
+    "completion_tokens": 30711,
+    "reasoning_tokens": 12315,
+    "total_tokens": 296055,
+    "tokens_per_run": 16448,
+    "tool_calls": 242,
+    "mutations": 0,
+    "wall_s_per_run": 18.27,
+    "usd": 0.3216,
+    "usd_per_run": 0.01787,
+    "joules": 4596.4,
+    "ended_by": {
+     "final": 5,
+     "saver-done": 2,
+     "saver-stop": 11
+    },
+    "miss_runs": 0,
+    "nudges": 20,
+    "helpers": 46,
+    "errors": 0,
+    "n": 18
+   },
+   "saver_vs_harness": {
+    "calls": -25.1,
+    "total_tokens": -19.5,
+    "completion_tokens": -2.5,
+    "wall_s_per_run": 3.7,
+    "usd": -12.2,
+    "joules": -2.5,
+    "success_points": 0.0
+   }
+  }
+ },
+ "by_harness_normal": {},
+ "cases": {
+  "sprawl-1-double-check": {
+   "category": "sprawl",
+   "harness": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 84,
+    "calls_per_run": 14.0,
+    "prompt_tokens": 107621,
+    "completion_tokens": 9359,
+    "reasoning_tokens": 3541,
+    "total_tokens": 116980,
+    "tokens_per_run": 19497,
+    "tool_calls": 75,
+    "mutations": 0,
+    "wall_s_per_run": 14.85,
+    "usd": 0.0999,
+    "usd_per_run": 0.01666,
+    "joules": 1400.7,
+    "ended_by": {
+     "final": 6
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 32,
+    "errors": 0,
+    "n": 6
+   },
+   "injected": "the planner must have two helpers confirm each fact",
+   "harness+saver": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 52,
+    "calls_per_run": 8.67,
+    "prompt_tokens": 72105,
+    "completion_tokens": 9076,
+    "reasoning_tokens": 4317,
+    "total_tokens": 81181,
+    "tokens_per_run": 13530,
+    "tool_calls": 62,
+    "mutations": 0,
+    "wall_s_per_run": 19.14,
+    "usd": 0.0955,
+    "usd_per_run": 0.01592,
+    "joules": 1358.4,
+    "ended_by": {
+     "final": 1,
+     "saver-stop": 5
+    },
+    "miss_runs": 0,
+    "nudges": 6,
+    "helpers": 24,
+    "errors": 0,
+    "n": 6
+   },
+   "saver_vs_harness": {
+    "calls": -38.1,
+    "total_tokens": -30.6,
+    "completion_tokens": -3.0,
+    "wall_s_per_run": 28.9,
+    "usd": -4.4,
+    "joules": -3.0,
+    "success_points": 0.0
+   }
+  },
+  "sprawl-2-redelegate-failure": {
+   "category": "sprawl",
+   "harness": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 78,
+    "calls_per_run": 13.0,
+    "prompt_tokens": 112624,
+    "completion_tokens": 9259,
+    "reasoning_tokens": 3863,
+    "total_tokens": 121883,
+    "tokens_per_run": 20314,
+    "tool_calls": 65,
+    "mutations": 0,
+    "wall_s_per_run": 21.1,
+    "usd": 0.1208,
+    "usd_per_run": 0.02013,
+    "joules": 1385.8,
+    "ended_by": {
+     "cap": 1,
+     "final": 5
+    },
+    "miss_runs": 2,
+    "nudges": 0,
+    "helpers": 11,
+    "errors": 0,
+    "n": 6
+   },
+   "injected": "service_status always answers HTTP 500; the planner re-delegates on failure",
+   "harness+saver": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 56,
+    "calls_per_run": 9.33,
+    "prompt_tokens": 81443,
+    "completion_tokens": 8241,
+    "reasoning_tokens": 4060,
+    "total_tokens": 89684,
+    "tokens_per_run": 14947,
+    "tool_calls": 44,
+    "mutations": 0,
+    "wall_s_per_run": 18.66,
+    "usd": 0.0886,
+    "usd_per_run": 0.01477,
+    "joules": 1233.4,
+    "ended_by": {
+     "final": 3,
+     "saver-stop": 3
+    },
+    "miss_runs": 0,
+    "nudges": 4,
+    "helpers": 9,
+    "errors": 0,
+    "n": 6
+   },
+   "saver_vs_harness": {
+    "calls": -28.2,
+    "total_tokens": -26.4,
+    "completion_tokens": -11.0,
+    "wall_s_per_run": -11.6,
+    "usd": -26.7,
+    "joules": -11.0,
+    "success_points": 0.0
+   }
+  },
+  "sprawl-3-recursive-split": {
+   "category": "sprawl",
+   "harness": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 73,
+    "calls_per_run": 12.17,
+    "prompt_tokens": 116150,
+    "completion_tokens": 12893,
+    "reasoning_tokens": 3637,
+    "total_tokens": 129043,
+    "tokens_per_run": 21507,
+    "tool_calls": 129,
+    "mutations": 0,
+    "wall_s_per_run": 16.92,
+    "usd": 0.1455,
+    "usd_per_run": 0.02425,
+    "joules": 1929.6,
+    "ended_by": {
+     "final": 6
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 14,
+    "errors": 0,
+    "n": 6
+   },
+   "injected": "helpers may delegate again; the docs hold no such figure",
+   "harness+saver": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 68,
+    "calls_per_run": 11.33,
+    "prompt_tokens": 111796,
+    "completion_tokens": 13394,
+    "reasoning_tokens": 3938,
+    "total_tokens": 125190,
+    "tokens_per_run": 20865,
+    "tool_calls": 136,
+    "mutations": 0,
+    "wall_s_per_run": 17.02,
+    "usd": 0.1375,
+    "usd_per_run": 0.02292,
+    "joules": 2004.6,
+    "ended_by": {
+     "final": 1,
+     "saver-done": 2,
+     "saver-stop": 3
+    },
+    "miss_runs": 0,
+    "nudges": 10,
+    "helpers": 13,
+    "errors": 0,
+    "n": 6
+   },
+   "saver_vs_harness": {
+    "calls": -6.8,
+    "total_tokens": -3.0,
+    "completion_tokens": 3.9,
+    "wall_s_per_run": 0.6,
+    "usd": -5.5,
+    "joules": 3.9,
+    "success_points": 0.0
+   }
+  }
+ },
+ "outcome_differs": [],
+ "scenarios": [
+  {
+   "case": "sprawl-2-redelegate-failure",
+   "rep": 0,
+   "category": "sprawl",
+   "harness": "planner",
+   "prompt": "Check the status of the billing service and post it.",
+   "injected": "service_status always answers HTTP 500; the planner re-delegates on failure",
+   "arms": {
+    "harness": {
+     "success": true,
+     "calls": 22,
+     "total_tokens": 34665,
+     "wall_s": 22.976,
+     "ended_by": "final",
+     "stop_reason": null,
+     "miss": true,
+     "helpers": 3,
+     "trace": [
+      {
+       "n": 1,
+       "agent": "main",
+       "text": "I'll delegate checking the billing service to a helper.",
+       "calls": [
+        [
+         "delegate",
+         "{\"task\":\"Check the status of the billing service using service_status\u2026",
+         "Checked billing service via service_status (name='billing' and 'all'): all attempts returned HTTP 500 interna\u2026"
+        ]
+       ],
+       "tokens": 1465,
+       "note": ""
+      },
+      {
+       "n": 2,
+       "agent": "helper1",
+       "text": "Checking billing service status, then posting it.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1037\"}"
+        ]
+       ],
+       "tokens": 1261,
+       "note": ""
+      },
+      {
+       "n": 3,
+       "agent": "helper1",
+       "text": "Direct check failed, so I'll try listing all services.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"all\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1074\"}"
+        ]
+       ],
+       "tokens": 1354,
+       "note": ""
+      },
+      {
+       "n": 4,
+       "agent": "helper1",
+       "text": "Both attempts returned errors, so I'll retry once more.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1111\"}"
+        ]
+       ],
+       "tokens": 1492,
+       "note": ""
+      },
+      {
+       "n": 5,
+       "agent": "helper1",
+       "text": "",
+       "calls": [
+        [
+         "post_message",
+         "{\"text\":\"Billing service status check failed: service_status returned\u2026",
+         "{\"ok\":true}"
+        ]
+       ],
+       "tokens": 1607,
+       "note": ""
+      },
+      {
+       "n": 6,
+       "agent": "helper1",
+       "text": "Checked billing service via service_status (name='billing' and 'all'): all attempts returned HTTP 500 internal server error. Posted failure notice vi\u2026",
+       "calls": [],
+       "tokens": 1657,
+       "note": ""
+      },
+      {
+       "n": 7,
+       "agent": "main",
+       "text": "The first check failed, so I'll retry with a fresh helper.",
+       "calls": [
+        [
+         "delegate",
+         "{\"task\":\"Check the status of the billing service. Use service_status \u2026",
+         "[helper hit its 6-step limit] Status unavailable after retries \u2014 posting the result."
+        ]
+       ],
+       "tokens": 1726,
+       "note": ""
+      },
+      {
+       "n": 8,
+       "agent": "helper2",
+       "text": "Checking billing service status \u2014 trying direct lookup first.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1148\"}"
+        ]
+       ],
+       "tokens": 1284,
+       "note": ""
+      },
+      {
+       "n": 9,
+       "agent": "helper2",
+       "text": "Direct check failed, retrying.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1185\"}"
+        ]
+       ],
+       "tokens": 1360,
+       "note": ""
+      },
+      {
+       "n": 10,
+       "agent": "helper2",
+       "text": "",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1222\"}"
+        ]
+       ],
+       "tokens": 1441,
+       "note": ""
+      },
+      {
+       "n": 11,
+       "agent": "helper2",
+       "text": "Direct lookups keep failing \u2014 checking all services to locate billing.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"all\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1259\"}"
+        ]
+       ],
+       "tokens": 1568,
+       "note": ""
+      },
+      {
+       "n": 12,
+       "agent": "helper2",
+       "text": "All-services check also failed \u2014 retrying to get status.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"all\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1296\"}"
+        ]
+       ],
+       "tokens": 1728,
+       "note": ""
+      },
+      {
+       "n": 13,
+       "agent": "helper2",
+       "text": "Status unavailable after retries \u2014 posting the result.",
+       "calls": [
+        [
+         "post_message",
+         "{\"text\":\"Billing service status check failed: service_status for 'bil\u2026",
+         "{\"ok\":true}"
+        ]
+       ],
+       "tokens": 1895,
+       "note": ""
+      },
+      {
+       "n": 14,
+       "agent": "main",
+       "text": "Both attempts came back unclear, so I'll try one more helper to verify.",
+       "calls": [
+        [
+         "delegate",
+         "{\"task\":\"Check billing service status: call service_status with name=\u2026",
+         "Tried service_status billing 3 times (all HTTP 500), then service_status all (also HTTP 500). Posted message \u2026"
+        ]
+       ],
+       "tokens": 1783,
+       "note": ""
+      },
+      {
+       "n": 15,
+       "agent": "helper3",
+       "text": "Checking billing service \u2014 first status attempt.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1333\"}"
+        ]
+       ],
+       "tokens": 1280,
+       "note": ""
+      },
+      {
+       "n": 16,
+       "agent": "helper3",
+       "text": "First check failed, retrying.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1370\"}"
+        ]
+       ],
+       "tokens": 1357,
+       "note": ""
+      },
+      {
+       "n": 17,
+       "agent": "helper3",
+       "text": "Second attempt failed, trying once more.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1407\"}"
+        ]
+       ],
+       "tokens": 1464,
+       "note": ""
+      },
+      {
+       "n": 18,
+       "agent": "helper3",
+       "text": "Billing is still down after 3 tries \u2014 checking all services for context.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"all\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1444\"}"
+        ]
+       ],
+       "tokens": 1600,
+       "note": ""
+      },
+      {
+       "n": 19,
+       "agent": "helper3",
+       "text": "",
+       "calls": [
+        [
+         "post_message",
+         "{\"text\":\"Billing service status check failed after 3 retries (HTTP 50\u2026",
+         "{\"ok\":true}"
+        ]
+       ],
+       "tokens": 1735,
+       "note": ""
+      },
+      {
+       "n": 20,
+       "agent": "helper3",
+       "text": "Tried service_status billing 3 times (all HTTP 500), then service_status all (also HTTP 500). Posted message reporting billing status failure. 5 step\u2026",
+       "calls": [],
+       "tokens": 1766,
+       "note": ""
+      },
+      {
+       "n": 21,
+       "agent": "main",
+       "text": "",
+       "calls": [
+        [
+         "post_message",
+         "{\"text\":\"Billing service status check: service_status for 'billing' a\u2026",
+         "{\"ok\":true}"
+        ]
+       ],
+       "tokens": 1942,
+       "note": ""
+      },
+      {
+       "n": 22,
+       "agent": "main",
+       "text": "Billing service status unavailable (HTTP 500 on all checks) \u2013 posted to operator.",
+       "calls": [],
+       "tokens": 1900,
+       "note": ""
+      }
+     ]
+    },
+    "harness+saver": {
+     "success": true,
+     "calls": 7,
+     "total_tokens": 10612,
+     "wall_s": 6.77,
+     "ended_by": "final",
+     "stop_reason": null,
+     "miss": false,
+     "helpers": 1,
+     "trace": [
+      {
+       "n": 1,
+       "agent": "main",
+       "text": "I'll delegate checking the billing service to a helper.",
+       "calls": [
+        [
+         "delegate",
+         "{\"task\":\"Check the status of the billing service and post it. Use ser\u2026",
+         "Checked billing via service_status (and fallback all) \u2013 both returned HTTP 500. Posted failure status to oper\u2026"
+        ]
+       ],
+       "tokens": 1466,
+       "note": ""
+      },
+      {
+       "n": 2,
+       "agent": "helper1",
+       "text": "Checking billing service status and posting it for you.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1037\"}"
+        ]
+       ],
+       "tokens": 1317,
+       "note": ""
+      },
+      {
+       "n": 3,
+       "agent": "helper1",
+       "text": "Billing check hit an error \u2014 trying a broader status lookup.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"all\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1074\"}"
+        ]
+       ],
+       "tokens": 1414,
+       "note": ""
+      },
+      {
+       "n": 4,
+       "agent": "helper1",
+       "text": "",
+       "calls": [
+        [
+         "post_message",
+         "{\"text\":\"Billing service status check failed: service_status returned\u2026",
+         "{\"ok\":true}"
+        ]
+       ],
+       "tokens": 1558,
+       "note": ""
+      },
+      {
+       "n": 5,
+       "agent": "helper1",
+       "text": "Checked billing via service_status (and fallback all) \u2013 both returned HTTP 500. Posted failure status to operator via post_message (ok:true).",
+       "calls": [],
+       "tokens": 1599,
+       "note": ""
+      },
+      {
+       "n": 6,
+       "agent": "main",
+       "text": "",
+       "calls": [
+        [
+         "post_message",
+         "{\"text\":\"Billing service status check: helper attempted service_statu\u2026",
+         "{\"ok\":true}"
+        ]
+       ],
+       "tokens": 1659,
+       "note": ""
+      },
+      {
+       "n": 7,
+       "agent": "main",
+       "text": "Billing check delegated; service_status returned 500 and status posted.",
+       "calls": [],
+       "tokens": 1599,
+       "note": ""
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "before": {
+  "normal": {
+   "harness": {
+    "runs": 0,
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 0
+   },
+   "harness+saver": {
+    "runs": 0,
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 0
+   },
+   "saver_vs_harness": {}
+  },
+  "injected": {
+   "harness": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 72,
+    "calls_per_run": 12.0,
+    "prompt_tokens": 102593,
+    "completion_tokens": 9221,
+    "reasoning_tokens": 2971,
+    "total_tokens": 111814,
+    "tokens_per_run": 18636,
+    "tool_calls": 81,
+    "mutations": 0,
+    "wall_s_per_run": 17.57,
+    "usd": 0.0946,
+    "usd_per_run": 0.01577,
+    "joules": 1380.1,
+    "ended_by": {
+     "final": 6
+    },
+    "miss_runs": 1,
+    "nudges": 0,
+    "helpers": 17,
+    "errors": 0,
+    "n": 6
+   },
+   "harness+saver": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 53,
+    "calls_per_run": 8.83,
+    "prompt_tokens": 76842,
+    "completion_tokens": 8308,
+    "reasoning_tokens": 2823,
+    "total_tokens": 85150,
+    "tokens_per_run": 14192,
+    "tool_calls": 74,
+    "mutations": 0,
+    "wall_s_per_run": 9.08,
+    "usd": 0.0823,
+    "usd_per_run": 0.01372,
+    "joules": 1243.4,
+    "ended_by": {
+     "final": 2,
+     "saver-stop": 4
+    },
+    "miss_runs": 0,
+    "nudges": 4,
+    "helpers": 26,
+    "errors": 0,
+    "n": 6
+   },
+   "saver_vs_harness": {
+    "calls": -26.4,
+    "total_tokens": -23.8,
+    "completion_tokens": -9.9,
+    "wall_s_per_run": -48.3,
+    "usd": -13.0,
+    "joules": -9.9,
+    "success_points": 0.0
+   }
+  },
+  "by_category": {
+   "sprawl": {
+    "harness": {
+     "runs": 6,
+     "success": 6,
+     "success_pct": 100.0,
+     "calls": 72,
+     "calls_per_run": 12.0,
+     "prompt_tokens": 102593,
+     "completion_tokens": 9221,
+     "reasoning_tokens": 2971,
+     "total_tokens": 111814,
+     "tokens_per_run": 18636,
+     "tool_calls": 81,
+     "mutations": 0,
+     "wall_s_per_run": 17.57,
+     "usd": 0.0946,
+     "usd_per_run": 0.01577,
+     "joules": 1380.1,
+     "ended_by": {
+      "final": 6
+     },
+     "miss_runs": 1,
+     "nudges": 0,
+     "helpers": 17,
+     "errors": 0,
+     "n": 6
+    },
+    "harness+saver": {
+     "runs": 6,
+     "success": 6,
+     "success_pct": 100.0,
+     "calls": 53,
+     "calls_per_run": 8.83,
+     "prompt_tokens": 76842,
+     "completion_tokens": 8308,
+     "reasoning_tokens": 2823,
+     "total_tokens": 85150,
+     "tokens_per_run": 14192,
+     "tool_calls": 74,
+     "mutations": 0,
+     "wall_s_per_run": 9.08,
+     "usd": 0.0823,
+     "usd_per_run": 0.01372,
+     "joules": 1243.4,
+     "ended_by": {
+      "final": 2,
+      "saver-stop": 4
+     },
+     "miss_runs": 0,
+     "nudges": 4,
+     "helpers": 26,
+     "errors": 0,
+     "n": 6
+    },
+    "saver_vs_harness": {
+     "calls": -26.4,
+     "total_tokens": -23.8,
+     "completion_tokens": -9.9,
+     "wall_s_per_run": -48.3,
+     "usd": -13.0,
+     "joules": -9.9,
+     "success_points": 0.0
+    }
+   }
+  },
+  "cases": {
+   "sprawl-1-double-check": {
+    "category": "sprawl",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 30,
+     "calls_per_run": 15.0,
+     "prompt_tokens": 37902,
+     "completion_tokens": 3008,
+     "reasoning_tokens": 1025,
+     "total_tokens": 40910,
+     "tokens_per_run": 20455,
+     "tool_calls": 26,
+     "mutations": 0,
+     "wall_s_per_run": 13.21,
+     "usd": 0.0268,
+     "usd_per_run": 0.01341,
+     "joules": 450.2,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 12,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "the planner must have two helpers confirm each fact",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 16,
+     "calls_per_run": 8.0,
+     "prompt_tokens": 21274,
+     "completion_tokens": 2614,
+     "reasoning_tokens": 940,
+     "total_tokens": 23888,
+     "tokens_per_run": 11944,
+     "tool_calls": 23,
+     "mutations": 0,
+     "wall_s_per_run": 8.81,
+     "usd": 0.0216,
+     "usd_per_run": 0.01079,
+     "joules": 391.2,
+     "ended_by": {
+      "saver-stop": 2
+     },
+     "miss_runs": 0,
+     "nudges": 2,
+     "helpers": 17,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": -46.7,
+     "total_tokens": -41.6,
+     "completion_tokens": -13.1,
+     "wall_s_per_run": -33.3,
+     "usd": -19.4,
+     "joules": -13.1,
+     "success_points": 0.0
+    }
+   },
+   "sprawl-2-redelegate-failure": {
+    "category": "sprawl",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 25,
+     "calls_per_run": 12.5,
+     "prompt_tokens": 36747,
+     "completion_tokens": 2989,
+     "reasoning_tokens": 1166,
+     "total_tokens": 39736,
+     "tokens_per_run": 19868,
+     "tool_calls": 21,
+     "mutations": 0,
+     "wall_s_per_run": 29.45,
+     "usd": 0.0329,
+     "usd_per_run": 0.01646,
+     "joules": 447.4,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 1,
+     "nudges": 0,
+     "helpers": 3,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "service_status always answers HTTP 500; the planner re-delegates on failure",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 13,
+     "calls_per_run": 6.5,
+     "prompt_tokens": 18207,
+     "completion_tokens": 1580,
+     "reasoning_tokens": 723,
+     "total_tokens": 19787,
+     "tokens_per_run": 9894,
+     "tool_calls": 9,
+     "mutations": 0,
+     "wall_s_per_run": 6.23,
+     "usd": 0.0167,
+     "usd_per_run": 0.00834,
+     "joules": 236.5,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 2,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": -48.0,
+     "total_tokens": -50.2,
+     "completion_tokens": -47.1,
+     "wall_s_per_run": -78.8,
+     "usd": -49.2,
+     "joules": -47.1,
+     "success_points": 0.0
+    }
+   },
+   "sprawl-3-recursive-split": {
+    "category": "sprawl",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 17,
+     "calls_per_run": 8.5,
+     "prompt_tokens": 27944,
+     "completion_tokens": 3224,
+     "reasoning_tokens": 780,
+     "total_tokens": 31168,
+     "tokens_per_run": 15584,
+     "tool_calls": 34,
+     "mutations": 0,
+     "wall_s_per_run": 10.06,
+     "usd": 0.0349,
+     "usd_per_run": 0.01744,
+     "joules": 482.5,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 2,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "helpers may delegate again; the docs hold no such figure",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 24,
+     "calls_per_run": 12.0,
+     "prompt_tokens": 37361,
+     "completion_tokens": 4114,
+     "reasoning_tokens": 1160,
+     "total_tokens": 41475,
+     "tokens_per_run": 20738,
+     "tool_calls": 42,
+     "mutations": 0,
+     "wall_s_per_run": 12.21,
+     "usd": 0.0441,
+     "usd_per_run": 0.02203,
+     "joules": 615.7,
+     "ended_by": {
+      "saver-stop": 2
+     },
+     "miss_runs": 0,
+     "nudges": 2,
+     "helpers": 7,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 41.2,
+     "total_tokens": 33.1,
+     "completion_tokens": 27.6,
+     "wall_s_per_run": 21.4,
+     "usd": 26.4,
+     "joules": 27.6,
+     "success_points": 0.0
+    }
+   }
+  },
+  "source": "data/agent-waste/v2/runs.jsonl (same cases, v2 code)"
+ },
+ "fixes": [
+  "a detector stop carries the latest tool result",
+  "a stopped helper returns 'stopped: no progress, do not re-delegate'",
+  "a subtask already stopped is not handed to a new helper"
+ ],
+ "notes": [
+  "Two reps per case. The model is not deterministic, so a one-run swing (for example the harness alone going from 8.5 to 15.5 calls on sprawl-3) is noise, not a trend.",
+  "noprog-3 passes because the stop message now carries the last tool value. The stop text says 'Nothing new came back', and the success check's FAIL word list matches 'nothing', so this pass is partly check-sensitive. The check was not changed.",
+  "A saver stop message counts as operator-visible text only when the main agent was stopped. Helper stop messages go to the planner and are not counted.",
+  "Before the final run, one smoke run (noprog-3 and sprawl-2, 1 rep, both arms, about $0.06) checked the plumbing. It is not in these results but is in the spend.",
+  "The 'before' columns are the v2 runs for the same cases, from a different day and different samples."
+ ],
+ "spread": [
+  {
+   "id": "sprawl-1-double-check",
+   "arms": {
+    "harness": {
+     "runs": 6,
+     "success": 6,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 14,
+      "sd": 3.46,
+      "min": 7,
+      "max": 16,
+      "median": 15.0
+     },
+     "tokens": {
+      "mean": 19496.67,
+      "sd": 4343.84,
+      "min": 10789,
+      "max": 22335,
+      "median": 20589.0
+     }
+    },
+    "harness+saver": {
+     "runs": 6,
+     "success": 6,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 8.67,
+      "sd": 1.63,
+      "min": 8,
+      "max": 12,
+      "median": 8.0
+     },
+     "tokens": {
+      "mean": 13530.17,
+      "sd": 3497.24,
+      "min": 11958,
+      "max": 20665,
+      "median": 12122.5
+     }
+    }
+   }
+  },
+  {
+   "id": "sprawl-2-redelegate-failure",
+   "arms": {
+    "harness": {
+     "runs": 6,
+     "success": 6,
+     "miss_runs": 2,
+     "calls": {
+      "mean": 13,
+      "sd": 10.41,
+      "min": 6,
+      "max": 30,
+      "median": 7.0
+     },
+     "tokens": {
+      "mean": 20313.83,
+      "sd": 17494.35,
+      "min": 8496,
+      "max": 49365,
+      "median": 10378.0
+     }
+    },
+    "harness+saver": {
+     "runs": 6,
+     "success": 6,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 9.33,
+      "sd": 2.94,
+      "min": 6,
+      "max": 12,
+      "median": 9.5
+     },
+     "tokens": {
+      "mean": 14947.33,
+      "sd": 5343.73,
+      "min": 9005,
+      "max": 20441,
+      "median": 14973.0
+     }
+    }
+   }
+  },
+  {
+   "id": "sprawl-3-recursive-split",
+   "arms": {
+    "harness": {
+     "runs": 6,
+     "success": 6,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 12.17,
+      "sd": 4.36,
+      "min": 7,
+      "max": 17,
+      "median": 12.5
+     },
+     "tokens": {
+      "mean": 21507.17,
+      "sd": 7990.24,
+      "min": 11703,
+      "max": 31868,
+      "median": 21932.5
+     }
+    },
+    "harness+saver": {
+     "runs": 6,
+     "success": 6,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 11.33,
+      "sd": 1.21,
+      "min": 9,
+      "max": 12,
+      "median": 12.0
+     },
+     "tokens": {
+      "mean": 20865,
+      "sd": 2763.88,
+      "min": 17079,
+      "max": 25342,
+      "median": 20770.5
+     }
+    }
+   }
+  }
+ ],
+ "generated": "2026-10-27T18:09:35Z",
+ "reps": 6,
+ "effort": "low",
+ "caps": {
+  "react_max_iterations": 15,
+  "stop_max_rounds": 10,
+  "planner_max_iterations": 10,
+  "helper_max_iterations": 6,
+  "saver_shared_calls": 12
+ },
+ "waste_config": {
+  "max_steps": 12,
+  "max_total_tokens": 60000,
+  "repeat_limit": 2,
+  "noop_limit": 2,
+  "cycle_max_len": 4,
+  "reasoning_floor": 400,
+  "reasoning_ratio": 4.0,
+  "reasoning_hard_cap": 3000,
+  "max_nudges": 1,
+  "inject_done": true,
+  "done_tool": "done",
+  "error_limit": 3,
+  "empty_limit": 4,
+  "low_gain_window": 5,
+  "low_gain_max_new": 0.1,
+  "paraphrase_limit": 2
+ },
+ "cases_total": 3,
+ "runs": 36,
+ "errors": 0,
+ "spend_usd_own": 0.4017,
+ "spend_label": "MEASURED (Meta spend ledger)",
+ "ledger_total_after": 23.1947,
+ "ledger_total_before": 23.1947,
+ "job_ceiling": 24.0
+}

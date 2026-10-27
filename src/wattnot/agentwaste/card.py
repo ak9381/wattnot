@@ -134,6 +134,100 @@ def card_v2(res: dict) -> dict:
             "spend_usd": res.get("spend_usd_own"), "generated": res.get("generated")}
 
 
+V3_SCHEMA = "wattnot.agent-waste-v3/1"
+
+
+def load_v3(path: str | Path | None = None) -> dict | None:
+    """Read the v3 (after-the-fixes) results file. None when missing or another schema."""
+    p = Path(path) if path is not None else _root() / "data" / "agent-waste" / "v3" / "results.json"
+    try:
+        d = json.loads(p.read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(d, dict) or d.get("schema") != V3_SCHEMA:
+        return None
+    return d
+
+
+def _arm_stats(arm: dict) -> dict:
+    """Per-run numbers for one arm of one block."""
+    n = arm.get("runs") or 0
+
+    def per(key: str, nd: int):
+        return round(arm[key] / n, nd) if n and arm.get(key) is not None else None
+
+    return {"runs": n, "success": arm.get("success"), "success_pct": arm.get("success_pct"),
+            "calls": arm.get("calls_per_run"), "tokens": arm.get("tokens_per_run"),
+            "wall_s": arm.get("wall_s_per_run"), "usd": per("usd", 5), "joules": per("joules", 1),
+            "miss_runs": arm.get("miss_runs")}
+
+
+def _v3_block(block: dict, before: dict) -> dict:
+    return {"harness": _arm_stats(block.get("harness", {})),
+            "saver_v3": _arm_stats(block.get("harness+saver", {})),
+            "harness_v2": _arm_stats(before.get("harness", {})),
+            "saver_v2": _arm_stats(before.get("harness+saver", {}))}
+
+
+def spread(rows: list[dict]) -> list[dict]:
+    """Per case and arm: mean, stdev, min and max of calls and tokens, and passes, over reps."""
+    import statistics as st
+
+    def stats(xs: list[float]) -> dict:
+        return {"mean": round(st.mean(xs), 2), "sd": round(st.stdev(xs), 2) if len(xs) > 1 else 0.0,
+                "min": min(xs), "max": max(xs), "median": st.median(xs)}
+
+    out = []
+    for cid in sorted({r["case"] for r in rows if not r.get("error")}):
+        arms = {}
+        for arm in ("harness", "harness+saver"):
+            xs = [r for r in rows if r["case"] == cid and r["arm"] == arm and not r.get("error")]
+            if not xs:
+                continue
+            arms[arm] = {"runs": len(xs), "success": sum(bool(r["success"]) for r in xs),
+                         "miss_runs": sum(bool(r.get("miss")) for r in xs),
+                         "calls": stats([r["calls"] for r in xs]),
+                         "tokens": stats([r["total_tokens"] for r in xs])}
+        out.append({"id": cid, "arms": arms})
+    return out
+
+
+def load_repeat(path: str | Path | None = None) -> dict | None:
+    """The 6-rep sprawl re-run (same v3 code). None when missing or without a spread table."""
+    p = (Path(path) if path is not None
+         else _root() / "data" / "agent-waste" / "sprawl6" / "results.json")
+    try:
+        d = json.loads(p.read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(d, dict) or not isinstance(d.get("spread"), list):
+        return None
+    try:
+        v = json.loads((p.parent / "verdicts.json").read_text())
+    except (OSError, ValueError):
+        v = {}
+    return {"reps": d.get("reps"), "spread": d["spread"], "verdicts": v.get("verdicts", {}),
+            "verdict_label": v.get("label"), "notes": v.get("notes", []),
+            "spend_usd": d.get("spend_usd_own")}
+
+
+def card_v3(res: dict) -> dict:
+    """What changed after the two fixes: the same cases, v2 saver vs v3 saver, side by side."""
+    before = res.get("before", {})
+    cases = []
+    for cid, c in res.get("cases", {}).items():
+        if c.get("category") == "normal":
+            continue
+        old = before.get("cases", {}).get(cid, {})
+        cases.append({"id": cid, "category": c.get("category"),
+                      **_v3_block(c, old)})
+    fixed = _v3_block(res.get("injected", {}), before.get("injected", {}))
+    normal = _v3_block(res.get("normal", {}), before.get("normal", {}))
+    return {"fixes": res.get("fixes", []), "fixed": fixed, "normal": normal, "cases": cases,
+            "notes": res.get("notes", []), "reps": res.get("reps"),
+            "spend_usd": res.get("spend_usd_own"), "generated": res.get("generated")}
+
+
 def _row(off, on, change_pct, tag) -> dict:
     return {"off": off, "on": on, "change_pct": change_pct, "tag": tag}
 

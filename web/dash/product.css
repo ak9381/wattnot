@@ -134,7 +134,7 @@
 .wtrace code{color:var(--cy)}.wtrace .ret{color:var(--dim)}
 .wnote{color:var(--green);font-size:12px}
 .wend{font-size:13px;margin:8px 0 0}.wend.bad{color:#E9C46A}.wend.ok{color:var(--green)}.wend.run{color:var(--dim)}
-.wwarn{color:#E9C46A}.cmpt .chg.up{color:#E9C46A}
+.wfix{margin:2px 0 6px 18px;padding:0;font-size:13px;color:var(--ink2)}.wwarn{color:#E9C46A}.cmpt .chg.up{color:#E9C46A}
 @media (max-width:900px){.wpair{grid-template-columns:1fr}}
 .resfoot{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
 @media (max-width:1100px){.cfg,.rgrid{grid-template-columns:1fr}.pf-why,.rnar{position:static}}

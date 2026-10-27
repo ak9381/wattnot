@@ -46,8 +46,11 @@ from fastapi.staticfiles import StaticFiles
 
 from wattnot.agentwaste.card import card as waste_card
 from wattnot.agentwaste.card import card_v2 as waste_card_v2
+from wattnot.agentwaste.card import card_v3 as waste_card_v3
+from wattnot.agentwaste.card import load_repeat as load_waste_repeat
 from wattnot.agentwaste.card import load_results as load_waste
 from wattnot.agentwaste.card import load_v2 as load_waste_v2
+from wattnot.agentwaste.card import load_v3 as load_waste_v3
 from wattnot.approvals import model as _am
 from wattnot.approvals.appliers import NvidiaSmiApplier, demo_appliers
 from wattnot.approvals.guard import Guard
@@ -450,6 +453,12 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         v2 = load_waste_v2()
         if v2 is not None:
             body["second_layer"] = waste_card_v2(v2)
+            v3 = load_waste_v3()
+            if v3 is not None:
+                body["second_layer"]["after_fixes"] = waste_card_v3(v3)
+                rep = load_waste_repeat()
+                if rep is not None:
+                    body["second_layer"]["after_fixes"]["repeat"] = rep
         return body
 
     @app.get("/api/dash/gpu/scene/{scene_id}")

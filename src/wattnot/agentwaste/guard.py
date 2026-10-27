@@ -19,6 +19,7 @@ from wattnot.agentwaste.detect import (
     find_paraphrase,
     find_reasoning_overspend,
     find_repeat,
+    same_task,
 )
 
 _EFFORT_DOWN = {"high": "medium", "medium": "low", "low": "minimal"}
@@ -32,6 +33,29 @@ _STOP_REASONS = {
     "paraphrase": "same answer again and again",
 }
 _NEW_KINDS = {"error_storm", "low_gain", "paraphrase"}
+# Stops that mean "the agent is going round in circles" (vs. a budget running out).
+_NO_PROGRESS = set(_STOP_REASONS.values())
+_OBS_CHARS = 220
+
+# What the planner reads when a helper was stopped, and when it asks for that subtask again.
+HELPER_STOPPED = "stopped: no progress, do not re-delegate this subtask."
+
+
+def last_observation(messages: list) -> tuple[str, str] | None:
+    """The latest tool result in a chat, as (tool name, text), trimmed. None if there is none."""
+    names: dict[str, str] = {}
+    for msg in messages:
+        if isinstance(msg, dict) and msg.get("role") == "assistant":
+            for call in msg.get("tool_calls") or []:
+                if isinstance(call, dict) and call.get("id") is not None:
+                    names[str(call["id"])] = str((call.get("function") or {}).get("name", ""))
+    for msg in reversed(messages):
+        if isinstance(msg, dict) and msg.get("role") == "tool":
+            text = " ".join(_message_text(msg.get("content")).split())
+            if len(text) > _OBS_CHARS:
+                text = text[: _OBS_CHARS - 1] + "…"
+            return names.get(str(msg.get("tool_call_id")), "tool"), text
+    return None
 
 
 class SharedBudget:
@@ -46,6 +70,22 @@ class SharedBudget:
         self.max_calls, self.max_tokens, self.max_agents = max_calls, max_tokens, max_agents
         self.calls = self.tokens = self.agents = 0
         self._lock = threading.Lock()
+        self._stopped_tasks: list[tuple[str, str]] = []
+        self.redelegations = 0
+
+    def note_stopped_task(self, task: str, report: str) -> None:
+        """A helper was stopped on this subtask. Remember it for the whole run."""
+        with self._lock:
+            self._stopped_tasks.append((task, report))
+
+    def find_redelegation(self, task: str) -> str | None:
+        """The report of an earlier stopped helper whose subtask is nearly this one, or None."""
+        with self._lock:
+            for old, report in self._stopped_tasks:
+                if same_task(old, task):
+                    self.redelegations += 1
+                    return report
+        return None
 
     def register_agent(self) -> bool:
         """Count one more agent. False when the run already has max_agents."""
@@ -180,6 +220,7 @@ class WasteGuard:
         self._stop_reason: str | None = None
         self._done_called = False
         self._done_reason: str | None = None
+        self._last_obs: tuple[str, str] | None = None
 
     def _stop(self, reason: str) -> None:
         self._stopped = True
@@ -188,6 +229,7 @@ class WasteGuard:
     def before(self, body: dict) -> Verdict:
         """Check budgets and detectors. Never mutates the caller's body."""
         cfg = self._config
+        self._last_obs = last_observation(body.get("messages", []) or [])
         if self._shared is not None:
             why = "too many helper agents" if self._too_many else self._shared.reason()
             if why:
@@ -310,6 +352,16 @@ class WasteGuard:
     def stop_response(self, reason: str, model: str = "") -> dict:
         """A valid chat completion that reports an early stop."""
         self._stop(reason)
+        content = f"Stopped early: {reason}."
+        if reason in _NO_PROGRESS:
+            content += " Nothing new came back, so the task was not finished."
+        else:
+            content += " The task was not finished."
+        wn: dict = {"stopped": True, "reason": reason}
+        if self._last_obs is not None:
+            tool, text = self._last_obs
+            content += f" Latest result (from {tool}): {text}"
+            wn["last_result"] = {"tool": tool, "text": text}
         return {
             "id": "wattnot-stop",
             "object": "chat.completion",
@@ -319,7 +371,7 @@ class WasteGuard:
                 "index": 0,
                 "message": {
                     "role": "assistant",
-                    "content": f"Stopped early: {reason}",
+                    "content": content,
                 },
                 "finish_reason": "stop",
             }],
@@ -328,7 +380,7 @@ class WasteGuard:
                 "completion_tokens": 0,
                 "total_tokens": 0,
             },
-            "wattnot": {"stopped": True, "reason": reason},
+            "wattnot": wn,
         }
 
     def stats(self) -> dict:
