@@ -52,6 +52,7 @@ select = ["E", "F", "I", "W", "UP", "B"]
 "src/wattnot/dash/arch_spec.py" = ["E501"]  # one-line step descriptions
 "src/wattnot/dash/runplan.py" = ["E501"]
 "src/wattnot/dash/pipeline.py" = ["E501"]  # one-line plain-words narration strings
+"src/wattnot/dash/configure.py" = ["E501"]  # plain-words option help text
 "tests/test_dash_runplan.py" = ["E501"]
 "src/wattnot/dash/server.py" = ["E501"]  # inline login page and diagnostics text
 "tests/test_dash_arch.py" = ["E501"]
