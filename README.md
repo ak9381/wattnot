@@ -23,6 +23,20 @@ controller and writes a signed receipt: how much it cut, how fast, whether p99 a
 held, and how long ramp-back took. Today it runs on a software power model, so every number is
 SIMULATED; see [docs/FLEX.md](docs/FLEX.md).
 
+## Router (replay on recorded runs, region SIMULATED)
+
+`wattnot route replay` takes a recorded cloud run and picks the effort per request class that
+answers correctly for the fewest joules, then shows what always-`xhigh` would have cost next to
+it. A failed quality gate always rules a candidate out. Region is a what-if on rounded grid
+numbers, labelled SIMULATED. See [docs/ROUTE.md](docs/ROUTE.md).
+
+## Mock certificates (always MOCK)
+
+`wattnot certificate mint` turns one verified receipt into a one-page statement with the
+receipt hash, a QR code and a permanent MOCK / NOT TRADABLE / NOT A CARBON CREDIT watermark.
+NOISE and unverifiable receipts are refused, and a receipt can be certified once. It is a
+mock for a roadmap slide, not a product. See [docs/CERTIFICATE.md](docs/CERTIFICATE.md).
+
 ## Status
 
 Built during the Meta Global AI Developer Hackathon, Oct 26 – Nov 4 2026. Before Oct 26 we had only planning docs, no code.

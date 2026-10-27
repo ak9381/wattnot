@@ -86,6 +86,8 @@ def build_parser() -> argparse.ArgumentParser:
     _flex.add_parser(sub)
     from wattnot.route import cli as _route
     _route.add_parser(sub)
+    from wattnot.certificate import cli as _cert
+    _cert.add_parser(sub)
     return parser
 
 
@@ -233,6 +235,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _route.dispatch(args)
         except (OSError, KeyError, TypeError, ValueError) as e:
             parser.error(f"route: {e}")
+    if args.cmd == "certificate":
+        try:
+            from wattnot.certificate import cli as _cert
+
+            return _cert.dispatch(args)
+        except (OSError, KeyError, TypeError, ValueError, RuntimeError) as e:
+            parser.error(f"certificate: {e}")
     parser.print_help()
     return 0
 

@@ -145,3 +145,65 @@ while the grid is the fixture.
 ```
 
 `wattnot route grid --json` returns an array of `{region, gco2_per_kwh, label, source, as_of, note}`.
+
+## Certificate (`wattnot certificate mint --json`, and `<serial>.json`)
+
+```jsonc
+// mint --json
+{ "minted": true, "certificate": { /* below */ }, "files": ["certs/WNC-MOCK-0001.json", "..."],
+  "register": "certs/register.json" }
+// refused (exit code 2)
+{ "minted": false, "reasons": [ { "code": "grade", "detail": "grade is NOISE; ..." } ] }
+// codes: not_verified | grade | simulated | no_saving | ci_includes_zero | quality_drop
+//        | no_joules | duplicate | register
+
+// certificate
+{
+  "format": "wattnot.certificate/1",
+  "status": "MOCK",                                   // always
+  "watermark": { "lines": ["MOCK", "NOT TRADABLE", "NOT A CARBON CREDIT"], "permanent": true },
+  "serial": "WNC-MOCK-0001", "issued_at": "2026-10-28T10:00:00+00:00",
+  "title": "Verified Efficiency Statement (MOCK)",
+  "receipt": { "receipt_id": "...", "sha256": "...", "spec": "wattnot.receipt/1",
+               "grade": "ESTIMATE", "label": "MEASURED", "signer": "offline:...",
+               "rekor": false, "created_at": "..." },
+  "subject": { "model": "...", "provider": "...", "gpu": "...", "workload": "...", "mode": "..." },
+  "period": { "receipt_created_at": "...", "requests": 200 },
+  "headline": "Energy per request 9.9958% lower than the baseline (0.0048 Wh saved per request).",
+  "figures": {
+    "wh_per_request": { "baseline": 0.04802, "candidate": 0.04322, "saved": 0.0048,
+                        "saved_ci95": { "low": 0.0046, "high": 0.005 },   // null for an ESTIMATE ratio
+                        "baseline_range": null, "candidate_range": null }, // {low, high} for hosted runs
+    "saving_pct": { "mean": 9.9958, "ci_low": 9.57, "ci_high": 10.42, "basis": null },
+    "usd_per_request": { "baseline": 5.76e-06, "candidate": 5.19e-06, "saved": 5.7e-07,
+                         "currency": "USD" },                              // or null
+    "j_per_good_answer": { "baseline": 182.0, "candidate": 163.8, "change_pct": -9.9958 },
+    "pass_rate": { "baseline": 0.95, "candidate": 0.95 }
+  },
+  "labels": { "grade": "ESTIMATE", "energy": "MEASURED", "basis": "ESTIMATE" },
+  "verify": { "url": "https://github.com/ak9381/wattnot/tree/main/verifier#sha256=<receipt sha>",
+              "qr_text": "<same>", "how": "..." },
+  "limits": ["This is a mock. ..."],
+  "integrity": { "canonicalization": "JCS RFC 8785", "sha256": "..." }
+}
+```
+
+Always draw the three watermark lines from `watermark.lines`, and show `receipt.grade` as the chip
+(SIMULATED when `labels.basis` is SIMULATED). Do not show a carbon figure; there is none.
+
+`wattnot certificate verify <cert> [--receipt R] [--register REG] --json` returns
+`{"ok": true, "serial": "...", "problems": []}`.
+
+`wattnot certificate register --json` returns the register:
+
+```jsonc
+{ "format": "wattnot.cert-register/1", "label": "MOCK", "note": "...", "chain_ok": true,
+  "problems": [],
+  "entries": [ { "serial": "WNC-MOCK-0001", "minted_at": "...", "receipt_sha256": "...",
+                 "claim_keys": ["receipt:<sha>", "run:<id>", "cloud:<sha>"],
+                 "grade": "ESTIMATE", "label": "MOCK", "certificate_sha256": "...",
+                 "prev_sha256": null, "integrity": { "sha256": "..." } } ] }
+```
+
+`wattnot certificate roadmap --json` returns `{format, label: "ADVICE", title, status, caveat,
+items: [{need, why, wattnot_has, gap}]}`.
