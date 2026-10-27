@@ -42,6 +42,7 @@ select = ["E", "F", "I", "W", "UP", "B"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/wattnot/certificate/render.py" = ["E501"]  # CSS and HTML strings
+"scripts/gen_proof_workload.py" = ["E501"]  # task text
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

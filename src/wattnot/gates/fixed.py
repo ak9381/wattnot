@@ -10,6 +10,7 @@ baseline minus `max_drop_pts` percentage points (1 point by default).
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
@@ -17,13 +18,15 @@ from dataclasses import dataclass
 from wattnot.gates.result import GateResult
 from wattnot.runner.workload import WorkloadItem
 
-CHECK_TYPES = ("exact", "contains", "regex")
+CHECK_TYPES = ("exact", "contains", "regex", "math", "code", "qa")
+ANSWER_TYPES = ("math", "code", "qa")
 
 
 @dataclass(frozen=True)
 class Check:
     type: str
     value: str
+    spec: tuple = ()  # the raw check as sorted (key, json) pairs; used by the answer checkers
 
     @classmethod
     def from_meta(cls, raw: Mapping) -> Check:
@@ -33,10 +36,18 @@ class Check:
         value = raw.get("pattern" if kind == "regex" else "value")
         if not isinstance(value, str):
             raise ValueError(f"check {kind!r} needs a string value")
+        if kind in ANSWER_TYPES:
+            return cls(kind, value, tuple(sorted((k, json.dumps(v)) for k, v in raw.items())))
         return cls(kind, value)
 
+    def raw(self) -> dict:
+        return {k: json.loads(v) for k, v in self.spec}
 
-def run_check(check: Check, output: str) -> bool:
+
+def run_check(check: Check, output: str, *, truncated: bool = False) -> bool:
+    if check.type in ANSWER_TYPES:
+        from wattnot.gates.answers import check_answer
+        return check_answer(check.type, output, check.raw(), truncated=truncated)
     if check.type == "exact":
         return output.strip() == check.value.strip()
     if check.type == "contains":
@@ -48,7 +59,8 @@ def item_checks(item: WorkloadItem) -> list[Check]:
     return [Check.from_meta(raw) for raw in item.meta.get("checks", [])]
 
 
-def pass_rate(outputs: Mapping[str, str], items: Iterable[WorkloadItem]) -> tuple[float, int]:
+def pass_rate(outputs: Mapping[str, str], items: Iterable[WorkloadItem], *,
+              truncated: Mapping[str, bool] | None = None) -> tuple[float, int]:
     """Percent of checked items that pass, and how many items were checked.
 
     A missing output counts as a fail, so a crashed request can't hide.
@@ -61,7 +73,8 @@ def pass_rate(outputs: Mapping[str, str], items: Iterable[WorkloadItem]) -> tupl
             continue
         checked += 1
         text = outputs.get(item.id)
-        if text is not None and all(run_check(c, text) for c in checks):
+        cut = bool(truncated and truncated.get(item.id))
+        if text is not None and all(run_check(c, text, truncated=cut) for c in checks):
             passed += 1
     if checked == 0:
         return 0.0, 0
@@ -69,10 +82,12 @@ def pass_rate(outputs: Mapping[str, str], items: Iterable[WorkloadItem]) -> tupl
 
 
 def fixed_checks(base_outputs: Mapping[str, str], cand_outputs: Mapping[str, str],
-                 items: Iterable[WorkloadItem], *, max_drop_pts: float = 1.0) -> GateResult:
+                 items: Iterable[WorkloadItem], *, max_drop_pts: float = 1.0,
+                 base_truncated: Mapping[str, bool] | None = None,
+                 cand_truncated: Mapping[str, bool] | None = None) -> GateResult:
     items = list(items)
-    base, n = pass_rate(base_outputs, items)
-    cand, _ = pass_rate(cand_outputs, items)
+    base, n = pass_rate(base_outputs, items, truncated=base_truncated)
+    cand, _ = pass_rate(cand_outputs, items, truncated=cand_truncated)
     detail = {"baseline_pct": round(base, 3), "candidate_pct": round(cand, 3),
               "checked": n, "max_drop_pts": max_drop_pts}
     if n == 0:
