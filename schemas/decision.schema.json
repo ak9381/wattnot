@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wattnot.decision/1",
+  "title": "Planner decision",
+  "description": "One line in a proof run's decisions.jsonl: what the planner proposed, whether validation accepted the answer, what the call cost, and later what the gate ruled. Numbers only; no prompts, no model outputs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "step",
+    "planner",
+    "allowed_caps",
+    "proposed_cap_w",
+    "reason",
+    "explanation",
+    "proposal_accepted",
+    "fallback",
+    "gate"
+  ],
+  "properties": {
+    "step": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "1-based planner proposal number within the run."
+    },
+    "planner": {
+      "enum": ["muse-spark", "bisect"],
+      "description": "Who actually picked the cap. muse-spark is Muse Spark; bisect is the deterministic rule (directly or as fallback)."
+    },
+    "allowed_caps": {
+      "type": "array",
+      "items": {"type": "integer"},
+      "description": "Caps the planner could pick from at this step."
+    },
+    "proposed_cap_w": {
+      "type": ["integer", "null"],
+      "description": "The cap proposed, or null for kind=stop."
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 240,
+      "description": "One-line reason quoting the number that drove the choice."
+    },
+    "muse_explanation": {
+      "type": ["string", "null"],
+      "maxLength": 280,
+      "description": "Muse Spark's own plain-words explanation, when it gave one. Stored beside, never instead of, the deterministic explanation."
+    },
+    "explanation": {
+      "type": "string",
+      "maxLength": 600,
+      "description": "Deterministic 1-2 sentence plain-words account built from the record's real numbers. No API call needed."
+    },
+    "proposal_accepted": {
+      "type": ["boolean", "null"],
+      "description": "True when validation accepted the Muse answer, false when the answer was rejected (off the allow-list or malformed), null when there was no answer to check (API error) or no Muse call (direct bisect)."
+    },
+    "fallback": {
+      "type": "boolean",
+      "description": "True when the bisect rule picked instead of Muse Spark."
+    },
+    "fallback_reason": {
+      "type": ["string", "null"],
+      "maxLength": 200,
+      "description": "Why the bisect rule picked, e.g. the Muse error."
+    },
+    "usage": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "input": {"type": "integer", "minimum": 0},
+        "output": {"type": "integer", "minimum": 0},
+        "reasoning": {"type": "integer", "minimum": 0}
+      },
+      "description": "Token usage of the Muse call, when there was one."
+    },
+    "usd": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "description": "USD cost of the Muse call from the published rates, when there was one."
+    },
+    "gate": {
+      "enum": ["accepted", "rejected", "pending", "stop"],
+      "description": "What the quality/p99/energy gate ruled for the proposed cap. pending before the step is measured, stop when no cap was proposed."
+    },
+    "p99_change_pct": {
+      "type": ["number", "null"],
+      "description": "Mean p99 change versus stock in percent, when measured."
+    },
+    "energy_change_pct": {
+      "type": ["number", "null"],
+      "description": "Mean J/request change versus stock in percent, when measured."
+    },
+    "quality_pass_pct": {
+      "type": ["number", "null"],
+      "description": "Answer-checked pass rate at the cap in percent, when measured."
+    },
+    "gate_why": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Gate rejection reasons, empty when accepted."
+    }
+  }
+}

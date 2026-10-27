@@ -20,6 +20,7 @@ ROOT_TYPES: dict[str, str] = {
     "event": "RunEvent",
     "receipt": "Receipt",
     "ui-view": "UiView",
+    "decision": "PlannerDecision",
 }
 
 _IDENTIFIER = re.compile(r"^[A-Za-z_$][A-Za-z0-9_$]*$")
@@ -124,7 +125,7 @@ def _emit_named(name: str, node: dict) -> str:
 
 
 def render_typescript(schemas: dict[str, dict]) -> str:
-    """Render the three schemas into one TypeScript module (as a string)."""
+    """Render the frozen schemas into one TypeScript module (as a string)."""
 
     out: list[str] = [
         "// Generated from schemas/*.json by scripts/gen_ts_types.py.",
