@@ -41,6 +41,8 @@ from fastapi.responses import (
 )
 from fastapi.staticfiles import StaticFiles
 
+from wattnot.agentwaste.card import card as waste_card
+from wattnot.agentwaste.card import load_results as load_waste
 from wattnot.dash import experts, gpu, runplan
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -280,6 +282,13 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         slim = [{k: v for k, v in s.items() if k != "samples"} | {"n": len(s["samples"])}
                 for s in gpu_bundle["scenes"]]
         return {**{k: v for k, v in gpu_bundle.items() if k != "scenes"}, "scenes": slim}
+
+    @app.get("/api/dash/agent-waste")
+    def agent_waste():
+        res = load_waste()
+        if res is None:
+            raise HTTPException(404, "no agent-waste results file")
+        return waste_card(res)
 
     @app.get("/api/dash/gpu/scene/{scene_id}")
     def gpu_scene(scene_id: str):

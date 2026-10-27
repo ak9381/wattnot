@@ -1,6 +1,6 @@
-"""The seven steps of one WattNot run, and the room scan that opens it.
+"""The eight steps of one WattNot run, and the room scan that opens it.
 
-Room scan -> Baseline -> Quality gate -> Cap sweep (or Adaptive top-k) -> Keep / rollback -> Receipt.
+Room scan -> Baseline -> Quality gate -> Cap sweep (or Adaptive top-k) -> Agent waste -> Keep / rollback -> Receipt.
 
 ``nodes(variant, room)`` returns the graph nodes in the same shape the Architecture map uses, so the
 run view and the map draw them with one component. ``PIPE_MAP`` says which node and sub-step a raw
@@ -89,6 +89,11 @@ VARIANTS = {
                  _sub("p99", "Latency check", "p99 per class against your limit.", "gates/decide.py", "p99 per class", "p99 change", event="gate.result")],
     },
 }
+_WASTE = [_sub("watch", "Watch each step", "Reads the conversation before each call (WasteGuard.before).", "agentwaste/guard.py", "the conversation so far", "a verdict per call", partner="meta"),
+    _sub("detect", "Spot repeats, no-ops and cycles", "Flags repeated calls, no-op steps and plan cycles (find_repeat).", "agentwaste/detect.py", "recent steps", "a flag or nothing"),
+    _sub("nudge", "Offer the done action", "Offers the done action the loop takes when the work is finished (done_tool_schema).", "agentwaste/guard.py", "the verdict", "a done tool in the reply"),
+    _sub("budget", "Enforce step and token budgets", "Stops the run when the step or token budget runs out (WasteGuard.before).", "agentwaste/guard.py", "steps and tokens used", "stop or go on"),
+    _sub("exit", "Exit early with a reason", "Ends the loop early and says why (WasteProxy.proxy).", "agentwaste/proxy.py", "the verdict", "an early stop with a reason", event="decision")]
 _KEEP = [_sub("decide", "Decide what to keep", "Everything that passed all gates is kept; the rest is not.", "gates/decide.py", "all trials, your limits", "a decision", event="decision"),
          _sub("apply", "Apply it", "The setting is applied to the card or the router.", "approvals/appliers.py", "the decision", "the change applied", partner="nvidia", event="action.applied"),
          _sub("rollback", "Roll back", "Nothing qualified, or the run ended: everything goes back to stock.", "approvals/appliers.py", "the previous setting", "stock restored", event="action.rolled_back")]
@@ -107,11 +112,12 @@ _META = {
     "gate": ("Quality gate", "Turns your limits into checks and proves the answer check works on the stock answers.", ["oss"], None, "gates/decide.py"),
     "sweep": ("Cap sweep", "Tries one setting at a time and measures J per request, p99 and whether the gates pass.", ["nvidia", "meta"], "Muse Spark", "runbook.py"),
     "topk": ("Adaptive top-k", "Mixture-of-Experts models keep fewer experts per token; agreement with normal top-k is the quality check.", ["hf", "nvidia"], None, "moe/adaptive_topk.py"),
+    "waste": ("Agent waste", "Stops the planning agent from calling tools it does not need. A done action, checks for repeated calls, no-op steps and plan cycles, and step and token budgets.", ["meta"], "Muse Spark", "agentwaste/guard.py"),
     "keep": ("Keep or roll back", "Keeps what passed every gate, rolls back what did not.", ["nvidia"], None, "approvals/appliers.py"),
     "receipt": ("Receipt", "Writes the result down: numbers, labels, and the room before and after.", ["sigstore"], None, "receipt/build.py"),
 }
-_ORDER = {"cap": ["room", "baseline", "gate", "sweep", "keep", "receipt"], "topk": ["room", "baseline", "gate", "topk", "keep", "receipt"],
-          "hosted": ["baseline", "sweep", "gate", "keep", "receipt"]}
+_ORDER = {"cap": ["room", "baseline", "gate", "sweep", "waste", "keep", "receipt"], "topk": ["room", "baseline", "gate", "topk", "waste", "keep", "receipt"],
+          "hosted": ["baseline", "sweep", "waste", "gate", "keep", "receipt"]}
 _TITLES = {("hosted", "sweep"): ("Effort sweep", "Tries cheaper reasoning levels per prompt class and a cache-friendly order."),
            ("hosted", "baseline"): ("Baseline", "The prompts at the top reasoning level: reference cost and p99.")}
 
@@ -136,6 +142,8 @@ def nodes(variant: str, room: bool, partners: dict | None = None) -> list[dict]:
         title, desc = _TITLES.get((variant, nid), (title, desc))
         if nid == "room":
             subs = _ROOM
+        elif nid == "waste":
+            subs = _WASTE
         elif nid == "keep":
             subs = _KEEP
         elif nid == "receipt":
