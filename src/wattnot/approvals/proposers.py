@@ -38,6 +38,35 @@ def checks_from_gates(results: Iterable[Any]) -> dict:
     return out
 
 
+def physical_check(fleet: Any, gpu: int, cap_w: float | None = None) -> dict:
+    """The `checks.physical` block for a change to one GPU, from the rack photo audit.
+
+    passed is True only when SAM outlined a unit for that GPU and the cap is not above the
+    rack's per-node ceiling. Anything else is False, with the reason in `detail`.
+    """
+
+    lim = fleet.limit_for(gpu)
+    if not lim.eligible:
+        return {"passed": False, "detail": lim.reason, "gpu": gpu, "rack": lim.rack,
+                "source": "sam-3.1 photo audit", "label": "MEASURED"}
+    over = cap_w is not None and cap_w > lim.ceiling_w
+    detail = (f"{cap_w:g} W is above the rack's per-node ceiling of {lim.ceiling_w} W"
+              if over else f"{lim.reason}; per-node ceiling {lim.ceiling_w} W (ESTIMATE)")
+    return {"passed": not over, "detail": detail, "gpu": gpu, "rack": lim.rack,
+            "ceiling_w": lim.ceiling_w, "source": "sam-3.1 photo audit", "label": "MEASURED"}
+
+
+def with_physical_check(spec: Mapping, fleet: Any) -> dict:
+    """A copy of a power_cap spec with `checks.physical` filled in. Other kinds pass through."""
+
+    out = {**spec, "checks": dict(spec.get("checks") or {})}
+    ch = spec.get("change") or {}
+    if spec.get("kind") == m.POWER_CAP and "gpu" in ch:
+        cap = (ch.get("after") or {}).get("power_cap_w")
+        out["checks"]["physical"] = physical_check(fleet, int(ch["gpu"]), cap)
+    return out
+
+
 def _preview(profile: str, label: str, *, grade: str | None = None, receipt: Mapping | None = None,
              will_claim: list[str], not_claimed: list[str]) -> dict:
     prev: dict = {"profile": profile, "label": label,

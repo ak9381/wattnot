@@ -73,6 +73,35 @@ def grant_spec(*, title: str, bounds: Mapping, source: Mapping, ttl_s: float,
     }
 
 
+def narrow_bounds(bounds: Mapping, fleet: Any) -> dict:
+    """Cut a trial grant's bounds to what the rack photo audit supports.
+
+    Raises NotApproved when no requested GPU has a unit in its photo, or when the cap range
+    would be empty. What was cut is written into `bounds["physical"]` so a reviewer sees it.
+    """
+
+    out = json_clone(bounds)
+    asked = list(out.get("gpus", [0]))
+    keep = [g for g in asked if fleet.limit_for(g).eligible]
+    dropped = {g: fleet.limit_for(g).reason for g in asked if g not in keep}
+    if not keep:
+        raise NotApproved("physical check failed: " + "; ".join(dropped.values()))
+    out["gpus"] = keep
+    note: dict = {"source": "sam-3.1 photo audit", "dropped_gpus": dropped}
+    if "power_cap_w" in out:
+        ceiling = min(fleet.limit_for(g).ceiling_w for g in keep)
+        c = out["power_cap_w"]
+        if ceiling < c["min"]:
+            raise NotApproved(f"physical check failed: the rack ceiling of {ceiling} W is below "
+                              f"the requested minimum cap of {c['min']} W")
+        note["ceiling_w"] = ceiling
+        if c["max"] > ceiling:
+            note["max_cut_from_w"] = c["max"]
+            c["max"] = ceiling
+    out["physical"] = note
+    return out
+
+
 def json_clone(o: Any) -> Any:
     import json
     return json.loads(json.dumps(o))
@@ -92,8 +121,20 @@ class ApprovalGate:
         self.announce = announce or (lambda msg: print(msg, flush=True))
 
     # ---- one change to leave in place
-    def request(self, spec: Mapping, applier=None) -> dict:
-        """Propose, wait for a decision, apply. Returns the applied proposal."""
+    def request(self, spec: Mapping, applier=None, *, physical=None) -> dict:
+        """Propose, wait for a decision, apply. Returns the applied proposal.
+
+        `physical` is the rack photo audit (`wattnot.sam.physical.FleetAudit`). A power cap on
+        a GPU that has no unit in its rack photo, or above the rack's per-node ceiling, is
+        refused here, before any proposal exists. A cap that passes carries `checks.physical`.
+        """
+        if physical is not None:
+            from wattnot.approvals.proposers import with_physical_check
+            spec = with_physical_check(spec, physical)
+            phys = spec["checks"].get("physical")
+            if phys is not None and not phys["passed"]:
+                raise NotApproved(f"physical check failed: {phys['detail']}; "
+                                  "nothing was proposed or changed")
         if self.mode == DRY_RUN:
             self._need_simulated(spec)
         p = self.approvals.propose(spec)
@@ -109,7 +150,11 @@ class ApprovalGate:
 
     # ---- permission to try changes
     def session(self, *, title: str, bounds: Mapping, source: Mapping | None = None,
-                ttl_s: float = 6 * 3600, reason: str = "") -> TrialSession:
+                ttl_s: float = 6 * 3600, reason: str = "", physical=None) -> TrialSession:
+        """`physical` is the rack photo audit: GPUs with no unit in their photo are dropped
+        from the grant, and the power cap range is cut to the rack's per-node ceiling."""
+        if physical is not None:
+            bounds = narrow_bounds(bounds, physical)
         return TrialSession(self, grant_spec(title=title, bounds=bounds, ttl_s=ttl_s,
                                              source=source or {}, reason=reason))
 

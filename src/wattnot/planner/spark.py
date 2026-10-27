@@ -83,11 +83,16 @@ class Decision:
 
 def summarize(*, cap_w: int, min_w: int, max_w: int, step_w: int, base_p99_s: float,
               p99_s: float, slack: float, wh_per_req: float, base_wh_per_req: float,
-              gates: Sequence[Mapping], knobs: Mapping[str, object]) -> dict:
-    """The only thing Muse Spark sees. Small on purpose (about 150 tokens)."""
+              gates: Sequence[Mapping], knobs: Mapping[str, object],
+              physical: Mapping | None = None) -> dict:
+    """The only thing Muse Spark sees. Small on purpose (about 150 tokens).
+
+    `physical` is the rack photo audit for this GPU (numbers only): units seen, the per-node
+    ceiling. `range_w` is already clamped to that ceiling, so a cap above it is never chosen.
+    """
 
     budget = base_p99_s * (1 + slack)
-    return {
+    out = {
         "cap_w": cap_w, "range_w": [min_w, max_w], "step_w": step_w,
         "p99_ms": round(p99_s * 1000), "p99_budget_ms": round(budget * 1000),
         "p99_headroom_pct": round(100 * (budget - p99_s) / budget, 1),
@@ -99,6 +104,9 @@ def summarize(*, cap_w: int, min_w: int, max_w: int, step_w: int, base_p99_s: fl
         "knobs": dict(knobs),
         "allowed_knobs": {k: list(v) for k, v in KNOBS.items()},
     }
+    if physical:
+        out["physical"] = dict(physical)
+    return out
 
 
 def fallback_policy(s: Mapping) -> Decision:

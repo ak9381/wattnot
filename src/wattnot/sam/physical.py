@@ -254,6 +254,49 @@ class RackAudit:
                                  f"no unit outlined at slot {slot} in the {s.id} photo")
         return PhysicalLimit(gpu, s.id, False, 0, f"GPU {gpu} is not in rack {s.id}")
 
+    def recommend_opts(self) -> dict:
+        """Arguments for `recommend.for_run`: the rack as it is, not as the inventory says."""
+
+        return {"gpus_per_rack": max(1, self.present_nodes), "rack_budget_w": self.spec.budget_w}
+
+    def recommend_items(self, gpu: int, *, start_cap_w: int | None = None) -> list:
+        """Recommendation items for this rack. Counts from the photo are MEASURED; every watt
+        figure is an ESTIMATE (budget and node power are assumed inputs); advice has no number."""
+
+        from wattnot.recommend import ADVICE, Item
+
+        s, n, m = self.spec, self.present_nodes, len(self.spec.declared)
+        if not self.sam:
+            return [Item(ADVICE, "no rack photo audit: the inventory is trusted as written, "
+                         "so the per-node ceiling assumes every listed node is present",
+                         "physical_audit", "off")]
+        items = [Item(MEASURED, f"rack photo audit: SAM 3.1 found {n} server units in rack "
+                      f"{s.id}; the inventory lists {m}", "physical_nodes_seen", n, "units"),
+                 Item(ESTIMATE, f"per-node cap ceiling for rack {s.id}: {self.ceiling_w} W "
+                      f"({s.budget_w:,} W rack budget / {n} nodes, GPU power only)",
+                      "physical_ceiling_w", self.ceiling_w, "W")]
+        if self.unverified:
+            ids = ", ".join(str(g) for g in self.unverified)
+            items.append(Item(ADVICE, "GPUs with no unit in the photo were left alone; check "
+                              "the rack and fix the inventory", "physical_unverified_gpus", ids))
+        if self.unlisted:
+            items.append(Item(ADVICE, "units in the photo that the inventory does not list "
+                              "draw power too: add them, or find out what they are",
+                              "physical_unlisted_units", len(self.unlisted), "units"))
+            over = self.over_budget_w_if_trusting_inventory
+            if over:
+                items.append(Item(ESTIMATE, f"trusting the inventory, {n} nodes at "
+                                  f"{self.declared_ceiling_w} W would draw "
+                                  f"{n * self.declared_ceiling_w:,} W against a "
+                                  f"{s.budget_w:,} W budget ({over:,} W over)",
+                                  "physical_over_budget_w", over, "W"))
+        if start_cap_w is not None and start_cap_w > self.ceiling_w:
+            items.append(Item(ESTIMATE, f"the starting cap of {start_cap_w} W is above this "
+                              f"rack's ceiling of {self.ceiling_w} W; the planner will not go "
+                              "above the ceiling", "physical_start_over_ceiling_w",
+                              start_cap_w - self.ceiling_w, "W"))
+        return items
+
     def summary(self) -> dict:
         """The small, number-only block Muse Spark sees. No images, no host names."""
 

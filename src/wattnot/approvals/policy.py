@@ -109,6 +109,9 @@ class Policy:
         if off:
             why.append(f"label {', '.join(off)} is not allowed for auto-approve")
         checks = p.get("checks", {})
+        phys = checks.get("physical")
+        if phys is not None and phys.get("passed") is not True:
+            why.append("the rack photo check did not pass: " + str(phys.get("detail", "")))
         if (checks.get("quality") or {}).get("passed") is not True:
             why.append("the quality check did not pass (or was not run)")
         p99 = checks.get("p99") or {}
