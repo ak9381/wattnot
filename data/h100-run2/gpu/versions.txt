@@ -1,0 +1,6 @@
+vllm 0.32.0
+torch 2.13.0
+transformers 5.19.0
+accelerate 1.15.0
+huggingface_hub 2.3.0
+tokenizers 0.23.3

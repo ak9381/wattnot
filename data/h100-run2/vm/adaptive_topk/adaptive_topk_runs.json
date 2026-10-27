@@ -1,0 +1,115 @@
+{
+  "label": "MEASURED",
+  "model": "ibm-granite/granite-3.1-3b-a800m-instruct",
+  "runs": [
+    {
+      "arm": "off",
+      "rep": 0,
+      "wh": 1.8837322222222221,
+      "seconds": 53.000199760000214,
+      "tokens": 2048,
+      "j_per_token": 3.311248046875,
+      "active_experts": 8.0,
+      "csv": "/root/run2/results/traces/adaptive-1793113805/moe-off-0.csv"
+    },
+    {
+      "arm": "on",
+      "rep": 0,
+      "wh": 1.7333666666666667,
+      "seconds": 48.70033117300045,
+      "tokens": 2048,
+      "j_per_token": 3.04693359375,
+      "active_experts": 6.811276956869009,
+      "csv": "/root/run2/results/traces/adaptive-1793113805/moe-on-0.csv"
+    },
+    {
+      "arm": "on",
+      "rep": 1,
+      "wh": 1.7127919444444444,
+      "seconds": 48.00019718600015,
+      "tokens": 2048,
+      "j_per_token": 3.0107670898437497,
+      "active_experts": 6.811276956869009,
+      "csv": "/root/run2/results/traces/adaptive-1793113805/moe-on-1.csv"
+    },
+    {
+      "arm": "off",
+      "rep": 1,
+      "wh": 1.8284705555555556,
+      "seconds": 51.20023717700042,
+      "tokens": 2048,
+      "j_per_token": 3.2141083984375003,
+      "active_experts": 8.0,
+      "csv": "/root/run2/results/traces/adaptive-1793113805/moe-off-1.csv"
+    },
+    {
+      "arm": "off",
+      "rep": 2,
+      "wh": 1.8596805555555556,
+      "seconds": 52.20024494599966,
+      "tokens": 2048,
+      "j_per_token": 3.2689697265625,
+      "active_experts": 8.0,
+      "csv": "/root/run2/results/traces/adaptive-1793113805/moe-off-2.csv"
+    },
+    {
+      "arm": "on",
+      "rep": 2,
+      "wh": 1.712666388888889,
+      "seconds": 48.30020073000014,
+      "tokens": 2048,
+      "j_per_token": 3.01054638671875,
+      "active_experts": 6.811276956869009,
+      "csv": "/root/run2/results/traces/adaptive-1793113805/moe-on-2.csv"
+    },
+    {
+      "arm": "on",
+      "rep": 3,
+      "wh": 1.6846375,
+      "seconds": 47.60015065399966,
+      "tokens": 2048,
+      "j_per_token": 2.96127685546875,
+      "active_experts": 6.811276956869009,
+      "csv": "/root/run2/results/traces/adaptive-1793113805/moe-on-3.csv"
+    },
+    {
+      "arm": "off",
+      "rep": 3,
+      "wh": 1.7931425,
+      "seconds": 50.80021117599972,
+      "tokens": 2048,
+      "j_per_token": 3.15200830078125,
+      "active_experts": 8.0,
+      "csv": "/root/run2/results/traces/adaptive-1793113805/moe-off-3.csv"
+    },
+    {
+      "arm": "off",
+      "rep": 4,
+      "wh": 1.7826247222222222,
+      "seconds": 50.6002143730002,
+      "tokens": 2048,
+      "j_per_token": 3.13352001953125,
+      "active_experts": 8.0,
+      "csv": "/root/run2/results/traces/adaptive-1793113805/moe-off-4.csv"
+    },
+    {
+      "arm": "on",
+      "rep": 4,
+      "wh": 1.6998497222222222,
+      "seconds": 48.30021310200027,
+      "tokens": 2048,
+      "j_per_token": 2.98801708984375,
+      "active_experts": 6.811276956869009,
+      "csv": "/root/run2/results/traces/adaptive-1793113805/moe-on-4.csv"
+    }
+  ],
+  "prepare": {
+    "top_k": 8,
+    "sanity": {
+      "hooked_off_matches_stock": true
+    },
+    "layers": 32,
+    "transformers_hook": "granite-moe",
+    "dtype": "bfloat16"
+  }
+}

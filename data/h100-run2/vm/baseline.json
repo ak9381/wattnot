@@ -1,0 +1,23 @@
+{
+ "cap_w": 700,
+ "token_scale": 1.0,
+ "label": "MEASURED",
+ "requests": 222,
+ "errors": 0,
+ "truncated": 6,
+ "tokens": 23328,
+ "joules": 3491.404,
+ "wall_s": 6.938788060999741,
+ "j_per_req": 15.727045045045045,
+ "j_per_token": 0.14966580932784637,
+ "p50_s": 0.4578986055000769,
+ "p99_s": 3.604768258239819,
+ "pass_pct": 93.69369369369369,
+ "checked": 222,
+ "sampled_mean_w": 505.0176428571429,
+ "counter_mean_w": 503.1720192786748,
+ "max_temp_c": 54,
+ "mean_sm_mhz": 1980.0,
+ "raw": "raw/baseline-stock.jsonl",
+ "raw_sha256": "c8cd1ad696b11dd3e1480ca3fead651236b069d5fecf4f916b2c38810e9269ec"
+}

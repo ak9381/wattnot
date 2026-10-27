@@ -1,0 +1,37 @@
+{
+ "ran": true,
+ "label": "MEASURED",
+ "model": "ibm-granite/granite-3.1-3b-a800m-instruct",
+ "top_k": 8,
+ "active_experts_on": 6.81127695686901,
+ "agreement_pct": 94.53125,
+ "j_per_req_off": 205.8221375,
+ "j_per_req_on": 192.224525,
+ "j_per_token_change_pct": -6.606486875105937,
+ "p99_change_pct": -12.24557979900221,
+ "gates": {
+  "quality": {
+   "passed": false,
+   "gate": "token agreement with normal top-k >= 95%",
+   "agreement_pct": 94.53
+  },
+  "p99": {
+   "passed": true,
+   "gate": "p99 within 10% of normal top-k",
+   "increase_pct": -12.25
+  },
+  "energy": {
+   "passed": true,
+   "gate": "joules per token lower than normal top-k"
+  }
+ },
+ "all_gates_passed": false,
+ "truncated": null,
+ "reps": {
+  "off": 5,
+  "on": 5
+ },
+ "receipt": "rcpt_moe_3d465b60d0b5.json",
+ "receipt_id": "rcpt_moe_3d465b60d0b5",
+ "seconds": 616.1
+}
