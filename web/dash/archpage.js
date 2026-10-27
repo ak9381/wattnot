@@ -2,7 +2,7 @@
 // replay of recorded runs, live following of an events file, and the side panel.
 import { ArchView, fmt, panelHtml, statHtml } from "./arch.js";
 import { init as initPan } from "./pancanvas.js";
-import { esc, pill } from "./theme.js";
+import { esc, dot, numLab, legendHtml } from "./theme.js";
 
 // ---- live meter strip: power, cost and water per request scale, straight from the bundle.
 // Every value comes from the recorded runs, the tuning ledger or a stated published factor;
@@ -95,11 +95,29 @@ export class ArchPage {
     $("#rsel", host).innerHTML = rs.map((r) => `<option value="${r.id}">${esc(r.title)}</option>`).join("") + `<option value="live">Live run (events file)</option>`;
     $("#afil", host).innerHTML = FILTERS.map(([id, t, c]) => `<button class="fchip ${id === "meta" ? "meta" : ""}" data-f="${id}" ${c ? `style="--c:${c}"` : ""} aria-pressed="${id === "all"}">${c ? "<i></i>" : ""}${esc(t)}${id === "meta" ? ` <span class="muted">${data.nodes.filter((n) => n.partners.includes("meta")).length} steps</span>` : ""}</button>`).join("");
     $("#mstrip", host).innerHTML = data.meta.map((m) => `<div class="mcard"><b>${esc(m.name)}</b><p>${esc(m.does)}</p>${m.stats.slice(0, 3).map((s) => statHtml(s)).join("")}</div>`).join("");
-    this.view = new ArchView($("#amap", host), data, { mode: "map", follow: false, onSelect: (n, s) => this.panel(n, s), onCue: (c) => { $("#acap", host).innerHTML = `<b>${esc(this.d.nodes.find((n) => n.id === c.node).title)}</b> · ${esc(c.text)} ${c.tag ? pill(c.tag) : ""}`; if (this.pan && this.pan.getFollow()) { const el = this.view.el(c.node); if (el) this.pan.focus(el); } broadcast({ type: "tick", view: "arch", phase: this.phase, step: `${c.node}.${c.sub}`, text: c.text, archActive: this.d.nodes.findIndex((n) => n.id === c.node) % 8 }); }, onProgress: (i, n) => { $("#aprog", host).textContent = i >= n ? "done" : `${i + 1} of ${n}`; this.renderMeter(i); clock.setProgress(this._p0 + (this._p1 - this._p0) * (i / Math.max(1, n))); } });
+    this.view = new ArchView($("#amap", host), data, { mode: "map", follow: false, onSelect: (n, s) => this.panel(n, s), onCue: (c) => { $("#acap", host).innerHTML = `<b>${esc(this.d.nodes.find((n) => n.id === c.node).title)}</b> · ${esc(c.text)}${c.tag ? dot(c.tag) : ""}`; if (this.pan && this.pan.getFollow()) { const el = this.view.el(c.node); if (el) this.pan.focus(el); } broadcast({ type: "tick", view: "arch", phase: this.phase, step: `${c.node}.${c.sub}`, text: c.text, archActive: this.d.nodes.findIndex((n) => n.id === c.node) % 8 }); }, onProgress: (i, n) => { $("#aprog", host).textContent = i >= n ? "done" : `${i + 1} of ${n}`; this.renderMeter(i); clock.setProgress(this._p0 + (this._p1 - this._p0) * (i / Math.max(1, n))); } });
     this.pan = initPan($("#amap", host), this.view.root, { goto: () => { const id = this.view.cur; if (id) { const el = this.view.el(id); if (el) this.pan.focus(el, { zoom: Math.max(this.pan.state.scale, 1) }); } } });
     { const _le = this.view.layoutEdges.bind(this.view); this.view.layoutEdges = () => { _le(); this.pan?.refreshMinimap(); }; }
     this._fitted = false;
     this.wire(); this.mode = "pipe"; this.liveW = null; this.renderMeter(0);
+    // The live expert card nested in the Adaptive top-k block follows the same
+    // replay clock (progress 0..1 across both phases) as the map animation.
+    this._expertProgress = 0;
+    this._unsubClock = clock.subscribe((ev) => this.onClockExpert(ev));
+  }
+  // Paint the Adaptive top-k block's nested expert bars from the shared replay
+  // clock: progress fraction -> routed ticks so far -> per-group shares.
+  async onClockExpert(ev) {
+    if (ev.type !== "progress" && ev.type !== "reset") return;
+    if (!this.view || !this.view.ids.has("adaptive")) return;
+    this._expertProgress = ev.type === "reset" ? 0 : (ev.progress || 0);
+    let data; try { data = await this.ensureExperts(); } catch { return; }
+    const target = Math.min(data.ticks.length, Math.floor(this._expertProgress * data.ticks.length));
+    const st = createState(data.meta, this.expertMode || "tier");
+    replayAll(st, data.ticks.slice(0, target));
+    const gt = groupTotals(st, "off"), tot = gt.reduce((a, g) => a + g.routed, 0) || 1;
+    this.view.paintExperts("adaptive", gt.map((g) => (g.routed / tot) * 100));
+    this.view.layoutEdges();
   }
   setMode(m) {
     this.mode = m; const H = this.host; this.closePanel();
@@ -142,9 +160,9 @@ export class ArchPage {
     const box = $("#mmeter", this.host); if (!box) return;
     if (this.replay === "live") {
       const w = this.liveW;
-      box.innerHTML = `<div class="mm-head">Live meters ${pill("LIVE")} <span class="muted">waiting for the run's events</span></div>
+      box.innerHTML = `<div class="mm-head">Live meters${dot("LIVE")} <span class="muted">waiting for the run's events</span>${legendHtml()}</div>
         <div class="mm-grid">
-        <div class="mm"><span class="mk">Power · now</span><span class="mv num" data-mv="power">${w == null ? "–" : `${fmt(w)} W`}</span>${w == null ? "" : ` ${pill("MEASURED")}`}<span class="ms">${w == null ? "waiting for telemetry.sample…" : "live meter (NVML)"}</span></div>
+        <div class="mm"><span class="mk">Power · now</span><span class="mv num${numLab(w == null ? "" : "MEASURED")}" data-mv="power">${w == null ? "–" : `${fmt(w)} W`}</span>${w == null ? "" : dot("MEASURED")}<span class="ms">${w == null ? "waiting for telemetry.sample…" : "live meter (NVML)"}</span></div>
         <div class="mm"><span class="mk">Cost · per 1M requests</span><span class="mv num">–</span><span class="ms">totals at run end</span></div>
         <div class="mm water"><span class="mk">Water · per 1M requests</span><span class="mv num">–</span><span class="ms">totals at run end</span></div>
         </div><span class="mm-foot">– = not metered, never guessed</span>`;
@@ -155,8 +173,8 @@ export class ArchPage {
     // baseline numbers, Phase 2 the WattNot numbers with the saving vs baseline.
     const m = meterFor(this.d, this.replay), st = this.phase === 1 ? 0 : 2;
     const note = this.phase === 1 ? "baseline (stock settings)" : (m.lever.saved_pct != null ? `−${m.lever.saved_pct}% vs baseline` : "with WattNot");
-    box.innerHTML = `<div class="mm-head">Live meters ${pill("REPLAY")} <span>${esc(m.title)}</span><span class="muted">· ${esc(note)}</span><span class="muted">· ${esc(PHASE_LABEL[this.phase])}</span></div>
-      <div class="mm-grid">${m.tiles.map((t) => `<div class="mm${t.k === "water" ? " water" : ""}"><span class="mk">${esc(t.label)}</span><span class="mv num">${esc(st >= 2 ? t.after : t.before)}</span> ${pill(t.tag)}<span class="ms">${esc(t.sub)}</span></div>`).join("")}</div>
+    box.innerHTML = `<div class="mm-head">Live meters${dot("REPLAY")} <span>${esc(m.title)}</span><span class="muted">· ${esc(note)}</span><span class="muted">· ${esc(PHASE_LABEL[this.phase])}</span>${legendHtml()}</div>
+      <div class="mm-grid">${m.tiles.map((t) => `<div class="mm${t.k === "water" ? " water" : ""}"><span class="mk">${esc(t.label)}</span><span class="mv num${numLab(t.tag)}">${esc(st >= 2 ? t.after : t.before)}</span>${dot(t.tag)}<span class="ms">${esc(t.sub)}</span></div>`).join("")}</div>
       <span class="mm-foot">${esc(m.foot)}</span>`;
   }
   setFilter(f) {
@@ -245,15 +263,15 @@ export class ArchPage {
       const gt = groupTotals(st, "off"), tot = gt.reduce((a, g) => a + g.routed, 0) || 1;
       const per = jPerSlot(st, "off");
       const t = meta.totals || {};
-      box.innerHTML = `<h3>Experts · routed tokens per group ${pill("MEASURED")}</h3>
-        <p class="muted">${esc(meta.meta.model)} · captured ${esc(meta.meta.capture)} · ${esc(meta.meta.steps.length)} steps</p>
+      box.innerHTML = `<h3>Experts · routed tokens per group${dot("MEASURED")}</h3>
+        <p class="muted">${esc(meta.meta.model)} · captured ${esc(meta.meta.capture)} · ${esc(meta.meta.steps.length)} steps</p>${legendHtml()}
         <span class="seg" id="aexpertMode" role="group" aria-label="how experts are grouped">
           <button data-mode="tier" class="${mode === "tier" ? "on" : ""}">tiers</button><button data-mode="kmeans" class="${mode === "kmeans" ? "on" : ""}">k-means</button>
         </span>
-        <div class="stl">${gt.map((g, i) => `<div class="stat"><span class="k">${esc(st.names[i])}</span><span class="v num">${((g.routed / tot) * 100).toFixed(1)}%</span>${pill("MEASURED")}<span class="mbar" aria-hidden="true"><i style="width:${Math.max(4, Math.round((g.routed / tot) * 100))}%"></i></span></div>
-          <p class="muted">energy share ${per == null ? "– (no meter in this capture)" : `~${(g.routed * per).toFixed(1)} J`} ${pill("ESTIMATE")}</p>`).join("")}</div>
-        ${t.on && t.off ? `<p class="muted">Adaptive top-k routes to ${t.on.active_per_token.toFixed(2)} vs ${t.off.active_per_token.toFixed(2)} experts per token (on vs off) ${pill("MEASURED")}</p>` : ""}
-        <p class="cap">Counts are routed tokens ${pill("MEASURED")}; per-group joules split the window total by routed share ${pill("ESTIMATE")}.</p>`;
+        <div class="stl">${gt.map((g, i) => `<div class="stat"><span class="k">${esc(st.names[i])}</span><span class="v num${numLab("MEASURED")}">${((g.routed / tot) * 100).toFixed(1)}%</span>${dot("MEASURED")}<span class="mbar" aria-hidden="true"><i style="width:${Math.max(4, Math.round((g.routed / tot) * 100))}%"></i></span></div>
+          <p class="muted">energy share ${per == null ? "– (no meter in this capture)" : `~${(g.routed * per).toFixed(1)} J`}${dot("ESTIMATE")}</p>`).join("")}</div>
+        ${t.on && t.off ? `<p class="muted">Adaptive top-k routes to ${t.on.active_per_token.toFixed(2)} vs ${t.off.active_per_token.toFixed(2)} experts per token (on vs off)${dot("MEASURED")}</p>` : ""}
+        <p class="cap">Counts are routed tokens${dot("MEASURED")}; per-group joules split the window total by routed share${dot("ESTIMATE")}.</p>`;
     } catch (e) { box.innerHTML = `<p class="muted">The expert routing could not load (${esc(e.message)}).</p>`; }
   }
   async loadExpertsInto(root) {
@@ -263,7 +281,7 @@ export class ArchPage {
       const { meta, ticks } = await this.ensureExperts();
       const st = createState(meta, "tier"); replayAll(st, ticks);
       const gt = groupTotals(st, "off"), tot = gt.reduce((a, g) => a + g.routed, 0) || 1;
-      div.innerHTML = `<h5>Expert routing in this capture</h5>${gt.map((g, i) => `<div class="stat"><span class="k">${esc(st.names[i])}</span><span class="v num">${((g.routed / tot) * 100).toFixed(1)}%</span>${pill("MEASURED")}</div>`).join("")}
+      div.innerHTML = `<h5>Expert routing in this capture</h5>${gt.map((g, i) => `<div class="stat"><span class="k">${esc(st.names[i])}</span><span class="v num${numLab("MEASURED")}">${((g.routed / tot) * 100).toFixed(1)}%</span>${dot("MEASURED")}</div>`).join("")}
         <p><button class="btn" data-go="experts">Show expert details</button></p>`;
     } catch (e) { div.innerHTML = `<p class="muted">The expert routing could not load (${esc(e.message)}).</p>`; }
   }
@@ -332,19 +350,19 @@ export class ArchPage {
     const d = ev.data || {}, v = this.view, el = v.el(node), b = el?.querySelector(`.sub[data-sub="${sub}"]`);
     if (d.duration_s != null) v.timing[`${node}.${sub}`] = d.duration_s;
     if (b) { b.classList.remove("on"); b.classList.add(d.status === "ok" || d.status == null ? "done" : "bad"); }
-    if (v.cur === node) { el.querySelector(".now").innerHTML = `${esc(d.summary || d.label || sub)}${tag ? " " + pill(tag) : ""}`; }
-    $("#acap", this.host).innerHTML = `<b>${esc(this.d.nodes.find((n) => n.id === node)?.title || node)}</b> · ${esc(d.summary || d.label || "")} ${tag ? pill(tag) : ""}`;
+    if (v.cur === node) { el.querySelector(".now").innerHTML = `${esc(d.summary || d.label || sub)}${tag ? dot(tag) : ""}`; }
+    $("#acap", this.host).innerHTML = `<b>${esc(this.d.nodes.find((n) => n.id === node)?.title || node)}</b> · ${esc(d.summary || d.label || "")}${tag ? dot(tag) : ""}`;
   }
   liveBadge(ev) {
     const d = ev.data || {}, l = d.mode === "mock" || d.label === "MOCK" ? "MOCK" : this.h.health?.replay_only || d.replay || d.mode === "replay" ? "REPLAY" : "LIVE";
-    $("#aprog", this.host).innerHTML = `${pill(l)} <span class="muted">${esc(d.run || d.model || "")}</span>`;
+    $("#aprog", this.host).innerHTML = `${dot(l)} <span class="muted">${esc(d.run || d.model || "")}</span>`;
   }
   // The room node: a room_scan payload (before, then after) mounted with web/room/node.js (see roomnode.js).
   async roomScan(p) {
     this.roomPay[p.phase || "before"] = p; const host = $("#aroomBody", this.host), box = $("#aroom", this.host); box.hidden = false;
     try {
       const { labels } = await mountRoomScan(host, this.roomPay, (this.roomCache ||= {}));
-      $("#aroomTag", this.host).innerHTML = `<span class="muted">racks</span> ${pill(labels.rack_outline || "MEASURED")} <span class="muted">heat</span> ${pill(labels.thermal_frame || "SIMULATED")}`;
+      $("#aroomTag", this.host).innerHTML = `<span class="muted">racks</span> ${dot(labels.rack_outline || "MEASURED")} <span class="muted">heat</span> ${dot(labels.thermal_frame || "SIMULATED")}`;
     } catch (e) { host.innerHTML = `<p class="muted">The room picture could not be drawn (${esc(e.message)}).</p>`; }
   }
   stopLive() { this.es?.close(); this.es = null; }
@@ -355,5 +373,5 @@ export class ArchPage {
     this.pan.fit(); this._fitted = true;
   }
   show() { if (this.mode === "pipe") this.ensurePipe(); else requestAnimationFrame(() => { this.view.layoutEdges(); this.fitOnce(); }); }
-  destroy() { this.stopLive(); this.pipe?.destroyRun(); this.pan?.destroy(); this.view.destroy(); }
+  destroy() { this.stopLive(); this.pipe?.destroyRun(); this.pan?.destroy(); this._unsubClock?.(); this.view.destroy(); }
 }

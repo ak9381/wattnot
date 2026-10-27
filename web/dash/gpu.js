@@ -2,7 +2,7 @@
 // Source is either a replay scene of the real H100 run, or a live run read from /api/runs/<id>/events.
 // The replay scene also follows the shared replay clock the Architecture replay
 // publishes (play/pause/reset, progress, phase); the live run ignores it.
-import { esc, pill } from "./theme.js";
+import { esc, dot, numLab, legendHtml } from "./theme.js";
 import { clock } from "./replayclock.js";
 import { init as initPan } from "./pancanvas.js";
 import { broadcast } from "./clockbus.js";
@@ -52,6 +52,7 @@ export class Power {
         ${[["power", "GPU power", "W"], ["jtok", "Energy per token", "J"], ["toks", "Tokens per second", "tok/s"], ["p99", "p99 latency", "ms"], ["cap", "Power cap", "W"], ["req", "Requests per second", "req/s"]]
           .map(([id, k, u]) => `<div class="card"><div class="k"><span>${k}</span><span id="${id}-l"></span></div><div class="v"><span id="${id}-v">–</span><small>${u}</small></div><div class="d" id="${id}-d"></div></div>`).join("")}
       </div>
+      <p class="plegend">${legendHtml()}</p>
       <div class="pgrid">
         <div class="panel ppan"><h3>trace <span class="r">
             <select id="sceneSel">${scenes.map((s) => `<option value="${s.id}">${esc(s.title)}</option>`).join("")}<option value="run:">live run (API)…</option></select>
@@ -94,7 +95,7 @@ export class Power {
     }
     const sc = this.info.scenes.find((s) => s.id === id); this.scene = sc;
     this.stockCap = null;
-    this.baseNote = `${esc(sc.note || "")} ${pill(sc.label || "MEASURED")} <span class="muted">replay of the real run, ${sc.n} one-second samples</span>`;
+    this.baseNote = `${esc(sc.note || "")} ${dot(sc.label || "MEASURED")} <span class="muted">replay of the real run, ${sc.n} one-second samples</span>`;
     this.renderNote();
     this.baseJ = sc.baseline_j_per_tok ?? null;
     this.es = new EventSource(`/api/dash/gpu/scene/${encodeURIComponent(id)}/events?speed=${this.speed}`);
@@ -133,7 +134,7 @@ export class Power {
   }
 
   paintCards(s) {
-    const c = this.cur, set = (id, v, label, d) => { this.$(id + "-v").textContent = v; this.$(id + "-l").innerHTML = label ? pill(label) : ""; this.$(id + "-d").textContent = d || ""; };
+    const c = this.cur, set = (id, v, label, d) => { const el = this.$(id + "-v"); el.textContent = v; el.classList.remove("lab-MEASURED", "lab-ESTIMATE", "lab-SIMULATED", "lab-MOCK", "lab-REPLAY"); if (label) { el.classList.add(`lab-${label}`); el.title = label; el.setAttribute("aria-label", label); } else { el.removeAttribute("title"); el.removeAttribute("aria-label"); } this.$(id + "-l").innerHTML = label ? dot(label) : ""; this.$(id + "-d").textContent = d || ""; };
     const lab = s.label || this.scene?.label || "MEASURED";
     set("power", f1(s.power_w), s.power_w == null ? "" : lab, s.phase ? `phase: ${s.phase}` : "");
     const jt = s.j_per_tok ?? (s.power_w != null && s.rps ? null : null);
@@ -184,7 +185,7 @@ export class Power {
       : `<p class="note2">No proposals.</p>`;
     this.$("rcpts").innerHTML = `<table class="rc"><tr><th>receipt</th><th>saving</th><th>grade</th><th>signed</th></tr>${R.map((r) => `<tr>
       <td title="${esc(r.model || "")}">${esc(r.id.replace("rcpt_", ""))}<br><span class="muted">${esc(r.profile)}</span></td>
-      <td>${r.saving_pct == null ? "–" : `${r.saving_pct >= 0 ? "−" : "+"}${Math.abs(r.saving_pct).toFixed(1)}%`} ${pill(r.label)}</td>
+      <td class="num${numLab(r.label)}">${r.saving_pct == null ? "–" : `${r.saving_pct >= 0 ? "−" : "+"}${Math.abs(r.saving_pct).toFixed(1)}%`} ${dot(r.label)}</td>
       <td>${esc(r.grade || "–")}</td><td>${r.signed ? "yes" : "no"}</td></tr>`).join("")}</table>
       <p class="note2">Approving happens in <span class="mono">wattnot proposals</span>. This page only reads.</p>`;
   }

@@ -1,6 +1,6 @@
 // A room heat map drawn from a wattnot.room/1 scan: one polygon per rack, coloured by temperature.
 // The scan comes from a room module (or the labelled example). Nothing here segments an image.
-import { esc, pill } from "./theme.js";
+import { esc, dot } from "./theme.js";
 
 const T0 = 22, T1 = 45;                       // colour scale, in °C
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -30,7 +30,7 @@ export function heatSvg(scan, opts = {}) {
   return `<svg class="heat" viewBox="0 0 ${w} ${h}" role="group" aria-label="room heat map, ${scan.racks.length} racks">${img}${racks}</svg>`;
 }
 export const heatLegend = () => `<div class="hleg" aria-hidden="true"><span>${T0} °C</span><i style="background:linear-gradient(90deg,${[0, 0.25, 0.5, 0.75, 1].map((x) => heatColor(T0 + x * (T1 - T0))).join(",")})"></i><span>${T1} °C</span></div>`;
-export const scanTag = (scan) => (scan.label ? pill(scan.label) : "");
+export const scanTag = (scan) => (scan.label ? dot(scan.label) : "");
 
 // wire hover/focus on racks to a details line; returns a function to pulse one rack
 export function wireHeat(root, scan, detailEl) {

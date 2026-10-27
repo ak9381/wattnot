@@ -1,6 +1,6 @@
 // The architecture graph: nodes, their real sub-steps, the animation that walks through a recorded
 // or live run, and the side panel. Pure DOM + SVG; GSAP only for the height and fade tweens.
-import { esc, pill } from "./theme.js";
+import { esc, dot, numLab } from "./theme.js";
 import { poweredByFor, poweredByHtml } from "./partners.js";
 
 const g = () => window.gsap;
@@ -18,10 +18,20 @@ export function fmt(v) {
 export const statVal = (s) => (s.v == null ? "–" : `${s.unit === "$" ? "$" : ""}${fmt(s.v)}${s.unit && s.unit !== "$" ? " " + s.unit : ""}`);
 // Which mini-bar metric a stat belongs to: watts, dollars, or watt-hours (energy, the water proxy).
 export const barKey = (s) => (s.unit === "$" ? "$" : s.unit === "W" ? "W" : s.k === "wh" ? "wh" : null);
-export const statHtml = (s, pct = null) => `<div class="stat"><span class="k" title="${esc(s.label)}">${esc(s.label)}</span><span class="v num ${s.v == null ? "na" : ""}">${esc(statVal(s))}</span>${s.tag ? pill(s.tag) : ""}${pct == null ? "" : `<span class="mbar" aria-hidden="true"><i style="width:${pct}%"></i></span>`}</div>`;
+export const statHtml = (s, pct = null) => `<div class="stat"><span class="k" title="${esc(s.label)}">${esc(s.label)}</span><span class="v num ${s.v == null ? "na" : ""}${numLab(s.tag)}">${esc(statVal(s))}</span>${dot(s.tag)}${pct == null ? "" : `<span class="mbar" aria-hidden="true"><i style="width:${pct}%"></i></span>`}</div>`;
 
 const SHORT = { meta: "Meta", baseten: "Baseten", e2e: "E2E", hf: "Hugging Face", nvidia: "NVIDIA", sigstore: "Sigstore", oss: "open source" };
-const badge = (d, id) => { const p = d.partners[id]; return `<span class="bdg" style="--c:${p.color}" title="${esc(p.name)}">${esc(SHORT[id] || p.name)}</span>`; };
+const badge = (d, id) => { const p = d.partners[id]; return `<span class="bdg" title="${esc(p.name)}">${esc(SHORT[id] || p.name)}</span>`; };
+// Battery icon for one block: the fill is the block's power/energy share (0..1).
+// No reading -> an empty outlined battery titled "not metered". Colour comes
+// from the label legend class (lab-MEASURED and friends).
+export function batHtml(frac, label) {
+  if (frac == null || label == null) return `<span class="bat empty lab-none" title="not metered" aria-label="not metered"></span>`;
+  const pct = Math.max(4, Math.min(100, Math.round(frac * 100)));
+  return `<span class="bat lab-${label}" title="power share ${pct}% · ${label}" aria-label="power share ${pct} percent, ${label}"><i style="height:${pct}%"></i></span>`;
+}
+// The SAM block is the room scan: shown as "Room scan" with its SAM 3.1 tag.
+const displayTitle = (n) => (n.id === "sam" ? "Room scan" : n.title);
 const STATUS = { stub: "stub, not wired", roadmap: "roadmap", "not-run": "not run" };
 // Drill-downs inside the Architecture page (the old Power/Experts tabs are merged in):
 // "experts" enables the Expert toggle, "room" opens the rack map on the SAM card.
@@ -43,6 +53,12 @@ export class ArchView {
       const k = barKey(s);
       if (k && typeof s.v === "number") this.barMax[k] = Math.max(this.barMax[k] || 0, Math.abs(s.v));
     }
+    // Battery baseline: the largest watt reading across blocks; a block with a
+    // watt stat starts filled from the bundle, live readings override it later.
+    this.maxW = 0;
+    for (const n of this.nodes) for (const s of n.stats) {
+      if (s.unit === "W" && typeof s.v === "number" && s.v > 0) this.maxW = Math.max(this.maxW, s.v);
+    }
     this.build();
   }
   node(id) { return this.d.nodes.find((n) => n.id === id); }
@@ -50,6 +66,29 @@ export class ArchView {
     const k = barKey(s), m = k && this.barMax[k];
     if (!k || !m || typeof s.v !== "number" || s.v <= 0) return null;
     return Math.max(6, Math.round((s.v / m) * 100));
+  }
+  // The block's bundle power reading, if any: [share 0..1, label].
+  bundlePower(n) {
+    const s = n.stats.find((x) => x.unit === "W" && typeof x.v === "number" && x.v > 0);
+    if (!s || !this.maxW) return [null, null];
+    return [s.v / this.maxW, s.tag || "MEASURED"];
+  }
+  batFor(n) { const [frac, label] = this.bundlePower(n); return batHtml(frac, label); }
+  // A block's battery fill from a live reading: frac is share 0..1 (or null),
+  // label the reading's label colour. Unknown blocks keep their old battery.
+  paintPower(id, frac, label) {
+    const bat = this.el(id)?.querySelector(".bat");
+    if (!bat) return false;
+    const tmp = document.createElement("span"); tmp.innerHTML = batHtml(frac, label);
+    bat.replaceWith(tmp.firstChild); return true;
+  }
+  // Live expert routing nested in a block: compact bars, one per group.
+  paintExperts(id, shares, label = "MEASURED") {
+    const box = this.el(id)?.querySelector("[data-xbars]"); if (!box) return false;
+    const tot = shares.reduce((a, b) => a + b, 0) || 1, max = Math.max(...shares, 1);
+    box.hidden = false;
+    box.innerHTML = `<div class="xbars" role="img" aria-label="live expert routing: ${shares.map((s, i) => `group ${i + 1} ${Math.round((s / tot) * 100)} percent`).join(", ")}">${shares.map((s, i) => `<i style="height:${Math.max(4, Math.round((s / max) * 100))}%" title="group ${i + 1}: ${Math.round((s / tot) * 100)}% · ${label}"></i>`).join("")}</div><p class="xbars-cap">live expert routing ${dot(label)}</p>`;
+    return true;
   }
   build() {
     const mode = this.o.mode || "map", d = this.d;
@@ -64,11 +103,12 @@ export class ArchView {
       const stats = n.stats.slice(0, this.o.stats ?? 2);
       const subs = `<div class="subs"${C ? ` id="subs-${n.id}"` : ""}>${n.subs.map((s, i) => `${i ? '<div class="lnk"></div>' : ""}<button class="sub ${this.subMeta(n, s) ? "metasub" : ""}" data-sub="${s.id}" title="${esc(s.desc)}"><i>${i + 1}</i><span>${esc(s.title)}</span>${this.subMeta(n, s) ? "<em>Meta</em>" : ""}</button>`).join("")}</div>`;
       if (!C) {
-        el.innerHTML = `<div class="hd"><button class="t" title="Open details for ${esc(n.title)}">${esc(n.title)}</button><span class="bd">${n.partners.map((p) => badge(d, p)).join("")}</span></div>
+        el.innerHTML = `<div class="hd"><button class="t" title="Open details for ${esc(n.title)}">${esc(displayTitle(n))}</button>${this.batFor(n)}<span class="bd">${n.partners.map((p) => badge(d, p)).join("")}</span></div>
         <p class="d">${esc(n.desc)}</p>${poweredByHtml(poweredByFor(n))}
-        ${n.meta_product ? `<div class="bd" style="margin-bottom:6px"><span class="bdg mp" style="--c:var(--m)">Meta · ${esc(n.meta_product)}</span></div>` : ""}
+        ${n.meta_product ? `<div class="bd" style="margin-bottom:6px"><span class="bdg mp" title="${esc(n.meta_product)}">Meta · ${esc(n.meta_product)}</span></div>` : ""}
         <div class="stl">${stats.map((s) => statHtml(s)).join("")}</div>
         <div class="now"></div>
+        <div data-xbars hidden></div>
         ${subs}
         <div class="ft"><button class="xp" aria-expanded="false">steps (${n.subs.length})</button><button class="pin" aria-pressed="false" title="Keep this step open">pin</button>${STATUS[n.status] ? `<span class="st">${STATUS[n.status]}</span>` : ""}</div>`;
         grid.appendChild(el);
@@ -79,12 +119,13 @@ export class ArchView {
         continue;
       }
       const key = n.stats.find((s) => s.v != null) || n.stats[0];
-      el.innerHTML = `<div class="hd"><button class="t" aria-expanded="false" aria-controls="subs-${n.id}" title="Expand or collapse ${esc(n.title)}">${esc(n.title)}</button><span class="bd">${n.partners.map((p) => badge(d, p)).join("")}</span></div>
-        <button class="sum" data-act="sel" title="Open details for ${esc(n.title)}" aria-label="${esc(key?.label || "value")} for ${esc(n.title)}: open details"><span class="k">${esc(key?.label || "value")}</span><span class="v num">${esc(key ? statVal(key) : "–")}</span>${key?.tag ? pill(key.tag) : ""}</button>
+      el.innerHTML = `<div class="hd"><button class="t" aria-expanded="false" aria-controls="subs-${n.id}" title="Expand or collapse ${esc(n.title)}">${esc(displayTitle(n))}</button>${this.batFor(n)}<span class="bd">${n.partners.map((p) => badge(d, p)).join("")}</span></div>
+        <button class="sum" data-act="sel" title="Open details for ${esc(n.title)}" aria-label="${esc(key?.label || "value")} for ${esc(n.title)}: open details"><span class="k">${esc(key?.label || "value")}</span><span class="v num${numLab(key?.tag)}">${esc(key ? statVal(key) : "–")}</span>${dot(key?.tag)}</button>
         <p class="d">${esc(n.desc)}</p>${poweredByHtml(poweredByFor(n))}
-        ${n.meta_product ? `<div class="bd" style="margin-bottom:6px"><span class="bdg mp" style="--c:var(--m)">Meta · ${esc(n.meta_product)}</span></div>` : ""}
+        ${n.meta_product ? `<div class="bd" style="margin-bottom:6px"><span class="bdg mp" title="${esc(n.meta_product)}">Meta · ${esc(n.meta_product)}</span></div>` : ""}
         <div class="stl">${stats.map((s) => statHtml(s, this.barPct(s))).join("")}</div>
         <div class="now"></div>
+        <div data-xbars hidden></div>
         ${subs}
         <div class="ft"><button class="xp" aria-expanded="false" aria-controls="subs-${n.id}">steps (${n.subs.length})</button><button class="pin" aria-pressed="false" title="Keep this step open">pin</button>${STATUS[n.status] ? `<span class="st">${STATUS[n.status]}</span>` : ""}</div>`;
       grid.appendChild(el);
@@ -250,7 +291,7 @@ export class ArchView {
     this.open(c.node);
     if (fresh && this.o.follow !== false) requestAnimationFrame(() => el.scrollIntoView({ block: "nearest", inline: "center", behavior: reduce() ? "auto" : "smooth" }));
     this.light(c.node, c.sub, c.ok !== false);
-    el.querySelector(".now").innerHTML = `${esc(c.text)}${c.tag ? " " + pill(c.tag) : ""}`;
+    el.querySelector(".now").innerHTML = `${esc(c.text)}${dot(c.tag)}`;
     if (c.took != null) this.timing[`${c.node}.${c.sub}`] = c.took;
     this.o.onCue?.(c);
   }
@@ -288,7 +329,7 @@ export function panelHtml(view, n, s) {
   const t = view.timing[`${n.id}.${s?.id}`] ?? view.timing[`${n.id}.*`];
   const subStat = { "agent.call": "a_p50", "baseten_model.send": "p50", "telemetry.probe": "probe_s" }[`${n.id}.${s?.id}`];
   const ts = subStat && n.stats.find((x) => x.k === subStat);
-  const timing = t != null ? `${fmt(t)} s ${pill("MEASURED")} <span class="muted">(the run's own stage log)</span>` : ts?.v != null ? `${fmt(ts.v)} s ${pill(ts.tag)} <span class="muted">(${esc(ts.label)})</span>` : `– <span class="muted">not timed per step in the recorded runs</span>`;
+  const timing = t != null ? `<span class="num${numLab("MEASURED")}">${fmt(t)} s</span> ${dot("MEASURED")} <span class="muted">(the run's own stage log)</span>` : ts?.v != null ? `<span class="num${numLab(ts.tag)}">${fmt(ts.v)} s</span> ${dot(ts.tag)} <span class="muted">(${esc(ts.label)})</span>` : `– <span class="muted">not timed per step in the recorded runs</span>`;
   const used = n.used_for?.[p] || n.used_for?.[n.partners[0]] || "";
   const usedMeta = n.used_for?.meta || used;
   const ev = [...new Set(n.stats.map((x) => x.src).filter(Boolean))];

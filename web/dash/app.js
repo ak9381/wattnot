@@ -2,7 +2,7 @@ import * as C from "./core.js";
 import { Flow } from "./flow.js";
 import { Orchestra } from "./orchestra.js";
 import { Power } from "./gpu.js";
-import { esc, pill, pct, topicColor, GROUP_COLORS } from "./theme.js";
+import { esc, dot, legendHtml, pct, topicColor, GROUP_COLORS } from "./theme.js";
 import { Product } from "./product.js";
 import { ArchPage } from "./archpage.js";
 import { panelHtml } from "./arch.js";
@@ -78,7 +78,7 @@ async function initExperts() {
   flow = new Flow(flowPanInner, ctx); orch = new Orchestra($("orch"), ctx);
   ensureFlowPan();
   setView(params.get("view") || "both");
-  $("srcChip").innerHTML = `${esc(meta.meta.model)} · routing captured on ${esc(meta.meta.capture)} ${pill("MEASURED")} · energy ${meta.energy ? "rate from H100 counter" : "n/a"} ${meta.energy ? pill("MEASURED") : ""}`;
+  $("srcChip").innerHTML = `${esc(meta.meta.model)} · routing captured on ${esc(meta.meta.capture)}${dot("MEASURED")} · energy ${meta.energy ? "rate from H100 counter" : "n/a"}${meta.energy ? dot("MEASURED") : ""} ${legendHtml()}`;
   buildAll();
   wireControls();
   clock.subscribe(onClock);
@@ -192,7 +192,7 @@ function goLive() {
   const es = new EventSource("/api/dash/moe/events");
   es.addEventListener("tick", (ev) => { const t = JSON.parse(ev.data); app.ticks.push(t); if (t.arm === app.arm) consume(t); });
   es.addEventListener("end", () => { logLine("live", "run finished"); es.close(); });
-  $("srcChip").insertAdjacentHTML("afterbegin", `<span class="pill MEASURED">LIVE</span> `);
+  $("srcChip").insertAdjacentHTML("afterbegin", `live${dot("LIVE")} `);
 }
 
 // ---- focus (hover beats selection) and the link between the two views
@@ -306,7 +306,7 @@ function tipUnit(u, ev) {
   const n = st.meta.counts[arm][u], tot = st.meta.counts[arm].reduce((a, b) => a + b, 0);
   const toks = (st.meta.unit_tokens[String(u)] || []).slice(0, 4).map(([id, c]) => `${esc((st.meta.vocab[String(id)] || "").replace(/\n/g, "↵").trim() || "·")} ${c}`).join(" · ");
   const per = C.jPerSlot(st, arm);
-  tip.innerHTML = `<b>layer ${L} · expert ${e}</b> · ${esc(st.names[g])}<br>routed ${n} tokens (${(100 * n / tot).toFixed(2)}%) ${pill("MEASURED")}<br>${per == null ? "" : `~${(n * per).toFixed(2)} J ${pill("ESTIMATE")}<br>`}top tokens: ${toks || "–"}`;
+  tip.innerHTML = `<b>layer ${L} · expert ${e}</b> · ${esc(st.names[g])}<br>routed ${n} tokens (${(100 * n / tot).toFixed(2)}%)${dot("MEASURED")}<br>${per == null ? "" : `~${(n * per).toFixed(2)} J${dot("ESTIMATE")}<br>`}top tokens: ${toks || "–"}`;
   tip.hidden = false;
   if (ev) { tip.style.left = `${Math.min(innerWidth - 300, ev.clientX + 14)}px`; tip.style.top = `${Math.min(innerHeight - 120, ev.clientY + 14)}px`; }
 }

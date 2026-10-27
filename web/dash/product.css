@@ -213,3 +213,52 @@ body.replay-only #modeChip{border-color:var(--amber,#E8B64A);color:var(--amber,#
 .pcard p{margin:4px 0}
 .pcard.idle{color:var(--dim)}
 @media (prefers-reduced-motion:reduce){.rguard *,.pblock *{animation:none;transition:none}}
+/* ---- shared label colours: the number itself carries the label colour; the
+   dot names the label on hover. One compact legend per view explains them. ---- */
+.num.lab-MEASURED,.mv.lab-MEASURED,.big.lab-MEASURED{color:var(--cy)}
+.num.lab-ESTIMATE,.mv.lab-ESTIMATE,.big.lab-ESTIMATE{color:#E9C46A}
+.num.lab-SIMULATED,.mv.lab-SIMULATED,.big.lab-SIMULATED{color:var(--viol)}
+.num.lab-MOCK,.mv.lab-MOCK,.big.lab-MOCK{color:var(--mu)}
+.num.lab-REPLAY,.mv.lab-REPLAY,.big.lab-REPLAY{color:#8FE3B0}
+.num.lab-LIVE,.mv.lab-LIVE{color:var(--green)}
+.pdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--dim);margin-left:6px;vertical-align:1px;flex:none}
+.pdot.MEASURED,.pdot.REPLAY{background:var(--cy)}
+.pdot.ESTIMATE{background:#E9C46A}
+.pdot.SIMULATED,.pdot.MOCK{background:var(--viol)}
+.pdot.LIVE{background:var(--green)}
+.pdot.ADVICE{background:var(--dim);border:1px dashed #4a5865}
+th .pdot,td .pdot{margin-left:0}
+.lab-legend{display:inline-flex;gap:10px;flex-wrap:wrap;align-items:center;font:10.5px var(--mono);color:var(--dim);margin:6px 0}
+.lab-legend .li{display:inline-flex;gap:5px;align-items:center;white-space:nowrap}
+.lab-legend .pdot{margin-left:0}
+/* ---- partner tags: plain white text in a small glass box, never coloured ---- */
+.bdg,.pb,.pwb,.src.ms,.who .cr b,.bdg.mp{color:#F4F8FB!important;background:rgba(255,255,255,.06)!important;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.22)!important;border-radius:5px;box-shadow:none!important}
+.who .cr b{min-width:0;padding:0 6px}
+/* ---- minimalist bento: grid tiles with glass, a little overlap ---- */
+.bento{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;align-items:start}
+.tile{background:rgba(17,25,34,.55);-webkit-backdrop-filter:blur(14px) saturate(1.25);backdrop-filter:blur(14px) saturate(1.25);border:1px solid rgba(255,255,255,.10);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.38),0 0 16px rgba(34,199,217,.07),inset 0 1px 0 rgba(255,255,255,.08);padding:14px 16px;min-width:0;color:#EDF2F7}
+.tile.span-12{grid-column:span 12}.tile.span-8{grid-column:span 8}.tile.span-6{grid-column:span 6}.tile.span-4{grid-column:span 4}.tile.span-3{grid-column:span 3}
+.bento>.rside{grid-column:span 4}
+.tile.lap{margin-top:-10px;box-shadow:0 14px 40px rgba(0,0,0,.5),0 0 20px rgba(34,199,217,.10),inset 0 1px 0 rgba(255,255,255,.10)}
+@media (max-width:900px){.bento{grid-template-columns:1fr}.tile.span-12,.tile.span-8,.tile.span-6,.tile.span-4,.tile.span-3{grid-column:1/-1}.tile.lap{margin-top:0}}
+/* ---- battery icon: fill rises/falls with the block's power share ---- */
+.bat{position:relative;display:inline-block;width:13px;height:21px;border:1px solid currentColor;border-radius:3px;vertical-align:-4px;flex:none}
+.bat::after{content:"";position:absolute;top:5px;right:-4px;width:3px;height:6px;border-radius:0 2px 2px 0;background:currentColor}
+.bat i{position:absolute;left:2px;right:2px;bottom:2px;display:block;background:currentColor;border-radius:1px}
+.bat.empty{opacity:.4;border-style:dashed}
+.bat.empty::after{background:transparent;border:1px dashed currentColor}
+.bat.empty i{display:none}
+.bat.lab-MEASURED{color:var(--cy)}.bat.lab-ESTIMATE{color:#E9C46A}.bat.lab-SIMULATED{color:var(--viol)}.bat.lab-MOCK{color:var(--mu)}.bat.lab-REPLAY{color:#8FE3B0}.bat.lab-LIVE{color:var(--green)}
+.bat.lab-none{color:var(--dim)}
+/* ---- live expert routing nested in an architecture block ---- */
+.xbars{display:flex;align-items:flex-end;gap:3px;height:26px;margin-top:6px}
+.xbars i{flex:1;min-height:3px;border-radius:2px;background:var(--cy);opacity:.85}
+.xbars-cap{font:11px var(--mono);color:var(--dim);margin-top:4px}
+/* run page graph as a pan/zoom canvas with auto-follow */
+.rgraph.pc-view{min-height:340px;max-height:62vh;border:1px solid var(--hair);border-radius:10px;background:#080C11;background-image:radial-gradient(circle,#18222B 1px,transparent 1.2px);background-size:22px 22px;overflow:hidden}
+.rgraph .pc-inner{min-width:100%}
+.rgraph .av.row{min-width:calc(var(--n)*224px)}
+@media (prefers-reduced-motion:reduce){.tile.lap{margin-top:0}}
+/* run page canvas: fixed viewport so pan/zoom has room and controls never sit on cards */
+.rgraph.pc-view,.rgraph{height:min(64vh,640px);min-height:440px;overflow:hidden;position:relative}
+.bat{width:11px;height:18px;margin-right:4px}

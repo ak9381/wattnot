@@ -22,8 +22,8 @@ test("how a run ended is said in plain words", () => {
 test("the table shows both arms, the change and a label per row", () => {
   const h = tableHtml(block, "Injected");
   assert.match(h, /−|-60%/);
-  assert.match(h, /pill MEASURED/);
-  assert.match(h, /pill ESTIMATE/);
+  assert.match(h, /pdot MEASURED/);
+  assert.match(h, /pdot ESTIMATE/);
   assert.match(h, /3 alone, 0 with the saver/);
 });
 

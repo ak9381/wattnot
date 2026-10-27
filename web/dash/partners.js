@@ -1,6 +1,6 @@
 // Who is behind each step and each call. Pure formatting (no DOM at import
 // time, so node can test it) plus two small loaders for the dashboard.
-import { esc } from "./theme.js";
+import { esc, dot, numLab } from "./theme.js";
 
 const PCOL = {
   meta: "var(--m)",
@@ -97,13 +97,13 @@ export function partnersHtml(snap) {
         cost.value == null
           ? "–"
           : `${cost.unit === "USD" ? "$" : ""}${esc(fmtNum(cost.value))}${cost.unit ? ` ${esc(cost.unit)}` : ""}`;
-      const label = cost.value == null || !cost.label ? "" : ` <span class="pill ${esc(cost.label)}">${esc(cost.label)}</span>`;
+      const label = cost.value == null || !cost.label ? "" : dot(cost.label);
       const aw = p.agent_waste && p.agent_waste.usd != null
-        ? `<p class="muted">of which Agent waste <b class="num">$${esc(fmtNum(p.agent_waste.usd))}</b> <span class="pill ${esc(p.agent_waste.label || "")}">${esc(p.agent_waste.label || "")}</span></p>`
+        ? `<p class="muted">of which Agent waste <b class="num${numLab(p.agent_waste.label || "")}">$${esc(fmtNum(p.agent_waste.usd))}</b>${p.agent_waste.label ? dot(p.agent_waste.label) : ""}</p>`
         : "";
       return `<div class="pcard"><b>${esc(p.name)}</b><p>${esc(p.what || "–")}</p>`
         + `<p>calls <b class="num">${p.calls == null ? "–" : esc(String(p.calls))}</b></p>`
-        + `<p>cost <b class="num">${costHtml}</b>${label}</p>${aw}</div>`;
+        + `<p>cost <b class="num${numLab(cost.label)}">${costHtml}</b>${label}</p>${aw}</div>`;
     }).join("")}</div></section>`;
 }
 
