@@ -24,6 +24,7 @@ class CapGuard:
         self.permit = permit
         lo, hi = nvml.power_limit_constraints_mw(handle)
         self.min_w, self.max_w = lo // 1000, hi // 1000
+        self.ceiling_w: int | None = None
         self.saved_mw: int | None = None
         self._handle_sigterm = handle_sigterm
         self._old_handler = None
@@ -46,15 +47,30 @@ class CapGuard:
         self.restore()
         raise SystemExit(128 + signum)
 
-    def clamp(self, watts: int) -> int:
-        return max(self.min_w, min(self.max_w, int(watts)))
+    @property
+    def top_w(self) -> int:
+        """Highest cap a normal write may use: the driver maximum, or a lower outside ceiling."""
+        return self.max_w if self.ceiling_w is None else min(self.max_w, self.ceiling_w)
+
+    def tighten_max(self, watts: int) -> int:
+        """Set an outside ceiling (for example the rack budget) below the driver maximum.
+
+        Normal writes are clamped to it. Putting a saved limit back is not: restoring may need
+        a value above the ceiling, and it is the state the card started in. Returns `top_w`.
+        """
+        self.ceiling_w = max(self.min_w, min(self.max_w, int(watts)))
+        return self.top_w
+
+    def clamp(self, watts: int, *, restoring: bool = False) -> int:
+        hi = self.max_w if restoring else self.top_w
+        return max(self.min_w, min(hi, int(watts)))
 
     def cap_w(self) -> int:
         return int(self.nvml.power_limit_mw(self.handle)) // 1000
 
     def set_cap_w(self, watts: int, *, restoring: bool = False) -> int:
         """Write a power limit. `restoring=True` (putting a limit back) skips the permit."""
-        watts = self.clamp(watts)
+        watts = self.clamp(watts, restoring=restoring)
         if self.permit is not None and not restoring:
             self.permit(watts)
         self.nvml.set_power_limit_mw(self.handle, watts * 1000)

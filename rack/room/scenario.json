@@ -1,0 +1,38 @@
+{
+ "format": "wattnot.room-scenario/1",
+ "label": "SIMULATED",
+ "note": "Demo inputs for the Room view. The racks come from SAM; everything here is assumed: which GPUs sit in a rack, how hard they run, the inlet temperature, the rack budget, the thresholds, and one injected airflow fault. Replace with your own inventory and a real IR still.",
+ "gpus_per_rack": 4,
+ "rack_budget_w": 2400,
+ "node_max_w": 700,
+ "t_in_c": 22.0,
+ "r_air_c_per_w": 0.05,
+ "range_c": [
+  20.0,
+  50.0
+ ],
+ "thresholds": {
+  "hot_c": 45.0,
+  "high_power_w": 420,
+  "margin_c": 1.0,
+  "floor_w": 250
+ },
+ "rooms": {
+  "arsat": {
+   "default_load": 0.68,
+   "loads": {
+    "R01": 1.0,
+    "R03": 1.0,
+    "R10": 1.0,
+    "R04": 0.55,
+    "R02": 0.72,
+    "R11": 0.64,
+    "R06": 0.6
+   },
+   "faults": {
+    "R04": 9.0
+   },
+   "real_rack": "R03"
+  }
+ }
+}

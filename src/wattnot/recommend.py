@@ -182,6 +182,12 @@ def for_run(*, simulated: bool = False, **kw) -> Recommendations:
     return replace(rec, actions=acts)
 
 
+def add_actions(rec: Recommendations, items: Sequence[Item]) -> Recommendations:
+    """Extra action items (for example the rack photo audit) after the rule-based ones."""
+
+    return replace(rec, actions=tuple(rec.actions) + tuple(items))
+
+
 def _knob_items(knob: Mapping | None) -> list[Item]:
     if not knob:
         return []

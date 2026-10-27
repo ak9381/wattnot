@@ -52,6 +52,8 @@ PRICES: dict[str, Price] = {
     "muse-wonder-1.0": Price(4.00, 0.20, 20.00),
 }
 ASSUMED = Price(4.00, 0.20, 20.00)  # unknown model: the highest published rate
+# Models billed per image, not per token: USD per image (SAM 3.1: $2.50 per 1,000 images).
+PER_IMAGE_USD: dict[str, float] = {"sam-3.1": 0.0025}
 
 
 class BudgetExceeded(RuntimeError):
@@ -226,6 +228,37 @@ class SpendLedger:
             if note:
                 e["note"] = note[:200]
             return dict(e)
+
+    def charge_image(self, model: str, purpose: str, *, images: int = 1,
+                     note: str = "") -> str:
+        """Record a per-image call (SAM) before it is sent. Raises BudgetExceeded over the cap.
+
+        Returns the entry id. A per-image call has no token usage to settle, so the entry is
+        written at its flat price; call `refund` if the request was rejected before billing.
+        """
+
+        usd = round(PER_IMAGE_USD[model] * images, 8)
+        with self._locked() as doc:
+            total = sum(e["usd"] for e in doc["entries"])
+            if total + usd > self.cap_usd:
+                raise BudgetExceeded(f"refused: ${total:.4f} spent + ${usd:.4f} for this call "
+                                     f"> ${self.cap_usd:.2f} cap")
+            eid = uuid.uuid4().hex[:12]
+            doc["entries"].append({
+                "id": eid, "ts": _now(), "model": model, "purpose": purpose, "status": "ok",
+                "input_tokens": 0, "output_tokens": 0, "cached_tokens": 0, "usd": usd,
+                "estimated": False, "price_assumed": False, "images": images,
+                "note": note[:200]})
+            return eid
+
+    def refund(self, eid: str, note: str = "") -> None:
+        """Set an entry to $0 (the provider rejected the request, nothing was billed)."""
+
+        with self._locked() as doc:
+            e = next((x for x in doc["entries"] if x["id"] == eid), None)
+            if e is None:
+                raise KeyError(eid)
+            e.update(usd=0.0, status="error", note=note[:200])
 
     def seed(self, rows: list[dict]) -> int:
         """Add earlier recorded usage once (rows carry a unique `key`). Returns rows added."""
