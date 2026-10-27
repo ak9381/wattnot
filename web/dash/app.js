@@ -3,7 +3,7 @@ import { Flow } from "./flow.js";
 import { Orchestra } from "./orchestra.js";
 import { Power } from "./gpu.js";
 import { esc, pill, pct, topicColor, GROUP_COLORS } from "./theme.js";
-import { Story, derive } from "./story.js";
+import { Product } from "./product.js";
 import { ArchPage } from "./archpage.js";
 import { panelHtml } from "./arch.js";
 
@@ -256,11 +256,11 @@ function tipUnit(u, ev) {
 // ---- drawer
 let drawerOpen = false, opener = null;
 function openDrawer(tab, o = {}) {
-  const d = $("drawer"); opener = document.activeElement; closeStoryPanel();
+  const d = $("drawer"); opener = document.activeElement; closePanel();
   showTab(tab);
   if (tab === "arch" && o.filter) ensureArch().then(() => archPage?.setFilter(o.filter));
   if (!drawerOpen) {
-    drawerOpen = true; d.classList.add("open"); story?.stopAuto();
+    drawerOpen = true; d.classList.add("open");
     if (window.gsap && !matchMedia("(prefers-reduced-motion: reduce)").matches && !o.instant) window.gsap.fromTo(d, { yPercent: 100, y: 0 }, { yPercent: 0, y: 0, duration: 0.45, ease: "power3.out", onComplete: () => { flow?.layoutEdges(); orch?.layout(); archPage?.show(); } });
     else { d.style.transform = "none"; }
   }
@@ -277,13 +277,17 @@ $("dClose").onclick = closeDrawer;
 $("dPower").onclick = () => openDrawer("power"); $("dExperts").onclick = () => openDrawer("experts"); $("dArch").onclick = () => openDrawer("arch");
 document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => showTab(b.dataset.tab)));
 
-// ---- side panel on the story screens
-function closeStoryPanel() { $("spanel").classList.remove("open"); }
-function openStoryPanel(n, s, view) { $("spbody").innerHTML = panelHtml(view, n, s); $("spanel").classList.add("open"); $("spx").focus({ preventScroll: true }); $("spanel")._ctx = { n, view }; }
-$("spx").onclick = closeStoryPanel;
+// ---- side panel on the run screens
+function closePanel() { $("spanel").classList.remove("open"); }
+function openPanel(n, s, view, extra = "") {
+  const h = panelHtml(view, n, s);
+  $("spbody").innerHTML = extra ? h.replace(/(<h3>.*?<\/h3>)/, `$1${extra}`) : h;
+  $("spanel").classList.add("open"); $("spx").focus({ preventScroll: true }); $("spanel")._ctx = { n, view, extra };
+}
+$("spx").onclick = closePanel;
 $("spanel").addEventListener("click", (e) => {
-  const go = e.target.closest("[data-go]"); if (go) { closeStoryPanel(); go.dataset.go === "meta" ? openDrawer("arch", { filter: "meta" }) : openDrawer(go.dataset.go); return; }
-  const sb = e.target.closest("a[data-sub]"); if (sb) { e.preventDefault(); const c = $("spanel")._ctx; openStoryPanel(c.n, c.n.subs.find((x) => x.id === sb.dataset.sub), c.view); }
+  const go = e.target.closest("[data-go]"); if (go) { closePanel(); go.dataset.go === "meta" ? openDrawer("arch", { filter: "meta" }) : openDrawer(go.dataset.go); return; }
+  const sb = e.target.closest("a[data-sub]"); if (sb) { e.preventDefault(); const c = $("spanel")._ctx; openPanel(c.n, c.n.subs.find((x) => x.id === sb.dataset.sub), c.view, product?.runBlock(c.n, c.n.subs.find((x) => x.id === sb.dataset.sub)) || ""); }
 });
 
 // ---- tooltips (water and cost factors, assumptions)
@@ -316,43 +320,25 @@ function renderPop(r) {
 function togglePop(on) { $("pop").hidden = !on; $("metaChip").setAttribute("aria-expanded", on); if (on) $("popClose")?.focus(); }
 $("metaChip").onclick = () => togglePop($("pop").hidden);
 
-// ---- start the story
-let story = null, bundle = null;
+// ---- start the product flow
+let product = null, bundle = null;
 async function boot() {
   const stage = $("stage"); stage.innerHTML = "";
-  const [health, sb] = await Promise.all([loadHealth(), fetch("/api/dash/story").then((r) => { if (!r.ok) throw new Error(r.status === 404 ? "The story data has not been built yet: run scripts/build_dash_arch.py." : `HTTP ${r.status}`); return r.json(); }).catch((e) => ({ error: e.message }))]);
+  const [health, sb] = await Promise.all([loadHealth(), fetch("/api/dash/story").then((r) => { if (!r.ok) throw new Error(r.status === 404 ? "The run data has not been built yet: run scripts/build_dash_arch.py." : `HTTP ${r.status}`); return r.json(); }).catch((e) => ({ error: e.message }))]);
   checkMeta(false);
-  if (sb.error || !sb.story || !sb.story.levers) {
-    stage.innerHTML = `<section class="scene on" style="opacity:1"><div class="err"><b>The story could not load.</b><p>${esc(sb.error || "The bundle has no recorded run in it.")}</p><button class="btn" id="retry">Try again</button> <button class="btn" id="goPower">Open Power instead</button></div></section>`;
+  if (sb.error || !sb.config || !sb.config.models) {
+    stage.innerHTML = `<div class="pf"><div class="err"><b>The run configuration could not load.</b><p>${esc(sb.error || "The bundle has no recorded run in it. Rebuild it with scripts/build_dash_arch.py.")}</p><button class="btn" id="retry">Try again</button> <button class="btn" id="goPower">Open Power instead</button></div></div>`;
     $("retry").onclick = boot; $("goPower").onclick = () => openDrawer("power"); return;
   }
   bundle = sb;
   if (curTab === "arch") ensureArch().then(() => archPage?.show());
-  const [scene, moe] = await Promise.all([fetch("/api/dash/gpu/scene/sweep-muse-glimmer").then((r) => r.json()).catch(() => null), fetch("/api/dash/moe/meta").then((r) => r.json()).catch(() => null)]);
-  const D = { ...derive(sb), d: sb, samples: scene?.samples || [], moe, open: openStoryPanel, drawer: openDrawer };
-  if (!D.samples.length) { stage.innerHTML = `<div class="err">The GPU replay did not load, so the power scenes cannot draw.</div>`; return; }
-  story = new Story(stage, $("rail"), D);
-  const pb = $("playBtnTop");
-  story.onPlay = (on, fin) => { pb.textContent = on ? "Pause" : fin ? "Replay demo" : "Play demo"; pb.classList.toggle("on", on); };
-  story.onScene = () => closeStoryPanel();
-  pb.onclick = () => (story.playing ? story.stopAuto() : story.play());
-  const start = Math.min(5, Math.max(0, +(params.get("scene") || 1) - 1));
-  if (params.get("play") === "1") story.play(); else story.go(start, { instant: params.get("still") === "1" });
+  product = new Product(stage, $("rail"), { bundle: sb, health, open: openPanel, drawer: openDrawer });
   if (params.get("filter") === "meta" && params.get("tab") === "arch") ensureArch().then(() => archPage?.setFilter("meta"));
 }
 window.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") { if (!$("pop").hidden) return togglePop(false); if ($("spanel").classList.contains("open")) return closeStoryPanel(); if (drawerOpen) { if ($("apanel")?.classList.contains("open")) return archPage.closePanel(); return closeDrawer(); } return; }
-  if (!story || drawerOpen || e.metaKey || e.ctrlKey || e.altKey) return;
-  if (e.target.closest("input,select,textarea")) return;
-  const onBtn = e.target.closest("button,a");
-  if (e.key === "ArrowRight" || (e.key === " " && !onBtn) || e.key === "PageDown") { e.preventDefault(); story.step(1); }
-  else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); story.step(-1); }
-  else if (e.key === "p" || e.key === "P") $("playBtnTop").click();
-  else if (e.key === "d" || e.key === "D") openDrawer("arch");
-  else if (/^[1-6]$/.test(e.key)) { story.stopAuto(); story.go(+e.key - 1); }
+  if (e.key === "Escape") { if (!$("pop").hidden) return togglePop(false); if ($("spanel").classList.contains("open")) return closePanel(); if (drawerOpen) { if ($("apanel")?.classList.contains("open")) return archPage.closePanel(); return closeDrawer(); } return; }
 });
-window.addEventListener("resize", () => { story?.ctl.forEach((c) => c.view?.layoutEdges()); });
-window.__app = app; window.__story = () => story;
+window.__app = app; window.__product = () => product;
 const tab = params.get("tab");
 showTab(tab || "power");
 if (tab) openDrawer(tab, { instant: true });

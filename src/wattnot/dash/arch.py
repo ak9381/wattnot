@@ -17,6 +17,7 @@ from datetime import datetime
 from pathlib import Path
 
 from wattnot.dash import arch_spec as spec
+from wattnot.dash import gpu, runplan
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -170,6 +171,8 @@ def h100(e2e: Path | None) -> dict:
     out["rerun"] = rd(e2e / "h100-oct30-adaptive-rerun" / "summary.json") or {}
     out["qwen"] = rd(e2e / "qwen3-adaptive" / "summary.json") or {}
     out["qwen_rcpt"] = rd(e2e / "qwen3-adaptive" / "rcpt_moe_9a56b2eca886.json") or {}
+    out["granite_rcpt"] = rd(e2e / "h100-oct30-adaptive-rerun" / "adaptive_topk" / "rcpt_moe_a7b5b0dae89b.json") or {}
+    out["granite_runs"] = rd(e2e / "h100-oct30-adaptive-rerun" / "adaptive_topk" / "adaptive_topk_runs.json") or {}
     out["audit"] = jl(main / "approvals" / "audit.jsonl")
     out["audit_rerun"] = jl(e2e / "h100-oct30-adaptive-rerun" / "approvals" / "audit.jsonl")
     rows = 0
@@ -625,6 +628,16 @@ def agent_rounds(repo: Path) -> dict:
 
 # ---------------------------------------------------------------- the bundle
 
+def run_config(e2e: Path | None, h: dict, bt: dict) -> dict:
+    if not h.get("ok"):
+        return {}
+    try:
+        scenes = gpu.build_bundle(e2e).get("scenes", [])
+    except Exception:  # noqa: BLE001  the config is optional; the other tabs still work
+        scenes = []
+    return runplan.build_config(h, bt, scenes, WATER, PRICE)
+
+
 def build(*, repo: Path = ROOT, e2e: Path | None = None, ledger: Path | None = None) -> dict:
     h = h100(e2e)
     lg = ledger_groups(ledger or Path.home() / ".wattnot" / "meta_spend.json")
@@ -666,6 +679,7 @@ def build(*, repo: Path = ROOT, e2e: Path | None = None, ledger: Path | None = N
         "event_map": spec.EVENT_MAP,
         "meta": meta_block(S, lg, bt, h), "story": story(h, bt, S) if h.get("ok") else {},
         "replays": replays(h, bt, lg) if h.get("ok") else {}, "agent": agent_rounds(repo),
+        "config": run_config(e2e, h, bt),
         "ledger": {"cap_usd": lg.get("_cap_usd"), "total_usd": (lg.get("all") or {}).get("usd"),
                    "calls": (lg.get("all") or {}).get("calls")},
         "sources": ["Meta spend ledger (totals only)", "H100 run results folder", "reports/cloud-live receipts and calls",

@@ -41,7 +41,7 @@ from fastapi.responses import (
 )
 from fastapi.staticfiles import StaticFiles
 
-from wattnot.dash import experts, gpu
+from wattnot.dash import experts, gpu, runplan
 
 ROOT = Path(__file__).resolve().parents[3]
 WEB = ROOT / "web" / "dash"
@@ -196,13 +196,34 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
                 "capture_exists": cap_path.is_file(), "read_only": True,
                 "mode": "live" if live else "replay", "gpu_attached": gpu_attached,
                 "auth_required": bool(token), "story": story_path.is_file(),
-                "events": events is not None}
+                "events": events is not None, "events_name": events.name if events is not None else None}
 
     @app.get("/api/dash/story")
     def story_bundle():
         if not story_path.is_file():
             raise HTTPException(404, "story bundle not built: run scripts/build_dash_arch.py")
         return Response(story_path.read_bytes(), media_type="application/json")
+
+    plan_cache: dict = {}
+
+    @app.post("/api/dash/run/plan")
+    async def run_plan(request: Request):
+        """Re-evaluate a recorded run against the limits a person chose. Always a REPLAY; no GPU, no network."""
+        if not story_path.is_file():
+            raise HTTPException(404, "story bundle not built: run scripts/build_dash_arch.py")
+        try:
+            body = await request.json()
+        except ValueError:
+            raise HTTPException(400, "the request body must be JSON") from None
+        if not isinstance(body, dict):
+            raise HTTPException(400, "the request body must be a JSON object")
+        mt = story_path.stat().st_mtime
+        if plan_cache.get("mt") != mt:
+            plan_cache.update(mt=mt, b=json.loads(story_path.read_text()))
+        try:
+            return runplan.plan(plan_cache["b"], body)
+        except (ValueError, KeyError, TypeError) as e:
+            raise HTTPException(400, str(e) if isinstance(e, ValueError) else "the run settings are not valid") from None
 
     @app.get("/api/dash/meta/health")
     def meta_health(fresh: int = 0):
