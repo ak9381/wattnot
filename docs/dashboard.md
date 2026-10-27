@@ -1,6 +1,6 @@
 # Dashboard
 
-A read-only page that is also the demo. It opens on a six-scene story (about three minutes) and keeps
+A read-only page that is also the demo. It opens on the real product flow (configure, run, results) and keeps
 Power, Experts and Architecture one click away as deep-dive drawers. No build step, no network needed.
 
     pip install -e .
@@ -55,21 +55,70 @@ GPU's rate applied to the tokens the CPU run generated. When a meter reading com
 Without `--follow` the page replays `data/dash/granite-cpu-capture.jsonl.gz`, so it works the
 same offline.
 
-## The story
+## The flow: configure, run, results
 
-`Play demo` walks six scenes: the task and why it is hard; the stock run; WattNot steps in (Muse Spark
-proposes, a person approves, the change is applied); the re-run; before and after; who did what.
-Left and right arrows, space and the dots step through it by hand. `P` plays or pauses, `D` opens
-Architecture, `1` to `6` jump to a scene, `Esc` closes whatever is open. URL options: `?scene=N`,
-`?play=1`, `?tab=power|experts|arch`, `?tab=arch&filter=meta`.
+1. **Configure.** Workload, model, where it runs, the limits (how much p99 may rise, the quality bar),
+   the levers allowed, a "why this run is complex" panel computed from the real workload, and a **Room**
+   picker (example data center, your own photo or IR still, or none).
+2. **Run.** A live graph of the real pipeline, with a plain-words narration column and a small room heat map:
+   `Room scan` (SAM 3.1) -> `Baseline` -> `Quality gate` -> `Cap sweep` or `Adaptive top-k` -> `Keep or
+   roll back` -> `Receipt`. A step opens while it runs, shows clickable sub-steps (inputs, outputs, real
+   timing, numbers), folds when done and can be pinned. Marching ants run only along the step that is
+   moving data; finished edges go still and dim; `prefers-reduced-motion` turns the motion into a static
+   highlight. The same view is the **Architecture tab > Run pipeline**; `All modules` is the 21-module map.
+3. **Results.** Before and after for cost, energy, water, p99 and quality kept, the room heat map before
+   and after, and who did what (Meta, E2E, NVIDIA, Baseten, Hugging Face, Sigstore).
 
-Every number carries one label: MEASURED (read from a meter or a log), ESTIMATE (computed, with the
-assumption shown), SIMULATED, MOCK or ADVICE. A value that was not recorded shows as a dash with no
-label. The before and after screen never adds the three levers together: they come from separate runs.
+`?tab=power|experts|arch` and `?tab=arch&filter=meta` still work.
 
-Water is an ESTIMATE: measured kWh times a cited litres-per-kWh factor (the factor, formula and source are in a
-tooltip). The per-million-requests and per-year lines are ESTIMATEs with the assumptions listed and the
-request rate editable.
+### What is REPLAY and what is LIVE
+
+Every plan from `POST /api/dash/run/plan` is a **REPLAY**: a recorded real run re-evaluated against the
+limits that were chosen; no GPU and no network are used. `--events FILE` follows a stream live and labels it
+from what the stream says: LIVE, REPLAY, EXAMPLE or MOCK (`run.started.data.mode`). A fake-meter stream
+(`scripts/mock_run_events.py`) is always shown as MOCK with its power pill reading "fake meter".
+
+Labels: MEASURED (read from a meter or a log), ESTIMATE (computed, assumption shown), SIMULATED,
+MOCK or ADVICE; a missing value is a dash. In the room, only the H100 card's GPU power is MEASURED; every
+other rack and all temperatures are SIMULATED; cooling and water are ESTIMATEs (PUE 1.56 from the Uptime
+Institute 2024 survey, 0.36 L/kWh from LBNL 2024). Levers are never added together: they come from separate runs.
+
+### Event stream
+
+Runs are `wattnot.event/1` events (`schemas/run-event.schema.json`). The run view reads two optional
+extras in `data`: `node` and `sub` (the pipeline step; without them `pipe_map` maps the raw event type)
+and `rack` (the rack being acted on). `run.started.data.room` may carry the room scan (see below).
+
+**Narration contract.** `step.started.data.narration = {text, source: "template"}` is the default line.
+A later event for the same `step_id` carrying `data.narration = {text, source: "muse-spark", model}`
+replaces it. No schema change; a worker that generates the lines only needs to emit that event.
+
+### Room scan interface (`wattnot.room/1`)
+
+    {schema, source, label, size:[w,h], image,
+     racks:[{id, polygon:[[x,y]], temp_c, temp_label, power_w, power_label, gpu, decision, reason}], note}
+
+`decision` is `act`, `watch` or `skip`; labels are MEASURED, ESTIMATE or SIMULATED. `pipeline.example_room`
+is a 12-rack SIMULATED stub; `validate_room_scan` rejects bad input, and the plan endpoint accepts a
+`room_scan` in the body. A real SAM module only has to return this shape. An uploaded picture stays in the
+browser; SAM is not run on it here.
+
+## Hosted replay-only mode (for judges)
+
+    WATTNOT_HOSTED_REPLAY=1 wattnot dash --host 0.0.0.0 --events saved-run.jsonl [--token "$JUDGE_TOKEN"]
+    # or: wattnot dash --replay-only --events saved-run.jsonl
+
+- No GPU: `health.gpu_attached` is forced false and the server never starts a run.
+- No live Meta call: `/api/dash/meta/health` returns a fixed answer without touching the network (the top bar
+  says "Meta API: not called (hosted replay)"); nothing in the server holds or reads a model key.
+- Saved results only: the run to replay is the saved `events.jsonl` (the real H100 RUN2 once it exists). Its
+  Muse Spark picks and its SAM room scan (`run.started.data.room`) are read from the file; there is no SAM or
+  Muse call path in the server. Without a file, the bundled recorded runs are replayed.
+- A permanent REPLAY label: the top bar reads "REPLAY · saved run · no GPU, no live Meta calls" and the run
+  view's badge says REPLAY.
+- Judge sign-in is optional: without `--token` the page is open; with it, a one-field sign-in form.
+- The flag is `replay_only` in `create_app` / `--replay-only` / `WATTNOT_HOSTED_REPLAY`; `health.replay_only`
+  tells the page.
 
 ## Architecture
 
@@ -79,6 +128,7 @@ highlights the steps where Meta tooling did the work and lists each Meta product
 Replay the two recorded runs (H100 sweep, hosted run) or follow a live run:
 
     wattnot dash --events path/to/events.jsonl     # the map follows a run as it writes events
+    python scripts/mock_run_events.py /tmp/mock.jsonl   # a MOCK (fake meter) stream to try it with
 
 Steps expand while they run to show their sub-steps, collapse when done, and can be pinned.
 

@@ -13,7 +13,7 @@ const app = { st: null, ticks: [], arm: params.get("arm") === "on" ? "on" : "off
   sel: { steps: [], group: null }, hov: { steps: null, group: null }, ready: false, live: false, cursor: 0, clock: 0, runningUntil: 0 };
 
 // ---- tabs
-let archPage = null, curTab = "power";
+let archPage = null, curTab = "power", healthData = {};
 function showTab(name) {
   curTab = name;
   document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
@@ -24,7 +24,7 @@ function showTab(name) {
 }
 function ensureArch() {
   if (archPage || !bundle) return Promise.resolve();
-  archPage = new ArchPage($("arch"), bundle, { openDrawer });
+  archPage = new ArchPage($("arch"), bundle, { openDrawer, health: healthData });
   return Promise.resolve();
 }
 document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => showTab(b.dataset.tab)));
@@ -301,12 +301,13 @@ const chipSet = (el, cls, text) => { el.classList.remove("ok", "warn", "bad"); i
 async function loadHealth() {
   try {
     const h = await fetch("/api/dash/health").then((r) => r.json());
-    chipSet($("modeChip"), h.mode === "live" ? "ok" : "", h.mode === "live" ? "Live run" : `Replay of recorded runs${h.gpu_attached ? "" : " · no GPU attached"}`);
-    $("modeChip").title = h.mode === "live" ? "Following a run that is writing events now" : "Every number is read from a recorded run. Nothing here needs a GPU or a network connection.";
+    chipSet($("modeChip"), h.replay_only ? "warn" : h.mode === "live" ? "ok" : "", h.replay_only ? "REPLAY · saved run · no GPU, no live Meta calls" : h.mode === "live" ? "Live run" : `Replay of recorded runs${h.gpu_attached ? "" : " · no GPU attached"}`);
+    document.body.classList.toggle("replay-only", !!h.replay_only);
+    $("modeChip").title = h.replay_only ? "Hosted replay for judges: everything is read from a saved run. No GPU is used and no Meta or SAM call is made." : h.mode === "live" ? "Following a run that is writing events now" : "Every number is read from a recorded run. Nothing here needs a GPU or a network connection.";
     $("signout").hidden = !h.auth_required; return h;
   } catch { chipSet($("modeChip"), "bad", "Server not reachable"); return null; }
 }
-const META_TEXT = { ok: ["ok", "Meta API: connected"], key_missing: ["warn", "Meta API: reachable, no key"], key_rejected: ["bad", "Meta API: key rejected"], blocked: ["bad", "Meta API: blocked from here"], unreachable: ["bad", "Meta API: unreachable"], degraded: ["warn", "Meta API: degraded"], error: ["bad", "Meta API: check failed"] };
+const META_TEXT = { replay_only: ["", "Meta API: not called (hosted replay)"], ok: ["ok", "Meta API: connected"], key_missing: ["warn", "Meta API: reachable, no key"], key_rejected: ["bad", "Meta API: key rejected"], blocked: ["bad", "Meta API: blocked from here"], unreachable: ["bad", "Meta API: unreachable"], degraded: ["warn", "Meta API: degraded"], error: ["bad", "Meta API: check failed"] };
 async function checkMeta(fresh) {
   const chip = $("metaChip"); chipSet(chip, "", "Meta API: checking…");
   let r; try { r = await fetch(`/api/dash/meta/health${fresh ? "?fresh=1" : ""}`).then((x) => { if (!x.ok) throw new Error(x.status); return x.json(); }); }
@@ -330,7 +331,7 @@ async function boot() {
     stage.innerHTML = `<div class="pf"><div class="err"><b>The run configuration could not load.</b><p>${esc(sb.error || "The bundle has no recorded run in it. Rebuild it with scripts/build_dash_arch.py.")}</p><button class="btn" id="retry">Try again</button> <button class="btn" id="goPower">Open Power instead</button></div></div>`;
     $("retry").onclick = boot; $("goPower").onclick = () => openDrawer("power"); return;
   }
-  bundle = sb;
+  bundle = sb; healthData = health;
   if (curTab === "arch") ensureArch().then(() => archPage?.show());
   product = new Product(stage, $("rail"), { bundle: sb, health, open: openPanel, drawer: openDrawer });
   if (params.get("filter") === "meta" && params.get("tab") === "arch") ensureArch().then(() => archPage?.setFilter("meta"));

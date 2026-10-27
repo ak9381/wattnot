@@ -138,9 +138,16 @@ def _frame(event: str, obj, i: int | None = None) -> str:
 def create_app(*, bundle: Path | None = None, capture: Path | None = None,
                follow: Path | None = None, results: Path | None = None,
                story: Path | None = None, token: str | None = None,
-               events: Path | None = None, meta_probe=None) -> FastAPI:
+               events: Path | None = None, meta_probe=None,
+               replay_only: bool | None = None) -> FastAPI:
     app = FastAPI(title="WattNot dashboard", version="1")
     token = token or os.environ.get("WATTNOT_DASH_TOKEN") or None
+    # Hosted replay-only mode (for judges): no GPU, no Meta call of any kind, saved run file only.
+    # WATTNOT_HOSTED_REPLAY=1 or --replay-only; ``events`` is then the saved run to replay.
+    if replay_only is None:
+        replay_only = os.environ.get("WATTNOT_HOSTED_REPLAY", "").lower() in ("1", "true", "yes", "on")
+    if replay_only:
+        follow = None  # a live capture is never followed in the hosted copy
     story_path = Path(story or DEFAULT_STORY)
     meta_cache: dict = {}
 
@@ -194,7 +201,9 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         live = following or results is not None or events is not None
         return {"ok": True, "following": following, "capture": cap_path.name,
                 "capture_exists": cap_path.is_file(), "read_only": True,
-                "mode": "live" if live else "replay", "gpu_attached": gpu_attached,
+                "mode": "replay" if replay_only or not live else "live",
+                "replay_only": replay_only, "meta_calls": not replay_only,
+                "gpu_attached": False if replay_only else gpu_attached,
                 "auth_required": bool(token), "story": story_path.is_file(),
                 "events": events is not None, "events_name": events.name if events is not None else None}
 
@@ -227,6 +236,10 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
 
     @app.get("/api/dash/meta/health")
     def meta_health(fresh: int = 0):
+        if replay_only:  # never touches the network: the hosted copy makes no Meta call
+            return {"state": "replay_only", "ok": False, "called": False, "steps": [],
+                    "advice": "This is a hosted replay. It makes no live Meta calls; the Muse Spark and "
+                              "SAM results shown were saved from a real run.", "spends_money": False}
         now = time.time()
         if fresh or not meta_cache or now - meta_cache["t"] > 20:
             try:

@@ -4,6 +4,7 @@
 import { ArchView, fmt, statHtml } from "./arch.js";
 import { esc, pill } from "./theme.js";
 import { livePhrase } from "./archpage.js";
+import { heatSvg, heatLegend, scanTag, wireHeat, pulse, recolor } from "./heat.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const LABELS = ["MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "ADVICE"];
@@ -15,14 +16,17 @@ const tagOf = (t) => (LABELS.includes(t) ? pill(t) : "");
 export const badge = (l) => `<span class="srcb ${esc(l)}" title="${esc({ REPLAY: "A recorded real run, re-evaluated against your limits. Nothing is running on a GPU now.", LIVE: "Events are arriving from a run that is happening now.", EXAMPLE: "An example event stream, not a real run.", MOCK: "A run against a mock backend.", WAITING: "Waiting for the first event." }[l] || l)}"><i></i>${esc(l)}</span>`;
 
 export class Product {
-  constructor(host, rail, D) {
+  constructor(host, rail, D, opts = {}) {
+    this.embed = !!opts.embed; if (this.embed) rail = document.createElement("div");
     this.host = host; this.rail = rail; this.D = D; this.b = D.bundle; this.cfg = D.bundle.config; this.health = D.health || {};
     const m0 = this.cfg.models[0];
     const lim = Object.fromEntries(Object.entries(this.cfg.limits).map(([k, v]) => [k, v.default]));
-    this.sel = { place: m0.place, workload: m0.workload, model: m0.id, levers: new Set(m0.levers), ...lim };
+    this.sel = { place: m0.place, workload: m0.workload, model: m0.id, levers: new Set(m0.levers), room: "example", ...lim };
+    this.roomImg = null;
     this.screen = "config"; this.plan = null; this.done = false; this.speed = 2; this.log = {}; this.scale = 10_000_000;
-    this.renderRail(); this.config();
+    this.renderRail(); if (this.embed) this.start(); else this.config();
   }
+  $(s) { return this.host.querySelector(s); }
   // ---------------------------------------------------------------- stepper
   renderRail() {
     const S = [["config", "1  Configure"], ["run", "2  Run"], ["results", "3  Results"]];
@@ -52,16 +56,19 @@ export class Product {
       <fieldset><legend><i>1</i>Where does it run?</legend><div class="opts">${places.map((p) => radio("place", p.id, p.title, p.note, p.id === s.place, `<em class="pb" style="--c:${PCOL[p.partner]}">${esc(PNAME[p.partner])}</em>`)).join("")}</div></fieldset>
       <fieldset><legend><i>2</i>What is the workload?</legend><div class="opts">${wls.map((w) => radio("workload", w.id, w.title, w.desc, w.id === s.workload)).join("")}</div></fieldset>
       <fieldset><legend><i>3</i>Which model?</legend><div class="opts">${models.map((x) => radio("model", x.id, x.name, x.meta ? `Meta · ${x.product}` : "Open model (not Meta)", x.id === s.model)).join("")}</div></fieldset>
-      <fieldset><legend><i>4</i>Which levers may it use?</legend><div class="opts">${c.levers.map((l) => {
+      ${s.place === "h100" ? `<fieldset><legend><i>4</i>Which room is it in?</legend><div class="opts picker">${c.rooms.map((r) => radio("room", r.id, r.title, r.note, r.id === s.room, r.tag ? `<em class="pb" style="--c:var(--dim)">${esc(r.tag)}</em>` : "")).join("")}</div>
+        ${s.room === "upload" ? `<div class="up"><input type="file" id="roomFile" accept="image/*" aria-label="a photo or infrared still of the room">${this.roomImg ? `<img class="prev" alt="your upload" src="${esc(this.roomImg)}">` : ""}</div>` : ""}
+        <p class="hnt">The room scan is the first step of the run: find the racks, read their heat, check it against GPU power, pick where to start. It is a stand-in until a SAM 3.1 room module is connected (${esc(c.room_schema)}).</p></fieldset>` : ""}
+      <fieldset><legend><i>${s.place === "h100" ? 5 : 4}</i>Which levers may it use?</legend><div class="opts">${c.levers.map((l) => {
         const ok = m.levers.includes(l.id);
         return `<label class="opt ${ok && s.levers.has(l.id) ? "on" : ""} ${ok ? "" : "off"}"><input type="checkbox" name="lever" value="${l.id}" ${ok && s.levers.has(l.id) ? "checked" : ""} ${ok ? "" : "disabled"}><span class="ot">${esc(l.title)}<em class="pb" style="--c:${PCOL[l.partner]}">${esc(PNAME[l.partner])}</em></span><span class="od">${ok ? esc(l.desc) : `Not available for this model: needs ${esc(l.needs)}.`}</span></label>`;
       }).join("")}</div><p class="hnt">Levers are measured one at a time and never added together.</p></fieldset>
-      <fieldset><legend><i>5</i>Limits</legend><div class="lims">
+      <fieldset><legend><i>${s.place === "h100" ? 6 : 5}</i>Limits</legend><div class="lims">
         <label>${esc(c.limits.p99_slack_pct.label)}<span class="rg"><input type="range" id="limP" min="${c.limits.p99_slack_pct.min}" max="${c.limits.p99_slack_pct.max}" step="${c.limits.p99_slack_pct.step}" value="${s.p99_slack_pct}"><output id="limPo">${s.p99_slack_pct}%</output></span></label>
         <label>${esc(c.limits.min_quality_pct.label)}<span class="rg"><input type="range" id="limQ" min="${c.limits.min_quality_pct.min}" max="${c.limits.min_quality_pct.max}" step="${c.limits.min_quality_pct.step}" value="${s.min_quality_pct}"><output id="limQo">${s.min_quality_pct}%</output></span></label>
         <label class="ck"><input type="checkbox" id="limS" ${s.strict_quality ? "checked" : ""}> ${esc(c.limits.strict_quality.label)}</label></div></fieldset>
       <div class="startrow"><button class="btn pri big2" id="go" type="button">Start replay</button>${badge("REPLAY")}
-        ${this.health.events ? `<button class="btn" id="goLive" type="button">Watch the live run</button>` : ""}
+        ${this.health.events ? `<button class="btn" id="goLive" type="button">${this.health.replay_only ? "Replay the saved run" : "Watch the live run"}</button>` : ""}
         <span class="hnt" id="startnote">Re-evaluates a recorded real run against your limits. Nothing runs on a GPU now.</span></div>
       <p class="err" id="cfgErr" role="alert" hidden></p>
     </form><aside class="pf-why" id="why" aria-label="why this run is complex"></aside></div>`;
@@ -72,11 +79,13 @@ export class Product {
       if (t.name === "place") { s.place = t.value; const m1 = c.models.find((x) => x.place === s.place); Object.assign(s, { workload: m1.workload, model: m1.id, levers: new Set(m1.levers) }); this.config(); }
       else if (t.name === "workload") { s.workload = t.value; const m1 = c.models.find((x) => x.workload === s.workload); Object.assign(s, { model: m1.id, levers: new Set(m1.levers) }); this.config(); }
       else if (t.name === "model") { s.model = t.value; s.levers = new Set(this.model().levers); this.config(); }
+      else if (t.name === "room") { s.room = t.value; this.config(); }
+      else if (t.id === "roomFile") { const f0 = t.files?.[0]; if (f0 && f0.type.startsWith("image/")) { if (this.roomImg) URL.revokeObjectURL(this.roomImg); this.roomImg = URL.createObjectURL(f0); this.config(); } }
       else if (t.name === "lever") { t.checked ? s.levers.add(t.value) : s.levers.delete(t.value); t.closest(".opt").classList.toggle("on", t.checked); }
       else if (t.id === "limS") { s.strict_quality = t.checked; this.whyPanel(); }
     };
-    $("#limP", f).oninput = (e) => { s.p99_slack_pct = +e.target.value; $("#limPo").textContent = `${s.p99_slack_pct}%`; this.whyPanel(); };
-    $("#limQ", f).oninput = (e) => { s.min_quality_pct = +e.target.value; $("#limQo").textContent = `${s.min_quality_pct}%`; };
+    $("#limP", f).oninput = (e) => { s.p99_slack_pct = +e.target.value; this.$("#limPo").textContent = `${s.p99_slack_pct}%`; this.whyPanel(); };
+    $("#limQ", f).oninput = (e) => { s.min_quality_pct = +e.target.value; this.$("#limQo").textContent = `${s.min_quality_pct}%`; };
     $("#go", f).onclick = () => this.start();
     $("#goLive", f)?.addEventListener("click", () => this.startLive());
   }
@@ -84,15 +93,15 @@ export class Product {
     const x = this.cfg.complexity[this.sel.model], s = this.sel, m = this.model();
     const base = x.p99_base_s, lim = base == null ? null : base * (1 + s.p99_slack_pct / 100);
     const what = m.workload === "moe" ? "slowest batch" : m.workload === "classes" ? "slowest request" : "slowest 1% of requests (p99)";
-    $("#why").innerHTML = `<h2>Why this run is complex</h2><p class="muted">Computed from the recorded workload for ${esc(m.name)}.</p>
+    this.$("#why").innerHTML = `<h2>Why this run is complex</h2><p class="muted">Computed from the recorded workload for ${esc(m.name)}.</p>
       <dl class="cx">${x.items.map((i) => `<div class="${i.v == null ? "na" : ""}" title="${esc(i.src || "")}${i.note ? ": " + esc(i.note) : ""}"><dt>${esc(i.label)}</dt><dd><b class="num">${i.v == null ? "–" : esc(fmt(i.v))}</b> ${i.unit ? `<span class="u">${esc(i.unit)}</span>` : ""} ${tagOf(i.tag)}${i.v == null && i.note ? `<span class="u"> ${esc(i.note)}</span>` : ""}</dd></div>`).join("")}</dl>
       <div class="target"><span class="muted">Your latency target</span><b class="num">${lim == null ? "–" : `${lim.toFixed(2)} s`}</b><span class="muted">${esc(what)} at stock ${base == null ? "–" : base.toFixed(2) + " s"}, plus ${s.p99_slack_pct}%</span></div>
       <ul class="whylist">${x.why.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>`;
   }
   // ---------------------------------------------------------------- 2. run
   async start() {
-    const err = $("#cfgErr", this.host), btn = $("#go", this.host); err.hidden = true;
-    const s = this.sel, body = { model: s.model, levers: [...s.levers], p99_slack_pct: s.p99_slack_pct, min_quality_pct: s.min_quality_pct, strict_quality: s.strict_quality };
+    const err = $("#cfgErr", this.host) || {}, btn = $("#go", this.host) || {}; err.hidden = true;
+    const s = this.sel, body = { model: s.model, levers: [...s.levers], p99_slack_pct: s.p99_slack_pct, min_quality_pct: s.min_quality_pct, strict_quality: s.strict_quality, room: s.place === "h100" ? s.room : "none" };
     if (!body.levers.length) { err.textContent = "Pick at least one lever. This model supports: " + this.model().levers.join(", ") + "."; err.hidden = false; return; }
     btn.disabled = true; btn.textContent = "Planning…";
     try {
@@ -103,15 +112,13 @@ export class Product {
     this.live = false; this.done = false; this.screen = "run"; this.renderRail(); this.runView(false);
   }
   destroyRun() { this.player?.stop(); this.player = null; this.es?.close(); this.es = null; this.view?.destroy?.(); this.view = null; }
-  nodeOrder(events) {
-    const seen = [];
-    for (const e of events) { const n = e.data?.node || this.b.event_map[e.type]?.[0]; if (n && !seen.includes(n) && this.b.nodes.some((x) => x.id === n)) seen.push(n); }
-    return seen;
-  }
   runView(again) {
     this.destroyRun(); this.log = {}; this.nodeLog = {}; const live = this.live, P = this.plan;
     const events = live ? [] : P.events.map((f) => f.event);
-    const ids = live ? ["workload", "models", "telemetry", "apply", "gates", "receipts"].filter((i) => this.b.nodes.some((n) => n.id === i)) : this.nodeOrder(events);
+    // the run graph is the pipeline: Room scan, Baseline, Quality gate, Cap sweep / Adaptive top-k, Keep or roll back, Receipt
+    const pnodes = live ? this.cfg.pipeline : P.pipeline;
+    this.pd = { ...this.b, nodes: pnodes, edges: [], event_map: this.cfg.pipe_map };
+    const ids = pnodes.map((n) => n.id), room = live ? null : P.room;
     const lim = live ? null : P.config;
     this.host.innerHTML = `<div class="pf run"><div class="rbar"><span id="rbadge">${badge(live ? "WAITING" : "REPLAY")}</span>
         <span class="rt" id="rtitle">${live ? "Following the events file" : `${esc(P.results.model)} · ${esc(P.results.workload)}`}</span>
@@ -121,45 +128,47 @@ export class Product {
         <button class="btn" id="rpause">Pause</button>${live ? "" : `<button class="btn" id="rskip">Skip to the end</button><button class="btn" id="rrestart">Restart</button>`}</div>
       <p class="rnote" id="rnote">${live ? "Waiting for the first event from the run…" : `This is a <b>replay</b> of a recorded real run (${esc(P.results.place === "h100" ? "H100 on E2E Networks" : "Baseten")}), re-evaluated against your limits. Run id ${esc(P.run_id)}. The animation is compressed; each step shows its real measured time.`}</p>
       <div class="rgrid"><section class="rgraph" aria-label="live architecture graph"><div id="rg"></div></section>
-        <aside class="rnar" aria-label="narration"><h3>What is happening</h3><ol id="nar" aria-live="polite"></ol>
+        <div class="rside">${room ? `<section class="rroom" aria-label="room heat map"><h3>Room · ${esc(room.pick === "upload" ? "your picture" : "example data center")} ${scanTag(room.scan)}<span class="muted" id="roomPhase">before</span></h3><div id="roomMap"></div>${heatLegend()}<p class="cap" id="roomCap">Hover or tab to a rack for its numbers.</p></section>` : ""}<aside class="rnar" aria-label="narration"><h3>What is happening</h3><ol id="nar" aria-live="polite"></ol>
           <div class="meter" id="meter" hidden></div>
           <details class="evs"><summary>Events <span id="evn">0</span> · wattnot.event/1</summary><ol id="evl"></ol></details></aside></div>
-      <div class="rfoot"><span id="rstat" class="muted"></span><button class="btn pri" id="toRes" hidden>See the results</button></div></div>`;
-    if (!ids.length) { $("#rg").innerHTML = `<p class="note2">No steps to draw yet.</p>`; }
-    else this.view = new ArchView($("#rg"), this.b, { ids, chain: true, mode: "row", stats: 0, onSelect: (n, s, v) => this.D.open(n, s, v, this.runBlock(n, s)) });
-    this.nar = $("#nar"); this.evl = $("#evl"); this.evCount = 0;
-    $("#rpause").onclick = (e) => { const p = this.live ? null : this.player; if (this.live) { this.livePaused = !this.livePaused; } else p.pause(!p.paused); const on = this.live ? this.livePaused : p.paused; e.currentTarget.textContent = on ? "Resume" : "Pause"; this.view?.[on ? "pause" : "resume"](); };
+      </div><div class="rfoot"><span id="rstat" class="muted"></span><button class="btn pri" id="toRes" hidden>See the results</button></div></div>`;
+    this.room = room; if (room) this.drawRoom(room.scan, false);
+    this.view = new ArchView(this.$("#rg"), this.pd, { ids, chain: true, mode: "row", stats: 0, onSelect: (n, s, v) => this.D.open(n, s, v, this.runBlock(n, s)) });
+    this.nar = this.$("#nar"); this.evl = this.$("#evl"); this.evCount = 0;
+    this.$("#rpause").onclick = (e) => { const p = this.live ? null : this.player; if (this.live) { this.livePaused = !this.livePaused; } else p.pause(!p.paused); const on = this.live ? this.livePaused : p.paused; e.currentTarget.textContent = on ? "Resume" : "Pause"; this.view?.[on ? "pause" : "resume"](); };
     if (live) return;
     this.host.querySelectorAll("#spd button").forEach((b) => (b.onclick = () => { this.speed = +b.dataset.s; this.player.speed = this.speed; this.host.querySelectorAll("#spd button").forEach((x) => x.classList.toggle("on", x === b)); }));
-    $("#rskip").onclick = () => this.player.skip();
-    $("#rrestart").onclick = () => this.runView(true);
-    $("#toRes").onclick = () => this.go("results");
+    this.$("#rskip").onclick = () => this.player.skip();
+    this.$("#rrestart").onclick = () => this.runView(true);
+    this.$("#toRes").onclick = () => this.go("results");
     this.host.querySelectorAll("#spd button").forEach((b) => b.classList.toggle("on", +b.dataset.s === this.speed));
     this.player = new Player(P.events, this.speed, (ev) => this.onEvent(ev), () => this.finished());
     if (again && this.done && this.screen === "run" && this.replayDone) { /* viewing a finished run again: show it complete */ this.player.skip(); } else { this.done = false; this.replayDone = false; this.renderRail(); this.player.run(); }
   }
   finished() {
     this.done = true; this.replayDone = true; this.renderRail(); this.view?.finish?.(this.view.cur); this.view && (this.view.cur = null);
-    $("#toRes").hidden = false; $("#rstat").textContent = "The run is finished."; $("#rpause").disabled = true; $("#toRes").focus({ preventScroll: true });
+    this.$("#toRes").hidden = false; this.$("#rstat").textContent = "The run is finished."; this.$("#rpause").disabled = true; this.$("#toRes").focus({ preventScroll: true });
   }
   // one event -> graph, narration, log
   onEvent(ev) {
-    const d = ev.data || {}, map = this.b.event_map[ev.type] || [], node = d.node || map[0], sub = d.sub || map[1], v = this.view;
-    this.evCount++; $("#evn").textContent = this.evCount;
+    const d = ev.data || {}, map = this.pd.event_map[ev.type] || [], node = d.node || map[0], sub = d.sub || map[1], v = this.view;
+    this.evCount++; this.$("#evn").textContent = this.evCount;
     const li = document.createElement("li"); li.innerHTML = `<code>${esc(ev.type)}</code> <span class="muted">${esc(ev.step_id || "")}</span>`; this.evl.appendChild(li); if (this.evl.children.length > 150) this.evl.firstChild.remove();
     if (ev.type === "run.started") {
-      if (this.live) this.liveBadge(ev);
+      if (this.live) { this.liveBadge(ev); if (d.room?.scan && !this.room) this.liveRoom(d.room); }
       this.say({ id: "run", text: d.narration?.text || livePhrase(ev), source: d.narration?.source, head: true });
     }
-    if (ev.type === "telemetry.sample") { const m = $("#meter"); m.hidden = false; m.innerHTML = `Power now <b class="num">${num(d.power_w, 0)} W</b>${d.cap_w ? ` at a ${d.cap_w} W cap` : ""} ${tagOf(d.label || "MEASURED")} <span class="muted">${this.live ? "" : "recorded"}</span>`; }
+    if (ev.type === "telemetry.sample") { const m = this.$("#meter"); m.hidden = false; m.innerHTML = `Power now <b class="num">${num(d.power_w, 0)} W</b>${d.cap_w ? ` at a ${d.cap_w} W cap` : ""} ${tagOf(/mock|fake/i.test(`${d.source || ""} ${d.label || ""}`) ? "MOCK" : d.label || "MEASURED")}${/mock|fake/i.test(`${d.source || ""} ${d.label || ""}`) ? " <span class=\"muted\">fake meter</span>" : ""}${d.rack ? ` <span class="muted">rack ${esc(d.rack)}</span>` : ""} <span class="muted">${this.live ? "" : "recorded"}</span>`; }
     const key = `${node}.${sub}`;
     const entry = node ? ((this.log[key] ||= []), this.log[key]) : null;
     if (ev.type === "step.started" && node) {
       const rec = { sid: ev.step_id, label: d.label, inputs: d.inputs, outputs: null, took: null, numbers: [], events: [], status: "running", tag: null };
       entry.push(rec); (this.nodeLog[node] ||= []).push(rec);
       v?.activate({ node, sub, text: d.label || sub, tag: null, ok: true });
+      if (d.rack) this.pulseRack(d.rack);
+      if (node === "receipt" && sub === "heat") this.drawRoom(this.room?.after, true);
       this.say({ id: ev.step_id, node, sub, text: d.narration?.text || d.label || livePhrase(ev), source: d.narration?.source, model: d.narration?.model, label: d.label });
-      $("#rstat").textContent = `Running: ${d.label || ""}`;
+      this.$("#rstat").textContent = `Running: ${d.label || ""}`;
     } else if (ev.type === "step.finished" && node) {
       const rec = entry.find((r) => r.sid === ev.step_id) || entry[entry.length - 1] || {};
       Object.assign(rec, { outputs: d.outputs, took: d.duration_s, numbers: d.numbers || [], status: d.status, tag: d.label });
@@ -176,17 +185,31 @@ export class Product {
       else this.say({ id: `e${this.evCount}`, text: livePhrase(ev) });
     }
   }
+  // a live stream may carry its room scan in run.started.data.room ({scan, after, target, pick}, wattnot.room/1)
+  liveRoom(room) {
+    this.room = room; const side = this.$(".rside"); if (!side || this.$("#roomMap")) return;
+    const sec = document.createElement("section"); sec.className = "rroom"; sec.setAttribute("aria-label", "room heat map");
+    sec.innerHTML = `<h3>Room · ${esc(room.pick === "upload" ? "your picture" : "example data center")} ${scanTag(room.scan)}<span class="muted" id="roomPhase">before</span></h3><div id="roomMap"></div>${heatLegend()}<p class="cap" id="roomCap">Hover or tab to a rack for its numbers.</p>`;
+    side.prepend(sec); this.drawRoom(room.scan, false);
+  }
+  drawRoom(scan, after) {
+    const el = this.$("#roomMap"); if (!el || !scan) return;
+    if (!el.firstChild) { el.innerHTML = heatSvg(scan, { target: this.room?.target, img: this.room.pick === "upload" ? this.roomImg : null }); wireHeat(el, scan, this.$("#roomCap")); }
+    else recolor(el, scan);                  // same racks, new heat: the fill fades (CSS transition)
+    this.$("#roomPhase").textContent = after ? "after (simulated)" : "before";
+  }
+  pulseRack(id) { const el = this.$("#roomMap"); if (el) pulse(el, id); const c = this.$("#roomCap"); if (c && this.room) { const r = this.room.scan.racks.find((x) => x.id === id); if (r) c.textContent = `Acting on ${r.id}.`; } }
   liveBadge(ev) {
     const d = ev.data || {}, name = this.health.events_name || "";
-    const l = /demo|example/i.test(name) ? "EXAMPLE" : d.replay || d.mode === "replay" ? "REPLAY" : d.mode === "mock" || d.label === "MOCK" ? "MOCK" : "LIVE";
-    $("#rbadge").innerHTML = badge(l); this.liveKind = l;
-    $("#rnote").innerHTML = l === "LIVE" ? "Following a run that is writing events now." : l === "REPLAY" ? "These events are a replay of a recorded run." : `These events come from ${l === "EXAMPLE" ? "an example file, not a real run" : "a mock backend"}.`;
+    const l = d.mode === "mock" || d.label === "MOCK" ? "MOCK" : this.health.replay_only ? "REPLAY" : /demo|example/i.test(name) ? "EXAMPLE" : d.replay || d.mode === "replay" ? "REPLAY" : d.mode === "mock" || d.label === "MOCK" ? "MOCK" : "LIVE";
+    this.$("#rbadge").innerHTML = badge(l); this.liveKind = l;
+    this.$("#rnote").innerHTML = l === "LIVE" ? "Following a run that is writing events now." : l === "REPLAY" ? "These events are a replay of a recorded run." : `These events come from ${l === "EXAMPLE" ? "an example file, not a real run" : "a mock backend"}.`;
   }
   say(o) {
     const li = document.createElement("li"); li.dataset.id = o.id; if (o.node) { li.dataset.node = o.node; li.dataset.sub = o.sub; li.tabIndex = 0; li.setAttribute("role", "button"); }
     li.className = `${o.head ? "head" : ""} cur`;
     li.innerHTML = `<span class="tx">${esc(o.text)}</span>${o.source === "muse-spark" ? `<em class="src ms">Muse Spark${o.model ? " · " + esc(o.model) : ""}</em>` : ""}<div class="nn"></div>`;
-    const open = () => { const n = this.b.nodes.find((x) => x.id === o.node); if (n) this.D.open(n, n.subs.find((s) => s.id === o.sub), this.view, this.runBlock(n, n.subs.find((s) => s.id === o.sub))); };
+    const open = () => { const n = this.pd.nodes.find((x) => x.id === o.node); if (n) this.D.open(n, n.subs.find((s) => s.id === o.sub), this.view, this.runBlock(n, n.subs.find((s) => s.id === o.sub))); };
     if (o.node) { li.onclick = open; li.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } }; }
     this.nar.querySelectorAll("li.cur").forEach((x) => x.classList.remove("cur")); this.nar.appendChild(li);
     li.scrollIntoView({ block: "nearest", behavior: reduce() ? "auto" : "smooth" });
@@ -213,21 +236,35 @@ export class Product {
     this.plan = null; this.live = true; this.done = false; this.screen = "run"; this.renderRail(); this.runView(false);
     const es = (this.es = new EventSource("/api/dash/arch/live")); this.liveEvents = [];
     es.addEventListener("event", (m) => { if (this.livePaused) return; try { const ev = JSON.parse(m.data); this.liveEvents.push(ev); this.onEvent(ev); } catch { /* skip a bad line */ } });
-    es.onerror = () => { $("#rstat").textContent = "Connection lost, retrying…"; };
+    es.onerror = () => { this.$("#rstat").textContent = "Connection lost, retrying…"; };
   }
   // ---------------------------------------------------------------- 3. results
   results() {
     this.destroyRun(); const live = !this.plan;
-    if (live) { this.host.innerHTML = `<div class="pf res"><h1>Results</h1><div class="err">A live run's results come from its signed receipt. Open the receipt once the run has written it; this page does not compute before/after numbers from a partial stream.</div><p class="muted">Gate results seen: ${esc(JSON.stringify((this.liveEvents || []).filter((e) => e.type === "gate.result").map((e) => ({ check: e.data.check, passed: e.data.passed }))))}</p><button class="btn" id="again">Back to settings</button></div>`; $("#again").onclick = () => this.go("config"); return; }
+    if (live) { this.host.innerHTML = `<div class="pf res"><h1>Results</h1><div class="err">A live run's results come from its signed receipt. Open the receipt once the run has written it; this page does not compute before/after numbers from a partial stream.</div><p class="muted">Gate results seen: ${esc(JSON.stringify((this.liveEvents || []).filter((e) => e.type === "gate.result").map((e) => ({ check: e.data.check, passed: e.data.passed }))))}</p><button class="btn" id="again">Back to settings</button></div>`; this.$("#again").onclick = () => this.go("config"); return; }
     const R = this.plan.results, S = this.scale;
     this.host.innerHTML = `<div class="pf res"><div class="rbar"><h1>Results</h1>${badge("REPLAY")}<span class="rt">${esc(R.model)} · ${esc(R.workload)}</span><span class="sp"></span>
         <label class="scl">At <input id="scale" type="number" min="1" step="100000" value="${S}" aria-label="requests per day"> requests a day</label></div>
       <p class="rnote">Recorded run <code>${esc(R.run_id)}</code>, re-evaluated against your limits: p99 may rise ${R.limits.p99_slack_pct}%, agreement at least ${R.limits.min_quality_pct}%${R.limits.strict_quality ? ", quality must be verified" : ""}. Levers are shown separately and never added together.</p>
+      ${R.room ? this.roomResults(R) : ""}
       <div id="cards">${R.levers.map((L) => this.card(L)).join("")}</div>
       <div class="resfoot"><button class="btn" id="back">Change settings</button><button class="btn" id="seeRun">See the run again</button><button class="btn" id="rerun">Run again</button><button class="btn" id="openArch">Open the Architecture map</button></div></div>`;
-    $("#scale").onchange = (e) => { const v = Math.max(1, +e.target.value || 1); this.scale = v; $("#cards").innerHTML = R.levers.map((L) => this.card(L)).join(""); };
-    $("#back").onclick = () => this.go("config"); $("#seeRun").onclick = () => this.go("run"); $("#rerun").onclick = () => { this.runView(false); this.screen = "run"; this.done = false; this.renderRail(); };
-    $("#openArch").onclick = () => this.D.drawer("arch");
+    if (R.room) { const b = this.$("#resB"), a = this.$("#resA"), cap = this.$("#resCap"); wireHeat(b, R.room.before, cap); wireHeat(a, R.room.after, cap); }
+    this.$("#scale").onchange = (e) => { const v = Math.max(1, +e.target.value || 1); this.scale = v; this.$("#cards").innerHTML = R.levers.map((L) => this.card(L)).join(""); };
+    this.$("#back").onclick = () => this.go("config"); this.$("#seeRun").onclick = () => this.go("run"); this.$("#rerun").onclick = () => { this.runView(false); this.screen = "run"; this.done = false; this.renderRail(); };
+    this.$("#openArch").onclick = () => this.D.drawer("arch");
+  }
+  roomResults(R) {
+    const Rm = R.room, t = Rm.target, b = Rm.before.racks.find((x) => x.id === t), a = Rm.after.racks.find((x) => x.id === t), c = Rm.cooling;
+    const img = this.plan.room?.pick === "upload" ? this.roomImg : null;
+    const tt = c ? `<b>ESTIMATE</b> ${esc(c.formula)}<br><br><b>Source:</b> ${esc(c.source)}<br><br><b>Caveat:</b> ${esc(c.caveat)}` : "";
+    const kl = b && a && b.power_w != null && a.power_w != null ? `<div class="rkline"><b>${esc(t)}</b> GPU power <b class="num">${num(b.power_w, 0)} W</b> → <b class="num">${num(a.power_w, 0)} W</b> ${tagOf(b.power_label)} · heat <b class="num">${num(b.temp_c, 1)} °C</b> → <b class="num">${num(a.temp_c, 1)} °C</b> ${tagOf("SIMULATED")}</div>` : t ? `<div class="rkline"><b>${esc(t)}</b> acted on. No power figure, so the heat map is unchanged.</div>` : `<div class="rkline">No rack in this scan could be acted on.</div>`;
+    return `<section class="roomres" aria-label="room before and after"><h2>The room, before and after ${scanTag(Rm.before)}</h2>
+      <p class="hnt">${esc(Rm.before.note || "")} ${img ? "Your picture is under the racks; the racks drawn on it are the example layout." : ""} Heat after is a simple model: the rack's rise above a ${22} °C supply falls in proportion to its power. GPU power and energy are measured; temperatures are not.</p>
+      <div class="ba"><figure><figcaption>Before</figcaption><div id="resB">${heatSvg(Rm.before, { target: t, img })}</div></figure><figure><figcaption>After ${tagOf("SIMULATED")}</figcaption><div id="resA">${heatSvg(Rm.after, { target: t, img })}</div></figure></div>${heatLegend()}
+      <p class="cap hnt" id="resCap">Hover or tab to a rack for its numbers.</p>${kl}
+      ${c ? `<div class="rkline"><span class="tipx" tabindex="0" data-tt="${esc(tt)}">Cooling and overhead energy per 1M requests</span> <b class="num">${num(c.extra_before_kwh_per_m, 2)} kWh</b> → <b class="num">${num(c.extra_after_kwh_per_m, 2)} kWh</b> ${tagOf("ESTIMATE")} <span class="muted">PUE ${c.value}, ${esc(c.source.split(":")[0])}</span></div>` : ""}
+      <div class="rkline muted">${Rm.picked_by === "rule-based placeholder" ? "Which rack to start with was chosen by a plain rule here (hottest rack with card access). Muse Spark's pick replaces it when the run's event stream carries one." : ""}</div></section>`;
   }
   card(L) {
     const W = this.plan.results.water, P = this.plan.results.price, scale = this.scale * 365 / 1e6;
@@ -259,7 +296,7 @@ export class Product {
     const tried = L.tried_p99_change_pct != null || (L.tried && L.id === "topk");
     const credits = (L.credits || []).map(([p, t]) => `<li class="cr ${p === "meta" ? "meta" : ""}"><b style="--c:${PCOL[p]}">${esc(PNAME[p])}</b><span>${esc(t)}</span></li>`).join("");
     return `<section class="rc ${L.applied ? "kept" : "nokept"}" aria-label="${esc(L.title)}"><header><h2>${esc(L.title)}</h2><span class="hd2 num">${esc(head)}</span><span class="lb">${esc(L.before_label)} → ${esc(L.after_label)}</span></header>
-      <table class="cmp"><thead><tr><th></th><th>Before</th><th>After</th><th>Change</th><th></th><th></th></tr></thead><tbody>${rows}</tbody></table>
+      <table class="cmpt"><thead><tr><th></th><th>Before</th><th>After</th><th>Change</th><th></th><th></th></tr></thead><tbody>${rows}</tbody></table>
       <div class="qrow ${qcls}"><b>Quality kept</b><span>${esc(q.text || "–")}</span>${q.state && q.state !== "n/a" ? `<em class="qs ${qcls}">${esc(q.state)}</em>` : ""}</div>
       ${q.why ? `<p class="hnt">${esc(q.why)}</p>` : ""}
       ${q.classes ? `<p class="hnt">${q.classes.map((c) => `${esc(c.class)}: ${esc(c.chosen)} ${c.kept ? "kept" : "not kept"}`).join(" · ")}</p>` : ""}

@@ -26,11 +26,11 @@ def models(b):
     return [m["id"] for m in b["config"]["models"]]
 
 
-def test_every_model_plans_and_every_step_exists_in_the_map(bundle):
-    subs = {n["id"]: {s["id"] for s in n["subs"]} for n in bundle["nodes"]}
+def test_every_model_plans_and_every_step_exists_in_the_pipeline(bundle):
     for m in models(bundle):
         p = runplan.plan(bundle, {"model": m})
         assert p["source"] == "REPLAY"
+        subs = {n["id"]: {s["id"] for s in n["subs"]} for n in p["pipeline"]}
         for f in p["events"]:
             d = f["event"]["data"]
             if "node" in d:
@@ -62,7 +62,7 @@ def test_every_run_says_replay_and_every_step_has_plain_words(bundle):
                 n = e["data"]["narration"]
                 assert n["text"] and n["source"] == "template"
             for nm in e["data"].get("numbers", []):
-                assert nm["tag"] in (None, "MEASURED", "ESTIMATE")
+                assert nm["tag"] in (None, "MEASURED", "ESTIMATE", "SIMULATED")
                 assert nm["v"] is not None or nm["tag"] is None
 
 
@@ -125,3 +125,96 @@ def test_server_plan_endpoint_and_errors():
     assert c.post("/api/dash/run/plan", content=b"nope").status_code == 400
     assert c.post("/api/dash/run/plan", json=[1]).status_code == 400
     assert c.get("/api/dash/health").json()["events_name"] is None
+
+
+# ---------------------------------------------------------------- the pipeline and the room scan
+from wattnot.dash import pipeline  # noqa: E402
+
+SRC = ROOT / "src" / "wattnot"
+
+
+def test_the_run_graph_is_the_seven_pipeline_steps_in_order(bundle):
+    ids = [n["id"] for n in runplan.plan(bundle, {"model": "glimmer"})["pipeline"]]
+    assert ids == ["room", "baseline", "gate", "sweep", "keep", "receipt"]
+    ids = [n["id"] for n in runplan.plan(bundle, {"model": "qwen3"})["pipeline"]]
+    assert ids == ["room", "baseline", "gate", "topk", "keep", "receipt"]
+    assert [n["id"] for n in bundle["config"]["pipeline"]] == ["room", "baseline", "gate", "sweep", "topk", "keep", "receipt"]
+    assert [n["id"] for n in runplan.plan(bundle, {"model": "glimmer", "room": "none"})["pipeline"]][0] == "baseline"
+
+
+def test_pipeline_code_paths_are_real_files(bundle):
+    for n in pipeline.full_nodes():
+        assert (SRC / n["code"]).is_file(), n["code"]
+        for s in n["subs"]:
+            assert (SRC / s["code"]).is_file(), (n["id"], s["id"], s["code"])
+
+
+def test_live_event_map_points_at_real_steps():
+    subs = {n["id"]: {s["id"] for s in n["subs"]} for n in pipeline.full_nodes()}
+    for typ, (node, sub) in pipeline.PIPE_MAP.items():
+        assert sub in subs[node], typ
+
+
+def test_room_scan_is_first_and_only_the_gpu_power_is_measured(bundle):
+    p = runplan.plan(bundle, {"model": "glimmer"})
+    steps = [f["event"]["data"] for f in p["events"] if f["event"]["type"] == "step.started"]
+    assert [d["sub"] for d in steps[:5]] == ["segment", "heat", "xcheck", "rank", "pick"] and steps[0]["node"] == "room"
+    scan = p["room"]["scan"]
+    assert scan["schema"] == "wattnot.room/1" and scan["label"] == "SIMULATED" and scan["source"] == "stub"
+    for r in scan["racks"]:
+        assert r["temp_label"] == "SIMULATED"
+        assert r["power_label"] == ("MEASURED" if r["gpu"] else "SIMULATED")
+    tgt = next(r for r in scan["racks"] if r["id"] == p["room"]["target"])
+    assert tgt["gpu"] and tgt["decision"] == "act" and tgt["power_w"] > 100
+    hottest = max(scan["racks"], key=lambda r: r["temp_c"])
+    assert hottest["id"] != tgt["id"] and hottest["decision"] == "watch"     # the hottest rack has no card access
+    dec = [f["event"]["data"] for f in p["events"] if f["event"]["type"] == "decision"]
+    assert dec[0]["choice"]["racks"] == [tgt["id"]] and dec[0]["model"] is None
+
+
+def test_actions_are_tagged_with_the_rack_and_the_room_cools_only_there(bundle):
+    p = runplan.plan(bundle, {"model": "glimmer"})
+    for f in p["events"]:
+        d = f["event"]["data"]
+        if d.get("node") in ("baseline", "sweep", "keep"):
+            assert d["rack"] == p["room"]["target"]
+        if d.get("node") == "room" and f["event"]["type"] == "step.started":
+            assert "rack" not in d
+    b, a = p["room"]["scan"]["racks"], p["room"]["after"]["racks"]
+    changed = [x["id"] for x, y in zip(b, a, strict=True) if x["temp_c"] != y["temp_c"]]
+    assert changed == [p["room"]["target"]]
+    assert p["results"]["room"]["after"]["label"] == "SIMULATED"
+    assert p["results"]["room"]["cooling"]["value"] == 1.56
+    off = runplan.plan(bundle, {"model": "glimmer", "room": "none"})
+    assert off["room"] is None and "room" not in off["results"]
+    assert not any("rack" in f["event"]["data"] for f in off["events"])
+
+
+def test_hosted_runs_have_no_room(bundle):
+    p = runplan.plan(bundle, {"model": "spark_open", "room": "example"})
+    assert p["room"] is None and p["pipeline"][0]["id"] == "baseline"
+
+
+def test_room_scan_interface_accepts_a_module_scan_and_rejects_bad_ones(bundle):
+    scan = pipeline.example_room(500.0)
+    scan["source"] = "sam"
+    p = runplan.plan(bundle, {"model": "glimmer", "room_scan": scan})
+    assert p["room"]["scan"]["source"] == "sam"
+    bad = pipeline.example_room()
+    bad["racks"][0]["polygon"] = [[0, 0]]
+    with pytest.raises(ValueError):
+        runplan.plan(bundle, {"model": "glimmer", "room_scan": bad})
+    bad = pipeline.example_room()
+    bad["racks"][1]["decision"] = "delete everything"
+    with pytest.raises(ValueError):
+        pipeline.validate_room_scan(bad)
+    with pytest.raises(ValueError):
+        pipeline.validate_room_scan({"schema": "other", "racks": []})
+
+
+def test_after_room_changes_nothing_when_power_is_unknown():
+    scan = pipeline.example_room(None)
+    tgt = pipeline.target_of(scan)
+    assert tgt["power_w"] is None and tgt["power_label"] is None
+    after = pipeline.after_room(scan, tgt, None, None)
+    assert [r["temp_c"] for r in after["racks"]] == [r["temp_c"] for r in scan["racks"]]

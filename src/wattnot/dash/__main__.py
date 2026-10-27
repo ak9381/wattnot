@@ -19,11 +19,14 @@ def add_args(p: argparse.ArgumentParser) -> None:
                    help="require this access token (or set WATTNOT_DASH_TOKEN); for a hosted demo")
     p.add_argument("--events", type=Path,
                    help="a run's events.jsonl to follow on the Architecture view")
+    p.add_argument("--replay-only", action="store_true",
+                   help="hosted replay for judges: no GPU, no live Meta calls; "
+                        "--events is the saved run (or set WATTNOT_HOSTED_REPLAY=1)")
 
 
 def run(a: argparse.Namespace) -> int:
     return serve(a.host, a.port, capture=a.capture, follow=a.follow, results=a.results,
-                 token=a.token, events=a.events)
+                 token=a.token, events=a.events, replay_only=a.replay_only or None)
 
 
 def main() -> int:

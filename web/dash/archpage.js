@@ -2,6 +2,7 @@
 // replay of recorded runs, live following of an events file, and the side panel.
 import { ArchView, panelHtml, statHtml } from "./arch.js";
 import { esc, pill } from "./theme.js";
+import { Product } from "./product.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const G = () => window.gsap;
@@ -29,22 +30,38 @@ export function livePhrase(ev) {
 export class ArchPage {
   constructor(host, data, hooks) {
     this.host = host; this.d = data; this.h = hooks; this.speed = 2; this.replay = "h100"; this.filter = null;
-    host.innerHTML = `<div class="archbar"><label class="muted" for="rsel">Replay</label><select id="rsel" class="btn" aria-label="recorded run to replay"></select>
+    host.innerHTML = `<div class="archmode" role="group" aria-label="architecture view"><button data-m="pipe" class="on" aria-pressed="true">Run pipeline</button><button data-m="all" aria-pressed="false">All modules</button>
+      <span class="muted" id="amodeNote">The real steps of one run, lit up as its events arrive. Click a step for its sub-steps and numbers.</span></div>
+      <div id="apipe" class="apipe"></div><div id="aall" hidden><div class="archbar"><label class="muted" for="rsel">Replay</label><select id="rsel" class="btn" aria-label="recorded run to replay"></select>
       <button class="btn pri" id="aplay">Play</button><button class="btn" id="apause">Pause</button><button class="btn" id="areset">Reset</button>
       <span class="seg" id="aspd"><button data-s="1">1×</button><button data-s="2" class="on">2×</button><button data-s="4">4×</button></span><span class="sp"></span><span class="cap" id="aprog"></span></div>
       <div class="avlegend" id="afil" role="group" aria-label="filter by partner"></div>
       <div class="mstrip" id="mstrip" hidden></div>
       <div class="archcap" id="acap" aria-live="polite">Click a step to see its code, inputs, outputs, timing and partner. Pick a replay and press Play to watch a recorded run.</div>
-      <div id="amap"></div><aside class="panel in-drawer" id="apanel" aria-label="step details"><button class="btn x" id="apx" aria-label="close details">Close</button><div id="apbody"></div></aside>`;
+      <div id="amap"></div></div><aside class="panel in-drawer" id="apanel" aria-label="step details"><button class="btn x" id="apx" aria-label="close details">Close</button><div id="apbody"></div></aside>`;
     const rs = Object.values(data.replays);
     $("#rsel", host).innerHTML = rs.map((r) => `<option value="${r.id}">${esc(r.title)}</option>`).join("") + `<option value="live">Live run (events file)</option>`;
     $("#afil", host).innerHTML = FILTERS.map(([id, t, c]) => `<button class="fchip ${id === "meta" ? "meta" : ""}" data-f="${id}" ${c ? `style="--c:${c}"` : ""} aria-pressed="${id === "all"}">${c ? "<i></i>" : ""}${esc(t)}${id === "meta" ? ` <span class="muted">${data.nodes.filter((n) => n.partners.includes("meta")).length} steps</span>` : ""}</button>`).join("");
     $("#mstrip", host).innerHTML = data.meta.map((m) => `<div class="mcard"><b>${esc(m.name)}</b><p>${esc(m.does)}</p>${m.stats.slice(0, 3).map(statHtml).join("")}</div>`).join("");
     this.view = new ArchView($("#amap", host), data, { mode: "map", onSelect: (n, s) => this.panel(n, s), onCue: (c) => { $("#acap", host).innerHTML = `<b>${esc(this.d.nodes.find((n) => n.id === c.node).title)}</b> · ${esc(c.text)} ${c.tag ? pill(c.tag) : ""}`; }, onProgress: (i, n) => { $("#aprog", host).textContent = i >= n ? "done" : `${i + 1} of ${n}`; } });
-    this.wire();
+    this.wire(); this.mode = "pipe";
+  }
+  setMode(m) {
+    this.mode = m; const H = this.host; this.closePanel();
+    H.querySelectorAll(".archmode button").forEach((b) => { const on = b.dataset.m === m; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
+    $("#apipe", H).hidden = m !== "pipe"; $("#aall", H).hidden = m !== "all";
+    $("#amodeNote", H).textContent = m === "pipe" ? "The real steps of one run, lit up as its events arrive. Click a step for its sub-steps and numbers." : "Every module in the system, with who built it. Pick a replay to watch it.";
+    if (m === "pipe") this.ensurePipe(); else requestAnimationFrame(() => this.view.layoutEdges());
+  }
+  // The run pipeline: the same run view as the product, mounted here and started on the default H100 settings.
+  ensurePipe() {
+    if (this.pipe || !this.d.config) return;
+    const open = (n, s, v, extra) => this.panel(n, s, v, extra);
+    this.pipe = new Product($("#apipe", this.host), null, { bundle: this.d, health: this.h.health || {}, open, drawer: this.h.openDrawer }, { embed: true });
   }
   wire() {
     const H = this.host;
+    H.querySelectorAll(".archmode button").forEach((b) => (b.onclick = () => this.setMode(b.dataset.m)));
     $("#aplay", H).onclick = () => this.start();
     $("#apause", H).onclick = (e) => { const b = e.currentTarget; if (this.view.paused) { this.view.resume(); b.textContent = "Pause"; } else { this.view.pause(); b.textContent = "Resume"; } };
     $("#areset", H).onclick = () => { this.stopLive(); this.view.reset(); $("#aprog", H).textContent = ""; $("#apause", H).textContent = "Pause"; $("#acap", H).textContent = "Reset. Pick a replay and press Play."; };
@@ -54,7 +71,7 @@ export class ArchPage {
     $("#apx", H).onclick = () => this.closePanel();
     $("#apanel", H).addEventListener("click", (e) => {
       const go = e.target.closest("[data-go]"); if (go) { go.dataset.go === "meta" ? this.setFilter("meta") : this.h.openDrawer(go.dataset.go); return; }
-      const sb = e.target.closest("a[data-sub]"); if (sb) { e.preventDefault(); this.view.select(this.cur.id, sb.dataset.sub); }
+      const sb = e.target.closest("a[data-sub]"); if (sb) { e.preventDefault(); if (this.mode === "pipe") { const sub = this.cur.subs.find((x) => x.id === sb.dataset.sub); this.panel(this.cur, sub, this.pv, this.pipe?.runBlock(this.cur, sub) || ""); } else this.view.select(this.cur.id, sb.dataset.sub); }
     });
   }
   setFilter(f) {
@@ -70,8 +87,9 @@ export class ArchPage {
     const r = this.d.replays[this.replay]; $("#acap", this.host).innerHTML = esc(r.note); $("#apause", this.host).textContent = "Pause";
     await this.view.play(r.cues, { speed: this.speed });
   }
-  panel(n, s) {
-    this.cur = n; const p = $("#apanel", this.host); $("#apbody", this.host).innerHTML = panelHtml(this.view, n, s);
+  panel(n, s, view = this.view, extra = "") {
+    this.cur = n; this.pv = view; const p = $("#apanel", this.host); const h = panelHtml(view, n, s);
+    $("#apbody", this.host).innerHTML = extra ? h.replace(/(<h3>.*?<\/h3>)/, `$1${extra}`) : h;
     p.classList.add("open"); this.host.classList.add("pn"); $("#apx", this.host).focus();
   }
   closePanel() { $("#apanel", this.host).classList.remove("open"); this.host.classList.remove("pn"); }
@@ -90,6 +108,6 @@ export class ArchPage {
     es.onerror = () => { cap.innerHTML += ` <span class="muted">(connection lost, retrying)</span>`; };
   }
   stopLive() { this.es?.close(); this.es = null; }
-  show() { requestAnimationFrame(() => this.view.layoutEdges()); }
-  destroy() { this.stopLive(); this.view.destroy(); }
+  show() { if (this.mode === "pipe") this.ensurePipe(); else requestAnimationFrame(() => this.view.layoutEdges()); }
+  destroy() { this.stopLive(); this.pipe?.destroyRun(); this.view.destroy(); }
 }

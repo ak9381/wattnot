@@ -223,3 +223,27 @@ def test_meta_check_never_returns_the_key(monkeypatch, no_net):
 
 def test_live_endpoint_404_without_events_file_and_streams_with_one(tmp_path):
     assert TestClient(create_app()).get("/api/dash/arch/live").status_code == 404
+
+
+def test_hosted_replay_only_makes_no_meta_call_and_says_replay(tmp_path, monkeypatch):
+    saved = tmp_path / "run.jsonl"
+    saved.write_text('{"schema_version":"wattnot.event/1","type":"run.started"}\n')
+
+    def boom():
+        raise AssertionError("the hosted replay must not probe Meta")
+
+    c = TestClient(create_app(replay_only=True, events=saved, meta_probe=boom))
+    h = c.get("/api/dash/health").json()
+    assert h["mode"] == "replay" and h["replay_only"] is True
+    assert h["meta_calls"] is False and h["gpu_attached"] is False and h["events"] is True
+    m = c.get("/api/dash/meta/health").json()
+    assert m["state"] == "replay_only" and m["called"] is False and m["spends_money"] is False
+    # the plan endpoint is pure computation on the bundled recorded runs
+    assert c.post("/api/dash/run/plan", json={"model": "glimmer"}).status_code == 200
+
+
+def test_hosted_replay_flag_from_environment(monkeypatch):
+    monkeypatch.setenv("WATTNOT_HOSTED_REPLAY", "1")
+    assert TestClient(create_app()).get("/api/dash/health").json()["replay_only"] is True
+    monkeypatch.delenv("WATTNOT_HOSTED_REPLAY")
+    assert TestClient(create_app()).get("/api/dash/health").json()["replay_only"] is False
