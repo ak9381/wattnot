@@ -95,6 +95,9 @@ def build_parser() -> argparse.ArgumentParser:
     _route.add_parser(sub)
     from wattnot.certificate import cli as _cert
     _cert.add_parser(sub)
+    dsh = sub.add_parser("dash", help="live dashboard: GPU power, and a view of the experts")
+    from wattnot.dash import __main__ as _dash
+    _dash.add_args(dsh)
     return parser
 
 
@@ -243,6 +246,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         from wattnot.approvals import cli as _props
 
         return _props.dispatch(args)
+    if args.cmd == "dash":
+        from wattnot.dash import __main__ as _dash
+
+        return _dash.run(args)
     if args.cmd == "route":
         try:
             from wattnot.route import cli as _route

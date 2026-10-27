@@ -1,0 +1,31 @@
+"""``python -m wattnot.dash``: same as ``wattnot dash``."""
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+
+from wattnot.dash.server import serve
+
+
+def add_args(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8765)
+    p.add_argument("--capture", type=Path, help="expert capture to replay (jsonl or jsonl.gz)")
+    p.add_argument("--follow", type=Path,
+                   help="expert capture a local run is still writing; the page follows it live")
+    p.add_argument("--results", type=Path,
+                   help="H100 results folder to read directly (default: the bundled replay)")
+
+
+def run(a: argparse.Namespace) -> int:
+    return serve(a.host, a.port, capture=a.capture, follow=a.follow, results=a.results)
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(prog="wattnot dash", description=__doc__)
+    add_args(p)
+    return run(p.parse_args())
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
