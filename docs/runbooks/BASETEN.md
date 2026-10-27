@@ -28,8 +28,11 @@ call). Money is USD.
    the API gives it), USD and latency, plus what the same requests would have cost at
    `xhigh`. It also shows what the tuning run itself cost and how many workload runs it
    takes to pay that back. Energy is an ESTIMATE range from FLOPs.
-3. **Meter audit.** `wattnot cloud audit` compares the receipt's token totals with Baseten's
-   usage endpoint and flags a gap above 2%.
+3. **Audit.** `wattnot cloud audit` (default `--source per-call`) reconciles the receipt with the
+   usage blocks, ids and headers Baseten returned in the recorded replies, and recomputes cost
+   from the list prices in `GET /v1/model_apis`. It is reconciled against Baseten's per-response
+   usage, not the billing meter. `--source meter` compares with the workspace usage endpoint
+   instead, which a managed hackathon key cannot read.
 4. **Cache knobs.** Stable-prefix prompt layout, the `x-session-affinity` header, the cached
    share, an A/B (`cache-ab`) and a cheap half-life probe (`probe`).
 
@@ -60,8 +63,9 @@ wattnot cloud tune --live --classes extract,arith --repeats 1 --budget-usd 1 \
 wattnot cloud tune --live --budget-usd 10 \
   --record data/cloud/recorded-run1.json --out cloud-receipts
 
-# 3. Reconcile with Baseten's meter (needs the key to have usage-read access)
-wattnot cloud audit cloud-receipts/<receipt_id>.json
+# 3. Reconcile with Baseten's per-response usage (offline; needs the recording from step 2)
+wattnot cloud audit cloud-receipts/<receipt_id>.json --recording data/cloud/recorded-run1.json
+#    optional: wattnot cloud audit <receipt> --source meter (needs usage-read access)
 
 # 4. Cache: layout A/B and the half-life probe (the probe waits up to 10 minutes)
 wattnot cloud cache-ab --live
@@ -99,17 +103,22 @@ If you edit the workload, re-run the live step. The workload file is hashed into
 - API: `GET /api/cloud/receipts` and `GET /api/cloud/receipts/{id}?format=html` on the
   read-only API (root holds `cloud-receipts/`).
 
-## What is not verified until the key is set
+## What the first live runs showed (2026-10-27, MEASURED)
 
-| Item | Why it matters | How to check |
-|---|---|---|
-| Prices ($1.25 input, $0.15 cached, $4.25 output per 1M) | From the public model page. Not checked against an invoice. Receipts say so. | Compare one run's USD with the Baseten billing page; if it differs, pass `--confirmed-rates in,cached,out`. |
-| `usage.completion_tokens_details.reasoning_tokens` | The docs say reasoning is inside `completion_tokens`; they don't promise this field. | The receipt marks each class `api`, `estimated_from_text` or `absent`. USD never depends on it. |
-| Cached token count in `usage` | Needed for the cached share and cache A/B. | `cache-ab` shows 0% for every arm if it is missing. |
-| Usage endpoint access | `GET /v1/model_apis/usage` may need a management-scope key. | `audit` prints `NOT_AVAILABLE` with the reason; it never guesses. |
-| Rate limits | An unverified account is about 15 requests per minute. | 429 and 529 back off and retry (up to 4 times). Expect a slow first run. Retries show in the log. |
-| Cache lifetime and reuse | Not documented. | `probe` measures it; read the curve, not a promise. |
-| Energy | We can't see Baseten's GPUs. | Treat it as ESTIMATE: 2 x 42B active parameters x tokens x a J/FLOP range. |
+Receipts and recordings: `reports/cloud-live/`, `data/cloud/recorded-*.json`.
+
+| Item | Result |
+|---|---|
+| Prices ($1.25 input, $0.15 cached, $4.25 output per 1M) | Still the published rates. The usage and billing endpoints refuse this key (403), so nothing was checked against an invoice. Receipts keep saying so. |
+| `usage.completion_tokens_details.reasoning_tokens` | Present on every call, and it is inside `completion_tokens` (reasoning plus answer). |
+| `usage.prompt_tokens_details.cached_tokens` | Present. It moves in blocks of 128 tokens, so a prompt under 256 tokens caches 0 or 128. |
+| Usage endpoint | `GET /v1/model_apis/usage` and `/v1/billing/model_apis` answer 403 `PERMISSION_DENIED`: this key is inference-only. `audit` prints NOT_AVAILABLE. Set `BASETEN_METRICS_KEY` to a metrics-scoped key to run it. |
+| Rate limits | The response headers say 100 requests per minute and 2M tokens per minute on this key. The transport still spaces calls 4 s apart. |
+| Cache lifetime | A 2.2k-token prefix was still 98.7% cached after 10 minutes. |
+| Judge | The model judge returned parseable verdicts on all 8 calls. |
+| Planner | At `low` the model spent about 1.1k to 1.5k reasoning tokens on the order proposal, so the old 1500 cap truncated it. The cap is now 6000. |
+| Runaway `xhigh` | One `xhigh` call used all 32k tokens and hit the length cap (cost $0.136, 46 s). Reference calls can be heavy tailed; use repeats of 5 or more before quoting a saving. |
+| Energy | Still an ESTIMATE. We can't see Baseten's GPUs. |
 
 The meter audit does not read Prometheus (`baseten_model_api_tokens_total`); that path is
 not built.

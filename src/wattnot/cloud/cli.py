@@ -58,6 +58,13 @@ def add_parser(sub) -> None:
     a.add_argument("receipt")
     a.add_argument("--meter-fixture", help="usage JSON file instead of the live endpoint")
     a.add_argument("--tolerance", type=float, default=au.TOLERANCE)
+    a.add_argument("--source", choices=["per-call", "meter"], default="per-call",
+                   help="per-call (default): reconcile with the usage blocks Baseten returned, "
+                        "kept in a recording. meter: Baseten's workspace usage endpoint, which "
+                        "a managed hackathon key cannot read")
+    a.add_argument("--recording", help="per-call: the recorded replies (default: search "
+                                       "data/cloud/recorded-*.json for the one that fits)")
+    a.add_argument("--prices-fixture", help="per-call: catalog JSON instead of GET /v1/model_apis")
     ab = s.add_parser("cache-ab", help="A/B the prompt layout for cached input")
     _src(ab)
     ab.add_argument("--n", type=int, default=8)
@@ -105,10 +112,13 @@ def _load(path: str) -> tuple[dict, list[dict], Path]:
         if cp.is_file() else []
     if rows and rc.calls_digest(rows) != r["calls"]["sha256"]:
         raise ValueError("calls file does not match the receipt")
-    side = p.with_name(f"{r['receipt_id']}.audit.json")
     view_r = dict(r)
-    if side.is_file():
-        view_r["meter_audit"] = json.loads(side.read_text(encoding="utf-8"))
+    found = [json.loads(side.read_text(encoding="utf-8")) for side in
+             (p.with_name(f"{r['receipt_id']}.percall-audit.json"),
+              p.with_name(f"{r['receipt_id']}.audit.json")) if side.is_file()]
+    usable = [a for a in found if a.get("status") != "unavailable"]
+    if usable or found:
+        view_r["meter_audit"] = (usable or found)[0]
     return view_r, rows, p
 
 
@@ -121,8 +131,15 @@ def _tune(a) -> int:
         planner=not a.no_planner, judge=a.judge, affinity=not a.no_affinity,
         rates=_rates(a.confirmed_rates))
     prefix = key_prefix(read_key()) if a.live else None
-    path, r = rn.run(opts, transport, mode, out_dir=a.out, api_key_prefix=prefix,
-                     sign_key=a.sign_key)
+    try:
+        path, r = rn.run(opts, transport, mode, out_dir=a.out, api_key_prefix=prefix,
+                         sign_key=a.sign_key)
+    except BaseException:
+        if rec is not None and rec.replies:  # keep what was paid for, even on a stop
+            rec.save(a.record)
+            print(f"recorded {len(rec.replies)} replies to {a.record} before stopping",
+                  file=sys.stderr)
+        raise
     if rec is not None:
         rec.save(a.record)
         print(f"recorded replies to {a.record} (reasoning text is not stored)")
@@ -147,8 +164,48 @@ def _report(a) -> int:
     return 0
 
 
+def _audit_per_call(a, r: dict, rows: list[dict], p: Path) -> int:
+    from wattnot.cloud import percall as pc
+
+    cands = [a.recording] if getattr(a, "recording", None) else sorted(
+        [*map(str, rn.DEMO_FIXTURE.parent.glob("recorded-*.json")), str(rn.DEMO_FIXTURE)])
+    rec_path, doc = pc.find_recording(rows, cands)
+    simulated = r.get("mode") == "replay-synthetic" or doc.get("source") == "synthetic"
+    if getattr(a, "prices_fixture", None):
+        prices = pc.prices_from_catalog(json.loads(Path(a.prices_fixture).read_text("utf-8")),
+                                        r.get("model", pc.MODEL))
+    elif simulated:
+        prices = None  # a made-up fixture is never priced from the live catalog
+    else:
+        try:
+            prices = pc.fetch_list_prices(r.get("model", pc.MODEL))
+        except CloudError as e:
+            print(f"[NOTE] list prices not fetched: {e}", file=sys.stderr)
+            prices = None
+    res = pc.audit_per_call(r, rows, doc, prices=prices, recording_name=rec_path.name,
+                            tolerance=getattr(a, "tolerance", au.TOLERANCE), simulated=simulated)
+    side = p.with_name(f"{r['receipt_id']}.percall-audit.json")
+    side.write_text(json.dumps(res, indent=2) + "\n", encoding="utf-8")
+    print(f"[{res['label']}] {res['title']}: {res['scope']}")
+    print(f"recording {rec_path.name}; {res['calls_checked']} of {res['calls']} calls checked")
+    for x in res["rows"]:
+        print(f"{x['field']:<44}{x['receipt']:>14,}{x['meter']:>14,}  gap {x['gap_pct']:>6}%  "
+              f"{'ok' if x['ok'] else 'OVER'}")
+    for c in res["checks"]:
+        print(f"  {c['passed']:>4}/{c['total']:<4} {c['check']}")
+    for f in res["failures"][:5]:
+        print(f"  FAILED {f['check']} on {f['call']} {f['detail']}")
+    print(f"{res['price_note']}\n{res['caveat']}")
+    print(f"[{res['label']}] {res['status']}: {res['checks_passed']}/{res['checks_total']} checks "
+          f"({res['match_pct']}% match), worst total gap {res['worst_gap_pct']}%\nwrote {side}")
+    return 0 if res["status"] == "match" else 1
+
+
 def _audit(a, *, receipt: str | None = None, fixture: str | None = None) -> int:
     r, rows, p = _load(receipt or a.receipt)
+    if getattr(a, "source", "per-call") == "per-call" and not (fixture or getattr(
+            a, "meter_fixture", None)):
+        return _audit_per_call(a, r, rows, p)
     fx = fixture or getattr(a, "meter_fixture", None)
     tol = getattr(a, "tolerance", au.TOLERANCE)
     label = None
@@ -193,7 +250,8 @@ def _cache_ab(a) -> int:
     for x in res["arms"]:
         print(f"  {x['arm']:<22} cached {x['cached_share']:>6.1%} (after 1st "
               f"{x['cached_share_after_first']:.1%})  {view.usd(x['usd'])}  "
-              f"saving vs volatile-first {x['saving_vs_volatile_pct']:.1f}%")
+              f"total saving {x['saving_vs_volatile_pct']:.1f}%, input-only saving "
+              f"{x['input_saving_vs_volatile_pct']:.1f}%")
     print(f"wrote {out}")
     return 0
 

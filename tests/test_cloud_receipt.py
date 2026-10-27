@@ -260,7 +260,7 @@ def test_cli_cache_and_probe_demo_are_simulated(tmp_path, capsys):
 def test_cli_audit_without_key_says_not_available(monkeypatch, tmp_path, capsys):
     monkeypatch.delenv("BASETEN_API_KEY", raising=False)
     path, _ = demo(tmp_path)
-    assert cli.main(["cloud", "audit", str(path)]) == 3
+    assert cli.main(["cloud", "audit", str(path), "--source", "meter"]) == 3
     assert "NOT_AVAILABLE" in capsys.readouterr().out
 
 
@@ -303,3 +303,65 @@ def test_recorded_fixture_replays_as_measured_with_the_unconfirmed_price_note(tm
     assert r["label"] == "MEASURED" and r["totals"]["label"] == "MEASURED"
     assert any("invoice" in n for n in r["unverified"])
     assert rc.check(r) == []
+
+
+def test_usage_403_is_reported_with_a_hint_and_never_the_key():
+    import io
+    import urllib.error
+
+    import pytest
+
+    from wattnot.cloud import audit as au
+    from wattnot.cloud.transport import CloudError
+
+    seen = {}
+
+    def opener(req, timeout=0):
+        seen["auth"] = req.get_header("Authorization")
+        body = b'{"code": "PERMISSION_DENIED", "message": "Authorization error"}'
+        raise urllib.error.HTTPError(req.full_url, 403, "no", {}, io.BytesIO(body))
+
+    env = {"BASETEN_API_KEY": "abc.SECRETSECRET"}
+    with pytest.raises(CloudError) as ei:
+        au.fetch_usage("2026-10-27T00:00:00Z", "2026-10-27T01:00:00Z", env=env, opener=opener)
+    msg = str(ei.value)
+    assert "403" in msg and "PERMISSION_DENIED" in msg and "BASETEN_METRICS_KEY" in msg
+    assert "SECRETSECRET" not in msg
+    # with a metrics key set, that key authenticates, but rows are still filtered to the prefix
+    env["BASETEN_METRICS_KEY"] = "met.OTHERSECRET"
+    with pytest.raises(CloudError):
+        au.fetch_usage("2026-10-27T00:00:00Z", "2026-10-27T01:00:00Z", env=env, opener=opener)
+    assert seen["auth"] == "Bearer met.OTHERSECRET"
+
+
+def test_usage_403_says_when_the_metrics_key_is_the_inference_key():
+    import io
+    import urllib.error
+
+    import pytest
+
+    from wattnot.cloud import audit as au
+    from wattnot.cloud.transport import CloudError
+
+    def opener(req, timeout=0):
+        raise urllib.error.HTTPError(req.full_url, 403, "no", {}, io.BytesIO(b"{}"))
+
+    env = {"BASETEN_API_KEY": "abc.SECRETSECRET", "BASETEN_METRICS_KEY": "abc.SECRETSECRET"}
+    with pytest.raises(CloudError, match="same key as the inference key") as ei:
+        au.fetch_usage("2026-10-27T00:00:00Z", "2026-10-27T01:00:00Z", env=env, opener=opener)
+    assert "SECRETSECRET" not in str(ei.value)
+
+
+def test_empty_meter_is_unavailable_not_a_100_percent_mismatch():
+    from wattnot.cloud import audit as au
+
+    rows = [{"status": 200, "prompt_tokens": 100, "cached_tokens": 0, "completion_tokens": 50}]
+    empty = [{"start_time": "2026-10-27T04:00:00Z", "results": []}]
+    res = au.audit({"model": au.MODEL}, rows, empty)
+    assert res["status"] == "unavailable"
+    assert "no usage" in res["reason"]
+    # a meter with data still reconciles
+    full = [{"results": [{"model": au.MODEL, "request_count": 1, "input_tokens": 100,
+                          "cached_input_tokens": 0, "uncached_input_tokens": 100,
+                          "output_tokens": 50}]}]
+    assert au.audit({"model": au.MODEL}, rows, full)["status"] == "match"

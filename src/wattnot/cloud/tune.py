@@ -39,7 +39,7 @@ from wattnot.cloud.prompts import (
     prefix_hash,
     volatile_in_prefix,
 )
-from wattnot.cloud.transport import Reply, Request, Transport
+from wattnot.cloud.transport import CloudError, Reply, Request, Transport
 from wattnot.gates.fixed import fixed_checks
 from wattnot.gates.latency import p99_gate
 from wattnot.runner.trial import percentile
@@ -137,6 +137,13 @@ def parse_reply(reply: Reply, *, req: Request, task_id: str, cls: str, effort: s
                 reply.sent_at, req.tag)
 
 
+MAX_BAD_STREAK = 3
+
+
+def req_tag(c: Call) -> str:
+    return c.tag or f"{c.task_id}|{c.effort}|{c.repeat}"
+
+
 class Runner:
     """Makes the calls, tracks spend, and refuses to cross the stop line."""
 
@@ -154,6 +161,7 @@ class Runner:
         self.calls: list[Call] = []
         self.sessions: dict[str, str] = {}
         self.volatile: set[str] = set()
+        self.bad_streak = 0
 
     def session_for(self, cls: str) -> str | None:
         if not self.affinity:
@@ -184,7 +192,22 @@ class Runner:
                         rates=self.rates, session=session, prefix=prefix_hash(body["messages"]))
         self.spent += c.usd
         self.calls.append(c)
+        self._stop_on_errors(c, reply)
         return c
+
+    def _stop_on_errors(self, c: Call, reply: Reply) -> None:
+        """A live run must not burn money on a broken setup: stop on a hard error or a streak."""
+
+        if c.status == 200:
+            self.bad_streak = 0
+            return
+        err = reply.body.get("error") if isinstance(reply.body, Mapping) else None
+        msg = (err.get("message") if isinstance(err, Mapping) else str(err or ""))[:200]
+        self.bad_streak += 1
+        hard = 400 <= c.status < 500 and c.status not in (408, 429)
+        if hard or self.bad_streak >= MAX_BAD_STREAK:
+            raise CloudError(f"stopping: HTTP {c.status} on {req_tag(c)} "
+                             f"({self.bad_streak} in a row): {msg}")
 
 
 # ---- proposal -------------------------------------------------------------------------------

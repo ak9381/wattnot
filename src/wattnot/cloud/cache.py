@@ -25,7 +25,7 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from wattnot.cloud import MODEL
-from wattnot.cloud.pricing import Rates
+from wattnot.cloud.pricing import Rates, cost_usd
 from wattnot.cloud.prompts import affinity_headers, build_messages, cached_share, new_session_id
 from wattnot.cloud.transport import Request, Transport
 from wattnot.cloud.tune import parse_reply
@@ -76,9 +76,15 @@ def cache_ab(transport: Transport, rates: Rates, *, doc: str | None = None, n: i
                      "cached_share_after_first": cached_share(
                          sum(c.prompt for c in after_first), sum(c.cached for c in after_first)),
                      "usd": round(sum(c.usd for c in calls), 8),
+                     # input side only: output length varies call to call and is not a cache effect
+                     "input_usd": round(sum(cost_usd(rates, c.prompt, c.cached, 0)
+                                            for c in calls), 8),
                      "latency_p50_s": sorted(c.latency_s for c in calls)[n // 2]})
     base = arms[0]["usd"]
+    base_in = arms[0]["input_usd"]
     for a in arms:
+        a["input_saving_vs_volatile_pct"] = (round(100 * (base_in - a["input_usd"]) / base_in, 2)
+                                             if base_in else 0.0)
         a["saving_vs_volatile_pct"] = round(100 * (base - a["usd"]) / base, 2) if base else 0.0
     return {"label": "MEASURED", "arms": arms, "n_per_arm": n, "nonce": nonce}
 

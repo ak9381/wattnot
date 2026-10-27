@@ -11,6 +11,7 @@ passing --record to a live `wattnot cloud tune`.
 
 from __future__ import annotations
 
+import itertools
 import json
 import random
 import sys
@@ -38,6 +39,9 @@ ORDERS = {"extract": ["low", "medium", "high"], "classify": ["low", "medium", "h
           "logic": ["high", "medium", "low"]}
 
 
+_IDS = itertools.count(1)
+
+
 def reply(status, content, prompt, completion, reasoning, latency, *, cached=0,
           finish="stop", rlen=None):
     msg = {"role": "assistant", "content": content}
@@ -47,7 +51,8 @@ def reply(status, content, prompt, completion, reasoning, latency, *, cached=0,
     return {"status": status, "latency_s": round(latency, 3), "retries": 0,
             "headers": {"x-ratelimit-remaining-requests": "110",
                         "x-ratelimit-remaining-tokens": "480000"},
-            "body": {"model": MODEL, "choices": [{"message": msg, "finish_reason": finish}],
+            "body": {"id": f"chatcmpl-sim-{next(_IDS):06d}", "model": MODEL,
+                     "choices": [{"message": msg, "finish_reason": finish}],
                      "usage": {"prompt_tokens": prompt, "completion_tokens": completion,
                                "total_tokens": prompt + completion,
                                "prompt_tokens_details": {"cached_tokens": cached},

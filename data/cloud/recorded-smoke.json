@@ -1,0 +1,580 @@
+{
+ "format": "wattnot.cloud-fixture/1",
+ "model": "meta-models/muse-spark-open-1026",
+ "recorded_at": "2026-10-27T09:44:53+0530",
+ "replies": {
+  "arith-1|low|0": {
+   "body": {
+    "choices": [
+     {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+       "content": "ANSWER: 27.65",
+       "reasoning_chars": 558,
+       "reasoning_sha256": "aa411b1e8bf1e6b029cafea4ba81ebc387e8ac0ddf9b3fe096caf93db8f32d43",
+       "role": "assistant"
+      }
+     }
+    ],
+    "created": 1793074483,
+    "id": "chatcmpl-70dd619fb4754022977bbdee9cf353af",
+    "model": "meta-models/muse-spark-open-1026",
+    "object": "chat.completion",
+    "usage": {
+     "completion_tokens": 180,
+     "completion_tokens_details": {
+      "accepted_prediction_tokens": 137,
+      "audio_tokens": 0,
+      "reasoning_tokens": 164,
+      "rejected_prediction_tokens": 164
+     },
+     "prompt_tokens": 210,
+     "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cached_tokens": 0
+     },
+     "total_tokens": 390
+    }
+   },
+   "headers": {
+    "x-ratelimit-limit-requests": "100",
+    "x-ratelimit-limit-tokens": "2000000",
+    "x-ratelimit-remaining-requests": "50",
+    "x-ratelimit-remaining-tokens": "2000000"
+   },
+   "latency_s": 1.6706,
+   "retries": 0,
+   "status": 200
+  },
+  "arith-1|xhigh|0": {
+   "body": {
+    "choices": [
+     {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+       "content": "ANSWER: 27.65",
+       "reasoning_chars": 1822,
+       "reasoning_sha256": "b4c08b3e8a4c9fdf24ee63f0b85d310ac81b3de773350ab89e3007821738098e",
+       "role": "assistant"
+      }
+     }
+    ],
+    "created": 1793074471,
+    "id": "chatcmpl-529451a490eb43c29e8635bc62808865",
+    "model": "meta-models/muse-spark-open-1026",
+    "object": "chat.completion",
+    "usage": {
+     "completion_tokens": 482,
+     "completion_tokens_details": {
+      "accepted_prediction_tokens": 361,
+      "audio_tokens": 0,
+      "reasoning_tokens": 466,
+      "rejected_prediction_tokens": 493
+     },
+     "prompt_tokens": 210,
+     "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cached_tokens": 128
+     },
+     "total_tokens": 692
+    }
+   },
+   "headers": {
+    "x-ratelimit-limit-requests": "100",
+    "x-ratelimit-limit-tokens": "2000000",
+    "x-ratelimit-remaining-requests": "50",
+    "x-ratelimit-remaining-tokens": "2000000"
+   },
+   "latency_s": 2.6634,
+   "retries": 0,
+   "status": 200
+  },
+  "arith-2|low|0": {
+   "body": {
+    "choices": [
+     {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+       "content": "ANSWER: 2400",
+       "reasoning_chars": 453,
+       "reasoning_sha256": "c493f33f374fee0c36f0ef3c8a7379e6807c2239db2c96675d94ba837acbe5ca",
+       "role": "assistant"
+      }
+     }
+    ],
+    "created": 1793074487,
+    "id": "chatcmpl-0990b83eabfe48f9aaaca1a308f3d6cf",
+    "model": "meta-models/muse-spark-open-1026",
+    "object": "chat.completion",
+    "usage": {
+     "completion_tokens": 142,
+     "completion_tokens_details": {
+      "accepted_prediction_tokens": 105,
+      "audio_tokens": 0,
+      "reasoning_tokens": 127,
+      "rejected_prediction_tokens": 154
+     },
+     "prompt_tokens": 207,
+     "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cached_tokens": 128
+     },
+     "total_tokens": 349
+    }
+   },
+   "headers": {
+    "x-ratelimit-limit-requests": "100",
+    "x-ratelimit-limit-tokens": "2000000",
+    "x-ratelimit-remaining-requests": "50",
+    "x-ratelimit-remaining-tokens": "2000000"
+   },
+   "latency_s": 1.8033,
+   "retries": 0,
+   "status": 200
+  },
+  "arith-2|xhigh|0": {
+   "body": {
+    "choices": [
+     {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+       "content": "ANSWER: 2400",
+       "reasoning_chars": 1586,
+       "reasoning_sha256": "3d0d797f9140057d5cc29e81c0dd095b769ed27266a248d1a97d74a039e16180",
+       "role": "assistant"
+      }
+     }
+    ],
+    "created": 1793074476,
+    "id": "chatcmpl-0fd5635d21e24b42b0b719900e2259ff",
+    "model": "meta-models/muse-spark-open-1026",
+    "object": "chat.completion",
+    "usage": {
+     "completion_tokens": 410,
+     "completion_tokens_details": {
+      "accepted_prediction_tokens": 303,
+      "audio_tokens": 0,
+      "reasoning_tokens": 395,
+      "rejected_prediction_tokens": 446
+     },
+     "prompt_tokens": 207,
+     "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cached_tokens": 0
+     },
+     "total_tokens": 617
+    }
+   },
+   "headers": {
+    "x-ratelimit-limit-requests": "100",
+    "x-ratelimit-limit-tokens": "2000000",
+    "x-ratelimit-remaining-requests": "50",
+    "x-ratelimit-remaining-tokens": "2000000"
+   },
+   "latency_s": 2.6619,
+   "retries": 0,
+   "status": 200
+  },
+  "arith-3|low|0": {
+   "body": {
+    "choices": [
+     {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+       "content": "ANSWER: 20%",
+       "reasoning_chars": 1069,
+       "reasoning_sha256": "1944d4064eb55366d16cc7aa6b7eb40a9be0762aa6a23c3d389d392e99a1cd5e",
+       "role": "assistant"
+      }
+     }
+    ],
+    "created": 1793074492,
+    "id": "chatcmpl-2f0aca7c459a4672818ebf37c20032e3",
+    "model": "meta-models/muse-spark-open-1026",
+    "object": "chat.completion",
+    "usage": {
+     "completion_tokens": 281,
+     "completion_tokens_details": {
+      "accepted_prediction_tokens": 211,
+      "audio_tokens": 0,
+      "reasoning_tokens": 266,
+      "rejected_prediction_tokens": 286
+     },
+     "prompt_tokens": 198,
+     "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cached_tokens": 0
+     },
+     "total_tokens": 479
+    }
+   },
+   "headers": {
+    "x-ratelimit-limit-requests": "100",
+    "x-ratelimit-limit-tokens": "2000000",
+    "x-ratelimit-remaining-requests": "50",
+    "x-ratelimit-remaining-tokens": "2000000"
+   },
+   "latency_s": 2.2611,
+   "retries": 0,
+   "status": 200
+  },
+  "arith-3|xhigh|0": {
+   "body": {
+    "choices": [
+     {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+       "content": "ANSWER: 20%",
+       "reasoning_chars": 1394,
+       "reasoning_sha256": "e07a910e137e08383e3cee3a501c04f4a51a987845efa81962044c1d7b0597b2",
+       "role": "assistant"
+      }
+     }
+    ],
+    "created": 1793074480,
+    "id": "chatcmpl-eb7ddccbcb5b46dda044fae93ef9631a",
+    "model": "meta-models/muse-spark-open-1026",
+    "object": "chat.completion",
+    "usage": {
+     "completion_tokens": 371,
+     "completion_tokens_details": {
+      "accepted_prediction_tokens": 272,
+      "audio_tokens": 0,
+      "reasoning_tokens": 356,
+      "rejected_prediction_tokens": 421
+     },
+     "prompt_tokens": 198,
+     "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cached_tokens": 0
+     },
+     "total_tokens": 569
+    }
+   },
+   "headers": {
+    "x-ratelimit-limit-requests": "100",
+    "x-ratelimit-limit-tokens": "2000000",
+    "x-ratelimit-remaining-requests": "50",
+    "x-ratelimit-remaining-tokens": "2000000"
+   },
+   "latency_s": 2.5779,
+   "retries": 0,
+   "status": 200
+  },
+  "extract-1|low|0": {
+   "body": {
+    "choices": [
+     {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+       "content": "ANSWER: 48213|$67.40",
+       "reasoning_chars": 1220,
+       "reasoning_sha256": "3738e0fd47c466e16b3b8005eaaf8f00e90effad993fb04f324126d9ec58ccf6",
+       "role": "assistant"
+      }
+     }
+    ],
+    "created": 1793074459,
+    "id": "chatcmpl-e0088ef8323741b197155e158e5a57dd",
+    "model": "meta-models/muse-spark-open-1026",
+    "object": "chat.completion",
+    "usage": {
+     "completion_tokens": 309,
+     "completion_tokens_details": {
+      "accepted_prediction_tokens": 228,
+      "audio_tokens": 0,
+      "reasoning_tokens": 291,
+      "rejected_prediction_tokens": 339
+     },
+     "prompt_tokens": 214,
+     "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cached_tokens": 0
+     },
+     "total_tokens": 523
+    }
+   },
+   "headers": {
+    "x-ratelimit-limit-requests": "100",
+    "x-ratelimit-limit-tokens": "2000000",
+    "x-ratelimit-remaining-requests": "50",
+    "x-ratelimit-remaining-tokens": "2000000"
+   },
+   "latency_s": 2.0563,
+   "retries": 0,
+   "status": 200
+  },
+  "extract-1|xhigh|0": {
+   "body": {
+    "choices": [
+     {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+       "content": "ANSWER: 48213|$67.40",
+       "reasoning_chars": 2495,
+       "reasoning_sha256": "29de83bd41891a91eb1a7dd933cdb6ed08a2d82ad2fd9fa5603a289f45294004",
+       "role": "assistant"
+      }
+     }
+    ],
+    "created": 1793074447,
+    "id": "chatcmpl-e2f212b4d06d4bb290431035558a5c07",
+    "model": "meta-models/muse-spark-open-1026",
+    "object": "chat.completion",
+    "usage": {
+     "completion_tokens": 648,
+     "completion_tokens_details": {
+      "accepted_prediction_tokens": 487,
+      "audio_tokens": 0,
+      "reasoning_tokens": 630,
+      "rejected_prediction_tokens": 640
+     },
+     "prompt_tokens": 214,
+     "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cached_tokens": 0
+     },
+     "total_tokens": 862
+    }
+   },
+   "headers": {
+    "x-ratelimit-limit-requests": "100",
+    "x-ratelimit-limit-tokens": "2000000",
+    "x-ratelimit-remaining-requests": "50",
+    "x-ratelimit-remaining-tokens": "2000000"
+   },
+   "latency_s": 3.1157,
+   "retries": 0,
+   "status": 200
+  },
+  "extract-2|low|0": {
+   "body": {
+    "choices": [
+     {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+       "content": "ANSWER: INV-2209|2026-11-14",
+       "reasoning_chars": 778,
+       "reasoning_sha256": "1a248455c1533482fac14442c1f5aebcd0492583b03662e7718ba6054a685b12",
+       "role": "assistant"
+      }
+     }
+    ],
+    "created": 1793074464,
+    "id": "chatcmpl-5d53f73816704d2dab2e71163713c31e",
+    "model": "meta-models/muse-spark-open-1026",
+    "object": "chat.completion",
+    "usage": {
+     "completion_tokens": 224,
+     "completion_tokens_details": {
+      "accepted_prediction_tokens": 173,
+      "audio_tokens": 0,
+      "reasoning_tokens": 201,
+      "rejected_prediction_tokens": 184
+     },
+     "prompt_tokens": 215,
+     "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cached_tokens": 0
+     },
+     "total_tokens": 439
+    }
+   },
+   "headers": {
+    "x-ratelimit-limit-requests": "100",
+    "x-ratelimit-limit-tokens": "2000000",
+    "x-ratelimit-remaining-requests": "50",
+    "x-ratelimit-remaining-tokens": "2000000"
+   },
+   "latency_s": 2.0468,
+   "retries": 0,
+   "status": 200
+  },
+  "extract-2|xhigh|0": {
+   "body": {
+    "choices": [
+     {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+       "content": "ANSWER: INV-2209|2026-11-14",
+       "reasoning_chars": 1917,
+       "reasoning_sha256": "6f196450cd639c49bb0708699ec78678c13a860a8778c5e09d12797057a329ed",
+       "role": "assistant"
+      }
+     }
+    ],
+    "created": 1793074452,
+    "id": "chatcmpl-abf3bdfb04b9475d9b310e4fd602186e",
+    "model": "meta-models/muse-spark-open-1026",
+    "object": "chat.completion",
+    "usage": {
+     "completion_tokens": 485,
+     "completion_tokens_details": {
+      "accepted_prediction_tokens": 361,
+      "audio_tokens": 0,
+      "reasoning_tokens": 462,
+      "rejected_prediction_tokens": 514
+     },
+     "prompt_tokens": 215,
+     "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cached_tokens": 0
+     },
+     "total_tokens": 700
+    }
+   },
+   "headers": {
+    "x-ratelimit-limit-requests": "100",
+    "x-ratelimit-limit-tokens": "2000000",
+    "x-ratelimit-remaining-requests": "50",
+    "x-ratelimit-remaining-tokens": "2000000"
+   },
+   "latency_s": 2.7917,
+   "retries": 0,
+   "status": 200
+  },
+  "extract-3|low|0": {
+   "body": {
+    "choices": [
+     {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+       "content": "ANSWER: T-7731|P2",
+       "reasoning_chars": 706,
+       "reasoning_sha256": "1bbb9dd36e306ada578f2dc87eb5af4762ed19ede8a3be3d88acd7e05f330c78",
+       "role": "assistant"
+      }
+     }
+    ],
+    "created": 1793074467,
+    "id": "chatcmpl-b51d6b42258a44cda49cf01a4024cb54",
+    "model": "meta-models/muse-spark-open-1026",
+    "object": "chat.completion",
+    "usage": {
+     "completion_tokens": 184,
+     "completion_tokens_details": {
+      "accepted_prediction_tokens": 134,
+      "audio_tokens": 0,
+      "reasoning_tokens": 165,
+      "rejected_prediction_tokens": 216
+     },
+     "prompt_tokens": 204,
+     "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cached_tokens": 128
+     },
+     "total_tokens": 388
+    }
+   },
+   "headers": {
+    "x-ratelimit-limit-requests": "100",
+    "x-ratelimit-limit-tokens": "2000000",
+    "x-ratelimit-remaining-requests": "50",
+    "x-ratelimit-remaining-tokens": "2000000"
+   },
+   "latency_s": 1.797,
+   "retries": 0,
+   "status": 200
+  },
+  "extract-3|xhigh|0": {
+   "body": {
+    "choices": [
+     {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+       "content": "ANSWER: T-7731|P2",
+       "reasoning_chars": 1803,
+       "reasoning_sha256": "994732b6e16b7b21fe854935beb5466ed69d15bac3f5ed4dacc752bc866b90f5",
+       "role": "assistant"
+      }
+     }
+    ],
+    "created": 1793074455,
+    "id": "chatcmpl-1fcb24fbe8a1469c9fc9fbf48906f601",
+    "model": "meta-models/muse-spark-open-1026",
+    "object": "chat.completion",
+    "usage": {
+     "completion_tokens": 425,
+     "completion_tokens_details": {
+      "accepted_prediction_tokens": 325,
+      "audio_tokens": 0,
+      "reasoning_tokens": 406,
+      "rejected_prediction_tokens": 375
+     },
+     "prompt_tokens": 204,
+     "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cached_tokens": 0
+     },
+     "total_tokens": 629
+    }
+   },
+   "headers": {
+    "x-ratelimit-limit-requests": "100",
+    "x-ratelimit-limit-tokens": "2000000",
+    "x-ratelimit-remaining-requests": "49",
+    "x-ratelimit-remaining-tokens": "2000000"
+   },
+   "latency_s": 2.3546,
+   "retries": 0,
+   "status": 200
+  },
+  "propose": {
+   "body": {
+    "choices": [
+     {
+      "finish_reason": "length",
+      "index": 0,
+      "message": {
+       "content": "{\"orders\":{\"extract\":[\"low\",\"medium\",\"high\"],\"arith\":[\"medium\",\"high\",\"low\"]},\"note\":\"extract passes at low so low->medium->high;",
+       "reasoning_chars": 6533,
+       "reasoning_sha256": "b12746c555bdf8d6962cdb4345bf5f10741ca5641144b0ee4ca448d2c56c3a5b",
+       "role": "assistant"
+      }
+     }
+    ],
+    "created": 1793074441,
+    "id": "chatcmpl-4ab73a0598fb4059b80c0ad80cfc55b6",
+    "model": "meta-models/muse-spark-open-1026",
+    "object": "chat.completion",
+    "usage": {
+     "completion_tokens": 1500,
+     "completion_tokens_details": {
+      "accepted_prediction_tokens": 1048,
+      "audio_tokens": 0,
+      "reasoning_tokens": 1457,
+      "rejected_prediction_tokens": 2116
+     },
+     "prompt_tokens": 279,
+     "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cached_tokens": 0
+     },
+     "total_tokens": 1779
+    }
+   },
+   "headers": {
+    "x-ratelimit-limit-requests": "100",
+    "x-ratelimit-limit-tokens": "2000000",
+    "x-ratelimit-remaining-requests": "50",
+    "x-ratelimit-remaining-tokens": "2000000"
+   },
+   "latency_s": 6.0332,
+   "retries": 0,
+   "status": 200
+  }
+ },
+ "source": "recorded"
+}

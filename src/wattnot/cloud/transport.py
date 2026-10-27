@@ -64,8 +64,14 @@ def scrub(text: str, key: str | None) -> str:
     return text.replace(key, "[redacted]") if key else text
 
 
+def read_env(name: str, env: Mapping[str, str] | None = None) -> str:
+    """The one place the environment is read."""
+
+    return (env if env is not None else os.environ).get(name, "").strip()
+
+
 def read_key(env: Mapping[str, str] | None = None) -> str:
-    key = (env if env is not None else os.environ).get(KEY_ENV, "").strip()
+    key = read_env(KEY_ENV, env)
     if not key:
         raise MissingKey(f"{KEY_ENV} is not set. Export it in your shell; it is never read from "
                          "a file or a flag.")
@@ -82,12 +88,26 @@ def key_prefix(key: str) -> str | None:
 class LiveTransport:
     def __init__(self, *, base_url: str = BASE_URL, timeout_s: float = 600,
                  max_retries: int = 4, sleep: Callable[[float], None] = time.sleep,
-                 env: Mapping[str, str] | None = None) -> None:
+                 env: Mapping[str, str] | None = None, min_interval_s: float = 4.0,
+                 clock: Callable[[], float] = time.monotonic) -> None:
         self._key = read_key(env)
         self.base_url = base_url.rstrip("/")
         self.timeout_s = timeout_s
         self.max_retries = max_retries
         self._sleep = sleep
+        # An unverified account gets about 15 requests a minute: space calls this far apart.
+        self.min_interval_s = min_interval_s
+        self._clock = clock
+        self._last_start: float | None = None
+
+    def _throttle(self) -> None:
+        now = self._clock()
+        if self._last_start is not None:
+            wait = self._last_start + self.min_interval_s - now
+            if wait > 0:
+                self._sleep(wait)
+                now = self._clock()
+        self._last_start = now
 
     def __repr__(self) -> str:  # never show the key
         return f"LiveTransport(base_url={self.base_url!r})"
@@ -105,6 +125,7 @@ class LiveTransport:
                    **req.headers}
         retries = 0
         while True:
+            self._throttle()
             t0 = time.time()
             status, raw, hdrs = self._once(data, headers)
             latency = time.time() - t0

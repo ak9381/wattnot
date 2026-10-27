@@ -102,7 +102,7 @@ def test_missing_key_message_has_no_secret_and_names_the_variable():
 
 
 def test_live_transport_hides_key_and_refuses_other_models(monkeypatch):
-    t = tr.LiveTransport(env={"BASETEN_API_KEY": KEY})
+    t = tr.LiveTransport(min_interval_s=0, env={"BASETEN_API_KEY": KEY})
     assert KEY not in repr(t) and "SECRET" not in repr(t)
     assert tr.key_prefix(KEY) == "abc123" and tr.key_prefix("nodots") is None
     monkeypatch.setattr(tr.urllib.request, "urlopen",
@@ -120,7 +120,7 @@ def test_live_transport_sends_bearer_and_parses(monkeypatch):
         return FakeResp(200, {"choices": []}, {"x-ratelimit-remaining-requests": "9"})
 
     monkeypatch.setattr(tr.urllib.request, "urlopen", fake)
-    t = tr.LiveTransport(env={"BASETEN_API_KEY": KEY})
+    t = tr.LiveTransport(min_interval_s=0, env={"BASETEN_API_KEY": KEY})
     rep = t(tr.Request("t", {"model": MODEL}, {"x-session-affinity": "s9"}))
     assert rep.status == 200 and rep.headers == {"x-ratelimit-remaining-requests": "9"}
     assert seen["auth"] == f"Bearer {KEY}" and seen["url"] == BASE_URL + "/chat/completions"
@@ -137,7 +137,7 @@ def test_429_backs_off_then_succeeds_and_counts_retries(monkeypatch):
         return FakeResp(200, {"ok": 1})
 
     monkeypatch.setattr(tr.urllib.request, "urlopen", fake)
-    t = tr.LiveTransport(env={"BASETEN_API_KEY": KEY}, sleep=waits.append)
+    t = tr.LiveTransport(min_interval_s=0, env={"BASETEN_API_KEY": KEY}, sleep=waits.append)
     rep = t(_req())
     assert rep.status == 200 and rep.retries == 2 and waits == [2.0, 2.0]
 
@@ -147,7 +147,7 @@ def test_errors_never_carry_the_key(monkeypatch):
         raise urllib.error.URLError(f"cannot reach host with {KEY}")
 
     monkeypatch.setattr(tr.urllib.request, "urlopen", boom)
-    t = tr.LiveTransport(env={"BASETEN_API_KEY": KEY})
+    t = tr.LiveTransport(min_interval_s=0, env={"BASETEN_API_KEY": KEY})
     with pytest.raises(tr.CloudError) as e:
         t(_req())
     assert KEY not in str(e.value) and "SECRET" not in str(e.value)
@@ -171,3 +171,25 @@ def test_recorder_drops_reasoning_text_and_fixture_replays(tmp_path):
         tr.FixtureTransport.load(p)(tr.Request("missing", {}))
     with pytest.raises(tr.CloudError, match="not a cloud fixture"):
         tr.FixtureTransport({"format": "x"})
+
+
+def test_live_transport_spaces_calls_apart():
+    now = [100.0]
+    waits: list[float] = []
+
+    def sleep(s):
+        waits.append(s)
+        now[0] += s
+
+    t = tr.LiveTransport(env={"BASETEN_API_KEY": KEY}, sleep=sleep, clock=lambda: now[0],
+                         min_interval_s=4.0)
+    t._once = lambda data, headers: (200, b"{}", {})
+    req = tr.Request("a", {"model": tr.MODEL})
+    t(req)
+    assert waits == []  # the first call goes straight out
+    now[0] += 1.0
+    t(req)
+    assert waits == [3.0]  # the second waits out the rest of the 4 s gap
+    now[0] += 10.0
+    t(req)
+    assert waits == [3.0]  # already far enough apart

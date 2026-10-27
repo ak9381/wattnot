@@ -1,0 +1,46 @@
+{
+  "label": "MEASURED",
+  "arms": [
+    {
+      "arm": "volatile-first",
+      "calls": 8,
+      "prompt_tokens": 17781,
+      "cached_tokens": 0,
+      "cached_share": 0.0,
+      "cached_share_after_first": 0.0,
+      "usd": 0.03110875,
+      "latency_p50_s": 2.235255002975464,
+      "saving_vs_volatile_pct": 0.0,
+      "input_usd": 0.02222625,
+      "input_saving_vs_volatile_pct": 0.0
+    },
+    {
+      "arm": "stable-first",
+      "calls": 8,
+      "prompt_tokens": 17661,
+      "cached_tokens": 15232,
+      "cached_share": 0.8625,
+      "cached_share_after_first": 0.9856,
+      "usd": 0.01248655,
+      "latency_p50_s": 2.0403151512145996,
+      "saving_vs_volatile_pct": 59.86,
+      "input_usd": 0.00532105,
+      "input_saving_vs_volatile_pct": 76.06
+    },
+    {
+      "arm": "stable-first+affinity",
+      "calls": 8,
+      "prompt_tokens": 17685,
+      "cached_tokens": 15232,
+      "cached_share": 0.8613,
+      "cached_share_after_first": 0.9842,
+      "usd": 0.01476905,
+      "latency_p50_s": 2.3431804180145264,
+      "saving_vs_volatile_pct": 52.52,
+      "input_usd": 0.00535105,
+      "input_saving_vs_volatile_pct": 75.92
+    }
+  ],
+  "n_per_arm": 8,
+  "nonce": "cf5d01e9"
+}

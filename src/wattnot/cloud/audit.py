@@ -26,8 +26,9 @@ from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 
 from wattnot.cloud import MGMT_URL, MODEL
-from wattnot.cloud.transport import CloudError, key_prefix, read_key, scrub
+from wattnot.cloud.transport import CloudError, key_prefix, read_env, read_key, scrub
 
+METRICS_KEY_ENV = "BASETEN_METRICS_KEY"
 TOLERANCE = 0.02
 USAGE_PATH = "/v1/model_apis/usage"
 FIELDS = (("requests", "request_count"), ("input_tokens", "input_tokens"),
@@ -92,6 +93,14 @@ def window_for(receipt: Mapping, pad_min: int = 2) -> tuple[str, str]:
     return start.strftime(fmt), end.astimezone(UTC).strftime(fmt)
 
 
+def _why(e: urllib.error.HTTPError, key: str) -> str:
+    try:
+        doc = json.loads(e.read())
+        return scrub(str(doc.get("code") or doc.get("message") or "")[:60], key)
+    except (ValueError, OSError, AttributeError):
+        return "no detail"
+
+
 def fetch_usage(start: str, end: str, *, env: Mapping[str, str] | None = None,
                 base: str = MGMT_URL, timeout_s: float = 60,
                 opener: Callable | None = None) -> list[dict]:
@@ -101,6 +110,11 @@ def fetch_usage(start: str, end: str, *, env: Mapping[str, str] | None = None,
     """
 
     key = read_key(env)
+    # The inference key is usually not allowed to read usage. A metrics-scoped key (type
+    # WORKSPACE_EXPORT_METRICS) can be passed in BASETEN_METRICS_KEY; the usage rows are still
+    # filtered to the inference key's prefix.
+    auth = read_env(METRICS_KEY_ENV, env) or key
+    same_key = auth == key
     params: list[tuple[str, str]] = [("start_time", start), ("end_time", end),
                                      ("bucket_width", "1m"), ("limit", "1440"),
                                      ("group_by", "model")]
@@ -112,12 +126,18 @@ def fetch_usage(start: str, end: str, *, env: Mapping[str, str] | None = None,
     cursor = None
     while True:
         u = url + (f"&cursor={urllib.parse.quote(cursor)}" if cursor else "")
-        req = urllib.request.Request(u, headers={"Authorization": f"Bearer {key}"})
+        req = urllib.request.Request(u, headers={"Authorization": f"Bearer {auth}"})
         try:
             with (opener or urllib.request.urlopen)(req, timeout=timeout_s) as resp:  # noqa: S310
                 doc = json.loads(resp.read())
         except urllib.error.HTTPError as e:
-            raise CloudError(f"usage endpoint answered HTTP {e.code}") from None
+            raise CloudError(f"usage endpoint answered HTTP {e.code}"
+                             + (f" ({_why(e, auth)}); " + (
+                                 f"{METRICS_KEY_ENV} is the same key as the inference key, so it "
+                                 "has no extra scope. Create a metrics-scoped key (type "
+                                 "WORKSPACE_EXPORT_METRICS) and set it there"
+                                 if same_key else "this key cannot read usage; check its scope")
+                                if e.code in (401, 403) else "")) from None
         except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
             raise CloudError(scrub(f"usage endpoint failed: {type(e).__name__}", key)) from None
         items += doc.get("items") or []
@@ -132,7 +152,13 @@ def audit(receipt: Mapping, call_rows: Sequence[Mapping], meter_items: Sequence[
     if meter_items is None:
         return unavailable(why_unavailable or "no meter data")
     ours = totals_from_calls(call_rows)
-    res = reconcile(ours, sum_meter(meter_items, model=receipt.get("model", MODEL)),
-                    tolerance=tolerance)
+    meter = sum_meter(meter_items, model=receipt.get("model", MODEL))
+    if ours["requests"] and not any(meter.values()):
+        # An empty meter is not a 100% mismatch: the key may belong to another workspace, or
+        # the usage may not have landed yet. Say that, and do not call it a match or a gap.
+        return unavailable("the usage endpoint answered but returned no usage for this window "
+                           "or model; the metrics key is probably in a different workspace "
+                           "than the key that made the calls, or the meter has not caught up")
+    res = reconcile(ours, meter, tolerance=tolerance)
     res["model"] = receipt.get("model", MODEL)
     return res

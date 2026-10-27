@@ -89,8 +89,14 @@ def summarize_classes(classes: Mapping[str, Sequence]) -> dict:
         for name, items in classes.items()}}
 
 
+# Measured live: even at `low` the model spent ~1.5k reasoning tokens on this small JSON task, so
+# a 1500 cap cut the answer off (finish_reason length) and the planner fell back every time.
+PROPOSE_MAX_TOKENS = 6000
+
+
 def proposal_body(summary: Mapping) -> dict:
-    return {"model": MODEL, "reasoning_effort": "low", "max_tokens": 1500, "temperature": 0,
+    return {"model": MODEL, "reasoning_effort": "low", "max_tokens": PROPOSE_MAX_TOKENS,
+            "temperature": 0,
             "messages": [{"role": "system", "content": PROPOSE_SYSTEM},
                          {"role": "user", "content": json.dumps(summary, separators=(",", ":"))}]}
 
