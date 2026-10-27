@@ -2,7 +2,28 @@
 export const LABELS = ["MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "REPLAY", "ADVICE", "SAMPLE"];
 
 export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-export const badge = (t) => (t ? `<span class="b b-${esc(String(t).toLowerCase())}">${esc(t)}</span>` : "");
+// Label badge: a small coloured dot, no text. The label itself stays in
+// title/aria-label for accessibility; visible numbers carry their own colour
+// via cnum() instead of a text badge.
+export const badge = (t) => (t ? `<span class="b b-${esc(String(t).toLowerCase())}" title="${esc(t)}" aria-label="${esc(t)}"></span>` : "");
+
+// Number coloured by its label: measured = cyan, estimate = amber,
+// simulated = violet, mock = grey, replay = soft green. The label stays in
+// title/aria-label so no text badge is needed next to the number.
+const LABEL_CLASS = { MEASURED: "n-measured", ESTIMATE: "n-estimate", SIMULATED: "n-simulated", MOCK: "n-mock", REPLAY: "n-replay", ADVICE: "n-advice", SAMPLE: "n-mock" };
+export const cnum = (text, tag) => {
+  const k = String(tag || "").toUpperCase();
+  return `<span class="n ${LABEL_CLASS[k] || "n-mock"}"${tag ? ` title="${esc(tag)}" aria-label="${esc(tag)}"` : ""}>${text}</span>`;
+};
+
+// One compact colour legend per view. Plain text plus the same colours the
+// numbers use; no per-number badges needed beside it.
+export const legendHtml = () => `<div class="legend" role="note" aria-label="Number colours">`
+  + `<span><i class="dot n-measured"></i>measured</span>`
+  + `<span><i class="dot n-estimate"></i>estimate</span>`
+  + `<span><i class="dot n-simulated"></i>simulated</span>`
+  + `<span><i class="dot n-mock"></i>mock</span>`
+  + `<span><i class="dot n-replay"></i>replay</span></div>`;
 
 export function num(v, d = 2) {
   if (v == null || Number.isNaN(+v)) return "n/a";

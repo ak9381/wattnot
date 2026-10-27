@@ -1,4 +1,4 @@
-import { esc, badge, num, stageState, ledgerRows, run2Rows, verifySummary, phaseLabel } from "./v2lib.js";
+import { esc, badge, num, cnum, legendHtml, stageState, ledgerRows, run2Rows, verifySummary, phaseLabel } from "./v2lib.js";
 import { init as initPanCanvas } from "./pancanvas.js";
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -58,11 +58,12 @@ function renderHome() {
   <p>It measures a GPU, tries a safer setting, checks the answers did not get worse, asks a person, applies it, and signs a receipt. Every one of those steps is on this page. Nothing is hidden.</p></div>
   <button class="btn pri noprint" id="goCfg">Configure a run →</button></div>
   <div class="kpis">
-    <div class="kpi glass"><div class="v cy">21%</div><div class="c">less energy per request, Muse Glimmer 30B at a 400 W cap ${badge("MEASURED")}</div></div>
-    <div class="kpi glass"><div class="v tl">+3.7%</div><div class="c">slowest 1% got slower, inside the 10% limit ${badge("MEASURED")}</div></div>
-    <div class="kpi glass"><div class="v pk">67%</div><div class="c">fewer agent tokens when a harness's stop rule misses ${badge("MEASURED")}</div></div>
-    <div class="kpi glass"><div class="v am">$${num(led.total_usd)}</div><div class="c">Meta API spend recorded in this bundle, ${num(led.calls, 0)} calls ${badge("MEASURED")}</div></div>
+    <div class="kpi glass"><div class="v">${cnum("21%", "MEASURED")}</div><div class="c">less energy per request, Muse Glimmer 30B at a 400 W cap ${badge("MEASURED")}</div></div>
+    <div class="kpi glass"><div class="v">${cnum("+3.7%", "MEASURED")}</div><div class="c">slowest 1% got slower, inside the 10% limit ${badge("MEASURED")}</div></div>
+    <div class="kpi glass"><div class="v">${cnum("67%", "MEASURED")}</div><div class="c">fewer agent tokens when a harness's stop rule misses ${badge("MEASURED")}</div></div>
+    <div class="kpi glass"><div class="v">${cnum(`$${num(led.total_usd)}`, "MEASURED")}</div><div class="c">Meta API spend recorded in this bundle, ${num(led.calls, 0)} calls ${badge("MEASURED")}</div></div>
   </div>
+  ${legendHtml()}
   ${ctrl()}
   ${card("h-what", "?", "New here? Start with this", "What problem WattNot solves, in three sentences", `
     <p>AI models run on GPUs that draw up to 700 watts each, often more than the work needs. Lowering the limit a little can save a lot of energy with almost no slowdown, but nobody wants to risk worse answers.</p>
@@ -80,7 +81,7 @@ function renderHome() {
 }
 function partnersHtml() {
   const ps = S.partners?.partners || []; if (!ps.length) return "";
-  return `<div class="lvl">Partners and their calls</div><dl class="kv">${ps.map((p) => `<dt>${esc(p.name)}</dt><dd>${esc(p.what)}${p.calls != null ? ` · ${num(p.calls, 0)} calls` : ""}${p.cost?.value != null ? ` · ${esc(p.cost.unit === "INR" ? "₹" : "$")}${num(p.cost.value)} ${badge(p.cost.label)}` : ""}</dd>`).join("")}</dl>`;
+  return `<div class="lvl">Partners and their calls</div><dl class="kv">${ps.map((p) => `<dt><span class="ptag">${esc(p.name)}</span></dt><dd>${esc(p.what)}${p.calls != null ? ` · ${num(p.calls, 0)} calls` : ""}${p.cost?.value != null ? ` · ${cnum(`${esc(p.cost.unit === "INR" ? "₹" : "$")}${num(p.cost.value)}`, p.cost.label)}` : ""}</dd>`).join("")}</dl>`;
 }
 
 // ---------- configure: one question per screen ----------
@@ -158,13 +159,13 @@ function renderCfg() {
   const byId = Object.fromEntries(O.options.map((o) => [o.id, o]));
   const adv = O.options.filter((o) => !ESSENTIAL_IDS.includes(o.id)).map((o) => fld(o)).join("");
   $("#pCfg").innerHTML = `<div class="intro"><div><h1>Configure a new run</h1><p>One question per screen, five screens. Everything else keeps a safe default. Use Tab and the arrow keys to move between cards, Enter to continue. Live GPU runs are locked on this screen; it only replays recorded runs, so it costs nothing.</p></div></div>
-    <div class="cfg-step"><div class="glass step-main">
+    <div class="cfg-step bento"><div class="glass tile span4 lift step-main">
       <div class="step-prog"><span id="stepCount" role="status"></span><ol id="stepDots" aria-label="Progress"></ol></div>
       <div id="stepBody" aria-live="polite"></div>
       <div class="step-nav"><button class="btn" id="stepBack">Back</button><button class="btn pri" id="stepNext">Next</button></div>
     </div>
-    <div class="step-side"><div class="glass conn"><h3>Already connected</h3><p>Wired by default, read from the partners list.</p><ul id="connList"></ul></div>
-      <div class="grp glass"><h3>What will happen</h3><div id="cfgSum"></div>
+    <div class="step-side span2"><div class="glass tile low conn"><h3>Already connected</h3><p>Wired by default, read from the partners list.</p><ul id="connList"></ul></div>
+      <div class="grp glass tile low"><h3>What will happen</h3><div id="cfgSum"></div>${legendHtml()}
       <p class="lock">Live mode needs the owner's okay and the command line. It is never started from here.</p></div></div></div>
     <details class="adv glass" id="advDis"><summary id="advSum" aria-expanded="false"><span class="adv-t">Advanced settings</span>
       <span class="adv-line">Safe defaults are set; open this to change limits, gates and budgets.</span><span class="chev" aria-hidden="true">›</span></summary>
@@ -250,9 +251,14 @@ function run2BlockHtml(view, withToggle) {
   view = view || S.view || "both";
   const R = S.run?.results, rows = run2Rows(S.run2, R?.price, R?.water);
   if (!rows.length) return `<h3>Without WattNot vs With WattNot</h3><p>Headline numbers are still loading.</p>`;
+  // The model line reads the run data being shown, never a hard-coded name.
+  const m = S.run2 || {};
+  const where = [m.model, m.cap_w != null ? `at a ${m.cap_w} W cap` : null].filter(Boolean).join(" ");
+  const shown = S.run?.results?.model;
+  const other = m.model && shown && m.model !== shown ? ` (the separate RUN2 recording, not the ${shown} run shown above)` : "";
   const show = (side) => view === "both" || view === (side === "w" ? "with" : "without");
-  const cell = (r, side) => (show(side) ? `<div class="cell ${r.win === side ? "win" : ""}"><span class="v num">${esc(side === "w" ? r.wattnot : r.stock)}</span>${side === "w" && r.delta && view === "both" ? `<span class="d">${esc(r.delta)}</span>` : ""}</div>` : `<div></div>`);
-  return `<div class="r2head"><div><h3>Without WattNot vs With WattNot</h3><p>Llama 3.1 8B at a 350 W cap, RUN2 ${badge("REPLAY")}. Energy, p99 and quality are measured; cost and water are estimates from measured joules.</p></div>
+  const cell = (r, side) => (show(side) ? `<div class="cell ${r.win === side ? "win" : ""}"><span class="v num">${cnum(esc(side === "w" ? r.wattnot : r.stock), r.tag)}</span>${side === "w" && r.delta && view === "both" ? `<span class="d">${cnum(esc(r.delta), r.tag)}</span>` : ""}</div>` : `<div></div>`);
+  return `<div class="r2head"><div><h3>Without WattNot vs With WattNot</h3><p>${esc(where)}${esc(other)}${where ? ", " : ""}replay ${badge("REPLAY")}. Energy, p99 and quality are measured; cost and water are estimates from measured joules.</p></div>
     ${withToggle ? `<div class="seg" role="group" aria-label="Which run to show">${[["without", "Without"], ["both", "Compare"], ["with", "With"]].map(([v, t]) => `<button class="btn ${view === v ? "pri" : ""}" data-view="${v}" aria-pressed="${view === v}">${t}</button>`).join("")}</div>` : ""}</div>
   ${rows.map((r) => `<div class="rows">${cell(r, "s")}<div class="dimlab">${esc(r.dim)}<br>${r.tag ? badge(r.tag) : ""}</div>${cell(r, "w")}</div>${r.note ? `<p class="r2note">${esc(r.note)}</p>` : ""}`).join("")}`;
 }
@@ -268,7 +274,7 @@ function stageBody(p, evs) {
   const fin = Object.fromEntries(mine.filter((e) => e.type === "step.finished").map((e) => [e.data.sub, e]));
   const say = mine.filter((e) => e.data?.narration).map((e) => e.data.narration).slice(-1)[0];
   const subs = p.subs.map((s) => { const f = fin[s.id]; const st = f ? (f.data.status === "failed" ? "fail" : "done") : mine.some((e) => e.data.sub === s.id) ? "run" : "todo";
-    return `<div class="sub"><span class="st ${st}" style="margin-top:6px"></span><div style="flex:1"><b>${esc(s.title)}</b>${s.partner ? ` <span class="chip" style="padding:1px 7px">${esc(s.partner)}</span>` : ""}<p>${esc(f?.data.summary || s.desc)}</p>
+    return `<div class="sub"><span class="st ${st}" style="margin-top:6px"></span><div style="flex:1"><b>${esc(s.title)}</b>${s.partner ? ` <span class="ptag">${esc(s.partner)}</span>` : ""}<p>${esc(f?.data.summary || s.desc)}</p>
       <div class="io">in: ${esc(s.inputs)} → out: ${esc(s.outputs)} · <code>${esc(s.code || "")}</code></div>
       ${(f?.data.numbers || []).map((x) => `<span class="chip" style="margin:4px 4px 0 0">${esc(x.label)} <b style="color:#fff">${num(x.v)} ${esc(x.unit)}</b>${badge(x.tag)}</span>`).join("")}</div></div>`; }).join("");
   return `<p>${esc(p.desc)}</p>${say ? `<div class="say">${esc(say.text)} <small style="color:var(--mu)">(${esc(say.source)})</small></div>` : ""}
@@ -278,11 +284,11 @@ function renderRun() {
   if (!S.run) { $("#pRun").innerHTML = `<div class="intro"><div><h1>Run</h1><p>No run yet. <a href="#pCfg" id="toCfg">Configure one</a>, or start the default replay.</p></div><button class="btn pri" id="defRun">Start default replay</button></div>`; $("#defRun").onclick = startRun; $("#toCfg").onclick = (e) => { e.preventDefault(); show("pCfg"); }; return; }
   const R = S.run;
   S.view ??= "both";
-  $("#pRun").innerHTML = `<div class="glass run2block" id="run2block" aria-live="polite"></div>
-  <div class="intro"><div><h1>${esc(S.choice.name || "Run")} <span style="font-size:14px">${badge("REPLAY")}</span></h1><p>${esc(R.results.model)} · ${esc(R.results.workload)} · run id <code>${esc(R.run_id)}</code>. A recorded run, re-checked against your limits. Nothing is running on a GPU now.</p><p class="lock" id="phaseInd" role="status"></p></div>
-    <div class="noprint" style="display:flex;gap:8px"><button class="btn" id="pp">Pause</button><button class="btn" id="rs">Restart</button><select id="spd" style="width:auto"><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option><option value="20">20×</option></select></div></div>
-    <div class="glass" style="padding:10px 16px"><div style="display:flex;justify-content:space-between;font-size:13px"><span id="progT"></span><span id="progN" style="color:var(--mu)"></span></div><div class="prog"><i id="progB"></i></div>
-    <div class="rail" id="rail">${R.pipeline.map((p, i) => `${i ? '<span class="edge"></span>' : ""}<button class="node" data-stage="${p.id}"><b>${esc(p.title)}</b><span id="ns-${p.id}">waiting</span></button>`).join("")}</div></div>
+  $("#pRun").innerHTML = `<div class="bento"><div class="tile glass span4 lift run2block" id="run2block" aria-live="polite"></div>
+  <div class="tile glass span2 low"><div class="lvl">Run</div><h1>${esc(S.choice.name || "Run")}</h1><p>${esc(R.results.model)} · ${esc(R.results.workload)} · run id <code>${esc(R.run_id)}</code> ${badge("REPLAY")}. A recorded run, re-checked against your limits. Nothing is running on a GPU now.</p><p class="lock" id="phaseInd" role="status"></p>
+    <div class="noprint" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="pp">Pause</button><button class="btn" id="rs">Restart</button><select id="spd" style="width:auto"><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option><option value="20">20×</option></select></div>${legendHtml()}</div>
+    <div class="tile glass span6" style="padding:10px 16px"><div style="display:flex;justify-content:space-between;font-size:13px"><span id="progT"></span><span id="progN" style="color:var(--mu)"></span></div><div class="prog"><i id="progB"></i></div>
+    <div class="rail" id="rail">${R.pipeline.map((p, i) => `${i ? '<span class="edge"></span>' : ""}<button class="node" data-stage="${p.id}"><b>${esc(p.title)}</b><span id="ns-${p.id}">waiting</span></button>`).join("")}</div></div></div>
     ${ctrl()}<div id="stages">${R.pipeline.map((p) => card(`stage-${p.id}`, ICON[p.id] || "•", esc(p.title), `<span id="sm-${p.id}">${esc(p.desc)}</span>`, `<div id="sb-${p.id}"></div>`)).join("")}</div>
     ${card("planner", "✦", "The planner: Muse Spark's prompts and replies", "Every round it proposed, why, whether it passed, and its token use", plannerBody())}
     ${card("ledger", "≡", "Every backend action, in order", "Telemetry reads, gates, decisions, apply and undo. The audit trail.", `<div class="log" id="logBox"></div>`)}
@@ -499,12 +505,12 @@ function wireMap() {
   if (!mapWired) { mapWired = true; window.addEventListener("resize", mapLayout); }
 }
 // ---------- signed report: radial comparison canvas ----------
-// A pan/zoom radial view of the same run records: WattNot in the centre,
-// one first-ring card per run (Saved: Power/Cost/Water from that run's own
-// baseline vs WattNot phases), and an outer ring of per-method children.
-// Numbers come only from the run record (or a stated derivation from it);
-// anything else reads "not measured in this run". Totals are never split
-// across methods.
+// A pan/zoom radial view of ONE run record: WattNot in the centre (with a
+// run picker), three branch cards 120° apart (Power/Cost/Water savings from
+// that run's own baseline vs WattNot phases), and an outer sub-ring of
+// per-method cards per branch. Numbers come only from the run record (or a
+// stated derivation from it); anything else reads "not measured in this
+// run". Totals are never split across methods.
 const RAD_METHODS = [
   { id: "caps", name: "Power caps", hint: "Lower watt limit; keep the lowest cap that passes the gates." },
   { id: "topk", name: "Adaptive top-k", hint: "Fewer experts per word when the weight is concentrated." },
@@ -543,53 +549,114 @@ function radSavedLines(rec) {
   return out;
 }
 
-// One method's saving within a run record, or null when the record does not
-// attribute anything to that method (the caller renders RAD_FALLBACK).
-function radMethodSaving(rec, id) {
+// One method's saving for one metric branch within a run record, or null
+// when the record does not attribute anything to that method (the caller
+// renders RAD_FALLBACK). Totals are never split: only power caps may show
+// the whole-run figure, with a note that it is not a per-method split, and
+// cost/water for caps are derived from that whole-run figure with the same
+// note. Every other method reads "not measured in this run".
+function radMethodSaving(rec, branch, id) {
   const b = rec?.phases?.baseline, w = rec?.phases?.wattnot;
-  if (id === "caps" && b?.metrics?.j_per_req != null && w?.metrics?.j_per_req != null && w?.metrics?.saved_pct != null) {
-    return { text: `${num(w.metrics.saved_pct, 1)}%`, tag: w.label || "MEASURED",
-      note: `Whole-run WattNot-vs-baseline difference from this run's record (${w.cap_w} W vs ${b.cap_w} W). Not a per-method split: the record does not attribute shares to methods.` };
+  const bj = b?.metrics?.j_per_req, wj = w?.metrics?.j_per_req;
+  if (id !== "caps" || bj == null || wj == null || w?.metrics?.saved_pct == null) return null;
+  const splitNote = `Whole-run WattNot-vs-baseline difference from this run's record (${w.cap_w} W vs ${b.cap_w} W). Not a per-method split: the record does not attribute shares to methods.`;
+  if (branch === "power") {
+    return { text: `${num(w.metrics.saved_pct, 1)}%`, tag: w.label || "MEASURED", note: splitNote };
+  }
+  const kwh = (j) => (j * 1e6) / 3.6e6;
+  if (branch === "cost") {
+    const price = S.run?.results?.price;
+    if (price?.usd_per_kwh == null) return null;
+    const d = (kwh(bj) - kwh(wj)) * price.usd_per_kwh;
+    return { text: `${d >= 0 ? "saves" : "costs"} $${num(Math.abs(d))} per 1M`, tag: "ESTIMATE",
+      note: `Derived from the whole-run joules difference above × $${price.usd_per_kwh}/kWh. ${splitNote}` };
+  }
+  if (branch === "water") {
+    const water = S.run?.results?.water;
+    if (water?.factor_l_per_kwh == null) return null;
+    const d = (kwh(bj) - kwh(wj)) * water.factor_l_per_kwh;
+    return { text: `${d >= 0 ? "saves" : "uses"} ${num(Math.abs(d))} L per 1M`, tag: "ESTIMATE",
+      note: `Derived from the whole-run joules difference above × ${water.factor_l_per_kwh} L/kWh. ${splitNote}` };
   }
   return null;
 }
 
-function radialHtml(runs, featuredId) {
+// Power over time for the Power branch: per-repeat energy per request from
+// the run record itself (baseline repeats, then WattNot repeats) as a small
+// SVG step chart. Null when the record has no such series, so the branch
+// honestly says "not measured in this run".
+function radPowerSeries(rec) {
+  const b = rec?.phases?.baseline?.events || [], w = rec?.phases?.wattnot?.events || [];
+  const bj = b.map((e) => e.j_per_req).filter((v) => v != null);
+  const wj = w.map((e) => e.j_per_req).filter((v) => v != null);
+  if (!bj.length || !wj.length) return null;
+  return { base: bj, tuned: wj };
+}
+function radPowerSvg(rec) {
+  const s = radPowerSeries(rec);
+  if (!s) return `<span class="rad-miss">${RAD_FALLBACK}</span>`;
+  const pts = [...s.base.map((v) => ({ v, ph: 0 })), ...s.tuned.map((v) => ({ v, ph: 1 }))];
+  const W = 180, H = 56, P = 6;
+  const vs = pts.map((p) => p.v), lo = Math.min(...vs), hi = Math.max(...vs), rg = (hi - lo) || 1;
+  const X = (i) => (P + (i * (W - 2 * P)) / (pts.length - 1 || 1)).toFixed(1);
+  const Y = (v) => (H - P - ((v - lo) / rg) * (H - 2 * P)).toFixed(1);
+  const line = (a, z, cls) => `<polyline class="${cls}" points="${pts.slice(a, z).map((p, j) => `${X(a + j)},${Y(p.v)}`).join(" ")}"/>`;
+  const cut = (P + ((s.base.length - 0.5) * (W - 2 * P)) / (pts.length - 1 || 1)).toFixed(1);
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Energy per request over repeats: baseline then WattNot">`
+    + `<line x1="${cut}" y1="2" x2="${cut}" y2="${H - 2}" class="cut"/>`
+    + `${line(0, s.base.length, "s")}${line(s.base.length - 1, pts.length, "w")}`
+    + `<text x="${P}" y="${H - 1}" class="t">without</text><text x="${W - P}" y="${H - 1}" class="t e">with</text></svg>`;
+}
+
+// Radial comparison for ONE run: the centre WattNot node opens a dropdown
+// to pick the run (kept in sync with #runSel). The centre then has exactly
+// three branch cards — Power, Cost, Water — each showing that run's
+// WattNot-vs-own-baseline saving from radSavedLines, coloured by label.
+// Each branch opens its own outer sub-ring of method cards; a method shows
+// that metric's saving only when the record attributes it, else
+// "not measured in this run". The Power branch also carries a small
+// with-vs-without power-over-time graph from the run record.
+const RAD_BRANCHES = ["power", "cost", "water"];
+function radialHtml(runs, featuredId, rec) {
+  const lines = radSavedLines(rec);
+  const byId = Object.fromEntries(lines.map((l) => [l.id, l]));
   const cards = [], kids = [];
-  for (const r of runs) {
-    const rec = S.radRecs?.[r.id];
-    const lines = radSavedLines(rec);
+  for (const id of RAD_BRANCHES) {
+    const l = byId[id];
     for (const m of RAD_METHODS) {
-      const s = radMethodSaving(rec, m.id);
-      kids.push(`<div class="rad-child" data-parent="${esc(r.id)}" data-m="${m.id}" hidden><b>${esc(m.name)}</b>`
-        + (s ? `<span class="rad-save">${esc(s.text)} ${badge(s.tag)}</span><small class="rad-note" title="${esc(s.note)}">${esc(s.note)}</small>`
+      const s = radMethodSaving(rec, id, m.id);
+      kids.push(`<div class="rad-child" data-branch="${id}" data-m="${m.id}" hidden><b>${esc(m.name)}</b>`
+        + (s ? `<span class="rad-save">${cnum(esc(s.text), s.tag)}</span><small class="rad-note" title="${esc(s.note)}">${esc(s.note)}</small>`
           : `<span class="rad-miss">${RAD_FALLBACK}</span><small class="rad-note">${esc(m.hint)} The record has no per-method numbers, so nothing is split out.</small>`)
         + `</div>`);
     }
-    cards.push(`<div class="rad-card${r.id === featuredId ? " featured" : ""}" data-run="${esc(r.id)}" data-open="0">`
-      + `<button class="rad-head" aria-expanded="false"><b>${esc(r.name)}</b><small>${esc(rec?.model || r.model || "")}</small></button>`
+    const saving = l?.text
+      ? `<span class="rad-save">${cnum(esc(l.text), l.tag)}</span>`
+      : `<span class="rad-miss">${RAD_FALLBACK}</span>`;
+    const graph = id === "power" ? `<div class="rad-power">${radPowerSvg(rec)}</div>` : "";
+    cards.push(`<div class="rad-card" data-branch="${id}" data-open="0">`
+      + `<button class="rad-head" aria-expanded="false"><b>${esc(l?.name || id)}</b><small>saving vs this run's own baseline</small></button>`
       + `<div class="rad-saved"><div class="lvl">Saved</div>`
-      + lines.map((l) => `<button class="rad-line" data-m="${l.id}" title="${esc(l.note || "Not in this run's record.")}"><span class="rad-dim">${l.name}</span>`
-        + (l.text ? `<span class="rad-save">${esc(l.text)} ${badge(l.tag)}</span>` : `<span class="rad-miss">${RAD_FALLBACK}</span>`) + `</button>`).join("")
-      + `</div></div>`);
+      + `<button class="rad-line" data-branch="${id}" title="${esc(l?.note || "Not in this run's record.")}"><span class="rad-dim">${esc(l?.name || id)}</span>${saving}</button>`
+      + `${graph}</div></div>`);
   }
   const drop = runs.map((r) => `<button class="centre-opt${r.id === featuredId ? " now" : ""}" data-run="${esc(r.id)}" role="option" aria-selected="${r.id === featuredId}">${esc(r.name)}</button>`).join("")
     || `<span class="rad-miss">No runs listed.</span>`;
   const feat = runs.find((r) => r.id === featuredId) || runs[0];
-  return `<div class="radial-bar noprint"><span class="hint">WattNot in the middle. Pick a run, then open any ring card for its per-method detail. Drag to pan, scroll to zoom.</span>`
+  return `<div class="bento"><div class="radial-bar noprint span6"><span class="hint">WattNot in the middle. Pick a run, then open Power, Cost or Water for its per-method detail. Drag to pan, scroll to zoom.</span>`
     + `<span style="flex:1"></span><button class="btn" data-radial="open">Expand all</button><button class="btn" data-radial="close">Collapse all</button></div>`
-    + `<div class="radial-wrap glass" id="radialWrap"><svg class="radial-wires" id="radialWires" aria-hidden="true"></svg>`
+    + `<div class="radial-wrap glass tile span6 low" id="radialWrap"><svg class="radial-wires" id="radialWires" aria-hidden="true"></svg>`
     + `<div class="radial-stage" id="radialStage">`
     + `<div class="radial-centre" id="radCentre"><button class="centre-node" id="centreNode" aria-expanded="false" aria-haspopup="listbox" aria-label="WattNot: choose a run">WattNot</button>`
-    + `<div class="centre-sub">${esc(feat ? feat.name : "No run chosen")}</div>`
+    + `<div class="centre-sub">${esc(feat ? feat.name : "No run chosen")}${rec?.model ? ` · ${esc(rec.model)}` : ""}</div>`
     + `<div class="centre-drop" id="centreDrop" role="listbox" aria-label="Runs" hidden>${drop}</div></div>`
-    + cards.join("") + kids.join("") + `</div></div>`;
+    + cards.join("") + kids.join("") + `</div></div></div>`;
 }
 
-// Radial layout: first-ring cards sit on a ring around the centre; each
-// expanded card's children sit on an outer arc inside that card's own
-// angular sector, so neighbours never overlap. The child radius grows with
-// the widest expanded family, keeping arc slots wider than a child card.
+// Radial layout: three branch cards sit 120° apart on a compact inner ring
+// around the centre; each expanded branch's method cards fan out on an outer
+// arc inside that branch's own sector, so families never overlap. Radii stay
+// as small as the card sizes allow; the user pans for the rest at fit zoom.
 function layoutRadial() {
   const wrap = $("#radialWrap"), stage = $("#radialStage"), svg = $("#radialWires"), centre = $("#radCentre");
   if (!wrap || !stage || !svg || !centre) return;
@@ -605,14 +672,13 @@ function layoutRadial() {
     svg.innerHTML = "";
     return;
   }
-  const n = Math.max(cards.length, 1);
-  const R1 = 330 + 50 * Math.max(0, n - 3);
-  const sector = (2 * Math.PI) / n;
-  const byParent = cards.map((c) => visKids.filter((k) => k.dataset.parent === c.dataset.run));
+  const n = 3, sector = (2 * Math.PI) / n;
+  const R1 = 240;
+  const byBranch = cards.map((c) => visKids.filter((k) => k.dataset.branch === c.dataset.branch));
   let R2 = 0;
-  byParent.forEach((ks) => { if (ks.length) R2 = Math.max(R2, (ks.length * 250) / (0.8 * sector)); });
-  if (R2) R2 = Math.max(R2, R1 + 320);
-  const maxR = (R2 || R1) + 180;
+  byBranch.forEach((ks) => { if (ks.length) R2 = Math.max(R2, (ks.length * 210) / (0.8 * sector)); });
+  if (R2) R2 = Math.max(R2, R1 + 330);
+  const maxR = (R2 || R1) + 130;
   const w = Math.ceil(maxR * 2 + 40), h = Math.ceil(maxR * 2 + 40);
   const cx = w / 2, cy = h / 2;
   stage.style.width = `${w}px`; stage.style.height = `${h}px`;
@@ -622,7 +688,7 @@ function layoutRadial() {
     c.style.left = `${(cx + R1 * Math.cos(a)).toFixed(1)}px`;
     c.style.top = `${(cy + R1 * Math.sin(a)).toFixed(1)}px`;
   });
-  byParent.forEach((ks, i) => {
+  byBranch.forEach((ks, i) => {
     if (!ks.length) return;
     const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
     const k = ks.length, step = k > 1 ? (0.8 * sector) / (k - 1) : 0;
@@ -657,7 +723,7 @@ function drawRadialWires() {
     const head = $(".rad-head", c);
     if (!head) return;
     d.push(radial(hc, ctr(head)));
-    if (c.dataset.open === "1") $$(".rad-child", stage).filter((l) => l.dataset.parent === c.dataset.run && !l.hidden).forEach((l) => d.push(drop(bot(c), top(l))));
+    if (c.dataset.open === "1") $$(".rad-child", stage).filter((l) => l.dataset.branch === c.dataset.branch && !l.hidden).forEach((l) => d.push(drop(bot(c), top(l))));
   });
   svg.setAttribute("viewBox", `0 0 ${sr.width} ${sr.height}`);
   svg.innerHTML = d.map((x) => `<path d="${x}"/>`).join("");
@@ -669,18 +735,19 @@ function wireRadial() {
   const setCard = (c, on) => {
     c.dataset.open = on ? "1" : "0";
     $(".rad-head", c).setAttribute("aria-expanded", String(on));
-    $$(".rad-child", stage).filter((k) => k.dataset.parent === c.dataset.run).forEach((k) => { k.hidden = !on; });
+    $$(".rad-child", stage).filter((k) => k.dataset.branch === c.dataset.branch).forEach((k) => { k.hidden = !on; });
   };
+  const radFit = () => { S.radPan?.update(); S.radPan?.fit(); if (S.radPan && S.radPan.state.scale < 0.6) S.radPan.setZoom(0.6); };
   $$("#radialStage .rad-head").forEach((b) => (b.onclick = () => {
-    const c = b.closest(".rad-card"); setCard(c, c.dataset.open !== "1"); layoutRadial(); S.radPan?.update(); S.radPan?.fit();
+    const c = b.closest(".rad-card"); setCard(c, c.dataset.open !== "1"); layoutRadial(); radFit();
   }));
   $$("#radialStage .rad-line").forEach((b) => (b.onclick = () => {
-    const c = b.closest(".rad-card"); setCard(c, true); layoutRadial(); S.radPan?.update(); S.radPan?.fit();
+    const c = b.closest(".rad-card"); setCard(c, true); layoutRadial(); radFit();
   }));
   $$("#pReport [data-radial]").forEach((b) => (b.onclick = () => {
     const on = b.dataset.radial === "open";
     $$("#radialStage .rad-card").forEach((c) => setCard(c, on));
-    layoutRadial(); S.radPan?.update(); S.radPan?.fit();
+    layoutRadial(); radFit();
   }));
   const node = $("#centreNode"), cd = $("#centreDrop");
   if (node && cd) node.onclick = () => {
@@ -691,10 +758,11 @@ function wireRadial() {
   if (S.radPan) { try { S.radPan.destroy(); } catch {} S.radPan = null; }
   try {
     S.radPan = initPanCanvas(wrap, stage, { goto: () => {
-      const feat = $(".rad-card.featured", stage) || $("#radCentre");
+      const feat = $(".rad-card", stage) || $("#radCentre");
       if (feat) S.radPan.focus(feat);
     } });
     S.radPan.fit();
+    if (S.radPan.state.scale < 0.6) S.radPan.setZoom(0.6);
   } catch {}
   wrap.ondblclick = (e) => { if (e.target === wrap || e.target === stage) S.radPan?.setZoom(1); };
   setTimeout(() => { layoutRadial(); S.radPan?.update(); }, 0);
@@ -702,6 +770,7 @@ function wireRadial() {
 }
 async function selectRun(id) {
   S.selRunId = id;
+  const sel = $("#runSel"); if (sel && id) sel.value = id;
   if (!id || id === "default") { S.selRun = null; S.selHeadline = null; }
   else {
     try {
@@ -740,7 +809,8 @@ async function renderReport() {
       ${t.kids.map((k) => `<div class="leaf"><span class="leaf-ic" aria-hidden="true">${MAP_ICON[k.icon] || ""}</span><div><b>${esc(k.label)}</b><span>${k.text}</span></div></div>`).join("")}
       <div class="topic-detail">${t.detail}</div>
     </div></div>`;
-  $("#pReport").innerHTML = `${radialHtml(runs, selId)}<div class="ctrl noprint"><label for="runSel">Run</label><select id="runSel" style="width:auto;max-width:320px" aria-label="Run">${runs.length ? runs.map((r) => `<option value="${esc(r.id)}" ${r.id === selId ? "selected" : ""}>${esc(r.name)}</option>`).join("") : `<option value="default">Default replay</option>`}</select><button class="btn pri" onclick="print()">Export PDF / PNG (print)</button><span style="color:var(--mu);font-size:13px">Topics start closed so the map stays readable. Open any circle for its two paths and the detail.</span><span style="flex:1"></span><button class="btn" data-map="open">Expand all</button><button class="btn" data-map="close">Collapse all</button></div>
+  const featRec = S.selRun || (S.radRecs && S.radRecs[selId]) || null;
+  $("#pReport").innerHTML = `${radialHtml(runs, selId, featRec)}<div class="ctrl noprint"><label for="runSel">Run</label><select id="runSel" style="width:auto;max-width:320px" aria-label="Run">${runs.length ? runs.map((r) => `<option value="${esc(r.id)}" ${r.id === selId ? "selected" : ""}>${esc(r.name)}</option>`).join("") : `<option value="default">Default replay</option>`}</select>${legendHtml()}<button class="btn pri" onclick="print()">Export PDF / PNG (print)</button><span style="color:var(--mu);font-size:13px">Topics start closed so the map stays readable. Open any circle for its two paths and the detail.</span><span style="flex:1"></span><button class="btn" data-map="open">Expand all</button><button class="btn" data-map="close">Collapse all</button></div>
   <div class="map-wrap glass" id="mapWrap"><svg class="map-wires" id="mapWires" aria-hidden="true"></svg>
     <div class="map-stage" id="mapStage">
       <div class="map-hub" id="mapHub" data-open="0">
@@ -754,8 +824,8 @@ async function renderReport() {
     </div>
   </div>
   <div class="who-banner">Who should pick which?</div>
-  <div class="who"><div class="glass"><h3 style="color:var(--pk)">Pick the baseline if</h3><p>Every millisecond of the slowest requests matters more than the power bill, or you cannot run a quality check on your own prompts yet.</p></div>
-  <div class="glass"><h3 style="color:var(--cy)">Pick WattNot if</h3><p>You pay for power and cooling, can accept the p99 change shown above, and want each change approved, logged, undoable and signed.</p></div></div>
+  <div class="who bento"><div class="glass tile span3 low"><h3 style="color:var(--pk)">Pick the baseline if</h3><p>Every millisecond of the slowest requests matters more than the power bill, or you cannot run a quality check on your own prompts yet.</p></div>
+  <div class="glass tile span3 lift"><h3 style="color:var(--cy)">Pick WattNot if</h3><p>You pay for power and cooling, can accept the p99 change shown above, and want each change approved, logged, undoable and signed.</p></div></div>
   <div class="sig glass"><div><div class="lvl">This report's fingerprint</div><code class="fp" id="fpCode">sha256 ${esc(sha)}</code><p class="fp-note">Same data, same fingerprint, every load. Sorted keys, no timestamps.</p></div>
    <div><div class="lvl">Verifier check on sample receipts ${badge("SAMPLE")}</div>${vs.map((v) => `<div>${esc(v.sample)}: hash ${v.hash ? '<span class="ok">✓</span>' : '<span class="no">✗</span>'} · signature ${v.sig ? '<span class="ok">✓ verified</span>' : '<span class="no">✗ rejected</span>'} · grade ${esc(v.grade)}</div>`).join("")}</div></div>
   <p style="font-size:12px;color:var(--mu);margin-top:10px">${esc(S.verify?.note || "")} Cost uses ${esc(S.run.results.price?.name || "")}; water uses ${esc(S.run.results.water?.name || "")}. Source: ${esc(r2.source || "data/h100-run2/vm/steps/cap350.json")}.</p>`;

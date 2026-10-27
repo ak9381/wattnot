@@ -314,6 +314,95 @@ def test_report_is_a_radial_panzoom_canvas():
     assert "data-radial" in js and "Expand all" in js and "Collapse all" in js
 
 
+def test_radial_is_three_branches_for_one_run():
+    import pathlib
+    js = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash/v2.js").read_text()
+    assert 'RAD_BRANCHES = ["power", "cost", "water"]' in js
+    # branch cards are keyed by metric, not by run: the one-card-per-run
+    # ring is gone (the run picker dropdown keeps its own data-run options)
+    assert 'data-branch="${id}"' in js
+    assert "data-parent" not in js and ".rad-card.featured" not in js
+    assert "const n = 3" in js  # three branches, 120 degrees apart
+    # every branch opens on its own sub-ring, and Expand all opens all three
+    assert '$$("#radialStage .rad-head")' in js
+    assert "setCard(c, c.dataset.open" in js
+    assert "l.dataset.branch === c.dataset.branch" in js
+    assert "k.dataset.branch === c.dataset.branch" in js
+    assert '$$("#radialStage .rad-card").forEach((c) => setCard(c, on))' in js
+    # the centre picker and #runSel stay in sync both ways
+    assert 'id="centreDrop"' in js and 'sel.value = id' in js
+    assert '$("#runSel").onchange' in js
+    # compact stage that stays readable: small cards, small radii, and the
+    # fit zoom never drops below 0.6 (the user pans for the rest)
+    assert "R1 = 240" in js
+    assert "S.radPan.state.scale < 0.6" in js and "setZoom(0.6)" in js
+    css = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash/v2.css").read_text()
+    assert "width:204px" in css and "width:196px" in css
+
+
+def test_radial_methods_show_per_metric_saving_or_fallback():
+    import pathlib
+    js = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash/v2.js").read_text()
+    assert "radMethodSaving(rec, branch, id)" in js
+    # only caps may reuse the whole-run figure, with the no-split note, and
+    # cost/water for caps are derived from it with the same note
+    assert "Not a per-method split" in js
+    assert js.count("splitNote") >= 4  # defined once, reused by power/cost/water
+    assert "usd_per_kwh" in js and "factor_l_per_kwh" in js
+    assert 'RAD_FALLBACK = "not measured in this run"' in js
+
+
+def test_power_branch_has_with_without_graph_or_fallback():
+    import pathlib
+    js = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash/v2.js").read_text()
+    assert "radPowerSeries" in js and "radPowerSvg" in js
+    assert "<svg" in js and "polyline" in js
+    assert "j_per_req" in js  # the series comes from the run record itself
+
+
+def test_run_page_and_before_after_read_model_from_data():
+    import pathlib
+    js = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash/v2.js").read_text()
+    assert "Llama 3.1 8B at a 350 W cap, RUN2" not in js  # no hard-coded model line
+    assert "const m = S.run2 || {}" in js  # the block reads the run2 payload
+    assert "R.results.model" in js  # the header reads the run being shown
+
+
+def test_numbers_coloured_by_label_with_one_legend_per_view():
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash")
+    lib = root.joinpath("v2lib.js").read_text()
+    assert "cnum" in lib and "legendHtml" in lib
+    assert "badge" in lib and "title=" in lib and "aria-label" in lib
+    assert ">MEASURED<" not in lib and ">${esc(t)}<" not in lib  # no text badges
+    js = root.joinpath("v2.js").read_text()
+    assert js.count("legendHtml()") >= 4  # home, configure, run, report
+    css = root.joinpath("v2.css").read_text()
+    for cls in (".n-measured", ".n-estimate", ".n-simulated", ".n-mock", ".n-replay", ".legend"):
+        assert cls in css, cls
+
+
+def test_partner_tags_are_plain_glass_boxes():
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash")
+    css = root.joinpath("v2.css").read_text()
+    assert ".ptag" in css and "backdrop-filter" in css
+    assert "color:#fff" in css
+    js = root.joinpath("v2.js").read_text()
+    assert "ptag" in js
+
+
+def test_bento_shells_with_overlap_and_single_column():
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash")
+    css = root.joinpath("v2.css").read_text()
+    assert ".bento" in css and "repeat(6,1fr)" in css
+    assert ".tile.lift" in css and "margin-top:-10px" in css and "z-index:2" in css
+    js = root.joinpath("v2.js").read_text()
+    for token in ("bento", "tile glass span4", "span2", "span3", "span6"):
+        assert token in js, token
+
+
 def test_radial_saved_block_reads_phases_and_never_splits():
     c = _c()
     rec = c.get("/api/dash/v2/runs/run2-llama-350w").json()

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { stageState, ledgerRows, reportRows, run2Rows, verifySummary, badge, num, phaseLabel } from "../../web/dash/v2lib.js";
+import { stageState, ledgerRows, reportRows, run2Rows, verifySummary, badge, num, cnum, legendHtml, phaseLabel } from "../../web/dash/v2lib.js";
 
 const pipe = [{ id: "baseline" }, { id: "sweep" }, { id: "receipt" }];
 const ev = (type, node, extra = {}) => ({ event: { type, data: { node, ...extra } } });
@@ -31,6 +31,28 @@ test("verifySummary reads hash and signature steps", () => {
 });
 
 test("badge and num", () => { assert.match(badge("MEASURED"), /b-measured/); assert.equal(num(null), "n/a"); assert.equal(num(21.04, 1), "21"); });
+
+test("badge is a dot with the label in title, not visible text", () => {
+  const b = badge("MEASURED");
+  assert.match(b, /title="MEASURED"/); assert.match(b, /aria-label="MEASURED"/);
+  assert.doesNotMatch(b, />MEASURED</);
+  assert.equal(badge(null), "");
+});
+
+test("cnum colours the number by its label", () => {
+  assert.match(cnum("21%", "MEASURED"), /n-measured/);
+  assert.match(cnum("$1", "ESTIMATE"), /n-estimate/);
+  assert.match(cnum("x", "SIMULATED"), /n-simulated/);
+  assert.match(cnum("x", "MOCK"), /n-mock/);
+  assert.match(cnum("x", "REPLAY"), /n-replay/);
+  assert.match(cnum("21%", "MEASURED"), /title="MEASURED"/);
+});
+
+test("legendHtml is one compact legend", () => {
+  const h = legendHtml();
+  assert.match(h, /legend/);
+  for (const w of ["measured", "estimate", "simulated", "mock", "replay"]) assert.match(h, new RegExp(w));
+});
 
 test("phaseLabel splits baseline from wattnot at the break", () => {
   assert.equal(phaseLabel(0, 10), "Phase 1 of 2 · Without WattNot");
