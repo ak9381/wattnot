@@ -37,6 +37,14 @@ def add_parser(sub) -> None:
                    help="p99 budget = baseline p99 x (1 + slack) (default %(default)s)")
     r.add_argument("--created-at", help="fixed timestamp, for repeatable output")
     r.add_argument("--json", action="store_true", help="print one JSON summary")
+    r.add_argument("--proposals-dir", help="gpu backend: where proposals and the audit trail "
+                   "live (default $WATTNOT_PROPOSALS_DIR or ./proposals)")
+    r.add_argument("--pre-approved", metavar="NAME",
+                   help="gpu backend: a person approved these sheds in advance; NAME goes in "
+                        "the audit trail. Without it each shed waits for "
+                        "`wattnot proposals approve`")
+    r.add_argument("--approval-wait-s", type=float, default=600.0,
+                   help="gpu backend: wait this long for an approval, then stop (default 600)")
     ld = s.add_parser("load", help="load generator: writes the progress file for --backend gpu")
     ld.add_argument("--progress", required=True, help="progress file to write (JSON lines)")
     ld.add_argument("--url", help="OpenAI-compatible server, e.g. http://127.0.0.1:8000")
@@ -71,17 +79,44 @@ def _line(o: dict, label: str) -> str:
             f"ramp-back {o['ramp_back_s']}s")
 
 
-def _run_gpu(a, ev, cfg):  # pragma: no cover - real driver only; hw.run_on_gpu is tested
-    from wattnot import probe
+def _estimate(ev, cfg, seed: int) -> dict:
+    """A dry run on the software model: what the proposal can honestly say (SIMULATED)."""
+    r = run_flex(SimBackend(seed=seed), ev, cfg).result
+    p99 = r["p99_ms"]
+    return {"delivered_pct": r["delivered_pct"], "quality_ok": r["limit"] != "quality",
+            "p99_ok": r["limit"] != "p99",
+            "p99_increase_pct": round(100 * (p99["event_mean"] / p99["before_mean"] - 1), 1)}
+
+
+def _run_gpu(a, ev, cfg, sig, nvml, prev):
+    """Real GPU: the shed is a proposal first. Nothing touches the cap until it is approved."""
+    from wattnot.approvals import ApprovalGate, Approvals, CallbackApplier, NotApproved
+    from wattnot.approvals import model as m
+    from wattnot.approvals.appliers import nvml_appliers
+    from wattnot.approvals.proposers import flex_shed_spec
     from wattnot.flex.hw import run_on_gpu
 
     if not a.progress:
         raise ValueError("--backend gpu needs --progress FILE")
-    nvml = probe.load_nvml(a.nvml) if a.nvml else probe.open_nvml()
-    try:
-        return run_on_gpu(nvml, ev, a.progress, gpu=a.gpu, cfg=cfg, sleep=time.sleep)
-    finally:
-        nvml.shutdown()
+    apps = Approvals(a.proposals_dir)
+    apps.appliers.update(nvml_appliers(nvml))
+    gate = ApprovalGate(apps, mode="pre_approved" if a.pre_approved else "ask",
+                        name=a.pre_approved or "", wait_s=a.approval_wait_s)
+    cap = apps.appliers[m.POWER_CAP]
+    before = cap.get(a.gpu)
+    spec = flex_shed_spec(ev.to_dict(), estimate=_estimate(ev, cfg, a.seed), gpu=a.gpu,
+                          source={"signal": sig.source})
+    # The event itself is run below, by this process. Applying only records the cap to restore.
+    marker = CallbackApplier(lambda p: {"gpu": a.gpu, "restored_cap_w": before},
+                             lambda t: cap.set(a.gpu, before))
+    prop = gate.request(spec, applier=marker)
+
+    def permit(_w: int) -> None:  # a revoked or expired approval stops the next cap change
+        if apps.get(prop["id"])["status"] != m.APPLIED:
+            raise NotApproved(f"{prop['id']} was revoked; stopping")
+
+    run = run_on_gpu(nvml, ev, a.progress, gpu=a.gpu, cfg=cfg, sleep=time.sleep, permit=permit)
+    return run, apps, prop
 
 
 def _run(a) -> int:
@@ -90,16 +125,39 @@ def _run(a) -> int:
     if not events:
         raise ValueError(f"no event with id {a.event!r}")
     cfg = FlexConfig(pre_s=a.pre_s, post_s=a.post_s, sla_slack=a.sla_slack)
+    nvml = None
+    if a.backend == "gpu":
+        from wattnot import probe
+
+        nvml = probe.load_nvml(a.nvml) if a.nvml else probe.open_nvml()
+    try:
+        return _run_events(a, sig, events, cfg, nvml)
+    finally:
+        if nvml is not None:
+            nvml.shutdown()
+
+
+def _run_events(a, sig, events, cfg, nvml) -> int:
     out = []
     prev = None
     for ev in events:
+        approval = apps = prop = None
         if a.backend == "gpu":
-            run = _run_gpu(a, ev, cfg)
+            from wattnot.approvals import NotApproved
+
+            try:
+                run, apps, prop = _run_gpu(a, ev, cfg, sig, nvml, prev)
+            except NotApproved as e:
+                print(f"not approved, nothing changed: {e}")
+                return 50
+            approval = apps.receipt_block(prop["id"])
         else:
             run = run_flex(SimBackend(seed=a.seed), ev, cfg)
         w = write_flex_receipt(run, sig, a.out, created_at=a.created_at, prev_sha256=prev,
-                               sign_key=a.sign_key)
+                               sign_key=a.sign_key, approval=approval)
         r = w["receipt"]
+        if apps is not None:
+            apps.link_receipt(prop["id"], r)
         prev = r["integrity"]["sha256"]
         out.append({"event": ev.id, "path": w["path"], "grade": r["grade"],
                     "outcome": r["flex"]["outcome"], "sha256": prev})

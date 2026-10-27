@@ -257,10 +257,31 @@ def test_sample_window_stays_short():
     assert clock.t <= 1.0
 
 
+def _approved(tmp_path, out):
+    """Arguments for a run that may write the cap: pre-approved, proposals kept in tmp."""
+    return ["--out", str(out), "--pre-approved", "test", "--proposals-dir", str(tmp_path / "p")]
+
+
+def test_write_test_without_approval_changes_nothing(tmp_path):
+    fake = FakeNVML()
+    args = ["--out", str(tmp_path / "c.json"), "--proposals-dir", str(tmp_path / "p"),
+            "--approval-wait-s", "0"]
+    assert main(args, backend=fake) == 50
+    assert fake.power_history == []
+    assert not (tmp_path / "c.json").exists()
+
+
+def test_write_test_pre_approved_is_in_the_audit_trail(tmp_path):
+    fake = FakeNVML()
+    assert main(_approved(tmp_path, tmp_path / "c.json"), backend=fake) == 0
+    lines = (tmp_path / "p" / "audit.jsonl").read_text(encoding="utf-8")
+    assert "pre-approved:test" in lines and "grant_closed" in lines
+
+
 def test_no_gpu_exits_2(tmp_path):
     out = tmp_path / "capabilities.json"
     fake = FakeNVML(device_count=0)
-    code = main(["--out", str(out)], backend=fake)
+    code = main(_approved(tmp_path, out), backend=fake)
     assert code == 2
     assert not out.exists()
     assert fake.power_history == []
@@ -327,7 +348,7 @@ def test_main_writes_capabilities_json(tmp_path, capsys):
 def test_main_exit_0_when_cap_write_is_denied(tmp_path):
     out = tmp_path / "capabilities.json"
     fake = FakeNVML(allow_cap_write=False, allow_clock_lock=False)
-    assert main(["--out", str(out)], backend=fake) == 0
+    assert main(_approved(tmp_path, out), backend=fake) == 0
     caps = json.loads(out.read_text(encoding="utf-8"))
     assert caps["mode"] == "container"
     assert caps["power_cap_write"]["error"] == PERMISSION_DENIED

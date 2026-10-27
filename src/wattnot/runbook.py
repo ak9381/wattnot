@@ -18,8 +18,14 @@ Stages, in order. Each writes into OUT and the next only runs if it passed:
 Models run in order: Muse Glimmer 30B (default), Muse Spark Open (only on a box with
 700 GB+ VRAM, e.g. 8x H200; skipped and recorded otherwise), Llama 3.1 8B (comparison).
 Exit codes: 0 ok, 10 setup failed, 20 probe failed (release the GPU), 30 a later
-stage failed (results so far are kept). Receipts are signed with an offline test
-key only; nothing is published.
+stage failed (results so far are kept), 50 nobody approved the session (nothing was
+changed). Receipts are signed with an offline test key only; nothing is published.
+
+Approve before apply: a real rig changes power caps and restarts vLLM, so it first asks for
+a trial grant (what it may try, within bounds; see docs/APPROVALS.md). A person approves it
+(`wattnot proposals approve <id>`) or the run is started with `--pre-approved NAME`, which is
+recorded in the audit trail. Every change is checked against the grant and put back at the
+end. The best settings it finds are filed as pending proposals, never applied.
 
 `--rig fake` dry-runs every stage on the simulator: all numbers are SIMULATED.
 """
@@ -43,6 +49,8 @@ from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
+from wattnot.approvals import ApprovalGate, Approvals, NotApproved
+from wattnot.approvals import proposers as _prop
 from wattnot.gates.decide import decide
 from wattnot.headline import (
     BASELINE,
@@ -66,7 +74,7 @@ STAGES = ("setup", "probe", "sweep", "headline", "best", "ablation", "budget2")
 ORDER = ("setup", "probe", "flex", "sweep", "headline", "best", "ablation", "budget2")
 KIT_STAGES = ("setup", "probe", "flex", "sweep", "best")  # the Oct 30 H100 kit
 FLEX_EVENTS = Path(__file__).resolve().parents[2] / "data" / "flex" / "h100-events.json"
-EXIT_SETUP, EXIT_PROBE, EXIT_STAGE = 10, 20, 30
+EXIT_SETUP, EXIT_PROBE, EXIT_STAGE, EXIT_APPROVAL = 10, 20, 30, 50
 PROBE_BUDGET_S = 600
 
 
@@ -110,6 +118,10 @@ class FakeRig:
         self.gpu = "H100 80GB (simulated)"
         self.model: ServedModel | None = None
         self.cap = 700
+        self.session = None  # an approvals TrialSession, set by run()
+
+    def cap_bounds(self) -> tuple[int, int]:
+        return 200, 700
 
     def setup_checks(self, model: ServedModel) -> list[Check]:
         return [Check("nvidia-smi", True, "simulated"), Check("nvml", True, "simulated"),
@@ -127,6 +139,8 @@ class FakeRig:
         self.model = model
 
     def set_cap(self, watts: int) -> int:
+        if self.session is not None:
+            self.session.check_cap(watts, 0)
         self.cap = watts
         return watts
 
@@ -193,6 +207,17 @@ class RealRig:  # pragma: no cover - needs a GPU host
         self.model: ServedModel | None = None
         self.procs: list[subprocess.Popen] = []
         self.serving: tuple | None = None
+        self.session = None  # an approvals TrialSession, set by run(); required for any change
+
+    def cap_bounds(self) -> tuple[int, int]:
+        lo, hi = self.nvml.power_limit_constraints_mw(self.handles[0])
+        return lo // 1000, hi // 1000
+
+    def _need_session(self):
+        if self.session is None or self.session.mode == "dry_run":
+            raise NotApproved("a real GPU rig only changes things under an approved trial "
+                              "grant (see docs/APPROVALS.md); none is open")
+        return self.session
 
     # setup
     def setup_checks(self, model: ServedModel) -> list[Check]:
@@ -202,6 +227,9 @@ class RealRig:  # pragma: no cover - needs a GPU host
         out.append(Check("nvidia-smi", r[0] == 0, r[1].strip()[:300]))
         out.append(Check("nvml", True, f"{self.gpu}, driver {self.driver}"))
         from wattnot.probe import probe
+        lo_w, hi_w = self.cap_bounds()  # the probe writes a lower cap and puts the old one back
+        for w in (lo_w, hi_w):
+            self._need_session().check_cap(w, 0)
         caps = probe(self.nvml, write=True)
         pw = caps["power_cap_write"]
         out.append(Check("power_limit_write", bool(pw["ok"]), json.dumps(pw)))
@@ -264,8 +292,12 @@ class RealRig:  # pragma: no cover - needs a GPU host
         self.model = model
 
     def set_cap(self, watts: int) -> int:
-        for h in self.handles:
-            lo, hi = self.nvml.power_limit_constraints_mw(h)
+        s = self._need_session()
+        spans = [self.nvml.power_limit_constraints_mw(h) for h in self.handles]
+        asked = [max(lo, min(hi, watts * 1000)) // 1000 for lo, hi in spans]
+        for i, w in enumerate(asked):  # check every card before writing any
+            s.check_cap(w, i)
+        for h, (lo, hi) in zip(self.handles, spans, strict=True):
             self.nvml.set_power_limit_mw(h, max(lo, min(hi, watts * 1000)))
         return watts
 
@@ -278,6 +310,7 @@ class RealRig:  # pragma: no cover - needs a GPU host
                params.enable_prefix_caching, params.enable_chunked_prefill, params.block_size)
         if self.serving == key:
             return
+        self._need_session().check_vllm({"model": self.model.key, "params": asdict(params)})
         self._stop()
         logs = self.out / "logs"
         logs.mkdir(parents=True, exist_ok=True)
@@ -336,8 +369,9 @@ class RealRig:  # pragma: no cover - needs a GPU host
         try:
             _wait_progress(progress, 180)
             time.sleep(60)  # let batching and clocks settle before the first baseline
-            yield lambda ev, cfg: run_on_gpu(self.nvml, ev, progress, gpu=0, cfg=cfg,
-                                             sleep=time.sleep)
+            yield lambda ev, cfg: run_on_gpu(
+                self.nvml, ev, progress, gpu=0, cfg=cfg, sleep=time.sleep,
+                permit=lambda w: self._need_session().check_cap(w, 0))
         finally:
             _stop_proc(proc)
             self.restore()
@@ -426,8 +460,11 @@ def _tile(wl: Workload, n: int) -> Workload:
 # ---------------------------------------------------------------- stages
 
 class Runbook:
-    def __init__(self, rig, out: Path, plan: Plan, key_path: Path, run_tag: str):
+    def __init__(self, rig, out: Path, plan: Plan, key_path: Path, run_tag: str,
+                 approvals: Approvals | None = None):
         self.rig, self.out, self.plan, self.key, self.tag = rig, out, plan, key_path, run_tag
+        self.approvals = approvals
+        self.proposal_ids: list[str] = []
         self.summary: dict = {"run_tag": run_tag, "rig": rig.provider, "gpu": rig.gpu,
                               "plan": {k: v for k, v in asdict(plan).items() if k != "models"},
                               "models": [m.repo for m in plan.models], "stages": {}}
@@ -482,6 +519,7 @@ class Runbook:
         rows, prev = [], None
         with self.rig.flex_session(fdir / "progress.jsonl", rps=self.plan.flex_rps) as run_event:
             for ev in sig.events:
+                self._check_flex(ev)
                 fr = run_event(ev, cfg)
                 w = write_flex_receipt(fr, sig, fdir, prev_sha256=prev, sign_key=str(self.key))
                 r = w["receipt"]
@@ -535,6 +573,33 @@ class Runbook:
         self.summary["best_cap_w"] = dict(self.best)
         return True
 
+    def _propose(self, receipt_path: Path, decision, model: ServedModel) -> list[str]:
+        """File the settings this receipt backs as pending proposals. Never applies anything,
+        and never changes a stage result: a failure here is only recorded."""
+        if self.approvals is None:
+            return []
+        try:
+            receipt = json.loads(Path(receipt_path).read_text(encoding="utf-8"))
+            specs = _prop.from_gpu_receipt(
+                receipt, gates=getattr(decision, "results", ()),
+                source={"stage_model": model.repo, "run_tag": self.tag}, ttl_s=7 * 86400)
+            ids = []
+            if decision is not None and not decision.passed:
+                return []  # a candidate that failed its gates is never proposed
+            for spec in specs:
+                p = self.approvals.propose(spec)
+                ids.append(p["id"])
+            self.proposal_ids += ids
+            return ids
+        except Exception as e:  # noqa: BLE001 - proposals are extra; the run is the point
+            self.summary.setdefault("proposal_errors", []).append(f"{type(e).__name__}: {e}"[:300])
+            return []
+
+    def _check_flex(self, ev) -> None:
+        s = getattr(self.rig, "session", None)
+        if s is not None:
+            s.check_flex(ev.target_pct, ev.duration_s)
+
     def _compare(self, stage, m, base, cand, reason) -> dict:
         self.rig.use(m)
         r = gated_compare(self.rig, baseline=base, candidate=cand, root=self.out,
@@ -542,10 +607,12 @@ class Runbook:
                           workload=self._wl(), reason=reason,
                           concurrency=self.plan.concurrency)
         rep = verify_receipt(r.receipt)
+        proposals = self._propose(r.receipt, r.decision, m)
         return {"model": m.repo, "receipt": str(r.receipt.relative_to(self.out)),
                 "passed": r.decision_passed,
                 "verify_ok": all(st.ok for st in rep.steps if st.name != "rekor"),
-                "grade": rep.grade}  # rekor: offline test key, never published
+                "grade": rep.grade,  # rekor: offline test key, never published
+                "proposals": proposals}
 
     def headline(self) -> bool:
         self.summary["headline"] = [self._compare(
@@ -616,8 +683,37 @@ class Runbook:
         return r["verify_ok"]
 
 
+def _session_bounds(rig, plan: Plan, stages) -> dict:
+    """What a run may try: caps within the hardware range, vLLM restarts, and the flex events."""
+    lo, hi = rig.cap_bounds()
+    b: dict = {"power_cap_w": {"min": lo, "max": hi}, "gpus": list(range(rig.gpus)),
+               "vllm_config": True}
+    if "flex" in stages:
+        from wattnot.flex import signal as fsig
+
+        evs = fsig.load(plan.flex_events).events
+        b["flex_shed"] = {"max_target_pct": max(e.target_pct for e in evs),
+                          "max_duration_s": max(e.duration_s for e in evs)}
+    return b
+
+
+def _export_approvals(store, out: Path, ids: list[str]) -> None:
+    """Copy the audit trail and the proposals this run touched into the results folder."""
+    d = out / "approvals"
+    d.mkdir(parents=True, exist_ok=True)
+    if store.audit_path.exists():
+        shutil.copy2(store.audit_path, d / "audit.jsonl")
+    for pid in ids:
+        src = store._path(pid)
+        if src.exists():
+            shutil.copy2(src, d / src.name)
+
+
 def run(rig, out: str | Path, *, plan: Plan | None = None, stages=STAGES,
-        key_path: str | Path | None = None, run_tag: str | None = None, pack: bool = True) -> int:
+        key_path: str | Path | None = None, run_tag: str | None = None, pack: bool = True,
+        gate: ApprovalGate | None = None) -> int:
+    """Run the stages. `gate` decides whether a real rig may change anything (see
+    docs/APPROVALS.md). A fake rig gets a throwaway dry-run gate if none is given."""
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     plan = plan or Plan()
@@ -626,13 +722,39 @@ def run(rig, out: str | Path, *, plan: Plan | None = None, stages=STAGES,
     if not key.exists():
         key.parent.mkdir(parents=True, exist_ok=True)
         generate_test_key(key)  # offline test key, kept OUT of the results folder
-    rb = Runbook(rig, out, plan, key, tag)
+    scratch = None
+    if gate is None and rig.provider == "fake":
+        import tempfile
+
+        scratch = tempfile.mkdtemp(prefix="wattnot-dryrun-")
+        gate = ApprovalGate(Approvals(scratch), mode="dry_run", announce=lambda _m: None)
+    if gate is None:
+        print("no approval gate was given: a real rig changes nothing without one "
+              "(see docs/APPROVALS.md)", flush=True)
+        return EXIT_APPROVAL
+    rb = Runbook(rig, out, plan, key, tag, approvals=gate.approvals)
     steps = {"setup": (rb.setup, EXIT_SETUP), "probe": (rb.probe, EXIT_PROBE),
              "flex": (rb.flex, EXIT_STAGE),
              "sweep": (rb.sweep, EXIT_STAGE), "headline": (rb.headline, EXIT_STAGE),
              "best": (rb.best_rerun, EXIT_STAGE), "ablation": (rb.ablation_stage, EXIT_STAGE),
              "budget2": (rb.budget2, EXIT_STAGE)}
     code = 0
+    session = gate.session(
+        title=f"WattNot run {tag}: try power caps and vLLM settings on {rig.gpu}",
+        bounds=_session_bounds(rig, plan, stages),
+        source={"tool": "runbook", "run_tag": tag, "stages": list(stages), "rig": rig.provider},
+        ttl_s=8 * 3600,
+        reason="measure each setting against the baseline; everything is restored afterwards")
+    try:
+        session.__enter__()
+    except NotApproved as e:
+        print(f"not approved: {e}", flush=True)
+        rig.close()
+        if scratch:
+            shutil.rmtree(scratch, ignore_errors=True)
+        return EXIT_APPROVAL
+    rig.session = session
+    rb.summary["approvals"] = {"mode": gate.mode, "grant": session.id}
     try:
         for name in ORDER:
             if name not in stages:
@@ -653,7 +775,18 @@ def run(rig, out: str | Path, *, plan: Plan | None = None, stages=STAGES,
                     print("probe failed: release the machine now (no further GPU time).")
                 break
     finally:
-        rig.close()
+        rig.close()  # puts every cap back first; only then does the grant close
+        rig.session = None
+        session.__exit__(None, None, None)
+        g = gate.approvals.get(session.id)
+        rb.summary["approvals"].update(
+            status=g["status"], approved_by=(g.get("decision") or {}).get("by"),
+            usage=(g.get("grant") or {}).get("usage"),
+            proposals=list(rb.proposal_ids),
+            audit_chain_problems=gate.approvals.verify())
+        _export_approvals(gate.approvals.store, out, [session.id, *rb.proposal_ids])
+        if scratch:
+            shutil.rmtree(scratch, ignore_errors=True)
         rb.summary["receipt_labels"] = _receipt_labels(out)
         print("receipts by label:", json.dumps(rb.summary["receipt_labels"]), flush=True)
         rb._write("summary.json", rb.summary)
@@ -697,6 +830,14 @@ def main(argv=None) -> int:
     ap.add_argument("--flex-rps", type=float, default=8.0,
                     help="flex stage: load generator requests per second")
     ap.add_argument("--fail-probe", action="store_true", help="fake rig: simulate a no-go")
+    ap.add_argument("--pre-approved", metavar="NAME", default=None,
+                    help="a person approved this whole session in advance; NAME goes in the audit "
+                         "trail. Without it a real rig waits for `wattnot proposals approve`")
+    ap.add_argument("--approval-wait-s", type=float, default=600.0,
+                    help="how long to wait for an approval before exiting 50 (default 600)")
+    ap.add_argument("--proposals-dir", default=None,
+                    help="where proposals and the audit trail live "
+                         "(default $WATTNOT_PROPOSALS_DIR or ./proposals)")
     a = ap.parse_args(argv)
     plan = Plan(spark=a.spark, flex_rps=a.flex_rps)
     if a.quick:
@@ -706,7 +847,22 @@ def main(argv=None) -> int:
     rig = (FakeRig(gpus=a.gpus, cap_writable=not a.fail_probe) if a.rig == "fake"
            else RealRig(out, gpus=a.gpus))
     rig.vram_gb = a.gpus * a.gpu_gb
-    return run(rig, out, plan=plan, stages=tuple(a.stages.split(",")))
+    gate = None
+    if a.rig == "real" or a.pre_approved or a.proposals_dir:
+        apps = Approvals(a.proposals_dir)
+        if a.rig == "real":
+            from wattnot.approvals.appliers import nvml_appliers
+
+            apps.appliers.update(nvml_appliers(rig.nvml))
+        gate = ApprovalGate(
+            apps, mode="pre_approved" if a.pre_approved
+            else ("dry_run" if a.rig == "fake" else "ask"),
+            name=a.pre_approved or "", wait_s=a.approval_wait_s)
+        if a.pre_approved:
+            print(f"PRE-APPROVED by flag ({a.pre_approved}): this run may change power caps "
+                  "and restart vLLM inside the bounds in its grant. Recorded in the audit "
+                  "trail.", flush=True)
+    return run(rig, out, plan=plan, stages=tuple(a.stages.split(",")), gate=gate)
 
 
 if __name__ == "__main__":

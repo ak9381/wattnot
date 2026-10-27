@@ -49,10 +49,12 @@ class ProgressFile:
 
 def run_on_gpu(nvml, event: ShedEvent, progress: str | Path, *, gpu: int = 0,
                cfg: FlexConfig | None = None,
-               sleep: Callable[[float], None] = time.sleep) -> FlexRun:
+               sleep: Callable[[float], None] = time.sleep,
+               permit: Callable[[int], None] | None = None) -> FlexRun:
+    """`permit(watts)` (optional) is checked before every cap change; see `CapGuard`."""
     handle = nvml.device_handle(gpu)
     pf = ProgressFile(progress)
-    with CapGuard(nvml, handle) as guard:
+    with CapGuard(nvml, handle, permit=permit) as guard:
         backend = HardwareBackend(
             nvml, handle, guard, read_p99_ms=lambda: pf.latest()["p99_ms"],
             read_pass_rate=lambda: pf.latest()["pass_rate"],

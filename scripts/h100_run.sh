@@ -9,7 +9,10 @@
 # llama.cpp three-tier hybrid, ~32 tries (4 quants x 4 hot-layer levels x 2 batch modes)
 # planned to fit --spark-open-budget-h (default 4.5). It skips itself on low disk
 # (<550 GB) or RAM. Tiers are per layer in llama.cpp, not per expert.
-# Exit codes: 0 ok, 10 setup failed, 20 probe failed -> release the machine, 30 stage failed.
+# Approve before apply: a real run needs --pre-approved NAME (recorded in the audit trail) or a
+# person running `wattnot proposals approve <id>` within --approval-wait-s; otherwise exit 50.
+# Exit codes: 0 ok, 10 setup failed, 20 probe failed -> release the machine, 30 stage failed,
+# 50 nobody approved the session (nothing was changed).
 # Results: results/h100-<time>/ plus results/h100-<time>.tar.gz to copy back.
 set -euo pipefail
 cd "$(dirname "$0")/.."

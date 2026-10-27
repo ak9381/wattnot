@@ -3,18 +3,25 @@
 `CapGuard` reads the cap on entry and puts it back on exit, on an
 exception, and on SIGTERM. Caps are clamped to the driver's min/max, so
 the controller can never ask for an out-of-range value.
+
+Optional `permit(watts)` is called before every write that is not a restore. It raises
+(`wattnot.approvals.NotApproved`) when the change is outside what a human approved, and then
+nothing is written. Restoring the saved limit never needs permission.
 """
 
 from __future__ import annotations
 
 import signal
 import threading
+from collections.abc import Callable
 
 
 class CapGuard:
-    def __init__(self, nvml, handle, *, handle_sigterm: bool = True) -> None:
+    def __init__(self, nvml, handle, *, handle_sigterm: bool = True,
+                 permit: Callable[[int], None] | None = None) -> None:
         self.nvml = nvml
         self.handle = handle
+        self.permit = permit
         lo, hi = nvml.power_limit_constraints_mw(handle)
         self.min_w, self.max_w = lo // 1000, hi // 1000
         self.saved_mw: int | None = None
@@ -45,8 +52,11 @@ class CapGuard:
     def cap_w(self) -> int:
         return int(self.nvml.power_limit_mw(self.handle)) // 1000
 
-    def set_cap_w(self, watts: int) -> int:
+    def set_cap_w(self, watts: int, *, restoring: bool = False) -> int:
+        """Write a power limit. `restoring=True` (putting a limit back) skips the permit."""
         watts = self.clamp(watts)
+        if self.permit is not None and not restoring:
+            self.permit(watts)
         self.nvml.set_power_limit_mw(self.handle, watts * 1000)
         return watts
 

@@ -718,6 +718,8 @@ class NvmlLib:
 
 def main(argv: Sequence[str] | None = None, *, backend=None) -> int:
     """CLI entry. `backend` is for tests; the real driver is opened otherwise."""
+    from wattnot.approvals import NotApproved
+
     parser = argparse_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
     if backend is None:
@@ -729,12 +731,21 @@ def main(argv: Sequence[str] | None = None, *, backend=None) -> int:
 
     code = 0
     caps = None
+    session = None
     try:
         try:
+            if not args.no_write:  # the write test changes the power cap: ask first
+                session = _open_session(backend, args)
             caps = probe(backend, write=not args.no_write)
         except NoGpu:
             print("probe: no GPU or NVML is missing", file=sys.stderr)
             code = 2
+        except NotApproved as exc:
+            print(f"probe: not approved, nothing was changed: {exc}", file=sys.stderr)
+            code = 50
+        finally:
+            if session is not None:
+                session.__exit__(None, None, None)
         if caps is not None:
             payload = json.dumps(caps, indent=2) + "\n"
             if args.out:
@@ -749,6 +760,26 @@ def main(argv: Sequence[str] | None = None, *, backend=None) -> int:
     return code
 
 
+def _open_session(backend, args):
+    """Ask for permission to run the cap write test (it lowers the cap, then puts it back)."""
+    from wattnot.approvals import ApprovalGate, Approvals
+
+    try:
+        lo, hi = backend.power_limit_constraints_mw(backend.device_handle(0))
+        cap = {"min": lo // 1000, "max": hi // 1000}
+    except Exception:  # noqa: BLE001 - no GPU: probe() reports that itself
+        cap = {"min": 0, "max": 0}
+    gate = ApprovalGate(
+        Approvals(args.proposals_dir),
+        mode="pre_approved" if args.pre_approved else "ask", name=args.pre_approved or "",
+        wait_s=args.approval_wait_s)
+    session = gate.session(
+        title="Probe: test writing the GPU power cap, then put it back",
+        bounds={"power_cap_w": cap, "gpus": [0]}, source={"tool": "wattnot.probe"},
+        ttl_s=1800, reason="check that the cap can be written and restored")
+    return session.__enter__()
+
+
 def argparse_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m wattnot.probe",
@@ -760,6 +791,15 @@ def argparse_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="read-only check; do not change power caps or clocks",
     )
+    parser.add_argument(
+        "--pre-approved", metavar="NAME", default=None,
+        help="a person approved the cap write test in advance; NAME goes in the audit trail "
+             "(without it the test waits for `wattnot proposals approve`)")
+    parser.add_argument("--approval-wait-s", type=float, default=600.0,
+                        help="how long to wait for an approval, then exit 50 (default 600)")
+    parser.add_argument("--proposals-dir", default=None,
+                        help="where proposals and the audit trail live "
+                             "(default $WATTNOT_PROPOSALS_DIR or ./proposals)")
     return parser
 
 

@@ -8,23 +8,36 @@
 #   bash scripts/h100_oct30.sh --fake
 # On the GPU box (root), only after Akash has OK'd the rental:
 #   export HF_TOKEN=...            # read access; Llama 3.1 licence accepted on HF
-#   bash scripts/h100_oct30.sh [--gpus 2] [--flex-rps 8]
+#   bash scripts/h100_oct30.sh --pre-approved [--approved-by NAME] [--gpus 2] [--flex-rps 8]
+# Approve before apply: the real run changes power caps and restarts vLLM, so it first asks for
+# a trial grant. --pre-approved is the explicit flag for the unattended session: the grant is
+# recorded as approved by "pre-approved:h100_oct30.sh (by NAME)" in the audit trail, bounded to
+# the hardware's cap range and the flex events, and every change is put back at the end.
+# Without the flag the run waits (--approval-wait-s, default 600) for someone to run
+# `wattnot proposals approve <id>` on the box, then exits 50 with nothing changed.
+# The best settings it finds are filed as pending proposals; nothing is switched on by it.
+# Proposals and the audit trail live in ${WATTNOT_PROPOSALS_DIR:-proposals} (a --fake run keeps
+# them under its results folder) and a copy goes into the results as approvals/.
 # Exit codes: 0 ok, 10 setup failed, 20 probe failed -> release the machine, 30 a later stage
 # failed (results so far are kept), 40 ran clean but a receipt is not labelled as expected
-# (a real run must be all MEASURED; a --fake run all SIMULATED).
+# (a real run must be all MEASURED; a --fake run all SIMULATED), 50 nobody approved the
+# session (nothing was changed).
 # Results: results/h100-oct30-<time>/ plus results/h100-oct30-<time>.tar.gz to copy back.
 # Receipts are signed with an offline test key. Nothing is published, no Rekor.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 OUT="results/h100-oct30-$(date -u +%Y%m%d-%H%M%S)"
-RIG=real; EXTRA=()
+RIG=real; EXTRA=(); PRE=0; WHO="${WATTNOT_APPROVER:-$(id -un 2>/dev/null || echo unknown)}"
 while [ $# -gt 0 ]; do
   case "$1" in
     --fake) RIG=fake; EXTRA+=(--quick) ;;
     --out) OUT="$2"; shift ;;
     --gpus|--flex-rps|--gpu-gb) EXTRA+=("$1" "$2"); shift ;;
     --fail-probe) EXTRA+=("$1") ;;
-    -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
+    --pre-approved) PRE=1 ;;
+    --approved-by) WHO="$2"; shift ;;
+    --approval-wait-s) EXTRA+=("$1" "$2"); shift ;;
+    -h|--help) sed -n '2,28p' "$0"; exit 0 ;;
     *) echo "unknown option: $1 (try --help)"; exit 2 ;;
   esac
   shift
@@ -43,6 +56,9 @@ elif ! python3 -c "import wattnot" 2>/dev/null; then
   export PYTHONPATH="$PWD/src${PYTHONPATH:+:$PYTHONPATH}"
 fi
 PY=python; command -v python >/dev/null || PY=python3
+if [ "$RIG" = fake ]; then PROPS="$OUT/proposals"; else PROPS="${WATTNOT_PROPOSALS_DIR:-proposals}"; fi
+EXTRA+=(--proposals-dir "$PROPS")
+if [ "$PRE" = 1 ]; then EXTRA+=(--pre-approved "h100_oct30.sh (by $WHO)"); fi
 set +e
 $PY -m wattnot.runbook --rig "$RIG" --out "$OUT" --stages setup,probe,flex,sweep,best "${EXTRA[@]}"
 code=$?

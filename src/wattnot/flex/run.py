@@ -82,6 +82,10 @@ class HardwareBackend:
     def set_cap_w(self, w: int) -> int:
         return self.guard.set_cap_w(w)
 
+    def restore_cap(self, w: int) -> int:
+        """Put a limit back (never needs a permit)."""
+        return self.guard.set_cap_w(w, restoring=True)
+
     def observe(self, t: float) -> Reading:
         return Reading(self.nvml.power_usage_mw(self.handle) / 1000.0, float(self._p99()),
                        float(self._pass()), float(self._rps()))
@@ -157,7 +161,7 @@ def run_flex(backend, event: ShedEvent, cfg: FlexConfig | None = None, *,
             if sleep:
                 sleep(cfg.dt_s)
     finally:
-        backend.set_cap_w(original_cap)  # never leave the GPU capped
+        getattr(backend, "restore_cap", backend.set_cap_w)(original_cap)  # never leave it capped
     meter = backend.meter() if hasattr(backend, "meter") else {}
     return FlexRun(event, cfg, ticks, ctl.moves, _baseline(ticks, n_pre),
                    _summarise(ticks, ctl, event, cfg, n_pre, n_event), meter)

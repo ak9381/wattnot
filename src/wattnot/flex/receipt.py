@@ -97,7 +97,8 @@ def _arm(ticks, run: FlexRun, window_ticks) -> dict:
 
 def build_flex_receipt(run: FlexRun, signal: Signal, *, trace_name: str | None = None,
                        created_at: str | None = None,
-                       prev_sha256: str | None = None) -> tuple[dict[str, Any], str, dict]:
+                       prev_sha256: str | None = None,
+                       approval: dict | None = None) -> tuple[dict[str, Any], str, dict]:
     """Return (receipt, trace_csv_text, trace_json). Raises ValueError if it fails the checks."""
 
     label = (run.meter or {}).get("label", "SIMULATED")
@@ -154,6 +155,8 @@ def build_flex_receipt(run: FlexRun, signal: Signal, *, trace_name: str | None =
         },
         "planner_trace": [],
     }
+    if approval:  # points back at the approved proposal (id and content hash)
+        r["approval"] = dict(approval)
     with_joules(r)
     r["grade"] = claimed_grade(r, rekor=False)
     r["integrity"] = {"canonicalization": "JCS RFC 8785", "sha256": canonical_sha256(r),
@@ -172,13 +175,14 @@ def build_flex_receipt(run: FlexRun, signal: Signal, *, trace_name: str | None =
 
 
 def write_flex_receipt(run: FlexRun, signal: Signal, out: str | Path, *, created_at=None,
-                       prev_sha256=None, sign_key: str | None = None) -> dict:
+                       prev_sha256=None, sign_key: str | None = None,
+                       approval: dict | None = None) -> dict:
     """Write `<id>.json`, `<id>.trace.csv`, `<id>.trace.json` (and a bundle if `sign_key`)."""
 
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     r, csv_text, tj = build_flex_receipt(run, signal, created_at=created_at,
-                                         prev_sha256=prev_sha256)
+                                         prev_sha256=prev_sha256, approval=approval)
     rid = r["receipt_id"]
     (out / f"{rid}.trace.csv").write_text(csv_text, encoding="utf-8")
     (out / f"{rid}.trace.json").write_text(json.dumps(tj, separators=(",", ":")) + "\n",

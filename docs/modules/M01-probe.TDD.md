@@ -3,8 +3,11 @@ Branch: `feat/m01-probe` · Hours: 3 · Depends on: none
 
 ## Interfaces
 ```
-python -m wattnot.probe [--out capabilities.json] [--no-write]   # --no-write = read-only check
-exit 0 = probe ran (even if caps are blocked); exit 2 = no GPU / NVML missing
+python -m wattnot.probe [--out capabilities.json] [--no-write] [--pre-approved NAME]
+# --no-write = read-only check. The write test lowers the cap and puts it back, so it asks for
+# approval first (docs/APPROVALS.md): --pre-approved NAME, or `wattnot proposals approve <id>`.
+exit 0 = probe ran (even if caps are blocked); exit 2 = no GPU / NVML missing;
+exit 50 = the write test was not approved (nothing was changed)
 ```
 `capabilities.json`:
 ```json

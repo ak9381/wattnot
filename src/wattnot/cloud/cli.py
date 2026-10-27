@@ -49,6 +49,10 @@ def add_parser(sub) -> None:
     t.add_argument("--confirmed-rates", help="in/cached/out USD per 1M, e.g. 1.25,0.15,4.25")
     t.add_argument("--sign-key", help="Ed25519 test key: sign the receipt offline")
     t.add_argument("--out", default=OUT)
+    t.add_argument("--no-propose", action="store_true",
+                   help="do not file the tuned effort policy as a pending proposal")
+    t.add_argument("--proposals-dir", help="where proposals live "
+                   "(default $WATTNOT_PROPOSALS_DIR or ./proposals)")
     sh = s.add_parser("show", help="print a receipt as a table")
     sh.add_argument("receipt")
     rp = s.add_parser("report", help="write the receipt as one HTML page")
@@ -147,7 +151,27 @@ def _tune(a) -> int:
     page.write_text(view.render(r), encoding="utf-8")
     print("\n".join(view.summary_lines(r)))
     print(f"\nreceipt {path}\nreport  {page}")
+    if not a.no_propose:
+        _propose(a, r)
     return 0
+
+
+def _propose(a, receipt: dict) -> None:
+    """File the tuned policy as a pending proposal. Nothing is switched on: the routing policy
+    only changes after `wattnot proposals approve` and `apply`."""
+    from wattnot.approvals import Approvals
+    from wattnot.approvals.proposers import from_cloud_receipt
+
+    try:
+        spec = from_cloud_receipt(receipt, source={"tool": "wattnot cloud tune",
+                                                   "receipt_id": receipt.get("receipt_id")},
+                                  ttl_s=7 * 86400)
+        p = Approvals(a.proposals_dir).propose(spec)
+    except Exception as e:  # noqa: BLE001 - the receipt is the result; the proposal is extra
+        print(f"could not file a proposal ({type(e).__name__}: {e})", file=sys.stderr)
+        return
+    print(f"\nproposal {p['id']} is {p['status']}: nothing changes until a person approves it\n"
+          f"  review: wattnot proposals show {p['id']}")
 
 
 def _show(a) -> int:
