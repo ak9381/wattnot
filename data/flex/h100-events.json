@@ -1,0 +1,12 @@
+{
+  "label": "SIMULATED",
+  "source": "three replayed shed asks for the H100 check; not a live grid signal and not from any utility",
+  "events": [
+    {"id": "h100-evt-1", "kind": "shed", "target_pct": 15, "duration_s": 300,
+     "note": "A small ask. Should be easy on a warm H100."},
+    {"id": "h100-evt-2", "kind": "shed", "target_pct": 25, "duration_s": 300,
+     "note": "The demo ask. This is the one the receipt headline quotes."},
+    {"id": "h100-evt-3", "kind": "shed", "target_pct": 35, "duration_s": 300,
+     "note": "A hard ask. The run may stop short, and the receipt says why."}
+  ]
+}

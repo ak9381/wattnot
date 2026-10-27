@@ -62,6 +62,10 @@ from wattnot.runner.workload import Workload, load_replay_set
 from wattnot.verify import verify_receipt
 
 STAGES = ("setup", "probe", "sweep", "headline", "best", "ablation", "budget2")
+# `flex` is opt-in (about 25 min of GPU time): it never runs unless asked for by name.
+ORDER = ("setup", "probe", "flex", "sweep", "headline", "best", "ablation", "budget2")
+KIT_STAGES = ("setup", "probe", "flex", "sweep", "best")  # the Oct 30 H100 kit
+FLEX_EVENTS = Path(__file__).resolve().parents[2] / "data" / "flex" / "h100-events.json"
 EXIT_SETUP, EXIT_PROBE, EXIT_STAGE = 10, 20, 30
 PROBE_BUDGET_S = 600
 
@@ -81,6 +85,10 @@ class Plan:
     concurrency: int = 32     # requests in flight, so batching knobs matter
     ablation_trials: int = 8  # per arm
     spark: bool = False       # one Muse Spark call to seed Optuna (needs META_API_KEY)
+    flex_rps: float = 8.0     # flex stage: load generator request rate
+    flex_pre_s: int = 30      # flex stage: seconds measured before each event
+    flex_post_s: int = 90     # flex stage: seconds of ramp-back after each event
+    flex_events: str = str(FLEX_EVENTS)
     models: tuple[ServedModel, ...] = RUN_ORDER
     extra: dict = field(default_factory=dict)
 
@@ -121,6 +129,19 @@ class FakeRig:
     def set_cap(self, watts: int) -> int:
         self.cap = watts
         return watts
+
+    @contextlib.contextmanager
+    def flex_session(self, progress: Path, *, rps: float):
+        """Dry run: the real load generator in --fake mode writes the progress file, and the
+        software power model plays the card. Everything here is SIMULATED."""
+        from wattnot.flex.run import SimBackend, run_flex
+
+        proc = _spawn_load(progress, rps=rps, fake=True, log=progress.with_suffix(".log"))
+        try:
+            _wait_progress(progress, 30)
+            yield lambda ev, cfg: run_flex(SimBackend(seed=7), ev, cfg)
+        finally:
+            _stop_proc(proc)
 
     def _wh(self, p: TrialParams) -> float:
         cap = (p.power_cap_w or 700) / 700
@@ -303,6 +324,24 @@ class RealRig:  # pragma: no cover - needs a GPU host
                 return cs[_RoundRobin.n % len(cs)].complete(item)
         return _RoundRobin()
 
+    @contextlib.contextmanager
+    def flex_session(self, progress: Path, *, rps: float):
+        """vLLM up at the full cap, the load generator driving it, NVML on GPU 0.
+        The load keeps running between events so p99 and pass rate are always fresh."""
+        from wattnot.flex.hw import run_on_gpu
+
+        self.client(BASELINE)  # starts the server; cap back at the saved limit
+        proc = _spawn_load(progress, rps=rps, fake=False, log=self.out / "logs" / "flex-load.log",
+                           url=f"http://127.0.0.1:{self.port}", model=self.model.repo)
+        try:
+            _wait_progress(progress, 180)
+            time.sleep(60)  # let batching and clocks settle before the first baseline
+            yield lambda ev, cfg: run_on_gpu(self.nvml, ev, progress, gpu=0, cfg=cfg,
+                                             sleep=time.sleep)
+        finally:
+            _stop_proc(proc)
+            self.restore()
+
     def meter(self, params: TrialParams):
         from wattnot.meter.nvml import NvmlMeter
         return NvmlMeter(self.nvml, run_id=f"m-{int(time.time())}",
@@ -341,6 +380,34 @@ def _wait_http(url: str, timeout_s: float) -> None:  # pragma: no cover - real h
             return
         time.sleep(5)
     raise TimeoutError(f"vLLM not up: {url}")
+
+
+def _spawn_load(progress: Path, *, rps: float, fake: bool, log: Path, url: str | None = None,
+                model: str | None = None) -> subprocess.Popen:
+    """Start `wattnot flex load` in the background; it ends on SIGTERM."""
+    progress.parent.mkdir(parents=True, exist_ok=True)
+    log.parent.mkdir(parents=True, exist_ok=True)
+    argv = [sys.executable, "-c", "from wattnot.cli import main; raise SystemExit(main())",
+            "flex", "load", "--progress", str(progress), "--rps", f"{rps:g}"]
+    argv += ["--fake"] if fake else ["--url", url or "", "--model", model or ""]
+    return subprocess.Popen(argv, stdout=log.open("ab"), stderr=subprocess.STDOUT)
+
+
+def _wait_progress(progress: Path, timeout_s: float) -> None:
+    end = time.monotonic() + timeout_s
+    while time.monotonic() < end:
+        if progress.exists() and progress.stat().st_size > 0:
+            return
+        time.sleep(0.5)
+    raise TimeoutError(f"load generator wrote nothing to {progress} in {timeout_s:g}s")
+
+
+def _stop_proc(proc: subprocess.Popen) -> None:
+    proc.terminate()
+    try:
+        proc.wait(timeout=30)
+    except subprocess.TimeoutExpired:  # pragma: no cover - a stuck child
+        proc.kill()
 
 
 def _gate_cell(d) -> str:
@@ -399,6 +466,38 @@ class Runbook:
         ok, info = self.rig.probe(PROBE_BUDGET_S)
         self._write("probe.json", {"ok": ok, **info})
         return ok
+
+    def flex(self) -> bool:
+        """Shed test: three grid asks while the load generator keeps the server busy.
+        Each event is 30 s before + 300 s event + 90 s ramp-back (about 7 min), so the
+        stage is about 21 min of event time plus warm-up. One signed flex receipt each."""
+        from wattnot.flex import signal as fsig
+        from wattnot.flex.controller import FlexConfig
+        from wattnot.flex.receipt import check_trace, write_flex_receipt
+
+        sig = fsig.load(self.plan.flex_events)
+        self.rig.use(self.plan.models[0])
+        cfg = FlexConfig(pre_s=self.plan.flex_pre_s, post_s=self.plan.flex_post_s)
+        fdir = self.out / "flex"
+        rows, prev = [], None
+        with self.rig.flex_session(fdir / "progress.jsonl", rps=self.plan.flex_rps) as run_event:
+            for ev in sig.events:
+                fr = run_event(ev, cfg)
+                w = write_flex_receipt(fr, sig, fdir, prev_sha256=prev, sign_key=str(self.key))
+                r = w["receipt"]
+                prev = r["integrity"]["sha256"]
+                rep = verify_receipt(Path(w["path"]))
+                trace_ok, problems = check_trace(w["path"])
+                o = r["flex"]["outcome"]
+                rows.append({"event": ev.id, "target_pct": o["target_pct"],
+                             "delivered_pct": o["delivered_pct"], "status": o["status"],
+                             "limit": o["limit"], "p99_ms": o["p99_ms"],
+                             "label": r["flex"]["label"],
+                             "grade": rep.grade, "trace_ok": trace_ok, "problems": problems,
+                             "verify_ok": all(st.ok for st in rep.steps if st.name != "rekor"),
+                             "receipt": str(Path(w["path"]).relative_to(self.out))})
+        self.summary["flex"] = rows
+        return all(x["verify_ok"] and x["trace_ok"] for x in rows)
 
     def sweep(self) -> bool:
         rows = []
@@ -529,12 +628,13 @@ def run(rig, out: str | Path, *, plan: Plan | None = None, stages=STAGES,
         generate_test_key(key)  # offline test key, kept OUT of the results folder
     rb = Runbook(rig, out, plan, key, tag)
     steps = {"setup": (rb.setup, EXIT_SETUP), "probe": (rb.probe, EXIT_PROBE),
+             "flex": (rb.flex, EXIT_STAGE),
              "sweep": (rb.sweep, EXIT_STAGE), "headline": (rb.headline, EXIT_STAGE),
              "best": (rb.best_rerun, EXIT_STAGE), "ablation": (rb.ablation_stage, EXIT_STAGE),
              "budget2": (rb.budget2, EXIT_STAGE)}
     code = 0
     try:
-        for name in STAGES:
+        for name in ORDER:
             if name not in stages:
                 continue
             t0 = time.monotonic()
@@ -554,12 +654,28 @@ def run(rig, out: str | Path, *, plan: Plan | None = None, stages=STAGES,
                 break
     finally:
         rig.close()
+        rb.summary["receipt_labels"] = _receipt_labels(out)
+        print("receipts by label:", json.dumps(rb.summary["receipt_labels"]), flush=True)
         rb._write("summary.json", rb.summary)
         _manifest(out)
         if pack:
             with tarfile.open(out.with_suffix(".tar.gz"), "w:gz") as tf:
                 tf.add(out, arcname=out.name)
     return code
+
+
+def _receipt_labels(out: Path) -> dict[str, int]:
+    """Count the receipts in `out` by their measurement label (MEASURED / SIMULATED / ...)."""
+    n: dict[str, int] = {}
+    for p in sorted(out.rglob("rcpt_*.json")):
+        if p.name.endswith((".sigstore.json", ".trace.json")):
+            continue
+        try:
+            lab = json.loads(p.read_text(encoding="utf-8"))["measurement"]["label"]
+        except (OSError, ValueError, KeyError, TypeError):
+            lab = "UNREADABLE"
+        n[lab] = n.get(lab, 0) + 1
+    return n
 
 
 def _manifest(out: Path) -> None:
@@ -578,9 +694,11 @@ def main(argv=None) -> int:
     ap.add_argument("--stages", default=",".join(STAGES))
     ap.add_argument("--spark", action="store_true", help="one Muse Spark call seeds Optuna")
     ap.add_argument("--quick", action="store_true", help="tiny plan for a dry run")
+    ap.add_argument("--flex-rps", type=float, default=8.0,
+                    help="flex stage: load generator requests per second")
     ap.add_argument("--fail-probe", action="store_true", help="fake rig: simulate a no-go")
     a = ap.parse_args(argv)
-    plan = Plan(spark=a.spark)
+    plan = Plan(spark=a.spark, flex_rps=a.flex_rps)
     if a.quick:
         plan = replace(plan, caps=(700, 600, 500), reps=5, repeat=1, concurrency=1,
                        ablation_trials=4)

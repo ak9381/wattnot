@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# The Oct 30 H100 kit: one script, three jobs, in this order.
+#   1. probe  (<= 10 min)  can we write the power cap, does the energy counter move, is the cap put back
+#   2. flex   (~30 min)    three grid shed asks (15/25/35 percent) while the load generator keeps
+#                          vLLM busy; one signed flex receipt each
+#   3. sweep  (core)       power-cap sweep per model, then the best cap re-run as a gated receipt
+# Dry run, anywhere, no GPU (every number is SIMULATED, takes a few seconds):
+#   bash scripts/h100_oct30.sh --fake
+# On the GPU box (root), only after Akash has OK'd the rental:
+#   export HF_TOKEN=...            # read access; Llama 3.1 licence accepted on HF
+#   bash scripts/h100_oct30.sh [--gpus 2] [--flex-rps 8]
+# Exit codes: 0 ok, 10 setup failed, 20 probe failed -> release the machine, 30 a later stage
+# failed (results so far are kept), 40 ran clean but a receipt is not labelled as expected
+# (a real run must be all MEASURED; a --fake run all SIMULATED).
+# Results: results/h100-oct30-<time>/ plus results/h100-oct30-<time>.tar.gz to copy back.
+# Receipts are signed with an offline test key. Nothing is published, no Rekor.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+OUT="results/h100-oct30-$(date -u +%Y%m%d-%H%M%S)"
+RIG=real; EXTRA=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --fake) RIG=fake; EXTRA+=(--quick) ;;
+    --out) OUT="$2"; shift ;;
+    --gpus|--flex-rps|--gpu-gb) EXTRA+=("$1" "$2"); shift ;;
+    --fail-probe) EXTRA+=("$1") ;;
+    -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
+    *) echo "unknown option: $1 (try --help)"; exit 2 ;;
+  esac
+  shift
+done
+if [ "$RIG" = real ]; then
+  if [ ! -d .venv ]; then python3 -m venv .venv; fi
+  # shellcheck disable=SC1091
+  source .venv/bin/activate
+  PIP="python -m pip"; command -v uv >/dev/null && PIP="uv pip"
+  $PIP install -q -e . "huggingface_hub[cli]>=0.30"
+  : "${HF_TOKEN:?set HF_TOKEN (Hugging Face read token) first}"
+  command -v nvidia-smi >/dev/null || { echo "no nvidia-smi: not a GPU host"; exit 10; }
+  command -v docker >/dev/null || echo "warning: docker missing; Muse Glimmer needs vllm/vllm-openai:muse-glimmer"
+  python -c "import vllm" 2>/dev/null || $PIP install -q vllm  # for Llama 3.1 8B
+elif ! python3 -c "import wattnot" 2>/dev/null; then
+  export PYTHONPATH="$PWD/src${PYTHONPATH:+:$PYTHONPATH}"
+fi
+PY=python; command -v python >/dev/null || PY=python3
+set +e
+$PY -m wattnot.runbook --rig "$RIG" --out "$OUT" --stages setup,probe,flex,sweep,best "${EXTRA[@]}"
+code=$?
+set -e
+want=MEASURED; [ "$RIG" = fake ] && want=SIMULATED
+if [ "$code" = 0 ]; then
+  $PY - "$OUT/summary.json" "$want" <<'PYEOF' || code=40
+import json, sys
+labels = json.load(open(sys.argv[1]))["receipt_labels"]
+want = sys.argv[2]
+bad = {k: v for k, v in labels.items() if k != want}
+print(f"receipt labels: {labels}")
+if bad or not labels:
+    print(f"expected every receipt to be {want}; got {bad or 'no receipts'}")
+    sys.exit(1)
+PYEOF
+fi
+echo "results: $OUT  archive: $OUT.tar.gz  exit: $code"
+[ "$code" = 20 ] && echo ">>> PROBE FAILED: release the machine now."
+exit "$code"

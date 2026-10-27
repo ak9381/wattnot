@@ -77,3 +77,77 @@ def test_spark_open_skipped_on_h100_and_run_on_8x_h200_sized_box(tmp_path):
                  stages=("setup", "probe", "sweep"))
     s = json.loads((tmp_path / "big" / "summary.json").read_text())
     assert code == 0 and MUSE_SPARK_OPEN.repo in s["models"] and not s["skipped_models"]
+
+
+# ---- the Oct 30 kit: probe, flex shed test, core sweep ------------------------------------
+
+
+def _kit(tmp_path, **rig):
+    out = tmp_path / "kit"
+    code = R.run(R.FakeRig(**rig), out, plan=QUICK, stages=R.KIT_STAGES,
+                 key_path=tmp_path / "k.pem", run_tag=TAG)
+    return code, out
+
+
+def test_flex_is_opt_in_not_in_the_default_stages():
+    assert "flex" not in R.STAGES and "flex" in R.ORDER
+    assert R.KIT_STAGES == ("setup", "probe", "flex", "sweep", "best")
+
+
+def test_kit_dry_run_runs_in_order_and_everything_is_simulated(tmp_path):
+    code, out = _kit(tmp_path)
+    assert code == 0
+    s = json.loads((out / "summary.json").read_text())
+    assert list(s["stages"]) == list(R.KIT_STAGES) and all(v["ok"] for v in s["stages"].values())
+    assert s["receipt_labels"] == {"SIMULATED": 5}  # 3 flex + 2 best-point
+    assert [r["event"] for r in s["flex"]] == ["h100-evt-1", "h100-evt-2", "h100-evt-3"]
+    assert all(r["label"] == r["grade"] == "SIMULATED" and r["trace_ok"] for r in s["flex"])
+    assert s["flex"][2]["status"] == "partial"  # the 35 percent ask stops short and says so
+    assert (out / "flex" / "progress.jsonl").stat().st_size > 0  # the load generator really ran
+
+
+def test_kit_flex_receipts_are_chained_and_verify(tmp_path):
+    _, out = _kit(tmp_path)
+    s = json.loads((out / "summary.json").read_text())
+    prev = None
+    for row in s["flex"]:
+        p = out / row["receipt"]
+        rep = verify_receipt(p)
+        assert rep.grade == "SIMULATED" and all(st.ok for st in rep.steps if st.name != "rekor")
+        integ = json.loads(p.read_text())["integrity"]
+        assert integ.get("prev_sha256") == prev
+        prev = integ["sha256"]
+
+
+def test_kit_failed_probe_stops_before_flex_and_sweep(tmp_path):
+    code, out = _kit(tmp_path, energy_counter=False)
+    assert code == R.EXIT_PROBE
+    s = json.loads((out / "summary.json").read_text())
+    assert list(s["stages"]) == ["setup", "probe"]
+    assert not (out / "flex").exists() and not (out / "sweep.csv").exists()
+
+
+def test_kit_script_fake_dry_run_exits_zero(tmp_path):
+    import os
+    import shutil
+    import subprocess
+    from pathlib import Path
+    if not shutil.which("bash"):
+        return
+    root = Path(__file__).resolve().parents[1]
+    out = tmp_path / "oct30"
+    r = subprocess.run(["bash", str(root / "scripts" / "h100_oct30.sh"), "--fake",
+                        "--out", str(out)], capture_output=True, text=True, timeout=300,
+                       env={**os.environ, "HOME": str(tmp_path)})
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "receipt labels: {'SIMULATED': 5}" in r.stdout
+    assert (tmp_path / "oct30.tar.gz").exists()
+
+
+def test_kit_script_rejects_unknown_option():
+    import subprocess
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    r = subprocess.run(["bash", str(root / "scripts" / "h100_oct30.sh"), "--nope"],
+                       capture_output=True, text=True, timeout=60)
+    assert r.returncode == 2 and "unknown option" in r.stdout
