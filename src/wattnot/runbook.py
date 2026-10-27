@@ -256,7 +256,7 @@ class RealRig:  # pragma: no cover - needs a GPU host
         else:
             r = _sh([sys.executable, "-c", "import vllm;print(vllm.__version__)"])
             out.append(Check("vllm", r[0] == 0, r[1].strip()[-200:]))
-        r = _sh(["hf", "download", model.repo, "--exclude", "*.pth", "original/*"],
+        r = _sh(["hf", "download", model.repo, "--exclude", "*.pth", "--exclude", "original/*"],
                 timeout=7200)
         out.append(Check(f"weights:{model.repo}", r[0] == 0, r[1].strip()[-300:]))
         free = shutil.disk_usage(Path.home()).free / 1e9
