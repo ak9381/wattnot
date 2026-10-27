@@ -1,6 +1,7 @@
 // The Architecture deep dive: the whole map, a partner filter (with "Meta did this"),
 // replay of recorded runs, live following of an events file, and the side panel.
 import { ArchView, fmt, panelHtml, statHtml } from "./arch.js";
+import { init as initPan } from "./pancanvas.js";
 import { esc, pill } from "./theme.js";
 
 // ---- live meter strip: power, cost and water per request scale, straight from the bundle.
@@ -93,7 +94,10 @@ export class ArchPage {
     $("#rsel", host).innerHTML = rs.map((r) => `<option value="${r.id}">${esc(r.title)}</option>`).join("") + `<option value="live">Live run (events file)</option>`;
     $("#afil", host).innerHTML = FILTERS.map(([id, t, c]) => `<button class="fchip ${id === "meta" ? "meta" : ""}" data-f="${id}" ${c ? `style="--c:${c}"` : ""} aria-pressed="${id === "all"}">${c ? "<i></i>" : ""}${esc(t)}${id === "meta" ? ` <span class="muted">${data.nodes.filter((n) => n.partners.includes("meta")).length} steps</span>` : ""}</button>`).join("");
     $("#mstrip", host).innerHTML = data.meta.map((m) => `<div class="mcard"><b>${esc(m.name)}</b><p>${esc(m.does)}</p>${m.stats.slice(0, 3).map((s) => statHtml(s)).join("")}</div>`).join("");
-    this.view = new ArchView($("#amap", host), data, { mode: "map", onSelect: (n, s) => this.panel(n, s), onCue: (c) => { $("#acap", host).innerHTML = `<b>${esc(this.d.nodes.find((n) => n.id === c.node).title)}</b> · ${esc(c.text)} ${c.tag ? pill(c.tag) : ""}`; }, onProgress: (i, n) => { $("#aprog", host).textContent = i >= n ? "done" : `${i + 1} of ${n}`; this.renderMeter(i); clock.setProgress(this._p0 + (this._p1 - this._p0) * (i / Math.max(1, n))); } });
+    this.view = new ArchView($("#amap", host), data, { mode: "map", follow: false, onSelect: (n, s) => this.panel(n, s), onCue: (c) => { $("#acap", host).innerHTML = `<b>${esc(this.d.nodes.find((n) => n.id === c.node).title)}</b> · ${esc(c.text)} ${c.tag ? pill(c.tag) : ""}`; if (this.pan && this.pan.getFollow()) { const el = this.view.el(c.node); if (el) this.pan.focus(el); } }, onProgress: (i, n) => { $("#aprog", host).textContent = i >= n ? "done" : `${i + 1} of ${n}`; this.renderMeter(i); clock.setProgress(this._p0 + (this._p1 - this._p0) * (i / Math.max(1, n))); } });
+    this.pan = initPan($("#amap", host), this.view.root, { goto: () => { const id = this.view.cur; if (id) { const el = this.view.el(id); if (el) this.pan.focus(el, { zoom: Math.max(this.pan.state.scale, 1) }); } } });
+    { const _le = this.view.layoutEdges.bind(this.view); this.view.layoutEdges = () => { _le(); this.pan?.refreshMinimap(); }; }
+    this._fitted = false;
     this.wire(); this.mode = "pipe"; this.liveW = null; this.renderMeter(0);
   }
   setMode(m) {
@@ -101,7 +105,7 @@ export class ArchPage {
     H.querySelectorAll(".archmode button").forEach((b) => { const on = b.dataset.m === m; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
     $("#apipe", H).hidden = m !== "pipe"; $("#aall", H).hidden = m !== "all";
     $("#amodeNote", H).textContent = m === "pipe" ? "The real steps of one run, lit up as its events arrive. Click a step for its sub-steps and numbers." : "Every module in the system, with who built it. Pick a replay to watch it.";
-    if (m === "pipe") this.ensurePipe(); else requestAnimationFrame(() => this.view.layoutEdges());
+    if (m === "pipe") this.ensurePipe(); else requestAnimationFrame(() => { this.view.layoutEdges(); this.fitOnce(); });
   }
   // The run pipeline: the same run view as the product, mounted here and started on the default H100 settings.
   ensurePipe() {
@@ -342,6 +346,12 @@ export class ArchPage {
     } catch (e) { host.innerHTML = `<p class="muted">The room picture could not be drawn (${esc(e.message)}).</p>`; }
   }
   stopLive() { this.es?.close(); this.es = null; }
-  show() { if (this.mode === "pipe") this.ensurePipe(); else requestAnimationFrame(() => this.view.layoutEdges()); }
-  destroy() { this.stopLive(); this.pipe?.destroyRun(); this.view.destroy(); }
+  fitOnce() {
+    if (this._fitted || this.mode !== "all") return;
+    const r = this.host.querySelector("#amap")?.getBoundingClientRect();
+    if (!r || !r.width) return;
+    this.pan.fit(); this._fitted = true;
+  }
+  show() { if (this.mode === "pipe") this.ensurePipe(); else requestAnimationFrame(() => { this.view.layoutEdges(); this.fitOnce(); }); }
+  destroy() { this.stopLive(); this.pipe?.destroyRun(); this.pan?.destroy(); this.view.destroy(); }
 }

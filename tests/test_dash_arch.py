@@ -320,6 +320,22 @@ def test_arch_expert_toggle_and_room_drilldown():
     assert "sam" in page and ("heatSvg" in page or "mountRoomScan" in page)  # rack drill-down reuses room rendering
 
 
+def test_arch_pan_zoom_canvas_controls():
+    """The Architecture map is an infinite pan/zoom canvas with its own module and controls."""
+    pan = (ROOT / "web" / "dash" / "pancanvas.js").read_text()
+    page = (ROOT / "web" / "dash" / "archpage.js").read_text()
+    css = (ROOT / "web" / "dash" / "story.css").read_text()
+    assert "pancanvas.js" in page  # the Architecture page loads the reusable module
+    assert "export function init" in pan
+    assert "fit" in pan and "focus" in pan and "setZoom" in pan
+    for cid in ("pc-zoom-out", "pc-zoom-label", "pc-zoom-in", "pc-fit",
+                "pc-minimap-toggle", "pc-goto", "pc-follow", "pc-minimap"):
+        assert cid in pan, cid
+    assert "0.25" in pan and "2" in pan  # zoom clamp 0.25..2
+    assert "prefers-reduced-motion" in pan
+    assert "pc-controls" in css and "pc-minimap" in css
+
+
 # ---- two-phase replay: Phase 1 baseline, Phase 2 with WattNot ----
 def test_arch_replay_has_two_phases_with_indicator():
     """The toolbar names both phases; the meter strip follows them."""
