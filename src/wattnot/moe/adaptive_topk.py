@@ -50,7 +50,10 @@ from wattnot.schemas import validate_receipt
 # it is the model the CPU test used, so the numbers line up. OLMoE-1B-7B (64 experts, top-8) is
 # the usual alternative, but the hook is only wired for the Granite layout today.
 DEFAULT_MODEL = "ibm-granite/granite-3.1-3b-a800m-instruct"
-DEFAULT_MASS = 0.9
+# 0.95, tuned on a CPU (scripts/tune_adaptive_mass.py, data/adaptive-tune). RUN2 used 0.9 and got
+# 94.5% token agreement on the H100, under the 95% gate. On the CPU 0.95 keeps agreement at
+# 96.7% or better on three prompt sets (lower 95% bound 95.5%), with about 7.7 of 8 experts active.
+DEFAULT_MASS = 0.95
 MIN_MASS, MAX_MASS = 0.5, 0.999  # the range a trial grant covers
 DEFAULT_BUDGET_S = 1500.0  # about 25 minutes, the whole stage
 MIN_AGREEMENT_PCT = 95.0   # quality gate: token agreement with normal top-k
@@ -103,8 +106,8 @@ class AdaptiveConfig:
     max_new_tokens: int = 64    # forced length (no early stop) so both arms do the same work
     reps: int = 5               # most repeats per arm; fewer if the time box runs out
     budget_s: float = DEFAULT_BUDGET_S
-    agree_prompts: int = 16
-    agree_new_tokens: int = 32
+    agree_prompts: int = 32     # RUN2 used 16 x 32 = 512 positions: too few for a 95% gate
+    agree_new_tokens: int = 48
     min_agreement_pct: float = MIN_AGREEMENT_PCT
     max_p99_increase_pct: float = MAX_P99_INCREASE_PCT
 
@@ -232,15 +235,26 @@ def summarize(result: TrialResult) -> dict:
             "label": label_of(result)}
 
 
-def _prompts(cfg: AdaptiveConfig) -> list[str]:
-    """The same fixed prompts, in the same order, for both arms: the public replay set, then
-    the short flex questions, tiled up to `n_prompts`."""
+def _base_prompts() -> list[str]:
     from wattnot.flex import load as ld
     from wattnot.runner.workload import load_replay_set
 
-    base = [i.prompt for i in load_replay_set()] + [p.prompt for p in ld.load_prompts(
+    return [i.prompt for i in load_replay_set()] + [p.prompt for p in ld.load_prompts(
         ld.DEFAULT_PROMPTS)]
+
+
+def _prompts(cfg: AdaptiveConfig) -> list[str]:
+    """The same fixed prompts, in the same order, for both arms: the public replay set, then
+    the short flex questions, tiled up to `n_prompts`."""
+    base = _base_prompts()
     return [base[i % len(base)] for i in range(cfg.n_prompts)]
+
+
+def _agree_prompts(cfg: AdaptiveConfig) -> list[str]:
+    """The prompts for the agreement check. The first ones are the same as `_prompts` (and as
+    RUN2's 16); the list is as long as `agree_prompts`, so it does not stop at `n_prompts`."""
+    base = _base_prompts()
+    return [base[i % len(base)] for i in range(cfg.agree_prompts)]
 
 
 def run_trial(backend: MoeBackend, cfg: AdaptiveConfig, *, session=None,

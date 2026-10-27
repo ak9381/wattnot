@@ -221,10 +221,10 @@ class HFBackend:
         """Teacher-forced next-token agreement of the adaptive arm with normal top-k, on the
         normal arm's own greedy continuations. Same idea as the CPU test."""
         t, cfg = self.torch, self.cfg
-        from wattnot.moe.adaptive_topk import _prompts
+        from wattnot.moe.adaptive_topk import _agree_prompts
 
         agree = total = 0
-        for text in _prompts(cfg)[:cfg.agree_prompts]:
+        for text in _agree_prompts(cfg):
             ids = self.tok(text, return_tensors="pt")["input_ids"].to("cuda")
             plen = ids.shape[1]
             self.st.mass = None

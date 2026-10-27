@@ -196,7 +196,7 @@ def test_proposal_is_pending_and_off_until_a_person_applies_it(tmp_path):
     apps.approve(p["id"], "akash")
     assert at.read_setting(tmp_path / "p") is None   # approved is not applied
     apps.apply(p["id"])
-    assert at.read_setting(tmp_path / "p") == 0.9
+    assert at.read_setting(tmp_path / "p") == at.DEFAULT_MASS
     apps.rollback(p["id"], "akash")
     assert at.read_setting(tmp_path / "p") is None
     assert apps.verify() == []

@@ -105,7 +105,7 @@ class Plan:
     flex_pre_s: int = 30      # flex stage: seconds measured before each event
     flex_post_s: int = 90     # flex stage: seconds of ramp-back after each event
     flex_events: str = str(FLEX_EVENTS)
-    adaptive_mass: float = 0.9      # adaptive_topk stage: share of router weight to keep
+    adaptive_mass: float = 0.95     # adaptive_topk stage: router weight share kept (DEFAULT_MASS)
     adaptive_model: str = ""        # adaptive_topk stage: MoE model ("" = the documented default)
     adaptive_budget_s: float = 1500.0
     adaptive_min_agree: float = 95.0
@@ -922,8 +922,8 @@ def main(argv=None) -> int:
     ap.add_argument("--adaptive-topk", action="store_true",
                     help="also run the OPTIONAL adaptive top-k trial after the other stages "
                          "(off by default; about 25 min of GPU time, see docs/ADAPTIVE-TOPK.md)")
-    ap.add_argument("--adaptive-mass", type=float, default=0.9,
-                    help="adaptive top-k: share of router weight to keep per token (default 0.9)")
+    ap.add_argument("--adaptive-mass", type=float, default=0.95,
+                    help="adaptive top-k: share of router weight to keep per token (default 0.95)")
     ap.add_argument("--adaptive-model", default="",
                     help="adaptive top-k: MoE model repo (default: the documented Granite model)")
     ap.add_argument("--adaptive-budget-s", type=float, default=1500.0,
