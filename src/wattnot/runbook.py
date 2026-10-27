@@ -64,7 +64,7 @@ from wattnot.headline import (
     gated_compare,
     measurement_label,
 )
-from wattnot.models import RUN_ORDER, ServedModel, fits
+from wattnot.models import MODELS, RUN_ORDER, ServedModel, fits
 from wattnot.planner.ablation import Outcome, ablation
 from wattnot.planner.optuna_study import Bounds, PlannerContext, fallback_proposals, propose
 from wattnot.receipt.sign import generate_test_key
@@ -519,6 +519,7 @@ class Runbook:
         return all(c["ok"] for c in checks)
 
     def probe(self) -> bool:
+        self.rig.use(self.plan.models[-1])  # the smallest model in the plan loads fastest
         ok, info = self.rig.probe(PROBE_BUDGET_S)
         self._write("probe.json", {"ok": ok, **info})
         return ok
@@ -914,6 +915,9 @@ def main(argv=None) -> int:
     ap.add_argument("--quick", action="store_true", help="tiny plan for a dry run")
     ap.add_argument("--flex-rps", type=float, default=8.0,
                     help="flex stage: load generator requests per second")
+    ap.add_argument("--models", default="",
+                    help="comma list of model keys to serve, in order (default: all that fit). "
+                         "Example without an HF token: muse-glimmer,qwen2.5-7b")
     ap.add_argument("--fail-probe", action="store_true", help="fake rig: simulate a no-go")
     ap.add_argument("--adaptive-topk", action="store_true",
                     help="also run the OPTIONAL adaptive top-k trial after the other stages "
@@ -948,6 +952,12 @@ def main(argv=None) -> int:
     plan = Plan(spark=a.spark, flex_rps=a.flex_rps, adaptive_mass=a.adaptive_mass,
                 adaptive_model=a.adaptive_model, adaptive_budget_s=a.adaptive_budget_s,
                 adaptive_min_agree=a.adaptive_min_agree)
+    if a.models:
+        keys = [k.strip() for k in a.models.split(",") if k.strip()]
+        bad = [k for k in keys if k not in MODELS]
+        if bad:
+            ap.error(f"unknown model key(s) {bad}; choose from {sorted(MODELS)}")
+        plan = replace(plan, models=tuple(MODELS[k] for k in keys))
     if a.quick:
         plan = replace(plan, caps=(700, 600, 500), reps=5, repeat=1, concurrency=1,
                        ablation_trials=4)

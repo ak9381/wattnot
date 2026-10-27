@@ -52,7 +52,7 @@ while [ $# -gt 0 ]; do
     --approval-wait-s) EXTRA+=("$1" "$2"); shift ;;
     --adaptive-topk) ADAPT=1 ;;
     --adaptive-mass) MASS="$2"; shift ;;
-    --adaptive-model|--adaptive-budget-s|--adaptive-min-agree) EXTRA+=("$1" "$2"); shift ;;
+    --models|--adaptive-model|--adaptive-budget-s|--adaptive-min-agree) EXTRA+=("$1" "$2"); shift ;;
     -h|--help) sed -n '2,/^set -e/{/^set -e/!p}' "$0"; exit 0 ;;
     *) echo "unknown option: $1 (try --help)"; exit 2 ;;
   esac
@@ -68,7 +68,9 @@ if [ "$RIG" = real ]; then
   source .venv/bin/activate
   PIP="python -m pip"; command -v uv >/dev/null && PIP="uv pip"
   $PIP install -q -e . "huggingface_hub[cli]>=0.30"
-  : "${HF_TOKEN:?set HF_TOKEN (Hugging Face read token) first}"
+  if [ -z "${HF_TOKEN:-}" ] && ! printf '%s ' "${EXTRA[@]}" | grep -q -- '--models'; then
+    echo "set HF_TOKEN (Llama 3.1 is gated) or pass --models muse-glimmer,qwen2.5-7b (all ungated)"; exit 10
+  fi
   command -v nvidia-smi >/dev/null || { echo "no nvidia-smi: not a GPU host"; exit 10; }
   command -v docker >/dev/null || echo "warning: docker missing; Muse Glimmer needs vllm/vllm-openai:muse-glimmer"
   python -c "import vllm" 2>/dev/null || $PIP install -q vllm  # for Llama 3.1 8B
