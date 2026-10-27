@@ -74,6 +74,9 @@ def build_parser() -> argparse.ArgumentParser:
     from wattnot.cloud import cli as _cloud
 
     _cloud.add_parser(sub)
+    from wattnot.meta import cli as _meta
+
+    _meta.add_parser(sub)
     return parser
 
 
@@ -174,6 +177,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         from wattnot.cloud import cli as _cloud
 
         return _cloud.dispatch(args)
+    if args.cmd == "meta":
+        from wattnot.meta import cli as _meta
+
+        return _meta.dispatch(args)
     parser.print_help()
     return 0
 
