@@ -1,4 +1,4 @@
-import { esc, badge, num, stageState, ledgerRows, reportRows, run2Rows, verifySummary } from "./v2lib.js";
+import { esc, badge, num, stageState, ledgerRows, run2Rows, verifySummary } from "./v2lib.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -126,6 +126,13 @@ const COMPARE_CARDS = [
   { v: "without", t: "Run without (baseline)", d: "Stock settings, no changes applied.", ex: "The before picture.", icon: "base" },
   { v: "both", t: "Compare both", d: "Show the stock and tuned runs side by side.", ex: "The default: before and after.", icon: "both" },
 ];
+const MODEL_BLURB = {
+  glimmer: "30B dense model · runs on one H100",
+  llama: "8B dense model · runs on one H100",
+  qwen3: "30B mixture-of-experts · runs on one H100",
+  granite: "3B mixture-of-experts · runs on one H100",
+  spark_open: "Open model · runs hosted on Baseten",
+};
 const STEP_Q = ["What do you want to save on?", "Which AI are you running?", "What kind of traffic?", "How careful should we be?", "How do you want to run it?"];
 const CONN_ITEMS = [
   { id: "nvidia", t: "GPU telemetry", d: "NVIDIA NVML power counter" },
@@ -202,7 +209,7 @@ function renderStep() {
     const o = S.opts.options.find((x) => x.id === "model");
     body.innerHTML = `<h2>${esc(STEP_Q[1])}</h2><p class="step-note">A model is the AI program that answers your users' prompts.</p>
       <div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[1])}">${o.choices.map((c) => pickCard("model",
-        { v: c.v, t: c.label, d: o.help.example, ex: o.help.why, icon: "chip" }, S.choice.model === c.v)).join("")}</div>`;
+        { v: c.v, t: c.label, d: MODEL_BLURB[c.v] || c.label, icon: "chip" }, S.choice.model === c.v)).join("")}</div>`;
   } else if (n === 3) body.innerHTML = `<h2>${esc(STEP_Q[2])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[2])}">
     ${TRAFFIC_CARDS.map((c) => pickCard("traffic", c, S.choice.traffic === c.v, `<small class="ex">Runs as: ${esc(workloadLabel(TRAFFIC_MAP[c.v]))}</small>`)).join("")}</div>`;
   else if (n === 4) body.innerHTML = `<h2>${esc(STEP_Q[3])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[3])}">
@@ -336,73 +343,157 @@ function play() {
 function pause() { clearTimeout(S.timer); S.playing = false; $("#pp") && ($("#pp").textContent = "Play"); }
 
 // ---------- signed report ----------
+// ---------- signed report: a mind map ----------
+// Static. No scroll animation, no counting, no scrambling: numbers render
+// as plain text, and cards open with a simple expand toggle.
+function stableStringify(v) {
+  if (v === null || typeof v !== "object") return JSON.stringify(v);
+  if (Array.isArray(v)) return `[${v.map(stableStringify).join(",")}]`;
+  return `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${stableStringify(v[k])}`).join(",")}}`;
+}
+// Only headline report data goes into the fingerprint: sorted keys, and no
+// run id, timestamps, or randomness. Same data, same fingerprint, every load.
+function reportFingerprintData() {
+  const r = S.run2 || {};
+  return {
+    cap_w: r.cap_w, stock_w: r.stock_w, model: r.model,
+    j_per_req_stock: r.j_per_req_stock, j_per_req_cap: r.j_per_req_cap,
+    saved_pct: r.saved_pct, p99_s_stock: r.p99_s_stock, p99_s_cap: r.p99_s_cap,
+    p99_change_pct: r.p99_change_pct, quality_stock_pct: r.quality_stock_pct,
+    quality_cap_pct: r.quality_cap_pct, label: r.label, source: r.source,
+    rejected_325w_p99_change_pct: 10.9,
+    rejected_granite_agreement_pct: 94.53,
+  };
+}
+const MAP_ICON = {
+  bolt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>',
+  coin: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5c0-1 1.3-1.8 3-1.8s3 .8 3 1.8-1 1.6-3 2.2-3 1.2-3 2.3 1.3 1.8 3 1.8 3-.8 3-1.8"/></svg>',
+  drop: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c3.5 4.5 6 7.6 6 11a6 6 0 0 1-12 0c0-3.4 2.5-6.5 6-11z"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>',
+  check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/></svg>',
+  x: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  doc: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v4h4"/></svg>',
+};
+function mapTopics() {
+  const R = S.run?.results || {}, rows = run2Rows(S.run2, R.price, R.water);
+  const by = Object.fromEntries(rows.map((x) => [x.id, x]));
+  const leaf = (id, icon, label, text) => ({ id, icon, label, text });
+  const row = (r) => (r ? { stock: r.stock, wattnot: r.wattnot, delta: r.delta, tag: r.tag } : null);
+  const e = row(by.energy), c = row(by.cost), w = row(by.water), p = row(by.p99), q = row(by.quality);
+  return [
+    { id: "power", color: "#2ee6f0", name: "Power", sub: "Energy per request",
+      kids: [leaf("pw-s", "bolt", "Without WattNot", e ? `700 W stock · <b>${esc(e.stock)}</b>/req ${badge(e.tag)}` : "700 W stock · not measured"),
+             leaf("pw-w", "bolt", "With WattNot", e ? `350 W cap · <b>${esc(e.wattnot)}</b>/req · <b>${esc(e.delta)}</b> ${badge(e.tag)}` : "350 W cap · not measured")],
+      detail: `<b>What went right.</b> RUN2 on Llama 3.1 8B at a 350 W cap: <b>−27.1%</b> joules per request ${badge("MEASURED")} (data/h100-run2/vm/steps/cap350.json). Earlier sweep on Muse Glimmer 30B at 400 W: <b>−21.0%</b> with p99 +3.7% ${badge("MEASURED")} (H100 run sweep.csv, NVML). Qwen3 adaptive top-k saved 7.0% and passed all three gates at 95.7% agreement ${badge("MEASURED")}.` },
+    { id: "cost", color: "#ffc857", name: "Cost", sub: "Electricity per 1M requests",
+      kids: [leaf("c-s", "coin", "Without WattNot", c ? `Stock: <b>${esc(c.stock)}</b> ${badge(c.tag)}` : "Stock cost: not measured"),
+             leaf("c-w", "coin", "With WattNot", c ? `Capped: <b>${esc(c.wattnot)}</b> (<b>${esc(c.delta)}</b>) ${badge(c.tag)}` : "Capped cost: not measured")],
+      detail: `Measured joules times <b>$0.1387</b>/kWh, the US commercial electricity price (EIA). The meter reading is ${badge("MEASURED")}; the bill math is ${badge("ESTIMATE")}.` },
+    { id: "water", color: "#4aa8ff", name: "Water", sub: "Cooling water per 1M requests",
+      kids: [leaf("w-s", "drop", "Without WattNot", w ? `Stock: <b>${esc(w.stock)}</b> ${badge(w.tag)}` : "Stock water: not measured"),
+             leaf("w-w", "drop", "With WattNot", w ? `Capped: <b>${esc(w.wattnot)}</b> (<b>${esc(w.delta)}</b>) ${badge(w.tag)}` : "Capped water: not measured")],
+      detail: `Measured joules times <b>0.36 L</b>/kWh, a US fleet-average site water factor (LBNL). On-site cooling water only; making the electricity is not counted. ${badge("ESTIMATE")}.` },
+    { id: "latency", color: "#a78bfa", name: "Latency", sub: "Slowest 1% of requests (p99)",
+      kids: [leaf("l-s", "clock", "Without WattNot", p ? `Stock p99 <b>${esc(p.stock)}</b> ${badge(p.tag)}` : "Stock p99: not measured"),
+             leaf("l-w", "clock", "With WattNot", p ? `Capped p99 <b>${esc(p.wattnot)}</b> (<b>${esc(p.delta)}</b>) ${badge(p.tag)}` : "Capped p99: not measured")],
+      detail: `p99 is the time 99 of 100 requests beat. The 350 W cap added <b>+7.7%</b> ${badge("MEASURED")}, inside the <b>10%</b> gate, so it passed. A slower cap would not.` },
+    { id: "quality", color: "#2ff5b4", name: "Quality", sub: "Answer quality, stock vs capped",
+      kids: [leaf("q-s", "check", "Without WattNot", q ? `Stock: <b>${esc(q.stock)}</b> pass ${badge(q.tag)}` : "Stock quality: not measured"),
+             leaf("q-w", "check", "With WattNot", q ? `Capped: <b>${esc(q.wattnot)}</b> · <b>${esc(q.delta)}</b> ${badge(q.tag)}` : "Capped quality: not measured")],
+      detail: `<b>666</b> answers checked: <b>93.7%</b> pass at stock and <b>93.7%</b> capped ${badge("MEASURED")}. The same pass rate means quality held.` },
+    { id: "safety", color: "#ff8a5c", name: "Safety/Approve", sub: "A person stays in charge",
+      kids: [leaf("s-s", "shield", "Without WattNot", `No review: a change would just apply`),
+             leaf("s-w", "shield", "With WattNot", `A person approves high-risk changes ${badge("MOCK")}`)],
+      detail: `<b>Why choose WattNot.</b> It is a second layer, not a claim to beat everything. Every change is measured, gated, approved by a person, logged, undoable, and signed. If a cap fails a gate, it is rejected, as below.` },
+    { id: "rejected", color: "#ff6b6b", name: "Rejected options", sub: "What we refused, and why",
+      kids: [leaf("r-s", "x", "Without WattNot", `No gate: 325 W would just run slower at p99 <b>+10.9%</b>`),
+             leaf("r-w", "x", "With WattNot", `Gate rejects 325 W: p99 <b>+10.9%</b> is over the <b>10%</b> limit ${badge("MEASURED")}`)],
+      detail: `<b>325 W rejected:</b> p99 rose <b>+10.9%</b>, over the 10% limit ${badge("MEASURED")} (data/h100-run2/vm/steps/cap325.json). <b>Granite adaptive top-k rejected:</b> 94.53% agreement, under the 95% gate ${badge("MEASURED")} (story bundle adaptive stats). Rejections are the system working.` },
+    { id: "proof", color: "#e6edf5", name: "Proof", sub: "Fingerprint, verifier, raw files",
+      kids: [leaf("f-s", "doc", "Without WattNot", `A chart you cannot re-check`),
+             leaf("f-w", "doc", "With WattNot", `Fingerprint plus verifier plus raw files ${badge("SAMPLE")}`)],
+      detail: `The fingerprint covers the headline numbers only, with sorted keys and no timestamps. The verifier re-checks sample receipts ${badge("SAMPLE")}. Raw data: data/h100-run2/vm/steps/cap350.json, data/h100-run2/vm/steps/cap325.json, data/h100-run2/vm/adaptive_topk/, verifier/samples/.` },
+  ];
+}
+let mapWired = false;
+function drawWires() {
+  const wrap = $("#mapWrap"), svg = $("#mapWires");
+  if (!wrap || !svg) return;
+  const wr = wrap.getBoundingClientRect();
+  if (!wr.width) return;
+  const pt = (el, edge) => { const b = el.getBoundingClientRect(); return edge === "top" ? [b.left + b.width / 2 - wr.left, b.top - wr.top] : [b.left + b.width / 2 - wr.left, b.bottom - wr.top]; };
+  const curve = (a, b) => { const my = (a[1] + b[1]) / 2; return `M ${a[0].toFixed(1)} ${a[1].toFixed(1)} C ${a[0].toFixed(1)} ${my.toFixed(1)}, ${b[0].toFixed(1)} ${my.toFixed(1)}, ${b[0].toFixed(1)} ${b[1].toFixed(1)}`; };
+  const hub = $("#mapHub"), d = [];
+  if (hub) $$(".topic", wrap).forEach((t) => {
+    const head = $(".topic-head", t);
+    if (!head) return;
+    d.push(curve(pt(hub, "bot"), pt(head, "top")));
+    if (t.dataset.open === "1") $$(".leaf", t).forEach((l) => d.push(curve(pt(head, "bot"), pt(l, "top"))));
+  });
+  svg.setAttribute("viewBox", `0 0 ${wr.width} ${wr.height}`);
+  svg.innerHTML = d.map((x) => `<path d="${x}"/>`).join("");
+}
+function wireMap() {
+  drawWires();
+  setTimeout(drawWires, 0);
+  if (!mapWired) { mapWired = true; window.addEventListener("resize", drawWires); }
+}
 async function renderReport() {
   if (!S.run) { $("#pReport").innerHTML = `<p>Loading the default replay…</p>`; await startQuiet(); }
   S.verify ??= await fetch("/api/dash/v2/verify").then((r) => r.json()).catch(() => null);
-  const R = S.run.results, appr = S.opts.options.find((o) => o.id === "approval").choices.find((x) => x.v === S.choice.approval)?.label;
-  const { rows, lever } = reportRows(R, { approval: appr });
-  const rid = lever.receipt, rc = rid ? S.story?.config?.receipts?.[rid] : null;
-  const body = JSON.stringify({ run: S.run.run_id, rows });
-  const sha = await sha256(body);
+  const topics = mapTopics();
+  const left = topics.slice(0, 4), right = topics.slice(4);
+  const sha = await sha256(stableStringify(reportFingerprintData()));
   const vs = verifySummary(S.verify);
-  const cell = (r, side) => `<div class="cell ${r.win === side ? "win" : ""}"><span class="v num">${esc(side === "w" ? r.wattnot : r.stock)}</span>${side === "w" && r.delta ? `<span class="d">${esc(r.delta)}</span>` : ""}</div>`;
-  $("#pReport").innerHTML = `<div class="ctrl noprint"><button class="btn pri" onclick="print()">Export PDF / PNG (print)</button><span style="color:var(--mu);font-size:13px">Print to PDF keeps the dark theme. Turn on "background graphics".</span></div>
-  <div class="rep glass rep-ed" id="repCard"><div class="head ed-head"><p class="kicker">WattNot signed report · ${badge("REPLAY")}</p><h1 class="ed-title" data-split>Two paths for the same GPU</h1><p class="ed-sub">${esc(R.model)} · ${esc(R.workload)} · ${esc(lever.before_label || "")} vs ${esc(lever.after_label || "")}</p><div class="ed-rule"></div></div>
-  <div class="r2rep">${run2BlockHtml("both", false)}</div>
-  <div class="rows paths-ed" style="margin-bottom:6px"><div class="pcol s ed-path"><h2 class="ed-h" data-split>Stock settings</h2><svg class="draw" viewBox="0 0 120 12" aria-hidden="true"><path d="M4 8 H116"/></svg></div><div class="ed-mid"><div class="hub-ed"><span class="hub-num num">${num(lever.saved_pct, 1)}%</span><small>less energy</small></div></div><div class="pcol w ed-path"><h2 class="ed-h" data-split>With WattNot</h2><svg class="draw" viewBox="0 0 120 12" aria-hidden="true"><path d="M4 8 H116"/></svg></div></div>
-  ${rows.map((r, i) => `<div class="rows rev-row" style="--d:${i * 70}ms">${cell(r, "s")}<div class="dimlab">${esc(r.dim)}<br>${r.tag ? badge(r.tag) : '<span class="d" style="color:var(--mu);font-weight:400">not claimed</span>'}</div>${cell(r, "w")}</div>${r.note ? `<p style="text-align:center;font-size:12px;color:var(--mu);margin:-2px 0 6px">${esc(r.note)}</p>` : ""}`).join("")}
-  <div class="who"><div class="glass"><h3 style="color:var(--pk)">Pick stock if</h3><p>Every millisecond of the slowest requests matters more than the power bill, or you cannot run a quality check on your own prompts yet.</p></div>
+  const r2 = S.run2 || {};
+  const topicHtml = (t) => `<div class="topic" data-topic="${t.id}" data-open="0">
+    <button class="topic-head" aria-expanded="false"><span class="tdot" style="--tc:${t.color}" aria-hidden="true"></span><span class="tt"><b>${esc(t.name)}</b><small>${esc(t.sub)}</small></span><span class="chev" aria-hidden="true">›</span></button>
+    <div class="topic-kids" hidden>
+      ${t.kids.map((k) => `<div class="leaf"><span class="leaf-ic" aria-hidden="true">${MAP_ICON[k.icon] || ""}</span><div><b>${esc(k.label)}</b><span>${k.text}</span></div></div>`).join("")}
+      <div class="topic-detail">${t.detail}</div>
+    </div></div>`;
+  $("#pReport").innerHTML = `<div class="ctrl noprint"><button class="btn pri" onclick="print()">Export PDF / PNG (print)</button><span style="color:var(--mu);font-size:13px">Topics start closed so the map stays readable. Open any circle for its two paths and the detail.</span><span style="flex:1"></span><button class="btn" data-map="open">Expand all</button><button class="btn" data-map="close">Collapse all</button></div>
+  <div class="map-wrap glass" id="mapWrap"><svg class="map-wires" id="mapWires" aria-hidden="true"></svg>
+    <div class="map-hub" id="mapHub" data-open="0">
+      <p class="kicker">WattNot signed report · ${badge("REPLAY")} ${badge("MEASURED")}</p>
+      <h1>${esc(r2.model || "Llama 3.1 8B Instruct")} · ${r2.cap_w || 350} W cap</h1>
+      <p class="q">Can we cut GPU power without hurting quality?</p>
+      <button class="btn sm" id="hubToggle" aria-expanded="false">Show the question</button>
+      <div class="hub-detail" hidden><p>We capped an H100 at <b>350 W</b> instead of 700 W on Llama 3.1 8B and measured energy per request, the slowest 1% of requests, and answer quality. Energy fell <b>−27.1%</b> ${badge("MEASURED")}, the slowest 1% rose <b>+7.7%</b> ${badge("MEASURED")} inside the 10% limit, and quality stayed at <b>93.7%</b> ${badge("MEASURED")}.</p></div>
+    </div>
+    <div class="map-cols"><div class="map-col">${left.map(topicHtml).join("")}</div><div class="map-col">${right.map(topicHtml).join("")}</div></div>
+  </div>
+  <div class="who-banner">Who should pick which?</div>
+  <div class="who"><div class="glass"><h3 style="color:var(--pk)">Pick the baseline if</h3><p>Every millisecond of the slowest requests matters more than the power bill, or you cannot run a quality check on your own prompts yet.</p></div>
   <div class="glass"><h3 style="color:var(--cy)">Pick WattNot if</h3><p>You pay for power and cooling, can accept the p99 change shown above, and want each change approved, logged, undoable and signed.</p></div></div>
-  <div class="sig glass"><div><div class="lvl">This report's fingerprint</div><code class="fp" id="fpCode" data-fp="sha256 ${esc(sha.slice(0, 32))}…">sha256 ${esc(sha.slice(0, 32))}…</code></div>
-   <div><div class="lvl">This run's receipt</div>${rid ? `<code>${esc(rid)}</code> · signed: ${rc?.signed ? '<span class="ok">yes</span>' : '<span class="no">no</span>'} · transparency log: ${rc?.rekor ? '<span class="ok">yes</span>' : '<span class="no">no</span>'}` : '<span class="no">No signed receipt for this recorded sweep</span>, so none is claimed'}</div>
-   <div><div class="lvl">Verifier check on sample receipts ${badge("SAMPLE")}</div>${vs.map((v) => `<div>${esc(v.sample)}: hash ${v.hash ? '<span class="tick-wrap"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10.5l4.5 4.5L16 5.5"/></svg></span>' : '<span class="no">✗</span>'} · signature ${v.sig ? '<span class="ok">✓ verified</span>' : '<span class="no">✗ rejected</span>'} · grade ${esc(v.grade)}</div>`).join("")}</div></div>
-  <p style="font-size:12px;color:var(--mu);margin-top:10px">${esc(S.verify?.note || "")} Cost uses ${esc(R.price?.name || "")}; water uses ${esc(R.water?.name || "")}. Run id ${esc(S.run.run_id)}.</p></div>`;
-  initReportMotion($("#repCard"));
-}
-function splitWords(el) {
-  const text = el.textContent; el.setAttribute("aria-label", text.trim()); el.textContent = "";
-  text.split(" ").forEach((w, wi, arr) => {
-    const s = document.createElement("span"); s.className = "w"; s.setAttribute("aria-hidden", "true");
-    [...w].forEach((ch) => { const c = document.createElement("span"); c.className = "ch"; c.style.transitionDelay = `${wi * 90}ms`; c.textContent = ch; s.appendChild(c); });
-    el.appendChild(s); if (wi < arr.length - 1) el.appendChild(document.createTextNode(" "));
-  });
-}
-function countUp(el) {
-  if (el.dataset.done) return; el.dataset.done = "1";
-  const m = el.textContent.match(/-?\d[\d,]*(\.\d+)?/); if (!m) return;
-  const target = parseFloat(m[0].replace(/,/g, "")), dec = m[1] ? m[1].length - 1 : 0, full = el.textContent, t0 = performance.now(), dur = 900;
-  if (!isFinite(target)) return;
-  const fr = (t) => {
-    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3), cur = target * e;
-    el.textContent = full.replace(m[0], target >= 100 ? Math.round(cur).toLocaleString("en-US") : cur.toFixed(dec));
-    if (p < 1) requestAnimationFrame(fr);
+  <div class="sig glass"><div><div class="lvl">This report's fingerprint</div><code class="fp" id="fpCode">sha256 ${esc(sha)}</code><p class="fp-note">Same data, same fingerprint, every load. Sorted keys, no timestamps.</p></div>
+   <div><div class="lvl">Verifier check on sample receipts ${badge("SAMPLE")}</div>${vs.map((v) => `<div>${esc(v.sample)}: hash ${v.hash ? '<span class="ok">✓</span>' : '<span class="no">✗</span>'} · signature ${v.sig ? '<span class="ok">✓ verified</span>' : '<span class="no">✗ rejected</span>'} · grade ${esc(v.grade)}</div>`).join("")}</div></div>
+  <p style="font-size:12px;color:var(--mu);margin-top:10px">${esc(S.verify?.note || "")} Cost uses ${esc(S.run.results.price?.name || "")}; water uses ${esc(S.run.results.water?.name || "")}. Source: ${esc(r2.source || "data/h100-run2/vm/steps/cap350.json")}.</p>`;
+  const setTopic = (t, on) => {
+    t.dataset.open = on ? "1" : "0";
+    $(".topic-head", t).setAttribute("aria-expanded", String(on));
+    $(".topic-kids", t).hidden = !on;
   };
-  requestAnimationFrame(fr);
-}
-function scrambleFp(el) {
-  const final = el.dataset.fp || el.textContent, glyphs = "0123456789abcdef#*+=?";
-  let f = 0; const total = 18;
-  const iv = setInterval(() => {
-    f++;
-    el.textContent = [...final].map((c, i) => (i / final.length < f / total || c === " ") ? c : glyphs[(Math.random() * glyphs.length) | 0]).join("");
-    if (f >= total) { clearInterval(iv); el.textContent = final; el.closest(".rep")?.querySelectorAll(".tick-wrap").forEach((t) => t.classList.add("in")); }
-  }, 28);
-}
-function initReportMotion(root) {
-  if (!root) return;
-  root.querySelectorAll("[data-split]").forEach(splitWords);
-  const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  const fp = root.querySelector("#fpCode");
-  if (reduce) { root.classList.add("in"); if (fp && fp.dataset.fp) fp.textContent = fp.dataset.fp; return; }
-  requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add("in")));
-  const io = new IntersectionObserver((es) => es.forEach((e) => {
-    if (!e.isIntersecting) return;
-    e.target.classList.add("in");
-    e.target.querySelectorAll(".num").forEach(countUp);
-    io.unobserve(e.target);
-  }), { threshold: 0.2 });
-  root.querySelectorAll(".rev-row,.ed-path,.hub-ed,.tick-wrap").forEach((el) => io.observe(el));
-  if (fp) { const fio = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { scrambleFp(fp); fio.disconnect(); } }), { threshold: 0.4 }); fio.observe(fp); }
+  $$("#pReport .topic-head").forEach((b) => (b.onclick = () => {
+    const t = b.closest(".topic"); setTopic(t, t.dataset.open !== "1"); wireMap();
+  }));
+  $$("#pReport [data-map]").forEach((b) => (b.onclick = () => {
+    const on = b.dataset.map === "open";
+    $$("#pReport .topic").forEach((t) => setTopic(t, on));
+    const hub = $("#mapHub"), hd = $(".hub-detail", hub);
+    hub.dataset.open = on ? "1" : "0"; hd.hidden = !on;
+    $("#hubToggle").textContent = on ? "Hide the question" : "Show the question";
+    $("#hubToggle").setAttribute("aria-expanded", String(on));
+    wireMap();
+  }));
+  $("#hubToggle").onclick = () => {
+    const hub = $("#mapHub"), on = hub.dataset.open !== "1", hd = $(".hub-detail", hub);
+    hub.dataset.open = on ? "1" : "0"; hd.hidden = !on;
+    $("#hubToggle").textContent = on ? "Hide the question" : "Show the question";
+    $("#hubToggle").setAttribute("aria-expanded", String(on));
+  };
+  wireMap();
 }
 async function sha256(s) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
 async function startQuiet() { const r = await fetch("/api/dash/v2/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(S.choice) }); S.run = await r.json(); S.n = S.run.events.length; renderRun(); }

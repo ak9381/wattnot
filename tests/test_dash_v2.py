@@ -62,16 +62,64 @@ def test_configure_shows_essentials_and_collapsed_advanced():
     assert "aria-expanded" in js
 
 
-def test_report_motion_has_scroll_reveal_and_reduced_motion_guard():
+def test_report_has_no_gimmick_animation():
     import pathlib
     root = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash")
     js = root.joinpath("v2.js").read_text()
     css = root.joinpath("v2.css").read_text()
-    assert "IntersectionObserver" in js
-    assert "prefers-reduced-motion" in js
-    assert "data-split" in js and "scramble" in js.lower()
-    assert "prefers-reduced-motion" in css
-    assert "tabular-nums" in css
+    for token in ("IntersectionObserver", "requestAnimationFrame", "data-split",
+                  "splitWords", "countUp", "scramble", "rev-row", "tick-wrap"):
+        assert token not in js, token
+    assert "Math.random" not in js and "Date.now" not in js
+    for token in ("rev-row", "tick-wrap", "data-split", "prefers-reduced-motion"):
+        assert token not in css, token
+    assert "tabular-nums" in css  # numbers still line up, without animation
+    assert ".map-wires" in css and ".topic-head" in css
+
+
+def test_report_is_a_mind_map_with_expand_and_wires():
+    import pathlib
+    js = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash/v2.js").read_text()
+    assert "mapTopics" in js and "drawWires" in js and "wireMap" in js
+    assert "Expand all" in js and "Collapse all" in js
+    assert "Who should pick which?" in js  # banner stays under the map
+    for topic in ("Power", "Cost", "Water", "Latency", "Quality", "Safety/Approve",
+                  "Rejected options", "Proof"):
+        assert topic in js, topic
+    assert js.count("Without WattNot") >= 8 and js.count("With WattNot") >= 8
+    assert "Pick the baseline if" in js and "Pick WattNot if" in js
+    for leaf in ("topic-head", "topic-kids", "aria-expanded"):
+        assert leaf in js
+    assert "resize" in js  # connectors redraw on resize
+    assert "cap325" in js  # rejected 325 W names its source file
+    assert "93.7%" in js  # headline quality, unchanged
+
+
+def test_report_fingerprint_is_stable_across_renders():
+    import hashlib
+    import json
+    import pathlib
+    js = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash/v2.js").read_text()
+    assert "stableStringify" in js and "reportFingerprintData" in js
+    assert ".sort()" in js  # keys are sorted before hashing
+    c = _c()
+    first = c.get("/api/dash/v2/run2").json()
+    second = c.get("/api/dash/v2/run2").json()
+    assert first == second  # the headline data does not move between loads
+    canon = json.dumps(first, sort_keys=True, separators=(",", ":"))
+    again = json.dumps(second, sort_keys=True, separators=(",", ":"))
+    assert hashlib.sha256(canon.encode()).hexdigest() == hashlib.sha256(again.encode()).hexdigest()
+    assert "run_id" not in first  # nothing volatile feeds the fingerprint
+
+
+def test_stepper_model_cards_have_their_own_short_description():
+    import pathlib
+    js = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash/v2.js").read_text()
+    assert "MODEL_BLURB" in js
+    assert "30B dense model" in js and "8B dense model" in js
+    assert "mixture-of-experts" in js and "hosted on Baseten" in js
+    # step 2 no longer repeats one shared description for every card
+    assert "d: MODEL_BLURB[c.v]" in js
 
 
 def test_verify_accepts_real_and_rejects_forged():
@@ -145,7 +193,10 @@ def test_before_after_block_on_run_page_and_report():
     root = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash")
     js = root.joinpath("v2.js").read_text()
     assert "Without WattNot vs With WattNot" in js
-    assert js.count("run2BlockHtml") >= 3  # run page + signed report share one renderer
+    # run page keeps its block; the signed report builds its leaves from the
+    # same rows (mind map), so both read the same measured data
+    assert js.count("run2BlockHtml") >= 2
+    assert "mapTopics" in js and "run2Rows(S.run2" in js
     assert 'data-view' in js and "Compare" in js
     assert "/api/dash/v2/run2" in js
     lib = root.joinpath("v2lib.js").read_text()
