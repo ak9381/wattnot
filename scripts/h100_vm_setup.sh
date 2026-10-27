@@ -50,10 +50,15 @@ fi
 
 # --- install ------------------------------------------------------------------------------
 df -h / /root | tail -n 2
-command -v python3 >/dev/null && python3 -c "import venv" 2>/dev/null || {
-  DEBIAN_FRONTEND=noninteractive apt-get update -q && \
-  DEBIAN_FRONTEND=noninteractive apt-get install -y -q python3-venv python3-pip git curl; }
-python3 -m venv /root/venv
+# a venv from the system python needs ensurepip, which the stock image lacks and apt can stall
+# on a fresh VM; fall back to uv (its own python build, with headers) when it fails
+if ! python3 -m venv /root/venv >/dev/null 2>&1; then
+  echo "[setup] python3 -m venv failed; using uv"
+  rm -rf /root/venv
+  export PATH="$HOME/.local/bin:$PATH"
+  command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
+  uv venv --seed --python 3.12 /root/venv
+fi
 /root/venv/bin/pip install -q uv
 export UV_LINK_MODE=copy UV_NO_CACHE=1   # no second copy of the wheels on a small disk
 # accelerate: the adaptive step loads the MoE model with device_map="cuda", which needs it
