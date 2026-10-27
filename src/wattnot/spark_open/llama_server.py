@@ -16,16 +16,19 @@ from __future__ import annotations
 import subprocess
 import time
 import urllib.request
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from wattnot.spark_open.knobs import SparkKnobs
 from wattnot.spark_open.placement import LayerPlacement, Placement
 
+# Loopback must not go through an egress proxy (same reason as runner.vllm_server).
+_LOOPBACK = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
 
 def server_args(gguf: str | Path, knobs: SparkKnobs, *, port: int = 8090,
                 binary: str = "llama-server", ctx: int = 16384,
-                placement: Placement | None = None) -> list[str]:
+                placement: Placement | None = None, extra: Sequence[str] = ()) -> list[str]:
     args = [binary, "--model", str(gguf), "--port", str(port), "--host", "127.0.0.1",
             "--ctx-size", str(ctx), "--n-gpu-layers", "99", "--jinja", "--flash-attn", "on",
             "--ubatch-size", str(knobs.ubatch), "--batch-size", str(max(knobs.ubatch, 2048)),
@@ -33,7 +36,7 @@ def server_args(gguf: str | Path, knobs: SparkKnobs, *, port: int = 8090,
     args += (placement or LayerPlacement()).args(knobs)
     if not knobs.op_offload:
         args.append("--no-op-offload")
-    return args
+    return [*args, *extra]  # e.g. ["--reasoning-effort", "low"]
 
 
 def gguf_path(models_dir: str | Path, quant: str) -> Path:
@@ -49,11 +52,12 @@ class LlamaServer:
 
     def __init__(self, models_dir: str | Path, *, port: int = 8090, dry_run: bool = False,
                  log_dir: str | Path | None = None, load_timeout_s: float = 1800,
-                 popen: Callable = subprocess.Popen) -> None:
+                 popen: Callable = subprocess.Popen, extra_args: Sequence[str] = ()) -> None:
         self.models_dir, self.port, self.dry_run = Path(models_dir), port, dry_run
         self.log_dir = Path(log_dir) if log_dir else None
         self.load_timeout_s = load_timeout_s
         self._popen = popen
+        self.extra_args = tuple(extra_args)
         self._proc = None
         self.knobs: SparkKnobs | None = None
         self.argv: list[str] = []
@@ -68,7 +72,8 @@ class LlamaServer:
 
         self.stop()
         self.knobs = knobs
-        self.argv = server_args(gguf_path(self.models_dir, knobs.quant), knobs, port=self.port)
+        self.argv = server_args(gguf_path(self.models_dir, knobs.quant), knobs, port=self.port,
+                                extra=self.extra_args)
         self.restarts += 1
         if self.dry_run:
             return 0.0
@@ -90,7 +95,7 @@ class LlamaServer:
             if self._proc is not None and self._proc.poll() is not None:
                 raise RuntimeError("llama-server exited while loading")
             try:
-                with urllib.request.urlopen(url, timeout=5) as r:  # noqa: S310
+                with _LOOPBACK.open(url, timeout=5) as r:
                     if r.status == 200:
                         return
             except OSError:

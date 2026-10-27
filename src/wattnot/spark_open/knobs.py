@@ -31,7 +31,7 @@ OP_OFFLOAD_MIN_BATCH = 32  # ggml-cuda default (GGML_OP_OFFLOAD_MIN_BATCH)
 @dataclass(frozen=True)
 class Quant:
     name: str
-    approx_gb: int     # file size, ESTIMATE from the HF repo listing
+    approx_gb: int     # file size from the HF repo listing (IQ1_S, IQ2_S: MEASURED 27 Oct 2026)
     agentic_ok: bool   # Unsloth: below UD-IQ2_S, agentic tasks degrade
     note: str = ""
 
@@ -40,7 +40,7 @@ QUANTS: dict[str, Quant] = {
     "UD-IQ1_S": Quant("UD-IQ1_S", 176, False, "low end: chat holds up, agentic degrades"),
     "UD-IQ1_M": Quant("UD-IQ1_M", 209, False, "below the agentic floor"),
     "UD-IQ2_XXS": Quant("UD-IQ2_XXS", 220, False, "below the agentic floor"),
-    "UD-IQ2_S": Quant("UD-IQ2_S", 260, True, "default; agentic floor"),
+    "UD-IQ2_S": Quant("UD-IQ2_S", 276, True, "default; agentic floor"),
 }
 DEFAULT_QUANT = "UD-IQ2_S"
 AGENTIC_FLOOR = "UD-IQ2_S"
