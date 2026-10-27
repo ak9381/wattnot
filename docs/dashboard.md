@@ -7,7 +7,9 @@ Power, Experts and Architecture one click away as deep-dive drawers. No build st
     wattnot dash                  # or: python -m wattnot.dash
     # open http://127.0.0.1:8765
 
-The server only reads. Approving a proposal still happens in `wattnot proposals`.
+The server only reads, except the Operator check endpoints (`POST /api/dash/approve`,
+`/api/dash/reject`, `/api/dash/undo/...`), which decide, apply and undo
+guardrail proposals from the Run screen.
 
 ## Power
 
@@ -69,6 +71,14 @@ same offline.
 3. **Results.** Before and after for cost, energy, water, p99 and quality kept, the room heat map before
    and after, and who did what (Meta, E2E, NVIDIA, Baseten, Hugging Face, Sigstore).
 
+**Agent waste.** The run also passes through an `Agent waste` step (Meta Muse Spark): watch each
+call, flag repeats and cycles, offer a done action, enforce budgets, exit early. The Results screen
+shows its card under the lever cards, served from `GET /api/dash/agent-waste`. Its numbers come
+from `data/agent-waste/results.json`, a benchmark of an agent loop with and without the saver plus a
+standard harness that already stops by itself. Calls, tokens, wall time and success are MEASURED on
+Muse Spark; energy and dollars are ESTIMATE, using RUN2's measured joules per token for Llama 3.1 8B
+as a stand-in rate. A missing value is a dash.
+
 `?tab=power|experts|arch` and `?tab=arch&filter=meta` still work.
 
 ### What is REPLAY and what is LIVE
@@ -82,6 +92,23 @@ Labels: MEASURED (read from a meter or a log), ESTIMATE (computed, assumption sh
 MOCK or ADVICE; a missing value is a dash. In the room, only the H100 card's GPU power is MEASURED; every
 other rack and all temperatures are SIMULATED; cooling and water are ESTIMATEs (PUE 1.56 from the Uptime
 Institute 2024 survey, 0.36 L/kWh from LBNL 2024). Levers are never added together: they come from separate runs.
+
+### Operator check
+
+The Run screen has an Operator check panel beside the narration. It polls
+`GET /api/dash/approvals` every 2 s. Each pending card shows the change as
+before → after, the risk level with its reasons, who proposed it (planner
+name and tier), the label, and a countdown. `Approve` applies the change when
+the run owns it; `Reject` turns it down. An applied card says who approved it
+and how, and offers `Undo` while the run still allows it. Recent decisions
+list who decided and when.
+
+No answer in time means reject: an expired proposal shows as timed out and
+cannot be approved. A MOCK badge marks the mock backend. Starting the server
+with `--auto-approve` auto-approves standard-tier changes and logs the flag
+as the approver, visibly not a person; a strict-tier planner (an open-weights
+planner) still needs a person for high-risk changes. Hosted replay always uses
+the mock, even with live apply.
 
 ### Event stream
 

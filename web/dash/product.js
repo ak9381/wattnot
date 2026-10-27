@@ -6,9 +6,12 @@ import { esc, pill } from "./theme.js";
 import { livePhrase } from "./archpage.js";
 import { mountRoomScan } from "./roomnode.js";
 import { heatSvg, heatLegend, scanTag, wireHeat, pulse, recolor } from "./heat.js";
+import { GuardPanel } from "./guard.js";
+import { fillPlannerTags, loadPartners } from "./partners.js";
+import { secondLayerHtml, wireReplay } from "./wastereplay.js";
 
 const $ = (s, r = document) => r.querySelector(s);
-const RUN2_STAGE = { room_scan: "room", baseline: "baseline", quality_gate: "gate", cap_sweep: "sweep", adaptive_topk: "topk", keep_rollback: "keep", receipt: "receipt" };
+const RUN2_STAGE = { room_scan: "room", baseline: "baseline", quality_gate: "gate", cap_sweep: "sweep", adaptive_topk: "topk", agent_waste: "waste", approve: "approve", keep_rollback: "keep", receipt: "receipt" };
 const LABELS = ["MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "ADVICE"];
 const reduce = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const PCOL = { meta: "var(--m)", baseten: "var(--bt)", e2e: "var(--e2)", hf: "var(--hf)", nvidia: "var(--nv)", sigstore: "var(--sg)" };
@@ -113,7 +116,7 @@ export class Product {
     } catch (e) { err.textContent = `Could not plan this run: ${e.message}. The server may need a restart, or the story bundle needs rebuilding.`; err.hidden = false; btn.disabled = false; btn.textContent = "Start replay"; return; }
     this.live = false; this.done = false; this.screen = "run"; this.renderRail(); this.runView(false);
   }
-  destroyRun() { this.player?.stop(); this.player = null; this.es?.close(); this.es = null; this.view?.destroy?.(); this.view = null; }
+  destroyRun() { this.player?.stop(); this.player = null; this.es?.close(); this.es = null; this.guard?.stop(); this.guard = null; this.view?.destroy?.(); this.view = null; }
   runView(again) {
     this.destroyRun(); this.log = {}; this.nodeLog = {}; const live = this.live, P = this.plan;
     const events = live ? [] : P.events.map((f) => f.event);
@@ -132,11 +135,14 @@ export class Product {
       <div class="rgrid"><section class="rgraph" aria-label="live architecture graph"><div id="rg"></div></section>
         <div class="rside">${room ? `<section class="rroom" aria-label="room heat map"><h3>Room · ${esc(room.pick === "upload" ? "your picture" : "example data center")} ${scanTag(room.scan)}<span class="muted" id="roomPhase">before</span></h3><div id="roomMap"></div>${heatLegend()}<p class="cap" id="roomCap">Hover or tab to a rack for its numbers.</p></section>` : ""}<aside class="rnar" aria-label="narration"><h3>What is happening</h3><ol id="nar" aria-live="polite"></ol>
           <div class="meter" id="meter" hidden></div>
+          <section class="rguard" id="guardPanel" aria-label="operator check"></section>
           <details class="evs"><summary>Events <span id="evn">0</span> · wattnot.event/1</summary><ol id="evl"></ol></details></aside></div>
       </div><div class="rfoot"><span id="rstat" class="muted"></span><button class="btn pri" id="toRes" hidden>See the results</button></div></div>`;
     this.room = room; if (room) this.drawRoom(room.scan, false);
     this.view = new ArchView(this.$("#rg"), this.pd, { ids, chain: true, mode: "row", stats: 0, onSelect: (n, s, v) => this.D.open(n, s, v, this.runBlock(n, s)) });
     this.nar = this.$("#nar"); this.evl = this.$("#evl"); this.evCount = 0;
+    this.guard = new GuardPanel(this.$("#guardPanel"), {});
+    this.guard.start();
     this.$("#rswitch")?.addEventListener("click", () => { if (this.live) { this.destroyRun(); this.start(); } else this.startLive(); });
     this.$("#rpause").onclick = (e) => { const p = this.live ? null : this.player; if (this.live) { this.livePaused = !this.livePaused; } else p.pause(!p.paused); const on = this.live ? this.livePaused : p.paused; e.currentTarget.textContent = on ? "Resume" : "Pause"; this.view?.[on ? "pause" : "resume"](); };
     if (live) return;
@@ -157,9 +163,13 @@ export class Product {
     const d = ev.data || {}, map = this.pd.event_map[ev.type] || [], v = this.view;
     let node = d.node || map[0], sub = d.sub || map[1];
     // the RUN2 stream tags steps with architecture-map nodes (sam, e2e_rig...) and names its stages in step_id:
-    // room_scan, baseline, quality_gate, cap_sweep, adaptive_topk, keep_rollback, receipt. Those are this graph's nodes.
+    // room_scan, baseline, quality_gate, cap_sweep, adaptive_topk, approve, keep_rollback, receipt. Those are this graph's nodes.
     const stage = RUN2_STAGE[(ev.step_id || "").split(".")[0]];
     if (stage && v?.ids.has(stage) && !v.ids.has(d.node)) { node = stage; sub = ev.step_id.includes(".") ? ev.step_id.split(".").slice(1).join(".") : d.sub; }
+    if (ev.type === "proposal.created") this.guard?.kick();
+    // a step/progress event may name the planner that proposed it; the sweep node's tag resolves from that
+    const pp = d.planner && d.planner.partner;
+    if (typeof pp === "string" && pp && v) fillPlannerTags(v.root, pp);
     this.evCount++; this.$("#evn").textContent = this.evCount;
     const li = document.createElement("li"); li.innerHTML = `<code>${esc(ev.type)}</code> <span class="muted">${esc(ev.step_id || "")}</span>`; this.evl.appendChild(li); if (this.evl.children.length > 150) this.evl.firstChild.remove();
     if (ev.type === "run.started") {
@@ -271,8 +281,12 @@ export class Product {
       <p class="rnote">Recorded run <code>${esc(R.run_id)}</code>, re-evaluated against your limits: p99 may rise ${R.limits.p99_slack_pct}%, agreement at least ${R.limits.min_quality_pct}%${R.limits.strict_quality ? ", quality must be verified" : ""}. Levers are shown separately and never added together.</p>
       ${R.room ? this.roomResults(R) : ""}
       <div id="cards">${R.levers.map((L) => this.card(L)).join("")}</div>
+      <div id="wasteCard"></div>
+      <div id="partners"></div>
       <div class="resfoot"><button class="btn" id="back">Change settings</button><button class="btn" id="seeRun">See the run again</button><button class="btn" id="rerun">Run again</button><button class="btn" id="openArch">Open the Architecture map</button></div></div>`;
     if (R.room) { const b = this.$("#resB"), a = this.$("#resA"), cap = this.$("#resCap"); wireHeat(b, R.room.before, cap); wireHeat(a, R.room.after, cap); }
+    this.loadWaste();
+    loadPartners(this.$("#partners"));
     this.$("#scale").onchange = (e) => { const v = Math.max(1, +e.target.value || 1); this.scale = v; this.$("#cards").innerHTML = R.levers.map((L) => this.card(L)).join(""); };
     this.$("#back").onclick = () => this.go("config"); this.$("#seeRun").onclick = () => this.go("run"); this.$("#rerun").onclick = () => { this.runView(false); this.screen = "run"; this.done = false; this.renderRail(); };
     this.$("#openArch").onclick = () => this.D.drawer("arch");
@@ -325,6 +339,44 @@ export class Product {
       ${q.classes ? `<p class="hnt">${q.classes.map((c) => `${esc(c.class)}: ${esc(c.chosen)} ${c.kept ? "kept" : "not kept"}`).join(" · ")}</p>` : ""}
       ${L.note ? `<p class="note2">${esc(L.note)}</p>` : ""}${annual ? `<p class="annual">${annual}</p>` : ""}
       <div class="who"><h3>Who did what</h3><ul>${credits}</ul>${L.receipt ? `<p class="hnt">Receipt <code>${esc(L.receipt)}</code> · ${this.cfg.receipts[L.receipt]?.signed ? "signed with an offline key" : "not signed"} · no public Rekor entry</p>` : `<p class="hnt">Receipt: –</p>`}<p class="hnt">Source: ${esc(L.src)}. Cost basis: ${esc(L.usd_kind)}.</p></div></section>`;
+  }
+  // the Agent waste card: fetched once, shown under the lever cards, hidden on failure
+  async loadWaste() {
+    if (this._waste === undefined) {
+      try {
+        const r = await fetch("/api/dash/agent-waste");
+        this._waste = r.ok ? await r.json() : null;
+      } catch { this._waste = null; }
+    }
+    const el = this.$("#wasteCard");
+    if (el && this._waste) {
+      el.innerHTML = this.wasteCard(this._waste);
+      wireReplay(el, this._waste.second_layer, { reduce });
+    }
+  }
+  wasteCard(w) {
+    const who = w.partner || {};
+    const order = ["calls per run", "tokens per run", "wall time per run (s)", "energy per run (J)", "cost per run ($)"];
+    const rows = order.filter((k) => w.rows && w.rows[k]).map((k) => {
+      const r = w.rows[k];
+      const d = k.startsWith("cost") ? 4 : 2;
+      const chg = r.change_pct == null ? "–" : `${r.change_pct > 0 ? "+" : ""}${num(r.change_pct, 1)}%`;
+      return `<tr><th scope="row">${esc(k)}</th><td class="num">${num(r.off, d)}</td><td class="num"><b>${num(r.on, d)}</b></td><td class="num chg">${esc(chg)}</td><td>${tagOf(r.tag)}</td></tr>`;
+    }).join("");
+    const s = w.success || {}, pct = (v) => (v == null ? "–" : `${num(v, 1)}%`);
+    const g = w.groups || {};
+    const glines = ["work", "early", "no_work"].filter((k) => g[k]).map((k) => {
+      const x = g[k];
+      return `<p class="hnt">${esc(k)}: ${num(x.calls_off)} → ${num(x.calls_on)} calls per run; success ${pct(x.success_off)} → ${pct(x.success_on)}</p>`;
+    }).join("");
+    const ref = w.reference || {};
+    const notes = (w.notes || []).map((n) => `<p class="hnt">${esc(n)}</p>`).join("");
+    return `<section class="rc" aria-label="Agent waste"><header><h2>Agent waste</h2><em class="pb" style="--c:${PCOL[who.id] || "var(--dim)"}">${esc(who.name || "")}</em><span class="pill MEASURED">MEASURED on Muse Spark</span></header>
+      <p class="note2">${esc(w.headline || "")}</p>
+      <table class="cmpt"><thead><tr><th></th><th>Without the saver</th><th>With the saver</th><th>Change</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="qrow"><b>Tasks passed</b><span>${pct(s.off_pct)} without, ${pct(s.on_pct)} with the saver</span></div>
+      <div class="wgroups">${glines}<p class="hnt">Standard harness (stops by itself): ${num(ref.calls_per_run)} calls per run, ${pct(ref.success_pct)} tasks passed.</p></div>
+      <div class="wnotes">${notes}</div>${secondLayerHtml(w.second_layer)}</section>`;
   }
 }
 

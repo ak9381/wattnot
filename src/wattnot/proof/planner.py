@@ -27,6 +27,7 @@ class BisectPlanner:
     """Deterministic fallback: step down while a cap is accepted, then bisect the gap."""
 
     name = "bisect"
+    partner = None
 
     def __init__(self, lo: int = 300, hi: int = 700) -> None:
         self.lo, self.hi = lo, hi
@@ -112,6 +113,7 @@ def call_usd(model: str, usage: dict) -> float:
 
 class MusePlanner:
     name = "muse-spark"
+    partner = "meta"
 
     def __init__(self, client: Callable[..., dict], *, lo: int = 300, hi: int = 700,
                  fallback: BisectPlanner | None = None, model: str = MODEL) -> None:

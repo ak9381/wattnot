@@ -1,0 +1,3547 @@
+{
+ "schema": "wattnot.agent-waste-v2/1",
+ "model": "muse-spark-1.3",
+ "j_per_token": 0.149666,
+ "j_per_token_source": "data/h100-run2/vm/baseline.json (Llama-3.1-8B-Instruct, one H100, stock 700 W)",
+ "price_source": "https://dev.meta.ai/docs/pricing-rate-limits (muse-spark-1.3, standard rates)",
+ "labels": {
+  "calls": "MEASURED",
+  "tokens": "MEASURED",
+  "wall_time": "MEASURED",
+  "success": "MEASURED",
+  "miss": "MEASURED",
+  "energy_j": "ESTIMATE",
+  "usd": "ESTIMATE"
+ },
+ "normal": {
+  "harness": {
+   "runs": 36,
+   "success": 36,
+   "success_pct": 100.0,
+   "calls": 120,
+   "calls_per_run": 3.33,
+   "prompt_tokens": 157728,
+   "completion_tokens": 10776,
+   "reasoning_tokens": 3506,
+   "total_tokens": 168504,
+   "tokens_per_run": 4681,
+   "tool_calls": 96,
+   "mutations": 24,
+   "wall_s_per_run": 3.12,
+   "usd": 0.1592,
+   "usd_per_run": 0.00442,
+   "joules": 1612.8,
+   "ended_by": {
+    "final": 24,
+    "marker": 12
+   },
+   "miss_runs": 0,
+   "nudges": 0,
+   "helpers": 0,
+   "errors": 0,
+   "n": 36
+  },
+  "harness+saver": {
+   "runs": 36,
+   "success": 36,
+   "success_pct": 100.0,
+   "calls": 119,
+   "calls_per_run": 3.31,
+   "prompt_tokens": 164131,
+   "completion_tokens": 11505,
+   "reasoning_tokens": 4006,
+   "total_tokens": 175636,
+   "tokens_per_run": 4879,
+   "tool_calls": 95,
+   "mutations": 24,
+   "wall_s_per_run": 4.05,
+   "usd": 0.1572,
+   "usd_per_run": 0.00437,
+   "joules": 1721.9,
+   "ended_by": {
+    "final": 15,
+    "marker": 12,
+    "saver-done": 9
+   },
+   "miss_runs": 0,
+   "nudges": 0,
+   "helpers": 0,
+   "errors": 0,
+   "n": 36
+  },
+  "saver_vs_harness": {
+   "calls": -0.8,
+   "total_tokens": 4.2,
+   "completion_tokens": 6.8,
+   "wall_s_per_run": 29.8,
+   "usd": -1.3,
+   "joules": 6.8,
+   "success_points": 0.0
+  }
+ },
+ "injected": {
+  "harness": {
+   "runs": 24,
+   "success": 24,
+   "success_pct": 100.0,
+   "calls": 312,
+   "calls_per_run": 13.0,
+   "prompt_tokens": 649342,
+   "completion_tokens": 45829,
+   "reasoning_tokens": 18203,
+   "total_tokens": 695171,
+   "tokens_per_run": 28965,
+   "tool_calls": 425,
+   "mutations": 0,
+   "wall_s_per_run": 18.81,
+   "usd": 0.5362,
+   "usd_per_run": 0.02234,
+   "joules": 6859.0,
+   "ended_by": {
+    "cap": 18,
+    "final": 6
+   },
+   "miss_runs": 19,
+   "nudges": 0,
+   "helpers": 17,
+   "errors": 0,
+   "n": 24
+  },
+  "harness+saver": {
+   "runs": 24,
+   "success": 23,
+   "success_pct": 95.8,
+   "calls": 135,
+   "calls_per_run": 5.62,
+   "prompt_tokens": 206744,
+   "completion_tokens": 21058,
+   "reasoning_tokens": 9053,
+   "total_tokens": 227802,
+   "tokens_per_run": 9492,
+   "tool_calls": 165,
+   "mutations": 0,
+   "wall_s_per_run": 6.02,
+   "usd": 0.2083,
+   "usd_per_run": 0.00868,
+   "joules": 3151.7,
+   "ended_by": {
+    "final": 2,
+    "saver-done": 15,
+    "saver-stop": 7
+   },
+   "miss_runs": 0,
+   "nudges": 16,
+   "helpers": 26,
+   "errors": 0,
+   "n": 24
+  },
+  "saver_vs_harness": {
+   "calls": -56.7,
+   "total_tokens": -67.2,
+   "completion_tokens": -54.1,
+   "wall_s_per_run": -68.0,
+   "usd": -61.2,
+   "joules": -54.1,
+   "success_points": -4.2
+  }
+ },
+ "by_category": {
+  "normal": {
+   "harness": {
+    "runs": 36,
+    "success": 36,
+    "success_pct": 100.0,
+    "calls": 120,
+    "calls_per_run": 3.33,
+    "prompt_tokens": 157728,
+    "completion_tokens": 10776,
+    "reasoning_tokens": 3506,
+    "total_tokens": 168504,
+    "tokens_per_run": 4681,
+    "tool_calls": 96,
+    "mutations": 24,
+    "wall_s_per_run": 3.12,
+    "usd": 0.1592,
+    "usd_per_run": 0.00442,
+    "joules": 1612.8,
+    "ended_by": {
+     "final": 24,
+     "marker": 12
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 36
+   },
+   "harness+saver": {
+    "runs": 36,
+    "success": 36,
+    "success_pct": 100.0,
+    "calls": 119,
+    "calls_per_run": 3.31,
+    "prompt_tokens": 164131,
+    "completion_tokens": 11505,
+    "reasoning_tokens": 4006,
+    "total_tokens": 175636,
+    "tokens_per_run": 4879,
+    "tool_calls": 95,
+    "mutations": 24,
+    "wall_s_per_run": 4.05,
+    "usd": 0.1572,
+    "usd_per_run": 0.00437,
+    "joules": 1721.9,
+    "ended_by": {
+     "final": 15,
+     "marker": 12,
+     "saver-done": 9
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 36
+   },
+   "saver_vs_harness": {
+    "calls": -0.8,
+    "total_tokens": 4.2,
+    "completion_tokens": 6.8,
+    "wall_s_per_run": 29.8,
+    "usd": -1.3,
+    "joules": 6.8,
+    "success_points": 0.0
+   }
+  },
+  "fuzzy": {
+   "harness": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 60,
+    "calls_per_run": 10.0,
+    "prompt_tokens": 106422,
+    "completion_tokens": 11267,
+    "reasoning_tokens": 6154,
+    "total_tokens": 117689,
+    "tokens_per_run": 19615,
+    "tool_calls": 79,
+    "mutations": 0,
+    "wall_s_per_run": 13.58,
+    "usd": 0.1039,
+    "usd_per_run": 0.01732,
+    "joules": 1686.3,
+    "ended_by": {
+     "cap": 6
+    },
+    "miss_runs": 6,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 6
+   },
+   "harness+saver": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 22,
+    "calls_per_run": 3.67,
+    "prompt_tokens": 29331,
+    "completion_tokens": 2393,
+    "reasoning_tokens": 1228,
+    "total_tokens": 31724,
+    "tokens_per_run": 5287,
+    "tool_calls": 12,
+    "mutations": 0,
+    "wall_s_per_run": 3.58,
+    "usd": 0.0289,
+    "usd_per_run": 0.00482,
+    "joules": 358.2,
+    "ended_by": {
+     "saver-done": 6
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 6
+   },
+   "saver_vs_harness": {
+    "calls": -63.3,
+    "total_tokens": -73.0,
+    "completion_tokens": -78.8,
+    "wall_s_per_run": -73.6,
+    "usd": -72.2,
+    "joules": -78.8,
+    "success_points": 0.0
+   }
+  },
+  "retry": {
+   "harness": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 90,
+    "calls_per_run": 15.0,
+    "prompt_tokens": 174404,
+    "completion_tokens": 8798,
+    "reasoning_tokens": 2325,
+    "total_tokens": 183202,
+    "tokens_per_run": 30534,
+    "tool_calls": 90,
+    "mutations": 0,
+    "wall_s_per_run": 18.91,
+    "usd": 0.1115,
+    "usd_per_run": 0.01859,
+    "joules": 1316.8,
+    "ended_by": {
+     "cap": 6
+    },
+    "miss_runs": 6,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 6
+   },
+   "harness+saver": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 26,
+    "calls_per_run": 4.33,
+    "prompt_tokens": 36631,
+    "completion_tokens": 3970,
+    "reasoning_tokens": 2214,
+    "total_tokens": 40601,
+    "tokens_per_run": 6767,
+    "tool_calls": 20,
+    "mutations": 0,
+    "wall_s_per_run": 4.24,
+    "usd": 0.0339,
+    "usd_per_run": 0.00565,
+    "joules": 594.2,
+    "ended_by": {
+     "saver-done": 6
+    },
+    "miss_runs": 0,
+    "nudges": 6,
+    "helpers": 0,
+    "errors": 0,
+    "n": 6
+   },
+   "saver_vs_harness": {
+    "calls": -71.1,
+    "total_tokens": -77.8,
+    "completion_tokens": -54.9,
+    "wall_s_per_run": -77.6,
+    "usd": -69.6,
+    "joules": -54.9,
+    "success_points": 0.0
+   }
+  },
+  "noprogress": {
+   "harness": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 90,
+    "calls_per_run": 15.0,
+    "prompt_tokens": 265923,
+    "completion_tokens": 16543,
+    "reasoning_tokens": 6753,
+    "total_tokens": 282466,
+    "tokens_per_run": 47078,
+    "tool_calls": 175,
+    "mutations": 0,
+    "wall_s_per_run": 25.19,
+    "usd": 0.2262,
+    "usd_per_run": 0.03769,
+    "joules": 2475.9,
+    "ended_by": {
+     "cap": 6
+    },
+    "miss_runs": 6,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 6
+   },
+   "harness+saver": {
+    "runs": 6,
+    "success": 5,
+    "success_pct": 83.3,
+    "calls": 34,
+    "calls_per_run": 5.67,
+    "prompt_tokens": 63940,
+    "completion_tokens": 6387,
+    "reasoning_tokens": 2788,
+    "total_tokens": 70327,
+    "tokens_per_run": 11721,
+    "tool_calls": 59,
+    "mutations": 0,
+    "wall_s_per_run": 7.17,
+    "usd": 0.0632,
+    "usd_per_run": 0.01054,
+    "joules": 955.9,
+    "ended_by": {
+     "saver-done": 3,
+     "saver-stop": 3
+    },
+    "miss_runs": 0,
+    "nudges": 6,
+    "helpers": 0,
+    "errors": 0,
+    "n": 6
+   },
+   "saver_vs_harness": {
+    "calls": -62.2,
+    "total_tokens": -75.1,
+    "completion_tokens": -61.4,
+    "wall_s_per_run": -71.5,
+    "usd": -72.1,
+    "joules": -61.4,
+    "success_points": -16.7
+   }
+  },
+  "sprawl": {
+   "harness": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 72,
+    "calls_per_run": 12.0,
+    "prompt_tokens": 102593,
+    "completion_tokens": 9221,
+    "reasoning_tokens": 2971,
+    "total_tokens": 111814,
+    "tokens_per_run": 18636,
+    "tool_calls": 81,
+    "mutations": 0,
+    "wall_s_per_run": 17.57,
+    "usd": 0.0946,
+    "usd_per_run": 0.01577,
+    "joules": 1380.1,
+    "ended_by": {
+     "final": 6
+    },
+    "miss_runs": 1,
+    "nudges": 0,
+    "helpers": 17,
+    "errors": 0,
+    "n": 6
+   },
+   "harness+saver": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 53,
+    "calls_per_run": 8.83,
+    "prompt_tokens": 76842,
+    "completion_tokens": 8308,
+    "reasoning_tokens": 2823,
+    "total_tokens": 85150,
+    "tokens_per_run": 14192,
+    "tool_calls": 74,
+    "mutations": 0,
+    "wall_s_per_run": 9.08,
+    "usd": 0.0823,
+    "usd_per_run": 0.01372,
+    "joules": 1243.4,
+    "ended_by": {
+     "final": 2,
+     "saver-stop": 4
+    },
+    "miss_runs": 0,
+    "nudges": 4,
+    "helpers": 26,
+    "errors": 0,
+    "n": 6
+   },
+   "saver_vs_harness": {
+    "calls": -26.4,
+    "total_tokens": -23.8,
+    "completion_tokens": -9.9,
+    "wall_s_per_run": -48.3,
+    "usd": -13.0,
+    "joules": -9.9,
+    "success_points": 0.0
+   }
+  }
+ },
+ "by_harness_normal": {
+  "planner": {
+   "harness": {
+    "runs": 12,
+    "success": 12,
+    "success_pct": 100.0,
+    "calls": 40,
+    "calls_per_run": 3.33,
+    "prompt_tokens": 54625,
+    "completion_tokens": 3891,
+    "reasoning_tokens": 1505,
+    "total_tokens": 58516,
+    "tokens_per_run": 4876,
+    "tool_calls": 32,
+    "mutations": 8,
+    "wall_s_per_run": 3.46,
+    "usd": 0.0566,
+    "usd_per_run": 0.00472,
+    "joules": 582.3,
+    "ended_by": {
+     "final": 12
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 12
+   },
+   "harness+saver": {
+    "runs": 12,
+    "success": 12,
+    "success_pct": 100.0,
+    "calls": 39,
+    "calls_per_run": 3.25,
+    "prompt_tokens": 55805,
+    "completion_tokens": 4193,
+    "reasoning_tokens": 1821,
+    "total_tokens": 59998,
+    "tokens_per_run": 5000,
+    "tool_calls": 31,
+    "mutations": 8,
+    "wall_s_per_run": 6.48,
+    "usd": 0.0599,
+    "usd_per_run": 0.00499,
+    "joules": 627.5,
+    "ended_by": {
+     "final": 11,
+     "saver-done": 1
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 12
+   },
+   "saver_vs_harness": {
+    "calls": -2.5,
+    "total_tokens": 2.5,
+    "completion_tokens": 7.8,
+    "wall_s_per_run": 87.3,
+    "usd": 5.8,
+    "joules": 7.8,
+    "success_points": 0.0
+   }
+  },
+  "react": {
+   "harness": {
+    "runs": 12,
+    "success": 12,
+    "success_pct": 100.0,
+    "calls": 40,
+    "calls_per_run": 3.33,
+    "prompt_tokens": 51275,
+    "completion_tokens": 3502,
+    "reasoning_tokens": 1057,
+    "total_tokens": 54777,
+    "tokens_per_run": 4565,
+    "tool_calls": 32,
+    "mutations": 8,
+    "wall_s_per_run": 2.97,
+    "usd": 0.053,
+    "usd_per_run": 0.00442,
+    "joules": 524.1,
+    "ended_by": {
+     "final": 12
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 12
+   },
+   "harness+saver": {
+    "runs": 12,
+    "success": 12,
+    "success_pct": 100.0,
+    "calls": 40,
+    "calls_per_run": 3.33,
+    "prompt_tokens": 53891,
+    "completion_tokens": 3656,
+    "reasoning_tokens": 950,
+    "total_tokens": 57547,
+    "tokens_per_run": 4796,
+    "tool_calls": 32,
+    "mutations": 8,
+    "wall_s_per_run": 2.85,
+    "usd": 0.0518,
+    "usd_per_run": 0.00432,
+    "joules": 547.2,
+    "ended_by": {
+     "final": 4,
+     "saver-done": 8
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 12
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 5.1,
+    "completion_tokens": 4.4,
+    "wall_s_per_run": -4.0,
+    "usd": -2.3,
+    "joules": 4.4,
+    "success_points": 0.0
+   }
+  },
+  "stop": {
+   "harness": {
+    "runs": 12,
+    "success": 12,
+    "success_pct": 100.0,
+    "calls": 40,
+    "calls_per_run": 3.33,
+    "prompt_tokens": 51828,
+    "completion_tokens": 3383,
+    "reasoning_tokens": 944,
+    "total_tokens": 55211,
+    "tokens_per_run": 4601,
+    "tool_calls": 32,
+    "mutations": 8,
+    "wall_s_per_run": 2.93,
+    "usd": 0.0496,
+    "usd_per_run": 0.00413,
+    "joules": 506.3,
+    "ended_by": {
+     "marker": 12
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 12
+   },
+   "harness+saver": {
+    "runs": 12,
+    "success": 12,
+    "success_pct": 100.0,
+    "calls": 40,
+    "calls_per_run": 3.33,
+    "prompt_tokens": 54435,
+    "completion_tokens": 3656,
+    "reasoning_tokens": 1235,
+    "total_tokens": 58091,
+    "tokens_per_run": 4841,
+    "tool_calls": 32,
+    "mutations": 8,
+    "wall_s_per_run": 2.81,
+    "usd": 0.0455,
+    "usd_per_run": 0.00379,
+    "joules": 547.2,
+    "ended_by": {
+     "marker": 12
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 12
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 5.2,
+    "completion_tokens": 8.1,
+    "wall_s_per_run": -4.1,
+    "usd": -8.3,
+    "joules": 8.1,
+    "success_points": 0.0
+   }
+  }
+ },
+ "cases": {
+  "fuzzy-1-prompt-drift": {
+   "category": "fuzzy",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 20,
+    "calls_per_run": 10.0,
+    "prompt_tokens": 38419,
+    "completion_tokens": 3902,
+    "reasoning_tokens": 1750,
+    "total_tokens": 42321,
+    "tokens_per_run": 21160,
+    "tool_calls": 35,
+    "mutations": 0,
+    "wall_s_per_run": 14.57,
+    "usd": 0.0385,
+    "usd_per_run": 0.01923,
+    "joules": 584.0,
+    "ended_by": {
+     "cap": 2
+    },
+    "miss_runs": 2,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "the prompt asks for 'Finished'; the loop waits for TASK_DONE",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 10615,
+    "completion_tokens": 833,
+    "reasoning_tokens": 427,
+    "total_tokens": 11448,
+    "tokens_per_run": 5724,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 3.33,
+    "usd": 0.0115,
+    "usd_per_run": 0.00576,
+    "joules": 124.7,
+    "ended_by": {
+     "saver-done": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": -60.0,
+    "total_tokens": -72.9,
+    "completion_tokens": -78.7,
+    "wall_s_per_run": -77.1,
+    "usd": -70.1,
+    "joules": -78.6,
+    "success_points": 0.0
+   }
+  },
+  "fuzzy-2-json-final": {
+   "category": "fuzzy",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 20,
+    "calls_per_run": 10.0,
+    "prompt_tokens": 40534,
+    "completion_tokens": 4061,
+    "reasoning_tokens": 1990,
+    "total_tokens": 44595,
+    "tokens_per_run": 22298,
+    "tool_calls": 32,
+    "mutations": 0,
+    "wall_s_per_run": 12.66,
+    "usd": 0.0402,
+    "usd_per_run": 0.02009,
+    "joules": 607.8,
+    "ended_by": {
+     "cap": 2
+    },
+    "miss_runs": 2,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "the loop wants a JSON final_answer; the prompt asks for plain words",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 8096,
+    "completion_tokens": 749,
+    "reasoning_tokens": 371,
+    "total_tokens": 8845,
+    "tokens_per_run": 4422,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 3.26,
+    "usd": 0.008,
+    "usd_per_run": 0.00401,
+    "joules": 112.1,
+    "ended_by": {
+     "saver-done": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": -70.0,
+    "total_tokens": -80.2,
+    "completion_tokens": -81.6,
+    "wall_s_per_run": -74.2,
+    "usd": -80.1,
+    "joules": -81.6,
+    "success_points": 0.0
+   }
+  },
+  "fuzzy-3-strict-line": {
+   "category": "fuzzy",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 20,
+    "calls_per_run": 10.0,
+    "prompt_tokens": 27469,
+    "completion_tokens": 3304,
+    "reasoning_tokens": 2414,
+    "total_tokens": 30773,
+    "tokens_per_run": 15386,
+    "tool_calls": 12,
+    "mutations": 0,
+    "wall_s_per_run": 13.51,
+    "usd": 0.0253,
+    "usd_per_run": 0.01264,
+    "joules": 494.5,
+    "ended_by": {
+     "cap": 2
+    },
+    "miss_runs": 2,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "the loop accepts only a bare TASK_DONE; the prompt asks for TASK_DONE plus a summary",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 10620,
+    "completion_tokens": 811,
+    "reasoning_tokens": 430,
+    "total_tokens": 11431,
+    "tokens_per_run": 5716,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 4.14,
+    "usd": 0.0094,
+    "usd_per_run": 0.00468,
+    "joules": 121.4,
+    "ended_by": {
+     "saver-done": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": -60.0,
+    "total_tokens": -62.9,
+    "completion_tokens": -75.5,
+    "wall_s_per_run": -69.4,
+    "usd": -62.8,
+    "joules": -75.4,
+    "success_points": 0.0
+   }
+  },
+  "noprog-1-search-summarize": {
+   "category": "noprogress",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 30,
+    "calls_per_run": 15.0,
+    "prompt_tokens": 153782,
+    "completion_tokens": 12235,
+    "reasoning_tokens": 5932,
+    "total_tokens": 166017,
+    "tokens_per_run": 83008,
+    "tool_calls": 115,
+    "mutations": 0,
+    "wall_s_per_run": 33.22,
+    "usd": 0.1585,
+    "usd_per_run": 0.07926,
+    "joules": 1831.2,
+    "ended_by": {
+     "cap": 2
+    },
+    "miss_runs": 2,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "the search ignores the query and returns the same three docs, reordered",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 14,
+    "calls_per_run": 7.0,
+    "prompt_tokens": 34453,
+    "completion_tokens": 3767,
+    "reasoning_tokens": 1442,
+    "total_tokens": 38220,
+    "tokens_per_run": 19110,
+    "tool_calls": 40,
+    "mutations": 0,
+    "wall_s_per_run": 10.4,
+    "usd": 0.0407,
+    "usd_per_run": 0.02034,
+    "joules": 563.8,
+    "ended_by": {
+     "saver-done": 1,
+     "saver-stop": 1
+    },
+    "miss_runs": 0,
+    "nudges": 2,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": -53.3,
+    "total_tokens": -77.0,
+    "completion_tokens": -69.2,
+    "wall_s_per_run": -68.7,
+    "usd": -74.3,
+    "joules": -69.2,
+    "success_points": 0.0
+   }
+  },
+  "noprog-2-ticket-poll": {
+   "category": "noprogress",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 30,
+    "calls_per_run": 15.0,
+    "prompt_tokens": 58081,
+    "completion_tokens": 2183,
+    "reasoning_tokens": 390,
+    "total_tokens": 60264,
+    "tokens_per_run": 30132,
+    "tool_calls": 30,
+    "mutations": 0,
+    "wall_s_per_run": 11.85,
+    "usd": 0.0338,
+    "usd_per_run": 0.0169,
+    "joules": 326.7,
+    "ended_by": {
+     "cap": 2
+    },
+    "miss_runs": 2,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "T-105 stays blocked; every read carries a new clock value",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 14,
+    "calls_per_run": 7.0,
+    "prompt_tokens": 21561,
+    "completion_tokens": 1577,
+    "reasoning_tokens": 763,
+    "total_tokens": 23138,
+    "tokens_per_run": 11569,
+    "tool_calls": 12,
+    "mutations": 0,
+    "wall_s_per_run": 6.44,
+    "usd": 0.0145,
+    "usd_per_run": 0.00723,
+    "joules": 236.0,
+    "ended_by": {
+     "saver-done": 2
+    },
+    "miss_runs": 0,
+    "nudges": 2,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": -53.3,
+    "total_tokens": -61.6,
+    "completion_tokens": -27.8,
+    "wall_s_per_run": -45.7,
+    "usd": -57.1,
+    "joules": -27.8,
+    "success_points": 0.0
+   }
+  },
+  "noprog-3-file-poll": {
+   "category": "noprogress",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 30,
+    "calls_per_run": 15.0,
+    "prompt_tokens": 54060,
+    "completion_tokens": 2125,
+    "reasoning_tokens": 431,
+    "total_tokens": 56185,
+    "tokens_per_run": 28092,
+    "tool_calls": 30,
+    "mutations": 0,
+    "wall_s_per_run": 30.51,
+    "usd": 0.0338,
+    "usd_per_run": 0.01692,
+    "joules": 318.0,
+    "ended_by": {
+     "cap": 2
+    },
+    "miss_runs": 2,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "the file never changes",
+   "harness+saver": {
+    "runs": 2,
+    "success": 1,
+    "success_pct": 50.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7926,
+    "completion_tokens": 1043,
+    "reasoning_tokens": 583,
+    "total_tokens": 8969,
+    "tokens_per_run": 4484,
+    "tool_calls": 7,
+    "mutations": 0,
+    "wall_s_per_run": 4.66,
+    "usd": 0.0081,
+    "usd_per_run": 0.00404,
+    "joules": 156.1,
+    "ended_by": {
+     "saver-stop": 2
+    },
+    "miss_runs": 0,
+    "nudges": 2,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": -80.0,
+    "total_tokens": -84.0,
+    "completion_tokens": -50.9,
+    "wall_s_per_run": -84.7,
+    "usd": -76.0,
+    "joules": -50.9,
+    "success_points": -50.0
+   }
+  },
+  "normal-planner-E1": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7740,
+    "completion_tokens": 457,
+    "reasoning_tokens": 181,
+    "total_tokens": 8197,
+    "tokens_per_run": 4098,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.88,
+    "usd": 0.0081,
+    "usd_per_run": 0.00407,
+    "joules": 68.4,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 8136,
+    "completion_tokens": 580,
+    "reasoning_tokens": 304,
+    "total_tokens": 8716,
+    "tokens_per_run": 4358,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 3.31,
+    "usd": 0.0075,
+    "usd_per_run": 0.00375,
+    "joules": 86.8,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 6.3,
+    "completion_tokens": 26.9,
+    "wall_s_per_run": 14.9,
+    "usd": -7.4,
+    "joules": 26.9,
+    "success_points": 0.0
+   }
+  },
+  "normal-planner-E4": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7846,
+    "completion_tokens": 450,
+    "reasoning_tokens": 167,
+    "total_tokens": 8296,
+    "tokens_per_run": 4148,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 3.77,
+    "usd": 0.0091,
+    "usd_per_run": 0.00454,
+    "joules": 67.3,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 8233,
+    "completion_tokens": 445,
+    "reasoning_tokens": 161,
+    "total_tokens": 8678,
+    "tokens_per_run": 4339,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 12.35,
+    "usd": 0.0098,
+    "usd_per_run": 0.00491,
+    "joules": 66.6,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 4.6,
+    "completion_tokens": -1.1,
+    "wall_s_per_run": 227.6,
+    "usd": 7.7,
+    "joules": -1.0,
+    "success_points": 0.0
+   }
+  },
+  "normal-planner-N1": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7841,
+    "completion_tokens": 437,
+    "reasoning_tokens": 128,
+    "total_tokens": 8278,
+    "tokens_per_run": 4139,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.06,
+    "usd": 0.0078,
+    "usd_per_run": 0.00388,
+    "joules": 65.4,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 8236,
+    "completion_tokens": 525,
+    "reasoning_tokens": 215,
+    "total_tokens": 8761,
+    "tokens_per_run": 4380,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.91,
+    "usd": 0.0072,
+    "usd_per_run": 0.00362,
+    "joules": 78.6,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 5.8,
+    "completion_tokens": 20.1,
+    "wall_s_per_run": 41.3,
+    "usd": -7.7,
+    "joules": 20.2,
+    "success_points": 0.0
+   }
+  },
+  "normal-planner-N3": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7890,
+    "completion_tokens": 658,
+    "reasoning_tokens": 349,
+    "total_tokens": 8548,
+    "tokens_per_run": 4274,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.56,
+    "usd": 0.0088,
+    "usd_per_run": 0.00438,
+    "joules": 98.5,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 5,
+    "calls_per_run": 2.5,
+    "prompt_tokens": 6800,
+    "completion_tokens": 723,
+    "reasoning_tokens": 481,
+    "total_tokens": 7523,
+    "tokens_per_run": 3762,
+    "tool_calls": 3,
+    "mutations": 0,
+    "wall_s_per_run": 2.86,
+    "usd": 0.0089,
+    "usd_per_run": 0.00447,
+    "joules": 108.2,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": -16.7,
+    "total_tokens": -12.0,
+    "completion_tokens": 9.9,
+    "wall_s_per_run": 11.7,
+    "usd": 1.1,
+    "joules": 9.8,
+    "success_points": 0.0
+   }
+  },
+  "normal-planner-W1": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 12382,
+    "completion_tokens": 986,
+    "reasoning_tokens": 240,
+    "total_tokens": 13368,
+    "tokens_per_run": 6684,
+    "tool_calls": 10,
+    "mutations": 6,
+    "wall_s_per_run": 5.24,
+    "usd": 0.0122,
+    "usd_per_run": 0.00608,
+    "joules": 147.6,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 12910,
+    "completion_tokens": 1026,
+    "reasoning_tokens": 243,
+    "total_tokens": 13936,
+    "tokens_per_run": 6968,
+    "tool_calls": 10,
+    "mutations": 6,
+    "wall_s_per_run": 4.15,
+    "usd": 0.0148,
+    "usd_per_run": 0.0074,
+    "joules": 153.6,
+    "ended_by": {
+     "final": 1,
+     "saver-done": 1
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 4.2,
+    "completion_tokens": 4.1,
+    "wall_s_per_run": -20.8,
+    "usd": 21.3,
+    "joules": 4.1,
+    "success_points": 0.0
+   }
+  },
+  "normal-planner-W4": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 10926,
+    "completion_tokens": 903,
+    "reasoning_tokens": 440,
+    "total_tokens": 11829,
+    "tokens_per_run": 5914,
+    "tool_calls": 6,
+    "mutations": 2,
+    "wall_s_per_run": 4.24,
+    "usd": 0.0107,
+    "usd_per_run": 0.00534,
+    "joules": 135.1,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 11490,
+    "completion_tokens": 894,
+    "reasoning_tokens": 417,
+    "total_tokens": 12384,
+    "tokens_per_run": 6192,
+    "tool_calls": 6,
+    "mutations": 2,
+    "wall_s_per_run": 13.31,
+    "usd": 0.0116,
+    "usd_per_run": 0.00581,
+    "joules": 133.8,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 4.7,
+    "completion_tokens": -1.0,
+    "wall_s_per_run": 213.9,
+    "usd": 8.4,
+    "joules": -1.0,
+    "success_points": 0.0
+   }
+  },
+  "normal-react-E1": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7222,
+    "completion_tokens": 405,
+    "reasoning_tokens": 130,
+    "total_tokens": 7627,
+    "tokens_per_run": 3814,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.16,
+    "usd": 0.0055,
+    "usd_per_run": 0.00274,
+    "joules": 60.6,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7614,
+    "completion_tokens": 421,
+    "reasoning_tokens": 113,
+    "total_tokens": 8035,
+    "tokens_per_run": 4018,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.35,
+    "usd": 0.0042,
+    "usd_per_run": 0.00211,
+    "joules": 63.0,
+    "ended_by": {
+     "final": 1,
+     "saver-done": 1
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 5.3,
+    "completion_tokens": 4.0,
+    "wall_s_per_run": 8.8,
+    "usd": -23.6,
+    "joules": 4.0,
+    "success_points": 0.0
+   }
+  },
+  "normal-react-E4": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7322,
+    "completion_tokens": 422,
+    "reasoning_tokens": 138,
+    "total_tokens": 7744,
+    "tokens_per_run": 3872,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.72,
+    "usd": 0.0084,
+    "usd_per_run": 0.00422,
+    "joules": 63.2,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7706,
+    "completion_tokens": 430,
+    "reasoning_tokens": 155,
+    "total_tokens": 8136,
+    "tokens_per_run": 4068,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.96,
+    "usd": 0.009,
+    "usd_per_run": 0.00448,
+    "joules": 64.4,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 5.1,
+    "completion_tokens": 1.9,
+    "wall_s_per_run": 8.8,
+    "usd": 7.1,
+    "joules": 1.9,
+    "success_points": 0.0
+   }
+  },
+  "normal-react-N1": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7306,
+    "completion_tokens": 470,
+    "reasoning_tokens": 169,
+    "total_tokens": 7776,
+    "tokens_per_run": 3888,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.96,
+    "usd": 0.0079,
+    "usd_per_run": 0.00397,
+    "joules": 70.3,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7700,
+    "completion_tokens": 464,
+    "reasoning_tokens": 122,
+    "total_tokens": 8164,
+    "tokens_per_run": 4082,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.63,
+    "usd": 0.0078,
+    "usd_per_run": 0.00392,
+    "joules": 69.4,
+    "ended_by": {
+     "final": 1,
+     "saver-done": 1
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 5.0,
+    "completion_tokens": -1.3,
+    "wall_s_per_run": -11.1,
+    "usd": -1.3,
+    "joules": -1.3,
+    "success_points": 0.0
+   }
+  },
+  "normal-react-N3": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7354,
+    "completion_tokens": 541,
+    "reasoning_tokens": 239,
+    "total_tokens": 7895,
+    "tokens_per_run": 3948,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.83,
+    "usd": 0.0084,
+    "usd_per_run": 0.00422,
+    "joules": 81.0,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7750,
+    "completion_tokens": 587,
+    "reasoning_tokens": 213,
+    "total_tokens": 8337,
+    "tokens_per_run": 4168,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.69,
+    "usd": 0.0087,
+    "usd_per_run": 0.00436,
+    "joules": 87.9,
+    "ended_by": {
+     "saver-done": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 5.6,
+    "completion_tokens": 8.5,
+    "wall_s_per_run": -4.9,
+    "usd": 3.6,
+    "joules": 8.5,
+    "success_points": 0.0
+   }
+  },
+  "normal-react-W1": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 11762,
+    "completion_tokens": 983,
+    "reasoning_tokens": 202,
+    "total_tokens": 12745,
+    "tokens_per_run": 6372,
+    "tool_calls": 10,
+    "mutations": 6,
+    "wall_s_per_run": 4.22,
+    "usd": 0.0115,
+    "usd_per_run": 0.00576,
+    "joules": 147.1,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 12290,
+    "completion_tokens": 1053,
+    "reasoning_tokens": 205,
+    "total_tokens": 13343,
+    "tokens_per_run": 6672,
+    "tool_calls": 10,
+    "mutations": 6,
+    "wall_s_per_run": 3.84,
+    "usd": 0.0116,
+    "usd_per_run": 0.00582,
+    "joules": 157.6,
+    "ended_by": {
+     "saver-done": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 4.7,
+    "completion_tokens": 7.1,
+    "wall_s_per_run": -9.0,
+    "usd": 0.9,
+    "joules": 7.1,
+    "success_points": 0.0
+   }
+  },
+  "normal-react-W4": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 10309,
+    "completion_tokens": 681,
+    "reasoning_tokens": 179,
+    "total_tokens": 10990,
+    "tokens_per_run": 5495,
+    "tool_calls": 6,
+    "mutations": 2,
+    "wall_s_per_run": 2.91,
+    "usd": 0.0112,
+    "usd_per_run": 0.0056,
+    "joules": 101.9,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 10831,
+    "completion_tokens": 701,
+    "reasoning_tokens": 142,
+    "total_tokens": 11532,
+    "tokens_per_run": 5766,
+    "tool_calls": 6,
+    "mutations": 2,
+    "wall_s_per_run": 2.66,
+    "usd": 0.0104,
+    "usd_per_run": 0.0052,
+    "joules": 104.9,
+    "ended_by": {
+     "saver-done": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 4.9,
+    "completion_tokens": 2.9,
+    "wall_s_per_run": -8.6,
+    "usd": -7.1,
+    "joules": 2.9,
+    "success_points": 0.0
+   }
+  },
+  "normal-stop-E1": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7306,
+    "completion_tokens": 395,
+    "reasoning_tokens": 120,
+    "total_tokens": 7701,
+    "tokens_per_run": 3850,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 3.32,
+    "usd": 0.0071,
+    "usd_per_run": 0.00353,
+    "joules": 59.1,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7703,
+    "completion_tokens": 403,
+    "reasoning_tokens": 127,
+    "total_tokens": 8106,
+    "tokens_per_run": 4053,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.48,
+    "usd": 0.0049,
+    "usd_per_run": 0.00247,
+    "joules": 60.3,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 5.3,
+    "completion_tokens": 2.0,
+    "wall_s_per_run": -25.3,
+    "usd": -31.0,
+    "joules": 2.0,
+    "success_points": 0.0
+   }
+  },
+  "normal-stop-E4": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7398,
+    "completion_tokens": 356,
+    "reasoning_tokens": 68,
+    "total_tokens": 7754,
+    "tokens_per_run": 3877,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.89,
+    "usd": 0.0059,
+    "usd_per_run": 0.00295,
+    "joules": 53.3,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7795,
+    "completion_tokens": 378,
+    "reasoning_tokens": 89,
+    "total_tokens": 8173,
+    "tokens_per_run": 4086,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.77,
+    "usd": 0.0055,
+    "usd_per_run": 0.00276,
+    "joules": 56.6,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 5.4,
+    "completion_tokens": 6.2,
+    "wall_s_per_run": -4.2,
+    "usd": -6.8,
+    "joules": 6.2,
+    "success_points": 0.0
+   }
+  },
+  "normal-stop-N1": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7392,
+    "completion_tokens": 492,
+    "reasoning_tokens": 190,
+    "total_tokens": 7884,
+    "tokens_per_run": 3942,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.31,
+    "usd": 0.0076,
+    "usd_per_run": 0.00379,
+    "joules": 73.6,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7792,
+    "completion_tokens": 724,
+    "reasoning_tokens": 420,
+    "total_tokens": 8516,
+    "tokens_per_run": 4258,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.3,
+    "usd": 0.0091,
+    "usd_per_run": 0.00453,
+    "joules": 108.4,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 8.0,
+    "completion_tokens": 47.2,
+    "wall_s_per_run": -0.4,
+    "usd": 19.7,
+    "joules": 47.3,
+    "success_points": 0.0
+   }
+  },
+  "normal-stop-N3": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7440,
+    "completion_tokens": 487,
+    "reasoning_tokens": 187,
+    "total_tokens": 7927,
+    "tokens_per_run": 3964,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.39,
+    "usd": 0.0065,
+    "usd_per_run": 0.00325,
+    "joules": 72.9,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7836,
+    "completion_tokens": 515,
+    "reasoning_tokens": 215,
+    "total_tokens": 8351,
+    "tokens_per_run": 4176,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.53,
+    "usd": 0.0077,
+    "usd_per_run": 0.00384,
+    "joules": 77.1,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 5.3,
+    "completion_tokens": 5.7,
+    "wall_s_per_run": 5.9,
+    "usd": 18.5,
+    "joules": 5.8,
+    "success_points": 0.0
+   }
+  },
+  "normal-stop-W1": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 11882,
+    "completion_tokens": 1015,
+    "reasoning_tokens": 231,
+    "total_tokens": 12897,
+    "tokens_per_run": 6448,
+    "tool_calls": 10,
+    "mutations": 6,
+    "wall_s_per_run": 3.71,
+    "usd": 0.0135,
+    "usd_per_run": 0.00674,
+    "joules": 151.9,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 12374,
+    "completion_tokens": 961,
+    "reasoning_tokens": 193,
+    "total_tokens": 13335,
+    "tokens_per_run": 6668,
+    "tool_calls": 10,
+    "mutations": 6,
+    "wall_s_per_run": 3.86,
+    "usd": 0.0112,
+    "usd_per_run": 0.0056,
+    "joules": 143.8,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 3.4,
+    "completion_tokens": -5.3,
+    "wall_s_per_run": 4.0,
+    "usd": -17.0,
+    "joules": -5.3,
+    "success_points": 0.0
+   }
+  },
+  "normal-stop-W4": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 10410,
+    "completion_tokens": 638,
+    "reasoning_tokens": 148,
+    "total_tokens": 11048,
+    "tokens_per_run": 5524,
+    "tool_calls": 6,
+    "mutations": 2,
+    "wall_s_per_run": 2.93,
+    "usd": 0.0091,
+    "usd_per_run": 0.00453,
+    "joules": 95.5,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 10935,
+    "completion_tokens": 675,
+    "reasoning_tokens": 191,
+    "total_tokens": 11610,
+    "tokens_per_run": 5805,
+    "tool_calls": 6,
+    "mutations": 2,
+    "wall_s_per_run": 2.95,
+    "usd": 0.0071,
+    "usd_per_run": 0.00354,
+    "joules": 101.0,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 5.1,
+    "completion_tokens": 5.8,
+    "wall_s_per_run": 0.7,
+    "usd": -22.0,
+    "joules": 5.8,
+    "success_points": 0.0
+   }
+  },
+  "retry-1-status-500": {
+   "category": "retry",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 30,
+    "calls_per_run": 15.0,
+    "prompt_tokens": 56805,
+    "completion_tokens": 2788,
+    "reasoning_tokens": 891,
+    "total_tokens": 59593,
+    "tokens_per_run": 29796,
+    "tool_calls": 30,
+    "mutations": 0,
+    "wall_s_per_run": 30.88,
+    "usd": 0.036,
+    "usd_per_run": 0.01801,
+    "joules": 417.3,
+    "ended_by": {
+     "cap": 2
+    },
+    "miss_runs": 2,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "service_status always answers HTTP 500 with a fresh request id",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 11051,
+    "completion_tokens": 1264,
+    "reasoning_tokens": 761,
+    "total_tokens": 12315,
+    "tokens_per_run": 6158,
+    "tool_calls": 6,
+    "mutations": 0,
+    "wall_s_per_run": 4.07,
+    "usd": 0.0106,
+    "usd_per_run": 0.00529,
+    "joules": 189.2,
+    "ended_by": {
+     "saver-done": 2
+    },
+    "miss_runs": 0,
+    "nudges": 2,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": -73.3,
+    "total_tokens": -79.3,
+    "completion_tokens": -54.7,
+    "wall_s_per_run": -86.8,
+    "usd": -70.6,
+    "joules": -54.7,
+    "success_points": 0.0
+   }
+  },
+  "retry-2-write-503": {
+   "category": "retry",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 30,
+    "calls_per_run": 15.0,
+    "prompt_tokens": 59890,
+    "completion_tokens": 2997,
+    "reasoning_tokens": 546,
+    "total_tokens": 62887,
+    "tokens_per_run": 31444,
+    "tool_calls": 30,
+    "mutations": 0,
+    "wall_s_per_run": 12.55,
+    "usd": 0.0401,
+    "usd_per_run": 0.02003,
+    "joules": 448.5,
+    "ended_by": {
+     "cap": 2
+    },
+    "miss_runs": 2,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "write_file always answers HTTP 503 with a fresh request id",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 11184,
+    "completion_tokens": 1316,
+    "reasoning_tokens": 721,
+    "total_tokens": 12500,
+    "tokens_per_run": 6250,
+    "tool_calls": 6,
+    "mutations": 0,
+    "wall_s_per_run": 3.91,
+    "usd": 0.0119,
+    "usd_per_run": 0.00596,
+    "joules": 197.0,
+    "ended_by": {
+     "saver-done": 2
+    },
+    "miss_runs": 0,
+    "nudges": 2,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": -73.3,
+    "total_tokens": -80.1,
+    "completion_tokens": -56.1,
+    "wall_s_per_run": -68.8,
+    "usd": -70.3,
+    "joules": -56.1,
+    "success_points": 0.0
+   }
+  },
+  "retry-3-docs-empty": {
+   "category": "retry",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 30,
+    "calls_per_run": 15.0,
+    "prompt_tokens": 57709,
+    "completion_tokens": 3013,
+    "reasoning_tokens": 888,
+    "total_tokens": 60722,
+    "tokens_per_run": 30361,
+    "tool_calls": 30,
+    "mutations": 0,
+    "wall_s_per_run": 13.3,
+    "usd": 0.0354,
+    "usd_per_run": 0.01772,
+    "joules": 450.9,
+    "ended_by": {
+     "cap": 2
+    },
+    "miss_runs": 2,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "search_docs always comes back empty ('index rebuilding'), new timing each time",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 10,
+    "calls_per_run": 5.0,
+    "prompt_tokens": 14396,
+    "completion_tokens": 1390,
+    "reasoning_tokens": 732,
+    "total_tokens": 15786,
+    "tokens_per_run": 7893,
+    "tool_calls": 8,
+    "mutations": 0,
+    "wall_s_per_run": 4.75,
+    "usd": 0.0114,
+    "usd_per_run": 0.00569,
+    "joules": 208.0,
+    "ended_by": {
+     "saver-done": 2
+    },
+    "miss_runs": 0,
+    "nudges": 2,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": -66.7,
+    "total_tokens": -74.0,
+    "completion_tokens": -53.9,
+    "wall_s_per_run": -64.3,
+    "usd": -67.8,
+    "joules": -53.9,
+    "success_points": 0.0
+   }
+  },
+  "sprawl-1-double-check": {
+   "category": "sprawl",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 30,
+    "calls_per_run": 15.0,
+    "prompt_tokens": 37902,
+    "completion_tokens": 3008,
+    "reasoning_tokens": 1025,
+    "total_tokens": 40910,
+    "tokens_per_run": 20455,
+    "tool_calls": 26,
+    "mutations": 0,
+    "wall_s_per_run": 13.21,
+    "usd": 0.0268,
+    "usd_per_run": 0.01341,
+    "joules": 450.2,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 12,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "the planner must have two helpers confirm each fact",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 16,
+    "calls_per_run": 8.0,
+    "prompt_tokens": 21274,
+    "completion_tokens": 2614,
+    "reasoning_tokens": 940,
+    "total_tokens": 23888,
+    "tokens_per_run": 11944,
+    "tool_calls": 23,
+    "mutations": 0,
+    "wall_s_per_run": 8.81,
+    "usd": 0.0216,
+    "usd_per_run": 0.01079,
+    "joules": 391.2,
+    "ended_by": {
+     "saver-stop": 2
+    },
+    "miss_runs": 0,
+    "nudges": 2,
+    "helpers": 17,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": -46.7,
+    "total_tokens": -41.6,
+    "completion_tokens": -13.1,
+    "wall_s_per_run": -33.3,
+    "usd": -19.4,
+    "joules": -13.1,
+    "success_points": 0.0
+   }
+  },
+  "sprawl-2-redelegate-failure": {
+   "category": "sprawl",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 25,
+    "calls_per_run": 12.5,
+    "prompt_tokens": 36747,
+    "completion_tokens": 2989,
+    "reasoning_tokens": 1166,
+    "total_tokens": 39736,
+    "tokens_per_run": 19868,
+    "tool_calls": 21,
+    "mutations": 0,
+    "wall_s_per_run": 29.45,
+    "usd": 0.0329,
+    "usd_per_run": 0.01646,
+    "joules": 447.4,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 1,
+    "nudges": 0,
+    "helpers": 3,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "service_status always answers HTTP 500; the planner re-delegates on failure",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 13,
+    "calls_per_run": 6.5,
+    "prompt_tokens": 18207,
+    "completion_tokens": 1580,
+    "reasoning_tokens": 723,
+    "total_tokens": 19787,
+    "tokens_per_run": 9894,
+    "tool_calls": 9,
+    "mutations": 0,
+    "wall_s_per_run": 6.23,
+    "usd": 0.0167,
+    "usd_per_run": 0.00834,
+    "joules": 236.5,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 2,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": -48.0,
+    "total_tokens": -50.2,
+    "completion_tokens": -47.1,
+    "wall_s_per_run": -78.8,
+    "usd": -49.2,
+    "joules": -47.1,
+    "success_points": 0.0
+   }
+  },
+  "sprawl-3-recursive-split": {
+   "category": "sprawl",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 17,
+    "calls_per_run": 8.5,
+    "prompt_tokens": 27944,
+    "completion_tokens": 3224,
+    "reasoning_tokens": 780,
+    "total_tokens": 31168,
+    "tokens_per_run": 15584,
+    "tool_calls": 34,
+    "mutations": 0,
+    "wall_s_per_run": 10.06,
+    "usd": 0.0349,
+    "usd_per_run": 0.01744,
+    "joules": 482.5,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 2,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "helpers may delegate again; the docs hold no such figure",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 24,
+    "calls_per_run": 12.0,
+    "prompt_tokens": 37361,
+    "completion_tokens": 4114,
+    "reasoning_tokens": 1160,
+    "total_tokens": 41475,
+    "tokens_per_run": 20738,
+    "tool_calls": 42,
+    "mutations": 0,
+    "wall_s_per_run": 12.21,
+    "usd": 0.0441,
+    "usd_per_run": 0.02203,
+    "joules": 615.7,
+    "ended_by": {
+     "saver-stop": 2
+    },
+    "miss_runs": 0,
+    "nudges": 2,
+    "helpers": 7,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 41.2,
+    "total_tokens": 33.1,
+    "completion_tokens": 27.6,
+    "wall_s_per_run": 21.4,
+    "usd": 26.4,
+    "joules": 27.6,
+    "success_points": 0.0
+   }
+  }
+ },
+ "outcome_differs": [
+  "noprog-3-file-poll#1"
+ ],
+ "scenarios": [
+  {
+   "case": "fuzzy-1-prompt-drift",
+   "rep": 0,
+   "category": "fuzzy",
+   "harness": "stop",
+   "prompt": "Check the status of every service and post a one-line summary with post_message.",
+   "injected": "the prompt asks for 'Finished'; the loop waits for TASK_DONE",
+   "arms": {
+    "harness": {
+     "success": true,
+     "calls": 10,
+     "total_tokens": 21607,
+     "wall_s": 12.666,
+     "ended_by": "cap",
+     "stop_reason": null,
+     "miss": true,
+     "helpers": 0,
+     "trace": [
+      {
+       "n": 1,
+       "agent": "main",
+       "text": "Checking every service for a one-line summary.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"all\"}",
+         "{\"billing\":\"degraded\",\"search\":\"up\",\"auth\":\"up\",\"checkout\":\"down\"}"
+        ]
+       ],
+       "tokens": 1242,
+       "note": ""
+      },
+      {
+       "n": 2,
+       "agent": "main",
+       "text": "",
+       "calls": [
+        [
+         "post_message",
+         "{\"text\":\"Service status: auth up, search up, billing degraded, checko\u2026",
+         "{\"ok\":true}"
+        ]
+       ],
+       "tokens": 1336,
+       "note": ""
+      },
+      {
+       "n": 3,
+       "agent": "main",
+       "text": "Finished Service status checked: auth up, search up, billing degraded, checkout down.",
+       "calls": [],
+       "tokens": 1361,
+       "note": ""
+      },
+      {
+       "n": 4,
+       "agent": "main",
+       "text": "Continuing checks for pending work.",
+       "calls": [
+        [
+         "list_tickets",
+         "{}",
+         "[{\"id\":\"T-101\",\"title\":\"Login page slow\",\"status\":\"open\",\"owner\":\"sam\",\"priority\":\"medium\"},{\"id\":\"T-102\",\"ti\u2026"
+        ],
+        [
+         "service_status",
+         "{\"name\":\"all\"}",
+         "{\"billing\":\"degraded\",\"search\":\"up\",\"auth\":\"up\",\"checkout\":\"down\"}"
+        ]
+       ],
+       "tokens": 1609,
+       "note": ""
+      },
+      {
+       "n": 5,
+       "agent": "main",
+       "text": "Initial status posted \u2014 now looking for further operational tasks.",
+       "calls": [
+        [
+         "list_files",
+         "{\"dir\":\"/\"}",
+         "[\"/README.txt\",\"/config/app.yaml\",\"/drafts/a.txt\",\"/notes/todo.txt\",\"/reports/limits.txt\"]"
+        ],
+        [
+         "search_docs",
+         "{\"query\":\"operations assignment runbook\"}",
+         "[]"
+        ]
+       ],
+       "tokens": 1959,
+       "note": ""
+      },
+      {
+       "n": 6,
+       "agent": "main",
+       "text": "Found some files \u2014 reading them to identify next steps.",
+       "calls": [
+        [
+         "read_file",
+         "{\"path\":\"/README.txt\"}",
+         "{\"path\":\"/README.txt\",\"content\":\"Ops handbook v3\\nSee /config/app.yaml for limits.\\n\"}"
+        ],
+        [
+         "read_file",
+         "{\"path\":\"/notes/todo.txt\"}",
+         "{\"path\":\"/notes/todo.txt\",\"content\":\"Pick up T-101 and T-104 today.\\n\"}"
+        ],
+        [
+         "read_file",
+         "{\"path\":\"/config/app.yaml\"}",
+         "{\"path\":\"/config/app.yaml\",\"content\":\"name: shop\\nmax_connections: 120\\ntimeout_s: 30\\n\"}"
+        ],
+        [
+         "read_file",
+         "{\"path\":\"/reports/limits.txt\"}",
+         "{\"path\":\"/reports/limits.txt\",\"content\":\"max_connections=120\\n\"}"
+        ],
+        [
+         "read_file",
+         "{\"path\":\"/drafts/a.txt\"}",
+         "{\"path\":\"/drafts/a.txt\",\"content\":\"Release notes draft: faster login.\\n\"}"
+        ]
+       ],
+       "tokens": 2215,
+       "note": ""
+      },
+      {
+       "n": 7,
+       "agent": "main",
+       "text": "No explicit task found \u2014 inspecting tickets noted in the todo file.",
+       "calls": [
+        [
+         "get_ticket",
+         "{\"id\":\"T-101\"}",
+         "{\"id\":\"T-101\",\"title\":\"Login page slow\",\"status\":\"open\",\"owner\":\"sam\",\"priority\":\"medium\"}"
+        ],
+        [
+         "get_ticket",
+         "{\"id\":\"T-104\"}",
+         "{\"id\":\"T-104\",\"title\":\"Search index stale\",\"status\":\"open\",\"owner\":\"kim\",\"priority\":\"high\"}"
+        ],
+        [
+         "get_ticket",
+         "{\"id\":\"T-102\"}",
+         "{\"id\":\"T-102\",\"title\":\"Invoice export fails\",\"status\":\"open\",\"owner\":\"none\",\"priority\":\"high\"}"
+        ]
+       ],
+       "tokens": 2872,
+       "note": ""
+      },
+      {
+       "n": 8,
+       "agent": "main",
+       "text": "",
+       "calls": [
+        [
+         "post_message",
+         "{\"text\":\"Continue check: 6 open tickets (4 high-priority unassigned: \u2026",
+         "{\"ok\":true}"
+        ]
+       ],
+       "tokens": 2962,
+       "note": ""
+      },
+      {
+       "n": 9,
+       "agent": "main",
+       "text": "Finished Continued monitoring: reported open tickets and service health.",
+       "calls": [],
+       "tokens": 2883,
+       "note": ""
+      },
+      {
+       "n": 10,
+       "agent": "main",
+       "text": "Continuing the sweep \u2014 digging deeper for outstanding work.",
+       "calls": [
+        [
+         "list_files",
+         "{\"dir\":\"/config\"}",
+         "[\"/config/app.yaml\"]"
+        ],
+        [
+         "list_files",
+         "{\"dir\":\"/notes\"}",
+         "[\"/notes/todo.txt\"]"
+        ],
+        [
+         "list_files",
+         "{\"dir\":\"/reports\"}",
+         "[\"/reports/limits.txt\"]"
+        ],
+        [
+         "list_files",
+         "{\"dir\":\"/drafts\"}",
+         "[\"/drafts/a.txt\"]"
+        ]
+       ],
+       "tokens": 3168,
+       "note": ""
+      }
+     ]
+    },
+    "harness+saver": {
+     "success": true,
+     "calls": 4,
+     "total_tokens": 5702,
+     "wall_s": 3.438,
+     "ended_by": "saver-done",
+     "stop_reason": "done: Service status checked and summary posted",
+     "miss": false,
+     "helpers": 0,
+     "trace": [
+      {
+       "n": 1,
+       "agent": "main",
+       "text": "Checking every service for a one-line summary.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"all\"}",
+         "{\"billing\":\"degraded\",\"search\":\"up\",\"auth\":\"up\",\"checkout\":\"down\"}"
+        ]
+       ],
+       "tokens": 1293,
+       "note": ""
+      },
+      {
+       "n": 2,
+       "agent": "main",
+       "text": "",
+       "calls": [
+        [
+         "post_message",
+         "{\"text\":\"Service status: auth up, search up, billing degraded, checko\u2026",
+         "{\"ok\":true}"
+        ]
+       ],
+       "tokens": 1398,
+       "note": ""
+      },
+      {
+       "n": 3,
+       "agent": "main",
+       "text": "Finished Service status summary posted.",
+       "calls": [],
+       "tokens": 1456,
+       "note": ""
+      },
+      {
+       "n": 4,
+       "agent": "main",
+       "text": "Service status checked and summary posted",
+       "calls": [],
+       "tokens": 1555,
+       "note": "saver: done (Service status checked and summary posted)"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "case": "retry-1-status-500",
+   "rep": 0,
+   "category": "retry",
+   "harness": "react",
+   "prompt": "Check the status of the billing service and post it.",
+   "injected": "service_status always answers HTTP 500 with a fresh request id",
+   "arms": {
+    "harness": {
+     "success": true,
+     "calls": 15,
+     "total_tokens": 29934,
+     "wall_s": 49.06,
+     "ended_by": "cap",
+     "stop_reason": null,
+     "miss": true,
+     "helpers": 0,
+     "trace": [
+      {
+       "n": 1,
+       "agent": "main",
+       "text": "Checking billing service status.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1037\"}"
+        ]
+       ],
+       "tokens": 1249,
+       "note": ""
+      },
+      {
+       "n": 2,
+       "agent": "main",
+       "text": "That check failed \u2014 retrying.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1074\"}"
+        ]
+       ],
+       "tokens": 1342,
+       "note": ""
+      },
+      {
+       "n": 3,
+       "agent": "main",
+       "text": "Still erroring \u2014 trying again.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1111\"}"
+        ]
+       ],
+       "tokens": 1444,
+       "note": ""
+      },
+      {
+       "n": 4,
+       "agent": "main",
+       "text": "Retrying the status check.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1148\"}"
+        ]
+       ],
+       "tokens": 1540,
+       "note": ""
+      },
+      {
+       "n": 5,
+       "agent": "main",
+       "text": "Still failing \u2014 retrying until it succeeds.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1185\"}"
+        ]
+       ],
+       "tokens": 1656,
+       "note": ""
+      },
+      {
+       "n": 6,
+       "agent": "main",
+       "text": "Retrying again.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1222\"}"
+        ]
+       ],
+       "tokens": 1766,
+       "note": ""
+      },
+      {
+       "n": 7,
+       "agent": "main",
+       "text": "Still getting an error \u2014 retrying.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1259\"}"
+        ]
+       ],
+       "tokens": 1880,
+       "note": ""
+      },
+      {
+       "n": 8,
+       "agent": "main",
+       "text": "Retrying the billing check.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1296\"}"
+        ]
+       ],
+       "tokens": 1990,
+       "note": ""
+      },
+      {
+       "n": 9,
+       "agent": "main",
+       "text": "Still failing \u2014 retrying.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1333\"}"
+        ]
+       ],
+       "tokens": 2103,
+       "note": ""
+      },
+      {
+       "n": 10,
+       "agent": "main",
+       "text": "Retrying again.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1370\"}"
+        ]
+       ],
+       "tokens": 2208,
+       "note": ""
+      },
+      {
+       "n": 11,
+       "agent": "main",
+       "text": "Still erroring \u2014 retrying until it works.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1407\"}"
+        ]
+       ],
+       "tokens": 2324,
+       "note": ""
+      },
+      {
+       "n": 12,
+       "agent": "main",
+       "text": "Retrying the status check.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1444\"}"
+        ]
+       ],
+       "tokens": 2432,
+       "note": ""
+      },
+      {
+       "n": 13,
+       "agent": "main",
+       "text": "Still failing \u2014 retrying.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1481\"}"
+        ]
+       ],
+       "tokens": 2565,
+       "note": ""
+      },
+      {
+       "n": 14,
+       "agent": "main",
+       "text": "Retrying again.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1518\"}"
+        ]
+       ],
+       "tokens": 2674,
+       "note": ""
+      },
+      {
+       "n": 15,
+       "agent": "main",
+       "text": "Still erroring \u2014 retrying.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1555\"}"
+        ]
+       ],
+       "tokens": 2761,
+       "note": ""
+      }
+     ]
+    },
+    "harness+saver": {
+     "success": true,
+     "calls": 4,
+     "total_tokens": 6142,
+     "wall_s": 4.099,
+     "ended_by": "saver-done",
+     "stop_reason": "done: Blocked: billing service_status failed 3 times with HTTP 500",
+     "miss": false,
+     "helpers": 0,
+     "trace": [
+      {
+       "n": 1,
+       "agent": "main",
+       "text": "Checking billing service status for you.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1037\"}"
+        ]
+       ],
+       "tokens": 1317,
+       "note": ""
+      },
+      {
+       "n": 2,
+       "agent": "main",
+       "text": "That check hit a hiccup \u2014 retrying.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1074\"}"
+        ]
+       ],
+       "tokens": 1414,
+       "note": ""
+      },
+      {
+       "n": 3,
+       "agent": "main",
+       "text": "",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1111\"}"
+        ]
+       ],
+       "tokens": 1506,
+       "note": ""
+      },
+      {
+       "n": 4,
+       "agent": "main",
+       "text": "Blocked: billing service_status failed 3 times with HTTP 500",
+       "calls": [],
+       "tokens": 1905,
+       "note": "saver: nudge (error_storm) then saver: done (Blocked: billing service_status failed 3 times with HTTP 500)"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "case": "sprawl-2-redelegate-failure",
+   "rep": 1,
+   "category": "sprawl",
+   "harness": "planner",
+   "prompt": "Check the status of the billing service and post it.",
+   "injected": "service_status always answers HTTP 500; the planner re-delegates on failure",
+   "arms": {
+    "harness": {
+     "success": true,
+     "calls": 17,
+     "total_tokens": 27768,
+     "wall_s": 51.183,
+     "ended_by": "final",
+     "stop_reason": null,
+     "miss": true,
+     "helpers": 2,
+     "trace": [
+      {
+       "n": 1,
+       "agent": "main",
+       "text": "I'll delegate checking the billing service to a helper.",
+       "calls": [
+        [
+         "delegate",
+         "{\"task\":\"Check the status of the billing service using service_status\u2026",
+         "Checked billing via service_status (name='billing') -> HTTP 500 (rq-1037). Retried with name='all' -> HTTP 50\u2026"
+        ]
+       ],
+       "tokens": 1457,
+       "note": ""
+      },
+      {
+       "n": 2,
+       "agent": "helper1",
+       "text": "Checking billing service status, then posting it.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1037\"}"
+        ]
+       ],
+       "tokens": 1258,
+       "note": ""
+      },
+      {
+       "n": 3,
+       "agent": "helper1",
+       "text": "Direct check failed \u2014 trying a broader lookup.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"all\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1074\"}"
+        ]
+       ],
+       "tokens": 1360,
+       "note": ""
+      },
+      {
+       "n": 4,
+       "agent": "helper1",
+       "text": "",
+       "calls": [
+        [
+         "post_message",
+         "{\"text\":\"Billing service status check failed: service_status for 'bil\u2026",
+         "{\"ok\":true}"
+        ]
+       ],
+       "tokens": 1491,
+       "note": ""
+      },
+      {
+       "n": 5,
+       "agent": "helper1",
+       "text": "Checked billing via service_status (name='billing') -> HTTP 500 (rq-1037). Retried with name='all' -> HTTP 500 (rq-1074). Posted failure message via \u2026",
+       "calls": [],
+       "tokens": 1550,
+       "note": ""
+      },
+      {
+       "n": 6,
+       "agent": "main",
+       "text": "That check failed, so I'll retry with a fresh helper.",
+       "calls": [
+        [
+         "delegate",
+         "{\"task\":\"Check the status of the billing service using service_status\u2026",
+         "[helper hit its 6-step limit] Unable to get status \u2014 posting the outcome."
+        ]
+       ],
+       "tokens": 1644,
+       "note": ""
+      },
+      {
+       "n": 7,
+       "agent": "helper2",
+       "text": "Checking billing service \u2014 trying it now.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1111\"}"
+        ]
+       ],
+       "tokens": 1280,
+       "note": ""
+      },
+      {
+       "n": 8,
+       "agent": "helper2",
+       "text": "First check hit a transient error \u2014 retrying.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1148\"}"
+        ]
+       ],
+       "tokens": 1364,
+       "note": ""
+      },
+      {
+       "n": 9,
+       "agent": "helper2",
+       "text": "Still failing \u2014 trying again.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1185\"}"
+        ]
+       ],
+       "tokens": 1464,
+       "note": ""
+      },
+      {
+       "n": 10,
+       "agent": "helper2",
+       "text": "Direct checks failed \u2014 falling back to full status.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"all\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1222\"}"
+        ]
+       ],
+       "tokens": 1579,
+       "note": ""
+      },
+      {
+       "n": 11,
+       "agent": "helper2",
+       "text": "All-services check also failed \u2014 retrying once more.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"all\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1259\"}"
+        ]
+       ],
+       "tokens": 1767,
+       "note": ""
+      },
+      {
+       "n": 12,
+       "agent": "helper2",
+       "text": "Unable to get status \u2014 posting the outcome.",
+       "calls": [
+        [
+         "post_message",
+         "{\"text\":\"Billing service status check failed: service_status with nam\u2026",
+         "{\"ok\":true}"
+        ]
+       ],
+       "tokens": 1865,
+       "note": ""
+      },
+      {
+       "n": 13,
+       "agent": "main",
+       "text": "Helpers couldn't get a clean read, so I'll check the billing service directly.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1296\"}"
+        ]
+       ],
+       "tokens": 1843,
+       "note": ""
+      },
+      {
+       "n": 14,
+       "agent": "main",
+       "text": "The first attempt hit an error, so I'll retry the status check.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1333\"}"
+        ]
+       ],
+       "tokens": 1791,
+       "note": ""
+      },
+      {
+       "n": 15,
+       "agent": "main",
+       "text": "Direct checks are still failing, so I'll try a broader lookup.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"all\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1370\"}"
+        ]
+       ],
+       "tokens": 1886,
+       "note": ""
+      },
+      {
+       "n": 16,
+       "agent": "main",
+       "text": "",
+       "calls": [
+        [
+         "post_message",
+         "{\"text\":\"Billing service status check: service_status for 'billing' (\u2026",
+         "{\"ok\":true}"
+        ]
+       ],
+       "tokens": 2071,
+       "note": ""
+      },
+      {
+       "n": 17,
+       "agent": "main",
+       "text": "Billing service status unavailable (HTTP 500); posted to operator.",
+       "calls": [],
+       "tokens": 2098,
+       "note": ""
+      }
+     ]
+    },
+    "harness+saver": {
+     "success": true,
+     "calls": 6,
+     "total_tokens": 8983,
+     "wall_s": 5.592,
+     "ended_by": "final",
+     "stop_reason": null,
+     "miss": false,
+     "helpers": 1,
+     "trace": [
+      {
+       "n": 1,
+       "agent": "main",
+       "text": "I'll delegate checking the billing service status to a helper.",
+       "calls": [
+        [
+         "delegate",
+         "{\"task\":\"Check the status of the billing service and post it. Use ser\u2026",
+         "Checked billing service via service_status (got HTTP 500, request rq-1037), posted that status to operator vi\u2026"
+        ]
+       ],
+       "tokens": 1508,
+       "note": ""
+      },
+      {
+       "n": 2,
+       "agent": "helper1",
+       "text": "Checking billing service status to post to operator.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1037\"}"
+        ]
+       ],
+       "tokens": 1304,
+       "note": ""
+      },
+      {
+       "n": 3,
+       "agent": "helper1",
+       "text": "",
+       "calls": [
+        [
+         "post_message",
+         "{\"text\":\"Billing service status check failed: HTTP 500 internal serve\u2026",
+         "{\"ok\":true}"
+        ]
+       ],
+       "tokens": 1462,
+       "note": ""
+      },
+      {
+       "n": 4,
+       "agent": "helper1",
+       "text": "Checked billing service via service_status (got HTTP 500, request rq-1037), posted that status to operator via post_message (ok:true).",
+       "calls": [],
+       "tokens": 1463,
+       "note": ""
+      },
+      {
+       "n": 5,
+       "agent": "main",
+       "text": "",
+       "calls": [
+        [
+         "post_message",
+         "{\"text\":\"Billing service status: HTTP 500 (request rq-1037) - service\u2026",
+         "{\"ok\":true}"
+        ]
+       ],
+       "tokens": 1657,
+       "note": ""
+      },
+      {
+       "n": 6,
+       "agent": "main",
+       "text": "Billing service is down (HTTP 500) and status posted.",
+       "calls": [],
+       "tokens": 1589,
+       "note": ""
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "generated": "2026-10-27T17:04:28Z",
+ "reps": 2,
+ "effort": "low",
+ "caps": {
+  "react_max_iterations": 15,
+  "stop_max_rounds": 10,
+  "planner_max_iterations": 10,
+  "helper_max_iterations": 6,
+  "saver_shared_calls": 12
+ },
+ "waste_config": {
+  "max_steps": 12,
+  "max_total_tokens": 60000,
+  "repeat_limit": 2,
+  "noop_limit": 2,
+  "cycle_max_len": 4,
+  "reasoning_floor": 400,
+  "reasoning_ratio": 4.0,
+  "reasoning_hard_cap": 3000,
+  "max_nudges": 1,
+  "inject_done": true,
+  "done_tool": "done",
+  "error_limit": 3,
+  "empty_limit": 4,
+  "low_gain_window": 5,
+  "low_gain_max_new": 0.1,
+  "paraphrase_limit": 2
+ },
+ "cases_total": 30,
+ "runs": 120,
+ "errors": 0,
+ "spend_usd_own": 1.6033,
+ "spend_label": "MEASURED (Meta spend ledger)",
+ "ledger_total_after": 21.8094,
+ "ledger_total_before": 21.493,
+ "job_ceiling": 24.0
+}

@@ -62,7 +62,7 @@ def test_every_run_says_replay_and_every_step_has_plain_words(bundle):
                 n = e["data"]["narration"]
                 assert n["text"] and n["source"] == "template"
             for nm in e["data"].get("numbers", []):
-                assert nm["tag"] in (None, "MEASURED", "ESTIMATE", "SIMULATED")
+                assert nm["tag"] in (None, "MEASURED", "ESTIMATE", "SIMULATED", "REPLAY", "ADVICE")
                 assert nm["v"] is not None or nm["tag"] is None
 
 
@@ -133,20 +133,85 @@ from wattnot.dash import pipeline  # noqa: E402
 SRC = ROOT / "src" / "wattnot"
 
 
-def test_the_run_graph_is_the_seven_pipeline_steps_in_order(bundle):
+def test_the_run_graph_is_the_eight_pipeline_steps_in_order(bundle):
     ids = [n["id"] for n in runplan.plan(bundle, {"model": "glimmer"})["pipeline"]]
-    assert ids == ["room", "baseline", "gate", "sweep", "keep", "receipt"]
+    assert ids == ["room", "baseline", "gate", "sweep", "waste", "approve", "keep", "receipt"]
     ids = [n["id"] for n in runplan.plan(bundle, {"model": "qwen3"})["pipeline"]]
-    assert ids == ["room", "baseline", "gate", "topk", "keep", "receipt"]
-    assert [n["id"] for n in bundle["config"]["pipeline"]] == ["room", "baseline", "gate", "sweep", "topk", "keep", "receipt"]
+    assert ids == ["room", "baseline", "gate", "topk", "waste", "approve", "keep", "receipt"]
+    assert [n["id"] for n in bundle["config"]["pipeline"]] == ["room", "baseline", "gate", "sweep", "topk", "waste", "approve", "keep", "receipt"]
     assert [n["id"] for n in runplan.plan(bundle, {"model": "glimmer", "room": "none"})["pipeline"]][0] == "baseline"
+
+
+def test_the_waste_stage_names_meta_and_real_code(bundle):
+    p = runplan.plan(bundle, {"model": "glimmer"})
+    n = next(x for x in p["pipeline"] if x["id"] == "waste")
+    assert n["title"] == "Agent waste" and n["partners"] == ["meta"]
+    assert n["meta_product"] == "Muse Spark" and n["code"] == "agentwaste/guard.py"
+    subs = {s["id"]: s for s in n["subs"]}
+    assert set(subs) == {"watch", "detect", "nudge", "budget", "exit"}
+    assert subs["watch"]["partner"] == "meta" and subs["exit"]["event"] == "decision"
+    for s in n["subs"]:
+        assert (SRC / s["code"]).is_file()
+
+
+def test_the_waste_steps_run_before_keep_with_numbers_from_the_benchmark(bundle):
+    for m in models(bundle):
+        p = runplan.plan(bundle, {"model": m})
+        if m == "spark_open":
+            continue  # effort and cache levers share the hosted run; checked below
+        started = [f["event"] for f in p["events"] if f["event"]["type"] == "step.started"]
+        subs = [e["data"]["sub"] for e in started if e["data"].get("node") == "waste"]
+        assert subs == ["watch", "detect", "nudge", "budget", "exit"], m
+        nodes = [f["event"]["data"].get("node") for f in p["events"] if f["event"]["type"] == "step.started"]
+        assert nodes.index("waste") > nodes.index("sweep" if "sweep" in nodes else "topk")
+        assert nodes.index("waste") < nodes.index("keep")
+        for e in started:
+            if e["data"].get("node") == "waste":
+                assert e["data"]["narration"]["source"] == "template" and e["data"]["narration"]["text"]
+        nums = [n for f in p["events"] if f["event"]["type"] == "step.finished"
+                and f["event"]["data"].get("node") == "waste" for n in f["event"]["data"]["numbers"]]
+        assert nums and all(n["tag"] in ("MEASURED", "ESTIMATE") and n["v"] is not None for n in nums)
+        dec = [f["event"]["data"] for f in p["events"] if f["event"]["type"] == "decision"
+               and f["event"]["data"].get("kind") == "agent_waste"]
+        assert len(dec) == 1 and dec[0]["stopped"] is True and dec[0]["reason"] == "done"
+        assert dec[0]["calls_on"] is not None and dec[0]["success_on_pct"] is not None
+
+
+def test_the_hosted_run_also_carries_the_waste_steps(bundle):
+    p = runplan.plan(bundle, {"model": "spark_open"})
+    subs = [f["event"]["data"]["sub"] for f in p["events"]
+            if f["event"]["type"] == "step.started" and f["event"]["data"].get("node") == "waste"]
+    assert subs == ["watch", "detect", "nudge", "budget", "exit"]
+
+
+def test_the_waste_steps_show_dashes_without_a_results_file(bundle, monkeypatch):
+    monkeypatch.setattr(runplan, "load_waste", lambda: None)
+    p = runplan.plan(bundle, {"model": "glimmer"})
+    fin = [f["event"] for f in p["events"] if f["event"]["type"] == "step.finished"
+           and f["event"]["data"].get("node") == "waste"]
+    assert len(fin) == 5
+    for e in fin:
+        assert e["data"]["label"] is None
+        for n in e["data"]["numbers"]:
+            assert n["v"] is None and n["tag"] is None
+    assert p["events"][0]["event"]["data"]["label"] == "REPLAY"
+
+
+def _code_defined(path, symbol):
+    import re
+    text = (SRC / path).read_text()
+    return all(re.search(rf"^\s*(?:async\s+)?(?:def|class)\s+{re.escape(part)}\b|^\s*{re.escape(part)}\s*[:=]", text, re.M)
+               for part in symbol.split("."))
 
 
 def test_pipeline_code_paths_are_real_files(bundle):
     for n in pipeline.full_nodes():
         assert (SRC / n["code"]).is_file(), n["code"]
         for s in n["subs"]:
-            assert (SRC / s["code"]).is_file(), (n["id"], s["id"], s["code"])
+            path, _, sym = s["code"].partition("::")
+            assert (SRC / path).is_file(), (n["id"], s["id"], s["code"])
+            if sym:
+                assert _code_defined(path, sym), (n["id"], s["id"], s["code"])
 
 
 def test_live_event_map_points_at_real_steps():
@@ -212,9 +277,80 @@ def test_room_scan_interface_accepts_a_module_scan_and_rejects_bad_ones(bundle):
         pipeline.validate_room_scan({"schema": "other", "racks": []})
 
 
+def test_replay_runs_approve_before_keep(bundle):
+    for mid in ("glimmer", "qwen3"):
+        p = runplan.plan(bundle, {"model": mid})
+        kinds = [(f["event"]["data"].get("node"), f["event"]["data"].get("sub"))
+                 for f in p["events"] if f["event"]["type"] == "step.started"]
+        rel = [(n, s) for n, s in kinds if n in ("approve", "keep")]
+        assert [s for n, s in rel if n == "approve"] == ["classify", "decide"], mid
+        first_ok = next(i for i, (n, s) in enumerate(rel) if n == "approve")
+        first_keep = next(i for i, (n, s) in enumerate(rel) if n == "keep")
+        assert first_ok < first_keep
+        assert any("auto-approved in replay (--auto-approve), logged as such" in
+                   (f["event"]["data"].get("summary") or "").lower()
+                   for f in p["events"] if f["event"]["type"] == "step.finished"), mid
+    # a run that keeps nothing has no classify, only a decide with nothing to approve
+    p = runplan.plan(bundle, {"model": "granite", "min_quality_pct": 95})
+    subs = [f["event"]["data"].get("sub") for f in p["events"]
+            if f["event"]["type"] == "step.started" and f["event"]["data"].get("node") == "approve"]
+    assert subs == ["decide"]
+    assert any("nothing to approve" in (f["event"]["data"].get("outputs") or "")
+               for f in p["events"] if f["event"]["type"] == "step.finished")
+
+
+def test_approve_step_numbers_carry_risk_and_replay_labels():
+    from datetime import UTC, datetime
+    S = runplan._Seq("abcdef", datetime.now(UTC))
+    runplan._approve_cap_change(S, {"cap": 400})
+    nums = [n for f in S.frames for n in f["event"]["data"].get("numbers", [])]
+    assert {n["label"]: n["tag"] for n in nums} == {
+        "risk level": "ADVICE", "cap vs stock": "REPLAY", "cap vs TDP": "REPLAY"}
+    assert any("no operator" in f["event"]["data"]["narration"]["text"]
+               for f in S.frames if f["event"]["type"] == "step.started")
+
+
 def test_after_room_changes_nothing_when_power_is_unknown():
     scan = pipeline.example_room(None)
     tgt = pipeline.target_of(scan)
     assert tgt["power_w"] is None and tgt["power_label"] is None
     after = pipeline.after_room(scan, tgt, None, None)
     assert [r["temp_c"] for r in after["racks"]] == [r["temp_c"] for r in scan["racks"]]
+
+
+def test_nodes_carry_powered_by():
+    by = {n["id"]: n["powered_by"] for n in pipeline.nodes("cap", True)}
+    assert by["room"] == [{"id": "meta", "name": "Meta SAM 3.1",
+                           "what": "finds the racks"}]
+    assert by["approve"] == [{"id": "operator", "name": "Operator",
+                              "what": "a person decides"}]
+    assert by["gate"] == [] and by["receipt"] == []
+    assert by["baseline"] == [{"id": "e2e", "name": "E2E H100",
+                               "what": "the GPU it runs on"}]
+    assert by["keep"] == [{"id": "e2e", "name": "E2E H100",
+                           "what": "the GPU it runs on"}]
+    assert by["sweep"][0] == {"id": "e2e", "name": "E2E H100",
+                              "what": "the GPU it runs on"}
+    assert by["sweep"][1] == {"id": "planner", "name": "planner",
+                              "what": "proposes the next cap"}
+    topk = {n["id"]: n["powered_by"] for n in pipeline.nodes("topk", True)}
+    assert topk["topk"] == [{"id": "e2e", "name": "E2E H100",
+                             "what": "the GPU it runs on"}]
+
+
+def test_hosted_nodes_run_on_baseten():
+    by = {n["id"]: n["powered_by"] for n in pipeline.nodes("hosted", False)}
+    assert by["baseline"][0]["id"] == "baseten"
+    assert by["baseline"][0]["name"] == "Baseten Model API"
+    assert by["sweep"][0]["id"] == "baseten"
+    assert by["sweep"][-1]["id"] == "planner"
+    assert by["approve"] == [{"id": "operator", "name": "Operator",
+                              "what": "a person decides"}]
+
+
+def test_powered_by_entries_are_labelled_words_not_numbers():
+    for n in pipeline.full_nodes():
+        assert "powered_by" in n
+        for entry in n["powered_by"]:
+            assert set(entry) == {"id", "name", "what"}
+            assert all(isinstance(v, str) and v for v in entry.values())

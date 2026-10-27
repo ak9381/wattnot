@@ -1,0 +1,419 @@
+{
+ "model": "muse-spark-1.3",
+ "j_per_token": 0.149666,
+ "j_per_token_source": "data/h100-run2/vm/baseline.json (Llama-3.1-8B-Instruct, one H100, stock 700 W)",
+ "price_source": "https://dev.meta.ai/docs/pricing-rate-limits (muse-spark-1.3, standard rates)",
+ "labels": {
+  "calls": "MEASURED",
+  "tokens": "MEASURED",
+  "wall_time": "MEASURED",
+  "success": "MEASURED",
+  "energy_j": "ESTIMATE",
+  "usd": "ESTIMATE"
+ },
+ "arms": {
+  "auto-ref": {
+   "all": {
+    "runs": 48,
+    "success": 48,
+    "success_pct": 100.0,
+    "calls": 165,
+    "calls_per_run": 3.44,
+    "prompt_tokens": 222053,
+    "completion_tokens": 16731,
+    "reasoning_tokens": 5891,
+    "total_tokens": 238784,
+    "tokens_per_run": 4975,
+    "tool_calls": 153,
+    "mutations": 20,
+    "wall_s_per_run": 2.75,
+    "usd": 0.1923,
+    "usd_per_run": 0.00401,
+    "joules": 2504.1,
+    "ended_by": {
+     "text": 48
+    }
+   },
+   "work": {
+    "runs": 16,
+    "success": 16,
+    "success_pct": 100.0,
+    "calls": 60,
+    "calls_per_run": 3.75,
+    "prompt_tokens": 80499,
+    "completion_tokens": 6237,
+    "reasoning_tokens": 2094,
+    "total_tokens": 86736,
+    "tokens_per_run": 5421,
+    "tool_calls": 52,
+    "mutations": 20,
+    "wall_s_per_run": 3.03,
+    "usd": 0.0661,
+    "usd_per_run": 0.00413,
+    "joules": 933.5,
+    "ended_by": {
+     "text": 16
+    }
+   },
+   "early": {
+    "runs": 16,
+    "success": 16,
+    "success_pct": 100.0,
+    "calls": 48,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 58254,
+    "completion_tokens": 3564,
+    "reasoning_tokens": 1457,
+    "total_tokens": 61818,
+    "tokens_per_run": 3864,
+    "tool_calls": 32,
+    "mutations": 0,
+    "wall_s_per_run": 2.03,
+    "usd": 0.0448,
+    "usd_per_run": 0.0028,
+    "joules": 533.4,
+    "ended_by": {
+     "text": 16
+    }
+   },
+   "no_work": {
+    "runs": 16,
+    "success": 16,
+    "success_pct": 100.0,
+    "calls": 57,
+    "calls_per_run": 3.56,
+    "prompt_tokens": 83300,
+    "completion_tokens": 6930,
+    "reasoning_tokens": 2340,
+    "total_tokens": 90230,
+    "tokens_per_run": 5639,
+    "tool_calls": 69,
+    "mutations": 0,
+    "wall_s_per_run": 3.2,
+    "usd": 0.0813,
+    "usd_per_run": 0.00508,
+    "joules": 1037.2,
+    "ended_by": {
+     "text": 16
+    }
+   }
+  },
+  "loop-off": {
+   "all": {
+    "runs": 48,
+    "success": 42,
+    "success_pct": 87.5,
+    "calls": 576,
+    "calls_per_run": 12.0,
+    "prompt_tokens": 1059727,
+    "completion_tokens": 109305,
+    "reasoning_tokens": 69665,
+    "total_tokens": 1169032,
+    "tokens_per_run": 24355,
+    "tool_calls": 576,
+    "mutations": 32,
+    "wall_s_per_run": 17.55,
+    "usd": 0.9706,
+    "usd_per_run": 0.02022,
+    "joules": 16359.2,
+    "ended_by": {
+     "cap": 48
+    }
+   },
+   "work": {
+    "runs": 16,
+    "success": 16,
+    "success_pct": 100.0,
+    "calls": 192,
+    "calls_per_run": 12.0,
+    "prompt_tokens": 332398,
+    "completion_tokens": 35719,
+    "reasoning_tokens": 25121,
+    "total_tokens": 368117,
+    "tokens_per_run": 23007,
+    "tool_calls": 133,
+    "mutations": 20,
+    "wall_s_per_run": 18.09,
+    "usd": 0.2939,
+    "usd_per_run": 0.01837,
+    "joules": 5345.9,
+    "ended_by": {
+     "cap": 16
+    }
+   },
+   "early": {
+    "runs": 16,
+    "success": 10,
+    "success_pct": 62.5,
+    "calls": 192,
+    "calls_per_run": 12.0,
+    "prompt_tokens": 393428,
+    "completion_tokens": 43424,
+    "reasoning_tokens": 25551,
+    "total_tokens": 436852,
+    "tokens_per_run": 27303,
+    "tool_calls": 281,
+    "mutations": 12,
+    "wall_s_per_run": 16.77,
+    "usd": 0.3938,
+    "usd_per_run": 0.02461,
+    "joules": 6499.1,
+    "ended_by": {
+     "cap": 16
+    }
+   },
+   "no_work": {
+    "runs": 16,
+    "success": 16,
+    "success_pct": 100.0,
+    "calls": 192,
+    "calls_per_run": 12.0,
+    "prompt_tokens": 333901,
+    "completion_tokens": 30162,
+    "reasoning_tokens": 18993,
+    "total_tokens": 364063,
+    "tokens_per_run": 22754,
+    "tool_calls": 162,
+    "mutations": 0,
+    "wall_s_per_run": 17.8,
+    "usd": 0.283,
+    "usd_per_run": 0.01768,
+    "joules": 4514.2,
+    "ended_by": {
+     "cap": 16
+    }
+   }
+  },
+  "loop-on": {
+   "all": {
+    "runs": 48,
+    "success": 48,
+    "success_pct": 100.0,
+    "calls": 167,
+    "calls_per_run": 3.48,
+    "prompt_tokens": 233893,
+    "completion_tokens": 17581,
+    "reasoning_tokens": 5488,
+    "total_tokens": 251474,
+    "tokens_per_run": 5239,
+    "tool_calls": 146,
+    "mutations": 20,
+    "wall_s_per_run": 2.92,
+    "usd": 0.1872,
+    "usd_per_run": 0.0039,
+    "joules": 2631.3,
+    "ended_by": {
+     "done": 48
+    }
+   },
+   "work": {
+    "runs": 16,
+    "success": 16,
+    "success_pct": 100.0,
+    "calls": 64,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 91682,
+    "completion_tokens": 7047,
+    "reasoning_tokens": 2166,
+    "total_tokens": 98729,
+    "tokens_per_run": 6171,
+    "tool_calls": 56,
+    "mutations": 20,
+    "wall_s_per_run": 3.34,
+    "usd": 0.0769,
+    "usd_per_run": 0.0048,
+    "joules": 1054.7,
+    "ended_by": {
+     "done": 16
+    }
+   },
+   "early": {
+    "runs": 16,
+    "success": 16,
+    "success_pct": 100.0,
+    "calls": 48,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 61488,
+    "completion_tokens": 4097,
+    "reasoning_tokens": 1375,
+    "total_tokens": 65585,
+    "tokens_per_run": 4099,
+    "tool_calls": 32,
+    "mutations": 0,
+    "wall_s_per_run": 2.42,
+    "usd": 0.0423,
+    "usd_per_run": 0.00265,
+    "joules": 613.2,
+    "ended_by": {
+     "done": 16
+    }
+   },
+   "no_work": {
+    "runs": 16,
+    "success": 16,
+    "success_pct": 100.0,
+    "calls": 55,
+    "calls_per_run": 3.44,
+    "prompt_tokens": 80723,
+    "completion_tokens": 6437,
+    "reasoning_tokens": 1947,
+    "total_tokens": 87160,
+    "tokens_per_run": 5448,
+    "tool_calls": 58,
+    "mutations": 0,
+    "wall_s_per_run": 3.02,
+    "usd": 0.068,
+    "usd_per_run": 0.00425,
+    "joules": 963.4,
+    "ended_by": {
+     "done": 16
+    }
+   }
+  }
+ },
+ "on_vs_off": {
+  "all": {
+   "calls": -71.0,
+   "total_tokens": -78.5,
+   "completion_tokens": -83.9,
+   "wall_s_per_run": -83.4,
+   "usd": -80.7,
+   "joules": -83.9,
+   "success_points": 12.5
+  },
+  "work": {
+   "calls": -66.7,
+   "total_tokens": -73.2,
+   "completion_tokens": -80.3,
+   "wall_s_per_run": -81.5,
+   "usd": -73.8,
+   "joules": -80.3,
+   "success_points": 0.0
+  },
+  "early": {
+   "calls": -75.0,
+   "total_tokens": -85.0,
+   "completion_tokens": -90.6,
+   "wall_s_per_run": -85.6,
+   "usd": -89.3,
+   "joules": -90.6,
+   "success_points": 37.5
+  },
+  "no_work": {
+   "calls": -71.4,
+   "total_tokens": -76.1,
+   "completion_tokens": -78.7,
+   "wall_s_per_run": -83.0,
+   "usd": -76.0,
+   "joules": -78.7,
+   "success_points": 0.0
+  }
+ },
+ "on_vs_auto": {
+  "all": {
+   "calls": 1.2,
+   "total_tokens": 5.3,
+   "completion_tokens": 5.1,
+   "wall_s_per_run": 6.2,
+   "usd": -2.7,
+   "joules": 5.1,
+   "success_points": 0.0
+  },
+  "work": {
+   "calls": 6.7,
+   "total_tokens": 13.8,
+   "completion_tokens": 13.0,
+   "wall_s_per_run": 10.2,
+   "usd": 16.3,
+   "joules": 13.0,
+   "success_points": 0.0
+  },
+  "early": {
+   "calls": 0.0,
+   "total_tokens": 6.1,
+   "completion_tokens": 15.0,
+   "wall_s_per_run": 19.2,
+   "usd": -5.6,
+   "joules": 15.0,
+   "success_points": 0.0
+  },
+  "no_work": {
+   "calls": -3.5,
+   "total_tokens": -3.4,
+   "completion_tokens": -7.1,
+   "wall_s_per_run": -5.6,
+   "usd": -16.4,
+   "joules": -7.1,
+   "success_points": 0.0
+  }
+ },
+ "auto_vs_off": {
+  "all": {
+   "calls": -71.4,
+   "total_tokens": -79.6,
+   "completion_tokens": -84.7,
+   "wall_s_per_run": -84.3,
+   "usd": -80.2,
+   "joules": -84.7,
+   "success_points": 12.5
+  },
+  "work": {
+   "calls": -68.8,
+   "total_tokens": -76.4,
+   "completion_tokens": -82.5,
+   "wall_s_per_run": -83.3,
+   "usd": -77.5,
+   "joules": -82.5,
+   "success_points": 0.0
+  },
+  "early": {
+   "calls": -75.0,
+   "total_tokens": -85.8,
+   "completion_tokens": -91.8,
+   "wall_s_per_run": -87.9,
+   "usd": -88.6,
+   "joules": -91.8,
+   "success_points": 37.5
+  },
+  "no_work": {
+   "calls": -70.3,
+   "total_tokens": -75.2,
+   "completion_tokens": -77.0,
+   "wall_s_per_run": -82.0,
+   "usd": -71.3,
+   "joules": -77.0,
+   "success_points": 0.0
+  }
+ },
+ "outcome_differs_on_vs_off": [
+  "E1#1",
+  "E3#0",
+  "E3#1",
+  "E5#1",
+  "E6#0",
+  "E8#0"
+ ],
+ "schema": "wattnot.agent-waste/1",
+ "generated": "2026-10-27T15:45:14Z",
+ "tasks": 24,
+ "reps": 2,
+ "effort": "low",
+ "max_steps": 12,
+ "waste_config": {
+  "max_steps": 12,
+  "max_total_tokens": 60000,
+  "repeat_limit": 2,
+  "noop_limit": 2,
+  "cycle_max_len": 4,
+  "reasoning_floor": 400,
+  "reasoning_ratio": 4.0,
+  "reasoning_hard_cap": 3000,
+  "max_nudges": 1,
+  "inject_done": true,
+  "done_tool": "done"
+ },
+ "workers": 4,
+ "spend_usd_ledger": 1.4752,
+ "spend_label": "MEASURED (Meta spend ledger)",
+ "errors": 0
+}

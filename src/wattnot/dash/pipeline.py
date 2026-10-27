@@ -1,6 +1,6 @@
-"""The seven steps of one WattNot run, and the room scan that opens it.
+"""The eight steps of one WattNot run, and the room scan that opens it.
 
-Room scan -> Baseline -> Quality gate -> Cap sweep (or Adaptive top-k) -> Keep / rollback -> Receipt.
+Room scan -> Baseline -> Quality gate -> Cap sweep (or Adaptive top-k) -> Agent waste -> Approve -> Keep / rollback -> Receipt.
 
 ``nodes(variant, room)`` returns the graph nodes in the same shape the Architecture map uses, so the
 run view and the map draw them with one component. ``PIPE_MAP`` says which node and sub-step a raw
@@ -89,6 +89,15 @@ VARIANTS = {
                  _sub("p99", "Latency check", "p99 per class against your limit.", "gates/decide.py", "p99 per class", "p99 change", event="gate.result")],
     },
 }
+_WASTE = [_sub("watch", "Watch each step", "Reads the conversation before each call (WasteGuard.before).", "agentwaste/guard.py", "the conversation so far", "a verdict per call", partner="meta"),
+    _sub("detect", "Spot repeats, no-ops and cycles", "Flags repeated calls, no-op steps and plan cycles (find_repeat).", "agentwaste/detect.py", "recent steps", "a flag or nothing"),
+    _sub("nudge", "Offer the done action", "Offers the done action the loop takes when the work is finished (done_tool_schema).", "agentwaste/guard.py", "the verdict", "a done tool in the reply"),
+    _sub("budget", "Enforce step and token budgets", "Stops the run when the step or token budget runs out (WasteGuard.before).", "agentwaste/guard.py", "steps and tokens used", "stop or go on"),
+    _sub("exit", "Exit early with a reason", "Ends the loop early and says why (WasteProxy.proxy).", "agentwaste/proxy.py", "the verdict", "an early stop with a reason", event="decision")]
+_APPROVE = [
+    _sub("classify", "Rate the risk", "A small cap tweak near stock is low risk; anything bigger waits for a person.", "approvals/risk.py::classify", "the change, stock and TDP", "low or high, with reasons"),
+    _sub("decide", "Operator check", "A low-risk change goes through once the gates pass; a big one waits for an operator to click Approve.", "approvals/guard.py::Guard.wait", "the proposal", "approved, rejected or expired"),
+    _sub("undo", "One-click undo", "An applied change is put back with the token saved when it was applied.", "approvals/guard.py::Guard.undo", "the applied change", "stock restored")]
 _KEEP = [_sub("decide", "Decide what to keep", "Everything that passed all gates is kept; the rest is not.", "gates/decide.py", "all trials, your limits", "a decision", event="decision"),
          _sub("apply", "Apply it", "The setting is applied to the card or the router.", "approvals/appliers.py", "the decision", "the change applied", partner="nvidia", event="action.applied"),
          _sub("rollback", "Roll back", "Nothing qualified, or the run ended: everything goes back to stock.", "approvals/appliers.py", "the previous setting", "stock restored", event="action.rolled_back")]
@@ -107,11 +116,13 @@ _META = {
     "gate": ("Quality gate", "Turns your limits into checks and proves the answer check works on the stock answers.", ["oss"], None, "gates/decide.py"),
     "sweep": ("Cap sweep", "Tries one setting at a time and measures J per request, p99 and whether the gates pass.", ["nvidia", "meta"], "Muse Spark", "runbook.py"),
     "topk": ("Adaptive top-k", "Mixture-of-Experts models keep fewer experts per token; agreement with normal top-k is the quality check.", ["hf", "nvidia"], None, "moe/adaptive_topk.py"),
+    "waste": ("Agent waste", "Stops the planning agent from calling tools it does not need. A done action, checks for repeated calls, no-op steps and plan cycles, and step and token budgets.", ["meta"], "Muse Spark", "agentwaste/guard.py"),
+    "approve": ("Approve", "Low-risk changes go through after the gates pass. A big one waits for an operator to click Approve. No answer in time means reject.", ["oss"], None, "approvals/guard.py"),
     "keep": ("Keep or roll back", "Keeps what passed every gate, rolls back what did not.", ["nvidia"], None, "approvals/appliers.py"),
     "receipt": ("Receipt", "Writes the result down: numbers, labels, and the room before and after.", ["sigstore"], None, "receipt/build.py"),
 }
-_ORDER = {"cap": ["room", "baseline", "gate", "sweep", "keep", "receipt"], "topk": ["room", "baseline", "gate", "topk", "keep", "receipt"],
-          "hosted": ["baseline", "sweep", "gate", "keep", "receipt"]}
+_ORDER = {"cap": ["room", "baseline", "gate", "sweep", "waste", "approve", "keep", "receipt"], "topk": ["room", "baseline", "gate", "topk", "waste", "approve", "keep", "receipt"],
+          "hosted": ["baseline", "sweep", "waste", "gate", "approve", "keep", "receipt"]}
 _TITLES = {("hosted", "sweep"): ("Effort sweep", "Tries cheaper reasoning levels per prompt class and a cache-friendly order."),
            ("hosted", "baseline"): ("Baseline", "The prompts at the top reasoning level: reference cost and p99.")}
 
@@ -128,6 +139,34 @@ def node_ids(variant: str, room: bool) -> list[str]:
     return [i for i in _ORDER[variant] if room or i != "room"]
 
 
+def _powered_by(nid: str, variant: str) -> list[dict]:
+    """Who is behind a node: static facts the screen can show without a run.
+
+    The sweep's `planner` entry is a placeholder: the screen resolves it from
+    the run's own events (the Meta Muse Spark API or Baseten Muse Spark Open).
+    """
+    meta = {"id": "meta", "name": "Meta SAM 3.1", "what": "finds the racks"}
+    gpu = {"id": "e2e", "name": "E2E H100", "what": "the GPU it runs on"}
+    hosted = {"id": "baseten", "name": "Baseten Model API",
+              "what": "the hosted model it runs on"}
+    planner = {"id": "planner", "name": "planner", "what": "proposes the next cap"}
+    operator = {"id": "operator", "name": "Operator", "what": "a person decides"}
+    muse = {"id": "meta", "name": "Meta Muse Spark", "what": "the planning agent it watches"}
+    if nid == "room":
+        return [meta]
+    if nid == "approve":
+        return [operator]
+    if nid == "waste":
+        return [muse]
+    if nid in ("gate", "receipt"):
+        return []
+    if nid in ("baseline", "sweep") and variant == "hosted":
+        return [hosted] + ([planner] if nid == "sweep" else [])
+    if nid in ("baseline", "sweep", "topk", "keep"):
+        return [gpu] + ([planner] if nid == "sweep" else [])
+    return []
+
+
 def nodes(variant: str, room: bool, partners: dict | None = None) -> list[dict]:
     """Graph nodes for one run variant ('cap', 'topk' or 'hosted')."""
     out = []
@@ -136,6 +175,10 @@ def nodes(variant: str, room: bool, partners: dict | None = None) -> list[dict]:
         title, desc = _TITLES.get((variant, nid), (title, desc))
         if nid == "room":
             subs = _ROOM
+        elif nid == "waste":
+            subs = _WASTE
+        elif nid == "approve":
+            subs = _APPROVE
         elif nid == "keep":
             subs = _KEEP
         elif nid == "receipt":
@@ -143,7 +186,7 @@ def nodes(variant: str, room: bool, partners: dict | None = None) -> list[dict]:
         else:
             subs = VARIANTS[variant][nid]
         used = {p: f"{_META[nid][0]}: {desc}" for p in parts}
-        out.append({"id": nid, "title": title, "partners": parts, "desc": desc, "code": code, "col": col, "row": 0, "subs": copy.deepcopy(subs),
+        out.append({"id": nid, "title": title, "partners": parts, "powered_by": _powered_by(nid, variant), "desc": desc, "code": code, "col": col, "row": 0, "subs": copy.deepcopy(subs),
                     "inputs": subs[0]["inputs"], "outputs": subs[-1]["outputs"], "used_for": used, "status": "code", "kind": "step", "lane": "Run",
                     "stats": [], "meta_product": prod})
     return out

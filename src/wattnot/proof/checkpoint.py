@@ -21,8 +21,8 @@ from pathlib import Path
 from typing import Any
 
 VERSION = 1
-STAGES = ("room_scan", "baseline", "quality_gate", "cap_sweep", "adaptive_topk", "keep_rollback",
-          "room_after", "receipt", "finished")
+STAGES = ("room_scan", "baseline", "quality_gate", "cap_sweep", "adaptive_topk", "approve",
+          "keep_rollback", "room_after", "receipt", "finished")
 
 
 class CheckpointError(RuntimeError):

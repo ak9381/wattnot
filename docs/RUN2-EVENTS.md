@@ -15,20 +15,60 @@ architecture-map node and sub-step), `label`, `inputs`, `narration`, and on fini
 | `room_scan` | `sam.masks` | SAM 3.1 room scan, the H100 in rack R03 (carries `data.kind == "room_scan"` progress payloads, before and after) |
 | `baseline` | `workload.send` | 111-prompt answer gate at the stock cap |
 | `quality_gate` | `gates.decide` | does the gate reject a deliberately cut-short setting |
-| `cap_sweep` | `e2e_rig.sweep` | Muse Spark proposes, interleaved stock/cap blocks decide; sub-steps `propose<N>` (`agent.call`) and `cap<W>` |
+| `cap_sweep` | `e2e_rig.sweep` | the planner proposes (Muse Spark, or Muse Spark Open with `--planner baseten-open`), interleaved stock/cap blocks decide; sub-steps `propose<N>` (`agent.call`) and `cap<W>` |
 | `adaptive_topk` | `adaptive.arms` | agreement %, J/request with fewer experts per token |
+| `agent_waste` | `waste.watch` … `waste.exit` | the Agent waste saver on the planning agent (Meta Muse Spark): repeat, no-op and cycle checks, a done action, step and token budgets; numbers come from the saved benchmark file |
+| `approve` | `approve.classify` / `approve.decide` | the risk rating and the wait for an operator |
 | `keep_rollback` | `apply.keep` | the chosen cap applied and read back, or rolled back |
 | `receipt` | `receipts.build` | canonical JSON, SHA-256, offline signature, grade |
 
 Labels: MEASURED (live card), MOCK (rehearsal on the fake meter), SIMULATED (other racks, the
 photo), REPLAY (saved SAM output), ADVICE (planner/room hints), ESTIMATE.
 
+Each `trial.proposed` and `decision` in the sweep carries `planner` (`name`,
+`model`, `partner`: `meta` for Muse Spark, `baseten` for Muse Spark Open,
+null for bisect/grid). The narration `source` on the agent's progress events
+is `muse-spark` or `muse-spark-open` when that planner proposed, else
+`template`.
+
+Rehearsal (no GPU, no API calls):
+`python -m wattnot.proof.orchestrate --mode rehearsal --out OUT --live-file OUT/live/run.events.jsonl`
+
+With `--planner baseten-open` the same scripted answers play through the open
+planner (MOCK, no network): proposal events and the receipt say
+`muse-spark-open` / `baseten` / tier `strict`.
+
+## The approve step
+
+Between the sweep and the keep sits `approve`: `approve.classify` rates the
+risk (low or high, with reasons), `approve.decide` waits for an operator.
+A high-risk change that nobody decides in time stays unapplied: the run emits
+the usual `action.rolled_back` with `failed_gates` of `["approval timed out"]`
+(or `["operator rejected the change"]`) and carries on to the receipt.
+
+While a change waits, the run emits one `proposal.created` event:
+
+```
+{"change_id": "prop_...", "risk": {"level": "high", "reasons": [...]}, "expires_at": "2026-10-27T...Z"}
+```
+
+The dashboard reads it as a pending card. `--auto-approve` skips the wait:
+the change is approved at once, logged as `auto-approve-flag:orchestrate`
+(`pre-approved`), visibly not a person's decision. In rehearsal the whole
+approve block is labelled MOCK, like everything else on the fake meter.
+
+The approve step's inputs name the planner and its tier; `approve.decide`
+numbers carry them too (`planner` and `planner tier`, ADVICE). A high-risk
+change from a strict-tier planner stays `pending-strict` even with
+`--auto-approve`: with nobody to click it, `--approval-timeout-s` runs out
+and the run rolls back, carrying on to the receipt.
+
 ## Resuming a run, and bounded SSH
 
 `orchestrate` writes `OUT/checkpoint.json` after every stage and every sweep step (atomic write).
 If the laptop, the network or the GPU session dies, run the same command again with `--resume`:
 
-- finished stages and finished cap steps are skipped, the run id and `events.jsonl` carry on
+- finished stages (including `approve`) and finished cap steps are skipped, the run id and `events.jsonl` carry on
   (the event `seq` stays unbroken, no second `run.started`);
 - a stage that was cut off in the middle is run again, except a command still going (or already
   finished) on the GPU host, which is re-attached and its log replayed quietly;
@@ -63,6 +103,3 @@ The control step now also reports `stock_noise_cv_pct` and `stock_range_pct` (ME
 extra stock blocks, and each cap step carries a `stock_noise` figure. Longer profiles take
 longer per cap step (`Profile.step_seconds` gives an ESTIMATE). Flags: `--reps --repeat --warmup --warmup-s --burn-in
 --counterbalance/--no-counterbalance --control-blocks`.
-
-Rehearsal (no GPU, no API calls):
-`python -m wattnot.proof.orchestrate --mode rehearsal --out OUT --live-file OUT/live/run.events.jsonl`
