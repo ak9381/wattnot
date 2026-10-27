@@ -62,7 +62,7 @@ def test_every_run_says_replay_and_every_step_has_plain_words(bundle):
                 n = e["data"]["narration"]
                 assert n["text"] and n["source"] == "template"
             for nm in e["data"].get("numbers", []):
-                assert nm["tag"] in (None, "MEASURED", "ESTIMATE", "SIMULATED")
+                assert nm["tag"] in (None, "MEASURED", "ESTIMATE", "SIMULATED", "REPLAY", "ADVICE")
                 assert nm["v"] is not None or nm["tag"] is None
 
 
@@ -133,20 +133,30 @@ from wattnot.dash import pipeline  # noqa: E402
 SRC = ROOT / "src" / "wattnot"
 
 
-def test_the_run_graph_is_the_seven_pipeline_steps_in_order(bundle):
+def test_the_run_graph_is_the_eight_pipeline_steps_in_order(bundle):
     ids = [n["id"] for n in runplan.plan(bundle, {"model": "glimmer"})["pipeline"]]
-    assert ids == ["room", "baseline", "gate", "sweep", "keep", "receipt"]
+    assert ids == ["room", "baseline", "gate", "sweep", "approve", "keep", "receipt"]
     ids = [n["id"] for n in runplan.plan(bundle, {"model": "qwen3"})["pipeline"]]
-    assert ids == ["room", "baseline", "gate", "topk", "keep", "receipt"]
-    assert [n["id"] for n in bundle["config"]["pipeline"]] == ["room", "baseline", "gate", "sweep", "topk", "keep", "receipt"]
+    assert ids == ["room", "baseline", "gate", "topk", "approve", "keep", "receipt"]
+    assert [n["id"] for n in bundle["config"]["pipeline"]] == ["room", "baseline", "gate", "sweep", "topk", "approve", "keep", "receipt"]
     assert [n["id"] for n in runplan.plan(bundle, {"model": "glimmer", "room": "none"})["pipeline"]][0] == "baseline"
+
+
+def _code_defined(path, symbol):
+    import re
+    text = (SRC / path).read_text()
+    return all(re.search(rf"^\s*(?:async\s+)?(?:def|class)\s+{re.escape(part)}\b|^\s*{re.escape(part)}\s*[:=]", text, re.M)
+               for part in symbol.split("."))
 
 
 def test_pipeline_code_paths_are_real_files(bundle):
     for n in pipeline.full_nodes():
         assert (SRC / n["code"]).is_file(), n["code"]
         for s in n["subs"]:
-            assert (SRC / s["code"]).is_file(), (n["id"], s["id"], s["code"])
+            path, _, sym = s["code"].partition("::")
+            assert (SRC / path).is_file(), (n["id"], s["id"], s["code"])
+            if sym:
+                assert _code_defined(path, sym), (n["id"], s["id"], s["code"])
 
 
 def test_live_event_map_points_at_real_steps():
@@ -210,6 +220,39 @@ def test_room_scan_interface_accepts_a_module_scan_and_rejects_bad_ones(bundle):
         pipeline.validate_room_scan(bad)
     with pytest.raises(ValueError):
         pipeline.validate_room_scan({"schema": "other", "racks": []})
+
+
+def test_replay_runs_approve_before_keep(bundle):
+    for mid in ("glimmer", "qwen3"):
+        p = runplan.plan(bundle, {"model": mid})
+        kinds = [(f["event"]["data"].get("node"), f["event"]["data"].get("sub"))
+                 for f in p["events"] if f["event"]["type"] == "step.started"]
+        rel = [(n, s) for n, s in kinds if n in ("approve", "keep")]
+        assert [s for n, s in rel if n == "approve"] == ["classify", "decide"], mid
+        first_ok = next(i for i, (n, s) in enumerate(rel) if n == "approve")
+        first_keep = next(i for i, (n, s) in enumerate(rel) if n == "keep")
+        assert first_ok < first_keep
+        assert any("auto-approved in replay (--auto-approve), logged as such" in
+                   (f["event"]["data"].get("summary") or "").lower()
+                   for f in p["events"] if f["event"]["type"] == "step.finished"), mid
+    # a run that keeps nothing has no classify, only a decide with nothing to approve
+    p = runplan.plan(bundle, {"model": "granite", "min_quality_pct": 95})
+    subs = [f["event"]["data"].get("sub") for f in p["events"]
+            if f["event"]["type"] == "step.started" and f["event"]["data"].get("node") == "approve"]
+    assert subs == ["decide"]
+    assert any("nothing to approve" in (f["event"]["data"].get("outputs") or "")
+               for f in p["events"] if f["event"]["type"] == "step.finished")
+
+
+def test_approve_step_numbers_carry_risk_and_replay_labels():
+    from datetime import UTC, datetime
+    S = runplan._Seq("abcdef", datetime.now(UTC))
+    runplan._approve_cap_change(S, {"cap": 400})
+    nums = [n for f in S.frames for n in f["event"]["data"].get("numbers", [])]
+    assert {n["label"]: n["tag"] for n in nums} == {
+        "risk level": "ADVICE", "cap vs stock": "REPLAY", "cap vs TDP": "REPLAY"}
+    assert any("no operator" in f["event"]["data"]["narration"]["text"]
+               for f in S.frames if f["event"]["type"] == "step.started")
 
 
 def test_after_room_changes_nothing_when_power_is_unknown():

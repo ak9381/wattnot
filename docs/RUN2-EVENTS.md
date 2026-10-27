@@ -17,6 +17,7 @@ architecture-map node and sub-step), `label`, `inputs`, `narration`, and on fini
 | `quality_gate` | `gates.decide` | does the gate reject a deliberately cut-short setting |
 | `cap_sweep` | `e2e_rig.sweep` | Muse Spark proposes, interleaved stock/cap blocks decide; sub-steps `propose<N>` (`agent.call`) and `cap<W>` |
 | `adaptive_topk` | `adaptive.arms` | agreement %, J/request with fewer experts per token |
+| `approve` | `approve.classify` / `approve.decide` | the risk rating and the wait for an operator |
 | `keep_rollback` | `apply.keep` | the chosen cap applied and read back, or rolled back |
 | `receipt` | `receipts.build` | canonical JSON, SHA-256, offline signature, grade |
 
@@ -25,3 +26,22 @@ photo), REPLAY (saved SAM output), ADVICE (planner/room hints), ESTIMATE.
 
 Rehearsal (no GPU, no API calls):
 `python -m wattnot.proof.orchestrate --mode rehearsal --out OUT --live-file OUT/live/run.events.jsonl`
+
+## The approve step
+
+Between the sweep and the keep sits `approve`: `approve.classify` rates the
+risk (low or high, with reasons), `approve.decide` waits for an operator.
+A high-risk change that nobody decides in time stays unapplied: the run emits
+the usual `action.rolled_back` with `failed_gates` of `["approval timed out"]`
+(or `["operator rejected the change"]`) and carries on to the receipt.
+
+While a change waits, the run emits one `proposal.created` event:
+
+```
+{"change_id": "prop_...", "risk": {"level": "high", "reasons": [...]}, "expires_at": "2026-10-27T...Z"}
+```
+
+The dashboard reads it as a pending card. `--auto-approve` skips the wait:
+the change is approved at once, logged as `auto-approve-flag:orchestrate`
+(`pre-approved`), visibly not a person's decision. In rehearsal the whole
+approve block is labelled MOCK, like everything else on the fake meter.

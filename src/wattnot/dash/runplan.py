@@ -23,6 +23,8 @@ import hashlib
 import json
 from datetime import UTC, datetime, timedelta
 
+from wattnot.approvals.risk import RiskConfig, classify
+
 from . import pipeline as pipe
 
 SCHEMA = "wattnot.event/1"
@@ -487,6 +489,50 @@ def plan(bundle: dict, c: dict, *, now: datetime | None = None) -> dict:
             "room": {"scan": scan, "after": aft, "target": tgt["id"] if tgt else None, "pick": room_pick} if scan else None}
 
 
+def _approve_cap_change(S, best, stock=700):
+    """The approve step in a replay. There was no operator on the recorded run,
+    so a kept change shows as auto-approved (--auto-approve), logged as such."""
+    if best is None:
+        S.step("approve", "decide", "Nothing to approve",
+               say="No cap passed every gate, so there is nothing to approve. The card stays at stock.",
+               inputs="no qualified change", outputs="nothing to approve", pace=700)
+        return
+    risk = classify({"kind": "power_cap",
+                     "change": {"gpu": 0, "before": {"power_cap_w": stock},
+                                "after": {"power_cap_w": best["cap"]}}},
+                    RiskConfig(), stock_cap_w=stock, tdp_w=stock)
+    drop = (1 - best["cap"] / stock) * 100
+    S.step("approve", "classify", f"Risk: {risk.level} ({'; '.join(risk.reasons)})", tag="MOCK",
+           say="This is a replay of a recorded run: there was no operator and nothing is applied now. The risk is rated from the recorded caps.",
+           inputs=f"cap {best['cap']} W against stock {stock} W", outputs=f"{risk.level} risk",
+           numbers=[_num("risk level", risk.level, "", "ADVICE"),
+                    _num("cap vs stock", round(drop, 1), "%", "REPLAY"),
+                    _num("cap vs TDP", round(best["cap"] / stock * 100, 1), "%", "REPLAY")],
+           pace=900)
+    S.step("approve", "decide", "Auto-approved in replay (--auto-approve), logged as such", tag="MOCK",
+           say="This is a replay: the recorded run had no operator, so the step shows auto-approved in replay (--auto-approve), logged as such. A live run waits for a click here; no answer in time means reject.",
+           inputs="the proposal", outputs="approved (auto-approve-flag)", pace=700)
+
+
+def _approve_topk_change(S, t, applied):
+    """The approve step for adaptive top-k in a replay. Routing changes always
+    need a person; the replay shows the flag instead."""
+    if not applied:
+        S.step("approve", "decide", "Nothing to approve",
+               say="Adaptive top-k did not pass every gate, so there is nothing to approve. Normal top-k stays on.",
+               inputs="no qualified change", outputs="nothing to approve", pace=700)
+        return
+    risk = classify({"kind": "moe_routing", "change": {"after": {"mass": t["mass"]}}},
+                    RiskConfig())
+    S.step("approve", "classify", f"Risk: {risk.level} ({'; '.join(risk.reasons)})", tag="MOCK",
+           say="This is a replay of a recorded run: there was no operator and nothing is applied now. Routing changes always need a person.",
+           inputs="adaptive routing", outputs=f"{risk.level} risk",
+           numbers=[_num("risk level", risk.level, "", "ADVICE")], pace=900)
+    S.step("approve", "decide", "Auto-approved in replay (--auto-approve), logged as such", tag="MOCK",
+           say="This is a replay: the recorded run had no operator, so the step shows auto-approved in replay (--auto-approve), logged as such. A live run waits for a click here; no answer in time means reject.",
+           inputs="the proposal", outputs="approved (auto-approve-flag)", pace=700)
+
+
 def _run_cap(S, cfg, m, lim, cx):
     ev = eval_cap(cfg, m["id"], lim)
     c = cfg["data"]["cap"][m["id"]]
@@ -525,6 +571,7 @@ def _run_cap(S, cfg, m, lim, cx):
                numbers=[_num("energy per request", round(t["wh"] * 1000, 3), "mWh"), _num("p99", t["p99"], "s"), _num("p99 change", t["p99_change_pct"], "%"),
                         _num("gate", "pass" if t["p99_ok"] else "fail", "")],
                extras=extras, pace=850)
+    _approve_cap_change(S, best)
     if best:
         S.step("keep", "decide", f"Keep {best['cap']} W", say=f"The lowest cap inside your latency limit is {best['cap']} W: {best['saved_pct']}% less energy per request, p99 {best['p99_change_pct']:+.1f}%. Quality check pending ({len(pend)} of {len(ev['tried']) - 1} caps failed the fixed check).",
                inputs="all caps, your limits", outputs=f"{best['cap']} W", pace=1000)
@@ -575,6 +622,7 @@ def _run_topk(S, cfg, m, lim, cx):
            say=f"The slowest batch took {ev['p99_change_pct']:+.1f}% as long as before. Your limit is +{lim['p99_slack_pct']:g}%.",
            inputs="batch generate times", outputs=f"{ev['p99_change_pct']:+.1f}%", numbers=[_num("p99 change", ev["p99_change_pct"], "%")], pace=1000,
            extras=[("gate.result", {"check": "p99", "passed": ev["p_ok"], "detail": {"score": ev["p99_change_pct"], "threshold": lim["p99_slack_pct"]}})])
+    _approve_topk_change(S, t, ev["applied"])
     if ev["applied"]:
         S.step("keep", "apply", "Adaptive top-k kept", say="All your limits hold, so adaptive top-k is kept.", inputs="gates passed", outputs="adaptive routing on", pace=900,
                extras=[("action.applied", {"change": {"adaptive_topk": True}})])

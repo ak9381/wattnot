@@ -19,6 +19,7 @@ pre-approved flag, or a policy the human enabled) has approved. Three are built 
 from __future__ import annotations
 
 import json
+import subprocess
 from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Protocol
@@ -168,3 +169,90 @@ def nvml_appliers(nvml) -> dict[str, Applier]:
     """Appliers for a GPU host: power cap set / rollback, flex rollback."""
     cap = PowerCapApplier.from_nvml(nvml)
     return {m.POWER_CAP: cap, m.FLEX_SHED: _FlexRestore(cap.set)}
+
+
+class NvidiaSmiApplier:
+    """Set a GPU power limit with the `nvidia-smi` command (for kind power_cap).
+
+    `run` is `subprocess.run` unless a test passes a fake. The new limit is read
+    back; if it is not what was asked for the old limit is restored and the
+    apply fails. Never construct this in replay or demo code: use
+    `MockPowerCapApplier` there.
+    """
+
+    def __init__(self, run: Callable = subprocess.run) -> None:
+        self._run = run
+
+    def _query(self, gpu: int) -> int:
+        try:
+            out = self._run(
+                ["nvidia-smi", "-i", str(gpu), "--query-gpu=power.limit",
+                 "--format=csv,noheader,nounits"],
+                capture_output=True, text=True, check=True)
+        except (OSError, subprocess.CalledProcessError) as e:
+            raise ApplyError(f"could not read the power limit on GPU {gpu}: {e}") from e
+        try:
+            return int(float(str(out.stdout).strip().split()[0]))
+        except (ValueError, IndexError) as e:
+            raise ApplyError(f"could not parse the power limit on GPU {gpu}: {e}") from e
+
+    def _set(self, gpu: int, watts: int) -> None:
+        try:
+            self._run(["nvidia-smi", "-i", str(gpu), "-pl", str(int(watts))],
+                      capture_output=True, text=True, check=True)
+        except (OSError, subprocess.CalledProcessError) as e:
+            raise ApplyError(f"could not set the power limit on GPU {gpu}: {e}") from e
+
+    def apply(self, proposal: Mapping) -> dict:
+        ch = proposal["change"]
+        gpu = int(ch.get("gpu", 0))
+        want = ch["after"].get("power_cap_w")
+        if not isinstance(want, int | float) or want <= 0:
+            raise ApplyError("the proposal has no power_cap_w to set")
+        before = self._query(gpu)
+        self._set(gpu, int(want))
+        read = self._query(gpu)
+        if read != int(want):
+            self._set(gpu, before)
+            raise ApplyError(f"asked for {int(want)} W, the card reports {read} W; "
+                             f"put it back to {before} W")
+        return {"gpu": gpu, "before_w": before, "after_w": read}
+
+    def rollback(self, token: Mapping, proposal: Mapping) -> None:
+        gpu, before = int(token["gpu"]), int(token["before_w"])
+        self._set(gpu, before)
+        if self._query(gpu) != before:
+            raise ApplyError(f"rollback: card did not return to {before} W")
+
+
+class MockPowerCapApplier:
+    """An in-memory power cap for demos and tests (MOCK). Same token shape as the
+    real appliers, starts at the stock value you pass in, never touches hardware."""
+
+    def __init__(self, stock_w: int = 700) -> None:
+        self.caps: dict[int, int] = {}
+        self.stock_w = int(stock_w)
+
+    def _read(self, gpu: int) -> int:
+        return self.caps.get(gpu, self.stock_w)
+
+    def apply(self, proposal: Mapping) -> dict:
+        ch = proposal["change"]
+        gpu = int(ch.get("gpu", 0))
+        want = ch["after"].get("power_cap_w")
+        if not isinstance(want, int | float) or want <= 0:
+            raise ApplyError("the proposal has no power_cap_w to set")
+        before = self._read(gpu)
+        self.caps[gpu] = int(want)
+        return {"gpu": gpu, "before_w": before, "after_w": int(want)}
+
+    def rollback(self, token: Mapping, proposal: Mapping) -> None:
+        self.caps[int(token["gpu"])] = int(token["before_w"])
+
+
+def demo_appliers(stock_w: int = 700) -> dict[str, Applier]:
+    """Appliers for demos: a mock cap, a flex rollback that restores nothing.
+
+    The caller merges this with `standard(store)` for the config-file kinds."""
+    return {m.POWER_CAP: MockPowerCapApplier(stock_w),
+            m.FLEX_SHED: _FlexRestore(lambda gpu, watts: int(watts))}

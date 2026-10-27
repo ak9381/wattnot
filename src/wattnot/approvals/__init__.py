@@ -14,16 +14,23 @@ from wattnot.approvals.appliers import (
     ApplyError,
     CallbackApplier,
     ConfigFileApplier,
+    MockPowerCapApplier,
+    NvidiaSmiApplier,
     PowerCapApplier,
+    demo_appliers,
 )
 from wattnot.approvals.gate import ApprovalGate, NotApproved, TrialSession
+from wattnot.approvals.guard import Guard
 from wattnot.approvals.model import ProposalError
 from wattnot.approvals.policy import Policy, PolicyError
+from wattnot.approvals.risk import Risk, RiskConfig, classify, load_config
 from wattnot.approvals.service import Approvals, StateError
 from wattnot.approvals.store import NotFound, Store
 
 __all__ = [
     "Applier", "ApplyError", "ApprovalGate", "Approvals", "CallbackApplier",
-    "ConfigFileApplier", "NotApproved", "NotFound", "Policy", "PolicyError",
-    "PowerCapApplier", "ProposalError", "StateError", "Store", "TrialSession",
+    "ConfigFileApplier", "Guard", "MockPowerCapApplier", "NotApproved", "NotFound",
+    "NvidiaSmiApplier", "Policy", "PolicyError", "PowerCapApplier",
+    "ProposalError", "Risk", "RiskConfig", "StateError", "Store", "TrialSession",
+    "classify", "demo_appliers", "load_config",
 ]

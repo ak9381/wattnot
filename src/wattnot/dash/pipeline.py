@@ -1,6 +1,6 @@
-"""The seven steps of one WattNot run, and the room scan that opens it.
+"""The eight steps of one WattNot run, and the room scan that opens it.
 
-Room scan -> Baseline -> Quality gate -> Cap sweep (or Adaptive top-k) -> Keep / rollback -> Receipt.
+Room scan -> Baseline -> Quality gate -> Cap sweep (or Adaptive top-k) -> Approve -> Keep / rollback -> Receipt.
 
 ``nodes(variant, room)`` returns the graph nodes in the same shape the Architecture map uses, so the
 run view and the map draw them with one component. ``PIPE_MAP`` says which node and sub-step a raw
@@ -89,6 +89,10 @@ VARIANTS = {
                  _sub("p99", "Latency check", "p99 per class against your limit.", "gates/decide.py", "p99 per class", "p99 change", event="gate.result")],
     },
 }
+_APPROVE = [
+    _sub("classify", "Rate the risk", "A small cap tweak near stock is low risk; anything bigger waits for a person.", "approvals/risk.py::classify", "the change, stock and TDP", "low or high, with reasons"),
+    _sub("decide", "Operator check", "A low-risk change goes through once the gates pass; a big one waits for an operator to click Approve.", "approvals/guard.py::Guard.wait", "the proposal", "approved, rejected or expired"),
+    _sub("undo", "One-click undo", "An applied change is put back with the token saved when it was applied.", "approvals/guard.py::Guard.undo", "the applied change", "stock restored")]
 _KEEP = [_sub("decide", "Decide what to keep", "Everything that passed all gates is kept; the rest is not.", "gates/decide.py", "all trials, your limits", "a decision", event="decision"),
          _sub("apply", "Apply it", "The setting is applied to the card or the router.", "approvals/appliers.py", "the decision", "the change applied", partner="nvidia", event="action.applied"),
          _sub("rollback", "Roll back", "Nothing qualified, or the run ended: everything goes back to stock.", "approvals/appliers.py", "the previous setting", "stock restored", event="action.rolled_back")]
@@ -107,11 +111,12 @@ _META = {
     "gate": ("Quality gate", "Turns your limits into checks and proves the answer check works on the stock answers.", ["oss"], None, "gates/decide.py"),
     "sweep": ("Cap sweep", "Tries one setting at a time and measures J per request, p99 and whether the gates pass.", ["nvidia", "meta"], "Muse Spark", "runbook.py"),
     "topk": ("Adaptive top-k", "Mixture-of-Experts models keep fewer experts per token; agreement with normal top-k is the quality check.", ["hf", "nvidia"], None, "moe/adaptive_topk.py"),
+    "approve": ("Approve", "Low-risk changes go through after the gates pass. A big one waits for an operator to click Approve. No answer in time means reject.", ["oss"], None, "approvals/guard.py"),
     "keep": ("Keep or roll back", "Keeps what passed every gate, rolls back what did not.", ["nvidia"], None, "approvals/appliers.py"),
     "receipt": ("Receipt", "Writes the result down: numbers, labels, and the room before and after.", ["sigstore"], None, "receipt/build.py"),
 }
-_ORDER = {"cap": ["room", "baseline", "gate", "sweep", "keep", "receipt"], "topk": ["room", "baseline", "gate", "topk", "keep", "receipt"],
-          "hosted": ["baseline", "sweep", "gate", "keep", "receipt"]}
+_ORDER = {"cap": ["room", "baseline", "gate", "sweep", "approve", "keep", "receipt"], "topk": ["room", "baseline", "gate", "topk", "approve", "keep", "receipt"],
+          "hosted": ["baseline", "sweep", "gate", "approve", "keep", "receipt"]}
 _TITLES = {("hosted", "sweep"): ("Effort sweep", "Tries cheaper reasoning levels per prompt class and a cache-friendly order."),
            ("hosted", "baseline"): ("Baseline", "The prompts at the top reasoning level: reference cost and p99.")}
 
@@ -136,6 +141,8 @@ def nodes(variant: str, room: bool, partners: dict | None = None) -> list[dict]:
         title, desc = _TITLES.get((variant, nid), (title, desc))
         if nid == "room":
             subs = _ROOM
+        elif nid == "approve":
+            subs = _APPROVE
         elif nid == "keep":
             subs = _KEEP
         elif nid == "receipt":
