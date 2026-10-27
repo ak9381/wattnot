@@ -470,7 +470,8 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
             out = runplan.plan(_story(), configure.to_plan_body(body))
         except (ValueError, KeyError, TypeError) as e:
             raise HTTPException(400, str(e) if isinstance(e, ValueError) else "the run settings are not valid") from None
-        out["choice"] = {k: v for k, v in body.items() if isinstance(v, (str, int, float, bool))}
+        out["choice"] = {k: v for k, v in body.items()
+                         if k != "compare" and isinstance(v, (str, int, float, bool))}
         return out
 
     @app.get("/api/dash/v2/run2")
@@ -478,6 +479,19 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         """Headline RUN2 numbers for the before/after block. Read from the
         raw step file when the checkout has it, else a fixed constant."""
         return run2.load(ROOT)
+
+    @app.get("/api/dash/v2/runs")
+    def v2_runs() -> dict:
+        """Runs by run name: id, name, model, date."""
+        return {"runs": run2.list_runs(ROOT)}
+
+    @app.get("/api/dash/v2/runs/{run_id}")
+    def v2_run_one(run_id: str) -> dict:
+        """One run record holding both phases (baseline, then WattNot)."""
+        rec = run2.get_run(ROOT, run_id)
+        if rec is None:
+            raise HTTPException(404, "no such run")
+        return rec
 
     @app.get("/api/dash/v2/verify")
     def v2_verify() -> dict:

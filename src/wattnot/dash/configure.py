@@ -184,11 +184,13 @@ STEPPER_CARE = {
     "balanced": {"p99_slack_pct": 10, "min_quality_pct": 95},
     "bold": {"p99_slack_pct": 15, "min_quality_pct": 94},
 }
-STEPPER_COMPARE = ("with", "without", "both")
-
-
 def apply_stepper(choice: dict, *, save=None, traffic=None, care=None, compare=None) -> dict:
-    """Fold stepper answers into an existing choice dict. Unknown answers raise."""
+    """Fold stepper answers into an existing choice dict. Unknown answers raise.
+
+    Every run measures both phases (baseline first, then WattNot), so there is
+    no compare option. ``compare`` is accepted and ignored so saved choices
+    from the old with/without/compare toggle still load.
+    """
     if save is not None:
         if save not in STEPPER_SAVE:
             raise ValueError(f"save must be one of {sorted(STEPPER_SAVE)}")
@@ -204,15 +206,15 @@ def apply_stepper(choice: dict, *, save=None, traffic=None, care=None, compare=N
             raise ValueError(f"care must be one of {sorted(STEPPER_CARE)}")
         choice.update(STEPPER_CARE[care])
         choice["care"] = care
-    if compare is not None:
-        if compare not in STEPPER_COMPARE:
-            raise ValueError(f"compare must be one of {list(STEPPER_COMPARE)}")
-        choice["compare"] = compare
     return choice
 
 
 def to_plan_body(choice: dict) -> dict:
-    """Map Configure choices to the replay planner's request body. Live is always refused."""
+    """Map Configure choices to the replay planner's request body. Live is always refused.
+
+    An old ``compare`` field from the removed with/without/compare toggle is
+    ignored: every run measures both phases.
+    """
     if choice.get("mode") == "live":
         raise ValueError("live runs cannot be started from the dashboard")
     body: dict = {"model": choice.get("model")}

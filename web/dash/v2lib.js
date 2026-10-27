@@ -98,6 +98,13 @@ export function run2Rows(r, price, water) {
   return rows;
 }
 
+// Which of the two run phases has played after `n` events. Phase 1 is the
+// baseline (Without WattNot), Phase 2 the tuned run (With WattNot); `brk`
+// is the Phase 2 start index from the replay builder.
+export function phaseLabel(n, brk) {
+  return n < brk ? "Phase 1 of 2 · Without WattNot" : "Phase 2 of 2 · With WattNot";
+}
+
 // Rows for the two-path signed report. Each: dim, stock, wattnot, tag, win ("w" | "s" | "tie" | null).
 export function reportRows(results, extra = {}) {
   const lv = (results?.levers || [])[0] || {};

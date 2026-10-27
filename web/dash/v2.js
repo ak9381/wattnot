@@ -1,4 +1,4 @@
-import { esc, badge, num, stageState, ledgerRows, run2Rows, verifySummary } from "./v2lib.js";
+import { esc, badge, num, stageState, ledgerRows, run2Rows, verifySummary, phaseLabel } from "./v2lib.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -101,9 +101,6 @@ const SVG = {
   batch: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8l8-4 8 4-8 4zM4 12l8 4 8-4M4 16l8 4 8-4"/></svg>',
   agent: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5l3 3M20 12a8 8 0 0 1-14 5l-3-3M17 4v4h-4M7 20v-4h4"/></svg>',
   shield: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/></svg>',
-  play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>',
-  base: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/></svg>',
-  both: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v16h4M16 4h4v16h-4M8 4h8v16H8z"/></svg>',
 };
 const SAVE_CARDS = [
   { v: "power", t: "Power", d: "Use less electricity on your own GPU.", ex: "Example: a lower watt cap on your card.", icon: "bolt" },
@@ -120,11 +117,6 @@ const CARE_CARDS = [
   { v: "gentle", t: "Gentle", d: "Stays well inside the limits; keeps less.", ex: "Slowest 1% may rise 5%, answers must agree 97%.", icon: "shield" },
   { v: "balanced", t: "Balanced", d: "The default limits.", ex: "Slowest 1% may rise 10%, answers must agree 95%.", icon: "shield" },
   { v: "bold", t: "Bold", d: "Pushes the limits to save the most.", ex: "Slowest 1% may rise 15%, answers must agree 94%.", icon: "shield" },
-];
-const COMPARE_CARDS = [
-  { v: "with", t: "Run with WattNot", d: "Apply the saving and show the result.", ex: "The tuned run.", icon: "play" },
-  { v: "without", t: "Run without (baseline)", d: "Stock settings, no changes applied.", ex: "The before picture.", icon: "base" },
-  { v: "both", t: "Compare both", d: "Show the stock and tuned runs side by side.", ex: "The default: before and after.", icon: "both" },
 ];
 const MODEL_BLURB = {
   glimmer: "30B dense model · runs on one H100",
@@ -161,7 +153,7 @@ function pickCard(name, c, checked, extra) {
 function renderCfg() {
   const O = S.opts;
   for (const o of O.options) S.choice[o.id] ??= o.default;
-  S.choice.compare ??= "both"; S.step ??= 1;
+  S.step ??= 1;
   const byId = Object.fromEntries(O.options.map((o) => [o.id, o]));
   const adv = O.options.filter((o) => !ESSENTIAL_IDS.includes(o.id)).map((o) => fld(o)).join("");
   $("#pCfg").innerHTML = `<div class="intro"><div><h1>Configure a new run</h1><p>One question per screen, five screens. Everything else keeps a safe default. Use Tab and the arrow keys to move between cards, Enter to continue. Live GPU runs are locked on this screen; it only replays recorded runs, so it costs nothing.</p></div></div>
@@ -214,8 +206,8 @@ function renderStep() {
     ${TRAFFIC_CARDS.map((c) => pickCard("traffic", c, S.choice.traffic === c.v, `<small class="ex">Runs as: ${esc(workloadLabel(TRAFFIC_MAP[c.v]))}</small>`)).join("")}</div>`;
   else if (n === 4) body.innerHTML = `<h2>${esc(STEP_Q[3])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[3])}">
     ${CARE_CARDS.map((c) => pickCard("care", c, S.choice.care === c.v)).join("")}</div>`;
-  else body.innerHTML = `<h2>${esc(STEP_Q[4])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[4])}">
-    ${COMPARE_CARDS.map((c) => pickCard("compare", c, (S.choice.compare || "both") === c.v)).join("")}</div>
+  else body.innerHTML = `<h2>${esc(STEP_Q[4])}</h2>
+    <p class="lock">This run measures both: baseline first, then WattNot.</p>
     <div class="fld namerow"><label for="f-name">Run name<small>free text</small></label><input type="text" id="f-name" value="${esc(S.choice.name || "My first replay")}"></div>
     <button class="btn pri big" id="startRun">Start replay</button>
     <p class="lock">Replay only, no GPU. Live mode needs the owner's okay and the command line.</p>`;
@@ -223,7 +215,6 @@ function renderStep() {
   $$('input[name="model"]', body).forEach((r) => (r.onchange = () => { S.choice.model = JSON.parse(r.value); sumCfg(); }));
   $$('input[name="traffic"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.workload = TRAFFIC_MAP[v]; S.choice.traffic = v; sumCfg(); }));
   $$('input[name="care"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); Object.assign(S.choice, CARE_MAP[v]); S.choice.care = v; sumCfg(); syncAdv(); }));
-  $$('input[name="compare"]', body).forEach((r) => (r.onchange = () => { S.choice.compare = JSON.parse(r.value); S.view = S.choice.compare; }));
   const fn = $("#f-name"); if (fn) fn.oninput = (e) => (S.choice.name = e.target.value);
   const st = $("#startRun"); if (st) st.onclick = startRun;
 }
@@ -285,9 +276,9 @@ function stageBody(p, evs) {
 function renderRun() {
   if (!S.run) { $("#pRun").innerHTML = `<div class="intro"><div><h1>Run</h1><p>No run yet. <a href="#pCfg" id="toCfg">Configure one</a>, or start the default replay.</p></div><button class="btn pri" id="defRun">Start default replay</button></div>`; $("#defRun").onclick = startRun; $("#toCfg").onclick = (e) => { e.preventDefault(); show("pCfg"); }; return; }
   const R = S.run;
-  S.view ??= S.choice.compare || "both";
+  S.view ??= "both";
   $("#pRun").innerHTML = `<div class="glass run2block" id="run2block" aria-live="polite"></div>
-  <div class="intro"><div><h1>${esc(S.choice.name || "Run")} <span style="font-size:14px">${badge("REPLAY")}</span></h1><p>${esc(R.results.model)} · ${esc(R.results.workload)} · run id <code>${esc(R.run_id)}</code>. A recorded run, re-checked against your limits. Nothing is running on a GPU now.</p></div>
+  <div class="intro"><div><h1>${esc(S.choice.name || "Run")} <span style="font-size:14px">${badge("REPLAY")}</span></h1><p>${esc(R.results.model)} · ${esc(R.results.workload)} · run id <code>${esc(R.run_id)}</code>. A recorded run, re-checked against your limits. Nothing is running on a GPU now.</p><p class="lock" id="phaseInd" role="status"></p></div>
     <div class="noprint" style="display:flex;gap:8px"><button class="btn" id="pp">Pause</button><button class="btn" id="rs">Restart</button><select id="spd" style="width:auto"><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option><option value="20">20×</option></select></div></div>
     <div class="glass" style="padding:10px 16px"><div style="display:flex;justify-content:space-between;font-size:13px"><span id="progT"></span><span id="progN" style="color:var(--mu)"></span></div><div class="prog"><i id="progB"></i></div>
     <div class="rail" id="rail">${R.pipeline.map((p, i) => `${i ? '<span class="edge"></span>' : ""}<button class="node" data-stage="${p.id}"><b>${esc(p.title)}</b><span id="ns-${p.id}">waiting</span></button>`).join("")}</div></div>
@@ -316,6 +307,8 @@ function tick(force) {
   $("#progB").style.width = `${(S.n / R.events.length) * 100}%`;
   $("#progT").textContent = active ? `Now: ${R.pipeline.find((p) => p.id === active).title}` : S.n >= R.events.length ? "Finished. Open the Signed report tab for the result." : "Ready";
   $("#progN").textContent = `${done} of ${R.pipeline.length} steps done · event ${S.n} of ${R.events.length}`;
+  const brk = R.phase_break ?? Math.floor(R.events.length / 2);
+  const ind = $("#phaseInd"); if (ind) ind.textContent = phaseLabel(S.n, brk);
   for (const p of R.pipeline) {
     const n = $(`.node[data-stage="${p.id}"]`); n.className = `node ${st[p.id]}`; $(`#ns-${p.id}`).textContent = { todo: "waiting", run: "running", done: "done", fail: "check" }[st[p.id]];
     const c = $(`[data-card="stage-${p.id}"]`);
@@ -351,11 +344,27 @@ function stableStringify(v) {
   if (Array.isArray(v)) return `[${v.map(stableStringify).join(",")}]`;
   return `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${stableStringify(v[k])}`).join(",")}}`;
 }
-// Only headline report data goes into the fingerprint: sorted keys, and no
-// run id, timestamps, or randomness. Same data, same fingerprint, every load.
-function reportFingerprintData() {
-  const r = S.run2 || {};
+// One run record's two phases as the headline the mind map reads. Returns
+// null when the run has no measured joules pair, so the leaves honestly say
+// "not measured" instead of borrowing another run's numbers.
+function headlineFromRecord(rec) {
+  const b = rec?.phases?.baseline, w = rec?.phases?.wattnot;
+  if (b?.metrics?.j_per_req == null || w?.metrics?.j_per_req == null) return null;
   return {
+    model: rec.model, cap_w: w.cap_w, stock_w: b.cap_w,
+    j_per_req_stock: b.metrics.j_per_req, j_per_req_cap: w.metrics.j_per_req,
+    saved_pct: w.metrics.saved_pct, p99_s_stock: b.metrics.p99_s, p99_s_cap: w.metrics.p99_s,
+    p99_change_pct: w.metrics.p99_change_pct, quality_stock_pct: b.metrics.quality_pct,
+    quality_cap_pct: w.metrics.quality_pct, label: "MEASURED",
+    source: (rec.source || []).join(", "),
+  };
+}
+// Only headline report data goes into the fingerprint: sorted keys, the run
+// id, and no timestamps or randomness. Same run, same fingerprint, every load.
+function reportFingerprintData() {
+  const r = S.selHeadline || S.run2 || {};
+  return {
+    run: S.selRun?.id || "run2",
     cap_w: r.cap_w, stock_w: r.stock_w, model: r.model,
     j_per_req_stock: r.j_per_req_stock, j_per_req_cap: r.j_per_req_cap,
     saved_pct: r.saved_pct, p99_s_stock: r.p99_s_stock, p99_s_cap: r.p99_s_cap,
@@ -376,7 +385,7 @@ const MAP_ICON = {
   doc: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v4h4"/></svg>',
 };
 function mapTopics() {
-  const R = S.run?.results || {}, rows = run2Rows(S.run2, R.price, R.water);
+  const R = S.run?.results || {}, rows = run2Rows(S.selHeadline || S.run2, R.price, R.water);
   const by = Object.fromEntries(rows.map((x) => [x.id, x]));
   const leaf = (id, icon, label, text) => ({ id, icon, label, text });
   const row = (r) => (r ? { stock: r.stock, wattnot: r.wattnot, delta: r.delta, tag: r.tag } : null);
@@ -439,28 +448,46 @@ function wireMap() {
   setTimeout(drawWires, 0);
   if (!mapWired) { mapWired = true; window.addEventListener("resize", drawWires); }
 }
+async function selectRun(id) {
+  S.selRunId = id;
+  if (!id || id === "default") { S.selRun = null; S.selHeadline = null; }
+  else {
+    try {
+      const rec = await fetch(`/api/dash/v2/runs/${encodeURIComponent(id)}`).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); });
+      S.selRun = rec; S.selHeadline = headlineFromRecord(rec);
+    } catch { S.selRun = null; S.selHeadline = null; }
+  }
+  renderReport();
+}
 async function renderReport() {
   if (!S.run) { $("#pReport").innerHTML = `<p>Loading the default replay…</p>`; await startQuiet(); }
   S.verify ??= await fetch("/api/dash/v2/verify").then((r) => r.json()).catch(() => null);
+  S.runs ??= await fetch("/api/dash/v2/runs").then((r) => r.json()).catch(() => null);
   const topics = mapTopics();
   const left = topics.slice(0, 4), right = topics.slice(4);
   const sha = await sha256(stableStringify(reportFingerprintData()));
   const vs = verifySummary(S.verify);
-  const r2 = S.run2 || {};
+  const r2 = S.selHeadline || S.run2 || {};
+  const runs = S.runs?.runs || [];
+  const selId = S.selRunId || (runs[0] && runs[0].id) || "default";
+  const hubTitle = S.selRun?.run_name || `${r2.model || "Llama 3.1 8B Instruct"} · ${r2.cap_w || 350} W cap`;
+  const hubDetail = r2.j_per_req_stock != null
+    ? `<p>We capped an H100 at <b>${r2.cap_w} W</b> instead of ${r2.stock_w} W on ${esc(r2.model)} and measured energy per request, the slowest 1% of requests, and answer quality. Energy fell <b>${num(r2.saved_pct, 1)}%</b> ${badge("MEASURED")}, the slowest 1% changed by <b>${num(r2.p99_change_pct, 1)}%</b> ${badge("MEASURED")}, and quality went from <b>${num(r2.quality_stock_pct, 1)}%</b> to <b>${num(r2.quality_cap_pct, 1)}%</b> ${badge("MEASURED")}.</p>`
+    : `<p>${esc(S.selRun?.phases?.wattnot?.note || "This run has no measured headline numbers.")}</p>`;
   const topicHtml = (t) => `<div class="topic" data-topic="${t.id}" data-open="0">
     <button class="topic-head" aria-expanded="false"><span class="tdot" style="--tc:${t.color}" aria-hidden="true"></span><span class="tt"><b>${esc(t.name)}</b><small>${esc(t.sub)}</small></span><span class="chev" aria-hidden="true">›</span></button>
     <div class="topic-kids" hidden>
       ${t.kids.map((k) => `<div class="leaf"><span class="leaf-ic" aria-hidden="true">${MAP_ICON[k.icon] || ""}</span><div><b>${esc(k.label)}</b><span>${k.text}</span></div></div>`).join("")}
       <div class="topic-detail">${t.detail}</div>
     </div></div>`;
-  $("#pReport").innerHTML = `<div class="ctrl noprint"><button class="btn pri" onclick="print()">Export PDF / PNG (print)</button><span style="color:var(--mu);font-size:13px">Topics start closed so the map stays readable. Open any circle for its two paths and the detail.</span><span style="flex:1"></span><button class="btn" data-map="open">Expand all</button><button class="btn" data-map="close">Collapse all</button></div>
+  $("#pReport").innerHTML = `<div class="ctrl noprint"><label for="runSel">Run</label><select id="runSel" style="width:auto;max-width:320px" aria-label="Run">${runs.length ? runs.map((r) => `<option value="${esc(r.id)}" ${r.id === selId ? "selected" : ""}>${esc(r.name)}</option>`).join("") : `<option value="default">Default replay</option>`}</select><button class="btn pri" onclick="print()">Export PDF / PNG (print)</button><span style="color:var(--mu);font-size:13px">Topics start closed so the map stays readable. Open any circle for its two paths and the detail.</span><span style="flex:1"></span><button class="btn" data-map="open">Expand all</button><button class="btn" data-map="close">Collapse all</button></div>
   <div class="map-wrap glass" id="mapWrap"><svg class="map-wires" id="mapWires" aria-hidden="true"></svg>
     <div class="map-hub" id="mapHub" data-open="0">
       <p class="kicker">WattNot signed report · ${badge("REPLAY")} ${badge("MEASURED")}</p>
-      <h1>${esc(r2.model || "Llama 3.1 8B Instruct")} · ${r2.cap_w || 350} W cap</h1>
+      <h1>${esc(hubTitle)}</h1>
       <p class="q">Can we cut GPU power without hurting quality?</p>
       <button class="btn sm" id="hubToggle" aria-expanded="false">Show the question</button>
-      <div class="hub-detail" hidden><p>We capped an H100 at <b>350 W</b> instead of 700 W on Llama 3.1 8B and measured energy per request, the slowest 1% of requests, and answer quality. Energy fell <b>−27.1%</b> ${badge("MEASURED")}, the slowest 1% rose <b>+7.7%</b> ${badge("MEASURED")} inside the 10% limit, and quality stayed at <b>93.7%</b> ${badge("MEASURED")}.</p></div>
+      <div class="hub-detail" hidden>${hubDetail}</div>
     </div>
     <div class="map-cols"><div class="map-col">${left.map(topicHtml).join("")}</div><div class="map-col">${right.map(topicHtml).join("")}</div></div>
   </div>
@@ -493,6 +520,7 @@ async function renderReport() {
     $("#hubToggle").textContent = on ? "Hide the question" : "Show the question";
     $("#hubToggle").setAttribute("aria-expanded", String(on));
   };
+  $("#runSel").onchange = (e) => selectRun(e.target.value);
   wireMap();
 }
 async function sha256(s) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
@@ -516,8 +544,8 @@ function renderLearn() {
 
 // ---------- boot ----------
 (async () => {
-  const [opts, story, partners, run2] = await Promise.all([fetch("/api/dash/v2/options").then((r) => r.json()), fetch("/api/dash/story").then((r) => r.json()).catch(() => null), fetch("/api/dash/partners").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/run2").then((r) => r.json()).catch(() => null)]);
-  S.opts = opts; S.story = story; S.partners = partners; S.run2 = run2; S.pipeline = story?.config?.pipeline || [];
+  const [opts, story, partners, run2, runs] = await Promise.all([fetch("/api/dash/v2/options").then((r) => r.json()), fetch("/api/dash/story").then((r) => r.json()).catch(() => null), fetch("/api/dash/partners").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/run2").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/runs").then((r) => r.json()).catch(() => null)]);
+  S.opts = opts; S.story = story; S.partners = partners; S.run2 = run2; S.runs = runs; S.pipeline = story?.config?.pipeline || [];
   renderCfg(); renderHome(); renderRun(); renderLearn();
   const h = location.hash.slice(1); if (h && $(`#${h}`)) show(h);
   if (new URLSearchParams(location.search).get("autorun")) { await startRun(); }

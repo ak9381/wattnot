@@ -152,14 +152,14 @@ def test_run2_loader_falls_back_when_data_file_missing():
 
 
 def test_stepper_answers_map_onto_existing_options():
-    c = configure.apply_stepper({}, save="power", traffic="chat", care="gentle", compare="both")
+    c = configure.apply_stepper({}, save="power", traffic="chat", care="gentle")
     assert c == {"goal": "save", "save_target": "power", "workload": "coding", "traffic": "chat",
-                 "p99_slack_pct": 5, "min_quality_pct": 97, "care": "gentle", "compare": "both"}
+                 "p99_slack_pct": 5, "min_quality_pct": 97, "care": "gentle"}
     c = configure.apply_stepper({}, save="balanced", traffic="agents", care="bold")
     assert (c["goal"], c["workload"]) == ("balanced", "classes")
     assert (c["p99_slack_pct"], c["min_quality_pct"]) == (15, 94)
     assert configure.STEPPER_CARE["balanced"] == {"p99_slack_pct": 10, "min_quality_pct": 95}
-    for bad in ({"save": "nuclear"}, {"traffic": "fax"}, {"care": "reckless"}, {"compare": "maybe"}):
+    for bad in ({"save": "nuclear"}, {"traffic": "fax"}, {"care": "reckless"}):
         with pytest.raises(ValueError):
             configure.apply_stepper({}, **bad)
     o = _c().get("/api/dash/v2/options").json()
@@ -185,7 +185,9 @@ def test_configure_is_a_guided_stepper_with_connected_panel():
                  "Baseten", "Hugging Face", "Sigstore"):
         assert item in js
     assert "Advanced settings" in js and "Defaults in use" in js
-    assert "Compare both" in js and "Run without (baseline)" in js and '"both"' in js
+    assert "This run measures both: baseline first, then WattNot." in js
+    assert "COMPARE_CARDS" not in js and 'input[name="compare"]' not in js
+    assert "Compare both" not in js and "Run without (baseline)" not in js
 
 
 def test_before_after_block_on_run_page_and_report():
@@ -196,10 +198,83 @@ def test_before_after_block_on_run_page_and_report():
     # run page keeps its block; the signed report builds its leaves from the
     # same rows (mind map), so both read the same measured data
     assert js.count("run2BlockHtml") >= 2
-    assert "mapTopics" in js and "run2Rows(S.run2" in js
+    assert "mapTopics" in js and "run2Rows(S.selHeadline || S.run2" in js
     assert 'data-view' in js and "Compare" in js
     assert "/api/dash/v2/run2" in js
     lib = root.joinpath("v2lib.js").read_text()
     assert "run2Rows" in lib
     css = root.joinpath("v2.css").read_text()
     assert ".picks" in css and ".conn" in css and ".run2block" in css
+
+
+def test_old_compare_field_is_ignored():
+    assert configure.apply_stepper({}, save="power", compare="both") == \
+        {"goal": "save", "save_target": "power"}
+    assert configure.apply_stepper({}, compare="maybe") == {}
+    assert "compare" not in configure.to_plan_body({"model": "glimmer", "compare": "both"})
+    assert not hasattr(configure, "STEPPER_COMPARE")
+    c = _c()
+    r = c.post("/api/dash/v2/run", json={"model": "glimmer", "mode": "replay", "compare": "both"})
+    assert r.status_code == 200 and "compare" not in r.json()["choice"]
+
+
+def test_run_record_holds_both_phases():
+    import pathlib
+    rec = run2.build_record(pathlib.Path(__file__).resolve().parent.parent)
+    assert rec["id"] and rec["run_name"] and rec["model"] == "Llama 3.1 8B Instruct"
+    assert rec["label"] == "REPLAY"
+    base, tuned = rec["phases"]["baseline"], rec["phases"]["wattnot"]
+    assert base["title"] == "Without WattNot" and tuned["title"] == "With WattNot"
+    assert base["label"] == tuned["label"] == "MEASURED"
+    assert base["cap_w"] == 700 and tuned["cap_w"] == 350
+    assert base["metrics"]["j_per_req"] == pytest.approx(15.959, abs=0.01)
+    assert tuned["metrics"]["j_per_req"] == pytest.approx(11.635, abs=0.01)
+    assert tuned["metrics"]["saved_pct"] == pytest.approx(-27.1, abs=0.05)
+    assert tuned["metrics"]["p99_change_pct"] == pytest.approx(7.7, abs=0.05)
+    assert base["metrics"]["quality_pct"] == tuned["metrics"]["quality_pct"] == pytest.approx(93.7, abs=0.05)
+    assert len(base["events"]) == len(tuned["events"]) == 3
+    assert all(e["label"] == "MEASURED" and e["raw_sha256"] for e in base["events"] + tuned["events"])
+
+
+def test_runs_endpoints_list_by_name_and_return_records():
+    c = _c()
+    got = c.get("/api/dash/v2/runs").json()["runs"]
+    assert got and all(set(r) >= {"id", "name", "model", "date"} for r in got)
+    first = c.get("/api/dash/v2/runs/run2-llama-350w").json()
+    assert first["run_name"] == got[0]["name"] == run2.RUN2_NAME
+    assert set(first["phases"]) == {"baseline", "wattnot"}
+    assert c.get("/api/dash/v2/runs/no-such-run").status_code == 404
+
+
+def test_replay_plays_baseline_then_wattnot():
+    import json
+    import pathlib
+    bundle = json.loads(pathlib.Path(__file__).resolve().parent.parent.joinpath("data/dash/story.json").read_text())
+    from wattnot.dash import runplan
+    for model in ("glimmer", "qwen3", "spark_open"):
+        p = runplan.plan(bundle, {"model": model})
+        brk = p["phase_break"]
+        assert 0 < brk < len(p["events"])
+        assert [f["phase"] for f in p["events"]] == ["baseline"] * brk + ["wattnot"] * (len(p["events"]) - brk)
+        assert p["phases"] == {"baseline": {"title": "Without WattNot", "n_events": brk},
+                               "wattnot": {"title": "With WattNot", "n_events": len(p["events"]) - brk}}
+    c = _c()
+    r = c.post("/api/dash/v2/run", json={"model": "glimmer", "mode": "replay"}).json()
+    assert r["phase_break"] == r["phases"]["baseline"]["n_events"]
+
+
+def test_run_page_shows_phase_indicator():
+    import pathlib
+    js = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash/v2.js").read_text()
+    assert "phaseInd" in js and "phase_break" in js
+    assert "Phase 1 of 2 · Without WattNot" in js or "phaseLabel(S.n, brk)" in js
+    lib = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash/v2lib.js").read_text()
+    assert "Phase 1 of 2 · Without WattNot" in lib and "Phase 2 of 2 · With WattNot" in lib
+
+
+def test_report_has_run_selector_wired_to_mind_map():
+    import pathlib
+    js = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash/v2.js").read_text()
+    assert 'id="runSel"' in js and "/api/dash/v2/runs" in js
+    assert "selectRun" in js and "headlineFromRecord" in js and "S.selHeadline" in js
+    assert "run: S.selRun?.id" in js  # fingerprint stays stable per run
