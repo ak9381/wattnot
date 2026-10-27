@@ -1,0 +1,27 @@
+{"id": "q01", "prompt": "What is 12 times 7?", "expect": ["84"]}
+{"id": "q02", "prompt": "Capital of France?", "expect": ["paris"]}
+{"id": "q03", "prompt": "How many days are in a leap year?", "expect": ["366"]}
+{"id": "q04", "prompt": "Boiling point of water at sea level in Celsius?", "expect": ["100"]}
+{"id": "q05", "prompt": "What gas do plants take in for photosynthesis?", "expect": ["carbon dioxide", "co2"]}
+{"id": "q06", "prompt": "Square root of 144?", "expect": ["12"]}
+{"id": "q07", "prompt": "Who wrote Romeo and Juliet?", "expect": ["shakespeare"]}
+{"id": "q08", "prompt": "How many continents are there?", "expect": ["seven", "7"]}
+{"id": "q09", "prompt": "Reverse the string 'abc'.", "expect": ["cba"]}
+{"id": "q10", "prompt": "What is the chemical symbol for gold?", "expect": ["au"]}
+{"id": "q11", "prompt": "Convert 1 km to meters.", "expect": ["1000", "1,000"]}
+{"id": "q12", "prompt": "Largest planet in the solar system?", "expect": ["jupiter"]}
+{"id": "q13", "prompt": "Python: length of [1,2,3]?", "expect": ["3"]}
+{"id": "q14", "prompt": "What is 15% of 200?", "expect": ["30"]}
+{"id": "q15", "prompt": "Freezing point of water in Fahrenheit?", "expect": ["32"]}
+{"id": "q16", "prompt": "How many sides does a hexagon have?", "expect": ["six", "6"]}
+{"id": "q17", "prompt": "What is the opposite of 'cold'?", "expect": ["hot"]}
+{"id": "q18", "prompt": "2 to the power of 10?", "expect": ["1024"]}
+{"id": "q19", "prompt": "Which language is spoken in Brazil?", "expect": ["portuguese"]}
+{"id": "q20", "prompt": "What is 9 times 8?", "expect": ["72"]}
+{"id": "q21", "prompt": "Capital of Japan?", "expect": ["tokyo"]}
+{"id": "q22", "prompt": "How many legs does a spider have?", "expect": ["eight", "8"]}
+{"id": "q23", "prompt": "Who painted the Mona Lisa?", "expect": ["leonardo", "da vinci"]}
+{"id": "q24", "prompt": "How many minutes are in an hour?", "expect": ["60", "sixty"]}
+{"id": "q25", "prompt": "Smallest prime number?", "expect": ["2", "two"]}
+{"id": "q26", "prompt": "What is 100 divided by 4?", "expect": ["25"]}
+{"id": "q27", "prompt": "Translate 'gracias' to English.", "expect": ["thank"]}

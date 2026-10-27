@@ -37,6 +37,24 @@ def add_parser(sub) -> None:
                    help="p99 budget = baseline p99 x (1 + slack) (default %(default)s)")
     r.add_argument("--created-at", help="fixed timestamp, for repeatable output")
     r.add_argument("--json", action="store_true", help="print one JSON summary")
+    ld = s.add_parser("load", help="load generator: writes the progress file for --backend gpu")
+    ld.add_argument("--progress", required=True, help="progress file to write (JSON lines)")
+    ld.add_argument("--url", help="OpenAI-compatible server, e.g. http://127.0.0.1:8000")
+    ld.add_argument("--model", help="model name the server expects")
+    ld.add_argument("--api-key-env", help="name of an environment variable holding an API key")
+    ld.add_argument("--prompts", help="JSONL of {id, prompt, expect:[...]} (default: bundled)")
+    ld.add_argument("--rps", type=float, default=8.0,
+                    help="requests per second (default %(default)s)")
+    ld.add_argument("--concurrency", type=int, default=32)
+    ld.add_argument("--duration", type=float, default=0.0,
+                    help="seconds to run; 0 = until Ctrl-C or SIGTERM (default)")
+    ld.add_argument("--window", type=float, default=10.0,
+                    help="seconds of history in each progress line (default %(default)s)")
+    ld.add_argument("--max-tokens", type=int, default=64)
+    ld.add_argument("--seed", type=int, default=7)
+    ld.add_argument("--append", action="store_true", help="keep an existing progress file")
+    ld.add_argument("--fake", action="store_true",
+                    help="no server: made-up latency and answers (SIMULATED), for dry runs")
     w = s.add_parser("show", help="print a flex receipt and check its trace files")
     w.add_argument("receipt")
     w.add_argument("--json", action="store_true")
@@ -109,9 +127,39 @@ def _show(a) -> int:
     return 0 if ok else 1
 
 
+def _load(a) -> int:
+    import os
+    import signal as _sig
+    import threading
+
+    from wattnot.flex import load as ld
+
+    prompts = ld.load_prompts(a.prompts or ld.DEFAULT_PROMPTS)
+    if a.fake:
+        send = ld.fake_sender({p.prompt: p.expect for p in prompts}, seed=a.seed)
+        label = "SIMULATED"
+    else:
+        if not a.url or not a.model:
+            raise ValueError("give --url and --model, or --fake for a dry run")
+        key = os.environ.get(a.api_key_env) if a.api_key_env else None
+        send = ld.http_sender(a.url, a.model, api_key=key)
+        label = "MEASURED"
+    stop = threading.Event()
+    for sg in (_sig.SIGINT, _sig.SIGTERM):
+        _sig.signal(sg, lambda *_: stop.set())
+    print(f"load: {a.rps:g} req/s, window {a.window:g}s -> {a.progress} ({label})", flush=True)
+    s = ld.run_load(send, prompts, a.progress, rps=a.rps, concurrency=a.concurrency,
+                    duration_s=a.duration, window_s=a.window, max_tokens=a.max_tokens,
+                    seed=a.seed, label=label, append=a.append, stop=stop)
+    print(json.dumps(s.to_dict(), indent=2))
+    return 0
+
+
 def dispatch(a) -> int:
+    if a.flex_cmd == "load":
+        return _load(a)
     if a.flex_cmd == "run":
         return _run(a)
     if a.flex_cmd == "show":
         return _show(a)
-    raise ValueError("use: wattnot flex run|show")
+    raise ValueError("use: wattnot flex run|show|load")
