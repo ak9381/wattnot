@@ -31,3 +31,5 @@ node_modules/
 # OS
 .DS_Store
 results/
+/cloud-receipts/
+/cloud-demo/

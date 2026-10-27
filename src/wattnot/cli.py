@@ -71,6 +71,9 @@ def build_parser() -> argparse.ArgumentParser:
     rs.add_argument("--no-rekor", action="store_true",
                     help="offline: sign with a local test key, no upload (grade max ESTIMATE)")
     rs.add_argument("--key", help="Ed25519 PEM test key for --no-rekor")
+    from wattnot.cloud import cli as _cloud
+
+    _cloud.add_parser(sub)
     return parser
 
 
@@ -167,6 +170,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_verify(args)
         except (OSError, ValueError) as e:
             parser.error(f"verify: {e}")
+    if args.cmd == "cloud":
+        from wattnot.cloud import cli as _cloud
+
+        return _cloud.dispatch(args)
     parser.print_help()
     return 0
 

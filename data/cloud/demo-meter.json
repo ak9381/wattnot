@@ -1,0 +1,23 @@
+{
+ "note": "SIMULATED usage response for the demo receipt (0.4% drift on output)",
+ "items": [
+  {
+   "start_time": "2026-10-27T06:00:00Z",
+   "end_time": "2026-10-27T06:01:00Z",
+   "results": [
+    {
+     "model": "meta-models/muse-spark-open-1026",
+     "request_count": 79,
+     "input_tokens": 7928,
+     "cached_input_tokens": 0,
+     "uncached_input_tokens": 7928,
+     "output_tokens": 124425
+    }
+   ]
+  }
+ ],
+ "pagination": {
+  "has_more": false,
+  "cursor": null
+ }
+}

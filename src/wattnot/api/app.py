@@ -22,6 +22,8 @@ Endpoints:
   computed in memory, nothing is stored.
 * ``GET /api/receipts/{id}/report/eu`` — EU 2024/1364 fields (``?format=json|csv|html``).
 * ``GET /api/ablation``               — the cold/warm/grid planner ablation, if present.
+* ``GET /api/cloud/receipts``         — cloud-mode receipts under ``cloud-receipts/``.
+* ``GET /api/cloud/receipts/{id}``    — one cloud receipt (``?format=json|html``).
 
 No endpoint mutates anything or starts work — runs begin from the CLI only.
 """
@@ -356,6 +358,34 @@ def create_app(root: str | os.PathLike[str] = ".") -> FastAPI:
         if format != "json":
             return JSONResponse({"code": "bad_format"}, status_code=400)
         return {"receipt_id": receipt_id, "fields": rows}
+
+    @app.get("/api/cloud/receipts")
+    def list_cloud_receipts() -> list[dict]:
+        d = base / "cloud-receipts"
+        rows = []
+        for p in sorted(d.glob("cloud_*.json")) if d.is_dir() else []:
+            r = json.loads(p.read_text(encoding="utf-8"))
+            t = r["totals"]
+            rows.append({"receipt_id": r["receipt_id"], "label": r["label"], "mode": r["mode"],
+                         "model": r["model"], "saving_pct": t["saving_pct"],
+                         "tuned_usd": t["tuned_usd"],
+                         "would_have_cost_xhigh_usd": t["would_have_cost_xhigh_usd"],
+                         "meter_audit": (r.get("meter_audit") or {}).get("status")})
+        return rows
+
+    @app.get("/api/cloud/receipts/{receipt_id}")
+    def get_cloud_receipt(receipt_id: str, format: str = "json") -> Any:  # noqa: A002
+        from wattnot.report import cloud
+
+        p = base / "cloud-receipts" / f"{receipt_id}.json"
+        if not _RECEIPT_ID_RE.match(receipt_id) or not p.is_file():
+            return JSONResponse({"code": "receipt_not_found"}, status_code=404)
+        r = json.loads(p.read_text(encoding="utf-8"))
+        if format == "html":
+            return HTMLResponse(cloud.render(r))
+        if format != "json":
+            return JSONResponse({"code": "bad_format"}, status_code=400)
+        return r
 
     @app.get("/api/ablation")
     def get_ablation() -> Any:
