@@ -159,6 +159,58 @@ GOAL_PRESETS = {"save": {"p99_slack_pct": 15, "min_quality_pct": 94},
                 "fast": {"p99_slack_pct": 5, "min_quality_pct": 97}}
 
 
+# Guided stepper (the v2 Configure screen asks one question per screen).
+# Every answer maps onto an EXISTING choice key above, so the replay path
+# (to_plan_body) needs no change. The stepper never invents a new knob.
+STEPPER_SAVE = {
+    # save target -> goal preset. Power, cost and water all want the
+    # max-saving preset; the replay measures energy and derives cost and
+    # water as estimates. Balanced keeps the default limits.
+    "power": "save",
+    "cost": "save",
+    "water": "save",
+    "balanced": "balanced",
+}
+STEPPER_TRAFFIC = {
+    # traffic kind -> existing workload id. The workload is used by a live
+    # run; a replay always uses the model's recorded workload.
+    "chat": "coding",
+    "batch": "moe",
+    "agents": "classes",
+}
+STEPPER_CARE = {
+    # carefulness -> the existing gate values (same numbers as GOAL_PRESETS).
+    "gentle": {"p99_slack_pct": 5, "min_quality_pct": 97},
+    "balanced": {"p99_slack_pct": 10, "min_quality_pct": 95},
+    "bold": {"p99_slack_pct": 15, "min_quality_pct": 94},
+}
+STEPPER_COMPARE = ("with", "without", "both")
+
+
+def apply_stepper(choice: dict, *, save=None, traffic=None, care=None, compare=None) -> dict:
+    """Fold stepper answers into an existing choice dict. Unknown answers raise."""
+    if save is not None:
+        if save not in STEPPER_SAVE:
+            raise ValueError(f"save must be one of {sorted(STEPPER_SAVE)}")
+        choice["goal"] = STEPPER_SAVE[save]
+        choice["save_target"] = save
+    if traffic is not None:
+        if traffic not in STEPPER_TRAFFIC:
+            raise ValueError(f"traffic must be one of {sorted(STEPPER_TRAFFIC)}")
+        choice["workload"] = STEPPER_TRAFFIC[traffic]
+        choice["traffic"] = traffic
+    if care is not None:
+        if care not in STEPPER_CARE:
+            raise ValueError(f"care must be one of {sorted(STEPPER_CARE)}")
+        choice.update(STEPPER_CARE[care])
+        choice["care"] = care
+    if compare is not None:
+        if compare not in STEPPER_COMPARE:
+            raise ValueError(f"compare must be one of {list(STEPPER_COMPARE)}")
+        choice["compare"] = compare
+    return choice
+
+
 def to_plan_body(choice: dict) -> dict:
     """Map Configure choices to the replay planner's request body. Live is always refused."""
     if choice.get("mode") == "live":

@@ -40,6 +40,64 @@ export function ledgerRows(events) {
   return out;
 }
 
+// Headline RUN2 before/after rows (Llama 3.1 8B, 350 W cap vs 700 W stock).
+// `r` is the /api/dash/v2/run2 payload (measured joules, p99, quality);
+// `price`/`water` are the bundle's {usd_per_kwh} / {factor_l_per_kwh}.
+// Energy, p99 and quality are MEASURED; cost and water are ESTIMATES
+// derived from measured joules. Shape matches reportRows.
+export function run2Rows(r, price, water) {
+  if (!r) return [];
+  const rows = [];
+  if (r.j_per_req_stock != null && r.j_per_req_cap != null) {
+    rows.push({
+      id: "energy", dim: "Energy per request",
+      stock: `${num(r.j_per_req_stock)} J`, wattnot: `${num(r.j_per_req_cap)} J`,
+      delta: `${num(r.saved_pct, 1)}%`, tag: "MEASURED",
+      win: r.saved_pct < 0 ? "w" : "tie",
+      note: `Llama 3.1 8B at a ${r.cap_w} W cap, RUN2 (${r.source})`,
+    });
+  }
+  const kwh = (j) => (j * 1e6) / 3.6e6;
+  if (r.j_per_req_stock != null && price?.usd_per_kwh != null) {
+    const s = kwh(r.j_per_req_stock) * price.usd_per_kwh, w = kwh(r.j_per_req_cap) * price.usd_per_kwh;
+    rows.push({
+      id: "cost", dim: "Electricity per 1M requests",
+      stock: `$${num(s)}`, wattnot: `$${num(w)}`, delta: `-$${num(s - w)}`,
+      tag: "ESTIMATE", win: "w",
+      note: `Measured joules x $${price.usd_per_kwh}/kWh (${price.name || "bundle price"})`,
+    });
+  }
+  if (r.j_per_req_stock != null && water?.factor_l_per_kwh != null) {
+    const s = kwh(r.j_per_req_stock) * water.factor_l_per_kwh, w = kwh(r.j_per_req_cap) * water.factor_l_per_kwh;
+    rows.push({
+      id: "water", dim: "Cooling water per 1M requests",
+      stock: `${num(s)} L`, wattnot: `${num(w)} L`, delta: `-${num(s - w)} L`,
+      tag: "ESTIMATE", win: "w",
+      note: `Measured joules x ${water.factor_l_per_kwh} L/kWh (${water.name || "bundle water factor"})`,
+    });
+  }
+  if (r.p99_s_stock != null && r.p99_s_cap != null) {
+    rows.push({
+      id: "p99", dim: "Slowest 1% (p99)",
+      stock: `${num(r.p99_s_stock)} s`, wattnot: `${num(r.p99_s_cap)} s`,
+      delta: `+${num(r.p99_change_pct, 1)}%`, tag: "MEASURED",
+      win: r.p99_change_pct <= 0 ? "w" : "s",
+      note: "The capped run is slower here; the gate decides if that is acceptable",
+    });
+  }
+  if (r.quality_stock_pct != null && r.quality_cap_pct != null) {
+    const same = r.quality_stock_pct === r.quality_cap_pct;
+    rows.push({
+      id: "quality", dim: "Answer quality",
+      stock: `${num(r.quality_stock_pct, 1)}%`, wattnot: `${num(r.quality_cap_pct, 1)}%`,
+      delta: same ? "unchanged" : `${num(r.quality_cap_pct - r.quality_stock_pct, 1)} pts`,
+      tag: "MEASURED", win: "tie",
+      note: same ? "Same pass rate capped as stock: quality held" : null,
+    });
+  }
+  return rows;
+}
+
 // Rows for the two-path signed report. Each: dim, stock, wattnot, tag, win ("w" | "s" | "tie" | null).
 export function reportRows(results, extra = {}) {
   const lv = (results?.levers || [])[0] || {};

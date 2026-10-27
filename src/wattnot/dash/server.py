@@ -58,7 +58,7 @@ from wattnot.approvals.risk import load_config as load_guard_config
 from wattnot.approvals.service import HTTP as _VIA_HTTP
 from wattnot.approvals.service import Approvals, StateError
 from wattnot.approvals.store import NotFound, resolve_root
-from wattnot.dash import configure, experts, gpu, runplan
+from wattnot.dash import configure, experts, gpu, run2, runplan
 
 ROOT = Path(__file__).resolve().parents[3]
 WEB = ROOT / "web" / "dash"
@@ -472,6 +472,12 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
             raise HTTPException(400, str(e) if isinstance(e, ValueError) else "the run settings are not valid") from None
         out["choice"] = {k: v for k, v in body.items() if isinstance(v, (str, int, float, bool))}
         return out
+
+    @app.get("/api/dash/v2/run2")
+    def v2_run2() -> dict:
+        """Headline RUN2 numbers for the before/after block. Read from the
+        raw step file when the checkout has it, else a fixed constant."""
+        return run2.load(ROOT)
 
     @app.get("/api/dash/v2/verify")
     def v2_verify() -> dict:

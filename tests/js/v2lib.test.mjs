@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { stageState, ledgerRows, reportRows, verifySummary, badge, num } from "../../web/dash/v2lib.js";
+import { stageState, ledgerRows, reportRows, run2Rows, verifySummary, badge, num } from "../../web/dash/v2lib.js";
 
 const pipe = [{ id: "baseline" }, { id: "sweep" }, { id: "receipt" }];
 const ev = (type, node, extra = {}) => ({ event: { type, data: { node, ...extra } } });
@@ -31,3 +31,14 @@ test("verifySummary reads hash and signature steps", () => {
 });
 
 test("badge and num", () => { assert.match(badge("MEASURED"), /b-measured/); assert.equal(num(null), "n/a"); assert.equal(num(21.04, 1), "21"); });
+
+test("run2Rows labels measured energy honest estimates", () => {
+  const r = { j_per_req_stock: 15.959, j_per_req_cap: 11.635, saved_pct: -27.1, p99_s_stock: 3.605, p99_s_cap: 3.882, p99_change_pct: 7.7, quality_stock_pct: 93.7, quality_cap_pct: 93.7, cap_w: 350, source: "data/h100-run2/vm/steps/cap350.json" };
+  const rows = run2Rows(r, { usd_per_kwh: 0.1387, name: "x" }, { factor_l_per_kwh: 0.36, name: "y" });
+  const by = Object.fromEntries(rows.map((x) => [x.id, x]));
+  assert.equal(by.energy.tag, "MEASURED"); assert.equal(by.energy.delta, "-27.1%");
+  assert.equal(by.p99.tag, "MEASURED"); assert.equal(by.p99.delta, "+7.7%");
+  assert.equal(by.quality.tag, "MEASURED"); assert.equal(by.quality.delta, "unchanged");
+  assert.equal(by.cost.tag, "ESTIMATE"); assert.equal(by.water.tag, "ESTIMATE");
+  assert.deepEqual(run2Rows(null, {}, {}), []);
+});

@@ -1,4 +1,4 @@
-import { esc, badge, num, stageState, ledgerRows, reportRows, verifySummary } from "./v2lib.js";
+import { esc, badge, num, stageState, ledgerRows, reportRows, run2Rows, verifySummary } from "./v2lib.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -82,41 +82,143 @@ function partnersHtml() {
   return `<div class="lvl">Partners and their calls</div><dl class="kv">${ps.map((p) => `<dt>${esc(p.name)}</dt><dd>${esc(p.what)}${p.calls != null ? ` · ${num(p.calls, 0)} calls` : ""}${p.cost?.value != null ? ` · ${esc(p.cost.unit === "INR" ? "₹" : "$")}${num(p.cost.value)} ${badge(p.cost.label)}` : ""}</dd>`).join("")}</dl>`;
 }
 
-// ---------- configure ----------
+// ---------- configure: one question per screen ----------
+// Every answer maps onto an EXISTING option key (see configure.py
+// STEPPER_SAVE / STEPPER_TRAFFIC / STEPPER_CARE), so the replay path needs
+// no change. The stepper never invents a new knob.
 const ESSENTIAL_IDS = ["model", "workload", "goal", "gpu", "room_size"];
 const GOAL_PRESETS = { save: { p99_slack_pct: 15, min_quality_pct: 94 }, balanced: { p99_slack_pct: 10, min_quality_pct: 95 }, fast: { p99_slack_pct: 5, min_quality_pct: 97 } };
+const SAVE_MAP = { power: "save", cost: "save", water: "save", balanced: "balanced" };
+const TRAFFIC_MAP = { chat: "coding", batch: "moe", agents: "classes" };
+const CARE_MAP = { gentle: { p99_slack_pct: 5, min_quality_pct: 97 }, balanced: { p99_slack_pct: 10, min_quality_pct: 95 }, bold: { p99_slack_pct: 15, min_quality_pct: 94 } };
+const SVG = {
+  bolt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>',
+  coin: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5c0-1 1.3-1.8 3-1.8s3 .8 3 1.8-1 1.6-3 2.2-3 1.2-3 2.3 1.3 1.8 3 1.8 3-.8 3-1.8"/></svg>',
+  drop: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c3.5 4.5 6 7.6 6 11a6 6 0 0 1-12 0c0-3.4 2.5-6.5 6-11z"/></svg>',
+  scale: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M5 7l7-3 7 3M5 7l-2.5 6a3.5 3.5 0 0 0 7 0L7 7M19 7l-2.5 6a3.5 3.5 0 0 0 7 0L21 7M8 20h8"/></svg>',
+  chip: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 2v4M14 2v4M10 18v4M14 18v4M2 10h4M2 14h4M18 10h4M18 14h4"/></svg>',
+  chat: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+  batch: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8l8-4 8 4-8 4zM4 12l8 4 8-4M4 16l8 4 8-4"/></svg>',
+  agent: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5l3 3M20 12a8 8 0 0 1-14 5l-3-3M17 4v4h-4M7 20v-4h4"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/></svg>',
+  play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>',
+  base: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/></svg>',
+  both: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v16h4M16 4h4v16h-4M8 4h8v16H8z"/></svg>',
+};
+const SAVE_CARDS = [
+  { v: "power", t: "Power", d: "Use less electricity on your own GPU.", ex: "Example: a lower watt cap on your card.", icon: "bolt" },
+  { v: "cost", t: "Cost", d: "Spend less per answer, on your card or a host.", ex: "Example: a cheaper setting that still passes.", icon: "coin" },
+  { v: "water", t: "Water", d: "Use less cooling water at the data center.", ex: "Example: less heat means less water to cool it.", icon: "drop" },
+  { v: "balanced", t: "Balanced", d: "Save what you can without pushing it.", ex: "Example: the default limits.", icon: "scale" },
+];
+const TRAFFIC_CARDS = [
+  { v: "chat", t: "Chat", d: "People waiting for replies.", ex: "Example: a support bot answering live.", icon: "chat" },
+  { v: "batch", t: "Batch", d: "Big jobs that can wait.", ex: "Example: overnight scoring of a backlog.", icon: "batch" },
+  { v: "agents", t: "Agents", d: "AI calling tools in loops.", ex: "Example: an agent retrying calls until done.", icon: "agent" },
+];
+const CARE_CARDS = [
+  { v: "gentle", t: "Gentle", d: "Stays well inside the limits; keeps less.", ex: "Slowest 1% may rise 5%, answers must agree 97%.", icon: "shield" },
+  { v: "balanced", t: "Balanced", d: "The default limits.", ex: "Slowest 1% may rise 10%, answers must agree 95%.", icon: "shield" },
+  { v: "bold", t: "Bold", d: "Pushes the limits to save the most.", ex: "Slowest 1% may rise 15%, answers must agree 94%.", icon: "shield" },
+];
+const COMPARE_CARDS = [
+  { v: "with", t: "Run with WattNot", d: "Apply the saving and show the result.", ex: "The tuned run.", icon: "play" },
+  { v: "without", t: "Run without (baseline)", d: "Stock settings, no changes applied.", ex: "The before picture.", icon: "base" },
+  { v: "both", t: "Compare both", d: "Show the stock and tuned runs side by side.", ex: "The default: before and after.", icon: "both" },
+];
+const STEP_Q = ["What do you want to save on?", "Which AI are you running?", "What kind of traffic?", "How careful should we be?", "How do you want to run it?"];
+const CONN_ITEMS = [
+  { id: "nvidia", t: "GPU telemetry", d: "NVIDIA NVML power counter" },
+  { id: "e2e", t: "E2E Networks H100", d: "the rented GPU" },
+  { id: "meta", t: "Meta Muse Spark planner", d: "proposes the next setting" },
+  { id: "baseten", t: "Baseten", d: "hosted model runs" },
+  { id: "huggingface", t: "Hugging Face", d: "model weights" },
+  { id: "sigstore", t: "Sigstore", d: "receipt signing" },
+];
+function connStatus(id) {
+  const p = S.partners?.partners?.find((x) => x.id === id);
+  return p && (p.status === "used" || p.status === "free") ? "ok" : "off";
+}
+function renderConn() {
+  const el = $("#connList"); if (!el) return;
+  el.innerHTML = CONN_ITEMS.map((c) => {
+    const ok = connStatus(c.id) === "ok";
+    return `<li class="${ok ? "ok" : "off"}"><span class="dot" aria-hidden="true"></span><span class="ct"><b>${esc(c.t)}</b><small>${ok ? esc(c.d) : "not set up"}</small></span></li>`;
+  }).join("");
+}
+function pickCard(name, c, checked, extra) {
+  return `<label class="pick"><input type="radio" name="${name}" value="${esc(JSON.stringify(c.v))}" ${checked ? "checked" : ""}>
+    <span class="pick-c"><span class="pick-ic" aria-hidden="true">${SVG[c.icon] || ""}</span>
+    <span class="pick-t"><b>${esc(c.t)}</b><small>${esc(c.d)}</small><small class="ex">${esc(c.ex)}</small>${extra || ""}</span></span></label>`;
+}
 function renderCfg() {
   const O = S.opts;
   for (const o of O.options) S.choice[o.id] ??= o.default;
-  const fld = (o) => `<div class="fld"><label for="f-${o.id}">${esc(o.label)}<small>${o.applies === "replay" ? "changes this replay" : "used by a live run"}</small></label>
-    <select id="f-${o.id}" data-k="${o.id}">${o.choices.map((c) => `<option value="${esc(JSON.stringify(c.v))}" ${JSON.stringify(c.v) === JSON.stringify(S.choice[o.id]) ? "selected" : ""} ${o.id === "mode" && c.v === "live" ? "disabled" : ""}>${esc(c.label)}</option>`).join("")}</select>
-    <button class="info" data-info="${o.id}" aria-label="What is ${esc(o.label)}?">i</button></div>`;
+  S.choice.compare ??= "both"; S.step ??= 1;
   const byId = Object.fromEntries(O.options.map((o) => [o.id, o]));
-  const ess = ESSENTIAL_IDS.map((id) => byId[id]).filter(Boolean).map(fld).join("");
-  const adv = O.options.filter((o) => !ESSENTIAL_IDS.includes(o.id)).map(fld).join("");
-  $("#pCfg").innerHTML = `<div class="intro"><div><h1>Configure a new run</h1><p>Five choices up front; everything else keeps a safe default. Press <b>i</b> next to any of them for a plain explanation. Live GPU runs are locked on this screen; it only replays recorded runs, so it costs nothing.</p></div></div>
-    <div class="cfg"><div>${ctrl()}
-    <div class="grp glass"><h3>Essentials</h3>
-      <div class="fld"><label for="f-name">Run name<small>free text</small></label><input type="text" id="f-name" value="${esc(S.choice.name || "My first replay")}"><span></span></div>${ess}</div>
+  const adv = O.options.filter((o) => !ESSENTIAL_IDS.includes(o.id)).map((o) => fld(o)).join("");
+  $("#pCfg").innerHTML = `<div class="intro"><div><h1>Configure a new run</h1><p>One question per screen, five screens. Everything else keeps a safe default. Use Tab and the arrow keys to move between cards, Enter to continue. Live GPU runs are locked on this screen; it only replays recorded runs, so it costs nothing.</p></div></div>
+    <div class="cfg-step"><div class="glass step-main">
+      <div class="step-prog"><span id="stepCount" role="status"></span><ol id="stepDots" aria-label="Progress"></ol></div>
+      <div id="stepBody" aria-live="polite"></div>
+      <div class="step-nav"><button class="btn" id="stepBack">Back</button><button class="btn pri" id="stepNext">Next</button></div>
+    </div>
+    <div class="step-side"><div class="glass conn"><h3>Already connected</h3><p>Wired by default, read from the partners list.</p><ul id="connList"></ul></div>
+      <div class="grp glass"><h3>What will happen</h3><div id="cfgSum"></div>
+      <p class="lock">Live mode needs the owner's okay and the command line. It is never started from here.</p></div></div></div>
     <details class="adv glass" id="advDis"><summary id="advSum" aria-expanded="false"><span class="adv-t">Advanced settings</span>
       <span class="adv-line">Safe defaults are set; open this to change limits, gates and budgets.</span><span class="chev" aria-hidden="true">›</span></summary>
       <div class="adv-defaults" id="advDef"><span class="lvl">Defaults in use</span><div id="advDefList"></div></div>
-      <div class="adv-fields">${adv}</div></details>
-    </div>
-    <div><div class="grp glass" style="position:sticky;top:80px"><h3>What will happen</h3><div id="cfgSum"></div>
-      <button class="btn pri" id="startRun" style="width:100%;margin-top:12px">Start replay</button>
-      <p class="lock">🔒 Live mode needs the owner's okay and the command line. It is never started from here.</p></div></div></div>`;
-  const applyGoal = (g) => {
-    const p = GOAL_PRESETS[g]; if (!p) return;
-    for (const [k, v] of Object.entries(p)) {
-      if (!byId[k] || !byId[k].choices.some((c) => JSON.stringify(c.v) === JSON.stringify(v))) continue;
-      S.choice[k] = v; const s = $(`#f-${CSS.escape(k)}`); if (s) s.value = JSON.stringify(v);
-    }
-  };
-  $$("#pCfg select").forEach((s) => (s.onchange = () => { S.choice[s.dataset.k] = JSON.parse(s.value); if (s.dataset.k === "goal") applyGoal(S.choice.goal); sumCfg(); syncAdv(); }));
-  $("#f-name").oninput = (e) => (S.choice.name = e.target.value);
+      <div class="adv-fields">${adv}</div></details>`;
+  function fld(o) {
+    return `<div class="fld"><label for="f-${o.id}">${esc(o.label)}<small>${o.applies === "replay" ? "changes this replay" : "used by a live run"}</small></label>
+    <select id="f-${o.id}" data-k="${o.id}">${o.choices.map((c) => `<option value="${esc(JSON.stringify(c.v))}" ${JSON.stringify(c.v) === JSON.stringify(S.choice[o.id]) ? "selected" : ""} ${o.id === "mode" && c.v === "live" ? "disabled" : ""}>${esc(c.label)}</option>`).join("")}</select>
+    <button class="info" data-info="${o.id}" aria-label="What is ${esc(o.label)}?">i</button></div>`;
+  }
+  $$("#pCfg select").forEach((s) => (s.onchange = () => { S.choice[s.dataset.k] = JSON.parse(s.value); sumCfg(); syncAdv(); }));
   $("#advDis").addEventListener("toggle", syncAdv);
-  $("#startRun").onclick = startRun; sumCfg(); syncAdv();
+  $("#stepBack").onclick = () => { if (S.step > 1) { S.step--; renderStep(); } };
+  $("#stepNext").onclick = () => { if (S.step < 5) { S.step++; renderStep(); } };
+  document.onkeydown = (e) => {
+    if (!$("#pCfg").classList.contains("on")) return;
+    if (e.key === "ArrowRight" && S.step < 5 && e.target.tagName !== "SELECT" && e.target.tagName !== "INPUT") { S.step++; renderStep(); }
+    if (e.key === "ArrowLeft" && S.step > 1 && e.target.tagName !== "SELECT" && e.target.tagName !== "INPUT") { S.step--; renderStep(); }
+  };
+  renderStep(); renderConn(); sumCfg(); syncAdv();
+}
+function workloadLabel(id) {
+  const o = S.opts.options.find((x) => x.id === "workload");
+  return o?.choices.find((c) => c.v === id)?.label || id;
+}
+function renderStep() {
+  const n = S.step, body = $("#stepBody");
+  $("#stepCount").textContent = `Step ${n} of 5`;
+  $("#stepDots").innerHTML = STEP_Q.map((q, i) => `<li class="${i + 1 === n ? "now" : i + 1 < n ? "done" : ""}" ${i + 1 === n ? 'aria-current="step"' : ""} title="${esc(q)}"><span></span></li>`).join("");
+  $("#stepBack").disabled = n === 1;
+  $("#stepNext").hidden = n === 5;
+  if (n === 1) body.innerHTML = `<h2>${esc(STEP_Q[0])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[0])}">
+    ${SAVE_CARDS.map((c) => pickCard("save", c, S.choice.save_target === c.v)).join("")}</div>`;
+  else if (n === 2) {
+    const o = S.opts.options.find((x) => x.id === "model");
+    body.innerHTML = `<h2>${esc(STEP_Q[1])}</h2><p class="step-note">A model is the AI program that answers your users' prompts.</p>
+      <div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[1])}">${o.choices.map((c) => pickCard("model",
+        { v: c.v, t: c.label, d: o.help.example, ex: o.help.why, icon: "chip" }, S.choice.model === c.v)).join("")}</div>`;
+  } else if (n === 3) body.innerHTML = `<h2>${esc(STEP_Q[2])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[2])}">
+    ${TRAFFIC_CARDS.map((c) => pickCard("traffic", c, S.choice.traffic === c.v, `<small class="ex">Runs as: ${esc(workloadLabel(TRAFFIC_MAP[c.v]))}</small>`)).join("")}</div>`;
+  else if (n === 4) body.innerHTML = `<h2>${esc(STEP_Q[3])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[3])}">
+    ${CARE_CARDS.map((c) => pickCard("care", c, S.choice.care === c.v)).join("")}</div>`;
+  else body.innerHTML = `<h2>${esc(STEP_Q[4])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[4])}">
+    ${COMPARE_CARDS.map((c) => pickCard("compare", c, (S.choice.compare || "both") === c.v)).join("")}</div>
+    <div class="fld namerow"><label for="f-name">Run name<small>free text</small></label><input type="text" id="f-name" value="${esc(S.choice.name || "My first replay")}"></div>
+    <button class="btn pri big" id="startRun">Start replay</button>
+    <p class="lock">Replay only, no GPU. Live mode needs the owner's okay and the command line.</p>`;
+  $$('input[name="save"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.goal = SAVE_MAP[v]; S.choice.save_target = v; sumCfg(); }));
+  $$('input[name="model"]', body).forEach((r) => (r.onchange = () => { S.choice.model = JSON.parse(r.value); sumCfg(); }));
+  $$('input[name="traffic"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.workload = TRAFFIC_MAP[v]; S.choice.traffic = v; sumCfg(); }));
+  $$('input[name="care"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); Object.assign(S.choice, CARE_MAP[v]); S.choice.care = v; sumCfg(); syncAdv(); }));
+  $$('input[name="compare"]', body).forEach((r) => (r.onchange = () => { S.choice.compare = JSON.parse(r.value); S.view = S.choice.compare; }));
+  const fn = $("#f-name"); if (fn) fn.oninput = (e) => (S.choice.name = e.target.value);
+  const st = $("#startRun"); if (st) st.onclick = startRun;
 }
 function advChoiceLabel(o) {
   const hit = o.choices.find((c) => JSON.stringify(c.v) === JSON.stringify(S.choice[o.id]));
@@ -144,6 +246,23 @@ async function startRun() {
   btn.disabled = false; btn.textContent = "Start replay";
 }
 
+// ---------- run: Without WattNot vs With WattNot ----------
+function run2BlockHtml(view, withToggle) {
+  view = view || S.view || "both";
+  const R = S.run?.results, rows = run2Rows(S.run2, R?.price, R?.water);
+  if (!rows.length) return `<h3>Without WattNot vs With WattNot</h3><p>Headline numbers are still loading.</p>`;
+  const show = (side) => view === "both" || view === (side === "w" ? "with" : "without");
+  const cell = (r, side) => (show(side) ? `<div class="cell ${r.win === side ? "win" : ""}"><span class="v num">${esc(side === "w" ? r.wattnot : r.stock)}</span>${side === "w" && r.delta && view === "both" ? `<span class="d">${esc(r.delta)}</span>` : ""}</div>` : `<div></div>`);
+  return `<div class="r2head"><div><h3>Without WattNot vs With WattNot</h3><p>Llama 3.1 8B at a 350 W cap, RUN2 ${badge("REPLAY")}. Energy, p99 and quality are measured; cost and water are estimates from measured joules.</p></div>
+    ${withToggle ? `<div class="seg" role="group" aria-label="Which run to show">${[["without", "Without"], ["both", "Compare"], ["with", "With"]].map(([v, t]) => `<button class="btn ${view === v ? "pri" : ""}" data-view="${v}" aria-pressed="${view === v}">${t}</button>`).join("")}</div>` : ""}</div>
+  ${rows.map((r) => `<div class="rows">${cell(r, "s")}<div class="dimlab">${esc(r.dim)}<br>${r.tag ? badge(r.tag) : ""}</div>${cell(r, "w")}</div>${r.note ? `<p class="r2note">${esc(r.note)}</p>` : ""}`).join("")}`;
+}
+function renderRun2() {
+  const el = $("#run2block"); if (!el) return;
+  el.innerHTML = run2BlockHtml(S.view, true);
+  $$("#run2block [data-view]").forEach((b) => (b.onclick = () => { S.view = b.dataset.view; renderRun2(); }));
+}
+
 // ---------- run ----------
 function stageBody(p, evs) {
   const mine = evs.filter((f) => (f.event || f).data?.node === p.id).map((f) => f.event || f);
@@ -159,7 +278,9 @@ function stageBody(p, evs) {
 function renderRun() {
   if (!S.run) { $("#pRun").innerHTML = `<div class="intro"><div><h1>Run</h1><p>No run yet. <a href="#pCfg" id="toCfg">Configure one</a>, or start the default replay.</p></div><button class="btn pri" id="defRun">Start default replay</button></div>`; $("#defRun").onclick = startRun; $("#toCfg").onclick = (e) => { e.preventDefault(); show("pCfg"); }; return; }
   const R = S.run;
-  $("#pRun").innerHTML = `<div class="intro"><div><h1>${esc(S.choice.name || "Run")} <span style="font-size:14px">${badge("REPLAY")}</span></h1><p>${esc(R.results.model)} · ${esc(R.results.workload)} · run id <code>${esc(R.run_id)}</code>. A recorded run, re-checked against your limits. Nothing is running on a GPU now.</p></div>
+  S.view ??= S.choice.compare || "both";
+  $("#pRun").innerHTML = `<div class="glass run2block" id="run2block" aria-live="polite"></div>
+  <div class="intro"><div><h1>${esc(S.choice.name || "Run")} <span style="font-size:14px">${badge("REPLAY")}</span></h1><p>${esc(R.results.model)} · ${esc(R.results.workload)} · run id <code>${esc(R.run_id)}</code>. A recorded run, re-checked against your limits. Nothing is running on a GPU now.</p></div>
     <div class="noprint" style="display:flex;gap:8px"><button class="btn" id="pp">Pause</button><button class="btn" id="rs">Restart</button><select id="spd" style="width:auto"><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option><option value="20">20×</option></select></div></div>
     <div class="glass" style="padding:10px 16px"><div style="display:flex;justify-content:space-between;font-size:13px"><span id="progT"></span><span id="progN" style="color:var(--mu)"></span></div><div class="prog"><i id="progB"></i></div>
     <div class="rail" id="rail">${R.pipeline.map((p, i) => `${i ? '<span class="edge"></span>' : ""}<button class="node" data-stage="${p.id}"><b>${esc(p.title)}</b><span id="ns-${p.id}">waiting</span></button>`).join("")}</div></div>
@@ -169,7 +290,7 @@ function renderRun() {
     ${card("results", "▣", "Results table", "Every setting tried, with its numbers", resultsBody())}`;
   $("#pp").onclick = () => (S.playing ? pause() : play()); $("#rs").onclick = () => { S.n = 0; $$("#stages .card").forEach((c) => { setOpen(c, false); c.dataset.pinned = ""; }); tick(true); play(); };
   $("#spd").onchange = (e) => (S.speed = +e.target.value);
-  S.lastActive = null; tick(true);
+  S.lastActive = null; renderRun2(); tick(true);
 }
 function plannerBody() {
   const a = S.story?.agent; if (!a) return "<p>No planner rounds in this bundle.</p>";
@@ -227,6 +348,7 @@ async function renderReport() {
   const cell = (r, side) => `<div class="cell ${r.win === side ? "win" : ""}"><span class="v num">${esc(side === "w" ? r.wattnot : r.stock)}</span>${side === "w" && r.delta ? `<span class="d">${esc(r.delta)}</span>` : ""}</div>`;
   $("#pReport").innerHTML = `<div class="ctrl noprint"><button class="btn pri" onclick="print()">Export PDF / PNG (print)</button><span style="color:var(--mu);font-size:13px">Print to PDF keeps the dark theme. Turn on "background graphics".</span></div>
   <div class="rep glass rep-ed" id="repCard"><div class="head ed-head"><p class="kicker">WattNot signed report · ${badge("REPLAY")}</p><h1 class="ed-title" data-split>Two paths for the same GPU</h1><p class="ed-sub">${esc(R.model)} · ${esc(R.workload)} · ${esc(lever.before_label || "")} vs ${esc(lever.after_label || "")}</p><div class="ed-rule"></div></div>
+  <div class="r2rep">${run2BlockHtml("both", false)}</div>
   <div class="rows paths-ed" style="margin-bottom:6px"><div class="pcol s ed-path"><h2 class="ed-h" data-split>Stock settings</h2><svg class="draw" viewBox="0 0 120 12" aria-hidden="true"><path d="M4 8 H116"/></svg></div><div class="ed-mid"><div class="hub-ed"><span class="hub-num num">${num(lever.saved_pct, 1)}%</span><small>less energy</small></div></div><div class="pcol w ed-path"><h2 class="ed-h" data-split>With WattNot</h2><svg class="draw" viewBox="0 0 120 12" aria-hidden="true"><path d="M4 8 H116"/></svg></div></div>
   ${rows.map((r, i) => `<div class="rows rev-row" style="--d:${i * 70}ms">${cell(r, "s")}<div class="dimlab">${esc(r.dim)}<br>${r.tag ? badge(r.tag) : '<span class="d" style="color:var(--mu);font-weight:400">not claimed</span>'}</div>${cell(r, "w")}</div>${r.note ? `<p style="text-align:center;font-size:12px;color:var(--mu);margin:-2px 0 6px">${esc(r.note)}</p>` : ""}`).join("")}
   <div class="who"><div class="glass"><h3 style="color:var(--pk)">Pick stock if</h3><p>Every millisecond of the slowest requests matters more than the power bill, or you cannot run a quality check on your own prompts yet.</p></div>
@@ -303,8 +425,8 @@ function renderLearn() {
 
 // ---------- boot ----------
 (async () => {
-  const [opts, story, partners] = await Promise.all([fetch("/api/dash/v2/options").then((r) => r.json()), fetch("/api/dash/story").then((r) => r.json()).catch(() => null), fetch("/api/dash/partners").then((r) => r.json()).catch(() => null)]);
-  S.opts = opts; S.story = story; S.partners = partners; S.pipeline = story?.config?.pipeline || [];
+  const [opts, story, partners, run2] = await Promise.all([fetch("/api/dash/v2/options").then((r) => r.json()), fetch("/api/dash/story").then((r) => r.json()).catch(() => null), fetch("/api/dash/partners").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/run2").then((r) => r.json()).catch(() => null)]);
+  S.opts = opts; S.story = story; S.partners = partners; S.run2 = run2; S.pipeline = story?.config?.pipeline || [];
   renderCfg(); renderHome(); renderRun(); renderLearn();
   const h = location.hash.slice(1); if (h && $(`#${h}`)) show(h);
   if (new URLSearchParams(location.search).get("autorun")) { await startRun(); }
