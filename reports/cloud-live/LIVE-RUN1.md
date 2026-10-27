@@ -51,6 +51,17 @@ level that passes, so it lands on `low` for all five classes.
 | Judge format | Parsed fine on all 8 judge calls. |
 | Planner | At `low` it used 1.1k to 1.5k reasoning tokens on a tiny JSON task. The old 1500 cap cut it off in the smoke run, so it fell back to `low, medium, high`. Fixed with a 6000 cap; in runs 1 and 2 it proposed orders (medium first for arith, high first for logic). |
 
+## Meter audit retry (2026-10-27, after BASETEN_METRICS_KEY was set)
+
+Still **NOT_AVAILABLE**, no match percentage. `GET /v1/model_apis/usage` answered 403
+`PERMISSION_DENIED` with `Bearer` and with the legacy `Api-Key` scheme on all three live receipts.
+The value in `BASETEN_METRICS_KEY` is the same string as the inference key (same value, same
+prefix), so it adds no scope. The billing endpoint was not retried with it for the same reason.
+Prices therefore remain unconfirmed against Baseten's own meter. To finish: create a key of type
+`WORKSPACE_EXPORT_METRICS` (Baseten console, API keys), export it as `BASETEN_METRICS_KEY`, and
+run `wattnot cloud audit` on the three receipts in `reports/cloud-live/` (the meter keeps 92 days).
+The audit error now says when the two keys are identical.
+
 ## Cache
 
 - Half-life probe: a 2,204-token prefix read back 98.7% cached (2,176 tokens) at 10, 30, 60,
@@ -79,5 +90,5 @@ level that passes, so it lands on `low` for all five classes.
 
 ## Not done
 
-Meter audit match (needs a metrics-scoped key), invoice check of the rates, Prometheus path.
+Meter audit match (needs a real metrics-scoped key, see above), invoice check of the rates, Prometheus path.
 Energy stays an ESTIMATE: 0.87 to 8.73 Wh avoided in run 2, from FLOPs, not measured.

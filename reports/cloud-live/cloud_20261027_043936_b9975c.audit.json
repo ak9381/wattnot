@@ -1,6 +1,6 @@
 {
   "status": "unavailable",
-  "reason": "usage endpoint answered HTTP 403 (PERMISSION_DENIED); this key is probably inference-only. Set BASETEN_METRICS_KEY to a metrics-scoped key to run the audit",
+  "reason": "usage endpoint answered HTTP 403 (PERMISSION_DENIED); BASETEN_METRICS_KEY is the same key as the inference key, so it has no extra scope. Create a metrics-scoped key (type WORKSPACE_EXPORT_METRICS) and set it there",
   "tolerance_pct": 2.0,
   "rows": [],
   "label": "NOT_AVAILABLE"

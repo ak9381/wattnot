@@ -114,6 +114,7 @@ def fetch_usage(start: str, end: str, *, env: Mapping[str, str] | None = None,
     # WORKSPACE_EXPORT_METRICS) can be passed in BASETEN_METRICS_KEY; the usage rows are still
     # filtered to the inference key's prefix.
     auth = read_env(METRICS_KEY_ENV, env) or key
+    same_key = auth == key
     params: list[tuple[str, str]] = [("start_time", start), ("end_time", end),
                                      ("bucket_width", "1m"), ("limit", "1440"),
                                      ("group_by", "model")]
@@ -131,8 +132,11 @@ def fetch_usage(start: str, end: str, *, env: Mapping[str, str] | None = None,
                 doc = json.loads(resp.read())
         except urllib.error.HTTPError as e:
             raise CloudError(f"usage endpoint answered HTTP {e.code}"
-                             + (f" ({_why(e, auth)}); this key is probably inference-only. Set "
-                                f"{METRICS_KEY_ENV} to a metrics-scoped key to run the audit"
+                             + (f" ({_why(e, auth)}); " + (
+                                 f"{METRICS_KEY_ENV} is the same key as the inference key, so it "
+                                 "has no extra scope. Create a metrics-scoped key (type "
+                                 "WORKSPACE_EXPORT_METRICS) and set it there"
+                                 if same_key else "this key cannot read usage; check its scope")
                                 if e.code in (401, 403) else "")) from None
         except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
             raise CloudError(scrub(f"usage endpoint failed: {type(e).__name__}", key)) from None
