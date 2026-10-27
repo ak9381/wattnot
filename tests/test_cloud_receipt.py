@@ -260,7 +260,7 @@ def test_cli_cache_and_probe_demo_are_simulated(tmp_path, capsys):
 def test_cli_audit_without_key_says_not_available(monkeypatch, tmp_path, capsys):
     monkeypatch.delenv("BASETEN_API_KEY", raising=False)
     path, _ = demo(tmp_path)
-    assert cli.main(["cloud", "audit", str(path)]) == 3
+    assert cli.main(["cloud", "audit", str(path), "--source", "meter"]) == 3
     assert "NOT_AVAILABLE" in capsys.readouterr().out
 
 

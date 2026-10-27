@@ -64,9 +64,13 @@ def summary_lines(r: Mapping) -> list[str]:
                "(H100-class J/FLOP range, not measured on Baseten's GPUs)")
     if r.get("meter_audit"):
         a = r["meter_audit"]
-        out.append(f"[{a['label']}] meter audit: {a['status']}"
-                   + (f", worst gap {a['worst_gap_pct']}%" if a.get("rows") else
-                      f" ({a.get('reason', '')})"))
+        if a.get("source") == "per-call":
+            out.append(f"[{a['label']}] per-call usage audit, {a['scope']}: {a['status']}, "
+                       f"{a['checks_passed']}/{a['checks_total']} checks ({a['match_pct']}%)")
+        else:
+            out.append(f"[{a['label']}] meter audit: {a['status']}"
+                       + (f", worst gap {a['worst_gap_pct']}%" if a.get("rows") else
+                          f" ({a.get('reason', '')})"))
     else:
         out.append("meter audit: not run yet (wattnot cloud audit)")
     for n in r.get("unverified", []):
@@ -117,11 +121,16 @@ def render(r: Mapping, *, audit: Mapping | None = None) -> str:
                      f'<td class="n">{x["meter"]:,}</td><td class="n">{x["gap_pct"]}%</td>'
                      f'<td>{"ok" if x["ok"] else "over tolerance"}</td></tr>'
                      for x in audit.get("rows", []))
-        aud = (f'<h2>Meter audit {_badge(audit["label"])}</h2>'
-               f'<p>Status: <b>{esc(audit["status"])}</b>'
+        pc = audit.get("source") == "per-call"
+        head = audit.get("title", "Meter audit")
+        aud = (f'<h2>{esc(head)} {_badge(audit["label"])}</h2>'
+               + (f'<p><b>{esc(audit["scope"][0].upper() + audit["scope"][1:])}.</b> {esc(audit["caveat"])} '
+                  f'{esc(audit["price_note"])}. {audit["checks_passed"]}/{audit["checks_total"]} '
+                  f'checks pass ({audit["match_pct"]}%).</p>' if pc else "")
+               + f'<p>Status: <b>{esc(audit["status"])}</b>'
                + (f' (tolerance {audit["tolerance_pct"]:g}%)' if audit.get("rows") else
                   f' &mdash; {esc(audit.get("reason", ""))}') + "</p>"
-               + (f"<table><tr><th>field</th><th>our receipt</th><th>Baseten usage</th>"
+               + (f"<table><tr><th>field</th><th>our receipt</th><th>Baseten usage (raw)</th>"
                   f"<th>gap</th><th></th></tr>{ar}</table>" if ar else ""))
     notes = "".join(f"<li>{esc(n)}</li>" for n in r.get("unverified", []))
     sim = ('<p class="warn">SIMULATED: this page was built from a made-up fixture. No API call '

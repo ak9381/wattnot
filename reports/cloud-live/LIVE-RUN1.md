@@ -95,6 +95,38 @@ To finish the audit: use a metrics-scoped key created in the same workspace as t
 key (or ask Baseten whether hackathon usage is exposed at all), then run `wattnot cloud audit`
 on the three receipts in `reports/cloud-live/`.
 
+## Per-call audit (2026-10-27)
+
+The hackathon key lives in Baseten's managed account, so the workspace meter cannot see our
+traffic (try 2 above: empty meter, zero billing). There is no way around that from the API side,
+so `wattnot cloud audit` now defaults to `--source per-call`. The meter is still there as
+`--source meter`.
+
+**[MEASURED] Reconciled against Baseten's per-response usage, not the billing meter.**
+
+It reads the raw replies kept in `data/cloud/recorded-*.json` (usage block, response id, model,
+finish reason, rate-limit headers) and checks each receipt call against them. It then recomputes
+cost from Baseten's list price (`GET /v1/model_apis`, free read, `BASETEN_METRICS_KEY`): $1.25
+input and $4.25 output per 1M tokens, matching the receipts. The cached rate ($0.15/1M) is not in
+the catalog, so it stays the receipt's own unconfirmed figure. No inference calls were made.
+
+| receipt | calls | checks passed | match | token and USD totals gap |
+|---|---|---|---|---|
+| smoke `cloud_20261027_041453_318fad` | 13 | 195 / 195 | 100.0% | 0.0% |
+| run1 `cloud_20261027_042232_d0287d` | 79 | 1185 / 1185 | 100.0% | 0.0% |
+| run2 `cloud_20261027_043936_b9975c` | 204 | 3060 / 3060 | 100.0% | 0.0% |
+
+Per call it checks: prompt, cached, completion and reasoning tokens, finish reason, answer hash,
+rate-limit headers, USD at list price, a response id that is present and unique, the model name,
+cached <= prompt, reasoning <= completion, and total = prompt + completion. In total it also
+rebuilds the totals, the xhigh baseline USD and each class's chosen-level completion tokens.
+
+What a match means: the receipts were built from these same replies, so it shows our parsing,
+sums and price arithmetic are right and that Baseten's usage blocks are self-consistent (204 unique
+response ids, reasoning inside completion). It does **not** show what Baseten billed. The cache
+probe and cache A/B calls have no recording and are not covered. Sidecars:
+`*.percall-audit.json` next to each receipt.
+
 ## Cache
 
 - Half-life probe: a 2,204-token prefix read back 98.7% cached (2,176 tokens) at 10, 30, 60,
@@ -120,8 +152,9 @@ on the three receipts in `reports/cloud-live/`.
 4. Usage 403 gave a bare status: it now names the reason and the fix. `BASETEN_METRICS_KEY`
    (metrics-scoped key) can be used just for the audit.
 5. Cache A/B printed output-length noise as a caching saving: it now reports input-only USD too.
+6. New `--source per-call` audit, now the default, with 10 tests. The demo fixture carries response ids.
 
 ## Not done
 
-Meter audit match (needs a real metrics-scoped key, see above), invoice check of the rates, Prometheus path.
+Billing-meter match (not reachable with a managed hackathon key; the per-call audit above stands in), invoice check of the rates and of the cached rate, Prometheus path.
 Energy stays an ESTIMATE: 0.87 to 8.73 Wh avoided in run 2, from FLOPs, not measured.

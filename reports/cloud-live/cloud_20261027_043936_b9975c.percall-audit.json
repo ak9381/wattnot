@@ -1,0 +1,206 @@
+{
+  "status": "match",
+  "source": "per-call",
+  "title": "Per-call usage audit",
+  "scope": "reconciled against Baseten's per-response usage, not the billing meter",
+  "caveat": "The receipt was built from these same responses, so this checks our parsing, sums and price arithmetic and the responses' internal consistency. It does not show what Baseten billed.",
+  "label": "MEASURED",
+  "tolerance_pct": 2.0,
+  "worst_gap_pct": 0.0,
+  "match_pct": 100.0,
+  "checks_passed": 3060,
+  "checks_total": 3060,
+  "calls": 204,
+  "calls_checked": 204,
+  "checks": [
+    {
+      "check": "call is in the recording",
+      "passed": 204,
+      "total": 204
+    },
+    {
+      "check": "status matches",
+      "passed": 204,
+      "total": 204
+    },
+    {
+      "check": "prompt tokens match",
+      "passed": 204,
+      "total": 204
+    },
+    {
+      "check": "cached tokens match",
+      "passed": 204,
+      "total": 204
+    },
+    {
+      "check": "completion tokens match",
+      "passed": 204,
+      "total": 204
+    },
+    {
+      "check": "reasoning tokens match",
+      "passed": 204,
+      "total": 204
+    },
+    {
+      "check": "finish reason matches",
+      "passed": 204,
+      "total": 204
+    },
+    {
+      "check": "answer hash matches",
+      "passed": 204,
+      "total": 204
+    },
+    {
+      "check": "rate-limit headers match",
+      "passed": 204,
+      "total": 204
+    },
+    {
+      "check": "cost recomputed from list prices matches",
+      "passed": 204,
+      "total": 204
+    },
+    {
+      "check": "response id present and unique",
+      "passed": 204,
+      "total": 204
+    },
+    {
+      "check": "response names our model",
+      "passed": 204,
+      "total": 204
+    },
+    {
+      "check": "cached tokens do not exceed prompt tokens",
+      "passed": 204,
+      "total": 204
+    },
+    {
+      "check": "reasoning tokens are inside completion tokens",
+      "passed": 204,
+      "total": 204
+    },
+    {
+      "check": "total tokens = prompt + completion",
+      "passed": 204,
+      "total": 204
+    }
+  ],
+  "rows": [
+    {
+      "field": "requests",
+      "receipt": 204,
+      "meter": 204,
+      "gap_pct": 0.0,
+      "ok": true
+    },
+    {
+      "field": "input_tokens",
+      "receipt": 51342,
+      "meter": 51342,
+      "gap_pct": 0.0,
+      "ok": true
+    },
+    {
+      "field": "cached_input_tokens",
+      "receipt": 26496,
+      "meter": 26496,
+      "gap_pct": 0.0,
+      "ok": true
+    },
+    {
+      "field": "output_tokens",
+      "receipt": 89681,
+      "meter": 89681,
+      "gap_pct": 0.0,
+      "ok": true
+    },
+    {
+      "field": "reasoning_tokens",
+      "receipt": 84588,
+      "meter": 84588,
+      "gap_pct": 0.0,
+      "ok": true
+    },
+    {
+      "field": "usd_all_calls",
+      "receipt": 0.41617615,
+      "meter": 0.41617615,
+      "gap_pct": 0.0,
+      "ok": true
+    },
+    {
+      "field": "xhigh_baseline_usd",
+      "receipt": 0.17005345,
+      "meter": 0.17005345,
+      "gap_pct": 0.0,
+      "ok": true
+    },
+    {
+      "field": "experiment_usd",
+      "receipt": 0.41617615,
+      "meter": 0.41617615,
+      "gap_pct": 0.0,
+      "ok": true
+    },
+    {
+      "field": "class extract chosen-level completion tokens",
+      "receipt": 4222,
+      "meter": 4222,
+      "gap_pct": 0.0,
+      "ok": true
+    },
+    {
+      "field": "class classify chosen-level completion tokens",
+      "receipt": 2928,
+      "meter": 2928,
+      "gap_pct": 0.0,
+      "ok": true
+    },
+    {
+      "field": "class trace chosen-level completion tokens",
+      "receipt": 2907,
+      "meter": 2907,
+      "gap_pct": 0.0,
+      "ok": true
+    },
+    {
+      "field": "class arith chosen-level completion tokens",
+      "receipt": 3680,
+      "meter": 3680,
+      "gap_pct": 0.0,
+      "ok": true
+    },
+    {
+      "field": "class logic chosen-level completion tokens",
+      "receipt": 3381,
+      "meter": 3381,
+      "gap_pct": 0.0,
+      "ok": true
+    }
+  ],
+  "failures": [],
+  "price_source": "list",
+  "price_note": "input and output priced at Baseten's list price from GET /v1/model_apis (Baseten list price); the cached rate ($0.15/1M) is not in the catalog, so it is the receipt's own and unconfirmed",
+  "list_prices": {
+    "model_listed_as": "meta-models/muse-spark-open",
+    "input_per_m": 1.25,
+    "output_per_m": 4.25,
+    "cached_per_m": null,
+    "source": "GET /v1/model_apis (Baseten list price)"
+  },
+  "rates_used": {
+    "input_per_m": 1.25,
+    "cached_per_m": 0.15,
+    "output_per_m": 4.25,
+    "source": "baseten.co/library/muse-spark-open (Model API pricing), read 2026-10-27",
+    "confirmed": false,
+    "currency": "USD",
+    "unit": "per 1M tokens"
+  },
+  "recording": "recorded-run2.json",
+  "model": "meta-models/muse-spark-open-1026"
+}

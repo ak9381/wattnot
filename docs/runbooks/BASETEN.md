@@ -28,8 +28,11 @@ call). Money is USD.
    the API gives it), USD and latency, plus what the same requests would have cost at
    `xhigh`. It also shows what the tuning run itself cost and how many workload runs it
    takes to pay that back. Energy is an ESTIMATE range from FLOPs.
-3. **Meter audit.** `wattnot cloud audit` compares the receipt's token totals with Baseten's
-   usage endpoint and flags a gap above 2%.
+3. **Audit.** `wattnot cloud audit` (default `--source per-call`) reconciles the receipt with the
+   usage blocks, ids and headers Baseten returned in the recorded replies, and recomputes cost
+   from the list prices in `GET /v1/model_apis`. It is reconciled against Baseten's per-response
+   usage, not the billing meter. `--source meter` compares with the workspace usage endpoint
+   instead, which a managed hackathon key cannot read.
 4. **Cache knobs.** Stable-prefix prompt layout, the `x-session-affinity` header, the cached
    share, an A/B (`cache-ab`) and a cheap half-life probe (`probe`).
 
@@ -60,8 +63,9 @@ wattnot cloud tune --live --classes extract,arith --repeats 1 --budget-usd 1 \
 wattnot cloud tune --live --budget-usd 10 \
   --record data/cloud/recorded-run1.json --out cloud-receipts
 
-# 3. Reconcile with Baseten's meter (needs the key to have usage-read access)
-wattnot cloud audit cloud-receipts/<receipt_id>.json
+# 3. Reconcile with Baseten's per-response usage (offline; needs the recording from step 2)
+wattnot cloud audit cloud-receipts/<receipt_id>.json --recording data/cloud/recorded-run1.json
+#    optional: wattnot cloud audit <receipt> --source meter (needs usage-read access)
 
 # 4. Cache: layout A/B and the half-life probe (the probe waits up to 10 minutes)
 wattnot cloud cache-ab --live
