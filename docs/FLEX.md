@@ -80,4 +80,4 @@ JSON shapes for the frontend are in [docs/moonshot/API-SHAPES.md](moonshot/API-S
 ## On a real GPU (the H100 run)
 
 See the "Flex check" step in [runbooks/H100.md](runbooks/H100.md). `--backend gpu` reads
-power from NVML and p99 and pass rate from the load generator's progress file.
+power from NVML and p99 and pass rate from the load generator's progress file. `wattnot flex load` is the small load generator that writes it (see `docs/runbooks/H100.md`).
