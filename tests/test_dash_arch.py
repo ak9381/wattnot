@@ -368,3 +368,71 @@ def test_arch_deep_links_stay_inside_architecture():
     m = re.search(r"export const DEEP = \{([^}]*)\}", js)
     # drill-down keys stay inside Architecture (expert toggle, rack map), never a removed tab
     assert m and set(re.findall(r':\s*"([^"]+)"', m.group(1))) <= {"experts", "room"}
+
+
+# ---- wider pan/zoom, live previews, floating windows, solo pop-outs ----
+def test_experts_flow_and_power_room_are_pan_zoom_canvases():
+    """Experts flow + Power/Room views reuse pancanvas.js: wheel/pinch zoom,
+    drag pan, +/-, fit, 'Go to current step', follow off on manual pan."""
+    app = (ROOT / "web" / "dash" / "app.js").read_text()
+    assert "pancanvas.js" in app and "flowwrap" in app
+    assert "initPan" in app and "flowGoto" in app and "getFollow" in app
+    gpu = (ROOT / "web" / "dash" / "gpu.js").read_text()
+    assert "pancanvas.js" in gpu and "initPan" in gpu and "goto" in gpu and "fit" in gpu
+    prod = (ROOT / "web" / "dash" / "product.js").read_text()
+    assert "pancanvas.js" in prod and "panRoom" in prod and "roompan-inner" in prod
+    css = (ROOT / "web" / "dash" / "story.css").read_text()
+    assert "pc-controls" in css and "#flowwrap" in css and ".ppan" in css and "#roomMap" in css
+
+
+def test_run_previews_share_one_clock_and_phase():
+    """Three titled minis side by side, each naming the executing step, all on
+    the same replay/run clock and Phase 1/Phase 2."""
+    prod = (ROOT / "web" / "dash" / "product.js").read_text()
+    for vid in ("preview-arch", "preview-experts", "preview-power"):
+        assert vid in prod, vid
+    for title in ("Architecture", "Experts", "Power"):
+        assert title in prod, title
+    assert "liveviews" in prod and "updatePreviews" in prod and "liveState" in prod
+    assert "clock.subscribe" in prod and "phase" in prod  # the shared replay/run clock + phase
+    assert "openLiveWindow" in prod  # clicking a preview opens its window
+    lv = (ROOT / "web" / "dash" / "liveviews.js").read_text()
+    assert "Phase 1 of 2" in lv and "Phase 2 of 2" in lv
+
+
+def test_floating_window_controls():
+    """Draggable by title bar, resizable, z-order on focus, close, minimize,
+    'Go to current step'; all three windows can be open together."""
+    lv = (ROOT / "web" / "dash" / "liveviews.js").read_text()
+    assert "win-${view}" in lv  # one window id per view: win-arch/experts/power
+    for view in ("arch", "experts", "power"):
+        assert view in lv, view
+    assert "livewin-bar" in lv  # draggable title bar
+    assert "Go to current step" in lv
+    assert "close" in lv and "min" in lv  # close + minimize buttons
+    assert "zIndex" in lv  # brings to front on focus
+    css = (ROOT / "web" / "dash" / "story.css").read_text()
+    assert "resize:both" in css.replace(" ", "") or "resize: both" in css  # resizable
+    assert "livewin-grip" in css  # corner handle
+    assert ".livewin.min" in css
+
+
+def test_solo_view_param_and_clock_channel():
+    """Each window pops out to ?view=arch&solo=1 (or experts/power): only that
+    canvas full screen, in sync through BroadcastChannel('wattnot-clock'),
+    and usable standalone with no broadcaster."""
+    bus = (ROOT / "web" / "dash" / "clockbus.js").read_text()
+    assert "wattnot-clock" in bus and "BroadcastChannel" in bus
+    assert "broadcast" in bus and "listen" in bus
+    lv = (ROOT / "web" / "dash" / "liveviews.js").read_text()
+    assert "window.open" in lv and "?view=" in lv and "&solo=1" in lv
+    assert "wattnot-clock" in lv or "CLOCK_CHANNEL" in lv
+    assert "solo-canvas" in lv and "solo-step" in lv  # only that canvas full screen
+    assert "Standalone" in lv or "standalone" in lv  # works with no broadcaster
+    assert "initSoloIfNeeded" in lv
+    app = (ROOT / "web" / "dash" / "app.js").read_text()
+    assert "initSoloIfNeeded" in app  # the main page hands off to the solo view
+    prod = (ROOT / "web" / "dash" / "product.js").read_text()
+    assert "broadcast" in prod and '"tick"' in prod and "phase" in prod  # tick + phase + active step
+    page = (ROOT / "web" / "dash" / "archpage.js").read_text()
+    assert "broadcast" in page

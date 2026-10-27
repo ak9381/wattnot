@@ -47,6 +47,7 @@ import { mountRoomScan } from "./roomnode.js";
 import { createState, replayAll, groupTotals, jPerSlot } from "./core.js";
 import { heatSvg, heatLegend, wireHeat } from "./heat.js";
 import { clock } from "./replayclock.js";
+import { broadcast } from "./clockbus.js";
 
 // The two phases of every replay: first the stock baseline without WattNot,
 // then the full run with it. Shown in the toolbar and the meter strip.
@@ -94,7 +95,7 @@ export class ArchPage {
     $("#rsel", host).innerHTML = rs.map((r) => `<option value="${r.id}">${esc(r.title)}</option>`).join("") + `<option value="live">Live run (events file)</option>`;
     $("#afil", host).innerHTML = FILTERS.map(([id, t, c]) => `<button class="fchip ${id === "meta" ? "meta" : ""}" data-f="${id}" ${c ? `style="--c:${c}"` : ""} aria-pressed="${id === "all"}">${c ? "<i></i>" : ""}${esc(t)}${id === "meta" ? ` <span class="muted">${data.nodes.filter((n) => n.partners.includes("meta")).length} steps</span>` : ""}</button>`).join("");
     $("#mstrip", host).innerHTML = data.meta.map((m) => `<div class="mcard"><b>${esc(m.name)}</b><p>${esc(m.does)}</p>${m.stats.slice(0, 3).map((s) => statHtml(s)).join("")}</div>`).join("");
-    this.view = new ArchView($("#amap", host), data, { mode: "map", follow: false, onSelect: (n, s) => this.panel(n, s), onCue: (c) => { $("#acap", host).innerHTML = `<b>${esc(this.d.nodes.find((n) => n.id === c.node).title)}</b> · ${esc(c.text)} ${c.tag ? pill(c.tag) : ""}`; if (this.pan && this.pan.getFollow()) { const el = this.view.el(c.node); if (el) this.pan.focus(el); } }, onProgress: (i, n) => { $("#aprog", host).textContent = i >= n ? "done" : `${i + 1} of ${n}`; this.renderMeter(i); clock.setProgress(this._p0 + (this._p1 - this._p0) * (i / Math.max(1, n))); } });
+    this.view = new ArchView($("#amap", host), data, { mode: "map", follow: false, onSelect: (n, s) => this.panel(n, s), onCue: (c) => { $("#acap", host).innerHTML = `<b>${esc(this.d.nodes.find((n) => n.id === c.node).title)}</b> · ${esc(c.text)} ${c.tag ? pill(c.tag) : ""}`; if (this.pan && this.pan.getFollow()) { const el = this.view.el(c.node); if (el) this.pan.focus(el); } broadcast({ type: "tick", view: "arch", phase: this.phase, step: `${c.node}.${c.sub}`, text: c.text, archActive: this.d.nodes.findIndex((n) => n.id === c.node) % 8 }); }, onProgress: (i, n) => { $("#aprog", host).textContent = i >= n ? "done" : `${i + 1} of ${n}`; this.renderMeter(i); clock.setProgress(this._p0 + (this._p1 - this._p0) * (i / Math.max(1, n))); } });
     this.pan = initPan($("#amap", host), this.view.root, { goto: () => { const id = this.view.cur; if (id) { const el = this.view.el(id); if (el) this.pan.focus(el, { zoom: Math.max(this.pan.state.scale, 1) }); } } });
     { const _le = this.view.layoutEdges.bind(this.view); this.view.layoutEdges = () => { _le(); this.pan?.refreshMinimap(); }; }
     this._fitted = false;
@@ -175,6 +176,7 @@ export class ArchPage {
     this.view.setPhase(p);
     this.renderMeter(0);
     clock.setPhase(p);
+    broadcast({ type: "phase", view: "all", phase: p, step: null, text: PHASE_LABEL[p] });
   }
   baselineCues(cues) {
     const base = new Set(this.d.nodes.filter((n) => n.baseline).map((n) => n.id));

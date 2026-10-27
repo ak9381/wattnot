@@ -4,6 +4,8 @@
 // publishes (play/pause/reset, progress, phase); the live run ignores it.
 import { esc, pill } from "./theme.js";
 import { clock } from "./replayclock.js";
+import { init as initPan } from "./pancanvas.js";
+import { broadcast } from "./clockbus.js";
 
 const f1 = (x, d = 0) => (x == null ? "–" : Number(x).toFixed(d));
 
@@ -51,7 +53,7 @@ export class Power {
           .map(([id, k, u]) => `<div class="card"><div class="k"><span>${k}</span><span id="${id}-l"></span></div><div class="v"><span id="${id}-v">–</span><small>${u}</small></div><div class="d" id="${id}-d"></div></div>`).join("")}
       </div>
       <div class="pgrid">
-        <div class="panel"><h3>trace <span class="r">
+        <div class="panel ppan"><h3>trace <span class="r">
             <select id="sceneSel">${scenes.map((s) => `<option value="${s.id}">${esc(s.title)}</option>`).join("")}<option value="run:">live run (API)…</option></select>
             <button class="ghost" id="pPlay">pause</button><button class="ghost" id="pRestart">restart</button></span></h3>
           <canvas id="chart"></canvas>
@@ -59,6 +61,17 @@ export class Power {
         <div class="panel"><h3>approve before apply</h3><div id="props"></div>
           <h3 style="margin-top:12px">receipts</h3><div id="rcpts"></div></div>
       </div>`;
+    // The trace is a pan/zoom canvas too: the chart sits on a transformed
+    // inner layer with the shared wheel/pinch/drag/controls, 'Go to current
+    // step' fits the live end of the trace, follow drops on manual pan.
+    {
+      const chart = this.$("chart"), panel = chart.closest(".ppan");
+      const inner = document.createElement("div");
+      inner.className = "ppan-inner";
+      chart.replaceWith(inner); inner.appendChild(chart);
+      this.pan = initPan(panel, inner, { goto: () => this.pan.fit() });
+      requestAnimationFrame(() => this.pan.fit());
+    }
     this.$("sceneSel").onchange = (e) => { this.followClock = false; this.pick(e.target.value); };
     this.$("pPlay").onclick = () => { this.followClock = false; this.paused = !this.paused; this.$("pPlay").textContent = this.paused ? "play" : "pause"; if (!this.paused) { (this.buf || []).splice(0).forEach((v) => this.add(v)); } };
     this.$("pRestart").onclick = () => { this.followClock = false; this.pick(this.$("sceneSel").value); };
@@ -70,6 +83,8 @@ export class Power {
   }
 
   $(id) { return this.host.querySelector(`#${id}`); }
+
+  show() { requestAnimationFrame(() => { this.pan?.fit(); this.draw(); }); }
 
   pick(id) {
     this.es?.close(); this.samples = []; this.cur = null; this.cap = null; this.baseJ = null;
@@ -112,6 +127,9 @@ export class Power {
     this.cur = { ...(this.cur || {}), ...Object.fromEntries(Object.entries(s).filter(([, v]) => v != null)) };
     if (this.scene?.kind === "sweep" || this.scene?.kind === "adaptive") this.cur.cap_w = s.cap_w ?? this.cur.cap_w;
     this.paintCards(s); this.draw();
+    if ((this._bc = (this._bc || 0) + 1) % 8 === 0 && s.power_w != null) {
+      broadcast({ type: "tick", view: "power", phase: this.clockPhase || 2, step: `t+${Math.round(s.t_s || 0)}s`, text: `${s.power_w} W`, powerSamples: this.samples.slice(-60).map((q) => q.power_w).filter((v) => v != null) });
+    }
   }
 
   paintCards(s) {

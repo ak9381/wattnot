@@ -7,6 +7,9 @@ import { Product } from "./product.js";
 import { ArchPage } from "./archpage.js";
 import { panelHtml } from "./arch.js";
 import { clock } from "./replayclock.js";
+import { init as initPan } from "./pancanvas.js";
+import { broadcast } from "./clockbus.js";
+import { initSoloIfNeeded } from "./liveviews.js";
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -21,7 +24,8 @@ function showTab(name) {
   document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
   $("power").classList.toggle("on", name === "power"); $("experts").classList.toggle("on", name === "experts"); $("arch").classList.toggle("on", name === "arch");
   $("expertCtl").hidden = name !== "experts"; $("srcChip").hidden = name === "arch";
-  if (name === "experts") { initExperts(); requestAnimationFrame(() => { flow?.layoutEdges(); orch?.layout(); }); }
+  if (name === "power") power.show?.();
+  if (name === "experts") { initExperts(); requestAnimationFrame(() => { flow?.layoutEdges(); orch?.layout(); flowPan?.refreshMinimap?.(); }); }
   if (name === "arch") ensureArch().then(() => archPage?.show());
 }
 function ensureArch() {
@@ -36,7 +40,23 @@ const power = new Power($("power"));
 power.init().catch((e) => ($("power").innerHTML = `<p class="note2">Could not load the GPU replay: ${esc(e.message)}</p>`));
 
 // ---- experts
-let flow, orch, inited = false, ctx;
+let flow, orch, inited = false, ctx, flowPan = null, flowPanInner = null, lastFlowStep = -1;
+
+// The Experts flow is a pan/zoom canvas too: wheel/pinch zoom, drag pan,
+// +/-/fit, 'Go to current step', and an auto-follow that switches off on any
+// manual pan (the shared pancanvas module owns the gestures).
+function flowGoto() {
+  if (!flowPan) return;
+  const el = $("flowwrap").querySelector(".node.run") || $("flowwrap").querySelector("#n-router");
+  if (el) flowPan.focus(el, { zoom: Math.max(flowPan.state.scale, 1) });
+}
+function ensureFlowPan() {
+  const fw = $("flowwrap");
+  if (!fw || !flowPanInner || !fw.contains(flowPanInner)) return;
+  flowPan?.destroy();
+  flowPan = initPan(fw, flowPanInner, { goto: flowGoto });
+  flowPan.fit();
+}
 
 async function initExperts() {
   if (inited) return; inited = true;
@@ -52,7 +72,11 @@ async function initExperts() {
     selectGroup: (g) => { app.sel.group = app.sel.group === g ? null : g; if (app.sel.group != null) app.sel.steps = []; refreshFocus(); },
     tipUnit,
   };
-  flow = new Flow($("flowwrap"), ctx); orch = new Orchestra($("orch"), ctx);
+  flowPanInner = document.createElement("div");
+  flowPanInner.className = "flowpan-inner";
+  $("flowwrap").appendChild(flowPanInner);
+  flow = new Flow(flowPanInner, ctx); orch = new Orchestra($("orch"), ctx);
+  ensureFlowPan();
   setView(params.get("view") || "both");
   $("srcChip").innerHTML = `${esc(meta.meta.model)} · routing captured on ${esc(meta.meta.capture)} ${pill("MEASURED")} · energy ${meta.energy ? "rate from H100 counter" : "n/a"} ${meta.energy ? pill("MEASURED") : ""}`;
   buildAll();
@@ -127,7 +151,15 @@ function loop(now) {
   }
   uiAcc += dt;
   orch.draw();
-  if (uiAcc > 0.1) { uiAcc = 0; flow.update(); paintTimeline(); }
+  if (uiAcc > 0.1) {
+    uiAcc = 0; flow.update(); paintTimeline();
+    const cur = app.st?.lastTick?.step;
+    if (cur != null && cur !== lastFlowStep) {
+      lastFlowStep = cur;
+      if (flowPan?.getFollow()) flowGoto();
+      broadcast({ type: "tick", view: "experts", phase: clock.phase, step: `step ${cur + 1}`, text: app.st.meta.meta.steps[cur]?.prompt || "", progress: clock.progress, expertActive: cur % 4 });
+    }
+  }
   requestAnimationFrame(loop);
 }
 
@@ -350,6 +382,7 @@ $("metaChip").onclick = () => togglePop($("pop").hidden);
 // ---- start the product flow
 let product = null, bundle = null;
 async function boot() {
+  if (initSoloIfNeeded()) return; // ?view=arch&solo=1 renders only that canvas full screen
   const stage = $("stage"); stage.innerHTML = "";
   const [health, sb] = await Promise.all([loadHealth(), fetch("/api/dash/story").then((r) => { if (!r.ok) throw new Error(r.status === 404 ? "The run data has not been built yet: run scripts/build_dash_arch.py." : `HTTP ${r.status}`); return r.json(); }).catch((e) => ({ error: e.message }))]);
   checkMeta(false);

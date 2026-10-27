@@ -9,6 +9,10 @@ import { heatSvg, heatLegend, scanTag, wireHeat, pulse, recolor } from "./heat.j
 import { GuardPanel } from "./guard.js";
 import { fillPlannerTags, loadPartners } from "./partners.js";
 import { secondLayerHtml, wireReplay } from "./wastereplay.js";
+import { clock } from "./replayclock.js";
+import { broadcast } from "./clockbus.js";
+import { openLiveWindow, updatePreviews } from "./liveviews.js";
+import { init as initPan } from "./pancanvas.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const RUN2_STAGE = { room_scan: "room", baseline: "baseline", quality_gate: "gate", cap_sweep: "sweep", adaptive_topk: "topk", agent_waste: "waste", approve: "approve", keep_rollback: "keep", receipt: "receipt" };
@@ -29,6 +33,13 @@ export class Product {
     this.sel = { place: m0.place, workload: m0.workload, model: m0.id, levers: new Set(m0.levers), room: "example", ...lim };
     this.roomImg = null;
     this.screen = "config"; this.plan = null; this.done = false; this.speed = 2; this.log = {}; this.scale = 10_000_000;
+    // one live state for the three mini previews and their floating windows:
+    // every preview names the currently executing step, all on the same clock/phase
+    this.phase = 2;
+    this.liveState = { phase: 2, step: null, text: "waiting for the run…", archActive: -1, expertActive: -1, powerSamples: [] };
+    clock.subscribe((ev) => {
+      if (ev.phase === 1 || ev.phase === 2) { this.phase = ev.phase; this.liveState.phase = ev.phase; updatePreviews(this.liveState); }
+    });
     this.renderRail(); if (this.embed) (this.health.events ? this.startLive() : this.start()); else this.config();
   }
   $(s) { return this.host.querySelector(s); }
@@ -116,7 +127,7 @@ export class Product {
     } catch (e) { err.textContent = `Could not plan this run: ${e.message}. The server may need a restart, or the story bundle needs rebuilding.`; err.hidden = false; btn.disabled = false; btn.textContent = "Start replay"; return; }
     this.live = false; this.done = false; this.screen = "run"; this.renderRail(); this.runView(false);
   }
-  destroyRun() { this.player?.stop(); this.player = null; this.es?.close(); this.es = null; this.guard?.stop(); this.guard = null; this.view?.destroy?.(); this.view = null; }
+  destroyRun() { this.player?.stop(); this.player = null; this.es?.close(); this.es = null; this.guard?.stop(); this.guard = null; this.roomPan?.destroy(); this.roomPan = null; this.view?.destroy?.(); this.view = null; }
   runView(again) {
     this.destroyRun(); this.log = {}; this.nodeLog = {}; const live = this.live, P = this.plan;
     const events = live ? [] : P.events.map((f) => f.event);
@@ -132,13 +143,27 @@ export class Product {
         ${live ? "" : `<span class="seg" id="spd" role="group" aria-label="replay speed"><button data-s="1">1×</button><button data-s="2" class="on">2×</button><button data-s="4">4×</button></span>`}
         ${this.embed && this.health.events ? `<button class="btn" id="rswitch">${live ? "Show the bundled recorded run" : "Follow the events file"}</button>` : ""}<button class="btn" id="rpause">Pause</button>${live ? "" : `<button class="btn" id="rskip">Skip to the end</button><button class="btn" id="rrestart">Restart</button>`}</div>
       <p class="rnote" id="rnote">${live ? "Waiting for the first event from the run…" : `This is a <b>replay</b> of a recorded real run (${esc(P.results.place === "h100" ? "H100 on E2E Networks" : "Baseten")}), re-evaluated against your limits. Run id ${esc(P.run_id)}. The animation is compressed; each step shows its real measured time.`}</p>
+      <section class="previews" aria-label="live previews: click one to open it as a floating window">
+        <article class="preview" id="preview-arch" data-view="arch" tabindex="0" role="button" aria-label="open the Architecture live window"><h3>Architecture</h3><canvas id="preview-arch-canvas"></canvas><p class="pstep" id="preview-arch-step">waiting for the run…</p><p class="pphase" id="preview-arch-phase"></p></article>
+        <article class="preview" id="preview-experts" data-view="experts" tabindex="0" role="button" aria-label="open the Experts live window"><h3>Experts</h3><canvas id="preview-experts-canvas"></canvas><p class="pstep" id="preview-experts-step">waiting for the run…</p><p class="pphase" id="preview-experts-phase"></p></article>
+        <article class="preview" id="preview-power" data-view="power" tabindex="0" role="button" aria-label="open the Power live window"><h3>Power</h3><canvas id="preview-power-canvas"></canvas><p class="pstep" id="preview-power-step">waiting for the run…</p><p class="pphase" id="preview-power-phase"></p></article>
+      </section>
+      <div id="livewins"></div>
       <div class="rgrid"><section class="rgraph" aria-label="live architecture graph"><div id="rg"></div></section>
         <div class="rside">${room ? `<section class="rroom" aria-label="room heat map"><h3>Room · ${esc(room.pick === "upload" ? "your picture" : "example data center")} ${scanTag(room.scan)}<span class="muted" id="roomPhase">before</span></h3><div id="roomMap"></div>${heatLegend()}<p class="cap" id="roomCap">Hover or tab to a rack for its numbers.</p></section>` : ""}<aside class="rnar" aria-label="narration"><h3>What is happening</h3><ol id="nar" aria-live="polite"></ol>
           <div class="meter" id="meter" hidden></div>
           <section class="rguard" id="guardPanel" aria-label="operator check"></section>
           <details class="evs"><summary>Events <span id="evn">0</span> · wattnot.event/1</summary><ol id="evl"></ol></details></aside></div>
       </div><div class="rfoot"><span id="rstat" class="muted"></span><button class="btn pri" id="toRes" hidden>See the results</button></div></div>`;
-    this.room = room; if (room) this.drawRoom(room.scan, false);
+    this.room = room; if (room) { this.drawRoom(room.scan, false); this.panRoom(); }
+    for (const v of ["arch", "experts", "power"]) {
+      const el = this.$(`#preview-${v}`);
+      if (el) {
+        el.onclick = () => openLiveWindow(v, () => this.liveState);
+        el.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openLiveWindow(v, () => this.liveState); } };
+      }
+    }
+    updatePreviews(this.liveState);
     this.view = new ArchView(this.$("#rg"), this.pd, { ids, chain: true, mode: "row", stats: 0, onSelect: (n, s, v) => this.D.open(n, s, v, this.runBlock(n, s)) });
     this.nar = this.$("#nar"); this.evl = this.$("#evl"); this.evCount = 0;
     this.guard = new GuardPanel(this.$("#guardPanel"), {});
@@ -166,6 +191,7 @@ export class Product {
     // room_scan, baseline, quality_gate, cap_sweep, adaptive_topk, approve, keep_rollback, receipt. Those are this graph's nodes.
     const stage = RUN2_STAGE[(ev.step_id || "").split(".")[0]];
     if (stage && v?.ids.has(stage) && !v.ids.has(d.node)) { node = stage; sub = ev.step_id.includes(".") ? ev.step_id.split(".").slice(1).join(".") : d.sub; }
+    this.liveTick(node, sub, d);
     if (ev.type === "proposal.created") this.guard?.kick();
     // a step/progress event may name the planner that proposed it; the sweep node's tag resolves from that
     const pp = d.planner && d.planner.partner;
@@ -209,7 +235,7 @@ export class Product {
     this.room = room; const side = this.$(".rside"); if (!side || this.$("#roomMap")) return;
     const sec = document.createElement("section"); sec.className = "rroom"; sec.setAttribute("aria-label", "room heat map");
     sec.innerHTML = `<h3>Room · ${esc(room.pick === "upload" ? "your picture" : "example data center")} ${scanTag(room.scan)}<span class="muted" id="roomPhase">before</span></h3><div id="roomMap"></div>${heatLegend()}<p class="cap" id="roomCap">Hover or tab to a rack for its numbers.</p>`;
-    side.prepend(sec); this.drawRoom(room.scan, false);
+    side.prepend(sec); this.drawRoom(room.scan, false); this.panRoom();
   }
   // a RUN2 room_scan payload (photo, SAM masks, thermal): draw it with the room module's node in the room panel
   async roomPayload(p) {
@@ -225,10 +251,35 @@ export class Product {
       this.$("#roomNodeTag").innerHTML = `${tagOf(labels.rack_outline || "MEASURED")} <span class="muted">racks</span> ${tagOf(labels.thermal_frame || "SIMULATED")} <span class="muted">heat</span>`;
     } catch (e) { this.$("#roomNodeBody").innerHTML = `<p class="muted">The room picture could not be drawn (${esc(e.message)}).</p>`; }
   }
+  // The room heat map is a pan/zoom canvas too: wheel/pinch zoom, drag pan,
+  // fit and 'Go to current step' from the shared module, follow off on manual pan.
+  panRoom() {
+    const el = this.$("#roomMap"); if (!el || el.dataset.panned) return;
+    el.dataset.panned = "1";
+    const inner = document.createElement("div");
+    inner.className = "roompan-inner";
+    while (el.firstChild) inner.appendChild(el.firstChild);
+    el.appendChild(inner);
+    this.roomPan = initPan(el, inner, { goto: () => this.roomPan.fit() });
+    requestAnimationFrame(() => this.roomPan.fit());
+  }
+  // one event -> the three previews, their windows, and the solo pop-outs:
+  // the main page broadcasts the clock tick + phase + active step here
+  liveTick(node, sub, d) {
+    const ids = this.pd?.nodes?.map((n) => n.id) || [];
+    this.liveState.step = node ? `${node}${sub ? "." + sub : ""}` : (d?.label || "event");
+    this.liveState.text = d?.label || d?.summary || this.liveState.step;
+    this.liveState.archActive = node ? ids.indexOf(node) : -1;
+    this.liveState.expertActive = (this.liveState.expertActive + 1) % 4;
+    if (d?.power_w != null) { this.liveState.powerSamples.push(d.power_w); if (this.liveState.powerSamples.length > 60) this.liveState.powerSamples.shift(); }
+    updatePreviews(this.liveState);
+    broadcast({ type: "tick", view: "all", phase: this.phase, step: this.liveState.step, text: this.liveState.text, progress: null, archActive: this.liveState.archActive, expertActive: this.liveState.expertActive, powerSamples: this.liveState.powerSamples.slice(-60) });
+  }
   drawRoom(scan, after) {
     const el = this.$("#roomMap"); if (!el || !scan) return;
-    if (!el.firstChild) { el.innerHTML = heatSvg(scan, { target: this.room?.target, img: this.room.pick === "upload" ? this.roomImg : null }); wireHeat(el, scan, this.$("#roomCap")); }
-    else recolor(el, scan);                  // same racks, new heat: the fill fades (CSS transition)
+    const box = el.querySelector(".roompan-inner") || el;
+    if (!box.querySelector("svg")) { box.innerHTML = heatSvg(scan, { target: this.room?.target, img: this.room.pick === "upload" ? this.roomImg : null }); wireHeat(box, scan, this.$("#roomCap")); }
+    else recolor(box, scan);                  // same racks, new heat: the fill fades (CSS transition)
     this.$("#roomPhase").textContent = after ? "after (simulated)" : "before";
   }
   pulseRack(id) { const el = this.$("#roomMap"); if (el) pulse(el, id); const c = this.$("#roomCap"); if (c && this.room) { const r = this.room.scan.racks.find((x) => x.id === id); if (r) c.textContent = `Acting on ${r.id}.`; } }
