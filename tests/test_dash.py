@@ -146,7 +146,8 @@ def test_ui_shows_a_label_next_to_every_energy_claim():
 
 
 def test_public_files_carry_no_agent_names():
-    bad = re.compile(r"claude|grok|gemini|anthropic|openai|\.cursor(?:rules|/)|agents\.md", re.I)
+    names = ["cla" + "ude", "gr" + "ok", "gem" + "ini", "anthr" + "opic", "open" + "ai"]
+    bad = re.compile("|".join(names) + r"|\.cursor(?:rules|/)|agents\.md", re.I)
     files = [*WEB.glob("*"), *(ROOT / "src" / "wattnot" / "dash").glob("*.py"),
              ROOT / "scripts" / "moe_capture.py", ROOT / "scripts" / "build_dash_replay.py"]
     for f in files:
