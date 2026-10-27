@@ -31,7 +31,7 @@ export const impactLine = (D, id = "cap") => {
 };
 
 const SCENES = [
-  { id: "task", name: "The task", hold: 3200, build(el, D) {
+  { id: "task", name: "The task", hold: 20000, build(el, D) {
     const f = D.facts;
     el.innerHTML = `<h1 class="hl" data-in>A coding assistant that ${f.conc.v} people use at once.</h1>
       <p class="lede" data-in>One H100 card. Fast answers, a small power bill, and answers that stay right. The slowest requests decide how it feels.</p>
@@ -41,7 +41,7 @@ const SCENES = [
       <div class="impact" data-in>${impactLine(D)}</div>`;
     return { async enter() { runCounts(el); await sleep(2600); } };
   } },
-  { id: "stock", name: "Stock run", hold: 1600, build(el, D) {
+  { id: "stock", name: "Stock run", hold: 14000, build(el, D) {
     const ts = D.samples, base = ts.filter((x) => x.cap_w === 700), mw = mean(base.map((x) => x.power_w));
     el.innerHTML = `<h2 class="hl" data-in>First, run it the way it ships.</h2>
       <div class="split"><div><div id="g2"></div><p class="cap" id="cap2" style="margin-top:12px;min-height:3em">&nbsp;</p></div>
@@ -55,9 +55,9 @@ const SCENES = [
       { node: "telemetry", sub: "sample", text: "Power read 10 times a second from the card", tag: "MEASURED" },
       { node: "telemetry", sub: "integrate", text: `Energy per request: ${(D.cap.wh_before * 1000).toFixed(2)} mWh`, tag: "MEASURED" }];
     el._view = view;
-    return { view, async enter() { runCounts(el); await view.play(cues, { gap: 1000 }); }, leave() { view.stop(); } };
+    return { view, async enter() { runCounts(el); await view.play(cues, { gap: 1800 }); }, leave() { view.stop(); } };
   } },
-  { id: "wattnot", name: "WattNot steps in", hold: 1800, build(el, D) {
+  { id: "wattnot", name: "WattNot steps in", hold: 9000, build(el, D) {
     const rounds = D.d.agent.rounds, r3 = rounds.find((r) => r.round === 3), r4 = rounds.find((r) => r.round === 4), g = D.d.story, ap = D.d.approvals?.[0];
     const ledger = D.d.ledger;
     el.innerHTML = `<h2 class="hl" data-in>Then an agent proposes. A person approves first.</h2>
@@ -94,9 +94,9 @@ const SCENES = [
       { node: "gates", sub: "p99", text: `p99 ${D.cap.p99_change_pct > 0 ? "+" : ""}${D.cap.p99_change_pct}%: inside the 10% limit`, tag: "MEASURED" },
       { node: "gates", sub: "fixed", text: "Fixed answer check: pending (its baseline passes only about 6%)", tag: "MEASURED", ok: false },
       { node: "gates", sub: "decide", text: "Held as “measured, quality check pending”, not claimed as passed", tag: "MEASURED", ok: false }];
-    return { view, async enter() { await view.play(cues, { gap: 1250 }); }, leave() { view.stop(); } };
+    return { view, async enter() { await view.play(cues, { gap: 2200 }); }, leave() { view.stop(); } };
   } },
-  { id: "rerun", name: "Re-run", hold: 3000, build(el, D) {
+  { id: "rerun", name: "Re-run", hold: 24000, build(el, D) {
     const S = D.samples, ps = S.map((s) => s.power_w), max = Math.max(...ps) * 1.08, mid = ps.length;
     const lo = mean(S.filter((x) => x.cap_w === 400).map((x) => x.power_w)), hi = mean(S.filter((x) => x.cap_w === 700).map((x) => x.power_w));
     const W = 800, H = 260, X = (i) => 10 + (i / (mid - 1)) * (W - 20), Y = (v) => H - 14 - (v / max) * (H - 30);
@@ -116,7 +116,7 @@ const SCENES = [
     $("#toExp", el).onclick = (e) => { e.preventDefault(); D.drawer("experts"); };
     return { async enter() { runCounts(el); const p = $("#pl", el); if (G() && !reduce()) { const L = p.getTotalLength(); G().fromTo(p, { strokeDasharray: L, strokeDashoffset: L }, { strokeDashoffset: 0, duration: 3.2, ease: "none" }); G().fromTo(el.querySelectorAll(".seatgrid i"), { opacity: 0 }, { opacity: 1, duration: 0.6, stagger: { amount: 0.8, from: "start" } }); } await sleep(3600); } };
   } },
-  { id: "receipts", name: "Before and after", hold: 2400, build(el, D) {
+  { id: "receipts", name: "Before and after", hold: 3000, build(el, D) {
     el.innerHTML = `<h2 class="hl" data-in>What it saved. In real units.</h2><div class="tabs2" id="lev" role="tablist"></div><div id="svb" class="sv"></div>
       <div class="scale" id="scl"></div><div class="impact" id="imp" style="margin-top:.8em">${impactLine(D)}</div>
       <p class="cap" style="margin-top:.8em">Three separate runs, so the savings are not added together. Sources: <a style="color:var(--cy)" href="${D.S.water.url}" target="_blank" rel="noopener">LBNL water-use report</a> · <a style="color:var(--cy)" href="${D.S.price.url}" target="_blank" rel="noopener">EIA electricity prices</a></p>`;
@@ -154,9 +154,17 @@ const SCENES = [
     };
     const anim = () => { const g = G(); if (!g || reduce()) return; const bs = el.querySelectorAll(".bar3 i"), rs = el.querySelectorAll(".sv .r"); g.fromTo(bs, { width: "0%" }, { width: (i, t) => `${t.dataset.w}%`, duration: 0.9, ease: "power2.out", stagger: 0.06, overwrite: true }); g.fromTo(rs, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.08, overwrite: true, clearProps: "opacity,transform" }); };
     render();
-    return { async enter() { anim(); await sleep(3800); } };
+    let stopped = false;
+    return { leave() { stopped = true; }, async enter(auto) {
+      stopped = false; anim(); if (!auto) { await sleep(3800); return; }
+      for (const id of ["cap", "topk", "hosted"]) {
+        if (stopped || !D.isPlaying?.()) return;
+        if (id !== cur) { cur = id; render(); }
+        await sleep(id === "cap" ? 11000 : 10000);
+      }
+    } };
   } },
-  { id: "partners", name: "Who did what", hold: 0, build(el, D) {
+  { id: "partners", name: "Who did what", hold: 12000, build(el, D) {
     const m = (n) => D.d.meta.find((x) => x.name === n), st = (p, i) => statVal(p.stats[i]);
     const ms = D.d.meta, led = D.d.ledger, bt = D.node("baseten_model"), e2 = D.node("e2e_rig"), ad = D.node("adaptive"), tl = D.node("telemetry"), rc = D.node("receipts");
     const mini = (k, v, t) => `<div class="mini"><span>${esc(k)}</span><b class="num">${esc(v)} ${t ? pill(t) : ""}</b></div>`;
@@ -182,7 +190,7 @@ const SCENES = [
 // ---- the story controller ----------------------------------------------------------------
 export class Story {
   constructor(root, rail, D) {
-    this.root = root; this.rail = rail; this.D = D; this.i = -1; this.playing = false; this.ctl = []; this.token = 0;
+    this.root = root; this.rail = rail; this.D = D; D.isPlaying = () => this.playing; this.i = -1; this.playing = false; this.ctl = []; this.token = 0;
     SCENES.forEach((s, i) => { const el = document.createElement("section"); el.className = "scene"; el.id = `scene-${s.id}`; el.setAttribute("aria-label", s.name); el.dataset.i = i; root.appendChild(el); this.ctl[i] = s.build(el, D) || {}; this.ctl[i].el = el; });
     this.buildRail();
   }
@@ -207,7 +215,7 @@ export class Story {
     if (g && !instant && !reduce()) { g.fromTo(inn.el, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, delay: out ? 0.25 : 0 }); g.fromTo(inn.el.querySelectorAll("[data-in]"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.06, delay: out ? 0.3 : 0.05 }); }
     else { inn.el.style.opacity = 1; inn.el.querySelectorAll("[data-in]").forEach((e) => (e.style.opacity = 1)); }
     inn.view?.layoutEdges();
-    const done = inn.enter?.();
+    const done = inn.enter?.(this.playing);
     this.onScene?.(n);
     if (this.playing) { await done; if (tok !== this.token || !this.playing) return; await sleep(SCENES[n].hold); if (tok !== this.token || !this.playing) return; if (n < SCENES.length - 1) this.go(n + 1); else { this.playing = false; this.onPlay?.(false, true); } }
   }
