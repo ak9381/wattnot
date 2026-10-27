@@ -1,0 +1,31 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!--CUR:route-->
+<title>Router · WattNot</title>
+<meta name="description" content="For each kind of request, the router picks the lowest reasoning effort that still passes your quality check.">
+<link rel="stylesheet" href="css/site.css"><link rel="stylesheet" href="css/route.css">
+<link rel="preload" href="fonts/inter-tight-var.woff2" as="font" type="font/woff2" crossorigin>
+</head><body>
+<div class="amb" aria-hidden="true"><i style="width:620px;height:420px;left:60%;top:20px;background:rgba(77,141,255,.10)"></i><i style="width:540px;height:400px;left:-8%;top:760px;background:rgba(155,140,255,.07);animation-delay:-4s"></i></div>
+<nav class="gl" aria-label="Main"><div class="in"><a class="logo" href="index.html">WattNot</a><div class="nl"><a href="verify.html">Receipts</a><a href="flex.html">Flex</a><a href="route.html" aria-current="page">Router</a><a href="certificate.html">Certificate</a><a href="features.html">Features</a></div><a class="btn pr sm" href="../run/index.html">Run screen</a></div></nav>
+<main>
+<header class="ph"><div class="w"><div class="k">Router · replayed from a <span id="srcchip"></span> hosted run</div>
+<h1>The cheapest answer<br>that still passes.</h1>
+<p class="sub">Hosted models let you choose how hard they think. WattNot's router tries each setting on each kind of request, keeps the lowest one that passes your check, and shows its reasons. Which region to run in is a what-if on top, and it is always labelled.</p></div></header>
+
+<section><div class="w">
+ <div class="row" style="justify-content:space-between;margin-bottom:18px">
+  <div class="pill-row" role="group" aria-label="Router mode"><button class="pill" id="m-effort" type="button" aria-pressed="false">Effort only</button><button class="pill" id="m-region" type="button" aria-pressed="true">Effort + region <span class="chip SIMULATED" style="margin-left:6px">SIMULATED</span></button></div>
+  <p class="note" id="src"></p>
+ </div>
+ <div class="tot" id="totals"></div>
+ <div class="k" style="margin:56px 0 18px">One decision per kind of request</div>
+ <div class="dg" id="cards"></div>
+ <div class="two-c">
+  <div class="card"><div class="k" style="margin-bottom:12px">Grid figures used for the region what-if <span class="chip SIMULATED" style="margin-left:8px">SIMULATED</span></div><table class="tbl" id="grid"></table><p class="note" id="gridnote" style="margin-top:12px"></p></div>
+  <div class="card"><div class="k" style="margin-bottom:12px">Read this before quoting anything here</div><ul class="notes" id="notes"></ul></div>
+ </div>
+</div></section>
+</main>
+<footer class="gl"><span class="logo">WattNot</span><span>Every number here carries a label: MEASURED, ESTIMATE, SIMULATED, MOCK or EXAMPLE.</span><span><a href="verify.html">Receipts</a> · <a href="route.html">Router</a> · <a href="https://github.com/ak9381/wattnot">GitHub</a></span></footer>
+<script type="module" src="js/route-page.mjs"></script>
+</body></html>

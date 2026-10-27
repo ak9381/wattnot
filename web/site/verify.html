@@ -1,0 +1,49 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!--CUR:verify-->
+<title>Check a receipt · WattNot</title>
+<meta name="description" content="Check a WattNot receipt in your browser. Change one digit and watch it fail.">
+<link rel="stylesheet" href="css/site.css"><link rel="stylesheet" href="css/verify.css">
+<link rel="preload" href="fonts/inter-tight-var.woff2" as="font" type="font/woff2" crossorigin>
+</head><body>
+<div class="amb" aria-hidden="true"><i style="width:620px;height:420px;left:62%;top:0;background:rgba(77,141,255,.10)"></i><i style="width:520px;height:380px;left:-8%;top:520px;background:rgba(155,140,255,.07);animation-delay:-5s"></i></div>
+<nav class="gl" aria-label="Main"><div class="in"><a class="logo" href="index.html">WattNot</a><div class="nl"><a href="verify.html" aria-current="page">Receipts</a><a href="flex.html">Flex</a><a href="route.html">Router</a><a href="certificate.html">Certificate</a><a href="features.html">Features</a></div><a class="btn pr sm" href="../run/index.html">Run screen</a></div></nav>
+<main>
+<header class="ph"><div class="w"><div class="k">Receipts · checked in this page</div>
+<h1>Change one digit.<br>Watch it fail.</h1>
+<p class="sub">A WattNot receipt is a signed record of a before and after. This page re-does every check on your machine, with no server. Edit the receipt below and the verdict updates as you type.</p></div></header>
+
+<section class="vw"><div class="w vgrid">
+ <div class="vl">
+  <div class="card">
+   <div class="k" style="margin-bottom:14px">1 · Pick a receipt</div>
+   <div class="pill-row" id="samples" role="group" aria-label="Sample receipts"></div>
+   <p class="note" id="sample-note" style="margin-top:14px"></p>
+  </div>
+  <div class="card" style="margin-top:18px">
+   <div class="row" style="justify-content:space-between;margin-bottom:12px"><div class="k" style="margin:0">2 · Edit it</div>
+    <div class="row"><button class="btn sm" id="flip" type="button">Change one digit</button><button class="btn sm" id="reset" type="button">Reset</button></div></div>
+   <label class="sr" for="rtext">Receipt JSON</label>
+   <textarea id="rtext" spellcheck="false" autocomplete="off" autocapitalize="off" rows="22"></textarea>
+   <div id="diff" class="diff" aria-live="polite"></div>
+   <details class="bund"><summary>Signature bundle (<span class="m">.sigstore.json</span>)</summary>
+    <label class="sr" for="btext">Bundle JSON</label><textarea id="btext" spellcheck="false" rows="8"></textarea></details>
+   <label class="drop" id="drop"><input type="file" id="file" accept=".json,application/json" multiple>
+    <span>Or drop your own <span class="m">receipt.json</span> and <span class="m">receipt.sigstore.json</span> here. They stay on this device.</span></label>
+  </div>
+ </div>
+ <div class="vr" aria-live="polite">
+  <div class="card verdict" id="verdict"></div>
+  <div class="card" style="margin-top:18px"><div class="k" style="margin-bottom:12px">Checks, in order</div><ol class="steps" id="steps"></ol></div>
+  <div class="card" style="margin-top:18px" id="claims"></div>
+  <div class="card" style="margin-top:18px" id="joules"></div>
+ </div>
+</div>
+<div class="w pagefoot">
+ <p class="note"><b>How it works.</b> The receipt is written in canonical JSON (RFC 8785), hashed with SHA-256, and the hash is signed with Ed25519. This page does the same maths, re-derives the grade (the grade written in the receipt is ignored), and recomputes joules from the receipt's own numbers. It is a port of <span class="m">verifier/wattnot_verify.py</span>, tested on the same 9 vectors. Spec v0.1 is an open draft, not a standard.</p>
+ <details class="bund" style="margin-top:14px"><summary>Trusted signers</summary><p class="note" id="trusted" style="margin-top:10px"></p></details>
+ <p class="note" style="margin-top:14px">The sample key is a public test key. Signatures from it prove the checker works, not that a real run happened.</p>
+</div></section>
+</main>
+<footer class="gl"><span class="logo">WattNot</span><span>Every number here carries a label: MEASURED, ESTIMATE, SIMULATED, MOCK or EXAMPLE.</span><span><a href="verify.html">Receipts</a> · <a href="route.html">Router</a> · <a href="https://github.com/ak9381/wattnot">GitHub</a></span></footer>
+<script type="module" src="js/verify-page.mjs"></script>
+</body></html>

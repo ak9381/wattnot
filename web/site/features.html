@@ -1,0 +1,58 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!--CUR:features-->
+<title>Features · WattNot</title>
+<meta name="description" content="What WattNot does today, what runs on sample data, and what still needs a real GPU run.">
+<link rel="stylesheet" href="css/site.css"><link rel="stylesheet" href="css/landing.css">
+<link rel="preload" href="fonts/inter-tight-var.woff2" as="font" type="font/woff2" crossorigin>
+</head><body class="lp">
+<div class="amb" aria-hidden="true"><i style="width:620px;height:420px;left:0;top:40px;background:rgba(77,141,255,.1)"></i><i style="width:520px;height:380px;right:0;top:600px;background:rgba(95,227,245,.06);animation-delay:-4s"></i></div>
+<nav class="gl" aria-label="Main"><div class="in"><a class="logo" href="index.html">WattNot</a><div class="nl"><a href="verify.html">Receipts</a><a href="flex.html">Flex</a><a href="route.html">Router</a><a href="certificate.html">Certificate</a><a href="features.html" aria-current="page">Features</a></div><a class="btn pr sm" href="../run/index.html">Run screen</a></div></nav>
+<main>
+<header class="ph"><div class="w"><div class="k">Features</div>
+<h1>What WattNot does,<br>and how far each part has got.</h1>
+<p class="sub">Measure, change, check, prove. Each feature below says plainly whether it has run on a real GPU or only on sample data.</p></div></header>
+
+<section><div class="w feats">
+
+ <article class="ft" id="receipts"><div><h3>Signed receipts</h3><span class="st">Built · works today</span></div>
+  <p>The before and after numbers, the quality check and a fingerprint, signed. The spec is public. A standalone verifier and a browser verifier re-do the arithmetic and the signature, and they never trust the grade a receipt claims for itself.</p>
+  <a class="ul" href="verify.html">Check a receipt →</a></article>
+
+ <article class="ft" id="flex"><div><h3>Grid flex</h3><span class="st sim">Built · simulated GPU only</span></div>
+  <p>Lowers GPU power in steps when the grid asks, and logs power, latency and answer quality every second. It stops at limits you set. In the sample runs latency goes over its budget for a second or two, and the receipt says so.</p>
+  <a class="ul" href="flex.html">See the chart →</a></article>
+
+ <article class="ft" id="router"><div><h3>Router</h3><span class="st sim">Built · replays a recorded run</span></div>
+  <p>For each kind of request, tries the hosted model's effort settings and keeps the cheapest one that still passes your check. An optional region what-if is always labelled SIMULATED.</p>
+  <a class="ul" href="route.html">See its decisions →</a></article>
+
+ <article class="ft" id="cloud"><div><h3>Cloud mode</h3><span class="st sim">Built · tested with a stand-in provider</span></div>
+  <p>For hosted models, WattNot cannot read a power meter. It records what it can see (tokens, time, price), turns that into an energy estimate with a stated method, and labels every figure ESTIMATE or SIMULATED. A real provider run has not been done yet.</p></article>
+
+ <article class="ft" id="report"><div><h3>Efficiency report</h3><span class="st">Built · from the receipts you give it</span></div>
+  <p>An energy and water export in the layout of the EU data-centre reporting rules (CSV and HTML), filled from your receipts. Water is always an ESTIMATE, and the grid figure is only used if you name its source.</p></article>
+
+ <article class="ft" id="certificate"><div><h3>Efficiency statement</h3><span class="st mock">MOCK · not tradable</span></div>
+  <p>A one-page restatement of a verified receipt, with a permanent MOCK mark. It refuses noise, duplicates and receipts that do not verify. It is not a carbon credit and gives no carbon figure.</p>
+  <a class="ul" href="certificate.html">Open one →</a></article>
+
+ <article class="ft" id="control"><div><h3>You stay in control</h3><span class="st">Rollback built · approval step is a design</span></div>
+  <p>Changes are tried one at a time on replayed prompts. If answer quality or latency fails, the old setting is put back automatically, and that is built and tested. An approve-before-apply step is shown as an example on the home page; it is not wired in yet.</p>
+  <a class="ul" href="../run/index.html">Open the run screen →</a></article>
+
+ <article class="ft"><div><h3>Power-cap trials and serving tuning</h3><span class="st">Needs a real GPU run</span></div>
+  <p>Steps the GPU power limit toward the efficient point, and tries batch size, KV cache and quantization, against your own prompts. The code is in place and tested against a stand-in. We have not yet published a measured result.</p></article>
+
+ <article class="ft"><div><h3>Rack floor map</h3><span class="st">Example</span></div>
+  <p>Outlines each server in a rack photo and lights up the GPUs a run touched. If the model is not available, you draw the map by hand and it is labelled as manual.</p>
+  <img class="rack" src="img/rackmap.webp" alt="A server rack with outlines drawn around each server" loading="lazy" width="494" height="720">
+  <p class="note">Photo: Btrs, CC BY-SA 4.0</p></article>
+
+</div></section>
+
+<section class="scr end"><div class="w c rv"><h2 class="big">WattNot proves<br>every watt it saves.</h2>
+<div class="row cta" style="justify-content:center"><a class="btn pr" href="verify.html">Check a receipt</a><a class="btn" href="https://github.com/ak9381/wattnot">GitHub</a></div></div></section>
+</main>
+<footer class="gl"><span class="logo">WattNot</span><span>Every number here carries a label: MEASURED, ESTIMATE, SIMULATED, MOCK or EXAMPLE.</span><span><a href="verify.html">Receipts</a> · <a href="route.html">Router</a> · <a href="https://github.com/ak9381/wattnot">GitHub</a></span></footer>
+<script type="module" src="js/landing.mjs"></script>
+</body></html>

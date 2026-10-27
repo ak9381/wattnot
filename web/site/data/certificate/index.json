@@ -1,0 +1,70 @@
+{
+  "minted": [
+    {
+      "serial": "WNC-MOCK-0001",
+      "receipt": "real-estimate",
+      "grade": "ESTIMATE",
+      "basis": "ESTIMATE"
+    },
+    {
+      "serial": "WNC-MOCK-0002",
+      "receipt": "real-cloud",
+      "grade": "SIMULATED",
+      "basis": "SIMULATED"
+    }
+  ],
+  "refused": [
+    {
+      "receipt": "real-noise",
+      "case": "A NOISE receipt",
+      "minted": false,
+      "reasons": [
+        {
+          "code": "grade",
+          "detail": "grade is NOISE; only VALID or ESTIMATE are minted"
+        }
+      ]
+    },
+    {
+      "receipt": "real-estimate",
+      "case": "The same receipt again",
+      "minted": false,
+      "reasons": [
+        {
+          "code": "duplicate",
+          "detail": "receipt:57a3a95761b4e746dcf44dcace104eeedd212682ea75c90ba7ab641362fc4813 is already certified as WNC-MOCK-0001"
+        }
+      ]
+    },
+    {
+      "receipt": "forged-edited",
+      "case": "A receipt that fails verification",
+      "minted": false,
+      "reasons": [
+        {
+          "code": "not_verified",
+          "detail": "sha256 check failed: values do not match"
+        },
+        {
+          "code": "not_verified",
+          "detail": "signature check failed: sha256 does not match the receipt"
+        },
+        {
+          "code": "grade",
+          "detail": "grade is UNVERIFIABLE; only VALID or ESTIMATE are minted"
+        }
+      ]
+    },
+    {
+      "receipt": "real-cloud",
+      "case": "A SIMULATED receipt without the demo flag",
+      "minted": false,
+      "reasons": [
+        {
+          "code": "simulated",
+          "detail": "a SIMULATED receipt is only minted with allow_simulated (demo)"
+        }
+      ]
+    }
+  ]
+}

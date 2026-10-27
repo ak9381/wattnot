@@ -1,0 +1,86 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!--CUR:home-->
+<title>WattNot: proves every watt it saves</title>
+<meta name="description" content="Power-saving changes for GPU inference, each tested on your own prompts and each backed by a receipt anyone can check.">
+<link rel="stylesheet" href="css/site.css"><link rel="stylesheet" href="css/flex.css"><link rel="stylesheet" href="css/landing.css">
+<link rel="preload" href="fonts/inter-tight-var.woff2" as="font" type="font/woff2" crossorigin>
+</head><body class="lp">
+<div class="amb" aria-hidden="true"><i style="width:760px;height:520px;left:-6%;top:-80px;background:rgba(77,141,255,.12)"></i><i style="width:620px;height:460px;right:-6%;top:200px;background:rgba(155,140,255,.09);animation-delay:-5s"></i></div>
+<nav class="gl" aria-label="Main"><div class="in"><a class="logo" href="index.html">WattNot</a><div class="nl"><a href="verify.html">Receipts</a><a href="flex.html">Flex</a><a href="route.html">Router</a><a href="certificate.html">Certificate</a><a href="features.html">Features</a></div><a class="btn pr sm" href="../run/index.html">Run screen</a></div></nav>
+<main>
+
+<header class="hero" id="top">
+ <div class="w hw">
+  <div class="k">Proof of efficiency for GPU inference</div>
+  <h1 class="mark" id="mark" aria-label="WattNot"><span aria-hidden="true" id="letters">WattNot</span></h1>
+  <div class="powerline" id="pl" role="img" aria-label="A GPU power line that falls from about 276 watts to about 205 watts. Simulated example."></div>
+  <div class="read"><span id="pread">276 W</span><span class="sep">GPU power, one simulated flex event</span><span class="chip SIMULATED">SIMULATED</span></div>
+  <p class="line">WattNot proves every watt it saves.</p>
+  <div class="row cta"><a class="btn pr" href="verify.html">Check a receipt</a><a class="btn" href="flex.html">Watch the power drop</a></div>
+ </div>
+ <a class="down" href="#claim" aria-label="Scroll to the next section"><span></span></a>
+</header>
+
+<section class="scr" id="claim"><div class="w c rv">
+ <div class="k">The idea</div>
+ <h2 class="big">A saving is only a claim<br>until someone else can check it.</h2>
+ <p class="sub c">So every change WattNot makes ends in a signed receipt. The receipt holds the before and after numbers, the quality check, and a fingerprint. Change one digit and the check fails. Try it on a real sample below.</p>
+ <div class="mini" id="mini">
+  <div class="mhead"><span class="mono-s" id="mid">receipt</span><span class="grade VALID" id="mgrade">…</span></div>
+  <pre class="mpre" id="mpre" aria-label="Part of the receipt"></pre>
+  <div class="mdiff" id="mdiff" aria-live="polite"></div>
+  <div class="row"><button class="btn sm" id="mflip" type="button">Change one digit</button><button class="btn sm" id="mundo" type="button" hidden>Undo</button><a class="btn sm" href="verify.html" style="margin-left:auto">Open the full verifier →</a></div>
+  <p class="mverdict" id="mverdict"></p>
+ </div>
+</div></section>
+
+<section class="scr alt" id="power"><div class="w rv">
+ <div class="k">Power on demand</div>
+ <h2 class="big">When the grid asks,<br>the power comes down.</h2>
+ <p class="sub">When the grid operator asks a data centre to use less, WattNot lowers the GPU power limit step by step and watches latency and answer quality all the way. Every step goes into a log, and the receipt covers the whole event.</p>
+ <div class="mchart" id="mchart"></div>
+ <div class="stats3" id="stats3"></div>
+ <p class="note" style="margin-top:22px">All of this is a simulated GPU. A real run on rented hardware is the next step, and it will be labelled MEASURED only if it is. <a href="flex.html" class="ul">Open the full chart →</a></p>
+</div></section>
+
+<section class="scr" id="control"><div class="w">
+ <div class="rv"><div class="k">You stay in control</div>
+ <h2 class="big">Nothing changes<br>until you say so.</h2>
+ <p class="sub">WattNot tests each change on your own prompts before it touches anything. You see what it did to power, speed and answer quality. Then you approve it, or you leave things as they are. If you change your mind later, one step puts the old setting back.</p></div>
+ <div class="ctl rv">
+  <ol class="three">
+   <li><b>01</b><span>Every change is tested.</span><em>Replayed on your real prompts, one change at a time.</em></li>
+   <li><b>02</b><span>You approve it.</span><em>Nothing is applied on its own. No answer-quality drop, no change.</em></li>
+   <li><b>03</b><span>You can roll it back.</span><em>The old setting is kept. One click restores it.</em></li>
+  </ol>
+  <div class="card appr" id="appr">
+   <div class="row" style="justify-content:space-between"><span class="k" style="margin:0">Proposed change</span><span class="chip EXAMPLE">EXAMPLE</span></div>
+   <h3>Lower the power limit from 700 W to 620 W</h3>
+   <div class="kv"><div>Tested on<span>200 prompts</span></div><div>Answer quality<span>0.95 → 0.95 <span class="chip EXAMPLE">EXAMPLE</span></span></div><div>Energy per request<span>−9.9% <span class="chip ESTIMATE">ESTIMATE</span></span></div></div>
+   <div class="row"><button class="btn pr sm" id="ap" type="button">Approve</button><button class="btn sm" id="ke" type="button">Keep as is</button><button class="btn sm bad" id="rb" type="button" hidden>Roll back</button></div>
+   <p class="note" id="astate">Waiting for you. Nothing has been applied.</p><p class="note" style="margin-top:6px;font-size:13px">An example screen. Automatic rollback is built; the approve step is a design we have not wired in yet.</p>
+  </div>
+ </div>
+</div></section>
+
+<section class="scr alt" id="place"><div class="w">
+ <div class="rv"><div class="k">Everything in one place</div>
+ <h2 class="big">Receipts, router,<br>cloud mode, report.</h2></div>
+ <div class="strip rv">
+  <a class="tile" href="verify.html"><span class="t">Receipts</span><span class="d">Check any receipt in your browser. Nothing is uploaded.</span><span class="go">Open →</span></a>
+  <a class="tile" href="route.html"><span class="t">Router</span><span class="d">Picks the cheapest setting that still passes your check, and shows why.</span><span class="go">Open →</span></a>
+  <a class="tile" href="features.html#cloud"><span class="t">Cloud mode</span><span class="d">Hosted models you cannot meter. Same receipts, with every figure labelled for what it is.</span><span class="go">Read more →</span></a>
+  <a class="tile" href="features.html#report"><span class="t">Efficiency report</span><span class="d">Energy and water in one page, filled in from your receipts.</span><span class="go">Read more →</span></a>
+ </div>
+ <p class="note rv" style="margin-top:22px">Also here: <a class="ul" href="flex.html">flex events</a> and <a class="ul" href="certificate.html">the MOCK efficiency statement</a>.</p>
+</div></section>
+
+<section class="scr end"><div class="w c rv">
+ <h2 class="big">WattNot proves<br>every watt it saves.</h2>
+ <p class="sub c">Water figures are always an ESTIMATE, and money is in USD. Nothing on this site is a carbon claim.</p>
+ <div class="row cta" style="justify-content:center"><a class="btn pr" href="verify.html">Check a receipt</a><a class="btn" href="features.html">See the features</a><a class="btn" href="https://github.com/ak9381/wattnot">GitHub</a></div>
+</div></section>
+</main>
+<footer class="gl"><span class="logo">WattNot</span><span>Every number here carries a label: MEASURED, ESTIMATE, SIMULATED, MOCK or EXAMPLE.</span><span><a href="verify.html">Receipts</a> · <a href="route.html">Router</a> · <a href="https://github.com/ak9381/wattnot">GitHub</a></span></footer>
+<script type="module" src="js/landing.mjs"></script>
+</body></html>

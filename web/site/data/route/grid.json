@@ -1,0 +1,66 @@
+[
+  {
+    "region": "ap-south",
+    "gco2_per_kwh": 680.0,
+    "label": "SIMULATED",
+    "source": "static fixture (rounded illustrative values)",
+    "as_of": "static fixture",
+    "note": "Order-of-magnitude numbers for a what-if. Not a dataset, not live. Replace with a real feed before quoting any of it."
+  },
+  {
+    "region": "ap-southeast",
+    "gco2_per_kwh": 480.0,
+    "label": "SIMULATED",
+    "source": "static fixture (rounded illustrative values)",
+    "as_of": "static fixture",
+    "note": "Order-of-magnitude numbers for a what-if. Not a dataset, not live. Replace with a real feed before quoting any of it."
+  },
+  {
+    "region": "eu-central",
+    "gco2_per_kwh": 380.0,
+    "label": "SIMULATED",
+    "source": "static fixture (rounded illustrative values)",
+    "as_of": "static fixture",
+    "note": "Order-of-magnitude numbers for a what-if. Not a dataset, not live. Replace with a real feed before quoting any of it."
+  },
+  {
+    "region": "eu-north",
+    "gco2_per_kwh": 35.0,
+    "label": "SIMULATED",
+    "source": "static fixture (rounded illustrative values)",
+    "as_of": "static fixture",
+    "note": "Order-of-magnitude numbers for a what-if. Not a dataset, not live. Replace with a real feed before quoting any of it."
+  },
+  {
+    "region": "eu-west",
+    "gco2_per_kwh": 300.0,
+    "label": "SIMULATED",
+    "source": "static fixture (rounded illustrative values)",
+    "as_of": "static fixture",
+    "note": "Order-of-magnitude numbers for a what-if. Not a dataset, not live. Replace with a real feed before quoting any of it."
+  },
+  {
+    "region": "gb",
+    "gco2_per_kwh": 150.0,
+    "label": "SIMULATED",
+    "source": "static fixture (rounded illustrative values)",
+    "as_of": "static fixture",
+    "note": "Order-of-magnitude numbers for a what-if. Not a dataset, not live. Replace with a real feed before quoting any of it."
+  },
+  {
+    "region": "us-east",
+    "gco2_per_kwh": 380.0,
+    "label": "SIMULATED",
+    "source": "static fixture (rounded illustrative values)",
+    "as_of": "static fixture",
+    "note": "Order-of-magnitude numbers for a what-if. Not a dataset, not live. Replace with a real feed before quoting any of it."
+  },
+  {
+    "region": "us-west",
+    "gco2_per_kwh": 250.0,
+    "label": "SIMULATED",
+    "source": "static fixture (rounded illustrative values)",
+    "as_of": "static fixture",
+    "note": "Order-of-magnitude numbers for a what-if. Not a dataset, not live. Replace with a real feed before quoting any of it."
+  }
+]

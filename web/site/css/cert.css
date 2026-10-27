@@ -1,0 +1,16 @@
+.cgrid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:24px;align-items:start}
+.paper{border-radius:14px;overflow:hidden;border:1px solid var(--ln2);background:#fff;box-shadow:0 30px 80px -30px rgba(0,0,0,.8),0 0 60px -20px rgba(245,197,107,.12)}
+.paper iframe{display:block;width:100%;height:1040px;border:0;background:#fff}
+.cr{position:sticky;top:90px}
+.notes{list-style:none;padding:0;color:var(--mu);font-size:15px}.notes li{padding:9px 0;border-top:1px solid var(--ln)}.notes li:first-child{border:0;padding-top:0}
+.steps{list-style:none;padding:0}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:12px;padding:11px 0;border-top:1px solid var(--ln);align-items:start}.steps li:first-child{border:0;padding-top:0}
+.ic2{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font:500 13px var(--mono);border:1px solid;margin-top:2px}
+.ic2.ok{color:var(--ok);border-color:rgba(92,230,168,.5);background:rgba(92,230,168,.08)}.ic2.no{color:var(--bad);border-color:rgba(255,107,122,.6);background:rgba(255,107,122,.1)}
+.steps b{font-weight:400;display:block}.steps .why{color:var(--mu);font-size:14px;line-height:1.45;margin-top:2px}.steps .why.err{color:var(--bad)}
+#verdict h2{font-size:30px;margin:14px 0 6px;letter-spacing:-.03em}#verdict p{color:var(--mu);font-size:15.5px}
+#verdict.bad{border-color:rgba(255,107,122,.5);background:linear-gradient(160deg,rgba(255,107,122,.09),transparent 70%),rgba(10,14,26,.6)}#verdict.bad h2{color:var(--bad)}
+.two-c2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:40px}
+.rf{padding:12px 0;border-top:1px solid var(--ln)}.rf:first-child{border:0;padding-top:0}.rf b{font-weight:400}.rf span{display:block;color:var(--mu);font-size:14px}
+.rm{padding:12px 0;border-top:1px solid var(--ln)}.rm:first-child{border:0;padding-top:0}.rm b{font-weight:400;display:block}.rm span{display:block;color:var(--mu);font-size:14px;margin-top:2px}.rm em{font-style:normal;color:var(--warn)}
+@media(max-width:980px){.cgrid,.two-c2{grid-template-columns:1fr}.cr{position:static}}

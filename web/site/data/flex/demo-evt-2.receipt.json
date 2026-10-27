@@ -1,0 +1,333 @@
+{
+  "spec": "wattnot.receipt/1",
+  "profile": "flex",
+  "receipt_id": "rcpt_flex_203cc8a96563",
+  "created_at": "2026-10-27T10:00:00+00:00",
+  "run_id": "flex_demo-evt-2",
+  "subject": {
+    "model": "demo model (not named)",
+    "host": {
+      "provider": "software power model",
+      "gpu": "H100 (modelled)",
+      "driver": "n/a"
+    },
+    "mode": "flex",
+    "workload": {
+      "name": "steady demo load",
+      "requests_per_s": 10.032
+    }
+  },
+  "baseline": {
+    "params": {
+      "power_cap_w": 700
+    },
+    "reps": 2,
+    "wh_per_req": {
+      "mean": 0.007573901,
+      "sd": 3.5557e-05,
+      "samples": [
+        0.007548758,
+        0.007599043
+      ]
+    },
+    "p99_ms": 1857.55,
+    "quality": {
+      "fixed_pass_rate": 0.82
+    }
+  },
+  "candidate": {
+    "params": {
+      "power_cap_w": 200
+    },
+    "reps": 9,
+    "wh_per_req": {
+      "mean": 0.005566074,
+      "sd": 4.1687e-05,
+      "samples": [
+        0.005539739,
+        0.005524941,
+        0.005600096,
+        0.005492359,
+        0.005589006,
+        0.005555685,
+        0.005623464,
+        0.005572329,
+        0.005597044
+      ]
+    },
+    "p99_ms": 2657.36,
+    "quality": {
+      "fixed_pass_rate": 0.82
+    }
+  },
+  "result": {
+    "saving_pct": {
+      "mean": 26.5098,
+      "ci_low": null,
+      "ci_high": null,
+      "basis": "energy per request, settled event window vs before"
+    },
+    "welch": {
+      "applicable": false,
+      "reason": "one event, no repeated runs to test; grade capped"
+    },
+    "billable": false,
+    "billed_saving_pct": 0.0,
+    "fee_share": 0.0,
+    "currency": "USD"
+  },
+  "measurement": {
+    "meter": "software power model v1",
+    "hz": 1.0,
+    "csv": [
+      {
+        "path": "rcpt_flex_203cc8a96563.trace.csv",
+        "sha256": "203cc8a96563bbd6e9868ff131f7f9e1dbf233c48f915879661f9d59669d7a6c"
+      }
+    ],
+    "label": "SIMULATED"
+  },
+  "flex": {
+    "label": "SIMULATED",
+    "event": {
+      "id": "demo-evt-2",
+      "kind": "shed",
+      "target_pct": 35.0,
+      "duration_s": 300,
+      "note": "A 35 percent ask. The simulated card cannot go that low, so the run stops short and says so."
+    },
+    "signal": {
+      "label": "SIMULATED",
+      "source": "replayed demo events; not a live grid signal and not from any utility"
+    },
+    "outcome": {
+      "status": "partial",
+      "limit": "cap_floor",
+      "target_pct": 35.0,
+      "target_w": 177.79,
+      "delivered_pct": 26.76,
+      "delivered_w": 73.2,
+      "seconds_to_target": null,
+      "ramp_back_s": 4.0,
+      "settled_cap_w": 200,
+      "p99_ms": {
+        "before_mean": 1806.1,
+        "event_mean": 2459.0,
+        "event_max": 2725.0,
+        "sla": 2709.2,
+        "sla_violation_s": 1.0
+      },
+      "pass_rate": {
+        "before": 0.82,
+        "event": 0.82
+      }
+    },
+    "baseline_power_w": 273.52,
+    "controller": {
+      "dt_s": 1.0,
+      "pre_s": 30,
+      "post_s": 90,
+      "step_w": 10,
+      "hold_s": 2.0,
+      "ema_alpha": 0.5,
+      "sla_slack": 0.5,
+      "danger": 0.98,
+      "headroom": 0.92,
+      "quality_drop_pts": 1.0,
+      "breach_ticks": 2,
+      "tol": 0.02,
+      "settle_ticks": 3
+    },
+    "model": {
+      "label": "SIMULATED",
+      "note": "software power model with guessed parameters; replaced by NVML readings on the H100 run",
+      "idle_w": 70.0,
+      "tdp_w": 700.0,
+      "intensity": 0.65,
+      "k": 2.5,
+      "beta": 0.6,
+      "clock_min": 0.35,
+      "capacity_rps": 20.0,
+      "base_p99_ms": 900.0,
+      "queue_q": 1.0
+    },
+    "cap_changes": [
+      [
+        30.0,
+        280
+      ],
+      [
+        32.0,
+        270
+      ],
+      [
+        34.0,
+        260
+      ],
+      [
+        36.0,
+        250
+      ],
+      [
+        38.0,
+        240
+      ],
+      [
+        40.0,
+        230
+      ],
+      [
+        42.0,
+        220
+      ],
+      [
+        44.0,
+        210
+      ],
+      [
+        46.0,
+        200
+      ],
+      [
+        330.0,
+        220
+      ],
+      [
+        331.0,
+        240
+      ],
+      [
+        332.0,
+        260
+      ],
+      [
+        333.0,
+        280
+      ],
+      [
+        334.0,
+        300
+      ],
+      [
+        335.0,
+        320
+      ],
+      [
+        336.0,
+        340
+      ],
+      [
+        337.0,
+        360
+      ],
+      [
+        338.0,
+        380
+      ],
+      [
+        339.0,
+        400
+      ],
+      [
+        340.0,
+        420
+      ],
+      [
+        341.0,
+        440
+      ],
+      [
+        342.0,
+        460
+      ],
+      [
+        343.0,
+        480
+      ],
+      [
+        344.0,
+        500
+      ],
+      [
+        345.0,
+        520
+      ],
+      [
+        346.0,
+        540
+      ],
+      [
+        347.0,
+        560
+      ],
+      [
+        348.0,
+        580
+      ],
+      [
+        349.0,
+        600
+      ],
+      [
+        350.0,
+        620
+      ],
+      [
+        351.0,
+        640
+      ],
+      [
+        352.0,
+        660
+      ],
+      [
+        353.0,
+        680
+      ],
+      [
+        354.0,
+        700
+      ]
+    ],
+    "cap_change_count": 34,
+    "trace": {
+      "csv_sha256": "203cc8a96563bbd6e9868ff131f7f9e1dbf233c48f915879661f9d59669d7a6c",
+      "json_sha256": "7330ffeb6929cb46673b0dbc0fdaed29c71b947beaa4978e5cdbc41738456b12",
+      "points": 420
+    },
+    "scope": "GPU draw only. Cooling, CPUs, networking and the rest of the site are not shed.",
+    "not_claimed": [
+      "no site or grid level saving",
+      "no carbon claim",
+      "not a utility program enrolment or a settled payment"
+    ]
+  },
+  "planner_trace": [],
+  "joules": {
+    "unit": "J",
+    "label": "SIMULATED",
+    "formula": "j_per_answer = wh_per_req x 3600; j_per_good_answer = j_per_answer / pass_rate",
+    "baseline": {
+      "j_per_answer": 27.266044,
+      "pass_rate": 0.82,
+      "j_per_good_answer": 33.251273
+    },
+    "candidate": {
+      "j_per_answer": 20.037866,
+      "pass_rate": 0.82,
+      "j_per_good_answer": 24.436422
+    },
+    "change_pct": {
+      "j_per_answer": -26.5098,
+      "j_per_good_answer": -26.5098
+    }
+  },
+  "grade": "SIMULATED",
+  "integrity": {
+    "canonicalization": "JCS RFC 8785",
+    "sha256": "9bf2a3e1c071dd8d3c9705adbcfa27ee8e02c2c80e411c6161c7b7d9aa13bbcf",
+    "prev_sha256": "5b3a25ce0dc7c384acb74c15fcfd4f726a8da29359eaf3350ee4b33fce39dcef",
+    "signer": "offline:56475aa75463474c",
+    "rekor": null
+  }
+}

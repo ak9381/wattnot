@@ -1,0 +1,37 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!--CUR:certificate-->
+<title>Efficiency statement (MOCK) · WattNot</title>
+<meta name="description" content="A one-page statement that restates a verified receipt. Today it is a mock, and it says so on every page.">
+<link rel="stylesheet" href="css/site.css"><link rel="stylesheet" href="css/cert.css">
+<link rel="preload" href="fonts/inter-tight-var.woff2" as="font" type="font/woff2" crossorigin>
+</head><body>
+<div class="amb" aria-hidden="true"><i style="width:620px;height:420px;left:6%;top:60px;background:rgba(245,197,107,.06)"></i><i style="width:560px;height:400px;left:62%;top:500px;background:rgba(77,141,255,.08);animation-delay:-4s"></i></div>
+<nav class="gl" aria-label="Main"><div class="in"><a class="logo" href="index.html">WattNot</a><div class="nl"><a href="verify.html">Receipts</a><a href="flex.html">Flex</a><a href="route.html">Router</a><a href="certificate.html" aria-current="page">Certificate</a><a href="features.html">Features</a></div><a class="btn pr sm" href="../run/index.html">Run screen</a></div></nav>
+<main>
+<header class="ph"><div class="w"><div class="k">Efficiency statement · <span id="mockchip"></span></div>
+<h1>A page that restates<br>a receipt, and nothing more.</h1>
+<p class="sub">Once a receipt checks out, WattNot can print a one-page statement from it. Today that statement is a mock: it carries a permanent MOCK mark, it is not tradable, and it is not a carbon credit. What it would take to be more than that is listed below.</p></div></header>
+
+<section><div class="w cgrid">
+ <div>
+  <div class="row" style="justify-content:space-between;margin-bottom:14px"><div class="pill-row" id="serials" role="group" aria-label="Statements"></div><span class="note" id="who"></span></div>
+  <div class="paper"><iframe id="doc" title="The statement" sandbox="allow-same-origin" loading="lazy"></iframe></div>
+ </div>
+ <div class="cr">
+  <div class="card" id="verdict"></div>
+  <div class="card" style="margin-top:16px"><div class="k" style="margin-bottom:12px">Checks, run in this page</div><ol class="steps" id="steps"></ol>
+   <div class="row" style="margin-top:14px"><button class="btn sm" id="t-digit" type="button">Change one digit</button><button class="btn sm" id="t-mark" type="button">Remove the MOCK mark</button><button class="btn sm" id="t-reset" type="button">Reset</button></div>
+   <p class="note" style="margin-top:12px" id="tmsg">These buttons change a copy in memory, not the page on the left, to show that the checks notice.</p></div>
+  <div class="card" style="margin-top:16px" id="figs"></div>
+  <div class="card" style="margin-top:16px"><div class="k" style="margin-bottom:10px">Limits, printed on the statement</div><ul class="notes" id="limits"></ul></div>
+ </div>
+</div>
+<div class="w two-c2">
+ <div class="card"><div class="k" style="margin-bottom:12px">Statements it refuses to print</div><div id="refused"></div></div>
+ <div class="card"><div class="k" style="margin-bottom:6px">What it would take to be more than a mock <span class="chip ADVICE" style="margin-left:8px">ADVICE</span></div><p class="note" id="rm-cav" style="margin-bottom:10px"></p><div id="roadmap"></div></div>
+</div>
+</section>
+</main>
+<footer class="gl"><span class="logo">WattNot</span><span>Every number here carries a label: MEASURED, ESTIMATE, SIMULATED, MOCK or EXAMPLE.</span><span><a href="verify.html">Receipts</a> · <a href="route.html">Router</a> · <a href="https://github.com/ak9381/wattnot">GitHub</a></span></footer>
+<script type="module" src="js/certificate-page.mjs"></script>
+</body></html>

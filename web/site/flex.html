@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!--CUR:flex-->
+<title>Flex mode · WattNot</title>
+<meta name="description" content="When the grid asks for less, WattNot lowers GPU power in small steps and watches latency and answer quality. This page replays a simulated event.">
+<link rel="stylesheet" href="css/site.css"><link rel="stylesheet" href="css/flex.css">
+<link rel="preload" href="fonts/inter-tight-var.woff2" as="font" type="font/woff2" crossorigin>
+</head><body>
+<div class="amb" aria-hidden="true"><i style="width:640px;height:420px;left:58%;top:40px;background:rgba(155,140,255,.09)"></i><i style="width:520px;height:380px;left:-6%;top:620px;background:rgba(95,227,245,.06);animation-delay:-5s"></i></div>
+<nav class="gl" aria-label="Main"><div class="in"><a class="logo" href="index.html">WattNot</a><div class="nl"><a href="verify.html">Receipts</a><a href="flex.html" aria-current="page">Flex</a><a href="route.html">Router</a><a href="certificate.html">Certificate</a><a href="features.html">Features</a></div><a class="btn pr sm" href="../run/index.html">Run screen</a></div></nav>
+<main>
+<header class="ph"><div class="w"><div class="k">Flex mode · <span id="sigchip"></span></div>
+<h1>Power goes down.<br>Latency and quality are watched at every step.</h1>
+<p class="sub">When the grid asks a data center to use less, WattNot lowers the GPU power limit one small step at a time. After each step it checks p99 latency and answer quality, and it stops if either gets close to its limit.</p></div></header>
+
+<section><div class="w">
+ <div class="card">
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+   <div class="pill-row" id="events" role="group" aria-label="Grid events"></div>
+   <div class="row"><span class="note">Everything on this chart is</span><span class="chip SIMULATED big">SIMULATED</span><button class="btn sm" id="replay" type="button">Replay</button></div>
+  </div>
+  <p class="ev-note" id="evnote" style="margin:0 0 14px"></p>
+  <div class="read" id="read" aria-live="off">Move over the chart to read a second.</div>
+  <div id="chart"></div>
+ </div>
+ <div class="cards" id="cards"></div>
+ <div class="scope">
+  <div class="card"><div class="k" style="margin-bottom:10px">Receipt</div><div id="rcpt"></div></div>
+  <div class="card"><div class="k" style="margin-bottom:10px">What this does not claim</div><ul id="nots" class="note" style="list-style:none;padding:0"></ul></div>
+ </div>
+ <div class="pagefoot"><p class="note"><b>Honest limits.</b> The GPU here is a software model and the grid signal is a replayed demo event, so every number is SIMULATED. On a real GPU the same controller runs with <span class="m">wattnot flex run --backend gpu</span>: the power and latency readings would be MEASURED, and the grid signal would still say SIMULATED until a real feed is wired in. Only GPU draw is shed; cooling and the rest of the site are not.</p></div>
+</div></section>
+</main>
+<footer class="gl"><span class="logo">WattNot</span><span>Every number here carries a label: MEASURED, ESTIMATE, SIMULATED, MOCK or EXAMPLE.</span><span><a href="verify.html">Receipts</a> · <a href="route.html">Router</a> · <a href="https://github.com/ak9381/wattnot">GitHub</a></span></footer>
+<script type="module" src="js/flex-page.mjs"></script>
+</body></html>

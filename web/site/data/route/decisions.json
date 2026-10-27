@@ -1,0 +1,922 @@
+{
+  "extract": {
+    "label": "SIMULATED",
+    "region_label": "SIMULATED",
+    "chosen": {
+      "id": "extract:low@eu-north",
+      "backend": "baseten/muse-spark-open-1026",
+      "effort": "low",
+      "usd_per_req": 0.000608167,
+      "wh_low": 0.008876,
+      "wh_high": 0.08876,
+      "pass_rate": 1.0,
+      "gate_passed": true,
+      "gate_note": "",
+      "region": "eu-north",
+      "is_reference": false,
+      "usd_label": "SIMULATED",
+      "energy_label": "ESTIMATE",
+      "j_per_good_answer": 175.7448
+    },
+    "reason": "low in eu-north: passes the gate, 175.7 J per good answer; 7 other option(s) are within 3% on joules, so the cleaner grid decided (35 gCO2/kWh vs up to 680)",
+    "ranked": [
+      {
+        "id": "extract:low@ap-south",
+        "status": "tied",
+        "j_per_good_answer": 175.7448,
+        "usd_per_req": 0.0006081666666666667,
+        "region": "ap-south",
+        "gco2_per_kwh": 680.0
+      },
+      {
+        "id": "extract:low@ap-southeast",
+        "status": "tied",
+        "j_per_good_answer": 175.7448,
+        "usd_per_req": 0.0006081666666666667,
+        "region": "ap-southeast",
+        "gco2_per_kwh": 480.0
+      },
+      {
+        "id": "extract:low@eu-central",
+        "status": "tied",
+        "j_per_good_answer": 175.7448,
+        "usd_per_req": 0.0006081666666666667,
+        "region": "eu-central",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "extract:low@eu-north",
+        "status": "chosen",
+        "j_per_good_answer": 175.7448,
+        "usd_per_req": 0.0006081666666666667,
+        "region": "eu-north",
+        "gco2_per_kwh": 35.0
+      },
+      {
+        "id": "extract:low@eu-west",
+        "status": "tied",
+        "j_per_good_answer": 175.7448,
+        "usd_per_req": 0.0006081666666666667,
+        "region": "eu-west",
+        "gco2_per_kwh": 300.0
+      },
+      {
+        "id": "extract:low@gb",
+        "status": "tied",
+        "j_per_good_answer": 175.7448,
+        "usd_per_req": 0.0006081666666666667,
+        "region": "gb",
+        "gco2_per_kwh": 150.0
+      },
+      {
+        "id": "extract:low@us-east",
+        "status": "tied",
+        "j_per_good_answer": 175.7448,
+        "usd_per_req": 0.0006081666666666667,
+        "region": "us-east",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "extract:low@us-west",
+        "status": "tied",
+        "j_per_good_answer": 175.7448,
+        "usd_per_req": 0.0006081666666666667,
+        "region": "us-west",
+        "gco2_per_kwh": 250.0
+      },
+      {
+        "id": "extract:xhigh@ap-south",
+        "status": "passed",
+        "j_per_good_answer": 836.8668,
+        "usd_per_req": 0.003986916666666666,
+        "region": "ap-south",
+        "gco2_per_kwh": 680.0
+      },
+      {
+        "id": "extract:xhigh@ap-southeast",
+        "status": "passed",
+        "j_per_good_answer": 836.8668,
+        "usd_per_req": 0.003986916666666666,
+        "region": "ap-southeast",
+        "gco2_per_kwh": 480.0
+      },
+      {
+        "id": "extract:xhigh@eu-central",
+        "status": "passed",
+        "j_per_good_answer": 836.8668,
+        "usd_per_req": 0.003986916666666666,
+        "region": "eu-central",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "extract:xhigh@eu-north",
+        "status": "passed",
+        "j_per_good_answer": 836.8668,
+        "usd_per_req": 0.003986916666666666,
+        "region": "eu-north",
+        "gco2_per_kwh": 35.0
+      },
+      {
+        "id": "extract:xhigh@eu-west",
+        "status": "passed",
+        "j_per_good_answer": 836.8668,
+        "usd_per_req": 0.003986916666666666,
+        "region": "eu-west",
+        "gco2_per_kwh": 300.0
+      },
+      {
+        "id": "extract:xhigh@gb",
+        "status": "passed",
+        "j_per_good_answer": 836.8668,
+        "usd_per_req": 0.003986916666666666,
+        "region": "gb",
+        "gco2_per_kwh": 150.0
+      },
+      {
+        "id": "extract:xhigh@us-east",
+        "status": "passed",
+        "j_per_good_answer": 836.8668,
+        "usd_per_req": 0.003986916666666666,
+        "region": "us-east",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "extract:xhigh@us-west",
+        "status": "passed",
+        "j_per_good_answer": 836.8668,
+        "usd_per_req": 0.003986916666666666,
+        "region": "us-west",
+        "gco2_per_kwh": 250.0
+      }
+    ],
+    "grid": {
+      "region": "eu-north",
+      "gco2_per_kwh": 35.0,
+      "label": "SIMULATED",
+      "source": "static fixture (rounded illustrative values)",
+      "as_of": "static fixture",
+      "note": "Order-of-magnitude numbers for a what-if. Not a dataset, not live. Replace with a real feed before quoting any of it."
+    },
+    "tie_broken_by_grid": true
+  },
+  "classify": {
+    "label": "SIMULATED",
+    "region_label": "SIMULATED",
+    "chosen": {
+      "id": "classify:low@eu-north",
+      "backend": "baseten/muse-spark-open-1026",
+      "effort": "low",
+      "usd_per_req": 0.000546167,
+      "wh_low": 0.008204,
+      "wh_high": 0.08204,
+      "pass_rate": 1.0,
+      "gate_passed": true,
+      "gate_note": "",
+      "region": "eu-north",
+      "is_reference": false,
+      "usd_label": "SIMULATED",
+      "energy_label": "ESTIMATE",
+      "j_per_good_answer": 162.4392
+    },
+    "reason": "low in eu-north: passes the gate, 162.4 J per good answer; 7 other option(s) are within 3% on joules, so the cleaner grid decided (35 gCO2/kWh vs up to 680)",
+    "ranked": [
+      {
+        "id": "classify:low@ap-south",
+        "status": "tied",
+        "j_per_good_answer": 162.4392,
+        "usd_per_req": 0.0005461666666666667,
+        "region": "ap-south",
+        "gco2_per_kwh": 680.0
+      },
+      {
+        "id": "classify:low@ap-southeast",
+        "status": "tied",
+        "j_per_good_answer": 162.4392,
+        "usd_per_req": 0.0005461666666666667,
+        "region": "ap-southeast",
+        "gco2_per_kwh": 480.0
+      },
+      {
+        "id": "classify:low@eu-central",
+        "status": "tied",
+        "j_per_good_answer": 162.4392,
+        "usd_per_req": 0.0005461666666666667,
+        "region": "eu-central",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "classify:low@eu-north",
+        "status": "chosen",
+        "j_per_good_answer": 162.4392,
+        "usd_per_req": 0.0005461666666666667,
+        "region": "eu-north",
+        "gco2_per_kwh": 35.0
+      },
+      {
+        "id": "classify:low@eu-west",
+        "status": "tied",
+        "j_per_good_answer": 162.4392,
+        "usd_per_req": 0.0005461666666666667,
+        "region": "eu-west",
+        "gco2_per_kwh": 300.0
+      },
+      {
+        "id": "classify:low@gb",
+        "status": "tied",
+        "j_per_good_answer": 162.4392,
+        "usd_per_req": 0.0005461666666666667,
+        "region": "gb",
+        "gco2_per_kwh": 150.0
+      },
+      {
+        "id": "classify:low@us-east",
+        "status": "tied",
+        "j_per_good_answer": 162.4392,
+        "usd_per_req": 0.0005461666666666667,
+        "region": "us-east",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "classify:low@us-west",
+        "status": "tied",
+        "j_per_good_answer": 162.4392,
+        "usd_per_req": 0.0005461666666666667,
+        "region": "us-west",
+        "gco2_per_kwh": 250.0
+      },
+      {
+        "id": "classify:xhigh@ap-south",
+        "status": "passed",
+        "j_per_good_answer": 693.9702,
+        "usd_per_req": 0.003262625,
+        "region": "ap-south",
+        "gco2_per_kwh": 680.0
+      },
+      {
+        "id": "classify:xhigh@ap-southeast",
+        "status": "passed",
+        "j_per_good_answer": 693.9702,
+        "usd_per_req": 0.003262625,
+        "region": "ap-southeast",
+        "gco2_per_kwh": 480.0
+      },
+      {
+        "id": "classify:xhigh@eu-central",
+        "status": "passed",
+        "j_per_good_answer": 693.9702,
+        "usd_per_req": 0.003262625,
+        "region": "eu-central",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "classify:xhigh@eu-north",
+        "status": "passed",
+        "j_per_good_answer": 693.9702,
+        "usd_per_req": 0.003262625,
+        "region": "eu-north",
+        "gco2_per_kwh": 35.0
+      },
+      {
+        "id": "classify:xhigh@eu-west",
+        "status": "passed",
+        "j_per_good_answer": 693.9702,
+        "usd_per_req": 0.003262625,
+        "region": "eu-west",
+        "gco2_per_kwh": 300.0
+      },
+      {
+        "id": "classify:xhigh@gb",
+        "status": "passed",
+        "j_per_good_answer": 693.9702,
+        "usd_per_req": 0.003262625,
+        "region": "gb",
+        "gco2_per_kwh": 150.0
+      },
+      {
+        "id": "classify:xhigh@us-east",
+        "status": "passed",
+        "j_per_good_answer": 693.9702,
+        "usd_per_req": 0.003262625,
+        "region": "us-east",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "classify:xhigh@us-west",
+        "status": "passed",
+        "j_per_good_answer": 693.9702,
+        "usd_per_req": 0.003262625,
+        "region": "us-west",
+        "gco2_per_kwh": 250.0
+      }
+    ],
+    "grid": {
+      "region": "eu-north",
+      "gco2_per_kwh": 35.0,
+      "label": "SIMULATED",
+      "source": "static fixture (rounded illustrative values)",
+      "as_of": "static fixture",
+      "note": "Order-of-magnitude numbers for a what-if. Not a dataset, not live. Replace with a real feed before quoting any of it."
+    },
+    "tie_broken_by_grid": true
+  },
+  "trace": {
+    "label": "SIMULATED",
+    "region_label": "SIMULATED",
+    "chosen": {
+      "id": "trace:low@eu-north",
+      "backend": "baseten/muse-spark-open-1026",
+      "effort": "low",
+      "usd_per_req": 0.000866042,
+      "wh_low": 0.011207,
+      "wh_high": 0.11207,
+      "pass_rate": 1.0,
+      "gate_passed": true,
+      "gate_note": "",
+      "region": "eu-north",
+      "is_reference": false,
+      "usd_label": "SIMULATED",
+      "energy_label": "ESTIMATE",
+      "j_per_good_answer": 221.8986
+    },
+    "reason": "low in eu-north: passes the gate, 221.9 J per good answer; 7 other option(s) are within 3% on joules, so the cleaner grid decided (35 gCO2/kWh vs up to 680)",
+    "ranked": [
+      {
+        "id": "trace:low@ap-south",
+        "status": "tied",
+        "j_per_good_answer": 221.8986,
+        "usd_per_req": 0.0008660416666666668,
+        "region": "ap-south",
+        "gco2_per_kwh": 680.0
+      },
+      {
+        "id": "trace:low@ap-southeast",
+        "status": "tied",
+        "j_per_good_answer": 221.8986,
+        "usd_per_req": 0.0008660416666666668,
+        "region": "ap-southeast",
+        "gco2_per_kwh": 480.0
+      },
+      {
+        "id": "trace:low@eu-central",
+        "status": "tied",
+        "j_per_good_answer": 221.8986,
+        "usd_per_req": 0.0008660416666666668,
+        "region": "eu-central",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "trace:low@eu-north",
+        "status": "chosen",
+        "j_per_good_answer": 221.8986,
+        "usd_per_req": 0.0008660416666666668,
+        "region": "eu-north",
+        "gco2_per_kwh": 35.0
+      },
+      {
+        "id": "trace:low@eu-west",
+        "status": "tied",
+        "j_per_good_answer": 221.8986,
+        "usd_per_req": 0.0008660416666666668,
+        "region": "eu-west",
+        "gco2_per_kwh": 300.0
+      },
+      {
+        "id": "trace:low@gb",
+        "status": "tied",
+        "j_per_good_answer": 221.8986,
+        "usd_per_req": 0.0008660416666666668,
+        "region": "gb",
+        "gco2_per_kwh": 150.0
+      },
+      {
+        "id": "trace:low@us-east",
+        "status": "tied",
+        "j_per_good_answer": 221.8986,
+        "usd_per_req": 0.0008660416666666668,
+        "region": "us-east",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "trace:low@us-west",
+        "status": "tied",
+        "j_per_good_answer": 221.8986,
+        "usd_per_req": 0.0008660416666666668,
+        "region": "us-west",
+        "gco2_per_kwh": 250.0
+      },
+      {
+        "id": "trace:xhigh@ap-south",
+        "status": "passed",
+        "j_per_good_answer": 1174.635,
+        "usd_per_req": 0.005735125,
+        "region": "ap-south",
+        "gco2_per_kwh": 680.0
+      },
+      {
+        "id": "trace:xhigh@ap-southeast",
+        "status": "passed",
+        "j_per_good_answer": 1174.635,
+        "usd_per_req": 0.005735125,
+        "region": "ap-southeast",
+        "gco2_per_kwh": 480.0
+      },
+      {
+        "id": "trace:xhigh@eu-central",
+        "status": "passed",
+        "j_per_good_answer": 1174.635,
+        "usd_per_req": 0.005735125,
+        "region": "eu-central",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "trace:xhigh@eu-north",
+        "status": "passed",
+        "j_per_good_answer": 1174.635,
+        "usd_per_req": 0.005735125,
+        "region": "eu-north",
+        "gco2_per_kwh": 35.0
+      },
+      {
+        "id": "trace:xhigh@eu-west",
+        "status": "passed",
+        "j_per_good_answer": 1174.635,
+        "usd_per_req": 0.005735125,
+        "region": "eu-west",
+        "gco2_per_kwh": 300.0
+      },
+      {
+        "id": "trace:xhigh@gb",
+        "status": "passed",
+        "j_per_good_answer": 1174.635,
+        "usd_per_req": 0.005735125,
+        "region": "gb",
+        "gco2_per_kwh": 150.0
+      },
+      {
+        "id": "trace:xhigh@us-east",
+        "status": "passed",
+        "j_per_good_answer": 1174.635,
+        "usd_per_req": 0.005735125,
+        "region": "us-east",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "trace:xhigh@us-west",
+        "status": "passed",
+        "j_per_good_answer": 1174.635,
+        "usd_per_req": 0.005735125,
+        "region": "us-west",
+        "gco2_per_kwh": 250.0
+      }
+    ],
+    "grid": {
+      "region": "eu-north",
+      "gco2_per_kwh": 35.0,
+      "label": "SIMULATED",
+      "source": "static fixture (rounded illustrative values)",
+      "as_of": "static fixture",
+      "note": "Order-of-magnitude numbers for a what-if. Not a dataset, not live. Replace with a real feed before quoting any of it."
+    },
+    "tie_broken_by_grid": true
+  },
+  "arith": {
+    "label": "SIMULATED",
+    "region_label": "SIMULATED",
+    "chosen": {
+      "id": "arith:medium@eu-north",
+      "backend": "baseten/muse-spark-open-1026",
+      "effort": "medium",
+      "usd_per_req": 0.003473083,
+      "wh_low": 0.03703,
+      "wh_high": 0.3703,
+      "pass_rate": 1.0,
+      "gate_passed": true,
+      "gate_note": "",
+      "region": "eu-north",
+      "is_reference": false,
+      "usd_label": "SIMULATED",
+      "energy_label": "ESTIMATE",
+      "j_per_good_answer": 733.194
+    },
+    "reason": "medium in eu-north: passes the gate, 733.2 J per good answer; 7 other option(s) are within 3% on joules, so the cleaner grid decided (35 gCO2/kWh vs up to 680)",
+    "ranked": [
+      {
+        "id": "arith:low@ap-south",
+        "status": "excluded",
+        "why": "failed: fixed"
+      },
+      {
+        "id": "arith:low@ap-southeast",
+        "status": "excluded",
+        "why": "failed: fixed"
+      },
+      {
+        "id": "arith:low@eu-central",
+        "status": "excluded",
+        "why": "failed: fixed"
+      },
+      {
+        "id": "arith:low@eu-north",
+        "status": "excluded",
+        "why": "failed: fixed"
+      },
+      {
+        "id": "arith:low@eu-west",
+        "status": "excluded",
+        "why": "failed: fixed"
+      },
+      {
+        "id": "arith:low@gb",
+        "status": "excluded",
+        "why": "failed: fixed"
+      },
+      {
+        "id": "arith:low@us-east",
+        "status": "excluded",
+        "why": "failed: fixed"
+      },
+      {
+        "id": "arith:low@us-west",
+        "status": "excluded",
+        "why": "failed: fixed"
+      },
+      {
+        "id": "arith:medium@ap-south",
+        "status": "tied",
+        "j_per_good_answer": 733.194,
+        "usd_per_req": 0.0034730833333333332,
+        "region": "ap-south",
+        "gco2_per_kwh": 680.0
+      },
+      {
+        "id": "arith:medium@ap-southeast",
+        "status": "tied",
+        "j_per_good_answer": 733.194,
+        "usd_per_req": 0.0034730833333333332,
+        "region": "ap-southeast",
+        "gco2_per_kwh": 480.0
+      },
+      {
+        "id": "arith:medium@eu-central",
+        "status": "tied",
+        "j_per_good_answer": 733.194,
+        "usd_per_req": 0.0034730833333333332,
+        "region": "eu-central",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "arith:medium@eu-north",
+        "status": "chosen",
+        "j_per_good_answer": 733.194,
+        "usd_per_req": 0.0034730833333333332,
+        "region": "eu-north",
+        "gco2_per_kwh": 35.0
+      },
+      {
+        "id": "arith:medium@eu-west",
+        "status": "tied",
+        "j_per_good_answer": 733.194,
+        "usd_per_req": 0.0034730833333333332,
+        "region": "eu-west",
+        "gco2_per_kwh": 300.0
+      },
+      {
+        "id": "arith:medium@gb",
+        "status": "tied",
+        "j_per_good_answer": 733.194,
+        "usd_per_req": 0.0034730833333333332,
+        "region": "gb",
+        "gco2_per_kwh": 150.0
+      },
+      {
+        "id": "arith:medium@us-east",
+        "status": "tied",
+        "j_per_good_answer": 733.194,
+        "usd_per_req": 0.0034730833333333332,
+        "region": "us-east",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "arith:medium@us-west",
+        "status": "tied",
+        "j_per_good_answer": 733.194,
+        "usd_per_req": 0.0034730833333333332,
+        "region": "us-west",
+        "gco2_per_kwh": 250.0
+      },
+      {
+        "id": "arith:xhigh@ap-south",
+        "status": "passed",
+        "j_per_good_answer": 2230.767,
+        "usd_per_req": 0.011126625000000001,
+        "region": "ap-south",
+        "gco2_per_kwh": 680.0
+      },
+      {
+        "id": "arith:xhigh@ap-southeast",
+        "status": "passed",
+        "j_per_good_answer": 2230.767,
+        "usd_per_req": 0.011126625000000001,
+        "region": "ap-southeast",
+        "gco2_per_kwh": 480.0
+      },
+      {
+        "id": "arith:xhigh@eu-central",
+        "status": "passed",
+        "j_per_good_answer": 2230.767,
+        "usd_per_req": 0.011126625000000001,
+        "region": "eu-central",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "arith:xhigh@eu-north",
+        "status": "passed",
+        "j_per_good_answer": 2230.767,
+        "usd_per_req": 0.011126625000000001,
+        "region": "eu-north",
+        "gco2_per_kwh": 35.0
+      },
+      {
+        "id": "arith:xhigh@eu-west",
+        "status": "passed",
+        "j_per_good_answer": 2230.767,
+        "usd_per_req": 0.011126625000000001,
+        "region": "eu-west",
+        "gco2_per_kwh": 300.0
+      },
+      {
+        "id": "arith:xhigh@gb",
+        "status": "passed",
+        "j_per_good_answer": 2230.767,
+        "usd_per_req": 0.011126625000000001,
+        "region": "gb",
+        "gco2_per_kwh": 150.0
+      },
+      {
+        "id": "arith:xhigh@us-east",
+        "status": "passed",
+        "j_per_good_answer": 2230.767,
+        "usd_per_req": 0.011126625000000001,
+        "region": "us-east",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "arith:xhigh@us-west",
+        "status": "passed",
+        "j_per_good_answer": 2230.767,
+        "usd_per_req": 0.011126625000000001,
+        "region": "us-west",
+        "gco2_per_kwh": 250.0
+      }
+    ],
+    "grid": {
+      "region": "eu-north",
+      "gco2_per_kwh": 35.0,
+      "label": "SIMULATED",
+      "source": "static fixture (rounded illustrative values)",
+      "as_of": "static fixture",
+      "note": "Order-of-magnitude numbers for a what-if. Not a dataset, not live. Replace with a real feed before quoting any of it."
+    },
+    "tie_broken_by_grid": true
+  },
+  "logic": {
+    "label": "SIMULATED",
+    "region_label": "SIMULATED",
+    "chosen": {
+      "id": "logic:high@eu-north",
+      "backend": "baseten/muse-spark-open-1026",
+      "effort": "high",
+      "usd_per_req": 0.017292833,
+      "wh_low": 0.174076,
+      "wh_high": 1.74076,
+      "pass_rate": 1.0,
+      "gate_passed": true,
+      "gate_note": "",
+      "region": "eu-north",
+      "is_reference": false,
+      "usd_label": "SIMULATED",
+      "energy_label": "ESTIMATE",
+      "j_per_good_answer": 3446.7048
+    },
+    "reason": "high in eu-north: passes the gate, 3446.7 J per good answer; 7 other option(s) are within 3% on joules, so the cleaner grid decided (35 gCO2/kWh vs up to 680)",
+    "ranked": [
+      {
+        "id": "logic:medium@ap-south",
+        "status": "excluded",
+        "why": "failed: fixed"
+      },
+      {
+        "id": "logic:medium@ap-southeast",
+        "status": "excluded",
+        "why": "failed: fixed"
+      },
+      {
+        "id": "logic:medium@eu-central",
+        "status": "excluded",
+        "why": "failed: fixed"
+      },
+      {
+        "id": "logic:medium@eu-north",
+        "status": "excluded",
+        "why": "failed: fixed"
+      },
+      {
+        "id": "logic:medium@eu-west",
+        "status": "excluded",
+        "why": "failed: fixed"
+      },
+      {
+        "id": "logic:medium@gb",
+        "status": "excluded",
+        "why": "failed: fixed"
+      },
+      {
+        "id": "logic:medium@us-east",
+        "status": "excluded",
+        "why": "failed: fixed"
+      },
+      {
+        "id": "logic:medium@us-west",
+        "status": "excluded",
+        "why": "failed: fixed"
+      },
+      {
+        "id": "logic:low@ap-south",
+        "status": "excluded",
+        "why": "failed: fixed, p99"
+      },
+      {
+        "id": "logic:low@ap-southeast",
+        "status": "excluded",
+        "why": "failed: fixed, p99"
+      },
+      {
+        "id": "logic:low@eu-central",
+        "status": "excluded",
+        "why": "failed: fixed, p99"
+      },
+      {
+        "id": "logic:low@eu-north",
+        "status": "excluded",
+        "why": "failed: fixed, p99"
+      },
+      {
+        "id": "logic:low@eu-west",
+        "status": "excluded",
+        "why": "failed: fixed, p99"
+      },
+      {
+        "id": "logic:low@gb",
+        "status": "excluded",
+        "why": "failed: fixed, p99"
+      },
+      {
+        "id": "logic:low@us-east",
+        "status": "excluded",
+        "why": "failed: fixed, p99"
+      },
+      {
+        "id": "logic:low@us-west",
+        "status": "excluded",
+        "why": "failed: fixed, p99"
+      },
+      {
+        "id": "logic:high@ap-south",
+        "status": "tied",
+        "j_per_good_answer": 3446.7048,
+        "usd_per_req": 0.017292833333333334,
+        "region": "ap-south",
+        "gco2_per_kwh": 680.0
+      },
+      {
+        "id": "logic:high@ap-southeast",
+        "status": "tied",
+        "j_per_good_answer": 3446.7048,
+        "usd_per_req": 0.017292833333333334,
+        "region": "ap-southeast",
+        "gco2_per_kwh": 480.0
+      },
+      {
+        "id": "logic:high@eu-central",
+        "status": "tied",
+        "j_per_good_answer": 3446.7048,
+        "usd_per_req": 0.017292833333333334,
+        "region": "eu-central",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "logic:high@eu-north",
+        "status": "chosen",
+        "j_per_good_answer": 3446.7048,
+        "usd_per_req": 0.017292833333333334,
+        "region": "eu-north",
+        "gco2_per_kwh": 35.0
+      },
+      {
+        "id": "logic:high@eu-west",
+        "status": "tied",
+        "j_per_good_answer": 3446.7048,
+        "usd_per_req": 0.017292833333333334,
+        "region": "eu-west",
+        "gco2_per_kwh": 300.0
+      },
+      {
+        "id": "logic:high@gb",
+        "status": "tied",
+        "j_per_good_answer": 3446.7048,
+        "usd_per_req": 0.017292833333333334,
+        "region": "gb",
+        "gco2_per_kwh": 150.0
+      },
+      {
+        "id": "logic:high@us-east",
+        "status": "tied",
+        "j_per_good_answer": 3446.7048,
+        "usd_per_req": 0.017292833333333334,
+        "region": "us-east",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "logic:high@us-west",
+        "status": "tied",
+        "j_per_good_answer": 3446.7048,
+        "usd_per_req": 0.017292833333333334,
+        "region": "us-west",
+        "gco2_per_kwh": 250.0
+      },
+      {
+        "id": "logic:xhigh@ap-south",
+        "status": "passed",
+        "j_per_good_answer": 5442.129,
+        "usd_per_req": 0.027490708333333332,
+        "region": "ap-south",
+        "gco2_per_kwh": 680.0
+      },
+      {
+        "id": "logic:xhigh@ap-southeast",
+        "status": "passed",
+        "j_per_good_answer": 5442.129,
+        "usd_per_req": 0.027490708333333332,
+        "region": "ap-southeast",
+        "gco2_per_kwh": 480.0
+      },
+      {
+        "id": "logic:xhigh@eu-central",
+        "status": "passed",
+        "j_per_good_answer": 5442.129,
+        "usd_per_req": 0.027490708333333332,
+        "region": "eu-central",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "logic:xhigh@eu-north",
+        "status": "passed",
+        "j_per_good_answer": 5442.129,
+        "usd_per_req": 0.027490708333333332,
+        "region": "eu-north",
+        "gco2_per_kwh": 35.0
+      },
+      {
+        "id": "logic:xhigh@eu-west",
+        "status": "passed",
+        "j_per_good_answer": 5442.129,
+        "usd_per_req": 0.027490708333333332,
+        "region": "eu-west",
+        "gco2_per_kwh": 300.0
+      },
+      {
+        "id": "logic:xhigh@gb",
+        "status": "passed",
+        "j_per_good_answer": 5442.129,
+        "usd_per_req": 0.027490708333333332,
+        "region": "gb",
+        "gco2_per_kwh": 150.0
+      },
+      {
+        "id": "logic:xhigh@us-east",
+        "status": "passed",
+        "j_per_good_answer": 5442.129,
+        "usd_per_req": 0.027490708333333332,
+        "region": "us-east",
+        "gco2_per_kwh": 380.0
+      },
+      {
+        "id": "logic:xhigh@us-west",
+        "status": "passed",
+        "j_per_good_answer": 5442.129,
+        "usd_per_req": 0.027490708333333332,
+        "region": "us-west",
+        "gco2_per_kwh": 250.0
+      }
+    ],
+    "grid": {
+      "region": "eu-north",
+      "gco2_per_kwh": 35.0,
+      "label": "SIMULATED",
+      "source": "static fixture (rounded illustrative values)",
+      "as_of": "static fixture",
+      "note": "Order-of-magnitude numbers for a what-if. Not a dataset, not live. Replace with a real feed before quoting any of it."
+    },
+    "tie_broken_by_grid": true
+  }
+}

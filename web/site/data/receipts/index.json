@@ -1,0 +1,56 @@
+[
+  {
+    "id": "real-estimate",
+    "title": "Hosted run, ESTIMATE",
+    "note": "A saving that holds up. Signed offline, so it tops out at ESTIMATE.",
+    "expected_grade": "ESTIMATE"
+  },
+  {
+    "id": "real-measured",
+    "title": "GPU run, MEASURED",
+    "note": "Measured on a GPU and signed offline: ESTIMATE, not VALID (no public log entry).",
+    "expected_grade": "ESTIMATE"
+  },
+  {
+    "id": "real-joules",
+    "title": "With a joules block",
+    "note": "Joules per answer are re-derived in your browser and must match.",
+    "expected_grade": "ESTIMATE"
+  },
+  {
+    "id": "real-cloud",
+    "title": "Hosted model, SIMULATED",
+    "note": "From the replayed demo fixture. Never above SIMULATED.",
+    "expected_grade": "SIMULATED"
+  },
+  {
+    "id": "real-noise",
+    "title": "Saving is noise",
+    "note": "The change is inside run-to-run noise, so nothing is billed: NOISE.",
+    "expected_grade": "NOISE"
+  },
+  {
+    "id": "forged-edited",
+    "title": "Edited after signing",
+    "note": "Someone changed the billed saving. The hash no longer matches.",
+    "expected_grade": "UNVERIFIABLE"
+  },
+  {
+    "id": "forged-rehashed",
+    "title": "Edited and re-hashed",
+    "note": "New hash, old signature. The signature fails.",
+    "expected_grade": "UNVERIFIABLE"
+  },
+  {
+    "id": "forged-otherkey",
+    "title": "Re-signed by another key",
+    "note": "Valid maths, but not a key you trust.",
+    "expected_grade": "UNVERIFIABLE"
+  },
+  {
+    "id": "forged-joules",
+    "title": "Joules block edited",
+    "note": "Hash and signature re-made, but the numbers disagree.",
+    "expected_grade": "UNVERIFIABLE"
+  }
+]

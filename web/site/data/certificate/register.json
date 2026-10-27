@@ -1,0 +1,42 @@
+{
+  "format": "wattnot.cert-register/1",
+  "label": "MOCK",
+  "note": "Local file. Nothing here is public and nothing here is tradable.",
+  "entries": [
+    {
+      "serial": "WNC-MOCK-0001",
+      "minted_at": "2026-10-27T10:00:00+00:00",
+      "receipt_sha256": "57a3a95761b4e746dcf44dcace104eeedd212682ea75c90ba7ab641362fc4813",
+      "claim_keys": [
+        "receipt:57a3a95761b4e746dcf44dcace104eeedd212682ea75c90ba7ab641362fc4813",
+        "run:run_20261028_100000_a00002"
+      ],
+      "grade": "ESTIMATE",
+      "label": "MOCK",
+      "certificate_sha256": "3d2d557ef738bbe2c1b3b796d6de1b9f12cee0ed5cf5a959a35f014483ec4858",
+      "prev_sha256": null,
+      "integrity": {
+        "sha256": "25bd8fe16d35ee70664a4f5ab317ffd531f3df4782ac1485c080e8852a7f37fc"
+      }
+    },
+    {
+      "serial": "WNC-MOCK-0002",
+      "minted_at": "2026-10-27T10:00:00+00:00",
+      "receipt_sha256": "013fb5dfc17857ca332a7a130f3e1f08eb2bb249c2a3840c03125bdf748e0437",
+      "claim_keys": [
+        "receipt:013fb5dfc17857ca332a7a130f3e1f08eb2bb249c2a3840c03125bdf748e0437",
+        "run:cloud_20261014_174640_6e4457",
+        "cloud:3f1d1db4c704ab27d38d2d3406ac63bcd922f4010b73bf6b288c0a55c3dcd258"
+      ],
+      "grade": "SIMULATED",
+      "label": "MOCK",
+      "certificate_sha256": "ab05047de8ad7053a5e6f56fb8a4deb5807394264888b7fc8b8be022ef56026e",
+      "prev_sha256": "25bd8fe16d35ee70664a4f5ab317ffd531f3df4782ac1485c080e8852a7f37fc",
+      "integrity": {
+        "sha256": "99573635853967c000a0f0d0a99571c6efbd3c1f793ac36677e501c674a351c1"
+      }
+    }
+  ],
+  "chain_ok": true,
+  "problems": []
+}

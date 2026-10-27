@@ -1,0 +1,94 @@
+{
+  "format": "wattnot.certificate/1",
+  "status": "MOCK",
+  "watermark": {
+    "lines": [
+      "MOCK",
+      "NOT TRADABLE",
+      "NOT A CARBON CREDIT"
+    ],
+    "permanent": true
+  },
+  "serial": "WNC-MOCK-0002",
+  "issued_at": "2026-10-27T10:00:00+00:00",
+  "title": "Verified Efficiency Statement (MOCK)",
+  "receipt": {
+    "receipt_id": "rcpt_20261014_174640_6e4457",
+    "sha256": "013fb5dfc17857ca332a7a130f3e1f08eb2bb249c2a3840c03125bdf748e0437",
+    "spec": "wattnot.receipt/1",
+    "grade": "SIMULATED",
+    "label": "SIMULATED",
+    "signer": "offline:56475aa75463474c",
+    "rekor": false,
+    "created_at": "2026-10-14T17:46:40Z"
+  },
+  "subject": {
+    "model": "meta-models/muse-spark-open-1026",
+    "provider": "baseten",
+    "gpu": "unknown (hosted)",
+    "workload": "cloud-effort-v1",
+    "mode": "cloud"
+  },
+  "period": {
+    "receipt_created_at": "2026-10-14T17:46:40Z",
+    "requests": 30
+  },
+  "headline": "Energy per request 54.3283% lower than the baseline (0.3132437 Wh saved per request).",
+  "figures": {
+    "wh_per_request": {
+      "baseline": 0.576576,
+      "candidate": 0.2633323,
+      "saved": 0.3132437,
+      "saved_ci95": null,
+      "baseline_range": {
+        "low": 0.104832,
+        "high": 1.04832
+      },
+      "candidate_range": {
+        "low": 0.0478786,
+        "high": 0.478786
+      }
+    },
+    "saving_pct": {
+      "mean": 54.3283,
+      "ci_low": null,
+      "ci_high": null,
+      "basis": "ESTIMATE: ratio of two FLOP-model energies"
+    },
+    "usd_per_request": {
+      "baseline": 0.0103204,
+      "candidate": 0.00455726,
+      "saved": 0.00576314,
+      "currency": "USD"
+    },
+    "j_per_good_answer": {
+      "baseline": 2075.6736,
+      "candidate": 947.99628,
+      "change_pct": -54.3283
+    },
+    "pass_rate": {
+      "baseline": 1.0,
+      "candidate": 1.0
+    }
+  },
+  "labels": {
+    "grade": "SIMULATED",
+    "energy": "SIMULATED",
+    "basis": "SIMULATED"
+  },
+  "verify": {
+    "url": "https://github.com/ak9381/wattnot/tree/main/verifier#sha256=013fb5dfc17857ca332a7a130f3e1f08eb2bb249c2a3840c03125bdf748e0437",
+    "qr_text": "https://github.com/ak9381/wattnot/tree/main/verifier#sha256=013fb5dfc17857ca332a7a130f3e1f08eb2bb249c2a3840c03125bdf748e0437",
+    "how": "Run the standalone verifier on the receipt and its .sigstore.json bundle, then compare the sha256."
+  },
+  "limits": [
+    "This is a mock. No registry, buyer or regulator accepts it.",
+    "It restates one receipt. It does not say the saving would repeat on other workloads.",
+    "Energy is GPU draw (or a model of it) for the listed requests, not a whole site.",
+    "No carbon figure is given, and none should be read into it."
+  ],
+  "integrity": {
+    "canonicalization": "JCS RFC 8785",
+    "sha256": "ab05047de8ad7053a5e6f56fb8a4deb5807394264888b7fc8b8be022ef56026e"
+  }
+}

@@ -1,0 +1,199 @@
+{
+  "spec": "wattnot.receipt/1",
+  "profile": "cloud",
+  "receipt_id": "rcpt_20261014_174640_6e4457",
+  "created_at": "2026-10-14T17:46:40Z",
+  "run_id": "cloud_20261014_174640_6e4457",
+  "subject": {
+    "model": "meta-models/muse-spark-open-1026",
+    "host": {
+      "provider": "baseten",
+      "gpu": "unknown (hosted)",
+      "driver": "n/a"
+    },
+    "mode": "cloud",
+    "workload": {
+      "name": "cloud-effort-v1",
+      "items": 15,
+      "classes": [
+        "arith",
+        "classify",
+        "extract",
+        "logic",
+        "trace"
+      ],
+      "sha256": "8135109c7247fa46c2116a93413680bbba135076e95ffa0381141d065e8c3f11"
+    }
+  },
+  "baseline": {
+    "params": {
+      "reasoning_effort": "xhigh"
+    },
+    "reps": 2,
+    "wh_per_req": {
+      "mean": 0.576576,
+      "sd": 0.0,
+      "range": {
+        "low": 0.104832,
+        "high": 1.04832
+      },
+      "basis": "middle of an ESTIMATE range, not a measurement"
+    },
+    "usd_per_req": {
+      "mean": 0.0103204,
+      "sd": 0.0
+    },
+    "p99_ms": 83632.4,
+    "quality": {
+      "fixed_pass_rate": 1.0
+    }
+  },
+  "candidate": {
+    "params": {
+      "reasoning_effort": "tuned"
+    },
+    "reps": 2,
+    "wh_per_req": {
+      "mean": 0.2633323,
+      "sd": 0.0,
+      "range": {
+        "low": 0.0478786,
+        "high": 0.478786
+      },
+      "basis": "middle of an ESTIMATE range, not a measurement"
+    },
+    "usd_per_req": {
+      "mean": 0.00455726,
+      "sd": 0.0
+    },
+    "p99_ms": 46548.6,
+    "quality": {
+      "fixed_pass_rate": 1.0
+    }
+  },
+  "result": {
+    "saving_pct": {
+      "mean": 54.3283,
+      "ci_low": null,
+      "ci_high": null,
+      "basis": "ESTIMATE: ratio of two FLOP-model energies"
+    },
+    "welch": {
+      "applicable": false,
+      "reason": "hosted run, no repeated energy samples to test"
+    },
+    "billable": false,
+    "billed_saving_pct": 0.0,
+    "fee_share": 0.0,
+    "currency": "USD",
+    "usd_saving_pct": {
+      "value": 55.84,
+      "label": "SIMULATED"
+    }
+  },
+  "measurement": {
+    "meter": "baseten usage block (tokens) + FLOP model (energy)",
+    "hz": 0,
+    "csv": [],
+    "label": "SIMULATED"
+  },
+  "cloud": {
+    "source_receipt": {
+      "schema": "wattnot.cloud-receipt/1",
+      "receipt_id": "cloud_20261014_174640_6e4457",
+      "sha256": "3f1d1db4c704ab27d38d2d3406ac63bcd922f4010b73bf6b288c0a55c3dcd258",
+      "mode": "replay-synthetic"
+    },
+    "labels": {
+      "tokens": "SIMULATED",
+      "usd": "SIMULATED",
+      "latency": "SIMULATED",
+      "energy": "ESTIMATE",
+      "rates": "ESTIMATE"
+    },
+    "chosen_effort": {
+      "extract": "low",
+      "classify": "low",
+      "trace": "low",
+      "arith": "medium",
+      "logic": "high"
+    },
+    "tuned_usd": 0.13671775,
+    "would_have_cost_xhigh_usd": 0.309612,
+    "saving_usd": 0.17289425,
+    "requests": 30,
+    "energy_wh_range": {
+      "tuned": {
+        "low": 1.436358,
+        "high": 14.36358
+      },
+      "baseline": {
+        "low": 3.14496,
+        "high": 31.4496
+      },
+      "label": "SIMULATED"
+    },
+    "unverified": [
+      "synthetic fixture: no real API call was made, every number is SIMULATED",
+      "USD rates are the published ones and not yet checked against an invoice"
+    ]
+  },
+  "planner_trace": [],
+  "estimates": {
+    "water_ml_per_req": {
+      "value": 0.473998,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh), site energy only",
+      "source": "assumed WUE 1.8 L/kWh applied to an ESTIMATE of site energy; not measured"
+    },
+    "baseline_water_ml_per_req": {
+      "value": 1.037837,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh), site energy only",
+      "source": "assumed WUE 1.8 L/kWh applied to an ESTIMATE of site energy; not measured"
+    }
+  },
+  "joules": {
+    "unit": "J",
+    "label": "SIMULATED",
+    "formula": "j_per_answer = wh_per_req x 3600; j_per_good_answer = j_per_answer / pass_rate",
+    "baseline": {
+      "j_per_answer": 2075.6736,
+      "pass_rate": 1.0,
+      "j_per_good_answer": 2075.6736,
+      "j_per_answer_range": {
+        "low": 377.3952,
+        "high": 3773.952
+      },
+      "j_per_good_answer_range": {
+        "low": 377.3952,
+        "high": 3773.952
+      }
+    },
+    "candidate": {
+      "j_per_answer": 947.99628,
+      "pass_rate": 1.0,
+      "j_per_good_answer": 947.99628,
+      "j_per_answer_range": {
+        "low": 172.36296,
+        "high": 1723.6296
+      },
+      "j_per_good_answer_range": {
+        "low": 172.36296,
+        "high": 1723.6296
+      }
+    },
+    "change_pct": {
+      "j_per_answer": -54.3283,
+      "j_per_good_answer": -54.3283
+    }
+  },
+  "grade": "SIMULATED",
+  "integrity": {
+    "canonicalization": "JCS RFC 8785",
+    "sha256": "013fb5dfc17857ca332a7a130f3e1f08eb2bb249c2a3840c03125bdf748e0437",
+    "prev_sha256": null,
+    "signer": "offline:56475aa75463474c",
+    "rekor": null
+  }
+}

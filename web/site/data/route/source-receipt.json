@@ -1,0 +1,621 @@
+{
+  "schema": "wattnot.cloud-receipt/1",
+  "receipt_id": "cloud_20261027_045510_ddcb48",
+  "created_at": "2026-10-27T04:55:10Z",
+  "provider": "baseten",
+  "model": "meta-models/muse-spark-open-1026",
+  "endpoint": "https://inference.baseten.co/v1",
+  "mode": "replay-synthetic",
+  "label": "SIMULATED",
+  "labels": {
+    "tokens": "SIMULATED",
+    "usd": "SIMULATED",
+    "latency": "SIMULATED",
+    "energy": "ESTIMATE",
+    "rates": "ESTIMATE"
+  },
+  "key_env": "BASETEN_API_KEY",
+  "api_key_prefix_sha256": null,
+  "reference_effort": "xhigh",
+  "efforts_available": [
+    "low",
+    "medium",
+    "high",
+    "xhigh"
+  ],
+  "rates": {
+    "input_per_m": 1.25,
+    "cached_per_m": 0.15,
+    "output_per_m": 4.25,
+    "source": "baseten.co/library/muse-spark-open (Model API pricing), read 2026-10-27",
+    "confirmed": false,
+    "currency": "USD",
+    "unit": "per 1M tokens"
+  },
+  "workload": {
+    "name": "cloud-effort-v1",
+    "items": 15,
+    "classes": [
+      "arith",
+      "classify",
+      "extract",
+      "logic",
+      "trace"
+    ],
+    "sha256": "8135109c7247fa46c2116a93413680bbba135076e95ffa0381141d065e8c3f11"
+  },
+  "settings": {
+    "repeats": 2,
+    "max_drop_pts": 1.0,
+    "p99_slack": 0.1,
+    "budget_usd": null,
+    "planner": true,
+    "judge": false,
+    "affinity": true,
+    "efforts_tried": null,
+    "temperature": 0
+  },
+  "planner": {
+    "proposer": "muse-spark",
+    "note": "start low where the answer is a lookup, start at high where it is multi-step",
+    "orders": {
+      "extract": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "classify": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "trace": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "arith": [
+        "medium",
+        "low",
+        "high"
+      ],
+      "logic": [
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "tokens": {
+      "input": 340,
+      "output": 90
+    },
+    "usd": 0.0008075
+  },
+  "classes": [
+    {
+      "class": "extract",
+      "items": 3,
+      "repeats": 2,
+      "chosen_effort": "low",
+      "kept": true,
+      "outcome": "kept low",
+      "tried": [
+        {
+          "effort": "low",
+          "skipped": false,
+          "passed": true,
+          "failed_gates": [],
+          "quality_pct": 100.0,
+          "reference_pct": 100.0,
+          "p99_effective_s": 2.3235,
+          "p99_budget_s": 12.6395,
+          "escape_retry_rate": 0.0,
+          "gates": [
+            {
+              "gate": "fixed",
+              "passed": true,
+              "reason": "pass rate 100.0% vs 100.0%"
+            },
+            {
+              "gate": "p99",
+              "passed": true,
+              "reason": "p99 2.323s within 12.639s"
+            }
+          ],
+          "usd": 0.003649,
+          "completion_tokens": 688,
+          "truncated": 0
+        },
+        {
+          "effort": "medium",
+          "skipped": true,
+          "reason": "low already passed; a higher level cannot be cheaper"
+        },
+        {
+          "effort": "high",
+          "skipped": true,
+          "reason": "low already passed; a higher level cannot be cheaper"
+        }
+      ],
+      "escape_retry_rate": 0.0,
+      "measured": {
+        "label": "SIMULATED",
+        "prompt_tokens": 580,
+        "cached_tokens": 0,
+        "completion_tokens": 688,
+        "reasoning_tokens": 604,
+        "reasoning_source": "api",
+        "usd": 0.003649,
+        "usd_before_escape": 0.003649,
+        "latency_p50_s": 2.291,
+        "latency_p99_s": 2.3235,
+        "cached_share": 0.0,
+        "truncated": 0
+      },
+      "would_have_cost_xhigh": {
+        "label": "SIMULATED",
+        "prompt_tokens": 580,
+        "cached_tokens": 0,
+        "completion_tokens": 5458,
+        "reasoning_tokens": 5374,
+        "usd": 0.0239215,
+        "latency_p50_s": 10.378,
+        "latency_p99_s": 11.4904
+      },
+      "saving": {
+        "label": "SIMULATED",
+        "usd": 0.0202725,
+        "pct": 84.75,
+        "completion_tokens": 4770
+      },
+      "stopped": null
+    },
+    {
+      "class": "classify",
+      "items": 3,
+      "repeats": 2,
+      "chosen_effort": "low",
+      "kept": true,
+      "outcome": "kept low",
+      "tried": [
+        {
+          "effort": "low",
+          "skipped": false,
+          "passed": true,
+          "failed_gates": [],
+          "quality_pct": 100.0,
+          "reference_pct": 100.0,
+          "p99_effective_s": 2.2027,
+          "p99_budget_s": 11.0272,
+          "escape_retry_rate": 0.0,
+          "gates": [
+            {
+              "gate": "fixed",
+              "passed": true,
+              "reason": "pass rate 100.0% vs 100.0%"
+            },
+            {
+              "gate": "p99",
+              "passed": true,
+              "reason": "p99 2.203s within 11.027s"
+            }
+          ],
+          "usd": 0.003277,
+          "completion_tokens": 604,
+          "truncated": 0
+        },
+        {
+          "effort": "medium",
+          "skipped": true,
+          "reason": "low already passed; a higher level cannot be cheaper"
+        },
+        {
+          "effort": "high",
+          "skipped": true,
+          "reason": "low already passed; a higher level cannot be cheaper"
+        }
+      ],
+      "escape_retry_rate": 0.0,
+      "measured": {
+        "label": "SIMULATED",
+        "prompt_tokens": 568,
+        "cached_tokens": 0,
+        "completion_tokens": 604,
+        "reasoning_tokens": 520,
+        "reasoning_source": "api",
+        "usd": 0.003277,
+        "usd_before_escape": 0.003277,
+        "latency_p50_s": 2.0795,
+        "latency_p99_s": 2.2027,
+        "cached_share": 0.0,
+        "truncated": 0
+      },
+      "would_have_cost_xhigh": {
+        "label": "SIMULATED",
+        "prompt_tokens": 568,
+        "cached_tokens": 0,
+        "completion_tokens": 4439,
+        "reasoning_tokens": 4355,
+        "usd": 0.01957575,
+        "latency_p50_s": 8.946,
+        "latency_p99_s": 10.0247
+      },
+      "saving": {
+        "label": "SIMULATED",
+        "usd": 0.01629875,
+        "pct": 83.26,
+        "completion_tokens": 3835
+      },
+      "stopped": null
+    },
+    {
+      "class": "trace",
+      "items": 3,
+      "repeats": 2,
+      "chosen_effort": "low",
+      "kept": true,
+      "outcome": "kept low",
+      "tried": [
+        {
+          "effort": "low",
+          "skipped": false,
+          "passed": true,
+          "failed_gates": [],
+          "quality_pct": 100.0,
+          "reference_pct": 100.0,
+          "p99_effective_s": 3.2424,
+          "p99_budget_s": 17.4995,
+          "escape_retry_rate": 0.0,
+          "gates": [
+            {
+              "gate": "fixed",
+              "passed": true,
+              "reason": "pass rate 100.0% vs 100.0%"
+            },
+            {
+              "gate": "p99",
+              "passed": true,
+              "reason": "p99 3.242s within 17.499s"
+            }
+          ],
+          "usd": 0.00519625,
+          "completion_tokens": 1065,
+          "truncated": 0
+        },
+        {
+          "effort": "medium",
+          "skipped": true,
+          "reason": "low already passed; a higher level cannot be cheaper"
+        },
+        {
+          "effort": "high",
+          "skipped": true,
+          "reason": "low already passed; a higher level cannot be cheaper"
+        }
+      ],
+      "escape_retry_rate": 0.0,
+      "measured": {
+        "label": "SIMULATED",
+        "prompt_tokens": 536,
+        "cached_tokens": 0,
+        "completion_tokens": 1065,
+        "reasoning_tokens": 981,
+        "reasoning_source": "api",
+        "usd": 0.00519625,
+        "usd_before_escape": 0.00519625,
+        "latency_p50_s": 2.969,
+        "latency_p99_s": 3.2424,
+        "cached_share": 0.0,
+        "truncated": 0
+      },
+      "would_have_cost_xhigh": {
+        "label": "SIMULATED",
+        "prompt_tokens": 536,
+        "cached_tokens": 0,
+        "completion_tokens": 7939,
+        "reasoning_tokens": 7855,
+        "usd": 0.03441075,
+        "latency_p50_s": 15.2885,
+        "latency_p99_s": 15.9086
+      },
+      "saving": {
+        "label": "SIMULATED",
+        "usd": 0.0292145,
+        "pct": 84.9,
+        "completion_tokens": 6874
+      },
+      "stopped": null
+    },
+    {
+      "class": "arith",
+      "items": 3,
+      "repeats": 2,
+      "chosen_effort": "medium",
+      "kept": true,
+      "outcome": "kept medium",
+      "tried": [
+        {
+          "effort": "medium",
+          "skipped": false,
+          "passed": true,
+          "failed_gates": [],
+          "quality_pct": 100.0,
+          "reference_pct": 100.0,
+          "p99_effective_s": 10.0305,
+          "p99_budget_s": 36.3319,
+          "escape_retry_rate": 0.0,
+          "gates": [
+            {
+              "gate": "fixed",
+              "passed": true,
+              "reason": "pass rate 100.0% vs 100.0%"
+            },
+            {
+              "gate": "p99",
+              "passed": true,
+              "reason": "p99 10.030s within 36.332s"
+            }
+          ],
+          "usd": 0.0208385,
+          "completion_tokens": 4742,
+          "truncated": 0
+        },
+        {
+          "effort": "low",
+          "skipped": false,
+          "passed": false,
+          "failed_gates": [
+            "fixed"
+          ],
+          "quality_pct": 66.667,
+          "reference_pct": 100.0,
+          "p99_effective_s": 30.7557,
+          "p99_budget_s": 36.3319,
+          "escape_retry_rate": 0.3333,
+          "gates": [
+            {
+              "gate": "fixed",
+              "passed": false,
+              "reason": "pass rate fell to 66.7% from 100.0%"
+            },
+            {
+              "gate": "p99",
+              "passed": true,
+              "reason": "p99 30.756s within 36.332s"
+            }
+          ],
+          "usd": 0.008828,
+          "completion_tokens": 1916,
+          "truncated": 0
+        },
+        {
+          "effort": "high",
+          "skipped": true,
+          "reason": "medium already passed; a higher level cannot be cheaper"
+        }
+      ],
+      "escape_retry_rate": 0.0,
+      "measured": {
+        "label": "SIMULATED",
+        "prompt_tokens": 548,
+        "cached_tokens": 0,
+        "completion_tokens": 4742,
+        "reasoning_tokens": 4658,
+        "reasoning_source": "api",
+        "usd": 0.0208385,
+        "usd_before_escape": 0.0208385,
+        "latency_p50_s": 9.365,
+        "latency_p99_s": 10.0305,
+        "cached_share": 0.0,
+        "truncated": 0
+      },
+      "would_have_cost_xhigh": {
+        "label": "SIMULATED",
+        "prompt_tokens": 548,
+        "cached_tokens": 0,
+        "completion_tokens": 15547,
+        "reasoning_tokens": 15463,
+        "usd": 0.06675975,
+        "latency_p50_s": 29.5395,
+        "latency_p99_s": 33.029
+      },
+      "saving": {
+        "label": "SIMULATED",
+        "usd": 0.04592125,
+        "pct": 68.79,
+        "completion_tokens": 10805
+      },
+      "stopped": null
+    },
+    {
+      "class": "logic",
+      "items": 3,
+      "repeats": 2,
+      "chosen_effort": "high",
+      "kept": true,
+      "outcome": "kept high",
+      "tried": [
+        {
+          "effort": "high",
+          "skipped": false,
+          "passed": true,
+          "failed_gates": [],
+          "quality_pct": 100.0,
+          "reference_pct": 100.0,
+          "p99_effective_s": 46.5486,
+          "p99_budget_s": 91.9956,
+          "escape_retry_rate": 0.0,
+          "gates": [
+            {
+              "gate": "fixed",
+              "passed": true,
+              "reason": "pass rate 100.0% vs 100.0%"
+            },
+            {
+              "gate": "p99",
+              "passed": true,
+              "reason": "p99 46.549s within 91.996s"
+            }
+          ],
+          "usd": 0.103757,
+          "completion_tokens": 24224,
+          "truncated": 0
+        },
+        {
+          "effort": "medium",
+          "skipped": false,
+          "passed": false,
+          "failed_gates": [
+            "fixed"
+          ],
+          "quality_pct": 66.667,
+          "reference_pct": 100.0,
+          "p99_effective_s": 90.153,
+          "p99_budget_s": 91.9956,
+          "escape_retry_rate": 0.3333,
+          "gates": [
+            {
+              "gate": "fixed",
+              "passed": false,
+              "reason": "pass rate fell to 66.7% from 100.0%"
+            },
+            {
+              "gate": "p99",
+              "passed": true,
+              "reason": "p99 90.153s within 91.996s"
+            }
+          ],
+          "usd": 0.05284625,
+          "completion_tokens": 12245,
+          "truncated": 0
+        },
+        {
+          "effort": "low",
+          "skipped": false,
+          "passed": false,
+          "failed_gates": [
+            "fixed",
+            "p99"
+          ],
+          "quality_pct": 0.0,
+          "reference_pct": 100.0,
+          "p99_effective_s": 100.7345,
+          "p99_budget_s": 91.9956,
+          "escape_retry_rate": 1.0,
+          "gates": [
+            {
+              "gate": "fixed",
+              "passed": false,
+              "reason": "pass rate fell to 0.0% from 100.0%"
+            },
+            {
+              "gate": "p99",
+              "passed": false,
+              "reason": "p99 100.735s over budget 91.996s"
+            }
+          ],
+          "usd": 0.02779675,
+          "completion_tokens": 6351,
+          "truncated": 2
+        }
+      ],
+      "escape_retry_rate": 0.0,
+      "measured": {
+        "label": "SIMULATED",
+        "prompt_tokens": 644,
+        "cached_tokens": 0,
+        "completion_tokens": 24224,
+        "reasoning_tokens": 24140,
+        "reasoning_source": "api",
+        "usd": 0.103757,
+        "usd_before_escape": 0.103757,
+        "latency_p50_s": 42.658,
+        "latency_p99_s": 46.5486,
+        "cached_share": 0.0,
+        "truncated": 0
+      },
+      "would_have_cost_xhigh": {
+        "label": "SIMULATED",
+        "prompt_tokens": 644,
+        "cached_tokens": 0,
+        "completion_tokens": 38621,
+        "reasoning_tokens": 38537,
+        "usd": 0.16494425,
+        "latency_p50_s": 67.8045,
+        "latency_p99_s": 83.6324
+      },
+      "saving": {
+        "label": "SIMULATED",
+        "usd": 0.06118725,
+        "pct": 37.1,
+        "completion_tokens": 14397
+      },
+      "stopped": null
+    }
+  ],
+  "totals": {
+    "label": "SIMULATED",
+    "requests": 30,
+    "tuned_usd": 0.13671775,
+    "would_have_cost_xhigh_usd": 0.309612,
+    "saving_usd": 0.17289425,
+    "saving_pct": 55.84,
+    "tuned_usd_per_request": 0.00455726,
+    "xhigh_usd_per_request": 0.0103204,
+    "completion_tokens_tuned": 31323,
+    "completion_tokens_xhigh": 72004,
+    "cached_share": 0.0,
+    "experiment_usd": 0.53660825,
+    "experiment_note": "what this whole tuning run cost, including every level tried; it pays for itself after the number of workload runs below",
+    "payback_runs": 6.21
+  },
+  "energy": {
+    "label": "ESTIMATE",
+    "unit": "Wh",
+    "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs.",
+    "assumptions": {
+      "active_params": 42000000000.0,
+      "j_per_flop_low": 1.8e-12,
+      "j_per_flop_high": 1.8e-11
+    },
+    "tuned_wh": {
+      "low": 1.436358,
+      "high": 14.36358
+    },
+    "baseline_wh": {
+      "low": 3.14496,
+      "high": 31.4496
+    },
+    "saved_wh": {
+      "low": 1.708602,
+      "high": 17.08602
+    }
+  },
+  "cache": {
+    "label": "SIMULATED",
+    "affinity_header_sent": true,
+    "volatile_values_in_stable_prefix": []
+  },
+  "window": {
+    "start": "2026-09-21T14:13:22Z",
+    "end": "2026-09-21T14:36:39Z"
+  },
+  "meter_audit": null,
+  "calls": {
+    "file": "calls.jsonl",
+    "sha256": "4759087ebdadd0c2d413c531123041f0b97065224f53013786c01a5f6024928b",
+    "n": 79
+  },
+  "unverified": [
+    "synthetic fixture: no real API call was made, every number is SIMULATED",
+    "USD rates are the published ones and not yet checked against an invoice"
+  ],
+  "stopped": null,
+  "integrity": {
+    "canonicalization": "JCS RFC 8785",
+    "sha256": "fa37008b55168d3359dbba15fdd130658473301c71cc86ec7a618735a44384dc",
+    "prev_sha256": null,
+    "signer": null,
+    "rekor": null
+  }
+}

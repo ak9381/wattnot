@@ -7,7 +7,7 @@
       "kind": "shed",
       "target_pct": 25,
       "duration_s": 300,
-      "note": "A 25 percent ask. The simulated card can meet it inside its latency budget."
+      "note": "A 25 percent ask. The simulated card meets it. Latency is tracked against its budget the whole way."
     },
     {
       "id": "demo-evt-2",
