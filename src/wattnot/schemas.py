@@ -1,10 +1,11 @@
 """Load and validate the frozen WattNot contracts.
 
-Three JSON Schemas live at the repo root under ``schemas/``:
+Four JSON Schemas live at the repo root under ``schemas/``:
 
 * ``run-event.schema.json`` — one object per line in ``runs/<id>/events.jsonl``
 * ``receipt.schema.json``   — one signed receipt per file
 * ``ui-view.schema.json``   — derived, unsigned UI blocks (never hashed)
+* ``decision.schema.json``  — one object per line in a proof run's ``decisions.jsonl``
 
 Everything downstream (emitter, API, verifier, EU export, frontend) reads
 these. This module is the single place that compiles them into validators so
@@ -31,6 +32,7 @@ __all__ = [
     "load_run_log",
     "load_schema",
     "schema_dir",
+    "validate_decision",
     "validate_event",
     "validate_receipt",
     "validate_run_log",
@@ -43,6 +45,7 @@ SCHEMA_NAMES: dict[str, str] = {
     "event": "run-event.schema.json",
     "receipt": "receipt.schema.json",
     "ui-view": "ui-view.schema.json",
+    "decision": "decision.schema.json",
 }
 
 
@@ -98,6 +101,12 @@ def validator_for(name: str) -> Draft202012Validator:
     return Draft202012Validator(
         schema, format_checker=Draft202012Validator.FORMAT_CHECKER
     )
+
+
+def validate_decision(record: dict) -> None:
+    """Validate one planner decision record. Raises ``ValidationError`` if invalid."""
+
+    validator_for("decision").validate(record)
 
 
 def validate_event(event: dict) -> None:

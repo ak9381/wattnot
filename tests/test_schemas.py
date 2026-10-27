@@ -26,17 +26,18 @@ RUN_ID = "run_20261027_101500_a1b2c3"
 # --- schema files exist and load -------------------------------------------
 
 
-def test_three_schemas_present_at_repo_root():
+def test_all_schemas_present_at_repo_root():
     names = {p.name for p in SCHEMA_DIR.glob("*.schema.json")}
     assert names == {
         "run-event.schema.json",
         "receipt.schema.json",
         "ui-view.schema.json",
+        "decision.schema.json",
     }
 
 
 def test_root_schemas_match_docs_copies():
-    for name in ("run-event", "receipt", "ui-view"):
+    for name in ("run-event", "receipt", "ui-view", "decision"):
         root = json.loads((SCHEMA_DIR / f"{name}.schema.json").read_text())
         doc = json.loads((REPO_ROOT / "docs" / "schemas" / f"{name}.schema.json").read_text())
         assert root == doc, f"{name} schema drifted from docs/schemas copy"
@@ -46,6 +47,22 @@ def test_load_schema_returns_the_frozen_versions():
     assert schemas.load_schema("event")["$id"] == "wattnot.event/1"
     assert schemas.load_schema("receipt")["$id"] == "wattnot.receipt/1"
     assert schemas.load_schema("ui-view")["$id"].endswith("ui-view.schema.json")
+    assert schemas.load_schema("decision")["$id"] == "wattnot.decision/1"
+
+
+def test_minimal_decision_validates():
+    record = {
+        "step": 1,
+        "planner": "muse-spark",
+        "allowed_caps": [400, 425],
+        "proposed_cap_w": 400,
+        "reason": "400 W is the next step down",
+        "explanation": "Muse Spark proposed 400 W. The gate has not ruled yet.",
+        "proposal_accepted": True,
+        "fallback": False,
+        "gate": "pending",
+    }
+    schemas.validate_decision(record)
 
 
 def test_every_schema_is_itself_valid_json_schema():
@@ -255,6 +272,7 @@ def test_generated_ts_has_root_types():
     assert "export interface RunEvent" in ts
     assert "export interface Receipt" in ts
     assert "export interface UiView" in ts
+    assert "export interface PlannerDecision" in ts
 
 
 def test_committed_ts_is_up_to_date():

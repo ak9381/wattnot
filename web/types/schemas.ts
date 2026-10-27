@@ -184,3 +184,29 @@ export interface UiView {
   matrix_cards: MatrixCard[];
   planner_reasons: PlannerReason[];
 }
+
+// ---- decision (wattnot.decision/1) ----
+
+export interface PlannerDecision {
+  step: number;
+  planner: "muse-spark" | "bisect";
+  allowed_caps: number[];
+  proposed_cap_w: number | null;
+  reason: string;
+  muse_explanation?: string | null;
+  explanation: string;
+  proposal_accepted: boolean | null;
+  fallback: boolean;
+  fallback_reason?: string | null;
+  usage?: {
+    input?: number;
+    output?: number;
+    reasoning?: number;
+  } | null;
+  usd?: number | null;
+  gate: "accepted" | "rejected" | "pending" | "stop";
+  p99_change_pct?: number | null;
+  energy_change_pct?: number | null;
+  quality_pass_pct?: number | null;
+  gate_why?: string[];
+}

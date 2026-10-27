@@ -12,8 +12,10 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 
 from wattnot.meta.agent import MODEL, _body, _json, usage_of
+from wattnot.meta.ledger import cost_usd
 
 STEP_W = 25
+EXPLANATION_MAX = 280
 
 
 def allowed_caps(lo: int, hi: int, tried: Sequence[int]) -> list[int]:
@@ -60,11 +62,48 @@ SYSTEM = (
     "the trials so far. Pick ONE next cap from `allowed` (kind=try), or kind=stop when more trials "
     "are unlikely to find a lower accepted cap. Look for the lowest-energy accepted cap; the "
     "energy saving usually grows as the cap falls until p99 breaks the limit. The reason is one "
-    "short line quoting the number that drove the choice. JSON only."
+    "short line quoting the number that drove the choice. Also give `explanation`: one or two "
+    "plain sentences a non-expert can read, saying which cap you picked and which number drove "
+    "it. JSON only."
 )
-SCHEMA = {"type": "object", "additionalProperties": False, "required": ["kind", "cap_w", "reason"],
+SCHEMA = {"type": "object", "additionalProperties": False,
+          "required": ["kind", "cap_w", "reason", "explanation"],
           "properties": {"kind": {"enum": ["try", "stop"]}, "cap_w": {"type": ["integer", "null"]},
-                         "reason": {"type": "string", "maxLength": 240}}}
+                         "reason": {"type": "string", "maxLength": 240},
+                         "explanation": {"type": ["string", "null"], "maxLength": EXPLANATION_MAX}}}
+
+
+def build_prompt(history: Sequence[dict], lo: int, hi: int) -> tuple[str, dict]:
+    """The exact (system, payload) sent to Muse Spark: gate rules, allowed caps, trials.
+
+    Numbers only: cap range, the caps still allowed, and per-cap measured deltas so far.
+    No prompts, no model outputs, no secrets.
+    """
+
+    tried = [h["cap_w"] for h in history]
+    payload = {"range_w": [lo, hi], "default_w": hi,
+               "allowed": allowed_caps(lo, hi, tried),
+               "trials": [{k: h[k] for k in ("cap_w", "energy_change_pct", "p99_change_pct",
+                                             "quality_pass_pct", "stock_pass_pct", "accepted",
+                                             "why_not")} for h in history],
+               "prior": "an earlier unchecked run saw about -18% J/request at 400 W with p99 "
+                        "+3.7%; treat it as a hint, not a fact"}
+    return SYSTEM, payload
+
+
+def clean_explanation(value: object) -> str | None:
+    """One whitespace-collapsed line, at most EXPLANATION_MAX chars. None when empty."""
+
+    text = " ".join(str(value or "").split())
+    if not text:
+        return None
+    return text[:EXPLANATION_MAX]
+
+
+def call_usd(model: str, usage: dict) -> float:
+    """USD for one Muse call from the published rates (input + output tokens)."""
+
+    return round(cost_usd(model, int(usage.get("input", 0)), int(usage.get("output", 0))), 6)
 
 
 class MusePlanner:
@@ -78,29 +117,40 @@ class MusePlanner:
         self.last_error: str | None = None
 
     def propose(self, history: Sequence[dict]) -> dict:
-        tried = [h["cap_w"] for h in history]
-        free = allowed_caps(self.lo, self.hi, tried)
+        free = allowed_caps(self.lo, self.hi, [h["cap_w"] for h in history])
         if not free:
             return {"kind": "stop", "cap_w": None, "reason": "every allowed cap was tried",
                     "by": self.name}
-        payload = {"range_w": [self.lo, self.hi], "default_w": self.hi, "allowed": free,
-                   "trials": [{k: h[k] for k in ("cap_w", "energy_change_pct", "p99_change_pct",
-                                                 "quality_pass_pct", "stock_pass_pct", "accepted",
-                                                 "why_not")} for h in history],
-                   "prior": "an earlier unchecked run saw about -18% J/request at 400 W with p99 "
-                            "+3.7%; treat it as a hint, not a fact"}
+        system, payload = build_prompt(history, self.lo, self.hi)
         try:
-            raw = self.client(_body(SYSTEM, payload, SCHEMA, "NextCap", effort="low",
+            raw = self.client(_body(system, payload, SCHEMA, "NextCap", effort="low",
                                     max_tokens=4000), purpose="next-power-cap")
-            self.last_usage, self.last_error = usage_of(raw), None
-            d = _json(raw)
-            reason = " ".join(str(d.get("reason", "")).split())[:240]
-            if d.get("kind") == "stop":
-                return {"kind": "stop", "cap_w": None, "reason": reason, "by": self.name}
-            if d.get("cap_w") not in free:
-                raise ValueError(f"off the allow-list: {d.get('cap_w')!r}")
-            return {"kind": "try", "cap_w": int(d["cap_w"]), "reason": reason, "by": self.name}
-        except Exception as e:  # noqa: BLE001 - any API or format failure falls back, and is logged
+            usage = usage_of(raw)
+            self.last_usage, self.last_error = usage, None
+        except Exception as e:  # noqa: BLE001 - no answer came back, so bisect picks
             self.last_error = f"{type(e).__name__}: {str(e)[:160]}"
             out = self.fallback.propose(history)
-            return {**out, "by": "bisect-fallback", "muse_error": self.last_error}
+            return {**out, "by": "bisect-fallback", "muse_error": self.last_error,
+                    "proposal_accepted": None, "explanation": None, "usage": None,
+                    "model": self.model, "usd": None}
+        try:
+            d = _json(raw)
+            reason = " ".join(str(d.get("reason", "")).split())[:240]
+            explanation = clean_explanation(d.get("explanation"))
+            usage = dict(usage)
+            usd = call_usd(self.model, usage)
+            if d.get("kind") == "stop":
+                return {"kind": "stop", "cap_w": None, "reason": reason, "by": self.name,
+                        "proposal_accepted": True, "explanation": explanation,
+                        "usage": usage, "model": self.model, "usd": usd}
+            if d.get("cap_w") not in free:
+                raise ValueError(f"off the allow-list: {d.get('cap_w')!r}")
+            return {"kind": "try", "cap_w": int(d["cap_w"]), "reason": reason, "by": self.name,
+                    "proposal_accepted": True, "explanation": explanation,
+                    "usage": usage, "model": self.model, "usd": usd}
+        except Exception as e:  # noqa: BLE001 - the answer failed validation, so bisect picks
+            self.last_error = f"{type(e).__name__}: {str(e)[:160]}"
+            out = self.fallback.propose(history)
+            return {**out, "by": "bisect-fallback", "muse_error": self.last_error,
+                    "proposal_accepted": False, "explanation": None, "usage": None,
+                    "model": self.model, "usd": None}

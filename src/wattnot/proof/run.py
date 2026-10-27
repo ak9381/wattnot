@@ -26,7 +26,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from wattnot.proof.client import ChatClient
-from wattnot.proof.planner import BisectPlanner
+from wattnot.proof.decisions import (
+    append_record,
+    format_decisions_summary,
+    load_records,
+    new_record,
+    settle_record,
+    summarize_decisions,
+)
+from wattnot.proof.planner import BisectPlanner, allowed_caps
 from wattnot.proof.rig import Rig
 from wattnot.proof.session import run_control, run_step
 from wattnot.runner.workload import load_workload, workloads_dir
@@ -59,14 +67,26 @@ def history_row(s: dict) -> dict:
 
 
 def run_session(step: Callable[[int], dict], planner, grid: Sequence[int], log, *,
-                max_proposals: int = 4, deadline: float | None = None) -> list[dict]:
+                max_proposals: int = 4, deadline: float | None = None,
+                out: Path | None = None) -> list[dict]:
     """Planner picks up to `max_proposals` caps, then the grid fills any cap not yet measured.
-    `step(cap)` measures one cap and returns its summary."""
+    `step(cap)` measures one cap and returns its summary. When `out` is given, each planner
+    proposal is appended as one JSON line to ``out/decisions.jsonl`` with its gate outcome."""
     done: list[dict] = []
     chosen_by: dict[int, str] = {}
+    step_no = 0
 
     def over() -> bool:
         return deadline is not None and time.time() > deadline
+
+    def record(prop: dict, hist: list[dict]) -> dict | None:
+        if out is None:
+            return None
+        nonlocal step_no
+        step_no += 1
+        lo, hi = getattr(planner, "lo", 300), getattr(planner, "hi", 700)
+        tried = [h["cap_w"] for h in hist]
+        return new_record(step_no, allowed=allowed_caps(lo, hi, tried), proposal=prop)
 
     for _ in range(max_proposals):
         if over():
@@ -74,9 +94,12 @@ def run_session(step: Callable[[int], dict], planner, grid: Sequence[int], log, 
             break
         hist = [history_row(s) for s in done]
         prop = planner.propose(hist)
+        rec = record(prop, hist)
         log("proposal", {**prop, "history_len": len(hist),
                          "planner": getattr(planner, "name", "?")})
         if prop["kind"] == "stop":
+            if rec is not None:
+                append_record(out, settle_record(rec, None))
             break
         cap = int(prop["cap_w"])
         s = step(cap)
@@ -88,6 +111,8 @@ def run_session(step: Callable[[int], dict], planner, grid: Sequence[int], log, 
                          "p99_change_pct": s["p99_change_pct"]["mean"],
                          "quality": s["quality"]["cap_pct"], "chosen_by": s["chosen_by"]})
         done.append(s)
+        if rec is not None:
+            append_record(out, settle_record(rec, s))
     for cap in grid:
         if over():
             log("deadline", {"stage": "grid"})
@@ -120,11 +145,14 @@ def write_manifest(out: Path) -> None:
 def write_report(out: Path, model: str, control: dict | None, steps: Sequence[dict],
                  meta: dict) -> dict:
     best = best_of(steps)
+    decisions = load_records(out)
+    summary = summarize_decisions(decisions)
     res = {"label": "MEASURED", "model": model, "meta": meta, "control": control and
            {k: v for k, v in control.items() if k != "blocks"},
            "steps": [{k: v for k, v in s.items() if k != "blocks"} for s in sorted(
                steps, key=lambda s: -s["cap_w"])],
-           "best_cap_w": best["cap_w"] if best else None}
+           "best_cap_w": best["cap_w"] if best else None,
+           "decisions_summary": summary}
     (out / "results.json").write_text(json.dumps(res, indent=1))
     rows = ["| cap W | chosen by | J/req change (mean ± sd) | p99 change "
             "| quality pass (stock → cap) "
@@ -135,6 +163,9 @@ def write_report(out: Path, model: str, control: dict | None, steps: Sequence[di
                     f"| {e['mean']:+.1f}% ± {e['sd']:.1f} "
                     f"| {p['mean']:+.1f}% | {q['stock_pct']:.1f}% → {q['cap_pct']:.1f}% "
                     f"| {'yes' if s['accepted'] else 'no: ' + '; '.join(s['why_not'])} |")
+    if decisions:
+        rows += ["", "Planner decisions:", "", format_decisions_summary(summary), "",
+                 *(f"- {r['explanation']}" for r in decisions)]
     (out / "results.md").write_text("\n".join(rows) + "\n")
     write_manifest(out)
     return res
@@ -233,7 +264,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover
                                  tag=a.tag),
             planner, [int(x) for x in a.grid.split(",") if x], log,
             max_proposals=a.max_proposals,
-            deadline=(t_start + a.budget_s) if a.budget_s else None)
+            deadline=(t_start + a.budget_s) if a.budget_s else None, out=a.out)
         write_report(a.out, a.model, control, steps,
                      {"started": datetime.fromtimestamp(t_start, UTC).isoformat(
                          timespec="seconds"),
