@@ -340,3 +340,15 @@ def test_torch_hook_off_matches_stock_and_on_uses_fewer_experts():
     restore()
     with torch.no_grad():
         assert torch.equal(model(ids).logits, stock)
+
+
+def test_router_output_order_is_found_by_shape_and_dtype():
+    """transformers 5.19 returns (index, weights, logits); 5.21 returns (logits, weights, index)."""
+    torch = pytest.importorskip("torch")
+    from wattnot.moe.hf_backend import _router_order
+
+    logits, w, idx = torch.randn(5, 40), torch.rand(5, 8), torch.randint(0, 40, (5, 8))
+    assert _router_order((logits, w, idx), torch) == (0, 1, 2)
+    assert _router_order((idx, w, logits), torch) == (2, 1, 0)
+    with pytest.raises(AdaptiveError):
+        _router_order((logits, w, w), torch)

@@ -5,14 +5,15 @@ router weight, drops the rest) and swaps in an eager expert loop that skips drop
 "off" arm runs the same hooked layers with no threshold, so both arms use identical code except
 for the threshold itself. Counters are kept on the GPU (no host sync per layer) in both arms.
 
-Only the Granite MoE layout is wired (router with `.top_k`, experts with `gate_up_proj`,
-`down_proj`, `act_fn`). Anything else raises `AdaptiveError` before a single watt is measured.
+Only the fused-expert layout is wired: Granite MoE and Qwen3-MoE (a router called `router` or
+`gate` with `.top_k`, experts with `gate_up_proj`, `down_proj`, `act_fn`). Anything else raises `AdaptiveError` before a single watt is measured.
 A one-prompt sanity check also compares the hooked "off" arm with the stock model.
 """
 
 from __future__ import annotations
 
 import contextlib
+import os
 import time
 from collections.abc import Callable
 from typing import Any
@@ -31,15 +32,36 @@ class _State:
         self.used, self.slots = torch.zeros((), dtype=torch.float64, device=self.device), 0
 
 
+def _router_of(block):
+    """Granite calls the router `router`; Qwen3-MoE calls it `gate`. Same forward contract."""
+    return getattr(block, "router", None) or getattr(block, "gate", None)
+
+
 def find_moe_layers(model) -> list:
     layers = [m for m in model.modules()
-              if hasattr(m, "router") and hasattr(m, "experts")
-              and hasattr(m.router, "top_k") and hasattr(m.experts, "gate_up_proj")
+              if hasattr(m, "experts") and hasattr(_router_of(m), "top_k")
+              and hasattr(m.experts, "gate_up_proj")
               and hasattr(m.experts, "down_proj") and hasattr(m.experts, "act_fn")]
     if not layers:
         raise AdaptiveError("this model does not have the Granite MoE layout the hook knows; "
                             "adaptive top-k is only wired for Granite 3.x MoE today")
     return layers
+
+
+def _router_order(out, torch) -> tuple[int, int, int]:
+    """Positions of (logits, weights, index) in a Granite router's 3-tuple output.
+
+    The index tensor is the only integer one. Logits are the only one whose last dimension is
+    wider than the other float tensor's (all experts vs top-k)."""
+    idx = [i for i, t in enumerate(out) if not torch.is_floating_point(t)]
+    if len(idx) != 1:
+        raise AdaptiveError("unexpected router output: could not find the expert index tensor")
+    flo = [i for i in range(3) if i != idx[0]]
+    a, b = flo
+    if out[a].shape[-1] == out[b].shape[-1]:
+        raise AdaptiveError("unexpected router output: logits and weights have the same width")
+    lg, wt = (a, b) if out[a].shape[-1] > out[b].shape[-1] else (b, a)
+    return lg, wt, idx[0]
 
 
 def install_hooks(model, torch) -> tuple[_State, Callable[[], None]]:
@@ -53,7 +75,11 @@ def install_hooks(model, torch) -> tuple[_State, Callable[[], None]]:
 
     def make_router(orig):
         def router_forward(h):
-            logits, w, idx = orig(h)
+            out = orig(h)
+            # transformers changed the router's return order between releases
+            # ((logits, weights, index) vs (index, weights, logits)); tell them apart by dtype and shape.
+            order = _router_order(out, torch)
+            logits, w, idx = (out[i] for i in order)
             n_exp = logits.shape[-1]
             wf = w.float()
             if st.mass is None:
@@ -68,7 +94,9 @@ def install_hooks(model, torch) -> tuple[_State, Callable[[], None]]:
             if st.mass is not None:
                 wk = wk / wk.sum(-1, keepdim=True)
             # a dropped slot points at a sentinel expert id that the loop below skips
-            return logits, wk.type_as(w), torch.where(keep, idx, torch.full_like(idx, n_exp))
+            res = {order[0]: logits, order[1]: wk.type_as(w),
+                   order[2]: torch.where(keep, idx, torch.full_like(idx, n_exp))}
+            return res[0], res[1], res[2]
         return router_forward
 
     def make_experts(mod):
@@ -88,8 +116,9 @@ def install_hooks(model, torch) -> tuple[_State, Callable[[], None]]:
         return experts_forward
 
     for layer in find_moe_layers(model):
-        saved.append((layer.router, layer.router.forward, layer.experts, layer.experts.forward))
-        layer.router.forward = make_router(layer.router.forward)
+        router = _router_of(layer)
+        saved.append((router, router.forward, layer.experts, layer.experts.forward))
+        router.forward = make_router(router.forward)
         layer.experts.forward = make_experts(layer.experts)
 
     def restore() -> None:
@@ -117,7 +146,10 @@ class HFBackend:
         if release:
             release()  # vLLM from the earlier stages must let go of its GPU memory
         left = max(60.0, min(600.0, deadline - clock() - 300))
-        rc, tail = _sh(["hf", "download", self.cfg.model], timeout=left)
+        if os.path.isdir(self.cfg.model):  # already on disk (a local path), nothing to download
+            rc, tail = 0, ""
+        else:
+            rc, tail = _sh(["hf", "download", self.cfg.model], timeout=left)
         if rc != 0:
             raise AdaptiveError(f"model download failed: {tail.strip()[-200:]}")
         try:
@@ -133,9 +165,9 @@ class HFBackend:
         if self.tok.pad_token is None:
             self.tok.pad_token = self.tok.eos_token
         self.model = AutoModelForCausalLM.from_pretrained(
-            self.cfg.model, dtype=torch.bfloat16).to("cuda").eval()
+            self.cfg.model, dtype=torch.bfloat16, device_map="cuda").eval()
         layers = find_moe_layers(self.model)
-        self.top_k = int(layers[0].router.top_k)
+        self.top_k = int(_router_of(layers[0]).top_k)
         sanity = self._sanity()
         self.st, self._restore = install_hooks(self.model, torch)
         ok = self._hooked_off_matches(sanity["_stock"])
