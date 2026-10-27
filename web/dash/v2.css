@@ -118,3 +118,52 @@ aside.side p{color:#eef3f8}
 .rows>.dimlab::before,.rows>.dimlab::after{content:"";position:absolute;top:50%;width:10px;height:1px;background:var(--ln2)}
 .rows>.dimlab::before{left:-2px}.rows>.dimlab::after{right:-2px}
 .rep::before{content:"";position:absolute;left:50%;top:150px;bottom:260px;width:1px;background:linear-gradient(var(--cy),var(--pk));opacity:.35}
+/* configure: essentials plus collapsed advanced */
+.adv{padding:2px 18px 14px;margin-top:14px}
+.adv summary{list-style:none;display:flex;gap:12px;align-items:baseline;cursor:pointer;padding:12px 0}
+.adv summary::-webkit-details-marker{display:none}
+.adv-t{font-weight:600;font-size:16px;color:#fff;white-space:nowrap}
+.adv-line{color:var(--mu);font-size:13px}
+.adv summary .chev{margin-left:auto;color:var(--mu);transition:transform .2s}
+.adv[open] summary .chev{transform:rotate(90deg)}
+.adv[open] .adv-defaults{display:none}
+.adv-defaults{padding-bottom:8px}
+#advDefList{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+/* signed report, set like an editorial page */
+:root{--serif:Georgia,"Iowan Old Style","Palatino Linotype","Times New Roman",serif;--rule:rgba(255,255,255,.16)}
+.rep-ed{padding:clamp(28px,5vw,64px)}
+.rep-ed::before{background:var(--rule);opacity:1}
+.rep-ed .ed-head{text-align:center;max-width:760px;margin:0 auto 8px}
+.rep-ed .kicker{margin:0 0 14px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mu)}
+.rep-ed .ed-title{font-family:var(--serif);font-weight:500;font-size:clamp(30px,4.5vw,46px);line-height:1.06;letter-spacing:-.01em;text-wrap:balance}
+.rep-ed .ed-sub{margin:14px auto 0;font-size:15.5px;color:var(--sub);max-width:62ch}
+.rep-ed .ed-rule{height:1px;background:var(--rule);margin:26px auto 10px;max-width:720px}
+.rep-ed .ed-h{font-family:var(--serif);font-weight:500;font-size:clamp(21px,2.6vw,28px);letter-spacing:0;margin-bottom:10px}
+.rep-ed .paths-ed{margin:26px 0 10px}
+.rep-ed .ed-mid{display:flex;justify-content:center}
+.rep-ed .hub-ed{width:136px;height:136px;border:1px solid var(--ln2);border-radius:50%;display:grid;place-content:center;text-align:center;gap:2px}
+.rep-ed .hub-num{font-family:var(--serif);font-size:30px;font-weight:500;color:#fff;line-height:1}
+.rep-ed .hub-ed small{font-size:11.5px;color:var(--sub)}
+.rep-ed .pcol.s .draw{color:var(--pk)}
+.rep-ed .pcol.w .draw{color:var(--cy)}
+.rep-ed .draw{display:block;width:min(120px,60%);height:12px;margin:0 auto}
+.rep-ed .draw path{fill:none;stroke:currentColor;stroke-width:1.5;stroke-dasharray:120;stroke-dashoffset:120;transition:stroke-dashoffset 1.1s ease .15s}
+.rep-ed .ed-path.in .draw path{stroke-dashoffset:0}
+.rep-ed .v,.rep-ed .hub-num,.rep-ed code,.rep-ed .d{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.rep-ed .rev-row{border-top:1px solid var(--rule);padding:16px 0;opacity:0;transform:translateY(14px);transition:opacity .6s ease var(--d,0ms),transform .6s ease var(--d,0ms)}
+.rep-ed .rev-row.in{opacity:1;transform:none}
+.rep-ed [data-split] .w{display:inline-block;overflow:hidden;vertical-align:bottom;padding-bottom:.08em;margin-bottom:-.08em}
+.rep-ed [data-split] .ch{display:inline-block;transform:translateY(110%);transition:transform .65s cubic-bezier(.2,.7,.2,1)}
+.rep-ed.in .ed-title .ch,.rep-ed .ed-path.in .ed-h .ch{transform:none}
+.rep-ed .who,.rep-ed .sig{border-top:1px solid var(--rule);padding-top:24px;margin-top:26px}
+.rep-ed .fp{letter-spacing:.02em}
+.rep-ed .tick-wrap{color:var(--tl)}
+.rep-ed .tick{width:15px;height:15px;vertical-align:-3px}
+.rep-ed .tick path{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:26;stroke-dashoffset:26;transition:stroke-dashoffset .5s ease .1s}
+.rep-ed .tick-wrap.in .tick path{stroke-dashoffset:0}
+@media (prefers-reduced-motion: reduce){
+.rep-ed *,.rep-ed *::before,.rep-ed *::after{animation:none!important;transition:none!important}
+.rep-ed [data-split] .ch{transform:none!important}
+.rep-ed .rev-row{opacity:1!important;transform:none!important}
+.rep-ed .draw path,.rep-ed .tick path{stroke-dashoffset:0!important}
+}

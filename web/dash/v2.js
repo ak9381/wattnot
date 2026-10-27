@@ -83,30 +83,56 @@ function partnersHtml() {
 }
 
 // ---------- configure ----------
+const ESSENTIAL_IDS = ["model", "workload", "goal", "gpu", "room_size"];
+const GOAL_PRESETS = { save: { p99_slack_pct: 15, min_quality_pct: 94 }, balanced: { p99_slack_pct: 10, min_quality_pct: 95 }, fast: { p99_slack_pct: 5, min_quality_pct: 97 } };
 function renderCfg() {
   const O = S.opts;
   for (const o of O.options) S.choice[o.id] ??= o.default;
   const fld = (o) => `<div class="fld"><label for="f-${o.id}">${esc(o.label)}<small>${o.applies === "replay" ? "changes this replay" : "used by a live run"}</small></label>
     <select id="f-${o.id}" data-k="${o.id}">${o.choices.map((c) => `<option value="${esc(JSON.stringify(c.v))}" ${JSON.stringify(c.v) === JSON.stringify(S.choice[o.id]) ? "selected" : ""} ${o.id === "mode" && c.v === "live" ? "disabled" : ""}>${esc(c.label)}</option>`).join("")}</select>
     <button class="info" data-info="${o.id}" aria-label="What is ${esc(o.label)}?">i</button></div>`;
-  const groups = O.groups.map((g, i) => {
-    const fs = O.options.filter((o) => o.group === g.id).map(fld).join("");
-    return i === 0 ? `<div class="grp glass"><h3>${esc(g.label)}</h3>
-      <div class="fld"><label for="f-name">Run name<small>free text</small></label><input type="text" id="f-name" value="${esc(S.choice.name || "My first replay")}"><span></span></div>${fs}</div>`
-      : card(`cfg-${g.id}`, "⚙", esc(g.label), `${O.options.filter((o) => o.group === g.id).length} settings, safe defaults chosen`, fs);
-  }).join("");
-  $("#pCfg").innerHTML = `<div class="intro"><div><h1>Configure a new run</h1><p>Every setting has a safe default. Press <b>i</b> next to any of them for a plain explanation. Live GPU runs are locked on this screen; it only replays recorded runs, so it costs nothing.</p></div></div>
-    <div class="cfg"><div>${ctrl()}${groups}</div>
+  const byId = Object.fromEntries(O.options.map((o) => [o.id, o]));
+  const ess = ESSENTIAL_IDS.map((id) => byId[id]).filter(Boolean).map(fld).join("");
+  const adv = O.options.filter((o) => !ESSENTIAL_IDS.includes(o.id)).map(fld).join("");
+  $("#pCfg").innerHTML = `<div class="intro"><div><h1>Configure a new run</h1><p>Five choices up front; everything else keeps a safe default. Press <b>i</b> next to any of them for a plain explanation. Live GPU runs are locked on this screen; it only replays recorded runs, so it costs nothing.</p></div></div>
+    <div class="cfg"><div>${ctrl()}
+    <div class="grp glass"><h3>Essentials</h3>
+      <div class="fld"><label for="f-name">Run name<small>free text</small></label><input type="text" id="f-name" value="${esc(S.choice.name || "My first replay")}"><span></span></div>${ess}</div>
+    <details class="adv glass" id="advDis"><summary id="advSum" aria-expanded="false"><span class="adv-t">Advanced settings</span>
+      <span class="adv-line">Safe defaults are set; open this to change limits, gates and budgets.</span><span class="chev" aria-hidden="true">›</span></summary>
+      <div class="adv-defaults" id="advDef"><span class="lvl">Defaults in use</span><div id="advDefList"></div></div>
+      <div class="adv-fields">${adv}</div></details>
+    </div>
     <div><div class="grp glass" style="position:sticky;top:80px"><h3>What will happen</h3><div id="cfgSum"></div>
       <button class="btn pri" id="startRun" style="width:100%;margin-top:12px">Start replay</button>
       <p class="lock">🔒 Live mode needs the owner's okay and the command line. It is never started from here.</p></div></div></div>`;
-  $$("#pCfg select").forEach((s) => (s.onchange = () => { S.choice[s.dataset.k] = JSON.parse(s.value); sumCfg(); }));
+  const applyGoal = (g) => {
+    const p = GOAL_PRESETS[g]; if (!p) return;
+    for (const [k, v] of Object.entries(p)) {
+      if (!byId[k] || !byId[k].choices.some((c) => JSON.stringify(c.v) === JSON.stringify(v))) continue;
+      S.choice[k] = v; const s = $(`#f-${CSS.escape(k)}`); if (s) s.value = JSON.stringify(v);
+    }
+  };
+  $$("#pCfg select").forEach((s) => (s.onchange = () => { S.choice[s.dataset.k] = JSON.parse(s.value); if (s.dataset.k === "goal") applyGoal(S.choice.goal); sumCfg(); syncAdv(); }));
   $("#f-name").oninput = (e) => (S.choice.name = e.target.value);
-  $("#startRun").onclick = startRun; sumCfg();
+  $("#advDis").addEventListener("toggle", syncAdv);
+  $("#startRun").onclick = startRun; sumCfg(); syncAdv();
+}
+function advChoiceLabel(o) {
+  const hit = o.choices.find((c) => JSON.stringify(c.v) === JSON.stringify(S.choice[o.id]));
+  return hit ? hit.label : JSON.stringify(S.choice[o.id] ?? o.default);
+}
+function syncAdv() {
+  const d = $("#advDis"); if (!d) return;
+  $("#advSum")?.setAttribute("aria-expanded", String(d.open));
+  const list = $("#advDefList"); if (!list) return;
+  list.innerHTML = S.opts.options.filter((o) => !ESSENTIAL_IDS.includes(o.id))
+    .map((o) => `<span class="chip">${esc(o.label)}: <b style="color:#fff">${esc(advChoiceLabel(o))}</b></span>`).join("");
 }
 function sumCfg() {
   const c = S.choice, m = S.opts.options.find((o) => o.id === "model").choices.find((x) => x.v === c.model);
-  $("#cfgSum").innerHTML = `<dl class="kv" style="grid-template-columns:110px 1fr"><dt>Model</dt><dd>${esc(m?.label)}</dd><dt>Speed limit</dt><dd>p99 may rise ${esc(c.p99_slack_pct)}%</dd><dt>Quality bar</dt><dd>${esc(c.min_quality_pct)}% agreement</dd><dt>Approval</dt><dd>${esc(S.opts.options.find((o) => o.id === "approval").choices.find((x) => x.v === c.approval)?.label)}</dd><dt>Cost</dt><dd>$0 ${badge("REPLAY")}</dd></dl>`;
+  const g = S.opts.options.find((o) => o.id === "goal")?.choices.find((x) => x.v === c.goal)?.label;
+  $("#cfgSum").innerHTML = `<dl class="kv" style="grid-template-columns:110px 1fr"><dt>Model</dt><dd>${esc(m?.label)}</dd>${g ? `<dt>Goal</dt><dd>${esc(g)}</dd>` : ""}<dt>Speed limit</dt><dd>p99 may rise ${esc(c.p99_slack_pct)}%</dd><dt>Quality bar</dt><dd>${esc(c.min_quality_pct)}% agreement</dd><dt>Approval</dt><dd>${esc(S.opts.options.find((o) => o.id === "approval").choices.find((x) => x.v === c.approval)?.label)}</dd><dt>Cost</dt><dd>$0 ${badge("REPLAY")}</dd></dl>`;
 }
 async function startRun() {
   const btn = $("#startRun"); btn.disabled = true; btn.textContent = "Loading the recorded run…";
@@ -198,17 +224,63 @@ async function renderReport() {
   const body = JSON.stringify({ run: S.run.run_id, rows });
   const sha = await sha256(body);
   const vs = verifySummary(S.verify);
-  const cell = (r, side) => `<div class="cell ${r.win === side ? "win" : ""}"><span class="v">${esc(side === "w" ? r.wattnot : r.stock)}</span>${side === "w" && r.delta ? `<span class="d">${esc(r.delta)}</span>` : ""}</div>`;
+  const cell = (r, side) => `<div class="cell ${r.win === side ? "win" : ""}"><span class="v num">${esc(side === "w" ? r.wattnot : r.stock)}</span>${side === "w" && r.delta ? `<span class="d">${esc(r.delta)}</span>` : ""}</div>`;
   $("#pReport").innerHTML = `<div class="ctrl noprint"><button class="btn pri" onclick="print()">Export PDF / PNG (print)</button><span style="color:var(--mu);font-size:13px">Print to PDF keeps the dark theme. Turn on "background graphics".</span></div>
-  <div class="rep glass" id="repCard"><div class="head"><div style="color:var(--mu);font-size:12px;letter-spacing:.1em">WATTNOT SIGNED REPORT · ${badge("REPLAY")}</div><h1>Two paths for the same GPU</h1><p>${esc(R.model)} · ${esc(R.workload)} · ${esc(lever.before_label || "")} vs ${esc(lever.after_label || "")}</p></div>
-  <div class="rows" style="margin-bottom:6px"><div class="pcol s"><h2>Stock settings</h2></div><div style="text-align:center"><div class="hub"><div class="core">${num(lever.saved_pct, 1)}%<br><small style="font-weight:500;font-size:11px;color:var(--sub)">less energy</small></div></div></div><div class="pcol w"><h2>With WattNot</h2></div></div>
-  ${rows.map((r) => `<div class="rows">${cell(r, "s")}<div class="dimlab">${esc(r.dim)}<br>${r.tag ? badge(r.tag) : '<span class="d" style="color:var(--mu);font-weight:400">not claimed</span>'}</div>${cell(r, "w")}</div>${r.note ? `<p style="text-align:center;font-size:12px;color:var(--mu);margin:-2px 0 6px">${esc(r.note)}</p>` : ""}`).join("")}
+  <div class="rep glass rep-ed" id="repCard"><div class="head ed-head"><p class="kicker">WattNot signed report · ${badge("REPLAY")}</p><h1 class="ed-title" data-split>Two paths for the same GPU</h1><p class="ed-sub">${esc(R.model)} · ${esc(R.workload)} · ${esc(lever.before_label || "")} vs ${esc(lever.after_label || "")}</p><div class="ed-rule"></div></div>
+  <div class="rows paths-ed" style="margin-bottom:6px"><div class="pcol s ed-path"><h2 class="ed-h" data-split>Stock settings</h2><svg class="draw" viewBox="0 0 120 12" aria-hidden="true"><path d="M4 8 H116"/></svg></div><div class="ed-mid"><div class="hub-ed"><span class="hub-num num">${num(lever.saved_pct, 1)}%</span><small>less energy</small></div></div><div class="pcol w ed-path"><h2 class="ed-h" data-split>With WattNot</h2><svg class="draw" viewBox="0 0 120 12" aria-hidden="true"><path d="M4 8 H116"/></svg></div></div>
+  ${rows.map((r, i) => `<div class="rows rev-row" style="--d:${i * 70}ms">${cell(r, "s")}<div class="dimlab">${esc(r.dim)}<br>${r.tag ? badge(r.tag) : '<span class="d" style="color:var(--mu);font-weight:400">not claimed</span>'}</div>${cell(r, "w")}</div>${r.note ? `<p style="text-align:center;font-size:12px;color:var(--mu);margin:-2px 0 6px">${esc(r.note)}</p>` : ""}`).join("")}
   <div class="who"><div class="glass"><h3 style="color:var(--pk)">Pick stock if</h3><p>Every millisecond of the slowest requests matters more than the power bill, or you cannot run a quality check on your own prompts yet.</p></div>
   <div class="glass"><h3 style="color:var(--cy)">Pick WattNot if</h3><p>You pay for power and cooling, can accept the p99 change shown above, and want each change approved, logged, undoable and signed.</p></div></div>
-  <div class="sig glass"><div><div class="lvl">This report's fingerprint</div><code>sha256 ${esc(sha.slice(0, 32))}…</code></div>
+  <div class="sig glass"><div><div class="lvl">This report's fingerprint</div><code class="fp" id="fpCode" data-fp="sha256 ${esc(sha.slice(0, 32))}…">sha256 ${esc(sha.slice(0, 32))}…</code></div>
    <div><div class="lvl">This run's receipt</div>${rid ? `<code>${esc(rid)}</code> · signed: ${rc?.signed ? '<span class="ok">yes</span>' : '<span class="no">no</span>'} · transparency log: ${rc?.rekor ? '<span class="ok">yes</span>' : '<span class="no">no</span>'}` : '<span class="no">No signed receipt for this recorded sweep</span>, so none is claimed'}</div>
-   <div><div class="lvl">Verifier check on sample receipts ${badge("SAMPLE")}</div>${vs.map((v) => `<div>${esc(v.sample)}: hash ${v.hash ? '<span class="ok">✓</span>' : '<span class="no">✗</span>'} · signature ${v.sig ? '<span class="ok">✓ verified</span>' : '<span class="no">✗ rejected</span>'} · grade ${esc(v.grade)}</div>`).join("")}</div></div>
+   <div><div class="lvl">Verifier check on sample receipts ${badge("SAMPLE")}</div>${vs.map((v) => `<div>${esc(v.sample)}: hash ${v.hash ? '<span class="tick-wrap"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10.5l4.5 4.5L16 5.5"/></svg></span>' : '<span class="no">✗</span>'} · signature ${v.sig ? '<span class="ok">✓ verified</span>' : '<span class="no">✗ rejected</span>'} · grade ${esc(v.grade)}</div>`).join("")}</div></div>
   <p style="font-size:12px;color:var(--mu);margin-top:10px">${esc(S.verify?.note || "")} Cost uses ${esc(R.price?.name || "")}; water uses ${esc(R.water?.name || "")}. Run id ${esc(S.run.run_id)}.</p></div>`;
+  initReportMotion($("#repCard"));
+}
+function splitWords(el) {
+  const text = el.textContent; el.setAttribute("aria-label", text.trim()); el.textContent = "";
+  text.split(" ").forEach((w, wi, arr) => {
+    const s = document.createElement("span"); s.className = "w"; s.setAttribute("aria-hidden", "true");
+    [...w].forEach((ch) => { const c = document.createElement("span"); c.className = "ch"; c.style.transitionDelay = `${wi * 90}ms`; c.textContent = ch; s.appendChild(c); });
+    el.appendChild(s); if (wi < arr.length - 1) el.appendChild(document.createTextNode(" "));
+  });
+}
+function countUp(el) {
+  if (el.dataset.done) return; el.dataset.done = "1";
+  const m = el.textContent.match(/-?\d[\d,]*(\.\d+)?/); if (!m) return;
+  const target = parseFloat(m[0].replace(/,/g, "")), dec = m[1] ? m[1].length - 1 : 0, full = el.textContent, t0 = performance.now(), dur = 900;
+  if (!isFinite(target)) return;
+  const fr = (t) => {
+    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3), cur = target * e;
+    el.textContent = full.replace(m[0], target >= 100 ? Math.round(cur).toLocaleString("en-US") : cur.toFixed(dec));
+    if (p < 1) requestAnimationFrame(fr);
+  };
+  requestAnimationFrame(fr);
+}
+function scrambleFp(el) {
+  const final = el.dataset.fp || el.textContent, glyphs = "0123456789abcdef#*+=?";
+  let f = 0; const total = 18;
+  const iv = setInterval(() => {
+    f++;
+    el.textContent = [...final].map((c, i) => (i / final.length < f / total || c === " ") ? c : glyphs[(Math.random() * glyphs.length) | 0]).join("");
+    if (f >= total) { clearInterval(iv); el.textContent = final; el.closest(".rep")?.querySelectorAll(".tick-wrap").forEach((t) => t.classList.add("in")); }
+  }, 28);
+}
+function initReportMotion(root) {
+  if (!root) return;
+  root.querySelectorAll("[data-split]").forEach(splitWords);
+  const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const fp = root.querySelector("#fpCode");
+  if (reduce) { root.classList.add("in"); if (fp && fp.dataset.fp) fp.textContent = fp.dataset.fp; return; }
+  requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add("in")));
+  const io = new IntersectionObserver((es) => es.forEach((e) => {
+    if (!e.isIntersecting) return;
+    e.target.classList.add("in");
+    e.target.querySelectorAll(".num").forEach(countUp);
+    io.unobserve(e.target);
+  }), { threshold: 0.2 });
+  root.querySelectorAll(".rev-row,.ed-path,.hub-ed,.tick-wrap").forEach((el) => io.observe(el));
+  if (fp) { const fio = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { scrambleFp(fp); fio.disconnect(); } }), { threshold: 0.4 }); fio.observe(fp); }
 }
 async function sha256(s) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
 async function startQuiet() { const r = await fetch("/api/dash/v2/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(S.choice) }); S.run = await r.json(); S.n = S.run.events.length; renderRun(); }

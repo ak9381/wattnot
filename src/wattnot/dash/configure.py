@@ -37,6 +37,14 @@ def options(cfg: dict) -> dict:
            what="The AI model WattNot serves and tunes. Each one has a recorded run behind it.",
            why="Savings depend on the model. A big dense model reacts to a power cap differently from a Mixture-of-Experts model, which can also use top-k.",
            example="Muse Glimmer 30B on one H100: a lower power cap saved 21% energy per request in the recorded sweep."),
+        _o("goal", "Goal",
+           [_c("save", "Save power: accept a little slowdown"),
+            _c("balanced", "Balanced: the default limits"),
+            _c("fast", "Fastest: keep replies as quick as stock")],
+           "balanced", group="basics", applies="replay", flag="goal (preset for --p99-budget-s and min_quality_pct)",
+           what="What matters most for this run: saving power, a balance, or keeping replies quick.",
+           why="Each goal sets the two gates to values already used in the recorded sweeps. Save power allows more slowdown, fastest allows almost none. You can still change each gate by hand under Advanced settings.",
+           example="Save power allows the slowest 1% to rise 15% with 94% answer agreement; fastest allows 5% with 97% agreement."),
         _o("workload", "Workload (the prompts we send)",
            [_c("auto", "Match the model's recorded workload"), _c("coding", "Coding assistant under load"),
             _c("moe", "Mixture-of-Experts decoding"), _c("classes", "Mixed prompt classes (complex)")],
@@ -146,11 +154,19 @@ def options(cfg: dict) -> dict:
             "live_locked": True}
 
 
+GOAL_PRESETS = {"save": {"p99_slack_pct": 15, "min_quality_pct": 94},
+                "balanced": {"p99_slack_pct": 10, "min_quality_pct": 95},
+                "fast": {"p99_slack_pct": 5, "min_quality_pct": 97}}
+
+
 def to_plan_body(choice: dict) -> dict:
     """Map Configure choices to the replay planner's request body. Live is always refused."""
     if choice.get("mode") == "live":
         raise ValueError("live runs cannot be started from the dashboard")
     body: dict = {"model": choice.get("model")}
+    for k, v in GOAL_PRESETS.get(choice.get("goal"), {}).items():
+        if choice.get(k) is None:
+            body[k] = float(v)
     lv = choice.get("levers")
     if lv and lv != "auto":
         body["levers"] = [lv]
