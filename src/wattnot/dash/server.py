@@ -41,7 +41,7 @@ from fastapi.responses import (
 )
 from fastapi.staticfiles import StaticFiles
 
-from wattnot.dash import experts, gpu, runplan
+from wattnot.dash import experts, gpu, receiptview, runcmd, runplan
 
 ROOT = Path(__file__).resolve().parents[3]
 WEB = ROOT / "web" / "dash"
@@ -233,6 +233,32 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
             return runplan.plan(plan_cache["b"], body)
         except (ValueError, KeyError, TypeError) as e:
             raise HTTPException(400, str(e) if isinstance(e, ValueError) else "the run settings are not valid") from None
+
+    @app.post("/api/dash/run/command")
+    async def run_command(request: Request):
+        """The shell command for this selection, as text. Read-only: never executes."""
+        try:
+            body = await request.json()
+        except ValueError:
+            raise HTTPException(400, "the request body must be JSON") from None
+        if not isinstance(body, dict):
+            raise HTTPException(400, "the request body must be a JSON object")
+        try:
+            return runcmd.command_for(body)
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from None
+
+    @app.get("/api/dash/run/receipt")
+    def run_receipt():
+        """Trimmed view of the run's signed receipt, when one sits next to --events FILE."""
+        if events is None:
+            raise HTTPException(404, "no events file is being followed (start with --events FILE)")
+        try:
+            return receiptview.view(receiptview.load_receipt(receiptview.find_receipt(events)))
+        except FileNotFoundError:
+            raise HTTPException(404, "no signed receipt in this run folder yet") from None
+        except (ValueError, OSError) as e:
+            raise HTTPException(404, f"no valid receipt here: {e}") from None
 
     @app.get("/api/dash/meta/health")
     def meta_health(fresh: int = 0):

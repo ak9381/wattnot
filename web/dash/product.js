@@ -69,6 +69,7 @@ export class Product {
         <label>${esc(c.limits.p99_slack_pct.label)}<span class="rg"><input type="range" id="limP" min="${c.limits.p99_slack_pct.min}" max="${c.limits.p99_slack_pct.max}" step="${c.limits.p99_slack_pct.step}" value="${s.p99_slack_pct}"><output id="limPo">${s.p99_slack_pct}%</output></span></label>
         <label>${esc(c.limits.min_quality_pct.label)}<span class="rg"><input type="range" id="limQ" min="${c.limits.min_quality_pct.min}" max="${c.limits.min_quality_pct.max}" step="${c.limits.min_quality_pct.step}" value="${s.min_quality_pct}"><output id="limQo">${s.min_quality_pct}%</output></span></label>
         <label class="ck"><input type="checkbox" id="limS" ${s.strict_quality ? "checked" : ""}> ${esc(c.limits.strict_quality.label)}</label></div></fieldset>
+      <fieldset><legend><i>${s.place === "h100" ? 7 : 6}</i>Command for this run ${pill("ADVICE")}</legend><div id="runcmd"><p class="hnt">Loading the command…</p></div></fieldset>
       <div class="startrow"><button class="btn pri big2" id="go" type="button">Start replay</button>${badge("REPLAY")}
         ${this.health.events ? `<button class="btn" id="goLive" type="button">${this.health.replay_only ? "Replay the saved run" : "Watch the live run"}</button>` : ""}
         <span class="hnt" id="startnote">Re-evaluates a recorded real run against your limits. Nothing runs on a GPU now.</span></div>
@@ -83,13 +84,40 @@ export class Product {
       else if (t.name === "model") { s.model = t.value; s.levers = new Set(this.model().levers); this.config(); }
       else if (t.name === "room") { s.room = t.value; this.config(); }
       else if (t.id === "roomFile") { const f0 = t.files?.[0]; if (f0 && f0.type.startsWith("image/")) { if (this.roomImg) URL.revokeObjectURL(this.roomImg); this.roomImg = URL.createObjectURL(f0); this.config(); } }
-      else if (t.name === "lever") { t.checked ? s.levers.add(t.value) : s.levers.delete(t.value); t.closest(".opt").classList.toggle("on", t.checked); }
-      else if (t.id === "limS") { s.strict_quality = t.checked; this.whyPanel(); }
+      else if (t.name === "lever") { t.checked ? s.levers.add(t.value) : s.levers.delete(t.value); t.closest(".opt").classList.toggle("on", t.checked); this.cmdPanel(); }
+      else if (t.id === "limS") { s.strict_quality = t.checked; this.whyPanel(); this.cmdPanel(); }
     };
-    $("#limP", f).oninput = (e) => { s.p99_slack_pct = +e.target.value; this.$("#limPo").textContent = `${s.p99_slack_pct}%`; this.whyPanel(); };
-    $("#limQ", f).oninput = (e) => { s.min_quality_pct = +e.target.value; this.$("#limQo").textContent = `${s.min_quality_pct}%`; };
+    $("#limP", f).oninput = (e) => { s.p99_slack_pct = +e.target.value; this.$("#limPo").textContent = `${s.p99_slack_pct}%`; this.whyPanel(); this.cmdSoon(); };
+    $("#limQ", f).oninput = (e) => { s.min_quality_pct = +e.target.value; this.$("#limQo").textContent = `${s.min_quality_pct}%`; this.cmdSoon(); };
     $("#go", f).onclick = () => this.start();
     $("#goLive", f)?.addEventListener("click", () => this.startLive());
+    this.cmdPanel();
+  }
+  cmdSoon() { clearTimeout(this.cmdT); this.cmdT = setTimeout(() => this.cmdPanel(), 250); }
+  // "Command for this run": the exact shell text from POST /api/dash/run/command, kept in sync with the selection above
+  async cmdPanel() {
+    const el = this.$("#runcmd"); if (!el) return;
+    const s = this.sel, t = (this.cmdTok = (this.cmdTok || 0) + 1);
+    const body = { model: s.model, place: s.place, workload: s.workload, room: s.room, levers: [...s.levers], p99_slack_pct: s.p99_slack_pct, min_quality_pct: s.min_quality_pct, strict_quality: s.strict_quality };
+    let cmd = null;
+    try {
+      const r = await fetch("/api/dash/run/command", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      cmd = await r.json();
+    } catch { /* the dash below says there is no command for this selection */ }
+    if (t !== this.cmdTok || this.$("#runcmd") !== el) return;
+    if (!cmd?.flow?.shell) { el.innerHTML = `<p class="cmdshell">–</p><p class="hnt">No shell command for this selection.</p>`; return; }
+    el.innerHTML = `<p class="hnt">Whole run, room to receipt</p>
+      <pre class="cmdshell"><code>${esc(cmd.flow.shell)}</code></pre>
+      <div class="cmdrow"><button class="btn" id="cmdCopy" type="button">Copy</button><span class="hnt" id="cmdMsg"></span></div>
+      <p class="hnt">Single step</p>
+      <pre class="cmdshell"><code>${esc(cmd.run.shell)}</code></pre>
+      <ul class="cmdnotes">${cmd.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>`;
+    this.$("#cmdCopy").onclick = async () => {
+      const msg = this.$("#cmdMsg");
+      try { await navigator.clipboard.writeText(cmd.flow.shell); msg.textContent = "Copied."; }
+      catch { msg.textContent = "Copy failed. Select the text by hand."; }
+    };
   }
   whyPanel() {
     const x = this.cfg.complexity[this.sel.model], s = this.sel, m = this.model();
@@ -270,12 +298,39 @@ export class Product {
         <label class="scl">At <input id="scale" type="number" min="1" step="100000" value="${S}" aria-label="requests per day"> requests a day</label></div>
       <p class="rnote">Recorded run <code>${esc(R.run_id)}</code>, re-evaluated against your limits: p99 may rise ${R.limits.p99_slack_pct}%, agreement at least ${R.limits.min_quality_pct}%${R.limits.strict_quality ? ", quality must be verified" : ""}. Levers are shown separately and never added together.</p>
       ${R.room ? this.roomResults(R) : ""}
+      <div id="rcpt"></div>
       <div id="cards">${R.levers.map((L) => this.card(L)).join("")}</div>
       <div class="resfoot"><button class="btn" id="back">Change settings</button><button class="btn" id="seeRun">See the run again</button><button class="btn" id="rerun">Run again</button><button class="btn" id="openArch">Open the Architecture map</button></div></div>`;
     if (R.room) { const b = this.$("#resB"), a = this.$("#resA"), cap = this.$("#resCap"); wireHeat(b, R.room.before, cap); wireHeat(a, R.room.after, cap); }
     this.$("#scale").onchange = (e) => { const v = Math.max(1, +e.target.value || 1); this.scale = v; this.$("#cards").innerHTML = R.levers.map((L) => this.card(L)).join(""); };
     this.$("#back").onclick = () => this.go("config"); this.$("#seeRun").onclick = () => this.go("run"); this.$("#rerun").onclick = () => { this.runView(false); this.screen = "run"; this.done = false; this.renderRail(); };
     this.$("#openArch").onclick = () => this.D.drawer("arch");
+    this.receiptBlock();
+  }
+  // "From the signed receipt": the trimmed receipt view when the server follows a run that wrote one; nothing otherwise
+  async receiptBlock() {
+    const el = this.$("#rcpt"); if (!el) return;
+    let v = null;
+    try {
+      const r = await fetch("/api/dash/run/receipt");
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      v = await r.json();
+    } catch { el.remove(); return; }
+    if (!v?.hash) { el.remove(); return; }
+    const e = v.energy_j_per_req, c = v.cost_usd_per_1m, w = v.water_l_per_1m, p = v.p99_s, q = v.quality_pct;
+    const row = (k, b, a, tag) => `<tr><th scope="row">${esc(k)}</th><td class="num">${b}</td><td class="num"><b>${a}</b></td><td>${tagOf(tag)}</td></tr>`;
+    const sig = v.signature?.signed ? `Signed offline by ${v.signature.signer || "–"}${v.signature.rekor ? ` · public log entry ${v.signature.rekor}` : " · no public log entry"}` : "Not signed";
+    el.innerHTML = `<section class="rc ${v.kept ? "kept" : "nokept"}" aria-label="from the signed receipt"><header><h2>From the signed receipt</h2><span class="hd2 num">${v.kept ? `kept ${v.kept_cap_w} W` : "Not kept"}</span><span class="lb"><code>${esc(v.receipt_id || "–")}</code></span> ${tagOf(v.label)}</header>
+      <table class="cmpt"><thead><tr><th></th><th>Before</th><th>After</th><th></th></tr></thead><tbody>
+      ${row("Energy per request", `${num(e.before, 3)} J`, `${num(e.after, 3)} J`, e.label)}
+      ${row("Cost per 1M requests", `$${num(c.before, 2)}`, `$${num(c.after, 2)}`, c.label)}
+      ${row("Water per 1M requests", `${num(w.before, 1)} L`, `${num(w.after, 1)} L`, w.label)}
+      ${row("Slowest 1% of requests (p99)", `${num(p.before, 2)} s`, `${num(p.after, 2)} s`, p.label)}
+      ${row("Quality kept", `${num(q.stock, 1)}%`, `${num(q.cap, 1)}%`, q.label)}
+      </tbody></table>
+      <p class="hnt">Steps: ${v.steps.map((s) => `${s.cap_w} W ${s.accepted ? "kept" : "not kept"}${s.chosen_by ? `, picked by ${esc(s.chosen_by)}` : ""}`).join(" · ")}</p>
+      <p class="hnt">sha256 <code>${esc(v.hash)}</code></p>
+      <p class="hnt">${esc(sig)}</p></section>`;
   }
   roomResults(R) {
     const Rm = R.room, t = Rm.target, b = Rm.before.racks.find((x) => x.id === t), a = Rm.after.racks.find((x) => x.id === t), c = Rm.cooling;
