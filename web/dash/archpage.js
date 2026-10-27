@@ -1,7 +1,46 @@
 // The Architecture deep dive: the whole map, a partner filter (with "Meta did this"),
 // replay of recorded runs, live following of an events file, and the side panel.
-import { ArchView, panelHtml, statHtml } from "./arch.js";
+import { ArchView, fmt, panelHtml, statHtml } from "./arch.js";
 import { esc, pill } from "./theme.js";
+
+// ---- live meter strip: power, cost and water per request scale, straight from the bundle.
+// Every value comes from the recorded runs, the tuning ledger or a stated published factor;
+// a value with no measurement is null and renders as "–" with no badge.
+const JH = 3600; // joules per watt-hour
+const mmMoney = (x) => (x < 100 ? `$${x.toFixed(2)}` : "$" + Math.round(x).toLocaleString("en-US"));
+
+// Which stage of a replay the meter shows: 0 baseline, 1 baseline seen in the run, 2 tuned.
+// The markers are the run's own words: the first per-request reading, then the tuned one.
+export function meterStage(cues, shown) {
+  const t = cues.slice(0, Math.max(0, shown)).map((c) => c.text).join("\n");
+  if (/Kept the cheapest|400 W: [\d.]+ mWh\/request/.test(t)) return 2;
+  if (/mWh\/request|\$[\d.,]+ for \d+ requests/.test(t)) return 1;
+  return 0;
+}
+
+// Meter tiles for one replay: power (W and J per request), cost ($ per 1M requests) and
+// water (L per 1M requests, ESTIMATE from the bundle's stated WUE factor).
+export function meterFor(d, id) {
+  const wue = d.story.water.factor_l_per_kwh, rate = d.story.price.usd_per_kwh;
+  const foot = `water = GPU kWh × WUE ${wue} L/kWh (LBNL 2024) · electricity $${rate}/kWh (EIA) · – = not metered, never guessed`;
+  if (id === "hosted") {
+    const L = d.story.levers.find((l) => l.id === "hosted"), e = L.energy_wh_per_75;
+    const kwh = (wh75) => (wh75 / 75) * 1e6 / 1000;
+    return { title: d.replays.hosted.title, lever: L, foot, tiles: [
+      { k: "power", label: "Power · per request", before: `${((e.high / 75) * JH).toFixed(1)} J`, after: `${((e.low / 75) * JH).toFixed(1)} J`, tag: "ESTIMATE", sub: "hosted GPUs are not metered — modeled energy range" },
+      { k: "cost", label: "Cost · per 1M requests", before: mmMoney(L.usd_before * 1e6), after: mmMoney(L.usd_after * 1e6), tag: "MEASURED", sub: "tuning ledger, per-request rate × 1M" },
+      { k: "water", label: "Water · per 1M requests", before: `${(kwh(e.high) * wue).toFixed(1)} L`, after: `${(kwh(e.low) * wue).toFixed(1)} L`, tag: "ESTIMATE", sub: `GPU kWh × WUE ${wue} L/kWh` },
+    ] };
+  }
+  const L = d.story.levers.find((l) => l.id === "cap");
+  const pw = d.nodes.find((n) => n.id === "telemetry")?.stats.find((s) => s.k === "probe_w");
+  const kwh = (wh) => wh * 1000;
+  return { title: d.replays.h100.title, lever: L, foot, tiles: [
+    { k: "power", label: "Power · per request", before: `${(L.wh_before * JH).toFixed(1)} J`, after: `${(L.wh_after * JH).toFixed(1)} J`, tag: "MEASURED", sub: pw ? `probe mean ${fmt(pw.v)} W · NVML` : "measured GPU energy (NVML)" },
+    { k: "cost", label: "Cost · per 1M requests", before: mmMoney(kwh(L.wh_before) * rate), after: mmMoney(kwh(L.wh_after) * rate), tag: "ESTIMATE", sub: `measured GPU kWh × $${rate}/kWh` },
+    { k: "water", label: "Water · per 1M requests", before: `${(kwh(L.wh_before) * wue).toFixed(1)} L`, after: `${(kwh(L.wh_after) * wue).toFixed(1)} L`, tag: "ESTIMATE", sub: `GPU kWh × WUE ${wue} L/kWh` },
+  ] };
+}
 import { Product } from "./product.js";
 import { mountRoomScan } from "./roomnode.js";
 
@@ -36,6 +75,7 @@ export class ArchPage {
       <div id="apipe" class="apipe"></div><div id="aall" hidden><div class="archbar"><label class="muted" for="rsel">Replay</label><select id="rsel" class="btn" aria-label="recorded run to replay"></select>
       <button class="btn pri" id="aplay">Play</button><button class="btn" id="apause">Pause</button><button class="btn" id="areset">Reset</button><button class="btn" id="aexpand">Expand all</button><button class="btn" id="acollapse">Collapse all</button>
       <span class="seg" id="aspd"><button data-s="1">1×</button><button data-s="2" class="on">2×</button><button data-s="4">4×</button></span><span class="sp"></span><span class="cap" id="aprog"></span></div>
+      <div class="mmeter" id="mmeter" aria-live="polite"></div>
       <div class="avlegend" id="afil" role="group" aria-label="filter by partner"></div>
       <div class="mstrip" id="mstrip" hidden></div>
       <div class="archcap" id="acap" aria-live="polite">Click a step to see its code, inputs, outputs, timing and partner. Pick a replay and press Play to watch a recorded run.</div>
@@ -43,9 +83,9 @@ export class ArchPage {
     const rs = Object.values(data.replays);
     $("#rsel", host).innerHTML = rs.map((r) => `<option value="${r.id}">${esc(r.title)}</option>`).join("") + `<option value="live">Live run (events file)</option>`;
     $("#afil", host).innerHTML = FILTERS.map(([id, t, c]) => `<button class="fchip ${id === "meta" ? "meta" : ""}" data-f="${id}" ${c ? `style="--c:${c}"` : ""} aria-pressed="${id === "all"}">${c ? "<i></i>" : ""}${esc(t)}${id === "meta" ? ` <span class="muted">${data.nodes.filter((n) => n.partners.includes("meta")).length} steps</span>` : ""}</button>`).join("");
-    $("#mstrip", host).innerHTML = data.meta.map((m) => `<div class="mcard"><b>${esc(m.name)}</b><p>${esc(m.does)}</p>${m.stats.slice(0, 3).map(statHtml).join("")}</div>`).join("");
-    this.view = new ArchView($("#amap", host), data, { mode: "map", onSelect: (n, s) => this.panel(n, s), onCue: (c) => { $("#acap", host).innerHTML = `<b>${esc(this.d.nodes.find((n) => n.id === c.node).title)}</b> · ${esc(c.text)} ${c.tag ? pill(c.tag) : ""}`; }, onProgress: (i, n) => { $("#aprog", host).textContent = i >= n ? "done" : `${i + 1} of ${n}`; } });
-    this.wire(); this.mode = "pipe";
+    $("#mstrip", host).innerHTML = data.meta.map((m) => `<div class="mcard"><b>${esc(m.name)}</b><p>${esc(m.does)}</p>${m.stats.slice(0, 3).map((s) => statHtml(s)).join("")}</div>`).join("");
+    this.view = new ArchView($("#amap", host), data, { mode: "map", onSelect: (n, s) => this.panel(n, s), onCue: (c) => { $("#acap", host).innerHTML = `<b>${esc(this.d.nodes.find((n) => n.id === c.node).title)}</b> · ${esc(c.text)} ${c.tag ? pill(c.tag) : ""}`; }, onProgress: (i, n) => { $("#aprog", host).textContent = i >= n ? "done" : `${i + 1} of ${n}`; this.renderMeter(i); } });
+    this.wire(); this.mode = "pipe"; this.liveW = null; this.renderMeter(0);
   }
   setMode(m) {
     this.mode = m; const H = this.host; this.closePanel();
@@ -65,10 +105,10 @@ export class ArchPage {
     H.querySelectorAll(".archmode button").forEach((b) => (b.onclick = () => this.setMode(b.dataset.m)));
     $("#aplay", H).onclick = () => this.start();
     $("#apause", H).onclick = (e) => { const b = e.currentTarget; if (this.view.paused) { this.view.resume(); b.textContent = "Pause"; } else { this.view.pause(); b.textContent = "Resume"; } };
-    $("#areset", H).onclick = () => { this.stopLive(); this.view.reset(); $("#aprog", H).textContent = ""; $("#apause", H).textContent = "Pause"; $("#acap", H).textContent = "Reset. Pick a replay and press Play."; };
+    $("#areset", H).onclick = () => { this.stopLive(); this.view.reset(); this.liveW = null; this.renderMeter(0); $("#aprog", H).textContent = ""; $("#apause", H).textContent = "Pause"; $("#acap", H).textContent = "Reset. Pick a replay and press Play."; };
     $("#aexpand", H).onclick = () => this.view.expandAll();
     $("#acollapse", H).onclick = () => this.view.collapseAll();
-    $("#rsel", H).onchange = (e) => { this.replay = e.target.value; this.view.reset(); if (this.replay === "live") this.startLive(); };
+    $("#rsel", H).onchange = (e) => { this.replay = e.target.value; this.view.reset(); this.liveW = null; this.renderMeter(0); if (this.replay === "live") this.startLive(); };
     H.querySelectorAll("#aspd button").forEach((b) => (b.onclick = () => { this.speed = +b.dataset.s; H.querySelectorAll("#aspd button").forEach((x) => x.classList.toggle("on", x === b)); }));
     H.querySelectorAll("#afil button").forEach((b) => (b.onclick = () => this.setFilter(b.dataset.f)));
     $("#apx", H).onclick = () => this.closePanel();
@@ -76,6 +116,27 @@ export class ArchPage {
       const go = e.target.closest("[data-go]"); if (go) { go.dataset.go === "meta" ? this.setFilter("meta") : this.h.openDrawer(go.dataset.go); return; }
       const sb = e.target.closest("a[data-sub]"); if (sb) { e.preventDefault(); if (this.mode === "pipe") { const sub = this.cur.subs.find((x) => x.id === sb.dataset.sub); this.panel(this.cur, sub, this.pv, this.pipe?.runBlock(this.cur, sub) || ""); } else this.view.select(this.cur.id, sb.dataset.sub); }
     });
+  }
+  // The meter strip follows the replay: baseline until the run's own readings arrive,
+  // tuned numbers once the run reaches them. `shown` is how many cues have played.
+  renderMeter(shown = 0) {
+    const box = $("#mmeter", this.host); if (!box) return;
+    if (this.replay === "live") {
+      const w = this.liveW;
+      box.innerHTML = `<div class="mm-head">Live meters ${pill("LIVE")} <span class="muted">waiting for the run's events</span></div>
+        <div class="mm-grid">
+        <div class="mm"><span class="mk">Power · now</span><span class="mv num" data-mv="power">${w == null ? "–" : `${fmt(w)} W`}</span>${w == null ? "" : ` ${pill("MEASURED")}`}<span class="ms">${w == null ? "waiting for telemetry.sample…" : "live meter (NVML)"}</span></div>
+        <div class="mm"><span class="mk">Cost · per 1M requests</span><span class="mv num">–</span><span class="ms">totals at run end</span></div>
+        <div class="mm water"><span class="mk">Water · per 1M requests</span><span class="mv num">–</span><span class="ms">totals at run end</span></div>
+        </div><span class="mm-foot">– = not metered, never guessed</span>`;
+      return;
+    }
+    const r = this.d.replays[this.replay]; if (!r) { box.innerHTML = ""; return; }
+    const m = meterFor(this.d, this.replay), st = meterStage(r.cues, shown);
+    const note = ["baseline (stock settings)", "baseline, confirmed by the run so far", `−${m.lever.saved_pct}% vs baseline`][st];
+    box.innerHTML = `<div class="mm-head">Live meters ${pill("REPLAY")} <span>${esc(m.title)}</span><span class="muted">· ${esc(note)}</span></div>
+      <div class="mm-grid">${m.tiles.map((t) => `<div class="mm${t.k === "water" ? " water" : ""}"><span class="mk">${esc(t.label)}</span><span class="mv num">${esc(st >= 2 ? t.after : t.before)}</span> ${pill(t.tag)}<span class="ms">${esc(t.sub)}</span></div>`).join("")}</div>
+      <span class="mm-foot">${esc(m.foot)}</span>`;
   }
   setFilter(f) {
     this.filter = f === "all" ? null : f; this.view.setFilter(this.filter);
@@ -108,6 +169,7 @@ export class ArchPage {
       let ev; try { ev = JSON.parse(m.data); } catch { return; }
       const d = ev.data || {};
       if (d.kind === "room_scan") this.roomScan(d);                       // a room_scan payload: draw it with the room node
+      if (ev.type === "telemetry.sample" && d.power_w != null) { this.liveW = d.power_w; this.renderMeter(0); }
       if (ev.type === "run.started") this.liveBadge(ev);
       if (ev.type === "run.finished") { this.view.finish(this.view.cur); this.view.cur = null; return; }
       const r = this.route(ev); if (!r) return;

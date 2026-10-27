@@ -129,6 +129,40 @@ def test_repo_names_no_agent_or_model_vendor():
     assert not hits, hits
 
 
+def test_arch_edges_march_with_static_dashed_idle():
+    css = (ROOT / "web" / "dash" / "story.css").read_text()
+    assert "@keyframes march" in css and "stroke-dashoffset" in css
+    base = re.search(r"\.av-edges \.e\{([^}]*)\}", css).group(1)
+    assert "stroke-dasharray" in base  # idle edges are dashed and static
+    assert "animation" not in base
+    flow = re.search(r"\.av-edges \.e\.flow\{([^}]*)\}", css).group(1)
+    assert "march" in flow and "stroke-dasharray" in flow  # inflow edges animate the dash
+    rm = css.split("prefers-reduced-motion", 1)[1]
+    assert "animation:none" in rm.replace(" ", "")
+    assert "stroke-dasharray:none" not in rm  # highlight colour kept, motion off
+
+
+def test_arch_meter_strip_and_card_bars(bundle):
+    page = (ROOT / "web" / "dash" / "archpage.js").read_text()
+    js = (ROOT / "web" / "dash" / "arch.js").read_text()
+    css = (ROOT / "web" / "dash" / "story.css").read_text()
+    assert "mmeter" in page and "meterFor" in page and "meterStage" in page
+    assert "WUE" in page and "per 1M requests" in page
+    assert '"MEASURED"' in page and '"ESTIMATE"' in page and 'pill("REPLAY")' in page
+    assert "mbar" in js and "barPct" in js and ".mbar" in css and ".mmeter" in css
+    assert ":not(.open) .d" in css and ":not(.open) .pw" in css  # collapsed: no description
+    assert "aplay" in page and "areset" in page and "afil" in page and "apanel" in page
+    # the strip's inputs really exist in the bundle it reads
+    assert bundle["story"]["water"]["factor_l_per_kwh"] > 0
+    assert bundle["story"]["price"]["usd_per_kwh"] > 0
+    levers = {x["id"]: x for x in bundle["story"]["levers"]}
+    assert levers["cap"]["wh_before"] and levers["cap"]["wh_after"]
+    assert levers["hosted"]["usd_before"] and levers["hosted"]["usd_after"]
+    assert set(bundle["replays"]) >= {"h100", "hosted"}
+    tele = next(n for n in bundle["nodes"] if n["id"] == "telemetry")
+    assert next(s for s in tele["stats"] if s["k"] == "probe_w")["v"] > 0
+
+
 # ---- server --------------------------------------------------------------------------------
 
 def test_story_and_health_endpoints():

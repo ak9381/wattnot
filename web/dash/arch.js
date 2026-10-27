@@ -16,7 +16,9 @@ export function fmt(v) {
   return (a >= 100 ? v.toFixed(0) : a >= 10 ? v.toFixed(1) : a >= 1 ? v.toFixed(2) : v.toPrecision(2)).replace(/\.?0+$/, (m) => (m.includes(".") ? "" : m));
 }
 export const statVal = (s) => (s.v == null ? "–" : `${s.unit === "$" ? "$" : ""}${fmt(s.v)}${s.unit && s.unit !== "$" ? " " + s.unit : ""}`);
-export const statHtml = (s) => `<div class="stat"><span class="k" title="${esc(s.label)}">${esc(s.label)}</span><span class="v num ${s.v == null ? "na" : ""}">${esc(statVal(s))}</span>${s.tag ? pill(s.tag) : ""}</div>`;
+// Which mini-bar metric a stat belongs to: watts, dollars, or watt-hours (energy, the water proxy).
+export const barKey = (s) => (s.unit === "$" ? "$" : s.unit === "W" ? "W" : s.k === "wh" ? "wh" : null);
+export const statHtml = (s, pct = null) => `<div class="stat"><span class="k" title="${esc(s.label)}">${esc(s.label)}</span><span class="v num ${s.v == null ? "na" : ""}">${esc(statVal(s))}</span>${s.tag ? pill(s.tag) : ""}${pct == null ? "" : `<span class="mbar" aria-hidden="true"><i style="width:${pct}%"></i></span>`}</div>`;
 
 const SHORT = { meta: "Meta", baseten: "Baseten", e2e: "E2E", hf: "Hugging Face", nvidia: "NVIDIA", sigstore: "Sigstore", oss: "open source" };
 const badge = (d, id) => { const p = d.partners[id]; return `<span class="bdg" style="--c:${p.color}" title="${esc(p.name)}">${esc(SHORT[id] || p.name)}</span>`; };
@@ -32,9 +34,20 @@ export class ArchView {
     this.edges = data.edges.filter((e) => this.ids.has(e.from) && this.ids.has(e.to));
     if (o.chain) this.edges = o.ids.slice(1).map((id, i) => ({ from: o.ids[i], to: id, partner: "oss" }));
     this.state = {}; this.filter = null; this.subOn = {};
+    // Per-metric maxima for the mini bars under power / cost / energy numbers.
+    this.barMax = {};
+    for (const n of this.nodes) for (const s of n.stats) {
+      const k = barKey(s);
+      if (k && typeof s.v === "number") this.barMax[k] = Math.max(this.barMax[k] || 0, Math.abs(s.v));
+    }
     this.build();
   }
   node(id) { return this.d.nodes.find((n) => n.id === id); }
+  barPct(s) {
+    const k = barKey(s), m = k && this.barMax[k];
+    if (!k || !m || typeof s.v !== "number" || s.v <= 0) return null;
+    return Math.max(6, Math.round((s.v / m) * 100));
+  }
   build() {
     const mode = this.o.mode || "map", d = this.d;
     // Collapsible glass cards live only on the architecture map. The run-pipeline
@@ -51,7 +64,7 @@ export class ArchView {
         el.innerHTML = `<div class="hd"><button class="t" title="Open details for ${esc(n.title)}">${esc(n.title)}</button><span class="bd">${n.partners.map((p) => badge(d, p)).join("")}</span></div>
         <p class="d">${esc(n.desc)}</p>${poweredByHtml(poweredByFor(n))}
         ${n.meta_product ? `<div class="bd" style="margin-bottom:6px"><span class="bdg mp" style="--c:var(--m)">Meta · ${esc(n.meta_product)}</span></div>` : ""}
-        <div class="stl">${stats.map(statHtml).join("")}</div>
+        <div class="stl">${stats.map((s) => statHtml(s)).join("")}</div>
         <div class="now"></div>
         ${subs}
         <div class="ft"><button class="xp" aria-expanded="false">steps (${n.subs.length})</button><button class="pin" aria-pressed="false" title="Keep this step open">pin</button>${STATUS[n.status] ? `<span class="st">${STATUS[n.status]}</span>` : ""}</div>`;
@@ -67,7 +80,7 @@ export class ArchView {
         <button class="sum" data-act="sel" title="Open details for ${esc(n.title)}" aria-label="${esc(key?.label || "value")} for ${esc(n.title)}: open details"><span class="k">${esc(key?.label || "value")}</span><span class="v num">${esc(key ? statVal(key) : "–")}</span>${key?.tag ? pill(key.tag) : ""}</button>
         <p class="d">${esc(n.desc)}</p>${poweredByHtml(poweredByFor(n))}
         ${n.meta_product ? `<div class="bd" style="margin-bottom:6px"><span class="bdg mp" style="--c:var(--m)">Meta · ${esc(n.meta_product)}</span></div>` : ""}
-        <div class="stl">${stats.map(statHtml).join("")}</div>
+        <div class="stl">${stats.map((s) => statHtml(s, this.barPct(s))).join("")}</div>
         <div class="now"></div>
         ${subs}
         <div class="ft"><button class="xp" aria-expanded="false" aria-controls="subs-${n.id}">steps (${n.subs.length})</button><button class="pin" aria-pressed="false" title="Keep this step open">pin</button>${STATUS[n.status] ? `<span class="st">${STATUS[n.status]}</span>` : ""}</div>`;
@@ -264,7 +277,7 @@ export function panelHtml(view, n, s) {
     <div class="row2"><div><h5>Goes in</h5><p>${esc(spec.inputs || "–")}</p></div><div><h5>Comes out</h5><p>${esc(spec.outputs || "–")}</p></div></div>
     <h5>Time</h5><p>${timing}</p>
     <h5>${esc(d.partners[p]?.name || "Partner")}${used ? " · used for" : ""}</h5><p>${esc(used) || "–"}</p>
-    <h5>${s ? "Numbers for this step's module" : "Numbers"}</h5>${n.stats.map(statHtml).join("") || "–"}
+    <h5>${s ? "Numbers for this step's module" : "Numbers"}</h5>${n.stats.map((s) => statHtml(s)).join("") || "–"}
     ${!s ? `<h5>Sub-steps</h5><ul>${n.subs.map((x, i) => `<li><a href="#" data-sub="${x.id}" style="color:var(--cy);text-decoration:none">${i + 1}. ${esc(x.title)}</a></li>`).join("")}</ul>` : ""}
     <h5>Evidence (last receipts and logs)</h5><ul>${(n.evidence || []).map((x) => `<li>${esc(x)}</li>`).join("")}${ev.map((x) => `<li class="muted">${esc(x)}</li>`).join("") || (n.evidence ? "" : "<li>–</li>")}</ul>
     <div class="go">${link ? `<button class="btn" data-go="${link}">Open in ${link === "power" ? "Power" : "Experts"}</button>` : ""}${n.partners.includes("meta") ? `<button class="btn" data-go="meta">Show everything Meta did</button>` : ""}</div>`;
