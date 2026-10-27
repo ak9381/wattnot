@@ -106,6 +106,8 @@ def run_step(rig: Rig, cap_w: int, reps: int, out: Path, *, workload: Workload, 
     stock, capped = [], []
     for r in range(reps):
         for arm, w in (("stock", stock_w), ("cap", cap_w)):
+            if log:
+                log("block_start", {"cap_w": cap_w, "arm": arm, "rep": r, "set_w": w})
             b = rig.block(w)
             if log:
                 log("block", {"cap_w": cap_w, "arm": arm, "rep": r, "set_w": w,
@@ -128,8 +130,15 @@ def run_control(rig: Rig, out: Path, *, workload: Workload, scale: float = 0.2, 
     """The gate's own test: stock vs a deliberately bad setting (answers cut to `scale` of
     their token budget). The gate must reject it; otherwise it can't tell good from bad."""
     stock_w = rig.default_w
-    a, b = rig.block(stock_w), rig.block(stock_w, token_scale=scale)
-    a2 = rig.block(stock_w)  # a second stock block: how much does stock move on its own
+
+    def blk(name: str, **kw) -> dict:
+        if log:
+            log("block_start", {"name": name, "set_w": stock_w, **kw})
+        return rig.block(stock_w, **kw)
+
+    a = blk("stock")
+    b = blk("truncated", token_scale=scale)
+    a2 = blk("stock2")  # a second stock block: how much does stock move on its own
     sa, sb, sa2 = (save_raw(out, f"control-{n}", x) for n, x in
                    (("stock", a), ("truncated", b), ("stock2", a2)))
     items = pooled_items(workload, rig.repeat)

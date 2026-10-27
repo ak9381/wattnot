@@ -44,7 +44,7 @@ def make_log(out: Path) -> Callable[[str, dict], None]:
 
     def log(kind: str, data: dict) -> None:
         line = json.dumps({"t": now(), "kind": kind, **data}, ensure_ascii=False)
-        with (out / "events.jsonl").open("a") as f:
+        with (out / "log.jsonl").open("a") as f:
             f.write(line + "\n")
         print(line[:300], flush=True)
     return log
@@ -162,23 +162,72 @@ def serve(model: str, port: int, log_path: Path):  # pragma: no cover
     return p
 
 
+class _NoGuard:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return None
+
+
 def open_rig(args) -> tuple[Rig, object]:  # pragma: no cover
+    wl = load_workload(args.workload or workloads_dir() / "proof-v1.jsonl", kind="proof")
+    if args.fake:  # a rehearsal: fake GPU, fake model server, nothing measured
+        from wattnot.proof.fake import FakeClient, FakeNvml
+        nvml = FakeNvml()
+        handle = nvml.device_handle(0)
+        rig = Rig(nvml, handle, FakeClient(nvml, delay_s=args.fake_delay), wl,
+                  concurrency=args.concurrency, repeat=args.repeat, settle_s=args.settle_s,
+                  warmup=args.warmup, sleep=lambda x: time.sleep(min(x, 0.2)))
+        return rig, _NoGuard()
     from wattnot.control.nvml_ctl import CapGuard
     from wattnot.probe import open_nvml
     nvml = open_nvml()
     handle = nvml.device_handle(0)
-    guard = CapGuard(nvml, handle)
+    guard = CapGuard(nvml, handle) if not args.keep_cap else _NoGuard()
     guard.__enter__()  # puts the saved limit back on exit and on SIGTERM
-    wl = load_workload(args.workload or workloads_dir() / "proof-v1.jsonl", kind="proof")
     client = ChatClient(f"http://127.0.0.1:{args.port}/v1", args.model)
-    rig = Rig(nvml, handle, client, wl, concurrency=args.concurrency, repeat=args.repeat)
+    rig = Rig(nvml, handle, client, wl, concurrency=args.concurrency, repeat=args.repeat,
+              settle_s=args.settle_s, warmup=args.warmup)
     return rig, guard
+
+
+def run_vm_command(a, rig: Rig) -> int:  # pragma: no cover - thin dispatch, tested via vm.py
+    """The events-emitting commands, driven from the control machine."""
+    from wattnot.proof import vm
+    from wattnot.proof.events import Stream, stdout_sink
+    s = Stream(stdout_sink(a.out / "vm_events.jsonl"), label="MOCK" if a.fake else "MEASURED")
+    nar = vm.Narrator(s).attach(rig)
+    if a.cmd == "snap":
+        vm.cmd_snap(rig, s, a.load_s)
+    elif a.cmd == "baseline":
+        vm.cmd_baseline(rig, s, nar, a.out)
+    elif a.cmd == "control":
+        r = vm.cmd_control(rig, s, nar, a.out)
+        return 0 if r["bad_setting_rejected"] and r["stock_vs_stock_accepted"] else 3
+    elif a.cmd == "step":
+        vm.cmd_step(rig, s, nar, a.cap, a.reps, a.out, tag=a.tag)
+    elif a.cmd == "apply":
+        vm.cmd_apply(rig, s, a.cap)
+    elif a.cmd == "adaptive":
+        from wattnot.moe import adaptive_topk as at
+        from wattnot.proof.adaptive import VmRig, run_adaptive
+        cfg = at.AdaptiveConfig(model=a.adaptive_model, budget_s=a.adaptive_budget_s)
+        if a.fake:
+            backend = at.FakeMoeBackend()
+        else:
+            from wattnot.moe.hf_backend import HFBackend
+            backend = HFBackend(cfg, VmRig(rig.nvml, rig.handle, a.out))
+        info = run_adaptive(s, a.out / "adaptive_topk", backend, cfg)
+        print("ADAPTIVE_JSON " + json.dumps(info, default=str), flush=True)
+    return 0
 
 
 def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawTextHelpFormatter)
-    ap.add_argument("cmd", choices=["full", "step", "control", "report"])
+    ap.add_argument("cmd", choices=["full", "step", "control", "report", "snap", "baseline",
+                                    "apply", "adaptive"])
     ap.add_argument("--model", default=MODEL)
     ap.add_argument("--out", type=Path, default=Path("results/proof"))
     ap.add_argument("--port", type=int, default=8000)
@@ -193,6 +242,15 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover
     ap.add_argument("--max-proposals", type=int, default=4)
     ap.add_argument("--budget-s", type=float, default=0, help="stop starting new caps after this")
     ap.add_argument("--tag", default="")
+    ap.add_argument("--emit", action="store_true", help="step/control: emit EVT event lines")
+    ap.add_argument("--fake", action="store_true", help="rehearsal: fake GPU and model, MOCK labels")
+    ap.add_argument("--fake-delay", type=float, default=0.0, help="seconds per fake request")
+    ap.add_argument("--settle-s", type=float, default=4.0)
+    ap.add_argument("--warmup", type=int, default=16)
+    ap.add_argument("--keep-cap", action="store_true", help="apply: leave the cap set on exit")
+    ap.add_argument("--load-s", type=float, default=0, help="snap: seconds of load at stock cap")
+    ap.add_argument("--adaptive-model", default="ibm-granite/granite-3.1-3b-a800m-instruct")
+    ap.add_argument("--adaptive-budget-s", type=float, default=1200)
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
     log = make_log(a.out)
@@ -202,11 +260,16 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover
         ctl = json.loads(cpath.read_text()) if cpath.exists() else None
         write_report(a.out, a.model, ctl, steps, {"note": "re-generated"})
         return 0
+    if a.cmd == "apply":
+        a.keep_cap = True
     proc = serve(a.model, a.port, a.out / "vllm.log") if a.serve else None
     rig, guard = open_rig(a)
     signal.signal(signal.SIGTERM, lambda *_: (_ for _ in ()).throw(SystemExit(143)))
     t_start = time.time()
     try:
+        if a.cmd in ("snap", "baseline", "apply", "adaptive") or (
+                a.cmd in ("control", "step") and a.emit):
+            return run_vm_command(a, rig)
         if a.cmd == "control":
             r = run_control(rig, a.out, workload=rig.workload, log=log)
             print(json.dumps({k: v for k, v in r.items() if k != "blocks"}))
@@ -242,8 +305,9 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover
                       "default_w": rig.default_w, "gpu_min_w": rig.min_w, "gpu_max_w": rig.max_w})
         return 0
     finally:
-        with contextlib.suppress(Exception):
-            rig.set_cap(rig.default_w)
+        if not a.keep_cap:
+            with contextlib.suppress(Exception):
+                rig.set_cap(rig.default_w)
         guard.__exit__(None, None, None)
         if proc is not None:
             proc.terminate()

@@ -60,7 +60,8 @@ SYSTEM = (
     "the trials so far. Pick ONE next cap from `allowed` (kind=try), or kind=stop when more trials "
     "are unlikely to find a lower accepted cap. Look for the lowest-energy accepted cap; the "
     "energy saving usually grows as the cap falls until p99 breaks the limit. The reason is one "
-    "short line quoting the number that drove the choice. JSON only."
+    "short line quoting the number that drove the choice. If `room` is present it is advice from "
+    "a rack-photo scan (hot rack, suggested cap ceiling); weigh it, the gates still decide. JSON only."
 )
 SCHEMA = {"type": "object", "additionalProperties": False, "required": ["kind", "cap_w", "reason"],
           "properties": {"kind": {"enum": ["try", "stop"]}, "cap_w": {"type": ["integer", "null"]},
@@ -76,6 +77,7 @@ class MusePlanner:
         self.fallback = fallback or BisectPlanner(lo, hi)
         self.last_usage: dict = {}
         self.last_error: str | None = None
+        self.context: dict = {}  # extra facts for the prompt, e.g. the room scan's hint for the rack
 
     def propose(self, history: Sequence[dict]) -> dict:
         tried = [h["cap_w"] for h in history]
@@ -89,6 +91,8 @@ class MusePlanner:
                                                  "why_not")} for h in history],
                    "prior": "an earlier unchecked run saw about -18% J/request at 400 W with p99 "
                             "+3.7%; treat it as a hint, not a fact"}
+        if self.context:
+            payload["room"] = self.context
         try:
             raw = self.client(_body(SYSTEM, payload, SCHEMA, "NextCap", effort="low",
                                     max_tokens=4000), purpose="next-power-cap")
