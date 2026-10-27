@@ -72,7 +72,7 @@ export class Orchestra {
     const { st, arm } = this.ctx, g = this.geo, cv = this.cv; if (!g || !cv) return;
     const x = cv.getContext("2d"); x.setTransform(g.dpr, 0, 0, g.dpr, 0, 0);
     x.clearRect(0, 0, g.W, g.H);
-    const colors = GROUP_COLORS[st.mode], counts = st.meta.counts[arm], max = Math.max(...counts) || 1;
+    const colors = GROUP_COLORS[st.mode], counts = this.ctx.live() ? st.arm[arm].units : st.meta.counts[arm], max = Math.max(...counts) || 1;
     const ratio = C.skipRatio(st), f = this.ctx.focus();
     const gt = C.groupTotals(st, arm);
     // section headers

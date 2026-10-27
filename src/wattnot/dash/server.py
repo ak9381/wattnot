@@ -22,7 +22,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from wattnot.dash import experts, gpu
@@ -42,7 +42,7 @@ def _frame(event: str, obj, i: int | None = None) -> str:
 def create_app(*, bundle: Path | None = None, capture: Path | None = None,
                follow: Path | None = None, results: Path | None = None) -> FastAPI:
     app = FastAPI(title="WattNot dashboard", version="1")
-    app.add_middleware(GZipMiddleware, minimum_size=2000)
+    app.add_middleware(GZipMiddleware, minimum_size=2000, compresslevel=3)
     cap_path = Path(follow or capture or DEFAULT_CAPTURE)
     following = follow is not None
 
@@ -87,11 +87,26 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         return StreamingResponse(gen(), media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache"})
 
-    def _meta() -> dict:
+    cache: dict = {}
+
+    def _load() -> experts.Capture:
+        """A finished capture is parsed once; one that is still being written, every time."""
         if not cap_path.is_file():
             raise HTTPException(404, "no capture yet")
-        cap = experts.Capture.load(cap_path) if not following else _partial(cap_path)
-        return experts.build_meta(cap, gpu_bundle.get("pricing"))
+        if following:
+            return _partial(cap_path)
+        key = (cap_path.stat().st_mtime_ns, cap_path.stat().st_size)
+        if cache.get("key") != key:
+            cap = experts.Capture.load(cap_path)
+            cache.update(key=key, cap=cap, meta=experts.build_meta(cap, gpu_bundle.get("pricing")),
+                         ticks=json.dumps(cap.ticks, separators=(",", ":")).encode())
+        return cache["cap"]
+
+    def _meta() -> dict:
+        cap = _load()
+        if following:
+            return experts.build_meta(cap, gpu_bundle.get("pricing"))
+        return cache["meta"]
 
     def _partial(path: Path) -> experts.Capture:
         """A capture that is still being written: read what is complete so far."""
@@ -110,10 +125,10 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
     @app.get("/api/dash/moe/ticks")
     def moe_ticks() -> JSONResponse:
         """Every tick at once, so the page can replay locally and flip adaptive top-k at will."""
-        if not cap_path.is_file():
-            raise HTTPException(404, "no capture yet")
-        cap = _partial(cap_path) if following else experts.Capture.load(cap_path)
-        return JSONResponse(cap.ticks)
+        cap = _load()
+        if following:
+            return JSONResponse(cap.ticks)
+        return Response(cache["ticks"], media_type="application/json")
 
     @app.get("/api/dash/moe/events")
     async def moe_events(request: Request, speed: float = 8.0):

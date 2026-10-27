@@ -28,12 +28,13 @@ let flow, orch, inited = false, ctx;
 
 async function initExperts() {
   if (inited) return; inited = true;
+  $("flowwrap").innerHTML = `<p class="note2" style="padding:20px">loading the capture…</p>`;
   const [meta, ticks] = await Promise.all([fetch("/api/dash/moe/meta").then((r) => r.json()), fetch("/api/dash/moe/ticks").then((r) => r.json())]);
   app.ticks = ticks;
   app.st = C.createState(meta, params.get("mode") === "kmeans" ? "kmeans" : "tier");
   ctx = {
     get st() { return app.st; }, get arm() { return app.arm; },
-    running: () => performance.now() < app.runningUntil,
+    running: () => performance.now() < app.runningUntil, live: () => app.live,
     focus: () => focus(), pickedGroup: () => app.sel.group,
     hoverGroup: (g) => { app.hov.group = g; refreshFocus(); },
     selectGroup: (g) => { app.sel.group = app.sel.group === g ? null : g; if (app.sel.group != null) app.sel.steps = []; refreshFocus(); },
@@ -94,7 +95,7 @@ function fastForwardTo(n) {
 let lastFrame = performance.now(), acc = 0, uiAcc = 0;
 function consume(t, flash = true) {
   C.applyTick(app.st, t);
-  if (flash) { C.bump(app.st, t); app.runningUntil = performance.now() + 600; }
+  if (flash) { C.bump(app.st, t); app.runningUntil = performance.now() + 1600; }
   logTick(t);
   setRunning(t.step);
 }
@@ -123,7 +124,7 @@ function goLive() {
   const es = new EventSource("/api/dash/moe/events");
   es.addEventListener("tick", (ev) => { const t = JSON.parse(ev.data); app.ticks.push(t); if (t.arm === app.arm) consume(t); });
   es.addEventListener("end", () => { logLine("live", "run finished"); es.close(); });
-  $("srcChip").insertAdjacentHTML("beforeend", ` <span class="pill MEASURED">LIVE</span>`);
+  $("srcChip").insertAdjacentHTML("afterbegin", `<span class="pill MEASURED">LIVE</span> `);
 }
 
 // ---- focus (hover beats selection) and the link between the two views

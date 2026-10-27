@@ -102,7 +102,7 @@ export class Flow {
     const w = cv.clientWidth || 180; cv.width = w;
     const x = cv.getContext("2d"), cw = w / E, ch = 3;
     x.clearRect(0, 0, w, cv.height);
-    const counts = st.meta.counts[arm], max = Math.max(...counts) || 1;
+    const counts = this.ctx.live() ? st.arm[arm].units : st.meta.counts[arm], max = Math.max(...counts) || 1;
     for (let l = 0; l < L; l++) for (let e = 0; e < E; e++) {
       const u = l * E + e;
       if (st.assign[u] !== g) { x.fillStyle = "#10171E"; x.fillRect(e * cw, l * ch + 1, cw - 0.6, ch - 0.6); continue; }
