@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Room scan node</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="room.css">
+<style>
+body{display:block;padding:24px;max-width:640px}
+.node{border:1px solid var(--ln);border-radius:12px;overflow:hidden;background:var(--s1)}
+.node h3{margin:0;padding:10px 14px;font:600 14px/1 Inter,system-ui,sans-serif}
+.room-node-bar{display:flex;gap:6px;padding:8px 12px;flex-wrap:wrap}
+.room-node-bar button{font:12px var(--mono);padding:4px 10px;border-radius:999px;border:1px solid #3a4856;background:none;color:inherit;cursor:pointer}
+.room-node-bar button.on{background:#22C7D9;color:#041014;border-color:#22C7D9}
+.room-node-note{padding:8px 12px;font:12px/1.4 Inter,system-ui,sans-serif;opacity:.8}
+</style></head>
+<body><div class="node"><h3>Room scan</h3><div id="n"></div><a href="index.html" style="display:block;padding:0 12px 10px;font-size:12px;color:var(--cy)">Open the full Room view</a></div>
+<script type="module">
+import { mountNode } from "./node.js";
+const q = new URLSearchParams(location.search);
+const h = await mountNode(document.getElementById("n"), { room: "arsat", data: "data" });
+if (q.get("view")) h.state.view = q.get("view"); if (q.get("phase")) h.state.phase = q.get("phase"); h.draw();
+</script></body></html>

@@ -183,7 +183,8 @@ def surface_c(power_w: float, t_in: float, r_air: float, extra_c: float = 0.0) -
     return t_in + r_air * power_w + extra_c
 
 
-def die_c(power_w: np.ndarray, t_in: float, r_die: float = 0.085, tau_s: float = 15.0) -> np.ndarray:
+def die_c(power_w: np.ndarray, t_in: float, r_die: float = 0.085,
+          tau_s: float = 15.0) -> np.ndarray:
     """GPU temperature from power, first order with lag. SIMULATED: RUN1 logged no temperature."""
 
     a = 1.0 / tau_s
@@ -299,6 +300,8 @@ def build_scan(room: str, *, root: Path = ROOT, thermal: str | Path | None = Non
     for i, m in enumerate(masks):
         load = sc["loads"].get(m.id, sc["default_load"])
         series[m.id] = [gpu_power(trace, i, g, load * (1 + 0.04 * _rng(i, g))) for g in range(n_g)]
+        if m.id == sc.get("real_rack"):  # the one real H100: its own log, no shift, no scale
+            series[m.id][0] = trace["power_w"].copy()
     tot = sum(sum(s) for r in series.values() for s in r)
     t_now = int(np.argmax(tot))
     rack_w = {k: float(np.mean([s[t_now] for s in v])) for k, v in series.items()}
@@ -348,8 +351,10 @@ def build_scan(room: str, *, root: Path = ROOT, thermal: str | Path | None = Non
             "id": m.id, "box": list(m.box), "polygon": outline(m), "path": svg_path(m),
             "temp_c": None if cam is None else round(cam, 1),
             "temp_max_c": None if cam is None else round(reading[m.id]["max"], 1),
+            "source": "h100-run1" if m.id == sc.get("real_rack") else "example",
             "power_w": round(rack_w[m.id]), "gpus": [
                 {"id": g, "power_w": round(float(series[m.id][k][t_now])),
+                 "measured": bool(m.id == sc.get("real_rack") and k == 0),
                  "gpu_temp_c": round(float(die_c(series[m.id][k], t_in)[t_now]), 1)}
                 for k, g in enumerate(gpus)],
             "decision": d["action"], "cap_w": d.get("cap_w"), "reason": d["reason"],
@@ -391,12 +396,14 @@ def build_scan(room: str, *, root: Path = ROOT, thermal: str | Path | None = Non
         "labels": {"rack_count": MEASURED, "rack_outline": MEASURED, "rack_to_gpu_map": SIMULATED,
                    "thermal_frame": frame_label, "rack_temp_c": cam_label, "gpu_power_w": REPLAY,
                    "gpu_temp_c": SIMULATED, "decision": ADVICE, "after": SIMULATED,
-                   "load_factors": SIMULATED},
+                   "load_factors": SIMULATED, "example_racks": SIMULATED,
+                   "h100_gpu_power_w": MEASURED},
         "thermal": {"mode": mode, "range_c": [lo, hi], "method": method, "hot_c": th["hot_c"],
                     "high_power_w": th["high_power_w"], "t_in_c": t_in,
                     "slope_c_per_w": r_air, "t_index": t_now},
         "sam": {"model": "sam-3.1", "prompt": PROMPT, "racks_found": len(masks)},
         "power_source": trace["source"],
+        "real_rack": sc.get("real_rack"),
         "racks": racks, "hotspots": [r["id"] for r in hot if r["temp_c"] >= th["hot_c"]],
         "before": before, "after": after, "sam_off": off}
     if out is not None:
@@ -435,9 +442,76 @@ def read_ir_still(path: str | Path, lo: float, hi: float, bands: int = 8) -> dic
             "hottest_band": max(rows, key=lambda r: r["p90_c"])["band"]}
 
 
+def targets(scan: dict) -> list[dict]:
+    """Candidate targets for Muse Spark in RUN2, most urgent first. Numbers and ids only: no
+    images, no host names. `derate` racks come first (hot at high power: a cap helps), then
+    `hold` (hot at low power: fix cooling, do not cap), then racks with the least headroom.
+    The planner and the gate still decide; this only orders the question."""
+
+    th = scan["thermal"]["hot_c"]
+    rank = {"derate": 0, "hold": 1, "ok": 2, "none": 3}
+    out = []
+    for r in scan["racks"]:
+        out.append({"rack": r["id"], "gpus": [g["id"] for g in r["gpus"]], "action": r["decision"],
+                    "camera_c": r["temp_c"], "power_w": r["power_w"], "cap_w": r["cap_w"],
+                    "headroom_c": None if r["temp_c"] is None else round(th - r["temp_c"], 1),
+                    "real_h100": r["source"] == "h100-run1", "reason": r["reason"]})
+    out.sort(key=lambda t: (rank[t["action"]],
+                            99 if t["headroom_c"] is None else t["headroom_c"]))
+    return out
+
+
+def event_payload(scan: dict, phase: str) -> dict:
+    """The `room_scan` payload for one phase ("before" or "after"). Compact: per rack the
+    outline, the reading, the power and the decision. Same shape for both phases."""
+
+    after = phase == "after"
+    racks = []
+    for r in scan["racks"]:
+        v = r["after"] if after else r["before"]
+        racks.append({"id": r["id"], "polygon": r["polygon"], "temp_c": v["temp_c"],
+                      "power_w": v["power_w"], "gpus": [g["id"] for g in r["gpus"]],
+                      "decision": r["decision"], "cap_w": r["cap_w"], "reason": r["reason"],
+                      "source": r["source"]})
+    agg = scan["after"] if after else scan["before"]
+    return {"kind": "room_scan", "phase": phase, "room_id": scan["room_id"],
+            "image": scan["image"],
+            "thermal_image": (scan["thermal_after_image"] or scan["thermal_image"]) if after
+            else scan["thermal_image"],
+            "labels": scan["labels"], "thermal_mode": scan["thermal"]["mode"],
+            "range_c": scan["thermal"]["range_c"], "hot_c": scan["thermal"]["hot_c"],
+            "racks": racks, "summary": agg, "hotspots": scan["hotspots"],
+            "targets": targets(scan) if not after else None,
+            "sam": scan["sam"]}
+
+
+def emit_events(scan: dict, emitter, *, step_id: str = "room-scan",
+                parent_step_id: str | None = None) -> list[dict]:
+    """Write the room scan into a run's event log, step 1 of a run. Uses only event types
+    the frozen schema already has: `step.started`, two `step.progress` events whose data
+    carries the `room_scan` payload (before, then after the planned caps) and `step.finished`.
+    The UI reads `data.kind == "room_scan"`."""
+
+    kw = {"step_id": step_id, "parent_step_id": parent_step_id}
+    out = [emitter.emit("step.started", {"kind": "room_scan", "label": "Room scan",
+                                         "agent": "wattnot", "model": "sam-3.1",
+                                         "effort": None}, **kw)]
+    out.append(emitter.emit("step.progress", {"pct": 50, "message": (
+        f"SAM 3.1 found {scan['sam']['racks_found']} racks; "
+        f"{len(scan['hotspots'])} over the {scan['thermal']['hot_c']:g} C line"),
+        **event_payload(scan, "before")}, **kw))
+    out.append(emitter.emit("step.progress", {"pct": 100, "message": (
+        f"after the planned caps: {scan['after']['saved_w']} W less, "
+        f"{scan['after']['hot_racks']} racks still over the line"),
+        **event_payload(scan, "after")}, **kw))
+    out.append(emitter.emit("step.finished", {"status": "ok", "duration_ms": 0, "tokens": None,
+                                              "meta_cost_usd": 0.0025, "retry": 0}, **kw))
+    return out
+
+
 def public(scan: dict) -> dict:
     return {k: v for k, v in scan.items() if not k.startswith("_")}
 
 
 __all__ = ["RackMask", "build_scan", "decide", "from_rgb", "masks_from_raw", "public",
-           "read_ir_still", "read_masks", "to_rgb"]
+           "read_ir_still", "read_masks", "to_rgb", "targets", "event_payload", "emit_events"]
