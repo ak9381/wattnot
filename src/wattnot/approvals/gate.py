@@ -48,13 +48,18 @@ def _bounds_text(b: Mapping) -> str:
     if "flex_shed" in b:
         f = b["flex_shed"]
         bits.append(f"shed up to {f['max_target_pct']}% for up to {f['max_duration_s']} s")
+    if "moe_routing" in b:
+        r = b["moe_routing"]
+        bits.append(f"run a MoE model with adaptive top-k (router mass {r['min_mass']:g}-"
+                    f"{r['max_mass']:g}) next to the normal top-k, in a separate process")
     return "; ".join(bits) or "nothing"
 
 
 def grant_spec(*, title: str, bounds: Mapping, source: Mapping, ttl_s: float,
                reason: str = "") -> dict:
     """A trial_grant proposal spec. `bounds` keys: power_cap_w {min,max}, gpus [..],
-    vllm_config true, flex_shed {max_target_pct, max_duration_s}."""
+    vllm_config true, flex_shed {max_target_pct, max_duration_s},
+    moe_routing {min_mass, max_mass}."""
     return {
         "kind": m.TRIAL_GRANT, "scope": m.TRIAL, "title": title,
         "summary": (f"Try these changes to take measurements: {_bounds_text(bounds)}. "
@@ -240,3 +245,14 @@ class TrialSession:
             raise NotApproved(f"a {target_pct:g}% shed for {duration_s:g} s is outside the "
                               f"approved {f['max_target_pct']:g}% / {f['max_duration_s']:g} s")
         self._used(m.FLEX_SHED, float(target_pct))
+
+    def check_moe(self, mass: float) -> None:
+        """Adaptive top-k trial: `mass` is the cumulative router mass kept per token."""
+        self._alive()
+        r = self.bounds.get("moe_routing")
+        if not r:
+            raise NotApproved("this grant does not allow an adaptive top-k trial")
+        if not r["min_mass"] <= mass <= r["max_mass"]:
+            raise NotApproved(f"router mass {mass:g} is outside the approved "
+                              f"{r['min_mass']:g}-{r['max_mass']:g}")
+        self._used(m.MOE_ROUTING, float(mass))
