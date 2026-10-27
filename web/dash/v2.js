@@ -426,27 +426,76 @@ function mapTopics() {
   ];
 }
 let mapWired = false;
+// Radial layout: the hub sits in the middle and the 8 topics sit on an
+// ellipse around it. Angles come from trig (Math.cos/Math.sin) so the
+// nodes spread evenly; the radii derive from the container size so the map
+// responds to width, and the stage grows taller when open topics need room.
+function mapLayout() {
+  const wrap = $("#mapWrap"), stage = $("#mapStage"), svg = $("#mapWires"), hub = $("#mapHub");
+  if (!wrap || !stage || !svg || !hub) return;
+  const W = wrap.clientWidth || 0;
+  const topics = $$(".topic", stage);
+  if (!W || W < 900) {
+    // Narrow screens: fall back to the stacked layout (static flow, no wires).
+    stage.style.height = "";
+    hub.style.left = ""; hub.style.top = "";
+    topics.forEach((t) => { t.style.left = ""; t.style.top = ""; });
+    svg.innerHTML = "";
+    return;
+  }
+  const n = topics.length || 8;
+  const openN = topics.filter((t) => t.dataset.open === "1").length;
+  let H = Math.max(660, 560 + openN * 120);
+  stage.style.height = `${H}px`;
+  const hubW = hub.offsetWidth || 360, hubH = hub.offsetHeight || 240;
+  const cx = W / 2, cy = H / 2;
+  const rx = Math.max(150, W / 2 - 160, hubW / 2 + 150);
+  const ry = Math.max(160, H / 2 - 130, hubH / 2 + 90);
+  hub.style.left = `${cx.toFixed(1)}px`; hub.style.top = `${cy.toFixed(1)}px`;
+  topics.forEach((t, i) => {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+    t.style.left = `${(cx + rx * Math.cos(a)).toFixed(1)}px`;
+    t.style.top = `${(cy + ry * Math.sin(a)).toFixed(1)}px`;
+  });
+  drawWires();
+  // Widen the canvas when an open topic spills past the bottom edge.
+  const need = stage.scrollHeight || 0;
+  if (need > H + 4) { stage.style.height = `${need + 24}px`; drawWires(); }
+}
 function drawWires() {
-  const wrap = $("#mapWrap"), svg = $("#mapWires");
-  if (!wrap || !svg) return;
-  const wr = wrap.getBoundingClientRect();
-  if (!wr.width) return;
-  const pt = (el, edge) => { const b = el.getBoundingClientRect(); return edge === "top" ? [b.left + b.width / 2 - wr.left, b.top - wr.top] : [b.left + b.width / 2 - wr.left, b.bottom - wr.top]; };
-  const curve = (a, b) => { const my = (a[1] + b[1]) / 2; return `M ${a[0].toFixed(1)} ${a[1].toFixed(1)} C ${a[0].toFixed(1)} ${my.toFixed(1)}, ${b[0].toFixed(1)} ${my.toFixed(1)}, ${b[0].toFixed(1)} ${b[1].toFixed(1)}`; };
-  const hub = $("#mapHub"), d = [];
-  if (hub) $$(".topic", wrap).forEach((t) => {
+  const wrap = $("#mapWrap"), stage = $("#mapStage"), svg = $("#mapWires"), hub = $("#mapHub");
+  if (!wrap || !stage || !svg || !hub) return;
+  if ((wrap.clientWidth || 0) < 900) return;
+  const sr = stage.getBoundingClientRect();
+  if (!sr.width || !sr.height) return;
+  const ctr = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - sr.left, b.top + b.height / 2 - sr.top]; };
+  const top = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - sr.left, b.top - sr.top]; };
+  const bot = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - sr.left, b.bottom - sr.top]; };
+  // Curved radial connector: leaves the hub toward the topic and arrives
+  // along the same direction, bowed with a cubic Bezier.
+  const radial = (a, b) => {
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const len = Math.hypot(dx, dy) || 1;
+    const sx = a[0] + (dx / len) * 40, sy = a[1] + (dy / len) * 40;
+    const ex = b[0] - (dx / len) * 46, ey = b[1] - (dy / len) * 30;
+    const c1 = [sx + dx * 0.3, sy + dy * 0.3], c2 = [sx + dx * 0.7, sy + dy * 0.7];
+    return `M ${sx.toFixed(1)} ${sy.toFixed(1)} C ${c1[0].toFixed(1)} ${c1[1].toFixed(1)}, ${c2[0].toFixed(1)} ${c2[1].toFixed(1)}, ${ex.toFixed(1)} ${ey.toFixed(1)}`;
+  };
+  const drop = (a, b) => { const my = (a[1] + b[1]) / 2; return `M ${a[0].toFixed(1)} ${a[1].toFixed(1)} C ${a[0].toFixed(1)} ${my.toFixed(1)}, ${b[0].toFixed(1)} ${my.toFixed(1)}, ${b[0].toFixed(1)} ${b[1].toFixed(1)}`; };
+  const hc = ctr(hub), d = [];
+  $$(".topic", stage).forEach((t) => {
     const head = $(".topic-head", t);
     if (!head) return;
-    d.push(curve(pt(hub, "bot"), pt(head, "top")));
-    if (t.dataset.open === "1") $$(".leaf", t).forEach((l) => d.push(curve(pt(head, "bot"), pt(l, "top"))));
+    d.push(radial(hc, ctr(head)));
+    if (t.dataset.open === "1") $$(".leaf", t).forEach((l) => d.push(drop(bot(head), top(l))));
   });
-  svg.setAttribute("viewBox", `0 0 ${wr.width} ${wr.height}`);
+  svg.setAttribute("viewBox", `0 0 ${sr.width} ${sr.height}`);
   svg.innerHTML = d.map((x) => `<path d="${x}"/>`).join("");
 }
 function wireMap() {
-  drawWires();
-  setTimeout(drawWires, 0);
-  if (!mapWired) { mapWired = true; window.addEventListener("resize", drawWires); }
+  mapLayout();
+  setTimeout(mapLayout, 0);
+  if (!mapWired) { mapWired = true; window.addEventListener("resize", mapLayout); }
 }
 async function selectRun(id) {
   S.selRunId = id;
@@ -464,7 +513,6 @@ async function renderReport() {
   S.verify ??= await fetch("/api/dash/v2/verify").then((r) => r.json()).catch(() => null);
   S.runs ??= await fetch("/api/dash/v2/runs").then((r) => r.json()).catch(() => null);
   const topics = mapTopics();
-  const left = topics.slice(0, 4), right = topics.slice(4);
   const sha = await sha256(stableStringify(reportFingerprintData()));
   const vs = verifySummary(S.verify);
   const r2 = S.selHeadline || S.run2 || {};
@@ -482,14 +530,16 @@ async function renderReport() {
     </div></div>`;
   $("#pReport").innerHTML = `<div class="ctrl noprint"><label for="runSel">Run</label><select id="runSel" style="width:auto;max-width:320px" aria-label="Run">${runs.length ? runs.map((r) => `<option value="${esc(r.id)}" ${r.id === selId ? "selected" : ""}>${esc(r.name)}</option>`).join("") : `<option value="default">Default replay</option>`}</select><button class="btn pri" onclick="print()">Export PDF / PNG (print)</button><span style="color:var(--mu);font-size:13px">Topics start closed so the map stays readable. Open any circle for its two paths and the detail.</span><span style="flex:1"></span><button class="btn" data-map="open">Expand all</button><button class="btn" data-map="close">Collapse all</button></div>
   <div class="map-wrap glass" id="mapWrap"><svg class="map-wires" id="mapWires" aria-hidden="true"></svg>
-    <div class="map-hub" id="mapHub" data-open="0">
-      <p class="kicker">WattNot signed report · ${badge("REPLAY")} ${badge("MEASURED")}</p>
-      <h1>${esc(hubTitle)}</h1>
-      <p class="q">Can we cut GPU power without hurting quality?</p>
-      <button class="btn sm" id="hubToggle" aria-expanded="false">Show the question</button>
-      <div class="hub-detail" hidden>${hubDetail}</div>
+    <div class="map-stage" id="mapStage">
+      <div class="map-hub" id="mapHub" data-open="0">
+        <p class="kicker">WattNot signed report · ${badge("REPLAY")} ${badge("MEASURED")}</p>
+        <h1>${esc(hubTitle)}</h1>
+        <p class="q">Can we cut GPU power without hurting quality?</p>
+        <button class="btn sm" id="hubToggle" aria-expanded="false">Show the question</button>
+        <div class="hub-detail" hidden>${hubDetail}</div>
+      </div>
+      ${topics.map(topicHtml).join("")}
     </div>
-    <div class="map-cols"><div class="map-col">${left.map(topicHtml).join("")}</div><div class="map-col">${right.map(topicHtml).join("")}</div></div>
   </div>
   <div class="who-banner">Who should pick which?</div>
   <div class="who"><div class="glass"><h3 style="color:var(--pk)">Pick the baseline if</h3><p>Every millisecond of the slowest requests matters more than the power bill, or you cannot run a quality check on your own prompts yet.</p></div>
@@ -519,6 +569,7 @@ async function renderReport() {
     hub.dataset.open = on ? "1" : "0"; hd.hidden = !on;
     $("#hubToggle").textContent = on ? "Hide the question" : "Show the question";
     $("#hubToggle").setAttribute("aria-expanded", String(on));
+    mapLayout();
   };
   $("#runSel").onchange = (e) => selectRun(e.target.value);
   wireMap();
