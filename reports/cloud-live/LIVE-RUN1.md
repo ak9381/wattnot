@@ -71,6 +71,15 @@ works, but the meter has nothing. Still **NOT_AVAILABLE**, no match percentage.
 - First version of the audit printed this as a 100% mismatch. That was misleading, so an empty
   meter is now reported as NOT_AVAILABLE with the reason above (test added).
 
+**Credit balance check (read-only, metrics key).** There is no balance endpoint in the
+Management API. `GET /v1/billing/usage_summary` (Oct 1 to 29) returned $0.00 subtotal,
+$0.00 credits used and $0.00 total for dedicated, training and Model APIs. `GET /v1/organizations/me`
+shows the metrics key's workspace is "Wattnot", created 2026-10-27 04:45 UTC, a few minutes
+before this check and after all our live calls. That is why it shows nothing: the inference key
+that made the calls was issued in a different account (the hackathon credits), so this workspace
+cannot see its usage, credits or balance. Credits remaining and used-so-far in USD are unknown;
+the only spend figure is our own receipts, about $0.81.
+
 **Price check, from `GET /v1/model_apis`** (the key can read the catalog):
 
 | | Catalog | Our receipts | Result |
