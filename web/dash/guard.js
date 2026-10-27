@@ -133,7 +133,7 @@ export function panelHtml(state) {
 export class GuardPanel {
   constructor(host, deps = {}) {
     this.host = host;
-    this.fetch = deps.fetch || (typeof fetch === "function" ? fetch : null);
+    this.fetch = deps.fetch || (typeof fetch === "function" ? fetch.bind(globalThis) : null);
     this._setTimeout = deps.setTimeout || ((fn, ms) => setTimeout(fn, ms));
     this._clearTimeout = deps.clearTimeout || ((id) => clearTimeout(id));
     this.started = false;

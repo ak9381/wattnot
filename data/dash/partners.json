@@ -1,15 +1,15 @@
 {
   "format": "wattnot.partners/1",
-  "generated_at": "2026-10-27T15:29:53+00:00",
+  "generated_at": "2026-10-27T16:28:58+00:00",
   "partners": [
     {
       "id": "meta",
       "name": "Meta",
       "what": "Muse Spark API (planner), Muse Code, SAM 3.1 room scan, open-weight models",
       "status": "used",
-      "calls": 464,
+      "calls": 1650,
       "cost": {
-        "value": 10.69,
+        "value": 17.675,
         "unit": "USD",
         "label": "ESTIMATE"
       },
