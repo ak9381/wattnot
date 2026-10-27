@@ -16,6 +16,13 @@ wattnot cloud tune --live --budget-usd 10 --record data/cloud/recorded-run1.json
 
 What is and isn't checked yet is listed in [docs/runbooks/BASETEN.md](docs/runbooks/BASETEN.md). The bundled numbers are SIMULATED until a live run is recorded.
 
+## Flex mode (grid events, SIMULATED until the H100 run)
+
+`wattnot flex run` replays a grid event ("cut GPU draw by 25% for 5 minutes") through a shed
+controller and writes a signed receipt: how much it cut, how fast, whether p99 and quality
+held, and how long ramp-back took. Today it runs on a software power model, so every number is
+SIMULATED; see [docs/FLEX.md](docs/FLEX.md).
+
 ## Status
 
 Built during the Meta Global AI Developer Hackathon, Oct 26 – Nov 4 2026. Before Oct 26 we had only planning docs, no code.

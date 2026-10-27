@@ -82,6 +82,8 @@ def build_parser() -> argparse.ArgumentParser:
     from wattnot.cloud import cli as _cloud
 
     _cloud.add_parser(sub)
+    from wattnot.flex import cli as _flex
+    _flex.add_parser(sub)
     return parser
 
 
@@ -215,6 +217,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         from wattnot.cloud import cli as _cloud
 
         return _cloud.dispatch(args)
+    if args.cmd == "flex":
+        try:
+            from wattnot.flex import cli as _flex
+
+            return _flex.dispatch(args)
+        except (OSError, KeyError, TypeError, ValueError) as e:
+            parser.error(f"flex: {e}")
     parser.print_help()
     return 0
 
