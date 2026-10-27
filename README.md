@@ -27,6 +27,16 @@ controller and writes a signed receipt: how much it cut, how fast, whether p99 a
 held, and how long ramp-back took. Today it runs on a software power model, so every number is
 SIMULATED; see [docs/FLEX.md](docs/FLEX.md).
 
+## Approve before apply
+
+WattNot does not change a power cap, a vLLM setting, a routing policy or a flex shed by
+itself. It files a proposal: what changes, the saving with its label, the quality and p99
+checks, and a receipt preview. A person runs `wattnot proposals approve <id>`, and only then
+`apply`. Every step goes in a hash-chained audit trail linked to the signed receipt. There is
+a local JSON API for a frontend, an optional auto-approve policy (off by default), expiry and
+rollback. See [docs/APPROVALS.md](docs/APPROVALS.md). The unattended H100 script takes an
+explicit `--pre-approved` flag.
+
 ## Router (replay on recorded runs, region SIMULATED)
 
 `wattnot route replay` takes a recorded cloud run and picks the effort per request class that

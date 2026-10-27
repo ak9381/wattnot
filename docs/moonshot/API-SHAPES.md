@@ -207,3 +207,119 @@ Always draw the three watermark lines from `watermark.lines`, and show `receipt.
 
 `wattnot certificate roadmap --json` returns `{format, label: "ADVICE", title, status, caveat,
 items: [{need, why, wattnot_has, gap}]}`.
+
+## Approvals (`wattnot proposals ...`, local API on `127.0.0.1:8781`)
+
+Nothing WattNot wants to change is applied until a person approves it. Full behaviour is in
+[`docs/APPROVALS.md`](../APPROVALS.md). The same JSON is on disk (`proposals/prop_*.json`,
+`proposals/audit.jsonl`) and over HTTP from `wattnot proposals serve`. Reads need no token.
+Every POST needs `Authorization: Bearer <token>` (`$WATTNOT_API_TOKEN`, or the one the server
+prints at start-up). Errors are `{"code": "not_found" | "conflict" | "unauthorized" |
+"bad_request" | "bad_host" | "apply_failed" | "bad_policy", "message": "..."}` with the matching HTTP status.
+
+### Proposal (`wattnot.proposal/1`)
+
+```jsonc
+{
+  "format": "wattnot.proposal/1",
+  "id": "prop_20261027_070029_5103cc05",
+  "kind": "power_cap" | "vllm_config" | "cloud_policy" | "flex_shed" | "trial_grant",
+  "scope": "commit" | "trial",           // trial = changes are put back; only trial_grant
+  "title": "Cap GPU 0 at 500 W",
+  "summary": "Lower the power limit from 700 W to 500 W.",
+  "created_at": "2026-10-27T07:00:29Z",
+  "expires_at": "2026-10-28T07:00:29Z",
+  "created_by": "wattnot",
+  "source": { "tool": "wattnot cloud tune", "receipt_id": "..." },
+  "label": "MEASURED",                   // the weakest label on any saving
+  "change": {                             // what changes, from and to
+    "gpu": 0,
+    "before": { "power_cap_w": 700 },
+    "after":  { "power_cap_w": 500 }
+    // vllm_config: { target, before, after, changed: [...] }
+    // cloud_policy: after = { effort_by_class, reference_effort, cache }
+    // trial_grant: { bounds: { power_cap_w: {min, max}, gpus: [..], ... }, restores_on_exit }
+  },
+  "savings": [ { "metric": "energy per good answer", "value": 18.0, "unit": "%",
+                 "label": "MEASURED", "low": null, "high": null } ],
+  "checks": {
+    "quality": { "passed": true,  "detail": "..." },    // passed: true | false | null
+    "p99":     { "passed": true,  "increase_pct": 4.2 }
+  },
+  "receipt_preview": {
+    "profile": "gpu" | "cloud" | "flex", "label": "MEASURED", "expected_grade": "VALID",
+    "will_claim": ["..."], "not_claimed": ["..."],
+    "evidence_receipt": { "receipt_id": "...", "sha256": "...", "signed": true, "grade": "..." }
+  },
+  // not part of the reviewed content:
+  "content_sha256": "9e3fa14b...",      // hash of the fields above (format ... receipt_preview)
+  "status": "pending" | "approved" | "rejected" | "expired" | "applied" | "failed"
+            | "rolled_back" | "closed",
+  "decision":    null | { "by": "user:akash" | "pre-approved:NAME" | "auto-policy:<hash12>",
+                          "at": "...", "via": "cli" | "http" | "pre-approved" | "auto-policy"
+                          | "dry-run", "note": "", "content_sha256": "..." },
+  "applied":     null | { "at": "...", "by": "...", "via": "...", "approved_by": "...",
+                          "token": { /* what is needed to undo it */ }, "error": "..." },
+  "rolled_back": null | { "at": "...", "by": "...", "via": "...", "note": "" },
+  "receipt":     null | { "receipt_id": "...", "sha256": "<receipt integrity.sha256>",
+                          "grade": "...", "signed": true, "linked_at": "..." },
+  "policy":      null | { "policy_sha256": "..." }
+}
+```
+
+`label` and every saving's `label` are MEASURED, ESTIMATE, SIMULATED or MOCK. Show them next
+to the number. A frontend should show the diff from `change.before` to `change.after`, the
+savings, both checks (a `null` check means it did not run), the receipt preview and the
+expiry, and should send back the `content_sha256` it showed as `sha256` when approving.
+
+### Audit entry (`audit.jsonl`, `GET /v1/audit`)
+
+```jsonc
+{ "seq": 2, "ts": "2026-10-27T07:00:29Z", "proposal_id": "prop_...",
+  "event": "proposed" | "approved" | "rejected" | "applied" | "apply_failed" | "rolled_back"
+           | "revoked" | "expired" | "receipt_linked" | "grant_opened" | "grant_closed",
+  "actor": "user:akash", "via": "cli", "detail": { "note": "" },
+  "content_sha256": "...",             // the proposal as it was reviewed
+  "prev_sha256": "000...0",            // hash of the previous line; a chain
+  "sha256": "..." }
+```
+
+### Endpoints
+
+| Method and path | Returns |
+|---|---|
+| `GET /v1/health` | `{ ok: true, folder, pending }` (pending is a count) |
+| `GET /v1/proposals?status=&kind=` | array of proposals |
+| `GET /v1/proposals/{id}` | the proposal plus `audit: [entry, ...]` |
+| `POST /v1/proposals/{id}/approve` | body `{by?, note?, sha256?, apply?}`; returns the proposal (status `approved`). Nothing is applied. |
+| `POST /v1/proposals/{id}/reject` | body `{by?, note?}` |
+| `POST /v1/proposals/{id}/apply` | applies an approved proposal on the machine running the server; 409 if not approved or expired; 409 `apply_failed` if the change could not be made or confirmed |
+| `POST /v1/proposals/{id}/rollback` | undoes an applied change (revokes a live trial grant) |
+| `GET /v1/audit?proposal_id=` | array of audit entries |
+| `GET /v1/audit/verify` | `{ "ok": true, "entries": 4, "problems": [] }` |
+| `GET /v1/policy` | the auto-approve policy, `sha256`, and `editable_here: false` |
+
+### Auto-approve policy (`proposals/policy.json`, off unless enabled)
+
+```jsonc
+{ "format": "wattnot.auto-approve/1", "enabled": false, "allowed_labels": ["MEASURED"],
+  "kinds": { "power_cap": { "min_saving_pct": 5, "max_p99_increase_pct": 10,
+                            "max_cap_drop_pct": 25 } },
+  "max_per_day": 5 }
+```
+
+`SIMULATED` and `MOCK` cannot appear in `allowed_labels`, and `trial_grant` cannot appear in
+`kinds`. Every enabled kind needs `min_saving_pct` and `max_p99_increase_pct`; there are no
+defaults.
+
+### Flex receipts: the `approval` block
+
+A flex receipt made under an approval carries
+`"approval": { "proposal_id": "prop_...", "proposal_sha256": "<content_sha256>" }`, and the
+proposal's `receipt.sha256` points back at the receipt's `integrity.sha256`.
+
+### Exit code 50
+
+`python -m wattnot.runbook`, `scripts/h100_oct30.sh`, `wattnot flex run --backend gpu` and the
+setup probe exit **50** when nobody approved a session before the wait ran out. Nothing was
+changed. `--pre-approved NAME` is the explicit flag for an unattended run.
