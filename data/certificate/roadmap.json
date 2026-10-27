@@ -1,0 +1,39 @@
+{
+  "format": "wattnot.cert-roadmap/1",
+  "label": "ADVICE",
+  "title": "What a real efficiency scheme would need",
+  "status": "Roadmap only. Nothing here is built, reviewed or accepted by anyone.",
+  "caveat": "This is our own reasoning, not advice from a lawyer or an auditor. We have not studied any specific standard yet, so we name none.",
+  "items": [
+    {
+      "need": "A methodology that outsiders have reviewed",
+      "why": "Today the method is ours: paired runs, a Welch test, a bootstrap interval. A scheme needs people who do not work for us to read it, break it and sign off.",
+      "wattnot_has": "A published receipt spec, a standalone verifier and conformance vectors.",
+      "gap": "No outside review yet."
+    },
+    {
+      "need": "A baseline rule",
+      "why": "A saving is only as honest as the thing it is measured against. If anyone can pick a flattering baseline, the number means nothing.",
+      "wattnot_has": "Both arms are in the receipt, so a reader can see the baseline.",
+      "gap": "No rule for what counts as a fair baseline across workloads."
+    },
+    {
+      "need": "Third-party verification",
+      "why": "A receipt we sign ourselves proves the file was not edited. It does not prove the run was honest.",
+      "wattnot_has": "Signed receipts, with a public-log option (Rekor) that is off in this build.",
+      "gap": "No independent party re-runs or audits."
+    },
+    {
+      "need": "A registry that prevents double counting",
+      "why": "The same saving must not be certified twice or sold to two people.",
+      "wattnot_has": "A local hash-chained register that blocks a second certificate for the same receipt, run or source.",
+      "gap": "Local file only. One user can start a second register. A real one needs a shared, controlled ledger."
+    },
+    {
+      "need": "Legal review",
+      "why": "Whether such a statement may be traded, claimed in marketing or used in a report depends on the law where it is used.",
+      "wattnot_has": "Wording rules that keep any carbon claim out, and a permanent MOCK watermark.",
+      "gap": "No legal review of anything."
+    }
+  ]
+}

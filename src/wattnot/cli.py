@@ -71,12 +71,26 @@ def build_parser() -> argparse.ArgumentParser:
     rs.add_argument("--no-rekor", action="store_true",
                     help="offline: sign with a local test key, no upload (grade max ESTIMATE)")
     rs.add_argument("--key", help="Ed25519 PEM test key for --no-rekor")
+    rj = rsub.add_parser("joules", help="print joules per answer and per good answer")
+    rj.add_argument("receipt", help="receipt JSON file")
+    rj.add_argument("--json", action="store_true", help="print the derived block as JSON")
+    rcl = rsub.add_parser("from-cloud", help="adapt a cloud receipt to the receipt spec "
+                                             "(grade capped at ESTIMATE)")
+    rcl.add_argument("cloud_receipt", help="cloud-receipts/cloud_<id>.json")
+    rcl.add_argument("--out", default="receipts", help="output directory (default %(default)s)")
+    rcl.add_argument("--sign-key", help="Ed25519 test key: sign the new receipt offline")
     from wattnot.cloud import cli as _cloud
 
     _cloud.add_parser(sub)
     from wattnot.meta import cli as _meta
 
     _meta.add_parser(sub)
+    from wattnot.flex import cli as _flex
+    _flex.add_parser(sub)
+    from wattnot.route import cli as _route
+    _route.add_parser(sub)
+    from wattnot.certificate import cli as _cert
+    _cert.add_parser(sub)
     return parser
 
 
@@ -88,8 +102,41 @@ def _run_receipt(a: argparse.Namespace) -> int:
         out = sign(a.receipt, no_rekor=a.no_rekor, key_path=a.key)
         print(f"{out}  ({'offline, no Rekor' if a.no_rekor else 'Rekor'})")
         return 0
+    if a.receipt_cmd == "joules":
+        from wattnot.receipt.joules import check_joules, joules_block
+
+        r = json.loads(Path(a.receipt).read_text(encoding="utf-8"))
+        ok, detail = check_joules(r)
+        block = joules_block(r)
+        if a.json:
+            print(json.dumps({"label": block["label"], "matches_stored": ok if "joules" in r
+                              else None, "joules": block}, indent=2))
+        else:
+            c, b = block["candidate"], block["baseline"]
+            print(f"[{block['label']}] baseline  {b['j_per_answer']} J per answer, "
+                  f"{b['j_per_good_answer']} J per good answer")
+            print(f"[{block['label']}] candidate {c['j_per_answer']} J per answer, "
+                  f"{c['j_per_good_answer']} J per good answer")
+            ch = block["change_pct"]["j_per_good_answer"]
+            print(f"change per good answer: {ch}%"
+                  + ("" if ok else "  (stored joules block does NOT match)"))
+        return 0 if ok else 1
+    if a.receipt_cmd == "from-cloud":
+        from wattnot.receipt.cloud_adapter import from_cloud
+        from wattnot.receipt.sign import sign
+
+        cloud = json.loads(Path(a.cloud_receipt).read_text(encoding="utf-8"))
+        r = from_cloud(cloud)
+        out = Path(a.out)
+        out.mkdir(parents=True, exist_ok=True)
+        path = out / f"{r['receipt_id']}.json"
+        path.write_text(json.dumps(r, indent=2) + "\n", encoding="utf-8")
+        if a.sign_key:
+            sign(path, no_rekor=True, key_path=a.sign_key)
+        print(f"{path}  grade {r['grade']}  sha256 {r['integrity']['sha256'][:16]}...")
+        return 0
     if a.receipt_cmd != "build":
-        raise ValueError("use: wattnot receipt build|sign")
+        raise ValueError("use: wattnot receipt build|sign|joules|from-cloud")
     path = build_from_dir(a.run, a.out)
     r = json.loads(Path(path).read_text())
     print(f"{path}  grade {r['grade']}  sha256 {r['integrity']['sha256'][:16]}...")
@@ -181,6 +228,27 @@ def main(argv: Sequence[str] | None = None) -> int:
         from wattnot.meta import cli as _meta
 
         return _meta.dispatch(args)
+    if args.cmd == "flex":
+        try:
+            from wattnot.flex import cli as _flex
+
+            return _flex.dispatch(args)
+        except (OSError, KeyError, TypeError, ValueError) as e:
+            parser.error(f"flex: {e}")
+    if args.cmd == "route":
+        try:
+            from wattnot.route import cli as _route
+
+            return _route.dispatch(args)
+        except (OSError, KeyError, TypeError, ValueError) as e:
+            parser.error(f"route: {e}")
+    if args.cmd == "certificate":
+        try:
+            from wattnot.certificate import cli as _cert
+
+            return _cert.dispatch(args)
+        except (OSError, KeyError, TypeError, ValueError, RuntimeError) as e:
+            parser.error(f"certificate: {e}")
     parser.print_help()
     return 0
 

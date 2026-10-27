@@ -1,0 +1,20 @@
+{
+  "label": "SIMULATED",
+  "source": "replayed demo events; not a live grid signal and not from any utility",
+  "events": [
+    {
+      "id": "demo-evt-1",
+      "kind": "shed",
+      "target_pct": 25,
+      "duration_s": 300,
+      "note": "A 25 percent ask. The simulated card can meet it inside its latency budget."
+    },
+    {
+      "id": "demo-evt-2",
+      "kind": "shed",
+      "target_pct": 35,
+      "duration_s": 300,
+      "note": "A 35 percent ask. The simulated card cannot go that low, so the run stops short and says so."
+    }
+  ]
+}

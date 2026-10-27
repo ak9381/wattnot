@@ -1,0 +1,18 @@
+{
+  "label": "SIMULATED",
+  "source": "static fixture (rounded illustrative values)",
+  "caveat": "Order-of-magnitude numbers for a what-if. Not a dataset, not live. Replace with a real feed before quoting any of it.",
+  "as_of": "static fixture",
+  "kind": "average (not marginal) grid carbon intensity",
+  "unit": "gCO2/kWh",
+  "regions": {
+    "us-east": {"name": "US East", "gco2_per_kwh": 380},
+    "us-west": {"name": "US West", "gco2_per_kwh": 250},
+    "eu-north": {"name": "Sweden", "gco2_per_kwh": 35},
+    "eu-west": {"name": "Ireland", "gco2_per_kwh": 300},
+    "eu-central": {"name": "Germany", "gco2_per_kwh": 380},
+    "gb": {"name": "Great Britain", "gco2_per_kwh": 150},
+    "ap-south": {"name": "India", "gco2_per_kwh": 680},
+    "ap-southeast": {"name": "Singapore", "gco2_per_kwh": 480}
+  }
+}

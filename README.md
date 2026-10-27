@@ -20,6 +20,27 @@ What is and isn't checked yet is listed in [docs/runbooks/BASETEN.md](docs/runbo
 
 Muse Spark makes WattNot's agent decisions: the next knob to try, the order of reasoning-effort levels, the judge verdicts and plain-words receipt notes. Every call goes through a spend guard that keeps a ledger (`~/.wattnot/meta_spend.json`), refuses a call that would pass **$20**, and warns at $15. `wattnot meta spend` shows the total, a per-purpose breakdown and what is left; `wattnot meta check` confirms the model answers. Details, the price used and the recorded session: [docs/runbooks/META-USAGE.md](docs/runbooks/META-USAGE.md).
 
+## Flex mode (grid events, SIMULATED until the H100 run)
+
+`wattnot flex run` replays a grid event ("cut GPU draw by 25% for 5 minutes") through a shed
+controller and writes a signed receipt: how much it cut, how fast, whether p99 and quality
+held, and how long ramp-back took. Today it runs on a software power model, so every number is
+SIMULATED; see [docs/FLEX.md](docs/FLEX.md).
+
+## Router (replay on recorded runs, region SIMULATED)
+
+`wattnot route replay` takes a recorded cloud run and picks the effort per request class that
+answers correctly for the fewest joules, then shows what always-`xhigh` would have cost next to
+it. A failed quality gate always rules a candidate out. Region is a what-if on rounded grid
+numbers, labelled SIMULATED. See [docs/ROUTE.md](docs/ROUTE.md).
+
+## Mock certificates (always MOCK)
+
+`wattnot certificate mint` turns one verified receipt into a one-page statement with the
+receipt hash, a QR code and a permanent MOCK / NOT TRADABLE / NOT A CARBON CREDIT watermark.
+NOISE and unverifiable receipts are refused, and a receipt can be certified once. It is a
+mock for a roadmap slide, not a product. See [docs/CERTIFICATE.md](docs/CERTIFICATE.md).
+
 ## Status
 
 Built during the Meta Global AI Developer Hackathon, Oct 26 – Nov 4 2026. Before Oct 26 we had only planning docs, no code.

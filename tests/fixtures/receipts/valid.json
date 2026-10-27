@@ -151,10 +151,29 @@
       "source": "assumed WUE 1.8 L/kWh (industry average); not measured"
     }
   },
+  "joules": {
+    "unit": "J",
+    "label": "MEASURED",
+    "formula": "j_per_answer = wh_per_req x 3600; j_per_good_answer = j_per_answer / pass_rate",
+    "baseline": {
+      "j_per_answer": 172.872,
+      "pass_rate": 0.95,
+      "j_per_good_answer": 181.970526
+    },
+    "candidate": {
+      "j_per_answer": 155.592,
+      "pass_rate": 0.95,
+      "j_per_good_answer": 163.781053
+    },
+    "change_pct": {
+      "j_per_answer": -9.9958,
+      "j_per_good_answer": -9.9958
+    }
+  },
   "grade": "VALID",
   "integrity": {
     "canonicalization": "JCS RFC 8785",
-    "sha256": "0e4e8c2a88ee5f53ee4a0685cfeba441eaeea874a898cbe4c0ee7c4cbe99ff88",
+    "sha256": "6dc94da36928507496c9be4a1940ac37e2b3ed24324bf9db7013a0014f272e9c",
     "prev_sha256": null,
     "signer": null,
     "rekor": null
