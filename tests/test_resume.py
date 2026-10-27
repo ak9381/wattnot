@@ -17,7 +17,7 @@ from wattnot.proof.transport import LocalTransport  # noqa: E402
 
 BASE = ["--mode", "rehearsal", "--load-s", "1", "--profile", "quick", "--reps", "2",
         "--repeat", "1", "--concurrency", "8", "--warmup", "1", "--settle-s", "0.05",
-        "--adaptive-budget-s", "30", "--no-adaptive", "--max-proposals", "3"]
+        "--adaptive-budget-s", "30", "--no-adaptive", "--max-proposals", "3", "--auto-approve"]
 
 
 class Flaky(LocalTransport):
@@ -147,3 +147,20 @@ def test_vm_commands_carry_a_key_and_the_measurement_profile(tmp_path):
     keys = [kw.get("key") for _, kw in Flaky.calls]
     assert all(k and "-" in k for k in keys) and len(set(keys)) == len(keys)
     assert any(k.endswith("-step-600") or "-step-" in k for k in keys)
+
+
+def test_stop_at_keep_after_approval_resumes_without_asking_again(tmp_path):
+    Flaky.cmd, Flaky.nth = "apply", 1  # approved, then the link drops as the cap is applied
+    code, out = launch(tmp_path)
+    assert code == 1
+    ck = Checkpoint.load(out / "checkpoint.json")
+    assert ck.done("approve") and not ck.done("keep_rollback")
+    assert ck.get("approve")["decision"] == "approved"
+    Flaky.cmd, Flaky.calls = None, []
+    code, out = launch(tmp_path, "--resume")
+    assert code == 0
+    ev = events_of(out)
+    started = [e["step_id"] for e in ev if e["type"] == "step.started"]
+    assert started.count("approve") == 1 and started.count("approve.classify") == 1
+    assert [c for c, _ in Flaky.calls][0] == "apply"
+    assert ev[-1]["data"]["status"] == "ok"

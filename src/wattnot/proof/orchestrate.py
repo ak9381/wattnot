@@ -163,9 +163,10 @@ def workload_sha() -> str | None:
 def apply_profile(a) -> None:
     """Fill every measurement field the namespace does not carry from its profile (so `drive` can
     be called with a hand-made namespace, and `main` and `run` agree on one set of numbers)."""
-    prof = resolve_profile(
-        getattr(a, "profile", None), **{k: getattr(a, k, None) for k in PROFILE_FIELDS}
-    )
+    name = getattr(a, "profile", None)
+    if name is None and getattr(a, "mode", None) == "rehearsal":
+        name = "quick"  # the fake meter has no noise to average out; keep rehearsals short
+    prof = resolve_profile(name, **{k: getattr(a, k, None) for k in PROFILE_FIELDS})
     for k, v in prof.as_dict().items():
         setattr(a, k, v)
 
