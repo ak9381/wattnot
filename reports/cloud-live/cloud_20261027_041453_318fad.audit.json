@@ -1,0 +1,7 @@
+{
+  "status": "unavailable",
+  "reason": "usage endpoint answered HTTP 403",
+  "tolerance_pct": 2.0,
+  "rows": [],
+  "label": "NOT_AVAILABLE"
+}

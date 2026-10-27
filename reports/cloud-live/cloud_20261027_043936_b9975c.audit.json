@@ -1,0 +1,7 @@
+{
+  "status": "unavailable",
+  "reason": "usage endpoint answered HTTP 403 (PERMISSION_DENIED); this key is probably inference-only. Set BASETEN_METRICS_KEY to a metrics-scoped key to run the audit",
+  "tolerance_pct": 2.0,
+  "rows": [],
+  "label": "NOT_AVAILABLE"
+}

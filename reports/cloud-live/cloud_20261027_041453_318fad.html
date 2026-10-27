@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>WattNot cloud receipt cloud_20261027_041453_318fad</title>
+<style>
+body{font:14px/1.45 system-ui,sans-serif;margin:2rem;color:#111;max-width:1100px}
+table{border-collapse:collapse;width:100%;margin:.5rem 0 1rem}
+th,td{border:1px solid #ccc;padding:.4rem .5rem;text-align:left;vertical-align:top}
+th{background:#f3f3f3}td.n{text-align:right;white-space:nowrap}td.eff{font-weight:700}
+td.sav{color:#0a6b2b;font-weight:700}ul.steps{margin:0;padding-left:1rem}
+li.ok{color:#0a6b2b}li.bad{color:#a11}li.skip{color:#777}
+.b{display:inline-block;padding:.05rem .45rem;border-radius:3px;font-size:12px;font-weight:700;color:#fff}
+.b.m{background:#0a6b2b}.b.e{background:#8a5a00}.b.s{background:#555}.b.a{background:#245}
+.b.n{background:#777}.warn{background:#fff4d6;padding:.5rem;border-left:4px solid #8a5a00}
+.big{font-size:1.5rem;margin:.5rem 0}small{color:#555}code{background:#f3f3f3;padding:0 .25rem}
+</style></head><body>
+<h1>Cloud mode receipt <span class="b m">MEASURED</span></h1>
+<p>baseten &middot; <code>meta-models/muse-spark-open-1026</code> &middot; mode live
+&middot; 2026-10-27T04:14:53Z<br><small>receipt cloud_20261027_041453_318fad &middot; sha256
+15d296e721a992a3&hellip; &middot; chained to
+none</small></p>
+
+<p class="big">$0.0069 instead of $0.0134
+at xhigh: <b>48.6% less</b> <span class="b m">MEASURED</span></p>
+<p>Each class keeps the lowest reasoning effort that matched the xhigh answers and stayed inside
+the p99 budget, including the cost of retrying at xhigh when a cheap answer fails its check.
+6 requests, cached prompt share 20.5%. Tuning itself cost
+$0.0270 and pays back in 4.14 runs of this workload.</p>
+<table><thead><tr><th>class</th><th>kept</th><th>levels tried</th><th>completion tokens</th>
+<th>USD</th><th>tuned / xhigh</th><th>saving</th></tr></thead><tbody>
+<tr><td><b>extract</b><br><small>3 items x 1</small></td><td class="eff">low</td><td><ul class="steps"><li class="ok">low: quality 100% of 100%, p99 2.1s of 3.4s</li><li class="skip">medium: low already passed; a higher level cannot be cheaper</li><li class="skip">high: low already passed; a higher level cannot be cheaper</li></ul></td><td class="n">717<br><small>vs 1,558</small></td><td class="n">$0.0037<br><small>would have cost $0.0074</small></td><td><svg width="220" height="26" role="img" aria-label="tuned vs xhigh"><rect x="0" y="2" width="110" height="9" fill="#0a6b2b"/><rect x="0" y="14" width="220" height="9" fill="#999"/></svg></td><td class="n sav">50.1%</td></tr><tr><td><b>arith</b><br><small>3 items x 1</small></td><td class="eff">low</td><td><ul class="steps"><li class="ok">low: quality 100% of 100%, p99 2.3s of 2.9s</li><li class="skip">medium: low already passed; a higher level cannot be cheaper</li><li class="skip">high: low already passed; a higher level cannot be cheaper</li></ul></td><td class="n">603<br><small>vs 1,263</small></td><td class="n">$0.0032<br><small>would have cost $0.0060</small></td><td><svg width="220" height="26" role="img" aria-label="tuned vs xhigh"><rect x="0" y="2" width="117" height="9" fill="#0a6b2b"/><rect x="0" y="14" width="220" height="9" fill="#999"/></svg></td><td class="n sav">46.8%</td></tr>
+</tbody></table>
+<h2>Energy <span class="b e">ESTIMATE</span></h2>
+<p>Work avoided: about <b>0.07 to 0.68 Wh</b> across
+this run. We cannot see Baseten's GPUs, so this is a FLOP count from the token counts times a
+stated joules-per-FLOP range for H100-class hardware. It is not a measurement and not a claim
+about anyone's grid.</p>
+
+<h2>Not verified</h2><ul><li>USD rates are the published ones and not yet checked against an invoice</li></ul>
+<p><small>Labels: MEASURED comes from the API usage block and our clock. ESTIMATE is derived.
+SIMULATED came from a made-up fixture. ADVICE is a suggestion, not a result. Money in USD at
+baseten.co/library/muse-spark-open (Model API pricing), read 2026-10-27: 1.25/0.15/
+4.25 per 1M tokens (input/cached/output).</small></p>
+</body></html>

@@ -1,0 +1,44 @@
+{
+  "label": "MEASURED",
+  "curve": [
+    {
+      "wait_s": 10.0,
+      "prompt_tokens": 2204,
+      "cached_tokens": 2176,
+      "cached_share": 0.9873,
+      "usd": 0.0006929
+    },
+    {
+      "wait_s": 30.0,
+      "prompt_tokens": 2204,
+      "cached_tokens": 2176,
+      "cached_share": 0.9873,
+      "usd": 0.0007269
+    },
+    {
+      "wait_s": 60.0,
+      "prompt_tokens": 2204,
+      "cached_tokens": 2176,
+      "cached_share": 0.9873,
+      "usd": 0.0007354
+    },
+    {
+      "wait_s": 180.0,
+      "prompt_tokens": 2204,
+      "cached_tokens": 2176,
+      "cached_share": 0.9873,
+      "usd": 0.0006929
+    },
+    {
+      "wait_s": 600.0,
+      "prompt_tokens": 2204,
+      "cached_tokens": 2176,
+      "cached_share": 0.9873,
+      "usd": 0.0010584
+    }
+  ],
+  "ran_at": "2026-10-27T04:23:46Z",
+  "warm_cached_share": 0.0,
+  "half_life_upper_bound_s": null,
+  "reading": "the prefix was still warm at the longest wait tested"
+}

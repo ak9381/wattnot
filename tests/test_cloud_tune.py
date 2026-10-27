@@ -190,3 +190,31 @@ def test_replaying_the_demo_fixture_is_deterministic(tmp_path):
     got = {c["class"]: c["chosen_effort"] for c in a["classes"]}
     assert got == {"extract": "low", "classify": "low", "trace": "low", "arith": "medium",
                    "logic": "high"}
+
+
+def test_run_stops_on_a_hard_http_error():
+    from wattnot.cloud.transport import CloudError
+
+    seen = []
+
+    def send(req):
+        seen.append(req.tag)
+        return Reply(401, {"error": {"message": "bad key"}}, 0.1, {}, 0, 1_790_000_000.0)
+
+    with pytest.raises(CloudError, match="HTTP 401"):
+        run_tune(send)
+    assert len(seen) == 1  # no more calls after the first hard error
+
+
+def test_run_stops_after_three_server_errors_in_a_row():
+    from wattnot.cloud.transport import CloudError
+
+    seen = []
+
+    def send(req):
+        seen.append(req.tag)
+        return Reply(503, {}, 0.1, {}, 0, 1_790_000_000.0)
+
+    with pytest.raises(CloudError, match="3 in a row"):
+        run_tune(send)
+    assert len(seen) == 3

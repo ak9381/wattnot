@@ -121,8 +121,15 @@ def _tune(a) -> int:
         planner=not a.no_planner, judge=a.judge, affinity=not a.no_affinity,
         rates=_rates(a.confirmed_rates))
     prefix = key_prefix(read_key()) if a.live else None
-    path, r = rn.run(opts, transport, mode, out_dir=a.out, api_key_prefix=prefix,
-                     sign_key=a.sign_key)
+    try:
+        path, r = rn.run(opts, transport, mode, out_dir=a.out, api_key_prefix=prefix,
+                         sign_key=a.sign_key)
+    except BaseException:
+        if rec is not None and rec.replies:  # keep what was paid for, even on a stop
+            rec.save(a.record)
+            print(f"recorded {len(rec.replies)} replies to {a.record} before stopping",
+                  file=sys.stderr)
+        raise
     if rec is not None:
         rec.save(a.record)
         print(f"recorded replies to {a.record} (reasoning text is not stored)")
@@ -193,7 +200,8 @@ def _cache_ab(a) -> int:
     for x in res["arms"]:
         print(f"  {x['arm']:<22} cached {x['cached_share']:>6.1%} (after 1st "
               f"{x['cached_share_after_first']:.1%})  {view.usd(x['usd'])}  "
-              f"saving vs volatile-first {x['saving_vs_volatile_pct']:.1f}%")
+              f"total saving {x['saving_vs_volatile_pct']:.1f}%, input-only saving "
+              f"{x['input_saving_vs_volatile_pct']:.1f}%")
     print(f"wrote {out}")
     return 0
 

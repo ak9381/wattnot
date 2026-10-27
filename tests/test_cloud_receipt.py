@@ -303,3 +303,32 @@ def test_recorded_fixture_replays_as_measured_with_the_unconfirmed_price_note(tm
     assert r["label"] == "MEASURED" and r["totals"]["label"] == "MEASURED"
     assert any("invoice" in n for n in r["unverified"])
     assert rc.check(r) == []
+
+
+def test_usage_403_is_reported_with_a_hint_and_never_the_key():
+    import io
+    import urllib.error
+
+    import pytest
+
+    from wattnot.cloud import audit as au
+    from wattnot.cloud.transport import CloudError
+
+    seen = {}
+
+    def opener(req, timeout=0):
+        seen["auth"] = req.get_header("Authorization")
+        body = b'{"code": "PERMISSION_DENIED", "message": "Authorization error"}'
+        raise urllib.error.HTTPError(req.full_url, 403, "no", {}, io.BytesIO(body))
+
+    env = {"BASETEN_API_KEY": "abc.SECRETSECRET"}
+    with pytest.raises(CloudError) as ei:
+        au.fetch_usage("2026-10-27T00:00:00Z", "2026-10-27T01:00:00Z", env=env, opener=opener)
+    msg = str(ei.value)
+    assert "403" in msg and "PERMISSION_DENIED" in msg and "BASETEN_METRICS_KEY" in msg
+    assert "SECRETSECRET" not in msg
+    # with a metrics key set, that key authenticates, but rows are still filtered to the prefix
+    env["BASETEN_METRICS_KEY"] = "met.OTHERSECRET"
+    with pytest.raises(CloudError):
+        au.fetch_usage("2026-10-27T00:00:00Z", "2026-10-27T01:00:00Z", env=env, opener=opener)
+    assert seen["auth"] == "Bearer met.OTHERSECRET"
