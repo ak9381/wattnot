@@ -118,3 +118,4 @@ table.rc{width:100%;border-collapse:collapse;font:11px var(--mono)}.rc th{text-a
 body{grid-template-columns:minmax(0,1fr)}
 .node .row{grid-template-columns:76px 1fr auto}
 .orch,.flowwrap,.logcol{min-width:0}
+@media (prefers-reduced-motion:reduce){.edge{animation:none}}

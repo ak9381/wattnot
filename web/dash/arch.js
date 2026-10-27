@@ -3,6 +3,7 @@
 import { esc, pill } from "./theme.js";
 
 const g = () => window.gsap;
+const has = (s, w) => (s || "").split(" ").includes(w);
 const reduce = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const SVG = "http://www.w3.org/2000/svg";
 
@@ -51,7 +52,7 @@ export class ArchView {
       grid.appendChild(el);
       el.querySelector(".t").onclick = () => this.select(n.id);
       el.querySelector(".xp").onclick = () => this.toggleOpen(n.id);
-      el.querySelector(".pin").onclick = (e) => { const on = !this.pins.has(n.id); on ? this.pins.add(n.id) : this.pins.delete(n.id); e.currentTarget.setAttribute("aria-pressed", on); if (on) this.open(n.id, true); else if (!this.state[n.id]?.includes("on")) this.close(n.id); };
+      el.querySelector(".pin").onclick = (e) => { const on = !this.pins.has(n.id); on ? this.pins.add(n.id) : this.pins.delete(n.id); e.currentTarget.setAttribute("aria-pressed", on); if (on) this.open(n.id, true); else if (!has(this.state[n.id], "on")) this.close(n.id); };
       el.querySelectorAll(".sub").forEach((b) => (b.onclick = () => this.select(n.id, b.dataset.sub)));
     }
     this.layoutEdges();
@@ -59,7 +60,7 @@ export class ArchView {
     this.applyFilter();
   }
   subMeta(n, s) { return !!s.meta; }
-  destroy() { this.stop(); this.ro?.disconnect(); this.host.innerHTML = ""; }
+  destroy() { this.stop(); this.ro?.disconnect(); this.paths = null; this.host.innerHTML = ""; }
   el(id) { return this.root.querySelector(`.avn[data-id="${id}"]`); }
   subEl(id, sub) { return this.el(id)?.querySelector(`.sub[data-sub="${sub}"]`); }
 
@@ -67,8 +68,8 @@ export class ArchView {
   layoutEdges() {
     if (!this.svg) return;
     const R = this.root.getBoundingClientRect(); if (!R.width) return;
-    const keep = [...this.svg.querySelectorAll("path")].map((p) => p.classList.contains("live") ? p.dataset.k : null);
-    this.svg.setAttribute("viewBox", `0 0 ${R.width} ${R.height}`); this.svg.innerHTML = "";
+    this.svg.setAttribute("viewBox", `0 0 ${R.width} ${R.height}`);
+    this.paths = this.paths || new Map(); const seen = new Set();
     for (const e of this.edges) {
       const a = this.el(e.from), b = this.el(e.to); if (!a || !b) continue;
       const A = a.getBoundingClientRect(), B = b.getBoundingClientRect();
@@ -76,18 +77,44 @@ export class ArchView {
       let x1, y1, x2, y2, d;
       if (same) { x1 = A.left + A.width / 2 - R.left; y1 = (A.top < B.top ? A.bottom : A.top) - R.top; x2 = B.left + B.width / 2 - R.left; y2 = (A.top < B.top ? B.top : B.bottom) - R.top; const m = (y1 + y2) / 2; d = `M${x1},${y1} C${x1},${m} ${x2},${m} ${x2},${y2}`; }
       else { const fw = A.left < B.left; x1 = (fw ? A.right : A.left) - R.left; y1 = Math.min(A.top + 26, A.bottom) - R.top; x2 = (fw ? B.left : B.right) - R.left; y2 = Math.min(B.top + 26, B.bottom) - R.top; const m = (x1 + x2) / 2; d = `M${x1},${y1} C${m},${y1} ${m},${y2} ${x2},${y2}`; }
-      const p = document.createElementNS(SVG, "path"); p.setAttribute("d", d); p.dataset.k = `${e.from}>${e.to}`; p.setAttribute("class", "e");
-      p.style.setProperty("--c", this.d.partners[e.partner]?.color || "var(--cy)"); this.svg.appendChild(p);
+      const k = `${e.from}>${e.to}`; seen.add(k);
+      let p = this.paths.get(k);
+      if (!p) {
+        p = document.createElementNS(SVG, "path"); p.dataset.k = k; p.setAttribute("class", "e");
+        p.style.setProperty("--c", this.d.partners[e.partner]?.color || "var(--cy)"); this.svg.appendChild(p); this.paths.set(k, p);
+      }
+      p.setAttribute("d", d);
+      if (p._pk) p._pk.firstChild.setAttribute("path", d);   // the travelling dot follows the moved edge
     }
+    for (const [k, p] of this.paths) if (!seen.has(k)) { p._pk?.remove(); p.remove(); this.paths.delete(k); }
     this.paintEdges();
   }
+  // Marching-ants state of one edge: flow (data moving in), done (static, dim) or idle.
+  edgeState(f, t) {
+    const sf = this.state[f], st = this.state[t];
+    if (has(st, "on") && (has(sf, "on") || has(sf, "done"))) return this.paused ? "flow paused" : "flow";
+    if (has(sf, "done") && has(st, "done")) return "done";
+    return "idle";
+  }
   paintEdges() {
-    this.svg.querySelectorAll("path").forEach((p) => {
-      const [f, t] = p.dataset.k.split(">"), e = this.edges.find((x) => x.from === f && x.to === t);
-      const sf = this.state[f] || "", st = this.state[t] || "";
-      p.classList.toggle("live", (sf.includes("on") || sf.includes("done")) && st.includes("on"));
-      if (this.filter) { const hit = this.matches(this.node(f)) && this.matches(this.node(t)) && (this.filter === "all" || e.partner === this.filter || this.matches(this.node(f)) && this.matches(this.node(t))); p.classList.toggle("hi", hit); p.classList.toggle("fade", !hit); } else { p.classList.remove("hi", "fade"); }
-    });
+    if (!this.paths) return;
+    for (const [k, p] of this.paths) {
+      const [f, t] = k.split(">"), e = this.edges.find((x) => x.from === f && x.to === t);
+      const s = this.edgeState(f, t);
+      p.classList.toggle("flow", s.startsWith("flow")); p.classList.toggle("halt", s === "flow paused"); p.classList.toggle("done", s === "done");
+      p.classList.toggle("live", s.startsWith("flow"));
+      this.dot(p, s === "flow" && !reduce());
+      if (this.filter) { const hit = this.matches(this.node(f)) && this.matches(this.node(t)); p.classList.toggle("hi", hit); p.classList.toggle("fade", !hit); } else { p.classList.remove("hi", "fade"); }
+    }
+  }
+  // a small packet that travels along an edge while data flows on it (SMIL, so it needs no per-frame work)
+  dot(p, on) {
+    if (on && !p._pk) {
+      const c = document.createElementNS(SVG, "circle"); c.setAttribute("r", "3.4"); c.setAttribute("class", "pk");
+      c.style.setProperty("--c", p.style.getPropertyValue("--c"));
+      const m = document.createElementNS(SVG, "animateMotion"); m.setAttribute("dur", "1.3s"); m.setAttribute("repeatCount", "indefinite"); m.setAttribute("path", p.getAttribute("d"));
+      c.appendChild(m); this.svg.appendChild(c); p._pk = c;
+    } else if (!on && p._pk) { p._pk.remove(); p._pk = null; }
   }
   // ---- filter by partner
   matches(n) { return !this.filter || n.partners.includes(this.filter); }
@@ -123,7 +150,7 @@ export class ArchView {
     else G.to(sub, { height: 0, opacity: 0, duration: 0.25, ease: "power2.in", onComplete: () => { sub.style.display = ""; fin(); } });
   }
   // ---- activation (live and replay both call these)
-  setState(id, s) { this.state[id] = s; const el = this.el(id); if (!el) return; el.classList.toggle("on", s.includes("on")); el.classList.toggle("done", s.includes("done")); el.classList.toggle("fail", s.includes("fail")); this.paintEdges(); }
+  setState(id, s) { this.state[id] = s; const el = this.el(id); if (!el) return; el.classList.toggle("on", has(s, "on")); el.classList.toggle("done", has(s, "done")); el.classList.toggle("fail", has(s, "fail")); this.paintEdges(); }
   reset() {
     this.stop(); this.state = {}; this.subOn = {};
     this.root.querySelectorAll(".avn").forEach((el) => { el.classList.remove("on", "done", "fail"); el.querySelector(".now").textContent = ""; if (!this.pins.has(el.dataset.id)) { el.classList.remove("open"); el.querySelector(".subs").style.cssText = ""; } });
@@ -143,10 +170,11 @@ export class ArchView {
     if (!this.ids.has(c.node)) return;
     const prev = this.cur;
     if (prev && prev !== c.node) this.finish(prev);
-    this.cur = c.node;
+    const fresh = this.cur !== c.node; this.cur = c.node;
     const el = this.el(c.node), failed = (this.state[c.node] || "").includes("fail") || c.ok === false;
     this.setState(c.node, "on" + (failed ? " fail" : ""));
     this.open(c.node);
+    if (fresh && this.o.follow !== false) requestAnimationFrame(() => el.scrollIntoView({ block: "nearest", inline: "center", behavior: reduce() ? "auto" : "smooth" }));
     this.light(c.node, c.sub, c.ok !== false);
     el.querySelector(".now").innerHTML = `${esc(c.text)}${c.tag ? " " + pill(c.tag) : ""}`;
     if (c.took != null) this.timing[`${c.node}.${c.sub}`] = c.took;
@@ -161,7 +189,7 @@ export class ArchView {
   }
   // ---- replay of cues
   stop() { this.token++; this.paused = false; }
-  pause() { this.paused = true; } resume() { this.paused = false; }
+  pause() { this.paused = true; this.paintEdges(); } resume() { this.paused = false; this.paintEdges(); }
   wait(ms, tok) { return new Promise((r) => { const t0 = performance.now(); const f = () => { if (tok !== this.token) return r(false); if (this.paused) { return setTimeout(f, 60); } performance.now() - t0 >= ms ? r(true) : setTimeout(f, 30); }; f(); }); }
   async play(cues, { speed = 1, gap = 950 } = {}) {
     this.reset(); const tok = this.token;
