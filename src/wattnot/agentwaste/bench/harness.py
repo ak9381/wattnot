@@ -27,7 +27,7 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 
 from wattnot.agentwaste.config import WasteConfig
-from wattnot.agentwaste.guard import SharedBudget
+from wattnot.agentwaste.guard import HELPER_STOPPED, SharedBudget
 from wattnot.agentwaste.proxy import WasteProxy
 
 from .env import MUTATING, TOOLS, World
@@ -134,7 +134,8 @@ class Run:
     def __init__(self, client: Client, world: World, *, saver: bool, agent_cap: int,
                  effort: str = "low", max_tokens: int = 1500, case_id: str = "",
                  quota: int | None = None, safety_calls: int = SAFETY_CALLS,
-                 shared: bool = False) -> None:
+                 shared: bool = False, purpose: str = "agentwaste-v2") -> None:
+        self.purpose = purpose
         self.world, self.saver, self.agent_cap = world, saver, agent_cap
         self.effort, self.max_tokens, self.case_id = effort, max_tokens, case_id
         self.quota, self.safety_calls = quota, safety_calls
@@ -162,7 +163,7 @@ class Run:
         body = {"model": MODEL, "reasoning_effort": self.effort, "max_tokens": self.max_tokens,
                 "temperature": 0, "tools": tools, "messages": msgs}
         before = self.counting.prompt + self.counting.completion
-        r = call(body, purpose=f"agentwaste-v2:{self.case_id}")
+        r = call(body, purpose=f"{self.purpose}:{self.case_id}")
         msg = r["choices"][0]["message"]
         wn = r.get("wattnot") or {}
         ev = {"n": len(self.trace) + 1, "agent": agent,
@@ -171,7 +172,9 @@ class Run:
               "note": ""}
         self.trace.append(ev)
         text = (msg.get("content") or "").strip()
-        if text and not wn.get("stopped"):
+        # A saver stop message counts as operator-visible only when the main agent was stopped:
+        # it is that run's final reply. A helper's stop message goes to the planner, not the user.
+        if text and (not wn.get("stopped") or agent == "main"):
             self.said.append(text)
         self._note_nudges(ev)
         tail = ""
@@ -269,6 +272,11 @@ def planner_loop(run: Run, system: str, prompt: str, cap: int, helper_cap: int,
     counters: dict[str, dict] = {"main": {}}
 
     def helper(task: str, level: int) -> str:
+        if run.shared is not None:
+            earlier = run.shared.find_redelegation(task)
+            if earlier is not None:
+                # the same subtask was already stopped for no progress: do not start a helper
+                return f"{HELPER_STOPPED} It was already stopped earlier. {earlier}"
         run.helpers += 1
         name = f"helper{run.helpers}"
         counters[name] = {}
@@ -279,8 +287,18 @@ def planner_loop(run: Run, system: str, prompt: str, cap: int, helper_cap: int,
                 return helper(str(a.get("task", "")), level + 1)
             return run.world_tool(fn, a, counters[name])
 
+        first_proxy = len(run.proxies)
         text, ended = react(run, name, SYS_HELPER, task, tools,
                             helper_cap, exec_h)
+        mine = run.proxies[first_proxy:first_proxy + 1]
+        no_progress = ended == "saver-stop" or (
+            ended == "saver-done" and any(p.stats()["nudges"] for p in mine))
+        if no_progress:
+            # tell the planner plainly: this helper was stopped, do not hand the subtask on
+            report = f"{HELPER_STOPPED} {text}".strip()
+            if run.shared is not None:
+                run.shared.note_stopped_task(task, report)
+            return report
         if ended == "cap":
             run.helper_caps += 1
             return f"[helper hit its {helper_cap}-step limit] {text}"
@@ -297,7 +315,8 @@ def planner_loop(run: Run, system: str, prompt: str, cap: int, helper_cap: int,
     return ended
 
 
-def run_case(case, client: Client, arm: str, *, effort: str = "low", rep: int = 0) -> HRun:
+def run_case(case, client: Client, arm: str, *, effort: str = "low", rep: int = 0,
+             purpose: str = "agentwaste-v2") -> HRun:
     """One (case, arm) run. `case` is a bench.cases.Case."""
     if arm not in ("harness", "harness+saver"):
         raise ValueError(f"unknown arm {arm}")
@@ -305,7 +324,8 @@ def run_case(case, client: Client, arm: str, *, effort: str = "low", rep: int = 
     cap = {"react": REACT_CAP, "stop": STOP_CAP, "planner": PLANNER_CAP}[case.harness]
     world = case.world()
     run = Run(client, world, saver=saver, agent_cap=cap, effort=effort,
-              case_id=case.id, quota=case.quota, shared=case.harness == "planner")
+              case_id=case.id, quota=case.quota, shared=case.harness == "planner",
+              purpose=purpose)
     res = HRun(case.harness, case.id, case.category, arm, rep)
     t0 = time.monotonic()
     tools = TOOLS + list(case.extra_tools)
@@ -337,6 +357,8 @@ def run_case(case, client: Client, arm: str, *, effort: str = "low", rep: int = 
     for p in run.proxies:
         for k, v in p.stats()["flags"].items():
             res.flags[k] = res.flags.get(k, 0) + v
+    if run.shared is not None:
+        res.flags["redelegate"] = run.shared.redelegations
     res.miss = res.ended_by in ("cap", "safety") or res.helper_caps > 0
     res.said, res.trace = run.said, run.trace
     res.success = res.error is None and bool(case.check(world, "\n".join(run.said).lower()))

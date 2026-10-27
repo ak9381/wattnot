@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { saverActed, endedText, tableHtml, categoriesHtml, stepCount, visible, eventHtml, replayHtml, secondLayerHtml } from "../../web/dash/wastereplay.js";
+import { saverActed, endedText, tableHtml, categoriesHtml, stepCount, visible, eventHtml, replayHtml, secondLayerHtml, afterFixesHtml } from "../../web/dash/wastereplay.js";
 
 const ev = (n, note = "") => ({ n, agent: "main", text: "x <b>", calls: [["service_status", "{}", "500 err"]], tokens: 100, note });
 const sc = {
@@ -60,4 +60,18 @@ test("a replay where the saver never acted says so", () => {
   assert.equal(saverActed(quiet), false);
   assert.match(replayHtml(quiet, 2), /did not step in/);
   assert.ok(!replayHtml(sc, 2).includes("did not step in"));
+});
+
+test("the after-fixes table shows harness, v2 saver and v3 saver, and escapes text", () => {
+  const b = (c) => ({ runs: 2, success: 2, calls: c, tokens: c * 1000 });
+  const blk = { harness: b(15), saver_v2: b(6), saver_v3: b(3) };
+  const h = afterFixesHtml({ fixes: ["fix <one>"], fixed: blk, normal: blk, cases: [{ id: "noprog-3", ...blk }], notes: ["a note"], reps: 2 });
+  assert.match(h, /After the two fixes/);
+  assert.match(h, /noprog-3/);
+  assert.match(h, /3 calls/);
+  assert.match(h, /a note/);
+  assert.ok(!h.includes("<one>"));
+  assert.equal(afterFixesHtml(null), "");
+  const sl = secondLayerHtml({ headline: "H", normal: { rows: {} }, injected: { rows: {} }, categories: [], scenarios: [], notes: [], reps: 2, cases: 1, spend_usd: 1, after_fixes: { fixes: [], fixed: blk, normal: blk, cases: [], notes: [], reps: 2 } });
+  assert.match(sl, /After the two fixes/);
 });

@@ -194,7 +194,8 @@ def test_stop_response_shape() -> None:
     out = guard.stop_response("repeated calls", model="m")
     assert out["id"] == "wattnot-stop"
     assert out["object"] == "chat.completion"
-    assert out["choices"][0]["message"]["content"] == "Stopped early: repeated calls"
+    assert out["choices"][0]["message"]["content"] == (
+        "Stopped early: repeated calls. Nothing new came back, so the task was not finished.")
     assert out["choices"][0]["finish_reason"] == "stop"
     assert out["usage"] == {"prompt_tokens": 0, "completion_tokens": 0,
                             "total_tokens": 0}
