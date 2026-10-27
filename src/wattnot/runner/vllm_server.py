@@ -16,6 +16,7 @@ import urllib.request
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Protocol
+from urllib.parse import urlsplit
 
 from wattnot.runner.workload import WorkloadItem
 
@@ -84,6 +85,27 @@ class Client(Protocol):
     def complete(self, item: WorkloadItem) -> Completion: ...
 
 
+def _is_loopback(url: str) -> bool:
+    host = (urlsplit(url).hostname or "").lower()
+    return host in ("localhost", "::1") or host.startswith("127.")
+
+
+_NO_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
+def _urlopen(req: urllib.request.Request, timeout: float):
+    """`urlopen` that bypasses any proxy for loopback targets.
+
+    A local vLLM server must be reached directly; sending it through an
+    egress proxy (from `http_proxy`) fails. Remote URLs use the default
+    opener, so proxy settings still apply to them.
+    """
+
+    if _is_loopback(req.full_url):
+        return _NO_PROXY_OPENER.open(req, timeout=timeout)
+    return urllib.request.urlopen(req, timeout=timeout)  # noqa: S310
+
+
 class OpenAIClient:
     """Blocking `/v1/completions` client. Temperature 0 so reps are comparable."""
 
@@ -107,7 +129,7 @@ class OpenAIClient:
             headers["Authorization"] = f"Bearer {self._api_key}"
         req = urllib.request.Request(self.url, data=body, headers=headers, method="POST")
         t0 = self._clock()
-        with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:  # noqa: S310
+        with _urlopen(req, timeout=self.timeout_s) as resp:
             payload = json.loads(resp.read())
         latency = self._clock() - t0
         usage = payload.get("usage") or {}
