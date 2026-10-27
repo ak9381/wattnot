@@ -184,3 +184,34 @@ h2.hl{font:600 clamp(28px,2.7vw,50px)/1.1 Inter,system-ui,sans-serif;letter-spac
 .archcap{min-height:1.6em;font:13px var(--mono);color:var(--ink2);margin:4px 0 12px}
 .err{border:1px solid #7a3a37;border-radius:8px;padding:14px 16px;color:var(--ink2);max-width:60ch}
 @media (prefers-reduced-motion:reduce){.av-edges .e.flow,.lnk.live{animation:none}.av-edges .e.flow{stroke-dasharray:none}}
+/* ---- architecture glass + collapse (scoped to #arch so other views do not change) ---- */
+#arch .av.aglass .avn{background:rgba(17,25,34,.55);-webkit-backdrop-filter:blur(14px) saturate(1.25);backdrop-filter:blur(14px) saturate(1.25);border:1px solid rgba(255,255,255,.14);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.38),0 0 16px rgba(34,199,217,.07);color:#EDF2F7}
+#arch .av.aglass .avn .hd .t{color:#F4F8FB}
+#arch .av.aglass .avn .d{color:#C6D0DA}
+#arch .av.aglass .avn .stat .k{color:#C6D0DA}
+#arch .av.aglass .avn .stat .v{color:#FFFFFF}
+#arch .av.aglass .avn .stat .v.na{color:#C6D0DA}
+#arch .av.aglass .avn .xp,#arch .av.aglass .avn .pin{color:#D5DDE4;border-color:rgba(255,255,255,.18)}
+#arch .av.aglass .avn .st{color:#C6D0DA}
+#arch .av.aglass .sub{background:rgba(13,19,27,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-color:rgba(255,255,255,.12);color:#E6EDF3}
+#arch .av.aglass .sub i{color:#C6D0DA}
+#arch .av.aglass .avn .now{color:#F4F8FB}
+#arch .av.aglass .avn.done .now{color:#D5DDE4}
+/* collapsed summary: title + partner tag stay in .hd, key number shows here */
+#arch .av.aglass .avn .sum{display:flex;align-items:baseline;gap:8px;width:100%;margin:8px 0 2px;padding:7px 10px;border:1px solid rgba(255,255,255,.14);border-radius:7px;background:rgba(255,255,255,.05);color:#F4F8FB;font-size:.92em;cursor:pointer;text-align:left}
+#arch .av.aglass .avn .sum .k{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#D5DDE4}
+#arch .av.aglass .avn .sum .v{color:#FFFFFF;font-variant-numeric:tabular-nums;white-space:nowrap}
+#arch .av.aglass .avn.open .sum{display:none}
+/* collapsed cards hide the full detail; expanded cards show the sub-step list */
+#arch .av.aglass .avn:not(.open) .d,#arch .av.aglass .avn:not(.open) .stl{display:none}
+/* glass side panel */
+#arch #apanel{background:rgba(13,19,27,.62);-webkit-backdrop-filter:blur(16px) saturate(1.25);backdrop-filter:blur(16px) saturate(1.25);border-left:1px solid rgba(255,255,255,.14);box-shadow:-12px 0 40px rgba(0,0,0,.45),0 0 20px rgba(34,199,217,.06);color:#EDF2F7}
+#arch #apanel h3{color:#FFFFFF}
+#arch #apanel p,#arch #apanel li{color:#DDE5EC}
+#arch #apanel .muted{color:#C6D0DA}
+/* narrow cards: let the title and tags wrap instead of overlapping */
+#arch .av.aglass .avn .hd{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:flex-start}
+#arch .av.aglass .avn .hd .t{flex:1 1 100%;min-width:0;overflow-wrap:anywhere}
+#arch .av.aglass .avn .sum{flex-wrap:wrap;row-gap:4px}
+#arch .av.aglass .avn .sum .k{flex:1 1 100%}
+#arch .av.aglass .avn:not(.open) .mp{display:none}

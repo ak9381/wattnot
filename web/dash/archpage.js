@@ -34,7 +34,7 @@ export class ArchPage {
     host.innerHTML = `<div class="archmode" role="group" aria-label="architecture view"><button data-m="pipe" class="on" aria-pressed="true">Run pipeline</button><button data-m="all" aria-pressed="false">All modules</button>
       <span class="muted" id="amodeNote">The real steps of one run, lit up as its events arrive. Click a step for its sub-steps and numbers.</span></div>
       <div id="apipe" class="apipe"></div><div id="aall" hidden><div class="archbar"><label class="muted" for="rsel">Replay</label><select id="rsel" class="btn" aria-label="recorded run to replay"></select>
-      <button class="btn pri" id="aplay">Play</button><button class="btn" id="apause">Pause</button><button class="btn" id="areset">Reset</button>
+      <button class="btn pri" id="aplay">Play</button><button class="btn" id="apause">Pause</button><button class="btn" id="areset">Reset</button><button class="btn" id="aexpand">Expand all</button><button class="btn" id="acollapse">Collapse all</button>
       <span class="seg" id="aspd"><button data-s="1">1×</button><button data-s="2" class="on">2×</button><button data-s="4">4×</button></span><span class="sp"></span><span class="cap" id="aprog"></span></div>
       <div class="avlegend" id="afil" role="group" aria-label="filter by partner"></div>
       <div class="mstrip" id="mstrip" hidden></div>
@@ -66,6 +66,8 @@ export class ArchPage {
     $("#aplay", H).onclick = () => this.start();
     $("#apause", H).onclick = (e) => { const b = e.currentTarget; if (this.view.paused) { this.view.resume(); b.textContent = "Pause"; } else { this.view.pause(); b.textContent = "Resume"; } };
     $("#areset", H).onclick = () => { this.stopLive(); this.view.reset(); $("#aprog", H).textContent = ""; $("#apause", H).textContent = "Pause"; $("#acap", H).textContent = "Reset. Pick a replay and press Play."; };
+    $("#aexpand", H).onclick = () => this.view.expandAll();
+    $("#acollapse", H).onclick = () => this.view.collapseAll();
     $("#rsel", H).onchange = (e) => { this.replay = e.target.value; this.view.reset(); if (this.replay === "live") this.startLive(); };
     H.querySelectorAll("#aspd button").forEach((b) => (b.onclick = () => { this.speed = +b.dataset.s; H.querySelectorAll("#aspd button").forEach((x) => x.classList.toggle("on", x === b)); }));
     H.querySelectorAll("#afil button").forEach((b) => (b.onclick = () => this.setFilter(b.dataset.f)));

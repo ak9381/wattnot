@@ -37,24 +37,51 @@ export class ArchView {
   node(id) { return this.d.nodes.find((n) => n.id === id); }
   build() {
     const mode = this.o.mode || "map", d = this.d;
-    this.host.innerHTML = `<div class="av ${mode}" style="--n:${this.nodes.length}"><svg class="av-edges" aria-hidden="true"></svg><div class="av-grid"></div></div>`;
+    // Collapsible glass cards live only on the architecture map. The run-pipeline
+    // embed (mode "row") keeps the original markup so that view does not change.
+    const C = this.collapsible = (this.o.collapse ?? (mode === "map"));
+    this.host.innerHTML = `<div class="av ${mode}${C ? " aglass" : ""}" style="--n:${this.nodes.length}"><svg class="av-edges" aria-hidden="true"></svg><div class="av-grid"></div></div>`;
     this.root = this.host.firstElementChild; this.svg = this.root.querySelector("svg"); const grid = this.root.querySelector(".av-grid");
     for (const n of this.nodes) {
       const el = document.createElement("div"); el.className = `avn ${n.status === "code" ? "" : n.status}`; el.dataset.id = n.id; el.setAttribute("role", "group"); el.setAttribute("aria-label", n.title);
       if (mode === "map") { el.style.gridColumn = n.col + 1; el.style.gridRow = n.row + 1; }
       const stats = n.stats.slice(0, this.o.stats ?? 2);
-      el.innerHTML = `<div class="hd"><button class="t" title="Open details for ${esc(n.title)}">${esc(n.title)}</button><span class="bd">${n.partners.map((p) => badge(d, p)).join("")}</span></div>
+      const subs = `<div class="subs"${C ? ` id="subs-${n.id}"` : ""}>${n.subs.map((s, i) => `${i ? '<div class="lnk"></div>' : ""}<button class="sub ${this.subMeta(n, s) ? "metasub" : ""}" data-sub="${s.id}" title="${esc(s.desc)}"><i>${i + 1}</i><span>${esc(s.title)}</span>${this.subMeta(n, s) ? "<em>Meta</em>" : ""}</button>`).join("")}</div>`;
+      if (!C) {
+        el.innerHTML = `<div class="hd"><button class="t" title="Open details for ${esc(n.title)}">${esc(n.title)}</button><span class="bd">${n.partners.map((p) => badge(d, p)).join("")}</span></div>
         <p class="d">${esc(n.desc)}</p>${poweredByHtml(poweredByFor(n))}
         ${n.meta_product ? `<div class="bd" style="margin-bottom:6px"><span class="bdg mp" style="--c:var(--m)">Meta · ${esc(n.meta_product)}</span></div>` : ""}
         <div class="stl">${stats.map(statHtml).join("")}</div>
         <div class="now"></div>
-        <div class="subs">${n.subs.map((s, i) => `${i ? '<div class="lnk"></div>' : ""}<button class="sub ${this.subMeta(n, s) ? "metasub" : ""}" data-sub="${s.id}" title="${esc(s.desc)}"><i>${i + 1}</i><span>${esc(s.title)}</span>${this.subMeta(n, s) ? "<em>Meta</em>" : ""}</button>`).join("")}</div>
+        ${subs}
         <div class="ft"><button class="xp" aria-expanded="false">steps (${n.subs.length})</button><button class="pin" aria-pressed="false" title="Keep this step open">pin</button>${STATUS[n.status] ? `<span class="st">${STATUS[n.status]}</span>` : ""}</div>`;
+        grid.appendChild(el);
+        el.querySelector(".t").onclick = () => this.select(n.id);
+        el.querySelector(".xp").onclick = () => this.toggleOpen(n.id);
+        el.querySelector(".pin").onclick = (e) => { const on = !this.pins.has(n.id); on ? this.pins.add(n.id) : this.pins.delete(n.id); e.currentTarget.setAttribute("aria-pressed", on); if (on) this.open(n.id, true); else if (!has(this.state[n.id], "on")) this.close(n.id); };
+        el.querySelectorAll(".sub").forEach((b) => (b.onclick = () => this.select(n.id, b.dataset.sub)));
+        continue;
+      }
+      const key = n.stats.find((s) => s.v != null) || n.stats[0];
+      el.innerHTML = `<div class="hd"><button class="t" aria-expanded="false" aria-controls="subs-${n.id}" title="Expand or collapse ${esc(n.title)}">${esc(n.title)}</button><span class="bd">${n.partners.map((p) => badge(d, p)).join("")}</span></div>
+        <button class="sum" data-act="sel" title="Open details for ${esc(n.title)}" aria-label="${esc(key?.label || "value")} for ${esc(n.title)}: open details"><span class="k">${esc(key?.label || "value")}</span><span class="v num">${esc(key ? statVal(key) : "–")}</span>${key?.tag ? pill(key.tag) : ""}</button>
+        <p class="d">${esc(n.desc)}</p>${poweredByHtml(poweredByFor(n))}
+        ${n.meta_product ? `<div class="bd" style="margin-bottom:6px"><span class="bdg mp" style="--c:var(--m)">Meta · ${esc(n.meta_product)}</span></div>` : ""}
+        <div class="stl">${stats.map(statHtml).join("")}</div>
+        <div class="now"></div>
+        ${subs}
+        <div class="ft"><button class="xp" aria-expanded="false" aria-controls="subs-${n.id}">steps (${n.subs.length})</button><button class="pin" aria-pressed="false" title="Keep this step open">pin</button>${STATUS[n.status] ? `<span class="st">${STATUS[n.status]}</span>` : ""}</div>`;
       grid.appendChild(el);
-      el.querySelector(".t").onclick = () => this.select(n.id);
+      el.querySelector(".t").onclick = () => this.toggleOpen(n.id);
+      el.querySelector(".sum").onclick = () => this.select(n.id);
       el.querySelector(".xp").onclick = () => this.toggleOpen(n.id);
       el.querySelector(".pin").onclick = (e) => { const on = !this.pins.has(n.id); on ? this.pins.add(n.id) : this.pins.delete(n.id); e.currentTarget.setAttribute("aria-pressed", on); if (on) this.open(n.id, true); else if (!has(this.state[n.id], "on")) this.close(n.id); };
       el.querySelectorAll(".sub").forEach((b) => (b.onclick = () => this.select(n.id, b.dataset.sub)));
+      // Keyboard: the header button toggles natively (Enter/Space fire click).
+      // This covers keyboard focus elsewhere in the header chrome itself.
+      el.querySelector(".hd").addEventListener("keydown", (e) => {
+        if ((e.key === "Enter" || e.key === " ") && !e.target.closest("button")) { e.preventDefault(); this.toggleOpen(n.id); }
+      });
     }
     this.layoutEdges();
     this.ro = new ResizeObserver(() => this.layoutEdges()); this.ro.observe(this.root);
@@ -132,16 +159,23 @@ export class ArchView {
   // ---- open/close
   isOpen(id) { return this.el(id).classList.contains("open"); }
   toggleOpen(id) { this.isOpen(id) ? this.close(id) : this.open(id, true); }
+  syncToggle(id, open) {
+    const el = this.el(id); if (!el) return;
+    if (this.collapsible) el.querySelector(".t")?.setAttribute("aria-expanded", String(open));
+    el.querySelector(".xp")?.setAttribute("aria-expanded", String(open));
+  }
   open(id, manual) {
-    const el = this.el(id); if (!el || el.classList.contains("open")) return;
-    el.classList.add("open"); el.querySelector(".xp").setAttribute("aria-expanded", "true");
+    const el = this.el(id); if (!el || el.classList.contains("open")) { this.syncToggle(id, true); return; }
+    el.classList.add("open"); this.syncToggle(id, true);
     this.tween(el.querySelector(".subs"), true);
   }
   close(id) {
     const el = this.el(id); if (!el || this.pins.has(id)) return;
-    el.querySelector(".xp").setAttribute("aria-expanded", "false");
+    this.syncToggle(id, false);
     this.tween(el.querySelector(".subs"), false, () => el.classList.remove("open"));
   }
+  expandAll() { for (const n of this.nodes) this.open(n.id, true); this.layoutEdges(); }
+  collapseAll() { for (const n of this.nodes) this.close(n.id); this.layoutEdges(); }
   tween(sub, open, done) {
     const G = g();
     if (!G || reduce()) { done?.(); this.layoutEdges(); return; }
@@ -154,7 +188,7 @@ export class ArchView {
   setState(id, s) { this.state[id] = s; const el = this.el(id); if (!el) return; el.classList.toggle("on", has(s, "on")); el.classList.toggle("done", has(s, "done")); el.classList.toggle("fail", has(s, "fail")); this.paintEdges(); }
   reset() {
     this.stop(); this.state = {}; this.subOn = {};
-    this.root.querySelectorAll(".avn").forEach((el) => { el.classList.remove("on", "done", "fail"); el.querySelector(".now").textContent = ""; if (!this.pins.has(el.dataset.id)) { el.classList.remove("open"); el.querySelector(".subs").style.cssText = ""; } });
+    this.root.querySelectorAll(".avn").forEach((el) => { el.classList.remove("on", "done", "fail"); el.querySelector(".now").textContent = ""; if (!this.pins.has(el.dataset.id)) { el.classList.remove("open"); el.querySelector(".subs").style.cssText = ""; this.syncToggle(el.dataset.id, false); } });
     this.root.querySelectorAll(".sub").forEach((b) => b.classList.remove("on", "done", "bad"));
     this.root.querySelectorAll(".lnk").forEach((b) => b.classList.remove("live"));
     this.layoutEdges();

@@ -104,6 +104,18 @@ def test_bundle_has_no_secrets(bundle):
         assert not re.search(pat, blob), pat
 
 
+def test_arch_cards_collapse_with_expand_all():
+    js = (ROOT / "web" / "dash" / "arch.js").read_text()
+    page = (ROOT / "web" / "dash" / "archpage.js").read_text()
+    css = (ROOT / "web" / "dash" / "story.css").read_text()
+    assert "aria-expanded" in js and "aria-controls" in js
+    assert "expandAll" in js and "collapseAll" in js
+    assert "Expand all" in page and "Collapse all" in page
+    assert "backdrop-filter" in css and "-webkit-backdrop-filter" in css
+    assert re.search(r"#arch[^{]*\{[^}]*backdrop-filter", css)
+    assert "aglass" in js
+
+
 def test_repo_names_no_agent_or_model_vendor():
     names = ["cla" + "ude", "anthr" + "opic", "open" + "ai", "chat" + "gpt", "gem" + "ini", "copi" + "lot", "gr" + "ok"]
     banned = re.compile("|".join(names), re.I)
