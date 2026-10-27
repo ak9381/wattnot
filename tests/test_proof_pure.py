@@ -165,7 +165,7 @@ def test_write_manifest_hashes_everything_but_itself(tmp_path):
 def test_make_log_appends_jsonl_and_prints(tmp_path, capsys):
     log = prun.make_log(tmp_path)
     log("decision", {"cap_w": 450})
-    line = (tmp_path / "events.jsonl").read_text().strip()
+    line = (tmp_path / "log.jsonl").read_text().strip()
     doc = json.loads(line)
     assert doc["kind"] == "decision" and doc["cap_w"] == 450 and "t" in doc
     assert "decision" in capsys.readouterr().out
