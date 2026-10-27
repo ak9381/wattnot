@@ -110,6 +110,9 @@
 .who .cr{display:flex;gap:10px;font-size:13.5px;color:var(--ink2)}
 .who .cr b{min-width:110px;color:var(--c)}
 .who .cr.meta{background:rgba(90,169,240,.07);border-radius:6px;padding:3px 6px;margin:0 -6px}
+/* Agent waste card: groups and reference read as small lines under the table. */
+.wgroups{margin:8px 0 0;display:grid;gap:2px}.wgroups .hnt{margin:0}
+.wnotes{margin-top:8px}
 .resfoot{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
 @media (max-width:1100px){.cfg,.rgrid{grid-template-columns:1fr}.pf-why,.rnar{position:static}}
 

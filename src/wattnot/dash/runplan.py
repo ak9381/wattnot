@@ -24,6 +24,7 @@ import json
 from datetime import UTC, datetime, timedelta
 
 from wattnot.approvals.risk import RiskConfig, classify
+from wattnot.agentwaste.card import load_results as load_waste
 
 from . import pipeline as pipe
 
@@ -533,6 +534,54 @@ def _approve_topk_change(S, t, applied):
            inputs="the proposal", outputs="approved (auto-approve-flag)", pace=700)
 
 
+def _waste(S):
+    """The Agent waste steps, from the benchmark file (dashes when it is missing)."""
+    arms = (load_waste() or {}).get("arms", {})
+    off = arms.get("loop-off", {}).get("all", {})
+    on = arms.get("loop-on", {}).get("all", {})
+    has = bool(off and on)
+
+    def per_run(arm, key, total, nd=2):
+        if arm.get(key) is not None:
+            return arm[key]
+        if arm.get("runs") and arm.get(total) is not None:
+            return round(arm[total] / arm["runs"], nd)
+        return None
+
+    calls = (off.get("calls_per_run"), on.get("calls_per_run"))
+    toks = (per_run(off, "tokens_per_run", "total_tokens", 0), per_run(on, "tokens_per_run", "total_tokens", 0))
+    wall = (off.get("wall_s_per_run"), on.get("wall_s_per_run"))
+    joules = (per_run(off, "joules_per_run", "joules", 1), per_run(on, "joules_per_run", "joules", 1))
+    usd = (off.get("usd_per_run"), on.get("usd_per_run"))
+    succ = (off.get("success_pct"), on.get("success_pct"))
+    show = lambda v, nd=1: "–" if v is None else f"{round(v, nd)}"  # noqa: E731
+    tag = "MEASURED" if has else None
+    S.step("waste", "watch", f"Watch: {show(calls[0])} calls per task without the saver, {show(calls[1])} with it", tag=tag,
+           say=f"The saver reads the conversation before each call. Without a stop action the loop ran {show(calls[0])} calls per task; with the saver it ran {show(calls[1])}.",
+           inputs="the conversation so far", outputs="a verdict per call",
+           numbers=[_num("calls per run, without", calls[0], "", tag or "MEASURED"), _num("calls per run, with", calls[1], "", tag or "MEASURED")])
+    S.step("waste", "detect", f"Detect: {show(toks[0], 0)} tokens per task without the saver, {show(toks[1], 0)} with it", tag=tag,
+           say=f"Repeated calls, no-op steps and plan cycles are flagged. Tokens per task fell from {show(toks[0], 0)} to {show(toks[1], 0)}.",
+           inputs="recent steps", outputs="a flag or nothing",
+           numbers=[_num("tokens per run, without", toks[0], "", tag or "MEASURED"), _num("tokens per run, with", toks[1], "", tag or "MEASURED")])
+    S.step("waste", "nudge", f"Nudge: {show(succ[0])}% of tasks passed without the saver, {show(succ[1])}% with it", tag=tag,
+           say=f"When the work looks done the loop is offered a done action. Tasks passed: {show(succ[0])}% without the saver, {show(succ[1])}% with it.",
+           inputs="the verdict", outputs="a done tool in the reply",
+           numbers=[_num("tasks passed, without", succ[0], "%", tag or "MEASURED"), _num("tasks passed, with", succ[1], "%", tag or "MEASURED")])
+    S.step("waste", "budget", f"Budget: {show(wall[0], 2)} s per task without the saver, {show(wall[1], 2)} s with it", tag=tag,
+           say=f"Step and token budgets cap the run. Wall time per task: {show(wall[0], 2)} s without the saver, {show(wall[1], 2)} s with it.",
+           inputs="steps and tokens used", outputs="stop or go on",
+           numbers=[_num("wall time per run, without", wall[0], "s", tag or "MEASURED"), _num("wall time per run, with", wall[1], "s", tag or "MEASURED")])
+    etag = "ESTIMATE" if has else None
+    S.step("waste", "exit", f"Exit: the loop stops early ({show(joules[1])} J, ${show(usd[1], 5)} per task with the saver)", tag=etag,
+           say=f"The loop exits early with a reason: done. Energy per task about {show(joules[1])} J and cost about ${show(usd[1], 5)} with the saver.",
+           inputs="the verdict", outputs="an early stop with a reason",
+           numbers=[_num("energy per run, with", joules[1], "J", etag or "ESTIMATE"), _num("cost per run, with", usd[1], "$", etag or "ESTIMATE")],
+           extras=[("decision", {"kind": "agent_waste", "stopped": True, "reason": "done",
+                                 "calls_off": calls[0], "calls_on": calls[1],
+                                 "success_off_pct": succ[0], "success_on_pct": succ[1]})])
+
+
 def _run_cap(S, cfg, m, lim, cx):
     ev = eval_cap(cfg, m["id"], lim)
     c = cfg["data"]["cap"][m["id"]]
@@ -571,6 +620,7 @@ def _run_cap(S, cfg, m, lim, cx):
                numbers=[_num("energy per request", round(t["wh"] * 1000, 3), "mWh"), _num("p99", t["p99"], "s"), _num("p99 change", t["p99_change_pct"], "%"),
                         _num("gate", "pass" if t["p99_ok"] else "fail", "")],
                extras=extras, pace=850)
+    _waste(S)
     _approve_cap_change(S, best)
     if best:
         S.step("keep", "decide", f"Keep {best['cap']} W", say=f"The lowest cap inside your latency limit is {best['cap']} W: {best['saved_pct']}% less energy per request, p99 {best['p99_change_pct']:+.1f}%. Quality check pending ({len(pend)} of {len(ev['tried']) - 1} caps failed the fixed check).",
@@ -622,6 +672,7 @@ def _run_topk(S, cfg, m, lim, cx):
            say=f"The slowest batch took {ev['p99_change_pct']:+.1f}% as long as before. Your limit is +{lim['p99_slack_pct']:g}%.",
            inputs="batch generate times", outputs=f"{ev['p99_change_pct']:+.1f}%", numbers=[_num("p99 change", ev["p99_change_pct"], "%")], pace=1000,
            extras=[("gate.result", {"check": "p99", "passed": ev["p_ok"], "detail": {"score": ev["p99_change_pct"], "threshold": lim["p99_slack_pct"]}})])
+    _waste(S)
     _approve_topk_change(S, t, ev["applied"])
     if ev["applied"]:
         S.step("keep", "apply", "Adaptive top-k kept", say="All your limits hold, so adaptive top-k is kept.", inputs="gates passed", outputs="adaptive routing on", pace=900,
@@ -671,6 +722,7 @@ def _run_effort(S, cfg, m, lim, cx):
     S.step("gate", "p99", f"p99 {'inside' if all(e['p99_change_pct'] <= lim['p99_slack_pct'] for e in ev) else 'over'} your limit for every class", ok=all(e["p99_change_pct"] <= lim["p99_slack_pct"] for e in ev),
            say=f"Latency is compared with the top level for every class. The limit is +{lim['p99_slack_pct']:g}%; the cheaper levels were faster.", inputs="p99 per class", outputs="p99 change per class", pace=900,
            extras=[("gate.result", {"check": "p99", "passed": True, "detail": {"limit_pct": lim["p99_slack_pct"]}})])
+    _waste(S)
     kept = [e for e in ev if e["kept"]]
     usd_top = sum(e["usd_top"] for e in ev)
     usd_after = sum(e["usd_tuned"] if e["kept"] else e["usd_top"] for e in ev)

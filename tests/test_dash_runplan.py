@@ -135,11 +135,66 @@ SRC = ROOT / "src" / "wattnot"
 
 def test_the_run_graph_is_the_eight_pipeline_steps_in_order(bundle):
     ids = [n["id"] for n in runplan.plan(bundle, {"model": "glimmer"})["pipeline"]]
-    assert ids == ["room", "baseline", "gate", "sweep", "approve", "keep", "receipt"]
+    assert ids == ["room", "baseline", "gate", "sweep", "waste", "approve", "keep", "receipt"]
     ids = [n["id"] for n in runplan.plan(bundle, {"model": "qwen3"})["pipeline"]]
-    assert ids == ["room", "baseline", "gate", "topk", "approve", "keep", "receipt"]
-    assert [n["id"] for n in bundle["config"]["pipeline"]] == ["room", "baseline", "gate", "sweep", "topk", "approve", "keep", "receipt"]
+    assert ids == ["room", "baseline", "gate", "topk", "waste", "approve", "keep", "receipt"]
+    assert [n["id"] for n in bundle["config"]["pipeline"]] == ["room", "baseline", "gate", "sweep", "topk", "waste", "approve", "keep", "receipt"]
     assert [n["id"] for n in runplan.plan(bundle, {"model": "glimmer", "room": "none"})["pipeline"]][0] == "baseline"
+
+
+def test_the_waste_stage_names_meta_and_real_code(bundle):
+    p = runplan.plan(bundle, {"model": "glimmer"})
+    n = next(x for x in p["pipeline"] if x["id"] == "waste")
+    assert n["title"] == "Agent waste" and n["partners"] == ["meta"]
+    assert n["meta_product"] == "Muse Spark" and n["code"] == "agentwaste/guard.py"
+    subs = {s["id"]: s for s in n["subs"]}
+    assert set(subs) == {"watch", "detect", "nudge", "budget", "exit"}
+    assert subs["watch"]["partner"] == "meta" and subs["exit"]["event"] == "decision"
+    for s in n["subs"]:
+        assert (SRC / s["code"]).is_file()
+
+
+def test_the_waste_steps_run_before_keep_with_numbers_from_the_benchmark(bundle):
+    for m in models(bundle):
+        p = runplan.plan(bundle, {"model": m})
+        if m == "spark_open":
+            continue  # effort and cache levers share the hosted run; checked below
+        started = [f["event"] for f in p["events"] if f["event"]["type"] == "step.started"]
+        subs = [e["data"]["sub"] for e in started if e["data"].get("node") == "waste"]
+        assert subs == ["watch", "detect", "nudge", "budget", "exit"], m
+        nodes = [f["event"]["data"].get("node") for f in p["events"] if f["event"]["type"] == "step.started"]
+        assert nodes.index("waste") > nodes.index("sweep" if "sweep" in nodes else "topk")
+        assert nodes.index("waste") < nodes.index("keep")
+        for e in started:
+            if e["data"].get("node") == "waste":
+                assert e["data"]["narration"]["source"] == "template" and e["data"]["narration"]["text"]
+        nums = [n for f in p["events"] if f["event"]["type"] == "step.finished"
+                and f["event"]["data"].get("node") == "waste" for n in f["event"]["data"]["numbers"]]
+        assert nums and all(n["tag"] in ("MEASURED", "ESTIMATE") and n["v"] is not None for n in nums)
+        dec = [f["event"]["data"] for f in p["events"] if f["event"]["type"] == "decision"
+               and f["event"]["data"].get("kind") == "agent_waste"]
+        assert len(dec) == 1 and dec[0]["stopped"] is True and dec[0]["reason"] == "done"
+        assert dec[0]["calls_on"] is not None and dec[0]["success_on_pct"] is not None
+
+
+def test_the_hosted_run_also_carries_the_waste_steps(bundle):
+    p = runplan.plan(bundle, {"model": "spark_open"})
+    subs = [f["event"]["data"]["sub"] for f in p["events"]
+            if f["event"]["type"] == "step.started" and f["event"]["data"].get("node") == "waste"]
+    assert subs == ["watch", "detect", "nudge", "budget", "exit"]
+
+
+def test_the_waste_steps_show_dashes_without_a_results_file(bundle, monkeypatch):
+    monkeypatch.setattr(runplan, "load_waste", lambda: None)
+    p = runplan.plan(bundle, {"model": "glimmer"})
+    fin = [f["event"] for f in p["events"] if f["event"]["type"] == "step.finished"
+           and f["event"]["data"].get("node") == "waste"]
+    assert len(fin) == 5
+    for e in fin:
+        assert e["data"]["label"] is None
+        for n in e["data"]["numbers"]:
+            assert n["v"] is None and n["tag"] is None
+    assert p["events"][0]["event"]["data"]["label"] == "REPLAY"
 
 
 def _code_defined(path, symbol):
