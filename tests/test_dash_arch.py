@@ -105,7 +105,8 @@ def test_bundle_has_no_secrets(bundle):
 
 
 def test_repo_names_no_agent_or_model_vendor():
-    banned = re.compile(r"claude|anthropic|openai|chatgpt|gemini|copilot", re.I)
+    names = ["cla" + "ude", "anthr" + "opic", "open" + "ai", "chat" + "gpt", "gem" + "ini", "copi" + "lot", "gr" + "ok"]
+    banned = re.compile("|".join(names), re.I)
     roots = [ROOT / "web" / "dash", ROOT / "src" / "wattnot" / "dash", ROOT / "docs" / "dashboard.md", STORY]
     hits = []
     for r in roots:
