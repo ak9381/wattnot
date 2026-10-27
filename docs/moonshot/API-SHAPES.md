@@ -87,3 +87,61 @@ An array, one entry per event:
 Chart idea: power_w as a line with target_w as a dashed line, cap_w as a step line, p99_ms on a
 second axis against sla_ms, the event window shaded. `wattnot flex show --json <receipt>`
 gives `{label, grade, outcome, trace_ok, problems}` for a status badge.
+
+## Router replay (`wattnot route replay --json`, or the `--out` file)
+
+```jsonc
+{
+  "format": "wattnot.route-replay/1",
+  "label": "SIMULATED",                       // ESTIMATE only if the source run was live
+  "labels": { "usd": "SIMULATED", "joules": "ESTIMATE", "gco2": "SIMULATED", "region": "SIMULATED" },
+  "source_receipt": { "receipt_id": "cloud_...", "sha256": "...", "mode": "replay-synthetic",
+                      "label": "SIMULATED" },
+  "backend": "baseten/muse-spark-open-1026",
+  "home_region": "us-east", "regions": ["ap-south", "..."], "tie_pct": 3.0, "requests": 30,
+  "grid": { "label": "SIMULATED", "source": "static fixture (...)", "as_of": "...",
+            "kind": "average, not marginal" },
+  "classes": [{
+    "class": "arith", "requests": 6,
+    "baseline":          { /* row */ },       // always xhigh in the home region
+    "effort_only":       { /* row */, "reason": "medium in us-east: passes the gate, ..." },
+    "effort_and_region": { /* row */, "reason": "...", "tie_broken_by_grid": true },
+    "excluded": [{ "id": "arith:low@us-east", "status": "excluded", "why": "failed: fixed" }]
+  }],
+  "totals": {
+    "baseline":          { "usd": 0.3096, "wh_low": 3.14, "wh_high": 31.45, "j_mid": 62270.2, "gco2_mid": 6.57 },
+    "effort_only":       { /* same keys */ },
+    "effort_and_region": { /* same keys */ },
+    "change_pct": { "effort_only": { "usd": -55.84, "j_mid": -54.33, "gco2_mid": -54.33 },
+                    "effort_and_region": { "usd": -55.84, "j_mid": -54.33, "gco2_mid": -95.79 } }
+  },
+  "notes": ["Region is a what-if: ...", "..."]
+}
+// row = { class, requests, candidate, effort, region, usd, wh_low, wh_high, j_mid,
+//         gco2_mid, gco2_per_kwh, pass_rate }
+```
+
+Show `labels` next to every column. The region column and CO2 column always carry SIMULATED
+while the grid is the fixture.
+
+## Router decision (`wattnot route decide --json`)
+
+```jsonc
+{
+  "label": "SIMULATED", "region_label": "SIMULATED",
+  "chosen": { "id": "arith:medium@eu-north", "backend": "baseten/...", "effort": "medium",
+              "region": "eu-north", "usd_per_req": 0.003473, "wh_low": 0.03703, "wh_high": 0.3703,
+              "pass_rate": 1.0, "j_per_good_answer": 733.194,
+              "usd_label": "SIMULATED", "energy_label": "ESTIMATE" },
+  "reason": "medium in eu-north: passes the gate, 733.2 J per good answer; ...",
+  "tie_broken_by_grid": true,
+  "grid": { "region": "eu-north", "gco2_per_kwh": 35.0, "label": "SIMULATED", "source": "...",
+            "as_of": "...", "note": "..." },       // null when the grid was not used
+  "ranked": [ { "id": "...", "status": "excluded", "why": "failed: fixed" },
+              { "id": "...", "status": "chosen" | "tied" | "passed",
+                "j_per_good_answer": 733.2, "usd_per_req": 0.0035, "region": "...",
+                "gco2_per_kwh": 380.0 } ]
+}
+```
+
+`wattnot route grid --json` returns an array of `{region, gco2_per_kwh, label, source, as_of, note}`.

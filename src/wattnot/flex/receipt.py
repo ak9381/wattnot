@@ -161,8 +161,10 @@ def build_flex_receipt(run: FlexRun, signal: Signal, *, trace_name: str | None =
     problems = lint(r)
     if label == "SIMULATED" and "MEASURED" in json.dumps(r["flex"]):
         problems.append("a SIMULATED flex receipt must not say MEASURED")
-    if "carbon neutral" in json.dumps(r).lower():
-        problems.append("banned wording")
+    from wattnot.cloud.receipt import BANNED
+
+    low = json.dumps(r).lower()
+    problems += [f"banned wording: {w}" for w in BANNED if w in low]
     if problems:
         raise ValueError("flex receipt failed checks: " + "; ".join(problems))
     validate_receipt(r)

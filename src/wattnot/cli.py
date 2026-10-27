@@ -84,6 +84,8 @@ def build_parser() -> argparse.ArgumentParser:
     _cloud.add_parser(sub)
     from wattnot.flex import cli as _flex
     _flex.add_parser(sub)
+    from wattnot.route import cli as _route
+    _route.add_parser(sub)
     return parser
 
 
@@ -224,6 +226,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _flex.dispatch(args)
         except (OSError, KeyError, TypeError, ValueError) as e:
             parser.error(f"flex: {e}")
+    if args.cmd == "route":
+        try:
+            from wattnot.route import cli as _route
+
+            return _route.dispatch(args)
+        except (OSError, KeyError, TypeError, ValueError) as e:
+            parser.error(f"route: {e}")
     parser.print_help()
     return 0
 
