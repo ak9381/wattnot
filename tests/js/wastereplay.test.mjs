@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { saverActed, endedText, tableHtml, categoriesHtml, stepCount, visible, eventHtml, replayHtml, secondLayerHtml, afterFixesHtml } from "../../web/dash/wastereplay.js";
+import { saverActed, endedText, tableHtml, categoriesHtml, stepCount, visible, eventHtml, replayHtml, secondLayerHtml, afterFixesHtml, repeatHtml } from "../../web/dash/wastereplay.js";
 
 const ev = (n, note = "") => ({ n, agent: "main", text: "x <b>", calls: [["service_status", "{}", "500 err"]], tokens: 100, note });
 const sc = {
@@ -74,4 +74,16 @@ test("the after-fixes table shows harness, v2 saver and v3 saver, and escapes te
   assert.equal(afterFixesHtml(null), "");
   const sl = secondLayerHtml({ headline: "H", normal: { rows: {} }, injected: { rows: {} }, categories: [], scenarios: [], notes: [], reps: 2, cases: 1, spend_usd: 1, after_fixes: { fixes: [], fixed: blk, normal: blk, cases: [], notes: [], reps: 2 } });
   assert.match(sl, /After the two fixes/);
+});
+
+test("the 6-rep sprawl table shows spread and the verdict, and is empty without data", () => {
+  const st = (m) => ({ mean: m, sd: 1.5, min: m - 2, max: m + 2, median: m });
+  const a = (m) => ({ runs: 6, success: 6, calls: st(m), tokens: st(m * 1000) });
+  const h = repeatHtml({ reps: 6, spread: [{ id: "sprawl-1", arms: { harness: a(14), "harness+saver": a(8) } }], verdicts: { "sprawl-1": "Real <b>" }, notes: ["n"] });
+  assert.match(h, /6 reps/);
+  assert.match(h, /14 \(12–16, sd 1\.5\)/);
+  assert.match(h, /ADVICE/);
+  assert.match(h, /Real &lt;b&gt;/);
+  assert.equal(repeatHtml(null), "");
+  assert.equal(repeatHtml({ spread: [] }), "");
 });

@@ -47,6 +47,17 @@ export function categoriesHtml(cats) {
 const passText = (a) => (a && a.runs ? `${num(a.success, 0)}/${num(a.runs, 0)}` : "–");
 const cell = (a) => (a && a.runs ? `${num(a.calls)} calls · ${num(a.tokens, 0)} tok · ${passText(a)} passed` : "–");
 
+// The 6-rep sprawl re-run: mean, spread and our reading of each case.
+const sdText = (s) => (s ? `${num(s.mean)} (${num(s.min, 0)}–${num(s.max, 0)}, sd ${num(s.sd)})` : "–");
+export function repeatHtml(rp) {
+  if (!rp || !rp.spread || !rp.spread.length) return "";
+  const arm = (a) => (a ? `${sdText(a.calls)} calls · ${num(a.tokens.mean, 0)} tok · ${num(a.success, 0)}/${num(a.runs, 0)}` : "–");
+  const rows = rp.spread.map((c) => `<tr><th scope="row">${esc(c.id)}</th><td class="num">${esc(arm(c.arms.harness))}</td><td class="num"><b>${esc(arm(c.arms["harness+saver"]))}</b></td><td>${esc((rp.verdicts || {})[c.id] || "")}</td></tr>`).join("");
+  const notes = (rp.notes || []).map((n) => `<p class="hnt">${esc(n)}</p>`).join("");
+  return `<h3 class="wsub">Sub-agent sprawl, ${num(rp.reps, 0)} reps ${tagOf("MEASURED")}</h3>
+    <table class="cmpt"><thead><tr><th></th><th>Harness alone</th><th>Saver (v3)</th><th>Does it look real? ${tagOf("ADVICE")}</th></tr></thead><tbody>${rows}</tbody></table>${notes}`;
+}
+
 // After the two fixes: same cases, harness alone, the v2 saver and the v3 saver side by side.
 export function afterFixesHtml(af) {
   if (!af) return "";
@@ -57,7 +68,7 @@ export function afterFixesHtml(af) {
   return `<h3 class="wsub">After the two fixes (v3) ${tagOf("MEASURED")}</h3>
     <ul class="wfix">${fx}</ul>
     <table class="cmpt"><thead><tr><th></th><th>Harness alone (v3 run)</th><th>Saver, before (v2)</th><th>Saver, after (v3)</th></tr></thead><tbody>${rows}</tbody></table>
-    ${notes}<p class="hnt">${num(af.reps, 0)} reps per case. v2 numbers come from the earlier run on the same cases; the model is not deterministic, so small gaps are noise.</p>`;
+    ${notes}${repeatHtml(af.repeat)}<p class="hnt">${num(af.reps, 0)} reps per case. v2 numbers come from the earlier run on the same cases; the model is not deterministic, so small gaps are noise.</p>`;
 }
 
 // the steps of one arm that are visible after k steps of the replay

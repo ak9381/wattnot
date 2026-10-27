@@ -169,6 +169,48 @@ def _v3_block(block: dict, before: dict) -> dict:
             "saver_v2": _arm_stats(before.get("harness+saver", {}))}
 
 
+def spread(rows: list[dict]) -> list[dict]:
+    """Per case and arm: mean, stdev, min and max of calls and tokens, and passes, over reps."""
+    import statistics as st
+
+    def stats(xs: list[float]) -> dict:
+        return {"mean": round(st.mean(xs), 2), "sd": round(st.stdev(xs), 2) if len(xs) > 1 else 0.0,
+                "min": min(xs), "max": max(xs), "median": st.median(xs)}
+
+    out = []
+    for cid in sorted({r["case"] for r in rows if not r.get("error")}):
+        arms = {}
+        for arm in ("harness", "harness+saver"):
+            xs = [r for r in rows if r["case"] == cid and r["arm"] == arm and not r.get("error")]
+            if not xs:
+                continue
+            arms[arm] = {"runs": len(xs), "success": sum(bool(r["success"]) for r in xs),
+                         "miss_runs": sum(bool(r.get("miss")) for r in xs),
+                         "calls": stats([r["calls"] for r in xs]),
+                         "tokens": stats([r["total_tokens"] for r in xs])}
+        out.append({"id": cid, "arms": arms})
+    return out
+
+
+def load_repeat(path: str | Path | None = None) -> dict | None:
+    """The 6-rep sprawl re-run (same v3 code). None when missing or without a spread table."""
+    p = (Path(path) if path is not None
+         else _root() / "data" / "agent-waste" / "sprawl6" / "results.json")
+    try:
+        d = json.loads(p.read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(d, dict) or not isinstance(d.get("spread"), list):
+        return None
+    try:
+        v = json.loads((p.parent / "verdicts.json").read_text())
+    except (OSError, ValueError):
+        v = {}
+    return {"reps": d.get("reps"), "spread": d["spread"], "verdicts": v.get("verdicts", {}),
+            "verdict_label": v.get("label"), "notes": v.get("notes", []),
+            "spend_usd": d.get("spend_usd_own")}
+
+
 def card_v3(res: dict) -> dict:
     """What changed after the two fixes: the same cases, v2 saver vs v3 saver, side by side."""
     before = res.get("before", {})

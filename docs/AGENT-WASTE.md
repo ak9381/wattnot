@@ -333,3 +333,32 @@ Estimates (ESTIMATE, same rates as v2): cost per normal run $0.00449 → $0.0047
 v3 own spend, smoke included: $0.98 (568 calls). Ledger total after: $22.79, under the $24
 job ceiling. Rebuild with `python scripts/agentwaste_v3_bench.py --reps 2`
 (`--summarize-only` rebuilds `results.json` from `runs.jsonl` with no API calls).
+
+### Sprawl again, 6 reps
+
+The 2-rep sprawl numbers above were too noisy to call, so we ran the three sprawl cases to
+6 reps per arm with the same v3 code and config. Reps 0 and 1 are the v3 runs above; reps 2
+to 5 are new (24 new runs). Calls and tokens are **MEASURED**; the "looks real?" column is
+**ADVICE**, our reading of a Welch t on calls, 6 runs against 6.
+
+| Case | Harness alone: calls mean (min–max, sd) | Saver v3: calls mean (min–max, sd) | Tokens mean, alone → saver | Passed | Looks real? |
+|---|---|---|---|---|---|
+| sprawl-1-double-check | 14.0 (7–16, sd 3.5) | 8.7 (8–12, sd 1.6) | 19,497 → 13,530 | 6/6, 6/6 | Yes, saver better (t ≈ 3.4) |
+| sprawl-2-redelegate-failure | 13.0 (6–30, sd 10.4), 2 misses | 9.3 (6–12, sd 2.9), 0 misses | 20,314 → 14,947 | 6/6, 6/6 | No. Harness is bimodal; its median (7) beats the saver's (9.5) (t ≈ 0.8) |
+| sprawl-3-recursive-split | 12.2 (7–17, sd 4.4) | 11.3 (9–12, sd 1.2) | 21,507 → 20,865 | 6/6, 6/6 | No difference (t ≈ 0.5) |
+
+What we read from it:
+
+- With helper agents the saver is **not worse than the harness alone on any case** by mean
+  calls, tokens or success, so the conditional fix (a helper cap per subtask and a
+  planner-level no-progress detector) was not built.
+- It is **clearly better only on sprawl-1**, where the planner double-checks done work.
+- On sprawl-2 the saver removes the two long runaway runs (22 and 30 calls) but makes the
+  short path a little longer: in 3 of 6 runs it ran into the 12-call shared budget, where the
+  harness alone often finished in 6. That is the open spot. A shared budget that fits the
+  task, or a stop that fires sooner on a repeated failing helper, may help; we have not
+  tested either.
+- On sprawl-3 the saver mainly makes runs more even (sd 1.2 vs 4.4), not cheaper.
+- Spend for this re-run: $0.40 (MEASURED, ledger purpose `agentwaste-sprawl6`).
+  Data: `data/agent-waste/sprawl6/` (`runs.jsonl`, `results.json` with a `spread` table,
+  `verdicts.json` with the ADVICE text).

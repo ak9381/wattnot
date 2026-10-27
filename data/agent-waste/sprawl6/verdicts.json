@@ -1,0 +1,13 @@
+{
+  "label": "ADVICE (our reading of the MEASURED spread; Welch t on calls, 6 vs 6 runs)",
+  "verdicts": {
+    "sprawl-1-double-check": "Real: the saver is better. 8.67 vs 14.0 calls (t about 3.4); 5 of 6 saver runs took 8 calls, 5 of 6 harness runs took 15 or 16.",
+    "sprawl-2-redelegate-failure": "Not clear. Mean 9.33 vs 13.0 calls, but the harness is bimodal (four runs at 6 to 8 calls, two at 22 and 30 that missed their stop). The saver's median is worse (9.5 vs 6): in 3 of 6 runs it ran into the 12-call shared budget. t about 0.8.",
+    "sprawl-3-recursive-split": "No real difference. 11.33 vs 12.17 calls, tokens about equal (20,865 vs 21,507); t about 0.5. The saver is steadier (sd 1.2 vs 4.4) but not cheaper."
+  },
+  "notes": [
+    "Reps 0 and 1 are the v3 runs from data/agent-waste/v3 (same code, same config); reps 2 to 5 are new. That saved about $0.25 of the $0.60 budget.",
+    "No case had the saver clearly worse than the harness alone on mean calls, tokens or success, so the conditional fix (a helper cap per subtask and a planner-level no-progress detector) was not built.",
+    "All 36 runs passed the check in both arms."
+  ]
+}

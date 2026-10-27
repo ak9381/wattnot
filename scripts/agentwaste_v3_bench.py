@@ -39,6 +39,7 @@ from wattnot.agentwaste.bench.harness import (  # noqa: E402
     run_case,
 )
 from wattnot.agentwaste.bench.hsummary import ARMS, summarize  # noqa: E402
+from wattnot.agentwaste.card import spread  # noqa: E402
 from wattnot.agentwaste.config import WasteConfig  # noqa: E402
 from wattnot.meta.client import GuardedClient  # noqa: E402
 from wattnot.meta.ledger import SpendLedger  # noqa: E402
@@ -52,13 +53,15 @@ V2_DIR = ROOT / "data" / "agent-waste" / "v2"
 class SpendLimited:
     """Refuses new calls once this benchmark's own spend, or the ledger total, is over."""
 
-    def __init__(self, client: GuardedClient, ledger: SpendLedger, max_spend: float) -> None:
+    def __init__(self, client: GuardedClient, ledger: SpendLedger, max_spend: float,
+                 purpose: str = PURPOSE) -> None:
         self.client, self.ledger, self.max_spend = client, ledger, max_spend
+        self.purpose = purpose
         self.lock = threading.Lock()
 
     def own(self) -> float:
         return sum(e["usd"] for e in self.ledger.entries()
-                   if str(e.get("purpose", "")).startswith(PURPOSE))
+                   if str(e.get("purpose", "")).startswith(self.purpose))
 
     def __call__(self, body, **kw):
         with self.lock:
@@ -88,6 +91,7 @@ def main() -> int:
     ap.add_argument("--effort", default="low")
     ap.add_argument("--max-spend", type=float, default=1.5)
     ap.add_argument("--only", default="", help="comma list of case ids or prefixes")
+    ap.add_argument("--purpose", default=PURPOSE, help="ledger purpose prefix for this job")
     ap.add_argument("--resume", action="store_true", help="skip runs already in runs.jsonl")
     ap.add_argument("--summarize-only", action="store_true", help="no API calls")
     ap.add_argument("--out", default=str(ROOT / "data" / "agent-waste" / "v3"))
@@ -97,7 +101,7 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     runs_path = out / "runs.jsonl"
     ledger = SpendLedger(cap_usd=JOB_CEILING, soft_usd=JOB_CEILING - 1)
-    client = SpendLimited(GuardedClient(ledger=ledger), ledger, a.max_spend)
+    client = SpendLimited(GuardedClient(ledger=ledger), ledger, a.max_spend, a.purpose)
     ledger_before = ledger.total()
     t0 = datetime.now(UTC)
 
@@ -116,7 +120,7 @@ def main() -> int:
 
         def one(j):
             c, arm, rep = j
-            res = run_case(c, client, arm, effort=a.effort, rep=rep, purpose=PURPOSE).as_dict()
+            res = run_case(c, client, arm, effort=a.effort, rep=rep, purpose=a.purpose).as_dict()
             with lock:
                 with runs_path.open("a") as f:
                     f.write(json.dumps(res) + "\n")
@@ -140,6 +144,7 @@ def main() -> int:
                         "a stopped helper returns 'stopped: no progress, do not re-delegate'",
                         "a subtask already stopped is not handed to a new helper"]
     summary["notes"] = NOTES
+    summary["spread"] = spread(rows)
     own = client.own()
     summary.update({
         "generated": t0.strftime("%Y-%m-%dT%H:%M:%SZ"), "reps": a.reps, "effort": a.effort,

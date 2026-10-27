@@ -70,3 +70,42 @@ def test_endpoint_attaches_after_fixes_only_with_both_results():
          mock.patch("wattnot.dash.server.load_waste_v3", return_value=_res()):
         body = TestClient(create_app()).get("/api/dash/agent-waste").json()
     assert "second_layer" not in body
+
+
+def _r(case, arm, calls, ok=True):
+    return {"case": case, "arm": arm, "calls": calls, "total_tokens": calls * 100,
+            "success": ok, "miss": False, "error": None}
+
+
+def test_spread_gives_mean_sd_min_max_per_case_and_arm():
+    from wattnot.agentwaste.card import spread
+    rows = [_r("s1", "harness", c) for c in (6, 10, 14)] + [_r("s1", "harness+saver", 8)]
+    rows.append({**_r("s1", "harness", 99), "error": "boom"})
+    (s,) = spread(rows)
+    h = s["arms"]["harness"]["calls"]
+    assert (h["mean"], h["min"], h["max"], h["median"], h["sd"]) == (10, 6, 14, 10, 4.0)
+    assert s["arms"]["harness+saver"]["calls"]["sd"] == 0.0
+    assert s["arms"]["harness"]["runs"] == 3
+
+
+def test_load_repeat_reads_spread_and_verdicts(tmp_path):
+    from wattnot.agentwaste.card import load_repeat
+    assert load_repeat(tmp_path / "x.json") is None
+    p = tmp_path / "results.json"
+    p.write_text(json.dumps({"reps": 6, "spread": [{"id": "s1", "arms": {}}],
+                             "spend_usd_own": 0.4}))
+    assert load_repeat(p)["verdicts"] == {}
+    (tmp_path / "verdicts.json").write_text(json.dumps({"verdicts": {"s1": "real"},
+                                                         "notes": ["n"], "label": "ADVICE"}))
+    r = load_repeat(p)
+    assert r["verdicts"] == {"s1": "real"} and r["notes"] == ["n"] and r["reps"] == 6
+
+
+def test_endpoint_attaches_repeat_under_after_fixes():
+    from tests.test_agentwaste_card_v2 import _results as v2_results
+    rep = {"reps": 6, "spread": [], "verdicts": {}, "notes": []}
+    with mock.patch("wattnot.dash.server.load_waste_v2", return_value=v2_results()), \
+         mock.patch("wattnot.dash.server.load_waste_v3", return_value=_res()), \
+         mock.patch("wattnot.dash.server.load_waste_repeat", return_value=rep):
+        body = TestClient(create_app()).get("/api/dash/agent-waste").json()
+    assert body["second_layer"]["after_fixes"]["repeat"]["reps"] == 6
