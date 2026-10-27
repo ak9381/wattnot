@@ -20,6 +20,7 @@ from typing import Any
 from wattnot.gates.noise import noise_gate
 from wattnot.receipt.canon import canonical_sha256
 from wattnot.receipt.grade import SPEC, claimed_grade
+from wattnot.receipt.joules import with_joules
 from wattnot.receipt.lint import lint
 from wattnot.schemas import validate_receipt
 
@@ -101,6 +102,7 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
     }
     if run.get("compare_to"):
         receipt["compare_to"] = run["compare_to"]
+    with_joules(receipt)
     receipt["grade"] = claimed_grade(receipt, rekor=rekor)
     receipt["integrity"] = {"canonicalization": "JCS RFC 8785",
                             "sha256": canonical_sha256(receipt), "prev_sha256": prev_sha256,

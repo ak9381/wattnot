@@ -16,6 +16,7 @@ from pathlib import Path
 
 from wattnot.receipt.canon import canonical_sha256
 from wattnot.receipt.grade import SPEC, grade
+from wattnot.receipt.joules import check_joules
 from wattnot.receipt.sign import bundle_path, verify_offline_bundle
 
 
@@ -32,10 +33,12 @@ class Report:
     steps: list[Step]
     grade: str
     claimed_grade: str | None
+    joules: dict | None = None  # derived j_per_answer / j_per_good_answer, None if not derivable
 
     def to_dict(self) -> dict:
         return {"path": self.path, "grade": self.grade, "claimed_grade": self.claimed_grade,
-                "steps": [{"name": s.name, "ok": s.ok, **s.detail} for s in self.steps]}
+                "steps": [{"name": s.name, "ok": s.ok, **s.detail} for s in self.steps],
+                "joules": self.joules}
 
 
 def _schema_step(receipt) -> Step:
@@ -115,12 +118,21 @@ def verify_document(receipt, bundle: dict | None, *, trusted: set[str] | None = 
                       {"log_index": log_index} if log_index is not None
                       else {"note": "no Rekor entry (offline signature): grade at most ESTIMATE"}))
 
+    derived = None
+    derived_ok = True
+    if isinstance(receipt, dict):
+        derived_ok, jd = check_joules(receipt)
+        derived = jd.get("derived")
+        if jd.get("present"):  # only receipts that carry the block get this step
+            steps.append(Step("joules", derived_ok,
+                              {"error": jd["error"]} if not derived_ok else {"matches": True}))
     sha_ok, sig_ok = steps[1].ok, steps[2].ok
     g = grade(receipt, sha_ok=steps[0].ok and sha_ok, sig_ok=sig_ok,
-              rekor_ok=log_index is not None) if isinstance(receipt, dict) else "UNVERIFIABLE"
+              rekor_ok=log_index is not None, derived_ok=derived_ok) \
+        if isinstance(receipt, dict) else "UNVERIFIABLE"
     claimed = integ.get("grade") if integ else None
     steps.append(Step("grade", g != "UNVERIFIABLE", {"grade": g, "claimed": claimed}))
-    return Report(path, steps, g, claimed)
+    return Report(path, steps, g, claimed, derived)
 
 
 def format_report(r: Report) -> str:
@@ -135,10 +147,18 @@ def format_report(r: Report) -> str:
         elif s.name == "rekor":
             info = f"log_index {d['log_index']}" if s.ok else d.get("note", "")
             mark = "ok  " if s.ok else "none"
+        elif s.name == "joules":
+            info = "matches the receipt's numbers" if s.ok else d.get("error", "")
         elif s.name == "grade":
             info = f"{d['grade']}" + (f"  (receipt claims {d['claimed']})"
                                       if d.get("claimed") and d["claimed"] != d["grade"] else "")
         else:
             info = d.get("spec") or d.get("error", "")
         lines.append(f"  {mark} {s.name:<9} {info}")
+    j = (r.joules or {}).get("candidate")
+    if j and j.get("j_per_answer") is not None:
+        good = j.get("j_per_good_answer")
+        lines.append(f"  info {'':<9} candidate {j['j_per_answer']:.1f} J per answer, "
+                     + (f"{good:.1f} J per good answer" if good is not None
+                        else "no good answers (pass rate 0)"))
     return "\n".join(lines)

@@ -16,22 +16,31 @@ SPEC = "wattnot.receipt/1"
 
 
 def claimed_grade(receipt: Mapping, *, rekor: bool) -> str:
-    """The grade the builder writes. The verifier re-derives it."""
+    """The grade the builder writes. The verifier re-derives it.
+
+    A receipt with no significance test (`result.welch.applicable` is false, as for hosted
+    cloud receipts and flex receipts) skips the NOISE check, and can never be VALID.
+    """
 
     w = receipt["result"]["welch"]
-    if not receipt["result"]["billable"] or w["p_value"] >= w.get("alpha", 0.05):
+    tested = w.get("applicable", True) is not False
+    if tested and (not receipt["result"]["billable"] or w["p_value"] >= w.get("alpha", 0.05)):
         return "NOISE"
     if receipt["measurement"]["label"] == "SIMULATED":
         return "SIMULATED"
-    if receipt["measurement"]["label"] != "MEASURED" or not rekor:
+    if receipt["measurement"]["label"] != "MEASURED" or not rekor or not tested:
         return "ESTIMATE"
     return "VALID"
 
 
-def grade(receipt: Mapping, *, sha_ok: bool, sig_ok: bool, rekor_ok: bool) -> str:
-    """Grade a received receipt from its content and the integrity checks."""
+def grade(receipt: Mapping, *, sha_ok: bool, sig_ok: bool, rekor_ok: bool,
+          derived_ok: bool = True) -> str:
+    """Grade a received receipt from its content and the integrity checks.
+
+    `derived_ok` is False when a stored derived block (joules) disagrees with the receipt.
+    """
 
     if not isinstance(receipt, Mapping) or receipt.get("spec") != SPEC or not sha_ok \
-            or not sig_ok:
+            or not sig_ok or not derived_ok:
         return "UNVERIFIABLE"
     return claimed_grade(receipt, rekor=rekor_ok)

@@ -41,3 +41,9 @@ removed or reordered receipt shows up.
 
 A receipt is rejected if it has a prompt or output text field anywhere, or
 any string over 200 characters (planner reasons may be up to 600).
+
+## Draft v0.1 additions
+
+A derived `joules` block (joules per answer and per good answer), receipt profiles
+(`cloud`, `flex`), a one-file verifier and conformance vectors are described in
+`docs/spec/RECEIPT-SPEC-v0.1.md`. They are an open draft, not a standard.
