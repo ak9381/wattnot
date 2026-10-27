@@ -18,7 +18,7 @@ import copy
 from pathlib import Path
 from typing import Any
 
-SLOT_SOURCE = "h100-run2-live"
+SLOT_SOURCE = "h100-run1"  # the id the room page already marks as the real GPU rack
 
 
 def build(

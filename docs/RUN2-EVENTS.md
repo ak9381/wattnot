@@ -1,0 +1,27 @@
+# RUN2 event stream
+
+`python -m wattnot.proof.orchestrate` runs the whole proof from the control machine and writes
+one `wattnot.event/1` stream (`runs/<run_id>/events.jsonl`, mirrored to `--live-file`). The GPU
+host prints raw `EVT` lines; the control machine validates them, numbers them and writes them.
+Point the dashboard at the live file: `python -m wattnot.dash --events <live file>`. It follows
+the file as it grows, and the same file is the replay.
+
+Every step is a `step.started` / `step.finished` pair with `data.node` and `data.sub` (the
+architecture-map node and sub-step), `label`, `inputs`, `narration`, and on finish `outputs`,
+`duration_s`, `numbers[{label, v, unit, tag}]`. Sub-steps have `parent_step_id` set.
+
+| step_id | map node.sub | what it is |
+|---|---|---|
+| `room_scan` | `sam.masks` | SAM 3.1 room scan, the H100 in rack R03 (carries `data.kind == "room_scan"` progress payloads, before and after) |
+| `baseline` | `workload.send` | 111-prompt answer gate at the stock cap |
+| `quality_gate` | `gates.decide` | does the gate reject a deliberately cut-short setting |
+| `cap_sweep` | `e2e_rig.sweep` | Muse Spark proposes, interleaved stock/cap blocks decide; sub-steps `propose<N>` (`agent.call`) and `cap<W>` |
+| `adaptive_topk` | `adaptive.arms` | agreement %, J/request with fewer experts per token |
+| `keep_rollback` | `apply.keep` | the chosen cap applied and read back, or rolled back |
+| `receipt` | `receipts.build` | canonical JSON, SHA-256, offline signature, grade |
+
+Labels: MEASURED (live card), MOCK (rehearsal on the fake meter), SIMULATED (other racks, the
+photo), REPLAY (saved SAM output), ADVICE (planner/room hints), ESTIMATE.
+
+Rehearsal (no GPU, no API calls):
+`python -m wattnot.proof.orchestrate --mode rehearsal --out OUT --live-file OUT/live/run.events.jsonl`

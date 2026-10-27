@@ -77,7 +77,8 @@ def install_hooks(model, torch) -> tuple[_State, Callable[[], None]]:
         def router_forward(h):
             out = orig(h)
             # transformers changed the router's return order between releases
-            # ((logits, weights, index) vs (index, weights, logits)); tell them apart by dtype and shape.
+            # ((logits, weights, index) vs (index, weights, logits)); tell them apart by
+            # dtype and shape.
             order = _router_order(out, torch)
             logits, w, idx = (out[i] for i in order)
             n_exp = logits.shape[-1]
