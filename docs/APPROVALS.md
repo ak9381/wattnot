@@ -12,6 +12,7 @@ This covers every change WattNot can make:
 | `vllm_config` | vLLM batch size, KV cache and quantization settings |
 | `cloud_policy` | hosted-model effort and cache routing (Baseten) |
 | `flex_shed` | cut GPU draw for a grid event |
+| `moe_routing` | MoE routing knob: adaptive top-k (off unless approved; see [ADAPTIVE-TOPK.md](ADAPTIVE-TOPK.md)) |
 | `trial_grant` | permission to change things temporarily, inside bounds, to take measurements |
 
 Everything is local files plus Python. No cloud service, no account.
@@ -281,6 +282,7 @@ It is made for one machine, so it is careful in small ways:
 | Path | What happens |
 |---|---|
 | `scripts/h100_oct30.sh`, `wattnot.runbook` | asks for a trial grant (or `--pre-approved`) before the first change; files the best settings as pending proposals |
+| `scripts/h100_oct30.sh --adaptive-topk` | the trial needs a `moe_routing` bound in the grant (a mass range, default 0.5 to 0.999); a passing result is filed as a pending `moe_routing` proposal, never applied by the run. See [ADAPTIVE-TOPK.md](ADAPTIVE-TOPK.md) |
 | `wattnot flex run --backend gpu` | files a `flex_shed` proposal and waits; applies only the approved cap; restores after |
 | `wattnot cloud tune` | files a pending `cloud_policy` proposal when the tuned policy passed its gates (`--no-propose` to skip) |
 | `wattnot.probe` (setup probe) | the one cap write it does is gated the same way |
