@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import threading
 import time
 from dataclasses import dataclass, field
 
@@ -12,7 +13,10 @@ from wattnot.agentwaste.detect import (
     Step,
     canon_args,
     find_cycle,
+    find_error_storm,
+    find_low_gain,
     find_no_op,
+    find_paraphrase,
     find_reasoning_overspend,
     find_repeat,
 )
@@ -23,7 +27,44 @@ _STOP_REASONS = {
     "repeat": "repeated calls",
     "no_op": "no new information",
     "cycle": "plan cycle",
+    "error_storm": "a tool keeps failing",
+    "low_gain": "no new information",
+    "paraphrase": "same answer again and again",
 }
+_NEW_KINDS = {"error_storm", "low_gain", "paraphrase"}
+
+
+class SharedBudget:
+    """One budget for a whole run: the main agent and every helper it starts.
+
+    A harness usually caps each agent's own loop. Helpers have their own counters, so the run as
+    a whole is not capped at all. Guards that share one SharedBudget count against the same
+    calls, tokens and number of helpers.
+    """
+
+    def __init__(self, max_calls: int = 12, max_tokens: int = 60000, max_agents: int = 4) -> None:
+        self.max_calls, self.max_tokens, self.max_agents = max_calls, max_tokens, max_agents
+        self.calls = self.tokens = self.agents = 0
+        self._lock = threading.Lock()
+
+    def register_agent(self) -> bool:
+        """Count one more agent. False when the run already has max_agents."""
+        with self._lock:
+            self.agents += 1
+            return self.agents <= self.max_agents
+
+    def charge(self, tokens: int) -> None:
+        with self._lock:
+            self.calls += 1
+            self.tokens += int(tokens)
+
+    def reason(self) -> str | None:
+        with self._lock:
+            if self.calls >= self.max_calls:
+                return "shared call budget reached"
+            if self.tokens >= self.max_tokens:
+                return "shared token budget reached"
+        return None
 
 
 @dataclass
@@ -121,8 +162,11 @@ def _tool_names(tools: list) -> set[str]:
 class WasteGuard:
     """Per-run waste state. One instance tracks one agent run."""
 
-    def __init__(self, config: WasteConfig | None = None) -> None:
+    def __init__(self, config: WasteConfig | None = None,
+                 shared: SharedBudget | None = None) -> None:
         self._config = config or WasteConfig()
+        self._shared = shared
+        self._too_many = shared is not None and not shared.register_agent()
         self._upstream_calls = 0
         self._prompt_tokens = 0
         self._completion_tokens = 0
@@ -130,7 +174,8 @@ class WasteGuard:
         self._reasoning_hist: list[int] = []
         self._reasoning_pending: Flag | None = None
         self._nudges = 0
-        self._flag_counts = {"repeat": 0, "no_op": 0, "cycle": 0, "reasoning": 0}
+        self._flag_counts = {"repeat": 0, "no_op": 0, "cycle": 0, "reasoning": 0,
+                             "error_storm": 0, "low_gain": 0, "paraphrase": 0}
         self._stopped = False
         self._stop_reason: str | None = None
         self._done_called = False
@@ -143,6 +188,11 @@ class WasteGuard:
     def before(self, body: dict) -> Verdict:
         """Check budgets and detectors. Never mutates the caller's body."""
         cfg = self._config
+        if self._shared is not None:
+            why = "too many helper agents" if self._too_many else self._shared.reason()
+            if why:
+                self._stop(why)
+                return Verdict("stop", None, why, [])
         if self._upstream_calls >= cfg.max_steps:
             self._stop("step budget reached")
             return Verdict("stop", None, "step budget reached", [])
@@ -156,6 +206,9 @@ class WasteGuard:
             lambda: find_repeat(trace, cfg.repeat_limit),
             lambda: find_no_op(trace, cfg.noop_limit),
             lambda: find_cycle(trace, cfg.cycle_max_len),
+            lambda: find_error_storm(trace, cfg.error_limit, cfg.empty_limit),
+            lambda: find_low_gain(trace, cfg.low_gain_window, cfg.low_gain_max_new),
+            lambda: find_paraphrase(body.get("messages", []) or [], cfg.paraphrase_limit),
         ):
             fired = finder()
             if fired is not None:
@@ -170,14 +223,15 @@ class WasteGuard:
                 self._stop(reason)
                 return Verdict("stop", None, reason, [fired])
             out = copy.deepcopy(body)
-            out.setdefault("messages", []).append({
-                "role": "user",
-                "content": (
-                    f"Note: {fired.detail}. If the goal is done or there is "
-                    f"nothing left to do, call the `{cfg.done_tool}` tool "
-                    "with a one-line reason instead of making more calls."
-                ),
-            })
+            if fired.kind in _NEW_KINDS:
+                note = (f"Note: {fired.detail}. Do not repeat it. If the work is finished, or "
+                        f"you are blocked, call the `{cfg.done_tool}` tool with a one-line "
+                        "reason (say what blocked you) instead of making more calls.")
+            else:
+                note = (f"Note: {fired.detail}. If the goal is done or there is "
+                        f"nothing left to do, call the `{cfg.done_tool}` tool "
+                        "with a one-line reason instead of making more calls.")
+            out.setdefault("messages", []).append({"role": "user", "content": note})
             self._nudges += 1
             flags.append(fired)
 
@@ -221,6 +275,8 @@ class WasteGuard:
         self._completion_tokens += int(completion)
         self._reasoning_tokens += int(reasoning)
         self._upstream_calls += 1
+        if self._shared is not None:
+            self._shared.charge(int(prompt) + int(completion))
         self._reasoning_hist.append(int(reasoning))
         hist = [Step(reasoning_tokens=v) for v in self._reasoning_hist]
         self._reasoning_pending = find_reasoning_overspend(

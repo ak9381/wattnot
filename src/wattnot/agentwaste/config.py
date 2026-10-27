@@ -18,6 +18,19 @@ class WasteConfig:
     max_nudges: int = 1
     inject_done: bool = True
     done_tool: str = "done"
+    # Second-layer detectors, off (0) by default so the first benchmark stays reproducible.
+    error_limit: int = 0       # a tool that fails this many times in a row
+    empty_limit: int = 0       # a tool that comes back empty this many times in a row
+    low_gain_window: int = 0   # calls in a row that add almost no new words
+    low_gain_max_new: float = 0.1
+    paraphrase_limit: int = 0  # text-only replies in a row that say the same thing
+
+    @classmethod
+    def second_layer(cls, max_steps: int = 12, **kw) -> WasteConfig:
+        """The preset for running behind a harness that has its own stop rules."""
+        base = {"max_steps": max_steps, "error_limit": 3, "empty_limit": 4,
+                "low_gain_window": 5, "low_gain_max_new": 0.1, "paraphrase_limit": 2}
+        return cls(**{**base, **kw})
 
     @classmethod
     def from_dict(cls, d: dict) -> WasteConfig:

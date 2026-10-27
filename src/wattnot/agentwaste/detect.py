@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import statistics
 from dataclasses import dataclass, field
 
@@ -27,7 +28,8 @@ class Step:
 
 @dataclass
 class Flag:
-    """A fired detector. kind is one of repeat, no_op, cycle, reasoning."""
+    """A fired detector. kind is one of repeat, no_op, cycle, reasoning, error_storm, low_gain,
+    paraphrase."""
 
     kind: str
     detail: str
@@ -141,4 +143,133 @@ def find_reasoning_overspend(
                 "reasoning",
                 f"reasoning tokens {last} above threshold {threshold:g}",
             )
+    return None
+
+
+# ---- second-layer detectors: the failures a harness stop rule tends to miss -----------------
+
+_WORD = re.compile(r"[a-z]{3,}")  # words only: ids, counters and timestamps are not new information
+_META_KEYS = ("results", "items", "matches", "hits", "rows")
+
+
+def _words(text: str) -> set[str]:
+    return set(_WORD.findall(text.lower()))
+
+
+def classify_result(result: str | None) -> str:
+    """'error', 'empty' or 'ok'. Only a clear error object or an empty answer is not 'ok'."""
+    if result is None:
+        return "ok"
+    text = result.strip()
+    if not text or text in ("[]", "{}", "null"):
+        return "empty"
+    try:
+        obj = json.loads(text)
+    except ValueError:
+        return "error" if re.match(r"(?i)\s*(error|http 5\d\d|5\d\d )", text) else "ok"
+    if isinstance(obj, list):
+        return "empty" if not obj else "ok"
+    if isinstance(obj, dict):
+        status = obj.get("status")
+        if "error" in obj or (isinstance(status, int) and status >= 500):
+            return "error"
+        for key in _META_KEYS:
+            if key in obj and isinstance(obj[key], list) and not obj[key]:
+                return "empty"
+    return "ok"
+
+
+def find_error_storm(steps: list[Step], error_limit: int, empty_limit: int) -> Flag | None:
+    """Flag one tool that failed (or came back empty) again and again, whatever the arguments.
+
+    A retry storm changes the arguments or carries a fresh request id each time, so the
+    byte-for-byte repeat and no-op checks never see it. The tool must also be in the last step:
+    an old storm the agent has since left is not fresh waste.
+    """
+    if not steps or not steps[-1].calls:
+        return None
+    by_tool: dict[str, list[str]] = {}
+    for step in steps:
+        for call in step.calls:
+            if call.result is not None:
+                by_tool.setdefault(call.name, []).append(classify_result(call.result))
+    for call in steps[-1].calls:
+        kinds = by_tool.get(call.name, [])
+        if not kinds or kinds[-1] == "ok":
+            continue
+        run = 0
+        for k in reversed(kinds):
+            if k != kinds[-1]:
+                break
+            run += 1
+        limit = error_limit if kinds[-1] == "error" else empty_limit
+        if limit and run >= limit:
+            what = "failed" if kinds[-1] == "error" else "came back empty"
+            return Flag("error_storm", f"tool {call.name} {what} {run} times in a row")
+    return None
+
+
+def _progress(call: Call) -> bool:
+    """A call that changed something has made progress, whatever words its result repeats."""
+    return '"changed":true' in (call.result or "").replace(" ", "")
+
+
+def find_low_gain(steps: list[Step], window: int, max_new: float) -> Flag | None:
+    """Flag the last `window` calls when each added almost no new words to what the run knew.
+
+    Reads and searches that return the same facts again (a different ordering, a new score or
+    timestamp) add nothing. A call that changed something counts as progress. Each call is
+    compared with everything its run had read before it.
+    """
+    if window <= 0:
+        return None
+    seen: set[str] = set()
+    gains: list[float] = []
+    for step in steps:
+        for call in step.calls:
+            if call.result is None:
+                continue
+            words = _words(call.result)
+            if _progress(call):
+                gains.append(1.0)
+            elif not words:
+                gains.append(0.0)
+            else:
+                gains.append(len(words - seen) / len(words))
+            seen |= words
+    if len(gains) > window and all(g <= max_new for g in gains[-window:]):
+        return Flag("low_gain", f"the last {window} calls added almost no new information")
+    return None
+
+
+def _overlap(a: set[str], b: set[str]) -> float:
+    return len(a & b) / min(len(a), len(b)) if a and b else 0.0
+
+
+def find_paraphrase(messages: list, limit: int, sim: float = 0.6) -> Flag | None:
+    """Flag a run that keeps answering with text and never finishes.
+
+    Looks at the assistant turns at the tail that carry no tool call. Fires when the last
+    `limit` of them say nearly the same thing, or when three come in a row.
+    """
+    if limit <= 0:
+        return None
+    tail: list[set[str]] = []
+    for msg in reversed(messages):
+        if not isinstance(msg, dict):
+            continue
+        if msg.get("role") == "assistant":
+            if msg.get("tool_calls"):
+                break
+            text = msg.get("content")
+            tail.append(_words(text if isinstance(text, str) else ""))
+        elif msg.get("role") == "tool":
+            break
+    tail.reverse()
+    if len(tail) >= 3:
+        return Flag("paraphrase", f"{len(tail)} text replies in a row and no finish")
+    if len(tail) >= limit and all(len(w) >= 3 for w in tail[-limit:]):
+        last = tail[-limit:]
+        if all(_overlap(last[i], last[i + 1]) >= sim for i in range(len(last) - 1)):
+            return Flag("paraphrase", "the last replies say the same thing again")
     return None

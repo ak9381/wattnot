@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from wattnot.agentwaste.config import WasteConfig
-from wattnot.agentwaste.guard import WasteGuard
+from wattnot.agentwaste.guard import SharedBudget, WasteGuard
 
 
 class WasteProxy:
@@ -13,14 +13,16 @@ class WasteProxy:
         self,
         upstream: Callable[..., dict],
         config: WasteConfig | None = None,
+        shared: SharedBudget | None = None,
     ) -> None:
         self._upstream = upstream
         self._config = config or WasteConfig()
-        self._guard = WasteGuard(self._config)
+        self._shared = shared
+        self._guard = WasteGuard(self._config, shared)
 
     def reset(self) -> None:
         """Start a new run with fresh counters."""
-        self._guard = WasteGuard(self._config)
+        self._guard = WasteGuard(self._config, self._shared)
 
     def __call__(self, body: dict, **kw) -> dict:
         return self.proxy(body, **kw)
