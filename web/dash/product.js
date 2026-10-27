@@ -8,6 +8,7 @@ import { mountRoomScan } from "./roomnode.js";
 import { heatSvg, heatLegend, scanTag, wireHeat, pulse, recolor } from "./heat.js";
 import { GuardPanel } from "./guard.js";
 import { fillPlannerTags, loadPartners } from "./partners.js";
+import { secondLayerHtml, wireReplay } from "./wastereplay.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const RUN2_STAGE = { room_scan: "room", baseline: "baseline", quality_gate: "gate", cap_sweep: "sweep", adaptive_topk: "topk", agent_waste: "waste", approve: "approve", keep_rollback: "keep", receipt: "receipt" };
@@ -348,7 +349,10 @@ export class Product {
       } catch { this._waste = null; }
     }
     const el = this.$("#wasteCard");
-    if (el && this._waste) el.innerHTML = this.wasteCard(this._waste);
+    if (el && this._waste) {
+      el.innerHTML = this.wasteCard(this._waste);
+      wireReplay(el, this._waste.second_layer, { reduce });
+    }
   }
   wasteCard(w) {
     const who = w.partner || {};
@@ -372,7 +376,7 @@ export class Product {
       <table class="cmpt"><thead><tr><th></th><th>Without the saver</th><th>With the saver</th><th>Change</th><th></th></tr></thead><tbody>${rows}</tbody></table>
       <div class="qrow"><b>Tasks passed</b><span>${pct(s.off_pct)} without, ${pct(s.on_pct)} with the saver</span></div>
       <div class="wgroups">${glines}<p class="hnt">Standard harness (stops by itself): ${num(ref.calls_per_run)} calls per run, ${pct(ref.success_pct)} tasks passed.</p></div>
-      <div class="wnotes">${notes}</div></section>`;
+      <div class="wnotes">${notes}</div>${secondLayerHtml(w.second_layer)}</section>`;
   }
 }
 

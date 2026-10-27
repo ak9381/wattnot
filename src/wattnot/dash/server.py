@@ -45,7 +45,9 @@ from fastapi.responses import (
 from fastapi.staticfiles import StaticFiles
 
 from wattnot.agentwaste.card import card as waste_card
+from wattnot.agentwaste.card import card_v2 as waste_card_v2
 from wattnot.agentwaste.card import load_results as load_waste
+from wattnot.agentwaste.card import load_v2 as load_waste_v2
 from wattnot.approvals import model as _am
 from wattnot.approvals.appliers import NvidiaSmiApplier, demo_appliers
 from wattnot.approvals.guard import Guard
@@ -444,7 +446,11 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         res = load_waste()
         if res is None:
             raise HTTPException(404, "no agent-waste results file")
-        return waste_card(res)
+        body = waste_card(res)
+        v2 = load_waste_v2()
+        if v2 is not None:
+            body["second_layer"] = waste_card_v2(v2)
+        return body
 
     @app.get("/api/dash/gpu/scene/{scene_id}")
     def gpu_scene(scene_id: str):
