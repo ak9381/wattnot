@@ -16,13 +16,29 @@ Endpoints (all under /api/dash):
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import hmac
 import json
+import os
+import shutil
+import socket
+import ssl
+import time
+import urllib.error
+import urllib.request
 from collections.abc import AsyncIterator
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+    JSONResponse,
+    RedirectResponse,
+    Response,
+    StreamingResponse,
+)
 from fastapi.staticfiles import StaticFiles
 
 from wattnot.dash import experts, gpu
@@ -32,6 +48,86 @@ WEB = ROOT / "web" / "dash"
 DATA = ROOT / "data" / "dash"
 DEFAULT_BUNDLE = DATA / "h100-replay.json"
 DEFAULT_CAPTURE = DATA / "granite-cpu-capture.jsonl.gz"
+DEFAULT_STORY = DATA / "story.json"
+META_HOST = "api.meta.ai"
+OPEN_PATHS = ("/login", "/logout", "/api/dash/health", "/favicon.ico")
+LOGIN_HTML = (
+    "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>"
+    "<title>WattNot</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;"
+    "background:#080B10;color:#E6ECF1;font:15px Inter,system-ui,sans-serif}form{display:grid;gap:14px;"
+    "width:300px}h1{font-size:22px;font-weight:600;margin:0}p{margin:0;color:#8795A1}input,button{font:inherit;"
+    "padding:10px 12px;border-radius:6px;border:1px solid #2C3945;background:#0C1118;color:inherit}"
+    "button{border-color:#22C7D9;color:#22C7D9;cursor:pointer}.e{color:#F0504A;min-height:1.2em}"
+    "</style><form method=post action=/login><h1>WattNot</h1><p>Enter the access token to open the demo.</p>"
+    "<input name=token type=password autocomplete=current-password autofocus aria-label='access token'>"
+    "<button>Open</button><div class=e>__ERR__</div></form>"
+)
+
+
+def _mac(token: str) -> str:
+    return hmac.new(token.encode(), b"wattnot-dash", hashlib.sha256).hexdigest()
+
+
+def meta_check(base: str | None = None, *, timeout: float = 6.0, opener=None) -> dict:
+    """Is the Meta API reachable from this machine? Spends nothing: no model call is made.
+
+    Steps: key present, DNS, TLS connect, then one GET on the models list. The key is used as a
+    bearer only on that GET and is never returned.
+    """
+
+    from wattnot.meta.client import DEFAULT_BASE, KEY_ENV, load_key
+
+    base = (base or os.environ.get("WATTNOT_META_BASE") or DEFAULT_BASE).rstrip("/")
+    host = base.split("//", 1)[-1].split("/", 1)[0]
+    key = load_key()
+    steps = [{"id": "key", "ok": bool(key),
+              "text": "API key found" if key else f"No API key set ({KEY_ENV} or the Muse login file)"}]
+    out = {"checked_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "host": host, "steps": steps,
+           "spends_money": False}
+
+    def done(state, advice):
+        out.update(state=state, ok=state == "ok", advice=advice)
+        return out
+
+    try:
+        socket.getaddrinfo(host, 443)
+        steps.append({"id": "dns", "ok": True, "text": f"{host} resolves"})
+    except OSError as e:
+        steps.append({"id": "dns", "ok": False, "text": f"{host} does not resolve ({e.__class__.__name__})"})
+        return done("unreachable", "This network cannot look up the Meta API. Replay mode still works.")
+    try:
+        with socket.create_connection((host, 443), timeout=timeout) as s, \
+                ssl.create_default_context().wrap_socket(s, server_hostname=host):
+            steps.append({"id": "tls", "ok": True, "text": "secure connection opens"})
+    except (OSError, ssl.SSLError) as e:
+        steps.append({"id": "tls", "ok": False, "text": f"secure connection failed ({e.__class__.__name__})"})
+        return done("blocked", "The connection is refused or dropped. Some data-center addresses are blocked by the API; "
+                    "run the live agent from another network, or use replay mode.")
+    req = urllib.request.Request(base + "/models", headers={"Accept": "application/json"})
+    if key:
+        req.add_header("Authorization", "Bearer " + key)
+    try:
+        if opener:
+            code = opener(req, timeout)
+        else:
+            try:
+                with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310
+                    code = r.status
+            except urllib.error.HTTPError as e:
+                code = e.code
+    except OSError as e:
+        steps.append({"id": "api", "ok": False, "text": f"request failed ({e.__class__.__name__})"})
+        return done("blocked", "The API did not answer. Try again, or use replay mode.")
+    steps.append({"id": "api", "ok": code < 400 or code == 404, "text": f"API answered HTTP {code}"})
+    if code in (401, 403):
+        return done("key_rejected" if key else "key_missing",
+                    "The API is reachable but did not accept this request. Check the key."
+                    if key else "The API is reachable. Add a key to run the live agent.")
+    if code >= 500 or code == 429:
+        return done("degraded", "The API is reachable but busy or failing. Replay mode still works.")
+    if not key:
+        return done("key_missing", "The API is reachable. Add a key to run the live agent.")
+    return done("ok", "Connected. The live agent can call Muse Spark.")
 
 
 def _frame(event: str, obj, i: int | None = None) -> str:
@@ -40,8 +136,49 @@ def _frame(event: str, obj, i: int | None = None) -> str:
 
 
 def create_app(*, bundle: Path | None = None, capture: Path | None = None,
-               follow: Path | None = None, results: Path | None = None) -> FastAPI:
+               follow: Path | None = None, results: Path | None = None,
+               story: Path | None = None, token: str | None = None,
+               events: Path | None = None, meta_probe=None) -> FastAPI:
     app = FastAPI(title="WattNot dashboard", version="1")
+    token = token or os.environ.get("WATTNOT_DASH_TOKEN") or None
+    story_path = Path(story or DEFAULT_STORY)
+    meta_cache: dict = {}
+
+    if token:
+        want = _mac(token)
+
+        @app.middleware("http")
+        async def gate(request: Request, call_next):
+            path = request.url.path
+            ok = hmac.compare_digest(request.cookies.get("wn_auth", "").encode(), want.encode()) or \
+                hmac.compare_digest(request.headers.get("authorization", "")[7:].encode(), token.encode())
+            if ok or path in OPEN_PATHS or path.startswith("/run/vendor"):
+                return await call_next(request)
+            if path.startswith("/api/"):
+                return JSONResponse({"error": "sign in required", "login": "/login"}, status_code=401)
+            return RedirectResponse("/login", status_code=303)
+
+        @app.get("/login")
+        def login_page(bad: int = 0):
+            return HTMLResponse(LOGIN_HTML.replace("__ERR__", "That token did not match." if bad else ""))
+
+        @app.get("/logout")
+        def logout():
+            r = RedirectResponse("/login", status_code=303)
+            r.delete_cookie("wn_auth")
+            return r
+
+        @app.post("/login")
+        async def login(request: Request):
+            form = (await request.body()).decode()
+            val = dict(x.split("=", 1) for x in form.split("&") if "=" in x).get("token", "")
+            from urllib.parse import unquote_plus
+            if hmac.compare_digest(unquote_plus(val).encode(), token.encode()):
+                r = RedirectResponse("/", status_code=303)
+                r.set_cookie("wn_auth", want, httponly=True, samesite="lax", max_age=86400)
+                return r
+            return RedirectResponse("/login?bad=1", status_code=303)
+
     app.add_middleware(GZipMiddleware, minimum_size=2000, compresslevel=3)
     cap_path = Path(follow or capture or DEFAULT_CAPTURE)
     following = follow is not None
@@ -53,8 +190,56 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
 
     @app.get("/api/dash/health")
     def health() -> dict:
+        gpu_attached = shutil.which("nvidia-smi") is not None
+        live = following or results is not None or events is not None
         return {"ok": True, "following": following, "capture": cap_path.name,
-                "capture_exists": cap_path.is_file(), "read_only": True}
+                "capture_exists": cap_path.is_file(), "read_only": True,
+                "mode": "live" if live else "replay", "gpu_attached": gpu_attached,
+                "auth_required": bool(token), "story": story_path.is_file(),
+                "events": events is not None}
+
+    @app.get("/api/dash/story")
+    def story_bundle():
+        if not story_path.is_file():
+            raise HTTPException(404, "story bundle not built: run scripts/build_dash_arch.py")
+        return Response(story_path.read_bytes(), media_type="application/json")
+
+    @app.get("/api/dash/meta/health")
+    def meta_health(fresh: int = 0):
+        now = time.time()
+        if fresh or not meta_cache or now - meta_cache["t"] > 20:
+            try:
+                meta_cache.update(t=now, v=(meta_probe or meta_check)())
+            except Exception as e:  # never a 500 for a diagnostics call
+                meta_cache.update(t=now, v={"ok": False, "state": "error", "steps": [],
+                                            "advice": f"The check itself failed: {e.__class__.__name__}.",
+                                            "spends_money": False})
+        return meta_cache["v"]
+
+    @app.get("/api/dash/arch/live")
+    async def arch_live(request: Request, speed: float = 1.0):
+        """SSE of a run's events.jsonl as it grows; the page maps each type to a step."""
+        if events is None:
+            raise HTTPException(404, "no events file is being followed (start with --events FILE)")
+
+        async def gen() -> AsyncIterator[str]:
+            pos = 0
+            while not await request.is_disconnected():
+                try:
+                    with events.open("rb") as f:
+                        f.seek(pos)
+                        chunk = f.read()
+                        pos = f.tell()
+                except OSError:
+                    chunk = b""
+                for line in chunk.decode("utf-8", "replace").splitlines():
+                    if line.startswith("{"):
+                        yield _frame("event", json.loads(line))
+                        await asyncio.sleep(0.25 / max(speed, 0.1))
+                yield ": keep-alive\n\n"
+                await asyncio.sleep(0.5)
+
+        return StreamingResponse(gen(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
 
     @app.get("/api/dash/gpu")
     def gpu_info() -> dict:

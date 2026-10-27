@@ -3,6 +3,9 @@ import { Flow } from "./flow.js";
 import { Orchestra } from "./orchestra.js";
 import { Power } from "./gpu.js";
 import { esc, pill, pct, topicColor, GROUP_COLORS } from "./theme.js";
+import { Story, derive } from "./story.js";
+import { ArchPage } from "./archpage.js";
+import { panelHtml } from "./arch.js";
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -10,12 +13,19 @@ const app = { st: null, ticks: [], arm: params.get("arm") === "on" ? "on" : "off
   sel: { steps: [], group: null }, hov: { steps: null, group: null }, ready: false, live: false, cursor: 0, clock: 0, runningUntil: 0 };
 
 // ---- tabs
+let archPage = null, curTab = "power";
 function showTab(name) {
+  curTab = name;
   document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
-  $("power").classList.toggle("on", name === "power"); $("experts").classList.toggle("on", name === "experts");
-  $("expertCtl").hidden = name !== "experts";
+  $("power").classList.toggle("on", name === "power"); $("experts").classList.toggle("on", name === "experts"); $("arch").classList.toggle("on", name === "arch");
+  $("expertCtl").hidden = name !== "experts"; $("srcChip").hidden = name === "arch";
   if (name === "experts") { initExperts(); requestAnimationFrame(() => { flow?.layoutEdges(); orch?.layout(); }); }
-  history.replaceState(null, "", `?${new URLSearchParams({ ...Object.fromEntries(params), tab: name })}`);
+  if (name === "arch") ensureArch().then(() => archPage?.show());
+}
+function ensureArch() {
+  if (archPage || !bundle) return Promise.resolve();
+  archPage = new ArchPage($("arch"), bundle, { openDrawer });
+  return Promise.resolve();
 }
 document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => showTab(b.dataset.tab)));
 
@@ -72,7 +82,7 @@ function wireControls() {
   $("playBtn").onclick = () => { app.playing = !app.playing; $("playBtn").textContent = app.playing ? "pause" : "play"; };
   $("restartBtn").onclick = () => restart();
   $("armBtn").onclick = () => { app.arm = app.arm === "off" ? "on" : "off"; restart(); };
-  window.addEventListener("keydown", (e) => { if (e.key === " " && inited) { e.preventDefault(); $("playBtn").click(); } });
+  window.addEventListener("keydown", (e) => { if (e.key === " " && inited && drawerOpen && curTab === "experts" && !e.target.closest("button,a,select,input")) { e.preventDefault(); $("playBtn").click(); } });
 }
 
 function armTicks() { return app.ticks.filter((t) => t.arm === app.arm); }
@@ -243,7 +253,107 @@ function tipUnit(u, ev) {
   if (ev) { tip.style.left = `${Math.min(innerWidth - 300, ev.clientX + 14)}px`; tip.style.top = `${Math.min(innerHeight - 120, ev.clientY + 14)}px`; }
 }
 
-// ---- start
-const tab = params.get("tab") || "power";
-showTab(tab);
-window.__app = app;
+// ---- drawer
+let drawerOpen = false, opener = null;
+function openDrawer(tab, o = {}) {
+  const d = $("drawer"); opener = document.activeElement; closeStoryPanel();
+  showTab(tab);
+  if (tab === "arch" && o.filter) ensureArch().then(() => archPage?.setFilter(o.filter));
+  if (!drawerOpen) {
+    drawerOpen = true; d.classList.add("open"); story?.stopAuto();
+    if (window.gsap && !matchMedia("(prefers-reduced-motion: reduce)").matches && !o.instant) window.gsap.fromTo(d, { yPercent: 100, y: 0 }, { yPercent: 0, y: 0, duration: 0.45, ease: "power3.out", onComplete: () => { flow?.layoutEdges(); orch?.layout(); archPage?.show(); } });
+    else { d.style.transform = "none"; }
+  }
+  $("dClose").focus({ preventScroll: true });
+  history.replaceState(null, "", `?${new URLSearchParams({ ...Object.fromEntries(params), tab })}`);
+}
+function closeDrawer() {
+  if (!drawerOpen) return; const d = $("drawer"); drawerOpen = false; archPage?.closePanel();
+  const done = () => { d.classList.remove("open"); d.style.transform = ""; opener?.focus?.({ preventScroll: true }); };
+  if (window.gsap && !matchMedia("(prefers-reduced-motion: reduce)").matches) window.gsap.to(d, { yPercent: 100, duration: 0.35, ease: "power2.in", onComplete: () => { done(); window.gsap.set(d, { clearProps: "transform" }); } }); else done();
+  history.replaceState(null, "", location.pathname);
+}
+$("dClose").onclick = closeDrawer;
+$("dPower").onclick = () => openDrawer("power"); $("dExperts").onclick = () => openDrawer("experts"); $("dArch").onclick = () => openDrawer("arch");
+document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => showTab(b.dataset.tab)));
+
+// ---- side panel on the story screens
+function closeStoryPanel() { $("spanel").classList.remove("open"); }
+function openStoryPanel(n, s, view) { $("spbody").innerHTML = panelHtml(view, n, s); $("spanel").classList.add("open"); $("spx").focus({ preventScroll: true }); $("spanel")._ctx = { n, view }; }
+$("spx").onclick = closeStoryPanel;
+$("spanel").addEventListener("click", (e) => {
+  const go = e.target.closest("[data-go]"); if (go) { closeStoryPanel(); go.dataset.go === "meta" ? openDrawer("arch", { filter: "meta" }) : openDrawer(go.dataset.go); return; }
+  const sb = e.target.closest("a[data-sub]"); if (sb) { e.preventDefault(); const c = $("spanel")._ctx; openStoryPanel(c.n, c.n.subs.find((x) => x.id === sb.dataset.sub), c.view); }
+});
+
+// ---- tooltips (water and cost factors, assumptions)
+const tt = $("tt");
+document.addEventListener("mouseover", (e) => { const t = e.target.closest("[data-tt]"); if (!t) return; tt.innerHTML = t.dataset.tt; tt.hidden = false; const r = t.getBoundingClientRect(); tt.style.left = `${Math.min(innerWidth - 440, Math.max(8, r.left))}px`; tt.style.top = `${Math.max(8, r.top - tt.offsetHeight - 8)}px`; if (r.top - tt.offsetHeight - 8 < 8) tt.style.top = `${r.bottom + 8}px`; });
+document.addEventListener("mouseout", (e) => { if (e.target.closest("[data-tt]")) tt.hidden = true; });
+document.addEventListener("focusin", (e) => { const t = e.target.closest("[data-tt]"); if (t) t.dispatchEvent(new MouseEvent("mouseover", { bubbles: true })); });
+
+// ---- health chips
+const chipSet = (el, cls, text) => { el.classList.remove("ok", "warn", "bad"); if (cls) el.classList.add(cls); el.querySelector("span").textContent = text; };
+async function loadHealth() {
+  try {
+    const h = await fetch("/api/dash/health").then((r) => r.json());
+    chipSet($("modeChip"), h.mode === "live" ? "ok" : "", h.mode === "live" ? "Live run" : `Replay of recorded runs${h.gpu_attached ? "" : " · no GPU attached"}`);
+    $("modeChip").title = h.mode === "live" ? "Following a run that is writing events now" : "Every number is read from a recorded run. Nothing here needs a GPU or a network connection.";
+    $("signout").hidden = !h.auth_required; return h;
+  } catch { chipSet($("modeChip"), "bad", "Server not reachable"); return null; }
+}
+const META_TEXT = { ok: ["ok", "Meta API: connected"], key_missing: ["warn", "Meta API: reachable, no key"], key_rejected: ["bad", "Meta API: key rejected"], blocked: ["bad", "Meta API: blocked from here"], unreachable: ["bad", "Meta API: unreachable"], degraded: ["warn", "Meta API: degraded"], error: ["bad", "Meta API: check failed"] };
+async function checkMeta(fresh) {
+  const chip = $("metaChip"); chipSet(chip, "", "Meta API: checking…");
+  let r; try { r = await fetch(`/api/dash/meta/health${fresh ? "?fresh=1" : ""}`).then((x) => { if (!x.ok) throw new Error(x.status); return x.json(); }); }
+  catch (e) { r = { state: "error", steps: [], advice: "The health check could not be reached. The story still works from recorded runs.", spends_money: false }; }
+  const [cls, text] = META_TEXT[r.state] || ["warn", `Meta API: ${r.state}`]; chipSet(chip, cls, text); renderPop(r); return r;
+}
+function renderPop(r) {
+  $("pop").innerHTML = `<h4>Meta API connection</h4><ul>${(r.steps || []).map((s) => `<li class="${s.ok ? "" : "no"}"><b>${s.ok ? "ok" : "no"}</b><span>${esc(s.text)}</span></li>`).join("") || "<li><span>No steps ran.</span></li>"}</ul><p>${esc(r.advice || "")}</p><p>This check makes no model call and costs nothing. Replay mode needs no connection.</p><div class="go" style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="popAgain">Check again</button><button class="btn" id="popClose">Close</button></div>`;
+  $("popAgain").onclick = () => checkMeta(true); $("popClose").onclick = () => togglePop(false);
+}
+function togglePop(on) { $("pop").hidden = !on; $("metaChip").setAttribute("aria-expanded", on); if (on) $("popClose")?.focus(); }
+$("metaChip").onclick = () => togglePop($("pop").hidden);
+
+// ---- start the story
+let story = null, bundle = null;
+async function boot() {
+  const stage = $("stage"); stage.innerHTML = "";
+  const [health, sb] = await Promise.all([loadHealth(), fetch("/api/dash/story").then((r) => { if (!r.ok) throw new Error(r.status === 404 ? "The story data has not been built yet: run scripts/build_dash_arch.py." : `HTTP ${r.status}`); return r.json(); }).catch((e) => ({ error: e.message }))]);
+  checkMeta(false);
+  if (sb.error || !sb.story || !sb.story.levers) {
+    stage.innerHTML = `<section class="scene on" style="opacity:1"><div class="err"><b>The story could not load.</b><p>${esc(sb.error || "The bundle has no recorded run in it.")}</p><button class="btn" id="retry">Try again</button> <button class="btn" id="goPower">Open Power instead</button></div></section>`;
+    $("retry").onclick = boot; $("goPower").onclick = () => openDrawer("power"); return;
+  }
+  bundle = sb;
+  if (curTab === "arch") ensureArch().then(() => archPage?.show());
+  const [scene, moe] = await Promise.all([fetch("/api/dash/gpu/scene/sweep-muse-glimmer").then((r) => r.json()).catch(() => null), fetch("/api/dash/moe/meta").then((r) => r.json()).catch(() => null)]);
+  const D = { ...derive(sb), d: sb, samples: scene?.samples || [], moe, open: openStoryPanel, drawer: openDrawer };
+  if (!D.samples.length) { stage.innerHTML = `<div class="err">The GPU replay did not load, so the power scenes cannot draw.</div>`; return; }
+  story = new Story(stage, $("rail"), D);
+  const pb = $("playBtnTop");
+  story.onPlay = (on, fin) => { pb.textContent = on ? "Pause" : fin ? "Replay demo" : "Play demo"; pb.classList.toggle("on", on); };
+  story.onScene = () => closeStoryPanel();
+  pb.onclick = () => (story.playing ? story.stopAuto() : story.play());
+  const start = Math.min(5, Math.max(0, +(params.get("scene") || 1) - 1));
+  if (params.get("play") === "1") story.play(); else story.go(start, { instant: params.get("still") === "1" });
+  if (params.get("filter") === "meta" && params.get("tab") === "arch") ensureArch().then(() => archPage?.setFilter("meta"));
+}
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { if (!$("pop").hidden) return togglePop(false); if ($("spanel").classList.contains("open")) return closeStoryPanel(); if (drawerOpen) { if ($("apanel")?.classList.contains("open")) return archPage.closePanel(); return closeDrawer(); } return; }
+  if (!story || drawerOpen || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target.closest("input,select,textarea")) return;
+  const onBtn = e.target.closest("button,a");
+  if (e.key === "ArrowRight" || (e.key === " " && !onBtn) || e.key === "PageDown") { e.preventDefault(); story.step(1); }
+  else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); story.step(-1); }
+  else if (e.key === "p" || e.key === "P") $("playBtnTop").click();
+  else if (e.key === "d" || e.key === "D") openDrawer("arch");
+  else if (/^[1-6]$/.test(e.key)) { story.stopAuto(); story.go(+e.key - 1); }
+});
+window.addEventListener("resize", () => { story?.ctl.forEach((c) => c.view?.layoutEdges()); });
+window.__app = app; window.__story = () => story;
+const tab = params.get("tab");
+showTab(tab || "power");
+if (tab) openDrawer(tab, { instant: true });
+boot();

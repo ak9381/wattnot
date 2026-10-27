@@ -1,6 +1,7 @@
 # Dashboard
 
-A read-only live page with two tabs. It starts with no build step and no network.
+A read-only page that is also the demo. It opens on a six-scene story (about three minutes) and keeps
+Power, Experts and Architecture one click away as deep-dive drawers. No build step, no network needed.
 
     pip install -e .
     wattnot dash                  # or: python -m wattnot.dash
@@ -53,3 +54,52 @@ GPU's rate applied to the tokens the CPU run generated. When a meter reading com
 
 Without `--follow` the page replays `data/dash/granite-cpu-capture.jsonl.gz`, so it works the
 same offline.
+
+## The story
+
+`Play demo` walks six scenes: the task and why it is hard; the stock run; WattNot steps in (Muse Spark
+proposes, a person approves, the change is applied); the re-run; before and after; who did what.
+Left and right arrows, space and the dots step through it by hand. `P` plays or pauses, `D` opens
+Architecture, `1` to `6` jump to a scene, `Esc` closes whatever is open. URL options: `?scene=N`,
+`?play=1`, `?tab=power|experts|arch`, `?tab=arch&filter=meta`.
+
+Every number carries one label: MEASURED (read from a meter or a log), ESTIMATE (computed, with the
+assumption shown), SIMULATED, MOCK or ADVICE. A value that was not recorded shows as a dash with no
+label. The before and after screen never adds the three levers together: they come from separate runs.
+
+Water is an ESTIMATE: measured kWh times a cited litres-per-kWh factor (the factor, formula and source are in a
+tooltip). The per-million-requests and per-year lines are ESTIMATEs with the assumptions listed and the
+request rate editable.
+
+## Architecture
+
+One live map of the real pipeline (`arch_spec.py`: every node and sub-step names a module and symbol
+that a test opens). Each node shows its partner badges, what it does, and real stats; `Meta did this`
+highlights the steps where Meta tooling did the work and lists each Meta product with its numbers.
+Replay the two recorded runs (H100 sweep, hosted run) or follow a live run:
+
+    wattnot dash --events path/to/events.jsonl     # the map follows a run as it writes events
+
+Steps expand while they run to show their sub-steps, collapse when done, and can be pinned.
+
+### Rebuilding the bundle
+
+The map and the story read `data/dash/story.json`, built read-only from the recorded runs and totals
+of the Meta spend ledger (no key, no prompt text):
+
+    PYTHONPATH=src python3 scripts/build_dash_arch.py --e2e <results dir of the H100 run>
+
+## Hosting
+
+    wattnot dash --host 0.0.0.0 --port 8765 --token "$WATTNOT_DASH_TOKEN"
+
+With a token the page shows a small sign-in form (`/login`, `/logout`); the API answers 401 without
+it. With no GPU attached the top bar reads "Replay of recorded runs"; everything on the page still works.
+The top bar also has a Meta API chip: it checks the key, DNS, the secure connection and one read-only
+call to the models list (no model call, no cost) and says in plain words what to do when it fails, for
+example when the API refuses data-center addresses.
+
+## Third-party
+
+`web/dash/vendor/gsap.min.js` is GSAP 3.15 under the GreenSock "Standard no charge" licence
+(https://gsap.com/standard-license). It is bundled unmodified.

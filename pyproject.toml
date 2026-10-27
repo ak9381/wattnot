@@ -42,6 +42,10 @@ select = ["E", "F", "I", "W", "UP", "B"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/wattnot/certificate/render.py" = ["E501"]  # CSS and HTML strings
+"src/wattnot/dash/arch.py" = ["E501", "E731"]  # long source strings in stat rows
+"src/wattnot/dash/arch_spec.py" = ["E501"]  # one-line step descriptions
+"src/wattnot/dash/server.py" = ["E501"]  # inline login page and diagnostics text
+"tests/test_dash_arch.py" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

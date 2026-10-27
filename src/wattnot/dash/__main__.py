@@ -15,10 +15,15 @@ def add_args(p: argparse.ArgumentParser) -> None:
                    help="expert capture a local run is still writing; the page follows it live")
     p.add_argument("--results", type=Path,
                    help="H100 results folder to read directly (default: the bundled replay)")
+    p.add_argument("--token",
+                   help="require this access token (or set WATTNOT_DASH_TOKEN); for a hosted demo")
+    p.add_argument("--events", type=Path,
+                   help="a run's events.jsonl to follow on the Architecture view")
 
 
 def run(a: argparse.Namespace) -> int:
-    return serve(a.host, a.port, capture=a.capture, follow=a.follow, results=a.results)
+    return serve(a.host, a.port, capture=a.capture, follow=a.follow, results=a.results,
+                 token=a.token, events=a.events)
 
 
 def main() -> int:
