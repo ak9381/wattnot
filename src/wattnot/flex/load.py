@@ -34,6 +34,7 @@ from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlsplit
 
 DEFAULT_PROMPTS = Path(__file__).resolve().parents[3] / "data" / "flex" / "load-prompts.jsonl"
 
@@ -105,6 +106,15 @@ class Window:
                 "rps": round(len(rows) / span, 2), "n": len(rows), "errors": errors}
 
 
+def _is_loopback(url: str) -> bool:
+    host = (urlsplit(url).hostname or "").lower()
+    return host in ("localhost", "::1") or host.startswith("127.")
+
+
+_NO_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+_DEFAULT_OPENER = urllib.request.build_opener()
+
+
 def http_sender(url: str, model: str, *, timeout: float = 60.0,
                 api_key: str | None = None) -> Sender:
     """POST /v1/chat/completions on an OpenAI-compatible server."""
@@ -121,7 +131,8 @@ def http_sender(url: str, model: str, *, timeout: float = 60.0,
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
         req = urllib.request.Request(endpoint, data=body, headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 (user-given URL)
+        opener = _NO_PROXY_OPENER if _is_loopback(endpoint) else _DEFAULT_OPENER
+        with opener.open(req, timeout=timeout) as r:  # noqa: S310 (user-given URL)
             doc = json.loads(r.read())
         return doc["choices"][0]["message"]["content"] or ""
 

@@ -14,6 +14,8 @@ import sys
 from pathlib import Path
 
 import pytest
+
+pytest.importorskip("httpx")
 from starlette.testclient import TestClient
 
 from fixtures.nvml_fake import FakeNVML

@@ -4,6 +4,23 @@ WattNot is an agent that cuts the energy and cost of each LLM inference request 
 
 H100 run: `bash scripts/h100_run.sh --dry-run` first, then see [docs/runbooks/H100.md](docs/runbooks/H100.md). Optional, off by default: an adaptive top-k trial on a small MoE model (a known technique, [docs/ADAPTIVE-TOPK.md](docs/ADAPTIVE-TOPK.md)).
 
+## Quickstart
+
+```bash
+python -m pytest -q                          # unit tests, no GPU or network
+python -m wattnot.proof.run report --out results/proof   # rebuild a report, no GPU needed
+```
+
+On an H100 host with vLLM up:
+
+```bash
+python -m wattnot.proof.run control --out results/proof  # gate check first
+python -m wattnot.proof.run step --cap 500 --out results/proof
+python -m wattnot.proof.run full --out results/proof     # control, planner caps, grid, report
+```
+
+`full` runs the whole proof. `step` and `control` write one result each, so a planner on another machine can drive the host. The dry run on a fake meter lives in the tests: `python -m pytest tests/test_proof.py -q`.
+
 ## Cloud mode (hosted Muse Spark Open on Baseten)
 
 No GPU box? On a hosted model you can't touch the batch size or the power cap, but you can change how hard the model thinks. `wattnot cloud tune` runs your prompts at `xhigh` (the default) as the reference, then tries `low`, `medium` and `high` per prompt class. It keeps the cheapest level whose answers still pass the same checks and whose p99 latency holds, counting any retry at `xhigh` when a cheap answer fails. The receipt then shows, per class, tokens, USD and latency (MEASURED), what the same requests would have cost at `xhigh`, and an energy range (ESTIMATE). `wattnot cloud audit` checks the receipt's token totals against Baseten's usage meter, and `cache-ab` / `probe` test prompt layout and cache lifetime.
