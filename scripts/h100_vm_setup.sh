@@ -60,6 +60,17 @@ if ! python3 -m venv /root/venv >/dev/null 2>&1; then
   uv venv --seed --python 3.12 /root/venv
 fi
 /root/venv/bin/pip install -q uv
+# RUN2 first-boot problems, each cost minutes: vLLM's JIT needs ninja on PATH, Triton needs
+# Python.h (the stock image has no headers), and the Hugging Face xet transfer stalled on large
+# shards while plain HTTP ran at ~200 MB/s.
+export PATH="/root/venv/bin:$HOME/.local/bin:$PATH"
+export HF_HUB_DISABLE_XET=1
+if [ ! -f /usr/include/python3.12/Python.h ]; then
+  command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
+  uv python install 3.12 >/dev/null 2>&1 || true
+  H="$(ls -d "$HOME"/.local/share/uv/python/*/include/python3.12 2>/dev/null | head -n1)"
+  if [ -n "$H" ]; then mkdir -p /usr/include/python3.12 && cp -r "$H"/. /usr/include/python3.12/; fi
+fi
 export UV_LINK_MODE=copy UV_NO_CACHE=1   # no second copy of the wheels on a small disk
 # accelerate: the adaptive step loads the MoE model with device_map="cuda", which needs it
 /root/venv/bin/uv pip install -q --python /root/venv/bin/python -e "$REPO" \
