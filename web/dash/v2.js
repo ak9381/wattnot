@@ -1,4 +1,5 @@
 import { esc, badge, num, stageState, ledgerRows, run2Rows, verifySummary, phaseLabel } from "./v2lib.js";
+import { init as initPanCanvas } from "./pancanvas.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -497,6 +498,208 @@ function wireMap() {
   setTimeout(mapLayout, 0);
   if (!mapWired) { mapWired = true; window.addEventListener("resize", mapLayout); }
 }
+// ---------- signed report: radial comparison canvas ----------
+// A pan/zoom radial view of the same run records: WattNot in the centre,
+// one first-ring card per run (Saved: Power/Cost/Water from that run's own
+// baseline vs WattNot phases), and an outer ring of per-method children.
+// Numbers come only from the run record (or a stated derivation from it);
+// anything else reads "not measured in this run". Totals are never split
+// across methods.
+const RAD_METHODS = [
+  { id: "caps", name: "Power caps", hint: "Lower watt limit; keep the lowest cap that passes the gates." },
+  { id: "topk", name: "Adaptive top-k", hint: "Fewer experts per word when the weight is concentrated." },
+  { id: "gate", name: "Quality-gate effect", hint: "Caps the gates refused, and what they would have cost." },
+  { id: "waste", name: "Agent-waste saver", hint: "Stops tool-call loops that repeat without new information." },
+  { id: "router", name: "Hosted-router choice", hint: "Own GPU with a cap, or paying a host per answer." },
+  { id: "cache", name: "Prompt cache", hint: "Reuse of repeated prompt prefixes." },
+];
+const RAD_FALLBACK = "not measured in this run";
+
+// Saved block for one run record: each line is that run's WattNot phase vs
+// its own baseline phase. Cost/water are derived from measured joules with
+// the bundle's price/water factors; the note states the derivation.
+function radSavedLines(rec) {
+  const b = rec?.phases?.baseline, w = rec?.phases?.wattnot;
+  const bj = b?.metrics?.j_per_req, wj = w?.metrics?.j_per_req;
+  const price = S.run?.results?.price, water = S.run?.results?.water;
+  const out = [];
+  if (bj != null && wj != null) {
+    const pct = ((wj - bj) / bj) * 100;
+    out.push({ id: "power", name: "Power", text: `${num(pct, 1)}% · ${num(bj)} → ${num(wj)} J/req`, tag: b.label || "MEASURED",
+      note: "This run's WattNot j_per_req vs its own baseline j_per_req: (wattnot − baseline) / baseline." });
+  } else out.push({ id: "power", name: "Power", text: null });
+  if (bj != null && wj != null && price?.usd_per_kwh != null) {
+    const kwh = (j) => (j * 1e6) / 3.6e6;
+    const s = kwh(bj) * price.usd_per_kwh, c = kwh(wj) * price.usd_per_kwh, d = s - c;
+    out.push({ id: "cost", name: "Cost", text: `$${num(s)} → $${num(c)} per 1M (${d >= 0 ? "saves" : "costs"} $${num(Math.abs(d))})`, tag: "ESTIMATE",
+      note: `Measured joules × $${price.usd_per_kwh}/kWh (${price.name || "bundle price"}). The meter reading is measured; the bill math is an estimate.` });
+  } else out.push({ id: "cost", name: "Cost", text: null });
+  if (bj != null && wj != null && water?.factor_l_per_kwh != null) {
+    const kwh = (j) => (j * 1e6) / 3.6e6;
+    const s = kwh(bj) * water.factor_l_per_kwh, c = kwh(wj) * water.factor_l_per_kwh, d = s - c;
+    out.push({ id: "water", name: "Water", text: `${num(s)} → ${num(c)} L per 1M (${d >= 0 ? "saves" : "uses"} ${num(Math.abs(d))} L)`, tag: "ESTIMATE",
+      note: `Measured joules × ${water.factor_l_per_kwh} L/kWh (${water.name || "bundle water factor"}), on-site cooling water only. The meter reading is measured; the water math is an estimate.` });
+  } else out.push({ id: "water", name: "Water", text: null });
+  return out;
+}
+
+// One method's saving within a run record, or null when the record does not
+// attribute anything to that method (the caller renders RAD_FALLBACK).
+function radMethodSaving(rec, id) {
+  const b = rec?.phases?.baseline, w = rec?.phases?.wattnot;
+  if (id === "caps" && b?.metrics?.j_per_req != null && w?.metrics?.j_per_req != null && w?.metrics?.saved_pct != null) {
+    return { text: `${num(w.metrics.saved_pct, 1)}%`, tag: w.label || "MEASURED",
+      note: `Whole-run WattNot-vs-baseline difference from this run's record (${w.cap_w} W vs ${b.cap_w} W). Not a per-method split: the record does not attribute shares to methods.` };
+  }
+  return null;
+}
+
+function radialHtml(runs, featuredId) {
+  const cards = [], kids = [];
+  for (const r of runs) {
+    const rec = S.radRecs?.[r.id];
+    const lines = radSavedLines(rec);
+    for (const m of RAD_METHODS) {
+      const s = radMethodSaving(rec, m.id);
+      kids.push(`<div class="rad-child" data-parent="${esc(r.id)}" data-m="${m.id}" hidden><b>${esc(m.name)}</b>`
+        + (s ? `<span class="rad-save">${esc(s.text)} ${badge(s.tag)}</span><small class="rad-note" title="${esc(s.note)}">${esc(s.note)}</small>`
+          : `<span class="rad-miss">${RAD_FALLBACK}</span><small class="rad-note">${esc(m.hint)} The record has no per-method numbers, so nothing is split out.</small>`)
+        + `</div>`);
+    }
+    cards.push(`<div class="rad-card${r.id === featuredId ? " featured" : ""}" data-run="${esc(r.id)}" data-open="0">`
+      + `<button class="rad-head" aria-expanded="false"><b>${esc(r.name)}</b><small>${esc(rec?.model || r.model || "")}</small></button>`
+      + `<div class="rad-saved"><div class="lvl">Saved</div>`
+      + lines.map((l) => `<button class="rad-line" data-m="${l.id}" title="${esc(l.note || "Not in this run's record.")}"><span class="rad-dim">${l.name}</span>`
+        + (l.text ? `<span class="rad-save">${esc(l.text)} ${badge(l.tag)}</span>` : `<span class="rad-miss">${RAD_FALLBACK}</span>`) + `</button>`).join("")
+      + `</div></div>`);
+  }
+  const drop = runs.map((r) => `<button class="centre-opt${r.id === featuredId ? " now" : ""}" data-run="${esc(r.id)}" role="option" aria-selected="${r.id === featuredId}">${esc(r.name)}</button>`).join("")
+    || `<span class="rad-miss">No runs listed.</span>`;
+  const feat = runs.find((r) => r.id === featuredId) || runs[0];
+  return `<div class="radial-bar noprint"><span class="hint">WattNot in the middle. Pick a run, then open any ring card for its per-method detail. Drag to pan, scroll to zoom.</span>`
+    + `<span style="flex:1"></span><button class="btn" data-radial="open">Expand all</button><button class="btn" data-radial="close">Collapse all</button></div>`
+    + `<div class="radial-wrap glass" id="radialWrap"><svg class="radial-wires" id="radialWires" aria-hidden="true"></svg>`
+    + `<div class="radial-stage" id="radialStage">`
+    + `<div class="radial-centre" id="radCentre"><button class="centre-node" id="centreNode" aria-expanded="false" aria-haspopup="listbox" aria-label="WattNot: choose a run">WattNot</button>`
+    + `<div class="centre-sub">${esc(feat ? feat.name : "No run chosen")}</div>`
+    + `<div class="centre-drop" id="centreDrop" role="listbox" aria-label="Runs" hidden>${drop}</div></div>`
+    + cards.join("") + kids.join("") + `</div></div>`;
+}
+
+// Radial layout: first-ring cards sit on a ring around the centre; each
+// expanded card's children sit on an outer arc inside that card's own
+// angular sector, so neighbours never overlap. The child radius grows with
+// the widest expanded family, keeping arc slots wider than a child card.
+function layoutRadial() {
+  const wrap = $("#radialWrap"), stage = $("#radialStage"), svg = $("#radialWires"), centre = $("#radCentre");
+  if (!wrap || !stage || !svg || !centre) return;
+  const W = wrap.clientWidth || 0;
+  const cards = $$(".rad-card", stage);
+  const kids = $$(".rad-child", stage);
+  const visKids = kids.filter((k) => !k.hidden);
+  if (!W || W < 900) {
+    stage.style.width = ""; stage.style.height = "";
+    centre.style.left = ""; centre.style.top = "";
+    cards.forEach((c) => { c.style.left = ""; c.style.top = ""; });
+    kids.forEach((k) => { k.style.left = ""; k.style.top = ""; });
+    svg.innerHTML = "";
+    return;
+  }
+  const n = Math.max(cards.length, 1);
+  const R1 = 330 + 50 * Math.max(0, n - 3);
+  const sector = (2 * Math.PI) / n;
+  const byParent = cards.map((c) => visKids.filter((k) => k.dataset.parent === c.dataset.run));
+  let R2 = 0;
+  byParent.forEach((ks) => { if (ks.length) R2 = Math.max(R2, (ks.length * 250) / (0.8 * sector)); });
+  if (R2) R2 = Math.max(R2, R1 + 320);
+  const maxR = (R2 || R1) + 180;
+  const w = Math.ceil(maxR * 2 + 40), h = Math.ceil(maxR * 2 + 40);
+  const cx = w / 2, cy = h / 2;
+  stage.style.width = `${w}px`; stage.style.height = `${h}px`;
+  centre.style.left = `${cx.toFixed(1)}px`; centre.style.top = `${cy.toFixed(1)}px`;
+  cards.forEach((c, i) => {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+    c.style.left = `${(cx + R1 * Math.cos(a)).toFixed(1)}px`;
+    c.style.top = `${(cy + R1 * Math.sin(a)).toFixed(1)}px`;
+  });
+  byParent.forEach((ks, i) => {
+    if (!ks.length) return;
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+    const k = ks.length, step = k > 1 ? (0.8 * sector) / (k - 1) : 0;
+    ks.forEach((el, j) => {
+      const aj = a + (j - (k - 1) / 2) * step;
+      el.style.left = `${(cx + R2 * Math.cos(aj)).toFixed(1)}px`;
+      el.style.top = `${(cy + R2 * Math.sin(aj)).toFixed(1)}px`;
+    });
+  });
+  drawRadialWires();
+}
+function drawRadialWires() {
+  const wrap = $("#radialWrap"), stage = $("#radialStage"), svg = $("#radialWires"), centre = $("#radCentre");
+  if (!wrap || !stage || !svg || !centre) return;
+  if ((wrap.clientWidth || 0) < 900) return;
+  const sr = stage.getBoundingClientRect();
+  if (!sr.width || !sr.height) return;
+  const ctr = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - sr.left, b.top + b.height / 2 - sr.top]; };
+  const top = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - sr.left, b.top - sr.top]; };
+  const bot = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - sr.left, b.bottom - sr.top]; };
+  const radial = (a, b) => {
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const len = Math.hypot(dx, dy) || 1;
+    const sx = a[0] + (dx / len) * 40, sy = a[1] + (dy / len) * 40;
+    const ex = b[0] - (dx / len) * 46, ey = b[1] - (dy / len) * 30;
+    const c1 = [sx + dx * 0.3, sy + dy * 0.3], c2 = [sx + dx * 0.7, sy + dy * 0.7];
+    return `M ${sx.toFixed(1)} ${sy.toFixed(1)} C ${c1[0].toFixed(1)} ${c1[1].toFixed(1)}, ${c2[0].toFixed(1)} ${c2[1].toFixed(1)}, ${ex.toFixed(1)} ${ey.toFixed(1)}`;
+  };
+  const drop = (a, b) => { const my = (a[1] + b[1]) / 2; return `M ${a[0].toFixed(1)} ${a[1].toFixed(1)} C ${a[0].toFixed(1)} ${my.toFixed(1)}, ${b[0].toFixed(1)} ${my.toFixed(1)}, ${b[0].toFixed(1)} ${b[1].toFixed(1)}`; };
+  const hc = ctr(centre), d = [];
+  $$(".rad-card", stage).forEach((c) => {
+    const head = $(".rad-head", c);
+    if (!head) return;
+    d.push(radial(hc, ctr(head)));
+    if (c.dataset.open === "1") $$(".rad-child", stage).filter((l) => l.dataset.parent === c.dataset.run && !l.hidden).forEach((l) => d.push(drop(bot(c), top(l))));
+  });
+  svg.setAttribute("viewBox", `0 0 ${sr.width} ${sr.height}`);
+  svg.innerHTML = d.map((x) => `<path d="${x}"/>`).join("");
+}
+let radWired = false;
+function wireRadial() {
+  const wrap = $("#radialWrap"), stage = $("#radialStage");
+  if (!wrap || !stage) return;
+  const setCard = (c, on) => {
+    c.dataset.open = on ? "1" : "0";
+    $(".rad-head", c).setAttribute("aria-expanded", String(on));
+    $$(".rad-child", stage).filter((k) => k.dataset.parent === c.dataset.run).forEach((k) => { k.hidden = !on; });
+  };
+  $$("#radialStage .rad-head").forEach((b) => (b.onclick = () => {
+    const c = b.closest(".rad-card"); setCard(c, c.dataset.open !== "1"); layoutRadial(); S.radPan?.update(); S.radPan?.fit();
+  }));
+  $$("#radialStage .rad-line").forEach((b) => (b.onclick = () => {
+    const c = b.closest(".rad-card"); setCard(c, true); layoutRadial(); S.radPan?.update(); S.radPan?.fit();
+  }));
+  $$("#pReport [data-radial]").forEach((b) => (b.onclick = () => {
+    const on = b.dataset.radial === "open";
+    $$("#radialStage .rad-card").forEach((c) => setCard(c, on));
+    layoutRadial(); S.radPan?.update(); S.radPan?.fit();
+  }));
+  const node = $("#centreNode"), cd = $("#centreDrop");
+  if (node && cd) node.onclick = () => {
+    const on = cd.hidden; cd.hidden = !on; node.setAttribute("aria-expanded", String(on));
+  };
+  $$("#centreDrop .centre-opt").forEach((b) => (b.onclick = () => selectRun(b.dataset.run)));
+  layoutRadial();
+  if (S.radPan) { try { S.radPan.destroy(); } catch {} S.radPan = null; }
+  try {
+    S.radPan = initPanCanvas(wrap, stage, { goto: () => {
+      const feat = $(".rad-card.featured", stage) || $("#radCentre");
+      if (feat) S.radPan.focus(feat);
+    } });
+    S.radPan.fit();
+  } catch {}
+  wrap.ondblclick = (e) => { if (e.target === wrap || e.target === stage) S.radPan?.setZoom(1); };
+  setTimeout(() => { layoutRadial(); S.radPan?.update(); }, 0);
+  if (!radWired) { radWired = true; window.addEventListener("resize", () => { layoutRadial(); }); }
+}
 async function selectRun(id) {
   S.selRunId = id;
   if (!id || id === "default") { S.selRun = null; S.selHeadline = null; }
@@ -509,9 +712,18 @@ async function selectRun(id) {
   renderReport();
 }
 async function renderReport() {
+  if (S.radPan) { try { S.radPan.destroy(); } catch {} S.radPan = null; }
   if (!S.run) { $("#pReport").innerHTML = `<p>Loading the default replay…</p>`; await startQuiet(); }
   S.verify ??= await fetch("/api/dash/v2/verify").then((r) => r.json()).catch(() => null);
   S.runs ??= await fetch("/api/dash/v2/runs").then((r) => r.json()).catch(() => null);
+  S.radRecs ??= {};
+  await Promise.all(((S.runs && S.runs.runs) || []).map(async (r) => {
+    if (S.radRecs[r.id]) return;
+    try {
+      const rec = await fetch(`/api/dash/v2/runs/${encodeURIComponent(r.id)}`).then((x) => { if (!x.ok) throw new Error(x.status); return x.json(); });
+      S.radRecs[r.id] = rec;
+    } catch { /* the card renders Saved fallbacks */ }
+  }));
   const topics = mapTopics();
   const sha = await sha256(stableStringify(reportFingerprintData()));
   const vs = verifySummary(S.verify);
@@ -528,7 +740,7 @@ async function renderReport() {
       ${t.kids.map((k) => `<div class="leaf"><span class="leaf-ic" aria-hidden="true">${MAP_ICON[k.icon] || ""}</span><div><b>${esc(k.label)}</b><span>${k.text}</span></div></div>`).join("")}
       <div class="topic-detail">${t.detail}</div>
     </div></div>`;
-  $("#pReport").innerHTML = `<div class="ctrl noprint"><label for="runSel">Run</label><select id="runSel" style="width:auto;max-width:320px" aria-label="Run">${runs.length ? runs.map((r) => `<option value="${esc(r.id)}" ${r.id === selId ? "selected" : ""}>${esc(r.name)}</option>`).join("") : `<option value="default">Default replay</option>`}</select><button class="btn pri" onclick="print()">Export PDF / PNG (print)</button><span style="color:var(--mu);font-size:13px">Topics start closed so the map stays readable. Open any circle for its two paths and the detail.</span><span style="flex:1"></span><button class="btn" data-map="open">Expand all</button><button class="btn" data-map="close">Collapse all</button></div>
+  $("#pReport").innerHTML = `${radialHtml(runs, selId)}<div class="ctrl noprint"><label for="runSel">Run</label><select id="runSel" style="width:auto;max-width:320px" aria-label="Run">${runs.length ? runs.map((r) => `<option value="${esc(r.id)}" ${r.id === selId ? "selected" : ""}>${esc(r.name)}</option>`).join("") : `<option value="default">Default replay</option>`}</select><button class="btn pri" onclick="print()">Export PDF / PNG (print)</button><span style="color:var(--mu);font-size:13px">Topics start closed so the map stays readable. Open any circle for its two paths and the detail.</span><span style="flex:1"></span><button class="btn" data-map="open">Expand all</button><button class="btn" data-map="close">Collapse all</button></div>
   <div class="map-wrap glass" id="mapWrap"><svg class="map-wires" id="mapWires" aria-hidden="true"></svg>
     <div class="map-stage" id="mapStage">
       <div class="map-hub" id="mapHub" data-open="0">
@@ -573,6 +785,7 @@ async function renderReport() {
   };
   $("#runSel").onchange = (e) => selectRun(e.target.value);
   wireMap();
+  wireRadial();
 }
 async function sha256(s) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
 async function startQuiet() { const r = await fetch("/api/dash/v2/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(S.choice) }); S.run = await r.json(); S.n = S.run.events.length; renderRun(); }

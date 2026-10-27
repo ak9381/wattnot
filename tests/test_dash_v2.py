@@ -278,3 +278,52 @@ def test_report_has_run_selector_wired_to_mind_map():
     assert 'id="runSel"' in js and "/api/dash/v2/runs" in js
     assert "selectRun" in js and "headlineFromRecord" in js and "S.selHeadline" in js
     assert "run: S.selRun?.id" in js  # fingerprint stays stable per run
+
+
+def test_report_is_a_radial_panzoom_canvas():
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash")
+    js = root.joinpath("v2.js").read_text()
+    css = root.joinpath("v2.css").read_text()
+    pan = root.joinpath("pancanvas.js").read_text()
+    # pancanvas is vendored in and wired up (plain JS + CSS transform)
+    assert 'from "./pancanvas.js"' in js and "initPanCanvas(wrap, stage" in js
+    assert "export function init(container, inner" in pan
+    for api in ("fit,", "focus,", "setZoom,"):
+        assert api in pan
+    assert "S.radPan.fit()" in js and ".focus(feat)" in js and ".setZoom(1)" in js
+    # centre node opens a run-name dropdown reusing the run list
+    assert 'id="centreNode"' in js and ">WattNot</button>" in js
+    assert 'id="centreDrop"' in js and "selectRun(b.dataset.run)" in js
+    # first-ring cards carry a Saved block (Power/Cost/Water from the run's
+    # own WattNot phase vs its baseline phase)
+    assert "radSavedLines" in js and "Saved</div>" in js
+    for field in ("Power", "Cost", "Water"):
+        assert field in js
+    assert "phases?.baseline" in js and "phases?.wattnot" in js
+    # outer-ring per-method children, with the honesty fallback
+    assert "RAD_METHODS" in js and "radMethodSaving" in js
+    assert 'RAD_FALLBACK = "not measured in this run"' in js
+    assert "rad-child" in js and "radial-wires" in js
+    # ring layout that spreads families apart, plus the stacked fallback
+    assert "layoutRadial" in js and "drawRadialWires" in js
+    assert "0.8 * sector" in js  # children stay inside their own sector
+    assert "W < 900" in js and "@media (max-width:900px)" in css
+    assert ".radial-centre" in css and ".radial-wires" in css
+    # canvas controls: zoom/fit/step come from pancanvas, expand/collapse here
+    assert "data-radial" in js and "Expand all" in js and "Collapse all" in js
+
+
+def test_radial_saved_block_reads_phases_and_never_splits():
+    c = _c()
+    rec = c.get("/api/dash/v2/runs/run2-llama-350w").json()
+    b, w = rec["phases"]["baseline"], rec["phases"]["wattnot"]
+    assert b["metrics"]["j_per_req"] and w["metrics"]["j_per_req"]
+    assert w["metrics"]["saved_pct"] == pytest.approx(-27.1, abs=0.05)
+    # the record attributes nothing to single methods, so the canvas must not
+    assert "methods" not in rec
+    assert all("methods" not in p for p in rec["phases"].values())
+    # a fixture run has no measured joules: every Saved line must fall back
+    fix = c.get("/api/dash/v2/runs/cloud-recorded-run1").json()
+    assert fix["phases"]["baseline"]["metrics"]["j_per_req"] is None
+    assert fix["phases"]["wattnot"]["metrics"] is None
