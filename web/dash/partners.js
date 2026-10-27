@@ -23,6 +23,7 @@ const STATIC_PB = {
   ],
   topk: [{ id: "e2e", name: "E2E H100", what: "the GPU it runs on" }],
   keep: [{ id: "e2e", name: "E2E H100", what: "the GPU it runs on" }],
+  waste: [{ id: "meta", name: "Meta Muse Spark", what: "the planning agent it watches" }],
   approve: [{ id: "operator", name: "Operator", what: "a person decides" }],
 };
 
@@ -97,9 +98,12 @@ export function partnersHtml(snap) {
           ? "–"
           : `${cost.unit === "USD" ? "$" : ""}${esc(fmtNum(cost.value))}${cost.unit ? ` ${esc(cost.unit)}` : ""}`;
       const label = cost.value == null || !cost.label ? "" : ` <span class="pill ${esc(cost.label)}">${esc(cost.label)}</span>`;
+      const aw = p.agent_waste && p.agent_waste.usd != null
+        ? `<p class="muted">of which Agent waste <b class="num">$${esc(fmtNum(p.agent_waste.usd))}</b> <span class="pill ${esc(p.agent_waste.label || "")}">${esc(p.agent_waste.label || "")}</span></p>`
+        : "";
       return `<div class="pcard"><b>${esc(p.name)}</b><p>${esc(p.what || "–")}</p>`
         + `<p>calls <b class="num">${p.calls == null ? "–" : esc(String(p.calls))}</b></p>`
-        + `<p>cost <b class="num">${costHtml}</b>${label}</p></div>`;
+        + `<p>cost <b class="num">${costHtml}</b>${label}</p>${aw}</div>`;
     }).join("")}</div></section>`;
 }
 

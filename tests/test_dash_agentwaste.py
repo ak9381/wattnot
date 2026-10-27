@@ -34,3 +34,11 @@ def test_agent_waste_endpoint_uses_whatever_the_loader_returns():
         r = TestClient(create_app()).get("/api/dash/agent-waste")
     assert r.status_code == 200
     assert r.json()["spend_usd"] == 0.5
+
+
+def test_the_waste_node_carries_the_meta_muse_spark_partner_tag():
+    from wattnot.dash import pipeline
+    for variant in ("cap", "topk", "hosted"):
+        n = next(x for x in pipeline.nodes(variant, False) if x["id"] == "waste")
+        assert n["powered_by"] == [{"id": "meta", "name": "Meta Muse Spark",
+                                    "what": "the planning agent it watches"}], variant

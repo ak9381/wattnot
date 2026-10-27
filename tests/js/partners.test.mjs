@@ -123,3 +123,13 @@ test("fillPlannerTags fills placeholders and is safe without data", () => {
   assert.equal(fillPlannerTags(root, undefined), 0);
   assert.equal(fillPlannerTags(null, "meta"), 0);
 });
+
+test("the Agent waste node is tagged Meta Muse Spark and the Meta card shows its spend", () => {
+  const h = poweredByHtml(poweredByFor({ id: "waste" }));
+  assert.match(h, /Meta Muse Spark/);
+  const c = partnersHtml({ partners: [{ id: "meta", name: "Meta", what: "x", status: "used", calls: 3,
+    cost: { value: 2, unit: "USD", label: "ESTIMATE" },
+    agent_waste: { usd: 1.4752, label: "MEASURED" } }] });
+  assert.match(c, /of which Agent waste/);
+  assert.match(c, /\$1\.4752/);
+});

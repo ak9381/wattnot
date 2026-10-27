@@ -132,8 +132,31 @@ def _used(name: str, what: str, source: str, calls, cost: dict,
     return entry
 
 
+AGENT_WASTE_ROW = "agentwaste-bench"
+
+
+def _with_agent_waste(meta: dict, meta_text: str | None, usd) -> dict:
+    """Show the Agent waste benchmark's Muse Spark spend on the Meta card.
+
+    `usd` is the benchmark's own ledger total (MEASURED). When the Meta log
+    already has the benchmark's row the total is left alone (no double
+    count); otherwise the spend is added to the Meta cost.
+    """
+    if usd is None:
+        return meta
+    in_log = AGENT_WASTE_ROW in (meta_text or "")
+    meta["agent_waste"] = {"usd": round(float(usd), 4), "label": "MEASURED",
+                           "in_meta_total": in_log,
+                           "source": "data/agent-waste/results.json"}
+    cost = meta["cost"]
+    if not in_log and cost["value"] is not None:
+        cost["value"] = round(cost["value"] + float(usd), 4)
+    return meta
+
+
 def build(meta_text: str | None = None, baseten_text: str | None = None,
-          e2e_runs: list[dict] | None = None, now=None) -> dict:
+          e2e_runs: list[dict] | None = None, now=None,
+          agent_waste_usd: float | None = None) -> dict:
     """The partners snapshot. A partner with no input keeps status "used"
     with null numbers and the note "ledger not provided": nothing is invented.
     """
@@ -148,6 +171,7 @@ def build(meta_text: str | None = None, baseten_text: str | None = None,
                      "SAM 3.1 room scan, open-weight models",
                      "meta-usage/LOG.md", None, _cost_block(None, None, None),
                      note="ledger not provided")
+    meta = _with_agent_waste(meta, meta_text, agent_waste_usd)
     if baseten_text:
         parsed = parse_baseten_log(baseten_text)
         baseten = _used("Baseten", "Muse Spark Open planner and hosted-model runs",

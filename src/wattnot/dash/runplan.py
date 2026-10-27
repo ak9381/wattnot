@@ -23,8 +23,8 @@ import hashlib
 import json
 from datetime import UTC, datetime, timedelta
 
-from wattnot.approvals.risk import RiskConfig, classify
 from wattnot.agentwaste.card import load_results as load_waste
+from wattnot.approvals.risk import RiskConfig, classify
 
 from . import pipeline as pipe
 

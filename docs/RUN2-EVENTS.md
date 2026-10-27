@@ -17,6 +17,7 @@ architecture-map node and sub-step), `label`, `inputs`, `narration`, and on fini
 | `quality_gate` | `gates.decide` | does the gate reject a deliberately cut-short setting |
 | `cap_sweep` | `e2e_rig.sweep` | the planner proposes (Muse Spark, or Muse Spark Open with `--planner baseten-open`), interleaved stock/cap blocks decide; sub-steps `propose<N>` (`agent.call`) and `cap<W>` |
 | `adaptive_topk` | `adaptive.arms` | agreement %, J/request with fewer experts per token |
+| `agent_waste` | `waste.watch` … `waste.exit` | the Agent waste saver on the planning agent (Meta Muse Spark): repeat, no-op and cycle checks, a done action, step and token budgets; numbers come from the saved benchmark file |
 | `approve` | `approve.classify` / `approve.decide` | the risk rating and the wait for an operator |
 | `keep_rollback` | `apply.keep` | the chosen cap applied and read back, or rolled back |
 | `receipt` | `receipts.build` | canonical JSON, SHA-256, offline signature, grade |

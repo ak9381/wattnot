@@ -102,3 +102,25 @@ def test_partners_endpoint_200_and_404(tmp_path):
     assert r.status_code == 404 and "build_partners" in r.json()["detail"]
     c = TestClient(create_app(replay_only=True))
     assert c.get("/api/dash/partners").status_code == 200
+
+
+def test_agent_waste_spend_is_added_once():
+    plain = P.build(meta_text=META_TEXT)["partners"][0]
+    assert "agent_waste" not in plain
+    added = P.build(meta_text=META_TEXT, agent_waste_usd=1.4752)["partners"][0]
+    assert added["agent_waste"] == {"usd": 1.4752, "label": "MEASURED", "in_meta_total": False,
+                                    "source": "data/agent-waste/results.json"}
+    assert added["cost"]["value"] == round(plain["cost"]["value"] + 1.4752, 4)
+    row = "| t | muse-spark-1.3 | agentwaste-bench (runs) | 5 | 1 | 0 | 1 | $1.4752 | |\n"
+    logged = META_TEXT + row
+    once = P.build(meta_text=logged, agent_waste_usd=1.4752)["partners"][0]
+    assert once["agent_waste"]["in_meta_total"] is True
+    assert once["cost"]["value"] == round(plain["cost"]["value"] + 1.4752, 4)
+    none = P.build(agent_waste_usd=1.4752)["partners"][0]
+    assert none["cost"]["value"] is None and none["note"] == "ledger not provided"
+
+
+def test_repo_snapshot_shows_agent_waste_spend():
+    by = {p["id"]: p for p in json.loads(SNAP.read_text())["partners"]}
+    aw = by["meta"]["agent_waste"]
+    assert aw["label"] == "MEASURED" and aw["usd"] > 0
