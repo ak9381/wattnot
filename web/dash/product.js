@@ -4,9 +4,11 @@
 import { ArchView, fmt, statHtml } from "./arch.js";
 import { esc, pill } from "./theme.js";
 import { livePhrase } from "./archpage.js";
+import { mountRoomScan } from "./roomnode.js";
 import { heatSvg, heatLegend, scanTag, wireHeat, pulse, recolor } from "./heat.js";
 
 const $ = (s, r = document) => r.querySelector(s);
+const RUN2_STAGE = { room_scan: "room", baseline: "baseline", quality_gate: "gate", cap_sweep: "sweep", adaptive_topk: "topk", keep_rollback: "keep", receipt: "receipt" };
 const LABELS = ["MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "ADVICE"];
 const reduce = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const PCOL = { meta: "var(--m)", baseten: "var(--bt)", e2e: "var(--e2)", hf: "var(--hf)", nvidia: "var(--nv)", sigstore: "var(--sg)" };
@@ -24,7 +26,7 @@ export class Product {
     this.sel = { place: m0.place, workload: m0.workload, model: m0.id, levers: new Set(m0.levers), room: "example", ...lim };
     this.roomImg = null;
     this.screen = "config"; this.plan = null; this.done = false; this.speed = 2; this.log = {}; this.scale = 10_000_000;
-    this.renderRail(); if (this.embed) this.start(); else this.config();
+    this.renderRail(); if (this.embed) (this.health.events ? this.startLive() : this.start()); else this.config();
   }
   $(s) { return this.host.querySelector(s); }
   // ---------------------------------------------------------------- stepper
@@ -125,7 +127,7 @@ export class Product {
         ${live ? "" : `<span class="chipn">p99 may rise ${lim.p99_slack_pct}%</span><span class="chipn">agreement ≥ ${lim.min_quality_pct}%</span>${lim.strict_quality ? '<span class="chipn">quality must be verified</span>' : ""}`}
         <span class="sp"></span>
         ${live ? "" : `<span class="seg" id="spd" role="group" aria-label="replay speed"><button data-s="1">1×</button><button data-s="2" class="on">2×</button><button data-s="4">4×</button></span>`}
-        <button class="btn" id="rpause">Pause</button>${live ? "" : `<button class="btn" id="rskip">Skip to the end</button><button class="btn" id="rrestart">Restart</button>`}</div>
+        ${this.embed && this.health.events ? `<button class="btn" id="rswitch">${live ? "Show the bundled recorded run" : "Follow the events file"}</button>` : ""}<button class="btn" id="rpause">Pause</button>${live ? "" : `<button class="btn" id="rskip">Skip to the end</button><button class="btn" id="rrestart">Restart</button>`}</div>
       <p class="rnote" id="rnote">${live ? "Waiting for the first event from the run…" : `This is a <b>replay</b> of a recorded real run (${esc(P.results.place === "h100" ? "H100 on E2E Networks" : "Baseten")}), re-evaluated against your limits. Run id ${esc(P.run_id)}. The animation is compressed; each step shows its real measured time.`}</p>
       <div class="rgrid"><section class="rgraph" aria-label="live architecture graph"><div id="rg"></div></section>
         <div class="rside">${room ? `<section class="rroom" aria-label="room heat map"><h3>Room · ${esc(room.pick === "upload" ? "your picture" : "example data center")} ${scanTag(room.scan)}<span class="muted" id="roomPhase">before</span></h3><div id="roomMap"></div>${heatLegend()}<p class="cap" id="roomCap">Hover or tab to a rack for its numbers.</p></section>` : ""}<aside class="rnar" aria-label="narration"><h3>What is happening</h3><ol id="nar" aria-live="polite"></ol>
@@ -135,6 +137,7 @@ export class Product {
     this.room = room; if (room) this.drawRoom(room.scan, false);
     this.view = new ArchView(this.$("#rg"), this.pd, { ids, chain: true, mode: "row", stats: 0, onSelect: (n, s, v) => this.D.open(n, s, v, this.runBlock(n, s)) });
     this.nar = this.$("#nar"); this.evl = this.$("#evl"); this.evCount = 0;
+    this.$("#rswitch")?.addEventListener("click", () => { if (this.live) { this.destroyRun(); this.start(); } else this.startLive(); });
     this.$("#rpause").onclick = (e) => { const p = this.live ? null : this.player; if (this.live) { this.livePaused = !this.livePaused; } else p.pause(!p.paused); const on = this.live ? this.livePaused : p.paused; e.currentTarget.textContent = on ? "Resume" : "Pause"; this.view?.[on ? "pause" : "resume"](); };
     if (live) return;
     this.host.querySelectorAll("#spd button").forEach((b) => (b.onclick = () => { this.speed = +b.dataset.s; this.player.speed = this.speed; this.host.querySelectorAll("#spd button").forEach((x) => x.classList.toggle("on", x === b)); }));
@@ -151,7 +154,12 @@ export class Product {
   }
   // one event -> graph, narration, log
   onEvent(ev) {
-    const d = ev.data || {}, map = this.pd.event_map[ev.type] || [], node = d.node || map[0], sub = d.sub || map[1], v = this.view;
+    const d = ev.data || {}, map = this.pd.event_map[ev.type] || [], v = this.view;
+    let node = d.node || map[0], sub = d.sub || map[1];
+    // the RUN2 stream tags steps with architecture-map nodes (sam, e2e_rig...) and names its stages in step_id:
+    // room_scan, baseline, quality_gate, cap_sweep, adaptive_topk, keep_rollback, receipt. Those are this graph's nodes.
+    const stage = RUN2_STAGE[(ev.step_id || "").split(".")[0]];
+    if (stage && v?.ids.has(stage) && !v.ids.has(d.node)) { node = stage; sub = ev.step_id.includes(".") ? ev.step_id.split(".").slice(1).join(".") : d.sub; }
     this.evCount++; this.$("#evn").textContent = this.evCount;
     const li = document.createElement("li"); li.innerHTML = `<code>${esc(ev.type)}</code> <span class="muted">${esc(ev.step_id || "")}</span>`; this.evl.appendChild(li); if (this.evl.children.length > 150) this.evl.firstChild.remove();
     if (ev.type === "run.started") {
@@ -159,6 +167,7 @@ export class Product {
       this.say({ id: "run", text: d.narration?.text || livePhrase(ev), source: d.narration?.source, head: true });
     }
     if (ev.type === "telemetry.sample") { const m = this.$("#meter"); m.hidden = false; m.innerHTML = `Power now <b class="num">${num(d.power_w, 0)} W</b>${d.cap_w ? ` at a ${d.cap_w} W cap` : ""} ${tagOf(/mock|fake/i.test(`${d.source || ""} ${d.label || ""}`) ? "MOCK" : d.label || "MEASURED")}${/mock|fake/i.test(`${d.source || ""} ${d.label || ""}`) ? " <span class=\"muted\">fake meter</span>" : ""}${d.rack ? ` <span class="muted">rack ${esc(d.rack)}</span>` : ""} <span class="muted">${this.live ? "" : "recorded"}</span>`; }
+    if (d.kind === "room_scan") this.roomPayload(d);
     const key = `${node}.${sub}`;
     const entry = node ? ((this.log[key] ||= []), this.log[key]) : null;
     if (ev.type === "step.started" && node) {
@@ -191,6 +200,20 @@ export class Product {
     const sec = document.createElement("section"); sec.className = "rroom"; sec.setAttribute("aria-label", "room heat map");
     sec.innerHTML = `<h3>Room · ${esc(room.pick === "upload" ? "your picture" : "example data center")} ${scanTag(room.scan)}<span class="muted" id="roomPhase">before</span></h3><div id="roomMap"></div>${heatLegend()}<p class="cap" id="roomCap">Hover or tab to a rack for its numbers.</p>`;
     side.prepend(sec); this.drawRoom(room.scan, false);
+  }
+  // a RUN2 room_scan payload (photo, SAM masks, thermal): draw it with the room module's node in the room panel
+  async roomPayload(p) {
+    const side = this.$(".rside"); if (!side) return;
+    this.roomPay = { ...(this.roomPay || {}), [p.phase || "before"]: p };
+    let sec = this.$("#roomNode");
+    if (!sec) {
+      this.$(".rroom")?.remove(); sec = document.createElement("section"); sec.className = "rroom"; sec.id = "roomNode"; sec.setAttribute("aria-label", "room scan");
+      sec.innerHTML = `<h3>Room · SAM 3.1 <span id="roomNodeTag"></span></h3><div id="roomNodeBody"></div>`; side.prepend(sec);
+    }
+    try {
+      const { labels } = await mountRoomScan(this.$("#roomNodeBody"), this.roomPay, (this.roomCache ||= {}));
+      this.$("#roomNodeTag").innerHTML = `${tagOf(labels.rack_outline || "MEASURED")} <span class="muted">racks</span> ${tagOf(labels.thermal_frame || "SIMULATED")} <span class="muted">heat</span>`;
+    } catch (e) { this.$("#roomNodeBody").innerHTML = `<p class="muted">The room picture could not be drawn (${esc(e.message)}).</p>`; }
   }
   drawRoom(scan, after) {
     const el = this.$("#roomMap"); if (!el || !scan) return;
@@ -234,7 +257,7 @@ export class Product {
   // ---------------------------------------------------------------- live following
   startLive() {
     this.plan = null; this.live = true; this.done = false; this.screen = "run"; this.renderRail(); this.runView(false);
-    const es = (this.es = new EventSource("/api/dash/arch/live")); this.liveEvents = [];
+    const es = (this.es = new EventSource(`/api/dash/arch/live?speed=${this.speed}`)); this.liveEvents = [];
     es.addEventListener("event", (m) => { if (this.livePaused) return; try { const ev = JSON.parse(m.data); this.liveEvents.push(ev); this.onEvent(ev); } catch { /* skip a bad line */ } });
     es.onerror = () => { this.$("#rstat").textContent = "Connection lost, retrying…"; };
   }

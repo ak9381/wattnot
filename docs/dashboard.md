@@ -93,6 +93,25 @@ and `rack` (the rack being acted on). `run.started.data.room` may carry the room
 A later event for the same `step_id` carrying `data.narration = {text, source: "muse-spark", model}`
 replaces it. No schema change; a worker that generates the lines only needs to emit that event.
 
+### Following a real run's events (step routing)
+
+The Architecture tab follows an events file live (`--events FILE`, SSE `/api/dash/arch/live?speed=N`). Events from the
+proof run carry `data.node` and `data.sub`, which are Architecture-map ids (`sam.masks`, `e2e_rig.sweep`,
+`agent.call`, `adaptive.hook`, `receipts.sign`, and so on, listed in `docs/RUN2-EVENTS.md`).
+
+- `step.started` / `step.finished` route by `[data.node, data.sub]` when present, and by event type only when absent.
+  The node lights with marching ants while a step runs and goes static and dim when it finishes. A parent step that
+  finishes after its child does not pull the map back, and `run.finished` ends the last node.
+- The `recommendations` event is advice, so it never lights the EU node once a stream is tagged.
+- Two views follow the stream. **All modules** lights the 21-node map (sam, e2e_rig, agent and adaptive included).
+  **Run pipeline** maps the `step_id` stages to its nodes (`room_scan`→Room scan, `baseline`, `quality_gate`→Quality
+  gate, `cap_sweep`, `adaptive_topk`, `keep_rollback`, `receipt`) and narrates every sub-step. With an events file
+  loaded it follows it by default, and a button switches to the bundled recorded run.
+- A `step.progress` event with `data.kind == "room_scan"` is drawn with `mountNode` from `web/room/node.js`
+  (`web/dash/roomnode.js` fills in the picture size and image names from the saved room folder, since the payload is
+  trimmed). `phase` `before` then `after` switches the view. `/room` is a read-only static mount of `web/room`.
+- A stream whose `telemetry.sample` source or label says mock or fake shows a MOCK badge and "fake meter".
+
 ### Room scan interface (`wattnot.room/1`)
 
     {schema, source, label, size:[w,h], image,

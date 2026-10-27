@@ -3,6 +3,7 @@
 import { ArchView, panelHtml, statHtml } from "./arch.js";
 import { esc, pill } from "./theme.js";
 import { Product } from "./product.js";
+import { mountRoomScan } from "./roomnode.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const G = () => window.gsap;
@@ -38,7 +39,7 @@ export class ArchPage {
       <div class="avlegend" id="afil" role="group" aria-label="filter by partner"></div>
       <div class="mstrip" id="mstrip" hidden></div>
       <div class="archcap" id="acap" aria-live="polite">Click a step to see its code, inputs, outputs, timing and partner. Pick a replay and press Play to watch a recorded run.</div>
-      <div id="amap"></div></div><aside class="panel in-drawer" id="apanel" aria-label="step details"><button class="btn x" id="apx" aria-label="close details">Close</button><div id="apbody"></div></aside>`;
+      <section class="aroom" id="aroom" hidden aria-label="room scan"><h3>Room scan · SAM 3.1 <span id="aroomTag"></span></h3><div id="aroomBody"></div></section><div id="amap"></div></div><aside class="panel in-drawer" id="apanel" aria-label="step details"><button class="btn x" id="apx" aria-label="close details">Close</button><div id="apbody"></div></aside>`;
     const rs = Object.values(data.replays);
     $("#rsel", host).innerHTML = rs.map((r) => `<option value="${r.id}">${esc(r.title)}</option>`).join("") + `<option value="live">Live run (events file)</option>`;
     $("#afil", host).innerHTML = FILTERS.map(([id, t, c]) => `<button class="fchip ${id === "meta" ? "meta" : ""}" data-f="${id}" ${c ? `style="--c:${c}"` : ""} aria-pressed="${id === "all"}">${c ? "<i></i>" : ""}${esc(t)}${id === "meta" ? ` <span class="muted">${data.nodes.filter((n) => n.partners.includes("meta")).length} steps</span>` : ""}</button>`).join("");
@@ -99,13 +100,51 @@ export class ArchPage {
     let ok = true; try { const r = await fetch("/api/dash/health"); ok = (await r.json()).events; } catch { ok = false; }
     if (!ok) { cap.innerHTML = `<span class="err">No run is being followed. Start the server with <code>--events path/to/events.jsonl</code> to watch a live run here. Recorded replays work without it.</span>`; return; }
     this.view.reset(); cap.textContent = "Following the run as it writes events…";
-    const es = (this.es = new EventSource("/api/dash/arch/live")); let last = 0;
+    const es = (this.es = new EventSource(`/api/dash/arch/live?speed=${this.speed}`)); let last = 0;
+    this.roomPay = {}; this.tagged = false; $("#aroom", H).hidden = true;
     es.addEventListener("event", (m) => {
-      const ev = JSON.parse(m.data), map = this.d.event_map[ev.type]; if (!map) return;
-      const now = performance.now(); if ((ev.type === "telemetry.sample" || ev.type === "step.progress") && now - last < 500) return; last = now;
-      this.view.activate({ node: map[0], sub: map[1], text: livePhrase(ev), tag: ev.data?.label && this.d.labels.includes(ev.data.label) ? ev.data.label : null, ok: !(ev.type === "gate.result" && ev.data?.passed === false) });
+      let ev; try { ev = JSON.parse(m.data); } catch { return; }
+      const d = ev.data || {};
+      if (d.kind === "room_scan") this.roomScan(d);                       // a room_scan payload: draw it with the room node
+      if (ev.type === "run.started") this.liveBadge(ev);
+      if (ev.type === "run.finished") { this.view.finish(this.view.cur); this.view.cur = null; return; }
+      const r = this.route(ev); if (!r) return;
+      const now = performance.now();
+      if (!d.node && (ev.type === "telemetry.sample" || ev.type === "step.progress") && now - last < 500) return; last = now;
+      const tag = d.label && this.d.labels.includes(d.label) ? d.label : null;
+      if (ev.type === "step.finished") return this.stepDone(r, ev, tag);
+      this.view.activate({ node: r[0], sub: r[1], text: ev.type === "step.started" ? d.label || livePhrase(ev) : livePhrase(ev), tag: ev.type === "step.started" ? null : tag, ok: !(ev.type === "gate.result" && d.passed === false) });
     });
     es.onerror = () => { cap.innerHTML += ` <span class="muted">(connection lost, retrying)</span>`; };
+  }
+  // Where an event lights the map: the step's own [data.node, data.sub] when it names a node on this map,
+  // otherwise the type-based table (live streams that do not tag their steps).
+  route(ev) {
+    const d = ev.data || {};
+    if (d.node && this.view.ids.has(d.node)) { this.tagged = true; return [d.node, d.sub]; }
+    if (this.tagged && ev.type === "recommendations") return null;   // the EU mapping is for untagged streams only
+    return this.d.event_map[ev.type] || null;
+  }
+  // step.finished: mark that sub-step done and keep its timing. The node stays lit only when it is the active one,
+  // so a parent step ending after its child (e2e_rig.sweep after agent.call) does not pull the map back.
+  stepDone([node, sub], ev, tag) {
+    const d = ev.data || {}, v = this.view, el = v.el(node), b = el?.querySelector(`.sub[data-sub="${sub}"]`);
+    if (d.duration_s != null) v.timing[`${node}.${sub}`] = d.duration_s;
+    if (b) { b.classList.remove("on"); b.classList.add(d.status === "ok" || d.status == null ? "done" : "bad"); }
+    if (v.cur === node) { el.querySelector(".now").innerHTML = `${esc(d.summary || d.label || sub)}${tag ? " " + pill(tag) : ""}`; }
+    $("#acap", this.host).innerHTML = `<b>${esc(this.d.nodes.find((n) => n.id === node)?.title || node)}</b> · ${esc(d.summary || d.label || "")} ${tag ? pill(tag) : ""}`;
+  }
+  liveBadge(ev) {
+    const d = ev.data || {}, l = d.mode === "mock" || d.label === "MOCK" ? "MOCK" : this.h.health?.replay_only || d.replay || d.mode === "replay" ? "REPLAY" : "LIVE";
+    $("#aprog", this.host).innerHTML = `${pill(l)} <span class="muted">${esc(d.run || d.model || "")}</span>`;
+  }
+  // The room node: a room_scan payload (before, then after) mounted with web/room/node.js (see roomnode.js).
+  async roomScan(p) {
+    this.roomPay[p.phase || "before"] = p; const host = $("#aroomBody", this.host), box = $("#aroom", this.host); box.hidden = false;
+    try {
+      const { labels } = await mountRoomScan(host, this.roomPay, (this.roomCache ||= {}));
+      $("#aroomTag", this.host).innerHTML = `<span class="muted">racks</span> ${pill(labels.rack_outline || "MEASURED")} <span class="muted">heat</span> ${pill(labels.thermal_frame || "SIMULATED")}`;
+    } catch (e) { host.innerHTML = `<p class="muted">The room picture could not be drawn (${esc(e.message)}).</p>`; }
   }
   stopLive() { this.es?.close(); this.es = null; }
   show() { if (this.mode === "pipe") this.ensurePipe(); else requestAnimationFrame(() => this.view.layoutEdges()); }

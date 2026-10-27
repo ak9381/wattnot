@@ -247,3 +247,11 @@ def test_hosted_replay_flag_from_environment(monkeypatch):
     assert TestClient(create_app()).get("/api/dash/health").json()["replay_only"] is True
     monkeypatch.delenv("WATTNOT_HOSTED_REPLAY")
     assert TestClient(create_app()).get("/api/dash/health").json()["replay_only"] is False
+
+
+def test_room_module_is_served_for_run_events() -> None:
+    """A room_scan payload is drawn with the room module's node, served read-only under /room."""
+    c = TestClient(create_app())
+    r = c.get("/room/node.js")
+    assert r.status_code == 200 and "mountNode" in r.text
+    assert c.get("/room/data/arsat/scan.json").status_code == 200

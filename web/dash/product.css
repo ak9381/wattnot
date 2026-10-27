@@ -140,3 +140,11 @@ svg.heat .rk.pulse polygon{animation:rkpulse 1.1s ease-out 2}
 .rgraph .avn .hd .t{flex:1 1 100%;white-space:nowrap}
 .archmode{display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap}.archmode button{font:12px var(--mono,monospace);background:none;border:1px solid var(--hair2);color:var(--dim);padding:6px 12px;border-radius:6px;cursor:pointer}.archmode button.on{border-color:var(--cy,#22d3ee);color:var(--ink)}.archmode .muted{margin-left:8px;font-size:12px}.apipe .pf{padding:0}
 body.replay-only #modeChip{border-color:var(--amber,#E8B64A);color:var(--amber,#E8B64A)}
+
+.aroom{border:1px solid var(--hair2);border-radius:8px;padding:10px 12px;margin:0 0 12px;max-width:560px;background:#0A0E14}
+.aroom h3{margin:0 0 8px;font:600 13px Inter,system-ui,sans-serif;display:flex;gap:8px;align-items:center}
+.room-node-bar{display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap}
+.room-node-bar button{font:11px var(--mono,monospace);background:none;border:1px solid var(--hair2);color:var(--dim);padding:4px 9px;border-radius:5px;cursor:pointer}
+.room-node-bar button.on{border-color:var(--cy,#22d3ee);color:var(--ink)}
+.room-node-note{font:11px/1.4 var(--mono,monospace);color:var(--dim);margin-top:6px}
+.aroom{max-width:420px}

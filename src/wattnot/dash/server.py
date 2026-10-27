@@ -409,6 +409,9 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
     fonts = ROOT / "web" / "run" / "vendor"
     if fonts.is_dir():  # the same self-hosted fonts the run page uses
         app.mount("/run/vendor", StaticFiles(directory=str(fonts)), name="fonts")
+    room_dir = WEB.parent / "room"  # the SAM room scan module: node.js and the saved scan folders
+    if room_dir.is_dir():
+        app.mount("/room", StaticFiles(directory=str(room_dir), html=True), name="room")
     app.mount("/", StaticFiles(directory=str(WEB), html=True), name="web")
     return app
 
