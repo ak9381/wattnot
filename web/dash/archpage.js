@@ -43,6 +43,8 @@ export function meterFor(d, id) {
 }
 import { Product } from "./product.js";
 import { mountRoomScan } from "./roomnode.js";
+import { createState, replayAll, groupTotals, jPerSlot } from "./core.js";
+import { heatSvg, heatLegend, wireHeat } from "./heat.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const G = () => window.gsap;
@@ -73,12 +75,13 @@ export class ArchPage {
     host.innerHTML = `<div class="archmode" role="group" aria-label="architecture view"><button data-m="pipe" class="on" aria-pressed="true">Run pipeline</button><button data-m="all" aria-pressed="false">All modules</button>
       <span class="muted" id="amodeNote">The real steps of one run, lit up as its events arrive. Click a step for its sub-steps and numbers.</span></div>
       <div id="apipe" class="apipe"></div><div id="aall" hidden><div class="archbar"><label class="muted" for="rsel">Replay</label><select id="rsel" class="btn" aria-label="recorded run to replay"></select>
-      <button class="btn pri" id="aplay">Play</button><button class="btn" id="apause">Pause</button><button class="btn" id="areset">Reset</button><button class="btn" id="aexpand">Expand all</button><button class="btn" id="acollapse">Collapse all</button>
+      <button class="btn pri" id="aplay">Play</button><button class="btn" id="apause">Pause</button><button class="btn" id="areset">Reset</button><button class="btn" id="aexpand">Expand all</button><button class="btn" id="acollapse">Collapse all</button><button class="btn" id="aexpert" aria-pressed="false" title="Show the mixture-of-experts routing details from the Experts view">Expert</button>
       <span class="seg" id="aspd"><button data-s="1">1×</button><button data-s="2" class="on">2×</button><button data-s="4">4×</button></span><span class="sp"></span><span class="cap" id="aprog"></span></div>
       <div class="mmeter" id="mmeter" aria-live="polite"></div>
       <div class="avlegend" id="afil" role="group" aria-label="filter by partner"></div>
       <div class="mstrip" id="mstrip" hidden></div>
       <div class="archcap" id="acap" aria-live="polite">Click a step to see its code, inputs, outputs, timing and partner. Pick a replay and press Play to watch a recorded run.</div>
+      <section id="aexpertBox" hidden aria-label="expert details"></section>
       <section class="aroom" id="aroom" hidden aria-label="room scan"><h3>Room scan · SAM 3.1 <span id="aroomTag"></span></h3><div id="aroomBody"></div></section><div id="amap"></div></div><aside class="panel in-drawer" id="apanel" aria-label="step details"><button class="btn x" id="apx" aria-label="close details">Close</button><div id="apbody"></div></aside>`;
     const rs = Object.values(data.replays);
     $("#rsel", host).innerHTML = rs.map((r) => `<option value="${r.id}">${esc(r.title)}</option>`).join("") + `<option value="live">Live run (events file)</option>`;
@@ -112,8 +115,13 @@ export class ArchPage {
     H.querySelectorAll("#aspd button").forEach((b) => (b.onclick = () => { this.speed = +b.dataset.s; H.querySelectorAll("#aspd button").forEach((x) => x.classList.toggle("on", x === b)); }));
     H.querySelectorAll("#afil button").forEach((b) => (b.onclick = () => this.setFilter(b.dataset.f)));
     $("#apx", H).onclick = () => this.closePanel();
+    $("#aexpert", H).onclick = (e) => this.setExpert(e.currentTarget.getAttribute("aria-pressed") !== "true");
+    $("#aexpertBox", H).addEventListener("click", (e) => {
+      const b = e.target.closest("#aexpertMode button"); if (!b) return;
+      this.expertMode = b.dataset.mode; this.renderExperts();
+    });
     $("#apanel", H).addEventListener("click", (e) => {
-      const go = e.target.closest("[data-go]"); if (go) { go.dataset.go === "meta" ? this.setFilter("meta") : this.h.openDrawer(go.dataset.go); return; }
+      const go = e.target.closest("[data-go]"); if (go) { this.followGo(go.dataset.go); return; }
       const sb = e.target.closest("a[data-sub]"); if (sb) { e.preventDefault(); if (this.mode === "pipe") { const sub = this.cur.subs.find((x) => x.id === sb.dataset.sub); this.panel(this.cur, sub, this.pv, this.pipe?.runBlock(this.cur, sub) || ""); } else this.view.select(this.cur.id, sb.dataset.sub); }
     });
   }
@@ -155,8 +163,96 @@ export class ArchPage {
     this.cur = n; this.pv = view; const p = $("#apanel", this.host); const h = panelHtml(view, n, s);
     $("#apbody", this.host).innerHTML = extra ? h.replace(/(<h3>.*?<\/h3>)/, `$1${extra}`) : h;
     p.classList.add("open"); this.host.classList.add("pn"); $("#apx", this.host).focus();
+    if (n.id === "sam") this.loadRoomInto($("#apbody", this.host));
+    if (n.id === "adaptive") this.loadExpertsInto($("#apbody", this.host));
   }
   closePanel() { $("#apanel", this.host).classList.remove("open"); this.host.classList.remove("pn"); }
+  // Card links stay inside Architecture: experts enables the Expert toggle,
+  // room opens the rack map, meta filters to Meta's steps.
+  followGo(go) {
+    if (go === "meta") return this.setFilter("meta");
+    if (go === "experts") return this.setExpert(true);
+    if (go === "room") return this.openRoom();
+    return this.h.openDrawer("arch");
+  }
+  // ---- Expert toggle: the merged Experts view, on the Adaptive top-k card's numbers.
+  // Grouping and energy reuse the expert content (core.js over /api/dash/moe/meta+ticks).
+  async setExpert(on) {
+    this.expertOn = on;
+    $("#aexpert", this.host).setAttribute("aria-pressed", String(on));
+    $("#aexpert", this.host).classList.toggle("on", on);
+    const box = $("#aexpertBox", this.host);
+    if (!on) { box.hidden = true; return; }
+    if (this.mode !== "all") this.setMode("all");
+    box.hidden = false;
+    await this.renderExperts();
+    if (this.cur?.id !== "adaptive") this.view.select("adaptive");
+  }
+  async ensureExperts() {
+    if (this.expertCache) return this.expertCache;
+    const [meta, ticks] = await Promise.all([fetch("/api/dash/moe/meta").then((r) => r.json()), fetch("/api/dash/moe/ticks").then((r) => r.json())]);
+    this.expertCache = { meta, ticks };
+    return this.expertCache;
+  }
+  async renderExperts() {
+    const box = $("#aexpertBox", this.host);
+    box.innerHTML = `<p class="muted">Loading the expert routing…</p>`;
+    try {
+      const { meta, ticks } = await this.ensureExperts();
+      const mode = this.expertMode || "tier";
+      const st = createState(meta, mode); replayAll(st, ticks);
+      const gt = groupTotals(st, "off"), tot = gt.reduce((a, g) => a + g.routed, 0) || 1;
+      const per = jPerSlot(st, "off");
+      const t = meta.totals || {};
+      box.innerHTML = `<h3>Experts · routed tokens per group ${pill("MEASURED")}</h3>
+        <p class="muted">${esc(meta.meta.model)} · captured ${esc(meta.meta.capture)} · ${esc(meta.meta.steps.length)} steps</p>
+        <span class="seg" id="aexpertMode" role="group" aria-label="how experts are grouped">
+          <button data-mode="tier" class="${mode === "tier" ? "on" : ""}">tiers</button><button data-mode="kmeans" class="${mode === "kmeans" ? "on" : ""}">k-means</button>
+        </span>
+        <div class="stl">${gt.map((g, i) => `<div class="stat"><span class="k">${esc(st.names[i])}</span><span class="v num">${((g.routed / tot) * 100).toFixed(1)}%</span>${pill("MEASURED")}<span class="mbar" aria-hidden="true"><i style="width:${Math.max(4, Math.round((g.routed / tot) * 100))}%"></i></span></div>
+          <p class="muted">energy share ${per == null ? "– (no meter in this capture)" : `~${(g.routed * per).toFixed(1)} J`} ${pill("ESTIMATE")}</p>`).join("")}</div>
+        ${t.on && t.off ? `<p class="muted">Adaptive top-k routes to ${t.on.active_per_token.toFixed(2)} vs ${t.off.active_per_token.toFixed(2)} experts per token (on vs off) ${pill("MEASURED")}</p>` : ""}
+        <p class="cap">Counts are routed tokens ${pill("MEASURED")}; per-group joules split the window total by routed share ${pill("ESTIMATE")}.</p>`;
+    } catch (e) { box.innerHTML = `<p class="muted">The expert routing could not load (${esc(e.message)}).</p>`; }
+  }
+  async loadExpertsInto(root) {
+    const div = document.createElement("div"); div.innerHTML = `<p class="muted">Loading the expert routing…</p>`;
+    root.appendChild(div);
+    try {
+      const { meta, ticks } = await this.ensureExperts();
+      const st = createState(meta, "tier"); replayAll(st, ticks);
+      const gt = groupTotals(st, "off"), tot = gt.reduce((a, g) => a + g.routed, 0) || 1;
+      div.innerHTML = `<h5>Expert routing in this capture</h5>${gt.map((g, i) => `<div class="stat"><span class="k">${esc(st.names[i])}</span><span class="v num">${((g.routed / tot) * 100).toFixed(1)}%</span>${pill("MEASURED")}</div>`).join("")}
+        <p><button class="btn" data-go="experts">Show expert details</button></p>`;
+    } catch (e) { div.innerHTML = `<p class="muted">The expert routing could not load (${esc(e.message)}).</p>`; }
+  }
+  // ---- Room drill-down: the merged Power/Room view, on the Rack map (SAM 3.1) card.
+  // Racks reuse the room rendering (heat.js over the served scan, or the live room_scan payload).
+  openRoom() {
+    if (this.mode !== "all") this.setMode("all");
+    this.view.open("sam", true);
+    this.view.select("sam");
+    requestAnimationFrame(() => this.view.layoutEdges());
+  }
+  async loadRoomInto(root) {
+    const div = document.createElement("div");
+    div.innerHTML = `<h5>Rack map</h5><div class="aroomBody"><p class="muted">Loading the racks…</p></div>`;
+    root.appendChild(div);
+    let body = div.querySelector(".aroomBody");
+    const pay = this.roomPay && (this.roomPay.after || this.roomPay.before);
+    if (pay) {
+      try {
+        const host = document.createElement("div"); body.replaceWith(host);
+        await mountRoomScan(host, this.roomPay, (this.roomCache ||= {}));
+        return;
+      } catch { body = div.querySelector(".aroomBody") || div; /* fall through to the served scan */ }
+    }
+    try {
+      const scan = await fetch("/room/data/arsat/scan.json").then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); });
+      body.innerHTML = `${heatSvg(scan, {})}${heatLegend()}<p class="cap" data-cap>Hover or tab to a rack for its numbers.</p>`;
+      wireHeat(body, scan, body.querySelector("[data-cap]"));
+    } catch (e) { body.innerHTML = `<p class="muted">The racks could not be drawn (${esc(e.message)}).</p>`; }
+  }
   // ---- live following
   async startLive() {
     const H = this.host, cap = $("#acap", H);

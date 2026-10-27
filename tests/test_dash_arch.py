@@ -302,3 +302,41 @@ def test_room_module_is_served_for_run_events() -> None:
     r = c.get("/room/node.js")
     assert r.status_code == 200 and "mountNode" in r.text
     assert c.get("/room/data/arsat/scan.json").status_code == 200
+
+
+# ---- single Architecture page: the Experts and Power/Room tabs are merged in --
+def test_nav_has_only_the_architecture_tab():
+    """The top nav and the drawer list one tab: Architecture."""
+    html = (ROOT / "web" / "dash" / "index.html").read_text()
+    assert re.findall(r'data-tab="([^"]+)"', html) == ["arch"]
+    assert 'id="dPower"' not in html and 'id="dExperts"' not in html
+    assert 'id="dArch"' in html
+    assert 'id="expertCtl"' not in html
+
+
+def test_legacy_tab_urls_redirect_to_architecture():
+    """?tab=experts, ?tab=power, ?tab=room and hash routes land on Architecture."""
+    js = (ROOT / "web" / "dash" / "app.js").read_text()
+    assert "LEGACY_TABS" in js and "location.hash" in js
+    for old in ("experts", "power", "room"):
+        assert re.search(rf"""['"]{old}['"]""", js), old
+    # legacy ids resolve to the arch page with the matching drill-down, never a tab
+    assert js.count('openDrawer("arch"') >= 2
+    assert 'q.set("expert", "1")' in js and 'q.set("room", "sam")' in js
+
+
+def test_arch_expert_toggle_and_room_drilldown():
+    """An Expert toggle in the Architecture toolbar; the rack map opens the racks."""
+    page = (ROOT / "web" / "dash" / "archpage.js").read_text()
+    assert 'id="aexpert"' in page and "aria-pressed" in page
+    assert "/api/dash/moe/meta" in page and "core.js" in page  # expert details reuse the expert content
+    assert "sam" in page and ("heatSvg" in page or "mountRoomScan" in page)  # rack drill-down reuses room rendering
+
+
+def test_arch_deep_links_stay_inside_architecture():
+    """No card links out to a removed Power/Experts tab anymore."""
+    js = (ROOT / "web" / "dash" / "arch.js").read_text()
+    assert "Open in Power" not in js and "Open in Experts" not in js
+    m = re.search(r"export const DEEP = \{([^}]*)\}", js)
+    # drill-down keys stay inside Architecture (expert toggle, rack map), never a removed tab
+    assert m and set(re.findall(r':\s*"([^"]+)"', m.group(1))) <= {"experts", "room"}

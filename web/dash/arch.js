@@ -23,7 +23,9 @@ export const statHtml = (s, pct = null) => `<div class="stat"><span class="k" ti
 const SHORT = { meta: "Meta", baseten: "Baseten", e2e: "E2E", hf: "Hugging Face", nvidia: "NVIDIA", sigstore: "Sigstore", oss: "open source" };
 const badge = (d, id) => { const p = d.partners[id]; return `<span class="bdg" style="--c:${p.color}" title="${esc(p.name)}">${esc(SHORT[id] || p.name)}</span>`; };
 const STATUS = { stub: "stub, not wired", roadmap: "roadmap", "not-run": "not run" };
-export const DEEP = { telemetry: "power", apply: "power", gates: "power", flex: "power", e2e_rig: "power", models: "power", adaptive: "experts" };
+// Drill-downs inside the Architecture page (the old Power/Experts tabs are merged in):
+// "experts" enables the Expert toggle, "room" opens the rack map on the SAM card.
+export const DEEP = { adaptive: "experts", sam: "room" };
 
 export class ArchView {
   constructor(host, data, o = {}) {
@@ -280,5 +282,5 @@ export function panelHtml(view, n, s) {
     <h5>${s ? "Numbers for this step's module" : "Numbers"}</h5>${n.stats.map((s) => statHtml(s)).join("") || "–"}
     ${!s ? `<h5>Sub-steps</h5><ul>${n.subs.map((x, i) => `<li><a href="#" data-sub="${x.id}" style="color:var(--cy);text-decoration:none">${i + 1}. ${esc(x.title)}</a></li>`).join("")}</ul>` : ""}
     <h5>Evidence (last receipts and logs)</h5><ul>${(n.evidence || []).map((x) => `<li>${esc(x)}</li>`).join("")}${ev.map((x) => `<li class="muted">${esc(x)}</li>`).join("") || (n.evidence ? "" : "<li>–</li>")}</ul>
-    <div class="go">${link ? `<button class="btn" data-go="${link}">Open in ${link === "power" ? "Power" : "Experts"}</button>` : ""}${n.partners.includes("meta") ? `<button class="btn" data-go="meta">Show everything Meta did</button>` : ""}</div>`;
+    <div class="go">${link ? `<button class="btn" data-go="${link}">${link === "experts" ? "Show expert details" : "Open rack map"}</button>` : ""}${n.partners.includes("meta") ? `<button class="btn" data-go="meta">Show everything Meta did</button>` : ""}</div>`;
 }
