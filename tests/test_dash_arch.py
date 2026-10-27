@@ -305,25 +305,12 @@ def test_room_module_is_served_for_run_events() -> None:
 
 
 # ---- single Architecture page: the Experts and Power/Room tabs are merged in --
-def test_nav_has_only_the_architecture_tab():
-    """The top nav and the drawer list one tab: Architecture."""
+def test_power_and_experts_tabs_are_kept():
+    """Power and Experts stay as their own tabs next to Architecture."""
     html = (ROOT / "web" / "dash" / "index.html").read_text()
-    assert re.findall(r'data-tab="([^"]+)"', html) == ["arch"]
-    assert 'id="dPower"' not in html and 'id="dExperts"' not in html
-    assert 'id="dArch"' in html
-    assert 'id="expertCtl"' not in html
-
-
-def test_legacy_tab_urls_redirect_to_architecture():
-    """?tab=experts, ?tab=power, ?tab=room and hash routes land on Architecture."""
-    js = (ROOT / "web" / "dash" / "app.js").read_text()
-    assert "LEGACY_TABS" in js and "location.hash" in js
-    for old in ("experts", "power", "room"):
-        assert re.search(rf"""['"]{old}['"]""", js), old
-    # legacy ids resolve to the arch page with the matching drill-down, never a tab
-    assert js.count('openDrawer("arch"') >= 2
-    assert 'q.set("expert", "1")' in js and 'q.set("room", "sam")' in js
-
+    for tab in ('data-tab="power"', 'data-tab="experts"', 'data-tab="arch"'):
+        assert tab in html
+    assert 'id="flowwrap"' in html and 'id="orch"' in html
 
 def test_arch_expert_toggle_and_room_drilldown():
     """An Expert toggle in the Architecture toolbar; the rack map opens the racks."""
