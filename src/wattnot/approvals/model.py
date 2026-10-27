@@ -24,8 +24,9 @@ POWER_CAP = "power_cap"          # a GPU power limit
 VLLM_CONFIG = "vllm_config"      # vLLM batch / KV cache / quantization settings
 CLOUD_POLICY = "cloud_policy"    # hosted-model effort and cache routing policy
 FLEX_SHED = "flex_shed"          # cut GPU draw for a grid event
+MOE_ROUTING = "moe_routing"      # MoE routing knob: adaptive top-k (off unless approved)
 TRIAL_GRANT = "trial_grant"      # permission to try changes inside bounds, to take measurements
-KINDS = (POWER_CAP, VLLM_CONFIG, CLOUD_POLICY, FLEX_SHED, TRIAL_GRANT)
+KINDS = (POWER_CAP, VLLM_CONFIG, CLOUD_POLICY, FLEX_SHED, MOE_ROUTING, TRIAL_GRANT)
 
 # Commit = leave the change in place. Trial = change things temporarily to measure, then restore.
 COMMIT, TRIAL = "commit", "trial"

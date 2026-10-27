@@ -223,7 +223,7 @@ prints at start-up). Errors are `{"code": "not_found" | "conflict" | "unauthoriz
 {
   "format": "wattnot.proposal/1",
   "id": "prop_20261027_070029_5103cc05",
-  "kind": "power_cap" | "vllm_config" | "cloud_policy" | "flex_shed" | "trial_grant",
+  "kind": "power_cap" | "vllm_config" | "cloud_policy" | "flex_shed" | "moe_routing" | "trial_grant",
   "scope": "commit" | "trial",           // trial = changes are put back; only trial_grant
   "title": "Cap GPU 0 at 500 W",
   "summary": "Lower the power limit from 700 W to 500 W.",
@@ -238,6 +238,8 @@ prints at start-up). Errors are `{"code": "not_found" | "conflict" | "unauthoriz
     "after":  { "power_cap_w": 500 }
     // vllm_config: { target, before, after, changed: [...] }
     // cloud_policy: after = { effort_by_class, reference_effort, cache }
+    // moe_routing: { target: "moe:<model>", before: { adaptive_topk: false },
+    //                after: { adaptive_topk: true, adaptive_mass, model, implementation } }
     // trial_grant: { bounds: { power_cap_w: {min, max}, gpus: [..], ... }, restores_on_exit }
   },
   "savings": [ { "metric": "energy per good answer", "value": 18.0, "unit": "%",

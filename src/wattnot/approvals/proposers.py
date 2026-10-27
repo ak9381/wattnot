@@ -193,6 +193,51 @@ def from_cloud_receipt(receipt: Mapping, *, source: Mapping | None = None,
             **({"ttl_s": ttl_s} if ttl_s else {})}
 
 
+def from_moe_receipt(receipt: Mapping, *, source: Mapping | None = None,
+                     ttl_s: float | None = None) -> dict:
+    """A `moe_routing` proposal from an adaptive top-k receipt. Only call it when the receipt's
+    gates all passed (`moe_adaptive_topk.all_gates_passed`); a failed trial is a result, not a
+    proposal. The setting is OFF until a person approves and applies this."""
+    blk = receipt["moe_adaptive_topk"]
+    label = blk["label"]
+    j, ex = blk["joules_per_token"], blk["active_experts"]
+    mass, model = blk["adaptive_mass"], receipt["subject"]["model"]
+    savings = [{"metric": "joules per token", "value": _round(j["saving_pct"], 2), "unit": "%",
+                "label": label, "baseline": j["off"]["mean"], "candidate": j["on"]["mean"],
+                "basis": f"NVML energy counter, repeats alternated, on lower in "
+                         f"{j['pairs_on_lower']} pairs" if label == "MEASURED"
+                         else "software model, not hardware"}]
+    if ex.get("reduction_pct") is not None:
+        savings.append({"metric": "experts used per token", "value": _round(ex["reduction_pct"], 1),
+                        "unit": "%", "label": label, "baseline": ex["off_mean"],
+                        "candidate": ex["on_mean"], "basis": "counted in the router hook"})
+    g = blk["gates"]
+    checks = {"quality": {"passed": g["quality"]["passed"], "gate": g["quality"]["gate"],
+                          "detail": f"token agreement {g['quality']['agreement_pct']}% with "
+                                    "normal top-k"},
+              "p99": {"passed": g["p99"]["passed"], "gate": g["p99"]["gate"],
+                      "detail": "p99 per prompt, adaptive vs normal top-k",
+                      "baseline_ms": blk["p99_ms"]["off"], "candidate_ms": blk["p99_ms"]["on"],
+                      "increase_pct": _round(g["p99"]["increase_pct"], 1)}}
+    prev = _preview("moe_adaptive_topk", label, grade=receipt.get("grade"), receipt=receipt,
+                    will_claim=["joules per token, adaptive vs normal top-k, same load",
+                                "token agreement and p99 against normal top-k"],
+                    not_claimed=list(blk["not_claimed"]))
+    return {"kind": m.MOE_ROUTING,
+            "title": f"Adaptive top-k (mass {mass:g}) on {model}",
+            "summary": f"Skip the experts a token does not need: keep the top experts until "
+                       f"{mass:g} of the router weight is covered. A known technique; it is "
+                       f"off today. Measured against normal top-k with a transformers hook; "
+                       f"label {label}. Not a vLLM kernel result.",
+            "change": {"target": f"moe:{model}", "before": {"adaptive_topk": False},
+                       "after": {"adaptive_topk": True, "adaptive_mass": mass, "model": model,
+                                 "implementation": "transformers hook"}},
+            "savings": savings, "checks": checks, "receipt_preview": prev,
+            "source": {"tool": "wattnot runbook adaptive_topk",
+                       "receipt_id": receipt.get("receipt_id"), **dict(source or {})},
+            **({"ttl_s": ttl_s} if ttl_s else {})}
+
+
 def flex_shed_spec(event: Mapping, *, estimate: Mapping, gpu: int = 0,
                    source: Mapping | None = None, ttl_s: float | None = None) -> dict:
     """A `flex_shed` proposal for one grid event. `estimate` is a dry run on the software

@@ -14,12 +14,16 @@ Stages, in order. Each writes into OUT and the next only runs if it passed:
   best      fresh 5 vs 5 re-run of the lowest passing cap from the sweep, receipt
   ablation  cold / Spark-warm / grid Optuna, real objective, target = best seen
   budget2   2-GPU power-budget re-run (only when 2+ GPUs are visible)
+  adaptive_topk  OPTIONAL, off by default: adaptive top-k on vs off on a small MoE model
+            (about 25 min). Runs last. It never changes the exit code (see below).
 
 Models run in order: Muse Glimmer 30B (default), Muse Spark Open (only on a box with
 700 GB+ VRAM, e.g. 8x H200; skipped and recorded otherwise), Llama 3.1 8B (comparison).
 Exit codes: 0 ok, 10 setup failed, 20 probe failed (release the GPU), 30 a later
 stage failed (results so far are kept), 50 nobody approved the session (nothing was
-changed). Receipts are signed with an offline test key only; nothing is published.
+changed). The optional adaptive_topk stage cannot change these: if it fails or is skipped the
+failure is written to summary.json and the exit code stays what the other stages decided.
+Receipts are signed with an offline test key only; nothing is published.
 
 Approve before apply: a real rig changes power caps and restarts vLLM, so it first asks for
 a trial grant (what it may try, within bounds; see docs/APPROVALS.md). A person approves it
@@ -71,7 +75,11 @@ from wattnot.verify import verify_receipt
 
 STAGES = ("setup", "probe", "sweep", "headline", "best", "ablation", "budget2")
 # `flex` is opt-in (about 25 min of GPU time): it never runs unless asked for by name.
-ORDER = ("setup", "probe", "flex", "sweep", "headline", "best", "ablation", "budget2")
+ORDER = ("setup", "probe", "flex", "sweep", "headline", "best", "ablation", "budget2",
+         "adaptive_topk")
+# Optional stages never decide the exit code and never stop the stages after them. Today it is the
+# last one, so it also never delays a core result.
+OPTIONAL = ("adaptive_topk",)
 KIT_STAGES = ("setup", "probe", "flex", "sweep", "best")  # the Oct 30 H100 kit
 FLEX_EVENTS = Path(__file__).resolve().parents[2] / "data" / "flex" / "h100-events.json"
 EXIT_SETUP, EXIT_PROBE, EXIT_STAGE, EXIT_APPROVAL = 10, 20, 30, 50
@@ -97,6 +105,10 @@ class Plan:
     flex_pre_s: int = 30      # flex stage: seconds measured before each event
     flex_post_s: int = 90     # flex stage: seconds of ramp-back after each event
     flex_events: str = str(FLEX_EVENTS)
+    adaptive_mass: float = 0.9      # adaptive_topk stage: share of router weight to keep
+    adaptive_model: str = ""        # adaptive_topk stage: MoE model ("" = the documented default)
+    adaptive_budget_s: float = 1500.0
+    adaptive_min_agree: float = 95.0
     models: tuple[ServedModel, ...] = RUN_ORDER
     extra: dict = field(default_factory=dict)
 
@@ -183,6 +195,9 @@ class FakeRig:
 
     def idle_w(self) -> float:
         return 70.0
+
+    def release_gpu(self) -> None:
+        pass
 
     def close(self) -> None:
         pass
@@ -392,6 +407,10 @@ class RealRig:  # pragma: no cover - needs a GPU host
         m.start("idle")
         time.sleep(60)
         return m.stop().mean_w
+
+    def release_gpu(self) -> None:
+        """Stop vLLM so another process (the adaptive top-k stage) can use the GPU memory."""
+        self._stop()
 
     def close(self) -> None:
         self._stop()
@@ -682,9 +701,66 @@ class Runbook:
         self.summary["budget2"] = r
         return r["verify_ok"]
 
+    def adaptive_topk(self) -> bool:
+        """OPTIONAL: adaptive top-k vs normal top-k on a small MoE model, same load, joules per
+        token from the NVML energy counter. Runs under the trial grant, writes a signed receipt
+        and, only if the quality, p99 and energy gates all passed, files a PENDING `moe_routing`
+        proposal (nothing is switched on). Raises on any failure; `run` records it and moves on."""
+        from wattnot.moe import adaptive_topk as at
+
+        cfg = at.AdaptiveConfig(
+            model=self.plan.adaptive_model or at.DEFAULT_MODEL, mass=self.plan.adaptive_mass,
+            budget_s=self.plan.adaptive_budget_s, min_agreement_pct=self.plan.adaptive_min_agree)
+        backend = _adaptive_backend(self.rig, cfg)
+        res = at.run_trial(backend, cfg, session=getattr(self.rig, "session", None))
+        out = self.out / "adaptive_topk"
+        s = at.summarize(res)
+        self.summary["adaptive_topk"] = info = {
+            "label": s["label"], "model": cfg.model, "mass": cfg.mass,
+            "saving_pct_j_per_token": round(s["saving_pct"], 2),
+            "agreement_pct": round(float(res.agreement["pct"]), 2),
+            "p99_increase_pct": round(s["p99_increase_pct"], 2),
+            "reps": {"off": s["off"]["reps"], "on": s["on"]["reps"]},
+            "gates": s["gates"], "truncated": res.truncated, "seconds": round(res.seconds, 1),
+            "known_technique": True, "prior_art": list(at.PRIOR_ART)}
+        approval = None
+        sess = getattr(self.rig, "session", None)
+        if self.approvals is not None and sess is not None and sess.id:
+            approval = self.approvals.receipt_block(sess.id)
+        w = at.write_receipt(res, out, sign_key=str(self.key), approval=approval)
+        rep = verify_receipt(Path(w["path"]))
+        info["receipt"] = str(Path(w["path"]).relative_to(self.out))
+        info["verify_ok"] = all(st.ok for st in rep.steps if st.name != "rekor")
+        info["grade"] = rep.grade
+        if s["all_gates_passed"] and self.approvals is not None:
+            from wattnot.approvals.proposers import from_moe_receipt
+
+            p = self.approvals.propose(from_moe_receipt(
+                w["receipt"], source={"run_tag": self.tag}, ttl_s=7 * 86400))
+            self.proposal_ids.append(p["id"])
+            info["proposal"] = p["id"]
+        else:
+            info["proposal"] = None
+            info["not_proposed"] = [k for k, g in s["gates"].items() if not g["passed"]] or \
+                ["no approvals store"]
+        return info["verify_ok"]
+
+
+def _adaptive_backend(rig, cfg):
+    """The backend for the adaptive top-k stage: a simulator on the fake rig, transformers on a
+    real one."""
+    from wattnot.moe.adaptive_topk import FakeMoeBackend
+
+    if rig.provider == "fake":
+        return FakeMoeBackend(fail=getattr(rig, "adaptive_fail", None))
+    from wattnot.moe.hf_backend import HFBackend  # pragma: no cover - needs a GPU host
+
+    return HFBackend(cfg, rig)  # pragma: no cover
+
 
 def _session_bounds(rig, plan: Plan, stages) -> dict:
-    """What a run may try: caps within the hardware range, vLLM restarts, and the flex events."""
+    """What a run may try: caps within the hardware range, vLLM restarts, the flex events and,
+    only when the adaptive top-k stage is in the run, that one trial."""
     lo, hi = rig.cap_bounds()
     b: dict = {"power_cap_w": {"min": lo, "max": hi}, "gpus": list(range(rig.gpus)),
                "vllm_config": True}
@@ -694,6 +770,10 @@ def _session_bounds(rig, plan: Plan, stages) -> dict:
         evs = fsig.load(plan.flex_events).events
         b["flex_shed"] = {"max_target_pct": max(e.target_pct for e in evs),
                           "max_duration_s": max(e.duration_s for e in evs)}
+    if "adaptive_topk" in stages:
+        from wattnot.moe.adaptive_topk import MAX_MASS, MIN_MASS
+
+        b["moe_routing"] = {"min_mass": MIN_MASS, "max_mass": MAX_MASS}
     return b
 
 
@@ -737,7 +817,7 @@ def run(rig, out: str | Path, *, plan: Plan | None = None, stages=STAGES,
              "flex": (rb.flex, EXIT_STAGE),
              "sweep": (rb.sweep, EXIT_STAGE), "headline": (rb.headline, EXIT_STAGE),
              "best": (rb.best_rerun, EXIT_STAGE), "ablation": (rb.ablation_stage, EXIT_STAGE),
-             "budget2": (rb.budget2, EXIT_STAGE)}
+             "budget2": (rb.budget2, EXIT_STAGE), "adaptive_topk": (rb.adaptive_topk, EXIT_STAGE)}
     code = 0
     session = gate.session(
         title=f"WattNot run {tag}: try power caps and vLLM settings on {rig.gpu}",
@@ -769,6 +849,11 @@ def run(rig, out: str | Path, *, plan: Plan | None = None, stages=STAGES,
                                           **({"error": err} if err else {})}
             print(f"[{name}] {'ok' if ok else 'FAILED'}" + (f": {err}" if err else ""),
                   flush=True)
+            if not ok and name in OPTIONAL:
+                rb.summary["stages"][name]["optional"] = True
+                print(f"[{name}] is optional: the rest of the run and the exit code are "
+                      "unaffected", flush=True)
+                continue
             if not ok:
                 code = steps[name][1]
                 if name == "probe":
@@ -830,6 +915,19 @@ def main(argv=None) -> int:
     ap.add_argument("--flex-rps", type=float, default=8.0,
                     help="flex stage: load generator requests per second")
     ap.add_argument("--fail-probe", action="store_true", help="fake rig: simulate a no-go")
+    ap.add_argument("--adaptive-topk", action="store_true",
+                    help="also run the OPTIONAL adaptive top-k trial after the other stages "
+                         "(off by default; about 25 min of GPU time, see docs/ADAPTIVE-TOPK.md)")
+    ap.add_argument("--adaptive-mass", type=float, default=0.9,
+                    help="adaptive top-k: share of router weight to keep per token (default 0.9)")
+    ap.add_argument("--adaptive-model", default="",
+                    help="adaptive top-k: MoE model repo (default: the documented Granite model)")
+    ap.add_argument("--adaptive-budget-s", type=float, default=1500.0,
+                    help="adaptive top-k: time box for the whole stage (default 1500 s)")
+    ap.add_argument("--adaptive-min-agree", type=float, default=95.0,
+                    help="adaptive top-k: quality gate, token agreement with normal top-k (%%)")
+    ap.add_argument("--adaptive-fail", choices=("prepare", "generate"), default=None,
+                    help="fake rig: make the adaptive trial fail, to check the rest still passes")
     ap.add_argument("--pre-approved", metavar="NAME", default=None,
                     help="a person approved this whole session in advance; NAME goes in the audit "
                          "trail. Without it a real rig waits for `wattnot proposals approve`")
@@ -839,7 +937,17 @@ def main(argv=None) -> int:
                     help="where proposals and the audit trail live "
                          "(default $WATTNOT_PROPOSALS_DIR or ./proposals)")
     a = ap.parse_args(argv)
-    plan = Plan(spark=a.spark, flex_rps=a.flex_rps)
+    if "adaptive_topk" in a.stages or a.adaptive_topk:
+        from wattnot.moe.adaptive_topk import MAX_MASS, MIN_MASS
+
+        if not MIN_MASS <= a.adaptive_mass <= MAX_MASS:
+            ap.error(f"--adaptive-mass must be between {MIN_MASS} and {MAX_MASS}")
+    stages = tuple(a.stages.split(","))
+    if a.adaptive_topk and "adaptive_topk" not in stages:
+        stages += ("adaptive_topk",)
+    plan = Plan(spark=a.spark, flex_rps=a.flex_rps, adaptive_mass=a.adaptive_mass,
+                adaptive_model=a.adaptive_model, adaptive_budget_s=a.adaptive_budget_s,
+                adaptive_min_agree=a.adaptive_min_agree)
     if a.quick:
         plan = replace(plan, caps=(700, 600, 500), reps=5, repeat=1, concurrency=1,
                        ablation_trials=4)
@@ -862,7 +970,8 @@ def main(argv=None) -> int:
             print(f"PRE-APPROVED by flag ({a.pre_approved}): this run may change power caps "
                   "and restart vLLM inside the bounds in its grant. Recorded in the audit "
                   "trail.", flush=True)
-    return run(rig, out, plan=plan, stages=tuple(a.stages.split(",")), gate=gate)
+    rig.adaptive_fail = a.adaptive_fail  # only the fake backend looks at this
+    return run(rig, out, plan=plan, stages=stages, gate=gate)
 
 
 if __name__ == "__main__":

@@ -16,7 +16,7 @@ from wattnot.approvals.store import resolve_root
 
 
 def read_active(kind: str, root: str | Path | None = None) -> dict | None:
-    """The settings last applied for `kind` (`vllm_config` or `cloud_policy`), or None.
+    """The settings last applied for `kind` (`vllm_config`, `cloud_policy`, `moe_routing`), or None.
     The result has `proposal_id`, `content_sha256`, `label` and the `config` itself
     (plus `vllm_args` for vLLM)."""
     f = resolve_root(root) / "active" / f"{kind}.json"

@@ -22,12 +22,25 @@
 # failed (results so far are kept), 40 ran clean but a receipt is not labelled as expected
 # (a real run must be all MEASURED; a --fake run all SIMULATED), 50 nobody approved the
 # session (nothing was changed).
+# OPTIONAL fourth job, off by default: --adaptive-topk [--adaptive-mass 0.9]
+#   4. adaptive_topk (~25 min, runs last)  adaptive top-k vs normal top-k on a small MoE model
+#                          (default Granite 3.1 3B-A800M, fits one H100 80GB): joules per token
+#                          from the NVML energy counter, p99, and agreement with normal top-k.
+#                          A KNOWN technique (see docs/ADAPTIVE-TOPK.md); it runs through
+#                          transformers, not vLLM. One signed receipt (MEASURED), and a pending
+#                          proposal only if the quality, p99 and energy gates all pass.
+#                          Add --adaptive-model REPO to try another Granite MoE.
+#   It is time-boxed (--adaptive-budget-s, default 1500) and cannot change the exit codes
+#   above: if it fails or is skipped, summary.json says so and the code stays what the other
+#   jobs decided. It needs the trial grant, so --pre-approved covers it like the rest.
+#   bash scripts/h100_oct30.sh --pre-approved --approved-by NAME --adaptive-topk --adaptive-mass 0.9
+#   bash scripts/h100_oct30.sh --fake --adaptive-topk        # dry run, SIMULATED
 # Results: results/h100-oct30-<time>/ plus results/h100-oct30-<time>.tar.gz to copy back.
 # Receipts are signed with an offline test key. Nothing is published, no Rekor.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 OUT="results/h100-oct30-$(date -u +%Y%m%d-%H%M%S)"
-RIG=real; EXTRA=(); PRE=0; WHO="${WATTNOT_APPROVER:-$(id -un 2>/dev/null || echo unknown)}"
+RIG=real; EXTRA=(); PRE=0; ADAPT=0; MASS=0.9; STAGES=setup,probe,flex,sweep,best; WHO="${WATTNOT_APPROVER:-$(id -un 2>/dev/null || echo unknown)}"
 while [ $# -gt 0 ]; do
   case "$1" in
     --fake) RIG=fake; EXTRA+=(--quick) ;;
@@ -37,11 +50,18 @@ while [ $# -gt 0 ]; do
     --pre-approved) PRE=1 ;;
     --approved-by) WHO="$2"; shift ;;
     --approval-wait-s) EXTRA+=("$1" "$2"); shift ;;
-    -h|--help) sed -n '2,28p' "$0"; exit 0 ;;
+    --adaptive-topk) ADAPT=1 ;;
+    --adaptive-mass) MASS="$2"; shift ;;
+    --adaptive-model|--adaptive-budget-s|--adaptive-min-agree) EXTRA+=("$1" "$2"); shift ;;
+    -h|--help) sed -n '2,/^set -e/{/^set -e/!p}' "$0"; exit 0 ;;
     *) echo "unknown option: $1 (try --help)"; exit 2 ;;
   esac
   shift
 done
+if ! awk -v m="$MASS" 'BEGIN { exit !(m ~ /^[0-9.]+$/ && m >= 0.5 && m < 1) }'; then
+  echo "--adaptive-mass must be a number from 0.5 up to (not including) 1, got: $MASS"; exit 2
+fi
+if [ "$ADAPT" = 1 ]; then STAGES="$STAGES,adaptive_topk"; EXTRA+=(--adaptive-topk --adaptive-mass "$MASS"); fi
 if [ "$RIG" = real ]; then
   if [ ! -d .venv ]; then python3 -m venv .venv; fi
   # shellcheck disable=SC1091
@@ -52,6 +72,10 @@ if [ "$RIG" = real ]; then
   command -v nvidia-smi >/dev/null || { echo "no nvidia-smi: not a GPU host"; exit 10; }
   command -v docker >/dev/null || echo "warning: docker missing; Muse Glimmer needs vllm/vllm-openai:muse-glimmer"
   python -c "import vllm" 2>/dev/null || $PIP install -q vllm  # for Llama 3.1 8B
+  if [ "$ADAPT" = 1 ]; then  # the adaptive top-k stage runs on transformers; a failure here only skips it
+    python -c "import transformers, accelerate" 2>/dev/null || $PIP install -q transformers accelerate \
+      || echo "warning: could not install transformers; the adaptive_topk stage will fail (optional)"
+  fi
 elif ! python3 -c "import wattnot" 2>/dev/null; then
   export PYTHONPATH="$PWD/src${PYTHONPATH:+:$PYTHONPATH}"
 fi
@@ -60,7 +84,7 @@ if [ "$RIG" = fake ]; then PROPS="$OUT/proposals"; else PROPS="${WATTNOT_PROPOSA
 EXTRA+=(--proposals-dir "$PROPS")
 if [ "$PRE" = 1 ]; then EXTRA+=(--pre-approved "h100_oct30.sh (by $WHO)"); fi
 set +e
-$PY -m wattnot.runbook --rig "$RIG" --out "$OUT" --stages setup,probe,flex,sweep,best "${EXTRA[@]}"
+$PY -m wattnot.runbook --rig "$RIG" --out "$OUT" --stages "$STAGES" "${EXTRA[@]}"
 code=$?
 set -e
 want=MEASURED; [ "$RIG" = fake ] && want=SIMULATED

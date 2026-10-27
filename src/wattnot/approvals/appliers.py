@@ -9,7 +9,8 @@ An applier has two methods:
 pre-approved flag, or a policy the human enabled) has approved. Three are built in:
 
 * `PowerCapApplier`   sets a GPU power limit and remembers the old one.
-* `ConfigFileApplier` writes `active/<kind>.json` (vLLM settings, routing policy) and keeps
+* `ConfigFileApplier` writes `active/<kind>.json` (vLLM settings, routing policy, adaptive
+                      top-k setting) and keeps
                       the previous file for rollback. WattNot does not restart a running
                       server; whatever serves traffic reads this file.
 * `CallbackApplier`   wraps two functions, for tests and for callers with their own apply.
@@ -144,7 +145,8 @@ def _vllm_args(cfg: Mapping) -> list[str] | None:
 def standard(store: Store) -> dict[str, Applier]:
     """The appliers that need no hardware handle."""
     return {m.VLLM_CONFIG: ConfigFileApplier(store, m.VLLM_CONFIG),
-            m.CLOUD_POLICY: ConfigFileApplier(store, m.CLOUD_POLICY)}
+            m.CLOUD_POLICY: ConfigFileApplier(store, m.CLOUD_POLICY),
+            m.MOE_ROUTING: ConfigFileApplier(store, m.MOE_ROUTING)}
 
 
 class _FlexRestore:
