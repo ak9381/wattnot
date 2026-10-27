@@ -30,6 +30,7 @@ export const DEEP = { adaptive: "experts", sam: "room" };
 export class ArchView {
   constructor(host, data, o = {}) {
     this.host = host; this.d = data; this.o = o; this.pins = new Set(); this.timing = {}; this.token = 0; this.paused = false;
+    this.phase = 2; this.skipped = new Set();
     this.nodes = data.nodes.filter((n) => !o.ids || o.ids.includes(n.id));
     if (o.ids) this.nodes.sort((a, b) => o.ids.indexOf(a.id) - o.ids.indexOf(b.id));
     this.ids = new Set(this.nodes.map((n) => n.id));
@@ -132,8 +133,29 @@ export class ArchView {
     for (const [k, p] of this.paths) if (!seen.has(k)) { p._pk?.remove(); p.remove(); this.paths.delete(k); }
     this.paintEdges();
   }
+  // Two-phase replay: in Phase 1 ("Without WattNot") only the bundle's baseline
+  // nodes stay lit; every WattNot-only block is greyed out with a small tag.
+  // Which nodes those are comes from the node data (baseline: true), decided
+  // by the bundle builder — never from a list here. An old bundle without the
+  // flag keeps everything active, exactly as before.
+  setPhase(p) {
+    this.phase = p;
+    const base = new Set(this.d.nodes.filter((n) => n.baseline).map((n) => n.id));
+    this.skipped = (p === 1 && base.size) ? new Set([...this.ids].filter((id) => !base.has(id))) : new Set();
+    for (const n of this.nodes) {
+      const el = this.el(n.id); if (!el) continue;
+      const sk = this.skipped.has(n.id);
+      el.classList.toggle("skipped", sk);
+      let tag = el.querySelector(".ft .skiptag");
+      if (sk && !tag) { tag = document.createElement("span"); tag.className = "skiptag"; tag.textContent = "skipped in baseline"; el.querySelector(".ft")?.appendChild(tag); }
+      if (!sk && tag) tag.remove();
+    }
+    this.paintEdges();
+  }
   // Marching-ants state of one edge: flow (data moving in), done (static, dim) or idle.
+  // In Phase 1 the ants run only along edges between blocks that stay active.
   edgeState(f, t) {
+    if (this.phase === 1 && (this.skipped.has(f) || this.skipped.has(t))) return "idle";
     const sf = this.state[f], st = this.state[t];
     if (has(st, "on") && (has(sf, "on") || has(sf, "done"))) return this.paused ? "flow paused" : "flow";
     if (has(sf, "done") && has(st, "done")) return "done";
@@ -203,7 +225,9 @@ export class ArchView {
   setState(id, s) { this.state[id] = s; const el = this.el(id); if (!el) return; el.classList.toggle("on", has(s, "on")); el.classList.toggle("done", has(s, "done")); el.classList.toggle("fail", has(s, "fail")); this.paintEdges(); }
   reset() {
     this.stop(); this.state = {}; this.subOn = {};
-    this.root.querySelectorAll(".avn").forEach((el) => { el.classList.remove("on", "done", "fail"); el.querySelector(".now").textContent = ""; if (!this.pins.has(el.dataset.id)) { el.classList.remove("open"); el.querySelector(".subs").style.cssText = ""; this.syncToggle(el.dataset.id, false); } });
+    this.phase = 2; this.skipped = new Set();
+    this.root.querySelectorAll(".skiptag").forEach((t) => t.remove());
+    this.root.querySelectorAll(".avn").forEach((el) => { el.classList.remove("on", "done", "fail", "skipped"); el.querySelector(".now").textContent = ""; if (!this.pins.has(el.dataset.id)) { el.classList.remove("open"); el.querySelector(".subs").style.cssText = ""; this.syncToggle(el.dataset.id, false); } });
     this.root.querySelectorAll(".sub").forEach((b) => b.classList.remove("on", "done", "bad"));
     this.root.querySelectorAll(".lnk").forEach((b) => b.classList.remove("live"));
     this.layoutEdges();
@@ -241,8 +265,8 @@ export class ArchView {
   stop() { this.token++; this.paused = false; }
   pause() { this.paused = true; this.paintEdges(); } resume() { this.paused = false; this.paintEdges(); }
   wait(ms, tok) { return new Promise((r) => { const t0 = performance.now(); const f = () => { if (tok !== this.token) return r(false); if (this.paused) { return setTimeout(f, 60); } performance.now() - t0 >= ms ? r(true) : setTimeout(f, 30); }; f(); }); }
-  async play(cues, { speed = 1, gap = 950 } = {}) {
-    this.reset(); const tok = this.token;
+  async play(cues, { speed = 1, gap = 950, phase = 2 } = {}) {
+    this.reset(); this.setPhase(phase); const tok = this.token;
     for (let i = 0; i < cues.length; i++) {
       const c = cues[i]; this.o.onProgress?.(i, cues.length);
       if (!(await this.wait(120 / speed, tok))) return false;

@@ -45,6 +45,11 @@ import { Product } from "./product.js";
 import { mountRoomScan } from "./roomnode.js";
 import { createState, replayAll, groupTotals, jPerSlot } from "./core.js";
 import { heatSvg, heatLegend, wireHeat } from "./heat.js";
+import { clock } from "./replayclock.js";
+
+// The two phases of every replay: first the stock baseline without WattNot,
+// then the full run with it. Shown in the toolbar and the meter strip.
+export const PHASE_LABEL = { 1: "Phase 1 of 2 · Without WattNot (baseline)", 2: "Phase 2 of 2 · With WattNot" };
 
 const $ = (s, r = document) => r.querySelector(s);
 const G = () => window.gsap;
@@ -72,11 +77,12 @@ export function livePhrase(ev) {
 export class ArchPage {
   constructor(host, data, hooks) {
     this.host = host; this.d = data; this.h = hooks; this.speed = 2; this.replay = "h100"; this.filter = null;
+    this.phase = 1; this._p0 = 0; this._p1 = 1;
     host.innerHTML = `<div class="archmode" role="group" aria-label="architecture view"><button data-m="pipe" class="on" aria-pressed="true">Run pipeline</button><button data-m="all" aria-pressed="false">All modules</button>
       <span class="muted" id="amodeNote">The real steps of one run, lit up as its events arrive. Click a step for its sub-steps and numbers.</span></div>
       <div id="apipe" class="apipe"></div><div id="aall" hidden><div class="archbar"><label class="muted" for="rsel">Replay</label><select id="rsel" class="btn" aria-label="recorded run to replay"></select>
       <button class="btn pri" id="aplay">Play</button><button class="btn" id="apause">Pause</button><button class="btn" id="areset">Reset</button><button class="btn" id="aexpand">Expand all</button><button class="btn" id="acollapse">Collapse all</button><button class="btn" id="aexpert" aria-pressed="false" title="Show the mixture-of-experts routing details from the Experts view">Expert</button>
-      <span class="seg" id="aspd"><button data-s="1">1×</button><button data-s="2" class="on">2×</button><button data-s="4">4×</button></span><span class="sp"></span><span class="cap" id="aprog"></span></div>
+      <span class="seg" id="aspd"><button data-s="1">1×</button><button data-s="2" class="on">2×</button><button data-s="4">4×</button></span><span class="sp"></span><span class="cap" id="aphase" aria-live="polite">Phase 1 of 2 · Without WattNot (baseline)</span><span class="cap" id="aprog"></span></div>
       <div class="mmeter" id="mmeter" aria-live="polite"></div>
       <div class="avlegend" id="afil" role="group" aria-label="filter by partner"></div>
       <div class="mstrip" id="mstrip" hidden></div>
@@ -87,7 +93,7 @@ export class ArchPage {
     $("#rsel", host).innerHTML = rs.map((r) => `<option value="${r.id}">${esc(r.title)}</option>`).join("") + `<option value="live">Live run (events file)</option>`;
     $("#afil", host).innerHTML = FILTERS.map(([id, t, c]) => `<button class="fchip ${id === "meta" ? "meta" : ""}" data-f="${id}" ${c ? `style="--c:${c}"` : ""} aria-pressed="${id === "all"}">${c ? "<i></i>" : ""}${esc(t)}${id === "meta" ? ` <span class="muted">${data.nodes.filter((n) => n.partners.includes("meta")).length} steps</span>` : ""}</button>`).join("");
     $("#mstrip", host).innerHTML = data.meta.map((m) => `<div class="mcard"><b>${esc(m.name)}</b><p>${esc(m.does)}</p>${m.stats.slice(0, 3).map((s) => statHtml(s)).join("")}</div>`).join("");
-    this.view = new ArchView($("#amap", host), data, { mode: "map", onSelect: (n, s) => this.panel(n, s), onCue: (c) => { $("#acap", host).innerHTML = `<b>${esc(this.d.nodes.find((n) => n.id === c.node).title)}</b> · ${esc(c.text)} ${c.tag ? pill(c.tag) : ""}`; }, onProgress: (i, n) => { $("#aprog", host).textContent = i >= n ? "done" : `${i + 1} of ${n}`; this.renderMeter(i); } });
+    this.view = new ArchView($("#amap", host), data, { mode: "map", onSelect: (n, s) => this.panel(n, s), onCue: (c) => { $("#acap", host).innerHTML = `<b>${esc(this.d.nodes.find((n) => n.id === c.node).title)}</b> · ${esc(c.text)} ${c.tag ? pill(c.tag) : ""}`; }, onProgress: (i, n) => { $("#aprog", host).textContent = i >= n ? "done" : `${i + 1} of ${n}`; this.renderMeter(i); clock.setProgress(this._p0 + (this._p1 - this._p0) * (i / Math.max(1, n))); } });
     this.wire(); this.mode = "pipe"; this.liveW = null; this.renderMeter(0);
   }
   setMode(m) {
@@ -107,11 +113,11 @@ export class ArchPage {
     const H = this.host;
     H.querySelectorAll(".archmode button").forEach((b) => (b.onclick = () => this.setMode(b.dataset.m)));
     $("#aplay", H).onclick = () => this.start();
-    $("#apause", H).onclick = (e) => { const b = e.currentTarget; if (this.view.paused) { this.view.resume(); b.textContent = "Pause"; } else { this.view.pause(); b.textContent = "Resume"; } };
-    $("#areset", H).onclick = () => { this.stopLive(); this.view.reset(); this.liveW = null; this.renderMeter(0); $("#aprog", H).textContent = ""; $("#apause", H).textContent = "Pause"; $("#acap", H).textContent = "Reset. Pick a replay and press Play."; };
+    $("#apause", H).onclick = (e) => { const b = e.currentTarget; if (this.view.paused) { this.view.resume(); b.textContent = "Pause"; } else { this.view.pause(); b.textContent = "Resume"; } if (this.replay !== "live") clock.setPlaying(!this.view.paused); };
+    $("#areset", H).onclick = () => { this.stopLive(); this.view.reset(); this.liveW = null; this._p0 = 0; this._p1 = 1; this.setPhase(1); clock.reset(); $("#aprog", H).textContent = ""; $("#apause", H).textContent = "Pause"; $("#acap", H).textContent = "Reset. Pick a replay and press Play."; };
     $("#aexpand", H).onclick = () => this.view.expandAll();
     $("#acollapse", H).onclick = () => this.view.collapseAll();
-    $("#rsel", H).onchange = (e) => { this.replay = e.target.value; this.view.reset(); this.liveW = null; this.renderMeter(0); if (this.replay === "live") this.startLive(); };
+    $("#rsel", H).onchange = (e) => { this.replay = e.target.value; this.view.reset(); this.liveW = null; this.phase = 1; $("#aphase", H).textContent = PHASE_LABEL[1]; this.view.setPhase(1); this.renderMeter(0); if (this.replay === "live") this.startLive(); };
     H.querySelectorAll("#aspd button").forEach((b) => (b.onclick = () => { this.speed = +b.dataset.s; H.querySelectorAll("#aspd button").forEach((x) => x.classList.toggle("on", x === b)); }));
     H.querySelectorAll("#afil button").forEach((b) => (b.onclick = () => this.setFilter(b.dataset.f)));
     $("#apx", H).onclick = () => this.closePanel();
@@ -140,9 +146,11 @@ export class ArchPage {
       return;
     }
     const r = this.d.replays[this.replay]; if (!r) { box.innerHTML = ""; return; }
-    const m = meterFor(this.d, this.replay), st = meterStage(r.cues, shown);
-    const note = ["baseline (stock settings)", "baseline, confirmed by the run so far", `−${m.lever.saved_pct}% vs baseline`][st];
-    box.innerHTML = `<div class="mm-head">Live meters ${pill("REPLAY")} <span>${esc(m.title)}</span><span class="muted">· ${esc(note)}</span></div>
+    // The meter follows the phase, not the cue count: Phase 1 shows the
+    // baseline numbers, Phase 2 the WattNot numbers with the saving vs baseline.
+    const m = meterFor(this.d, this.replay), st = this.phase === 1 ? 0 : 2;
+    const note = this.phase === 1 ? "baseline (stock settings)" : (m.lever.saved_pct != null ? `−${m.lever.saved_pct}% vs baseline` : "with WattNot");
+    box.innerHTML = `<div class="mm-head">Live meters ${pill("REPLAY")} <span>${esc(m.title)}</span><span class="muted">· ${esc(note)}</span><span class="muted">· ${esc(PHASE_LABEL[this.phase])}</span></div>
       <div class="mm-grid">${m.tiles.map((t) => `<div class="mm${t.k === "water" ? " water" : ""}"><span class="mk">${esc(t.label)}</span><span class="mv num">${esc(st >= 2 ? t.after : t.before)}</span> ${pill(t.tag)}<span class="ms">${esc(t.sub)}</span></div>`).join("")}</div>
       <span class="mm-foot">${esc(m.foot)}</span>`;
   }
@@ -154,10 +162,37 @@ export class ArchPage {
     else if (f && f !== "all") $("#acap", this.host).innerHTML = `Highlighting every step ${esc(this.d.partners[f].name)} did real work in.`;
     requestAnimationFrame(() => this.view.layoutEdges());
   }
+  // Every replay runs in two phases: Phase 1 lights only the baseline blocks
+  // (load, meter, rig), Phase 2 the full path with WattNot. The shared clock
+  // carries play/pause/progress/phase to the Power and Experts tabs.
+  setPhase(p) {
+    this.phase = p;
+    $("#aphase", this.host).textContent = PHASE_LABEL[p];
+    this.view.setPhase(p);
+    this.renderMeter(0);
+    clock.setPhase(p);
+  }
+  baselineCues(cues) {
+    const base = new Set(this.d.nodes.filter((n) => n.baseline).map((n) => n.id));
+    if (!base.size) return [];
+    return cues.filter((c) => base.has(c.node));
+  }
   async start() {
     this.stopLive(); if (this.replay === "live") return this.startLive();
     const r = this.d.replays[this.replay]; $("#acap", this.host).innerHTML = esc(r.note); $("#apause", this.host).textContent = "Pause";
-    await this.view.play(r.cues, { speed: this.speed });
+    clock.reset();
+    const first = this.baselineCues(r.cues);
+    clock.setPlaying(true);
+    if (first.length && first.length < r.cues.length) {
+      this._p0 = 0; this._p1 = 0.5; this.setPhase(1);
+      if (!(await this.view.play(first, { speed: this.speed, phase: 1 }))) return;
+      this._p0 = 0.5; this._p1 = 1; this.setPhase(2);
+      await this.view.play(r.cues, { speed: this.speed, phase: 2 });
+    } else {
+      this._p0 = 0; this._p1 = 1; this.setPhase(2);
+      await this.view.play(r.cues, { speed: this.speed, phase: 2 });
+    }
+    clock.setPlaying(false);
   }
   panel(n, s, view = this.view, extra = "") {
     this.cur = n; this.pv = view; const p = $("#apanel", this.host); const h = panelHtml(view, n, s);

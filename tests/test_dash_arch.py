@@ -320,6 +320,31 @@ def test_arch_expert_toggle_and_room_drilldown():
     assert "sam" in page and ("heatSvg" in page or "mountRoomScan" in page)  # rack drill-down reuses room rendering
 
 
+# ---- two-phase replay: Phase 1 baseline, Phase 2 with WattNot ----
+def test_arch_replay_has_two_phases_with_indicator():
+    """The toolbar names both phases; the meter strip follows them."""
+    page = (ROOT / "web" / "dash" / "archpage.js").read_text()
+    assert "Phase 1 of 2" in page and "Phase 2 of 2" in page
+    assert "Without WattNot" in page and "With WattNot" in page
+    assert "aphase" in page  # the toolbar phase indicator element
+
+
+def test_arch_baseline_greys_out_wattnot_blocks():
+    """In Phase 1 the WattNot-only blocks are greyed out and tagged; ants run
+    only between the blocks that stay active."""
+    js = (ROOT / "web" / "dash" / "arch.js").read_text()
+    css = (ROOT / "web" / "dash" / "story.css").read_text()
+    assert "skipped in baseline" in js
+    assert "skiptag" in js and ".skiptag" in css
+    assert ".skipped" in css
+
+
+def test_baseline_nodes_are_the_load_measure_and_rig(bundle):
+    """Exactly workload, telemetry, the H100 rig and models stay lit in Phase 1."""
+    base = {n["id"] for n in bundle["nodes"] if n.get("baseline")}
+    assert base == {"workload", "telemetry", "e2e_rig", "models"}
+
+
 def test_arch_deep_links_stay_inside_architecture():
     """No card links out to a removed Power/Experts tab anymore."""
     js = (ROOT / "web" / "dash" / "arch.js").read_text()
