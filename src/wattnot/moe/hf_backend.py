@@ -6,7 +6,8 @@ router weight, drops the rest) and swaps in an eager expert loop that skips drop
 for the threshold itself. Counters are kept on the GPU (no host sync per layer) in both arms.
 
 Only the fused-expert layout is wired: Granite MoE and Qwen3-MoE (a router called `router` or
-`gate` with `.top_k`, experts with `gate_up_proj`, `down_proj`, `act_fn`). Anything else raises `AdaptiveError` before a single watt is measured.
+`gate` with `.top_k`, experts with `gate_up_proj`, `down_proj`, `act_fn`). Anything else
+raises `AdaptiveError` before a single watt is measured.
 A one-prompt sanity check also compares the hooked "off" arm with the stock model.
 """
 
