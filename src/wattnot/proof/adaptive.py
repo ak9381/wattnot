@@ -33,7 +33,22 @@ class VmRig:
         """Stop the vLLM server from the Llama stages so the GPU memory is free."""
         with contextlib.suppress(Exception):
             subprocess.run(["pkill", "-f", "vllm serve"], check=False, timeout=30)
-        time.sleep(15)
+        time.sleep(10)
+        # the engine core is a child process and can outlive the API server: make sure it let go
+        with contextlib.suppress(Exception):
+            subprocess.run(["pkill", "-9", "-f", "VLLM::"], check=False, timeout=30)
+        for _ in range(30):
+            try:
+                out = subprocess.run(
+                    ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
+                    check=True, capture_output=True, text=True, timeout=15,
+                ).stdout
+                if int(out.split()[0]) < 2048:  # MiB: the card is free again
+                    return
+            except Exception:  # noqa: BLE001 - no reading: fall back to a fixed wait
+                time.sleep(10)
+                return
+            time.sleep(2)
 
     def meter(self, params):
         from wattnot.meter.nvml import NvmlMeter

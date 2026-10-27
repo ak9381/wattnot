@@ -1,0 +1,239 @@
+{
+  "spec": "wattnot.receipt/1",
+  "profile": "moe_adaptive_topk",
+  "receipt_id": "rcpt_moe_3d465b60d0b5",
+  "created_at": "2026-10-27T15:18:25Z",
+  "run_id": "moe_adaptive_3d465b60d0b5",
+  "subject": {
+    "model": "ibm-granite/granite-3.1-3b-a800m-instruct",
+    "host": {
+      "provider": "e2e",
+      "gpu": "NVIDIA H100 80GB HBM3",
+      "driver": "580.178.04"
+    },
+    "mode": "moe-adaptive-topk",
+    "workload": {
+      "name": "replay-v1 + flex questions",
+      "n_requests": 32,
+      "batch": 8,
+      "max_new_tokens": 64
+    }
+  },
+  "baseline": {
+    "params": {
+      "adaptive_topk": false
+    },
+    "reps": 5,
+    "wh_per_req": {
+      "mean": 0.057172816,
+      "sd": 0.001341588,
+      "samples": [
+        0.058866632,
+        0.057139705,
+        0.058115017,
+        0.056035703,
+        0.055707023
+      ]
+    },
+    "p99_ms": 14335.73,
+    "quality": {
+      "token_agreement_pct": 100.0
+    }
+  },
+  "candidate": {
+    "params": {
+      "adaptive_topk": true,
+      "adaptive_mass": 0.9
+    },
+    "reps": 5,
+    "wh_per_req": {
+      "mean": 0.053395701,
+      "sd": 0.000562987,
+      "samples": [
+        0.054167708,
+        0.053524748,
+        0.053520825,
+        0.052644922,
+        0.053120304
+      ]
+    },
+    "p99_ms": 12580.237,
+    "quality": {
+      "token_agreement_pct": 94.53
+    }
+  },
+  "result": {
+    "saving_pct": {
+      "mean": 6.6065,
+      "ci_low": null,
+      "ci_high": null,
+      "basis": "joules per token, adaptive vs normal top-k"
+    },
+    "welch": {
+      "applicable": false,
+      "reason": "a handful of repeats on one card; grade capped"
+    },
+    "billable": false,
+    "billed_saving_pct": 0.0,
+    "fee_share": 0.0,
+    "currency": "USD"
+  },
+  "measurement": {
+    "meter": "nvml",
+    "hz": 10,
+    "csv": [
+      {
+        "path": "/root/run2/results/traces/adaptive-1793113805/moe-off-0.csv",
+        "sha256": "a9357d28524cbc3f8a6a6d5c64a2f752f1699184140104cf34c45a25e1481941"
+      },
+      {
+        "path": "/root/run2/results/traces/adaptive-1793113805/moe-on-0.csv",
+        "sha256": "d8ebddbb92741a8e1635f43b83c58c053b94549fa8b564a45781b245f4ae03fb"
+      },
+      {
+        "path": "/root/run2/results/traces/adaptive-1793113805/moe-on-1.csv",
+        "sha256": "f6d8b62166a5e54f701eb57706b112d82f97a8fc1d3639ba09f0d608d1cc5532"
+      },
+      {
+        "path": "/root/run2/results/traces/adaptive-1793113805/moe-off-1.csv",
+        "sha256": "a78f4f59935a7c3597f4f8bec72924495dca867443ccbec4d32b4d246cb202ec"
+      },
+      {
+        "path": "/root/run2/results/traces/adaptive-1793113805/moe-off-2.csv",
+        "sha256": "9e07f52b14b1b74fe295f1fb910ffdc13242c3262f778a6d15be4b895522b376"
+      },
+      {
+        "path": "/root/run2/results/traces/adaptive-1793113805/moe-on-2.csv",
+        "sha256": "f2a6bc20c3a80d0eab8ae4d37b4bb4188295b52ddf2c72e02b1e385786da5e66"
+      },
+      {
+        "path": "/root/run2/results/traces/adaptive-1793113805/moe-on-3.csv",
+        "sha256": "5821437462d9ab56b0640e574c038f0a778f6bc02a4ed07a14d51501ef1d0708"
+      },
+      {
+        "path": "/root/run2/results/traces/adaptive-1793113805/moe-off-3.csv",
+        "sha256": "4359032a11501df3268b73b830e8839256fd0fd4a12f362d50593cb0d73dc9f0"
+      },
+      {
+        "path": "/root/run2/results/traces/adaptive-1793113805/moe-off-4.csv",
+        "sha256": "ddd04c9d306c669df3ccb522ac6a8a19a0f22f22d63cafc36b690b5a321baf12"
+      },
+      {
+        "path": "/root/run2/results/traces/adaptive-1793113805/moe-on-4.csv",
+        "sha256": "7f551cbf805f64c64897cd77042966841073f77f7048c190d000c80f209aec99"
+      }
+    ],
+    "label": "MEASURED"
+  },
+  "moe_adaptive_topk": {
+    "label": "MEASURED",
+    "technique": "adaptive top-k: skip experts once a share of router weight is covered",
+    "known_technique": true,
+    "prior_art": [
+      "Lu et al. 2024, Not All Experts are Equal (dynamic expert skipping), arXiv:2402.14800",
+      "Huang et al. 2024, Harder Tasks Need More Experts (top-p routing), arXiv:2403.07652",
+      "Yue et al. 2025, Ada-K Routing (learned per-token expert counts), ICLR 2025"
+    ],
+    "implementation": "transformers hook; same eager expert loop in both arms",
+    "vllm_native": false,
+    "adaptive_mass": 0.9,
+    "default": "off",
+    "joules_per_token": {
+      "off": {
+        "mean": 3.215971,
+        "sd": 0.075464,
+        "samples": [
+          3.311248,
+          3.214108,
+          3.26897,
+          3.152008,
+          3.13352
+        ]
+      },
+      "on": {
+        "mean": 3.003508,
+        "sd": 0.031668,
+        "samples": [
+          3.046934,
+          3.010767,
+          3.010546,
+          2.961277,
+          2.988017
+        ]
+      },
+      "saving_pct": 6.606,
+      "pairs_on_lower": "5/5"
+    },
+    "p99_ms": {
+      "off": 14335.73,
+      "on": 12580.237,
+      "increase_pct": -12.246,
+      "request": "one prompt; latency is its batch's generate time"
+    },
+    "active_experts": {
+      "top_k": 8,
+      "off_mean": 8.0,
+      "on_mean": 6.811,
+      "reduction_pct": 14.859
+    },
+    "agreement": {
+      "pct": 94.531,
+      "positions": 512,
+      "method": "next-token argmax vs normal top-k, teacher-forced on its greedy text"
+    },
+    "gates": {
+      "quality": {
+        "passed": false,
+        "gate": "token agreement with normal top-k >= 95%",
+        "agreement_pct": 94.53
+      },
+      "p99": {
+        "passed": true,
+        "gate": "p99 within 10% of normal top-k",
+        "increase_pct": -12.25
+      },
+      "energy": {
+        "passed": true,
+        "gate": "joules per token lower than normal top-k"
+      }
+    },
+    "all_gates_passed": false,
+    "truncated": null,
+    "seconds": 616.1,
+    "scope": "One MoE model, one GPU, one load shape, eager transformers expert loop in both arms. Not a vLLM kernel result and not a site or grid saving.",
+    "not_claimed": [
+      "not a new method: skipping low-weight experts is published prior art",
+      "no vLLM or fused-kernel claim",
+      "no site or grid level saving",
+      "no carbon claim"
+    ]
+  },
+  "planner_trace": [],
+  "joules": {
+    "unit": "J",
+    "label": "MEASURED",
+    "formula": "j_per_answer = wh_per_req x 3600; j_per_good_answer = j_per_answer / pass_rate",
+    "baseline": {
+      "j_per_answer": 205.822138,
+      "pass_rate": null,
+      "j_per_good_answer": null
+    },
+    "candidate": {
+      "j_per_answer": 192.224524,
+      "pass_rate": null,
+      "j_per_good_answer": null
+    },
+    "change_pct": {
+      "j_per_answer": -6.6065,
+      "j_per_good_answer": null
+    }
+  },
+  "grade": "ESTIMATE",
+  "integrity": {
+    "canonicalization": "JCS RFC 8785",
+    "sha256": "ccb99662ede91327b666726ce15847c3b710e69a6765b5d0a507c5f839dedb8b",
+    "prev_sha256": null,
+    "signer": null,
+    "rekor": null
+  }
+}

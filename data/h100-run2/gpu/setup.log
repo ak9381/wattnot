@@ -1,0 +1,21 @@
+[setup] 14:05:02 start
+NVIDIA H100 80GB HBM3, 580.178.04, 700.00 W, 81559 MiB
+[setup] power cap check ok: set 600 W, read back 600 W, restored 700 W
+[setup] free disk: 80 GB (need 60)
+[setup] Hugging Face access to meta-llama/Llama-3.1-8B-Instruct: HTTP 200
+/dev/vda1        95G   16G   80G  16% /
+/dev/vda1        95G   16G   80G  16% /
+[setup] python3 -m venv failed; using uv
+Using CPython 3.12.3 interpreter at: /usr/bin/python3.12
+Creating virtual environment with seed packages at: /root/venv
+ + pip==26.2.2
+Activate with: source /root/venv/bin/activate
+[setup] 14:06:13 packages installed
+vllm 0.32.0
+torch 2.13.0
+transformers 5.19.0
+accelerate 1.15.0
+huggingface_hub 2.3.0
+tokenizers 0.23.3
+/dev/vda1        95G   24G   72G  25% /
+Fetching 11 files:   0%|          | 0/11 [00:00<?, ?it/s]Fetching 11 files:   9%|▉         | 1/11 [00:00<00:04,  2.00it/s]Fetching 11 files:  18%|█▊        | 2/11 [00:00<00:04,  2.01it/s]Fetching 11 files:  27%|██▋       | 3/11 [00:02<00:07,  1.03it/s]Fetching 11 files:  36%|███▋      | 4/11 [00:03<00:05,  1.29it/s]Fetching 11 files:  45%|████▌     | 5/11 [00:03<00:04,  1.30it/s]Fetching 11 files:  55%|█████▍    | 6/11 [00:04<00:03,  1.32it/s]
