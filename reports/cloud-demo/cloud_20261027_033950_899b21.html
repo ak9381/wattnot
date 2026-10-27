@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>WattNot cloud receipt cloud_20261027_033950_899b21</title>
+<style>
+body{font:14px/1.45 system-ui,sans-serif;margin:2rem;color:#111;max-width:1100px}
+table{border-collapse:collapse;width:100%;margin:.5rem 0 1rem}
+th,td{border:1px solid #ccc;padding:.4rem .5rem;text-align:left;vertical-align:top}
+th{background:#f3f3f3}td.n{text-align:right;white-space:nowrap}td.eff{font-weight:700}
+td.sav{color:#0a6b2b;font-weight:700}ul.steps{margin:0;padding-left:1rem}
+li.ok{color:#0a6b2b}li.bad{color:#a11}li.skip{color:#777}
+.b{display:inline-block;padding:.05rem .45rem;border-radius:3px;font-size:12px;font-weight:700;color:#fff}
+.b.m{background:#0a6b2b}.b.e{background:#8a5a00}.b.s{background:#555}.b.a{background:#245}
+.b.n{background:#777}.warn{background:#fff4d6;padding:.5rem;border-left:4px solid #8a5a00}
+.big{font-size:1.5rem;margin:.5rem 0}small{color:#555}code{background:#f3f3f3;padding:0 .25rem}
+</style></head><body>
+<h1>Cloud mode receipt <span class="b s">SIMULATED</span></h1>
+<p>baseten &middot; <code>meta-models/muse-spark-open-1026</code> &middot; mode replay-synthetic
+&middot; 2026-10-27T03:39:50Z<br><small>receipt cloud_20261027_033950_899b21 &middot; sha256
+7331fcb36809320a&hellip; &middot; chained to
+none</small></p>
+<p class="warn">SIMULATED: this page was built from a made-up fixture. No API call was made.</p>
+<p class="big">$0.1367 instead of $0.3096
+at xhigh: <b>55.8% less</b> <span class="b s">SIMULATED</span></p>
+<p>Each class keeps the lowest reasoning effort that matched the xhigh answers and stayed inside
+the p99 budget, including the cost of retrying at xhigh when a cheap answer fails its check.
+30 requests, cached prompt share 0.0%. Tuning itself cost
+$0.5366 and pays back in 6.21 runs of this workload.</p>
+<table><thead><tr><th>class</th><th>kept</th><th>levels tried</th><th>completion tokens</th>
+<th>USD</th><th>tuned / xhigh</th><th>saving</th></tr></thead><tbody>
+<tr><td><b>extract</b><br><small>3 items x 2</small></td><td class="eff">low</td><td><ul class="steps"><li class="ok">low: quality 100% of 100%, p99 2.3s of 12.6s</li><li class="skip">medium: low already passed; a higher level cannot be cheaper</li><li class="skip">high: low already passed; a higher level cannot be cheaper</li></ul></td><td class="n">688<br><small>vs 5,458</small></td><td class="n">$0.0036<br><small>would have cost $0.0239</small></td><td><svg width="220" height="26" role="img" aria-label="tuned vs xhigh"><rect x="0" y="2" width="34" height="9" fill="#0a6b2b"/><rect x="0" y="14" width="220" height="9" fill="#999"/></svg></td><td class="n sav">84.8%</td></tr><tr><td><b>classify</b><br><small>3 items x 2</small></td><td class="eff">low</td><td><ul class="steps"><li class="ok">low: quality 100% of 100%, p99 2.2s of 11.0s</li><li class="skip">medium: low already passed; a higher level cannot be cheaper</li><li class="skip">high: low already passed; a higher level cannot be cheaper</li></ul></td><td class="n">604<br><small>vs 4,439</small></td><td class="n">$0.0033<br><small>would have cost $0.0196</small></td><td><svg width="220" height="26" role="img" aria-label="tuned vs xhigh"><rect x="0" y="2" width="37" height="9" fill="#0a6b2b"/><rect x="0" y="14" width="220" height="9" fill="#999"/></svg></td><td class="n sav">83.3%</td></tr><tr><td><b>trace</b><br><small>3 items x 2</small></td><td class="eff">low</td><td><ul class="steps"><li class="ok">low: quality 100% of 100%, p99 3.2s of 17.5s</li><li class="skip">medium: low already passed; a higher level cannot be cheaper</li><li class="skip">high: low already passed; a higher level cannot be cheaper</li></ul></td><td class="n">1,065<br><small>vs 7,939</small></td><td class="n">$0.0052<br><small>would have cost $0.0344</small></td><td><svg width="220" height="26" role="img" aria-label="tuned vs xhigh"><rect x="0" y="2" width="33" height="9" fill="#0a6b2b"/><rect x="0" y="14" width="220" height="9" fill="#999"/></svg></td><td class="n sav">84.9%</td></tr><tr><td><b>arith</b><br><small>3 items x 2</small></td><td class="eff">medium</td><td><ul class="steps"><li class="ok">medium: quality 100% of 100%, p99 10.0s of 36.3s</li><li class="bad">low: quality 67% of 100%, p99 30.8s of 36.3s &rarr; rejected (fixed)</li><li class="skip">high: medium already passed; a higher level cannot be cheaper</li></ul></td><td class="n">4,742<br><small>vs 15,547</small></td><td class="n">$0.0208<br><small>would have cost $0.0668</small></td><td><svg width="220" height="26" role="img" aria-label="tuned vs xhigh"><rect x="0" y="2" width="69" height="9" fill="#0a6b2b"/><rect x="0" y="14" width="220" height="9" fill="#999"/></svg></td><td class="n sav">68.8%</td></tr><tr><td><b>logic</b><br><small>3 items x 2</small></td><td class="eff">high</td><td><ul class="steps"><li class="ok">high: quality 100% of 100%, p99 46.5s of 92.0s</li><li class="bad">medium: quality 67% of 100%, p99 90.2s of 92.0s &rarr; rejected (fixed)</li><li class="bad">low: quality 0% of 100%, p99 100.7s of 92.0s &rarr; rejected (fixed+p99), 2 ran out of tokens</li></ul></td><td class="n">24,224<br><small>vs 38,621</small></td><td class="n">$0.1038<br><small>would have cost $0.1649</small></td><td><svg width="220" height="26" role="img" aria-label="tuned vs xhigh"><rect x="0" y="2" width="138" height="9" fill="#0a6b2b"/><rect x="0" y="14" width="220" height="9" fill="#999"/></svg></td><td class="n sav">37.1%</td></tr>
+</tbody></table>
+<h2>Energy <span class="b e">ESTIMATE</span></h2>
+<p>Work avoided: about <b>1.71 to 17.09 Wh</b> across
+this run. We cannot see Baseten's GPUs, so this is a FLOP count from the token counts times a
+stated joules-per-FLOP range for H100-class hardware. It is not a measurement and not a claim
+about anyone's grid.</p>
+<h2>Meter audit <span class="b s">SIMULATED</span></h2><p>Status: <b>match</b> (tolerance 2%)</p><table><tr><th>field</th><th>our receipt</th><th>Baseten usage</th><th>gap</th><th></th></tr><tr><td>requests</td><td class="n">79</td><td class="n">79</td><td class="n">0.0%</td><td>ok</td></tr><tr><td>input_tokens</td><td class="n">7,928</td><td class="n">7,928</td><td class="n">0.0%</td><td>ok</td></tr><tr><td>cached_input_tokens</td><td class="n">0</td><td class="n">0</td><td class="n">0.0%</td><td>ok</td></tr><tr><td>uncached_input_tokens</td><td class="n">7,928</td><td class="n">7,928</td><td class="n">0.0%</td><td>ok</td></tr><tr><td>output_tokens</td><td class="n">123,929</td><td class="n">124,425</td><td class="n">0.399%</td><td>ok</td></tr></table>
+<h2>Not verified</h2><ul><li>synthetic fixture: no real API call was made, every number is SIMULATED</li><li>USD rates are the published ones and not yet checked against an invoice</li></ul>
+<p><small>Labels: MEASURED comes from the API usage block and our clock. ESTIMATE is derived.
+SIMULATED came from a made-up fixture. ADVICE is a suggestion, not a result. Money in USD at
+baseten.co/library/muse-spark-open (Model API pricing), read 2026-10-27: 1.25/0.15/
+4.25 per 1M tokens (input/cached/output).</small></p>
+</body></html>

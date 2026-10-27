@@ -1,0 +1,44 @@
+{
+  "status": "match",
+  "tolerance_pct": 2.0,
+  "worst_gap_pct": 0.399,
+  "rows": [
+    {
+      "field": "requests",
+      "receipt": 79,
+      "meter": 79,
+      "gap_pct": 0.0,
+      "ok": true
+    },
+    {
+      "field": "input_tokens",
+      "receipt": 7928,
+      "meter": 7928,
+      "gap_pct": 0.0,
+      "ok": true
+    },
+    {
+      "field": "cached_input_tokens",
+      "receipt": 0,
+      "meter": 0,
+      "gap_pct": 0.0,
+      "ok": true
+    },
+    {
+      "field": "uncached_input_tokens",
+      "receipt": 7928,
+      "meter": 7928,
+      "gap_pct": 0.0,
+      "ok": true
+    },
+    {
+      "field": "output_tokens",
+      "receipt": 123929,
+      "meter": 124425,
+      "gap_pct": 0.399,
+      "ok": true
+    }
+  ],
+  "label": "SIMULATED",
+  "model": "meta-models/muse-spark-open-1026"
+}

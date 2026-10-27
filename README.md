@@ -4,6 +4,18 @@ WattNot is an agent that cuts the energy and cost of each LLM inference request 
 
 H100 run: `bash scripts/h100_run.sh --dry-run` first, then see [docs/runbooks/H100.md](docs/runbooks/H100.md).
 
+## Cloud mode (hosted Muse Spark Open on Baseten)
+
+No GPU box? On a hosted model you can't touch the batch size or the power cap, but you can change how hard the model thinks. `wattnot cloud tune` runs your prompts at `xhigh` (the default) as the reference, then tries `low`, `medium` and `high` per prompt class. It keeps the cheapest level whose answers still pass the same checks and whose p99 latency holds, counting any retry at `xhigh` when a cheap answer fails. The receipt then shows, per class, tokens, USD and latency (MEASURED), what the same requests would have cost at `xhigh`, and an energy range (ESTIMATE). `wattnot cloud audit` checks the receipt's token totals against Baseten's usage meter, and `cache-ab` / `probe` test prompt layout and cache lifetime.
+
+```bash
+wattnot cloud demo --out cloud-demo        # offline replay of a made-up fixture, every number SIMULATED
+export BASETEN_API_KEY=...                 # env only, never a flag or a file
+wattnot cloud tune --live --budget-usd 10 --record data/cloud/recorded-run1.json
+```
+
+What is and isn't checked yet is listed in [docs/runbooks/BASETEN.md](docs/runbooks/BASETEN.md). The bundled numbers are SIMULATED until a live run is recorded.
+
 ## Status
 
 Built during the Meta Global AI Developer Hackathon, Oct 26 – Nov 4 2026. Before Oct 26 we had only planning docs, no code.
@@ -15,6 +27,7 @@ Built during the Meta Global AI Developer Hackathon, Oct 26 – Nov 4 2026. Befo
 - `docs/schemas/`: run-event, receipt and ui-view schemas
 - `docs/FRONTEND-SECTIONS.md`: the four app screens
 - `docs/TASKS.md`: ordered build list
+- `docs/runbooks/BASETEN.md`: cloud mode on Baseten (effort router, receipt, meter audit, cache)
 
 ## Credits
 
