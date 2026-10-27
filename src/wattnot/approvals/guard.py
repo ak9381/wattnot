@@ -18,11 +18,16 @@ from typing import Any
 from wattnot.approvals import model as m
 from wattnot.approvals import risk as rk
 from wattnot.approvals import service as svc
+from wattnot.approvals.appliers import NvidiaSmiApplier, PowerCapApplier
 from wattnot.approvals.gate import NotApproved
 from wattnot.approvals.service import Approvals
 
 LOW_RISK_BY = "guardrail:low-risk"
 TIMEOUT_BY = "system:timeout"
+PENDING_STRICT = "pending-strict"
+STRICT_REASON = "proposed by an open-weights planner: needs a person"
+_PLANNER_PARTNERS = {"meta": {"id": "meta", "name": "Meta"},
+                     "baseten": {"id": "baseten", "name": "Baseten"}}
 
 
 class Guard:
@@ -37,28 +42,54 @@ class Guard:
     # ---- filing and routing
     def submit(self, spec: Mapping, *, gates_passed: bool,
                stock_cap_w: float | None = None,
-               tdp_w: float | None = None) -> dict:
-        """File a proposal and route it. Returns {"proposal", "risk", "route"}."""
+               tdp_w: float | None = None,
+               planner: dict | None = None) -> dict:
+        """File a proposal and route it. Returns {"proposal", "risk", "route"}.
+
+        `planner` is {"name", "model", "partner"}; it is stored under
+        `source.planner` with its autonomy tier, so it is part of the hashed
+        content the approver sees. A strict-tier planner may only auto-apply
+        LOW risk: its high-risk changes stay pending (route "pending-strict")
+        and --auto-approve does not apply to them.
+        """
         if not gates_passed:
             raise NotApproved("the gates did not pass; nothing was proposed or stored")
+        name = planner.get("name") if isinstance(planner, Mapping) else None
+        # No planner claim means the legacy path: it behaves as standard did.
+        # A named but unknown planner is strict (see rk.tier_for).
+        tier = "standard" if planner is None else rk.tier_for(self.cfg, name)
         risk = rk.classify(spec, self.cfg, stock_cap_w=stock_cap_w, tdp_w=tdp_w)
+        strict_high = tier == "strict" and risk.level == "high"
+        if strict_high:
+            risk = rk.Risk(level=risk.level, needs_approval=True,
+                           reasons=tuple([*risk.reasons, STRICT_REASON]),
+                           inputs=risk.inputs)
         work = json.loads(json.dumps(dict(spec)))
+        if planner is not None:
+            src = dict(work.get("source") or {})
+            src["planner"] = {"name": planner.get("name"), "model": planner.get("model"),
+                              "partner": planner.get("partner"), "tier": tier}
+            work["source"] = src
         change = dict(work.get("change") or {})
         change["risk"] = {"level": risk.level, "reasons": list(risk.reasons),
                           "inputs": risk.inputs}
         work["change"] = change
         work["ttl_s"] = self.cfg.approval_timeout_s
-        p = self.approvals.propose(work, auto=False)
+        note = (f"pending-strict: proposed by an open-weights planner ({name}), "
+                f"needs a person; --auto-approve does not apply") if strict_high else ""
+        p = self.approvals.propose(work, auto=False, note=note)
         if risk.level == "low":
             p = self.approvals.approve(p["id"], LOW_RISK_BY, via=svc.AUTO,
                                        note="; ".join(risk.reasons))
             route = "auto-low-risk"
-        elif self.auto_approve_by:
+        elif self.auto_approve_by and tier == "standard":
             p = self.approvals.approve(
                 p["id"], f"auto-approve-flag:{self.auto_approve_by}",
                 via=svc.PRE_APPROVED,
                 note="started with --auto-approve; not a person's decision")
             route = "auto-approve-flag"
+        elif strict_high:
+            route = PENDING_STRICT
         else:
             route = "pending"
         return {"proposal": p, "risk": risk, "route": route}
@@ -165,8 +196,50 @@ class Guard:
                 row["by"] = TIMEOUT_BY
             if op in ("approve", "reject"):
                 row["risk"] = self._risk_level(pid)
+            prop = self._proposal_of(pid)
+            row["planner"] = self._planner_of(prop)
+            row["partner"] = self._partner_for(op, row["by"], prop)
+            row["proposed_by"] = self._proposed_by(prop)
             out.append(row)
         return out
+
+    def _proposal_of(self, pid: str) -> dict | None:
+        try:
+            return self.approvals.store.get(pid)
+        except Exception:  # noqa: BLE001 - a missing file is not an ops failure
+            return None
+
+    def _planner_of(self, prop: dict | None) -> dict | None:
+        """The planner that proposed this change, with its tier (None when unknown)."""
+        src = (prop or {}).get("source") or {}
+        pl = src.get("planner")
+        if not isinstance(pl, Mapping):
+            return None
+        return {"name": pl.get("name"), "model": pl.get("model"),
+                "partner": pl.get("partner"), "tier": pl.get("tier")}
+
+    def _proposed_by(self, prop: dict | None) -> dict | None:
+        """Who proposed it, as a partner: Meta or Baseten (None when unknown)."""
+        pl = self._planner_of(prop)
+        if pl is None:
+            return None
+        return _PLANNER_PARTNERS.get(pl.get("partner"))
+
+    def _partner_for(self, op: str, by: str | None,
+                     prop: dict | None) -> dict | None:
+        """Who is behind an op. A person's decision is the Operator; an
+        automatic one is the Auto policy. An apply/undo on a real card is the
+        E2E H100; on the mock it is null."""
+        if op in ("approve", "reject"):
+            if (by or "").startswith(("dashboard:", "user:")):
+                return {"id": "operator", "name": "Operator"}
+            return {"id": "policy", "name": "Auto policy"}
+        if (prop or {}).get("label") in ("MOCK", "SIMULATED"):
+            return None
+        applier = self.approvals.appliers.get((prop or {}).get("kind"))
+        if isinstance(applier, (NvidiaSmiApplier, PowerCapApplier)):
+            return {"id": "e2e", "name": "E2E H100"}
+        return None
 
     def _risk_level(self, pid: str) -> str | None:
         try:
@@ -186,4 +259,5 @@ class Guard:
                 "audit_head_sha256": head}
 
 
-__all__ = ["Guard", "NotApproved", "LOW_RISK_BY", "TIMEOUT_BY"]
+__all__ = ["Guard", "NotApproved", "LOW_RISK_BY", "TIMEOUT_BY", "PENDING_STRICT",
+           "STRICT_REASON"]

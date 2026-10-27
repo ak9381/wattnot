@@ -17,7 +17,10 @@ from wattnot.approvals import model as m
 FORMAT = "wattnot.guardrail/1"
 FILENAME = "guardrail.json"
 _KNOWN_KEYS = ("low_cap_drop_pct", "high_below_tdp_pct", "max_gpus_auto",
-               "approval_timeout_s")
+               "approval_timeout_s", "tiers")
+TIERS = ("standard", "strict")
+DEFAULT_TIERS = {"muse-spark": "standard", "bisect": "standard",
+                 "muse-spark-open": "strict"}
 
 
 @dataclass(frozen=True)
@@ -26,6 +29,7 @@ class RiskConfig:
     high_below_tdp_pct: float = 70
     max_gpus_auto: int = 1
     approval_timeout_s: float = 600
+    tiers: dict = field(default_factory=lambda: dict(DEFAULT_TIERS))
 
     @staticmethod
     def from_dict(d: Mapping) -> RiskConfig:
@@ -50,13 +54,25 @@ class RiskConfig:
         if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or timeout <= 0:
             raise ValueError("approval_timeout_s must be over 0")
         kw["approval_timeout_s"] = timeout
+        tiers = d.get("tiers", dict(DEFAULT_TIERS))
+        if not isinstance(tiers, Mapping) or any(
+                not isinstance(k, str) or v not in TIERS for k, v in tiers.items()):
+            raise ValueError('tiers must map planner names to "standard" or "strict"')
+        kw["tiers"] = dict(tiers)
         return RiskConfig(**kw)
 
     def to_dict(self) -> dict:
         return {"format": FORMAT, "low_cap_drop_pct": self.low_cap_drop_pct,
                 "high_below_tdp_pct": self.high_below_tdp_pct,
                 "max_gpus_auto": self.max_gpus_auto,
-                "approval_timeout_s": self.approval_timeout_s}
+                "approval_timeout_s": self.approval_timeout_s,
+                "tiers": dict(self.tiers)}
+
+
+def tier_for(cfg: RiskConfig | None, planner_name: str | None) -> str:
+    """The autonomy tier for a planner. Unknown names are strict."""
+    tiers = cfg.tiers if cfg is not None else DEFAULT_TIERS
+    return tiers.get(planner_name, "strict") if isinstance(tiers, Mapping) else "strict"
 
 
 def load_config(root: str | Path) -> RiskConfig:

@@ -133,6 +133,31 @@ def node_ids(variant: str, room: bool) -> list[str]:
     return [i for i in _ORDER[variant] if room or i != "room"]
 
 
+def _powered_by(nid: str, variant: str) -> list[dict]:
+    """Who is behind a node: static facts the screen can show without a run.
+
+    The sweep's `planner` entry is a placeholder: the screen resolves it from
+    the run's own events (the Meta Muse Spark API or Baseten Muse Spark Open).
+    """
+    meta = {"id": "meta", "name": "Meta SAM 3.1", "what": "finds the racks"}
+    gpu = {"id": "e2e", "name": "E2E H100", "what": "the GPU it runs on"}
+    hosted = {"id": "baseten", "name": "Baseten Model API",
+              "what": "the hosted model it runs on"}
+    planner = {"id": "planner", "name": "planner", "what": "proposes the next cap"}
+    operator = {"id": "operator", "name": "Operator", "what": "a person decides"}
+    if nid == "room":
+        return [meta]
+    if nid == "approve":
+        return [operator]
+    if nid in ("gate", "receipt"):
+        return []
+    if nid in ("baseline", "sweep") and variant == "hosted":
+        return [hosted] + ([planner] if nid == "sweep" else [])
+    if nid in ("baseline", "sweep", "topk", "keep"):
+        return [gpu] + ([planner] if nid == "sweep" else [])
+    return []
+
+
 def nodes(variant: str, room: bool, partners: dict | None = None) -> list[dict]:
     """Graph nodes for one run variant ('cap', 'topk' or 'hosted')."""
     out = []
@@ -150,7 +175,7 @@ def nodes(variant: str, room: bool, partners: dict | None = None) -> list[dict]:
         else:
             subs = VARIANTS[variant][nid]
         used = {p: f"{_META[nid][0]}: {desc}" for p in parts}
-        out.append({"id": nid, "title": title, "partners": parts, "desc": desc, "code": code, "col": col, "row": 0, "subs": copy.deepcopy(subs),
+        out.append({"id": nid, "title": title, "partners": parts, "powered_by": _powered_by(nid, variant), "desc": desc, "code": code, "col": col, "row": 0, "subs": copy.deepcopy(subs),
                     "inputs": subs[0]["inputs"], "outputs": subs[-1]["outputs"], "used_for": used, "status": "code", "kind": "step", "lane": "Run",
                     "stats": [], "meta_product": prod})
     return out

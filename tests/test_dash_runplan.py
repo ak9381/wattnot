@@ -261,3 +261,41 @@ def test_after_room_changes_nothing_when_power_is_unknown():
     assert tgt["power_w"] is None and tgt["power_label"] is None
     after = pipeline.after_room(scan, tgt, None, None)
     assert [r["temp_c"] for r in after["racks"]] == [r["temp_c"] for r in scan["racks"]]
+
+
+def test_nodes_carry_powered_by():
+    by = {n["id"]: n["powered_by"] for n in pipeline.nodes("cap", True)}
+    assert by["room"] == [{"id": "meta", "name": "Meta SAM 3.1",
+                           "what": "finds the racks"}]
+    assert by["approve"] == [{"id": "operator", "name": "Operator",
+                              "what": "a person decides"}]
+    assert by["gate"] == [] and by["receipt"] == []
+    assert by["baseline"] == [{"id": "e2e", "name": "E2E H100",
+                               "what": "the GPU it runs on"}]
+    assert by["keep"] == [{"id": "e2e", "name": "E2E H100",
+                           "what": "the GPU it runs on"}]
+    assert by["sweep"][0] == {"id": "e2e", "name": "E2E H100",
+                              "what": "the GPU it runs on"}
+    assert by["sweep"][1] == {"id": "planner", "name": "planner",
+                              "what": "proposes the next cap"}
+    topk = {n["id"]: n["powered_by"] for n in pipeline.nodes("topk", True)}
+    assert topk["topk"] == [{"id": "e2e", "name": "E2E H100",
+                             "what": "the GPU it runs on"}]
+
+
+def test_hosted_nodes_run_on_baseten():
+    by = {n["id"]: n["powered_by"] for n in pipeline.nodes("hosted", False)}
+    assert by["baseline"][0]["id"] == "baseten"
+    assert by["baseline"][0]["name"] == "Baseten Model API"
+    assert by["sweep"][0]["id"] == "baseten"
+    assert by["sweep"][-1]["id"] == "planner"
+    assert by["approve"] == [{"id": "operator", "name": "Operator",
+                              "what": "a person decides"}]
+
+
+def test_powered_by_entries_are_labelled_words_not_numbers():
+    for n in pipeline.full_nodes():
+        assert "powered_by" in n
+        for entry in n["powered_by"]:
+            assert set(entry) == {"id", "name", "what"}
+            assert all(isinstance(v, str) and v for v in entry.values())

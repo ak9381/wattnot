@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 import time
 from collections.abc import Callable
@@ -35,7 +36,7 @@ from pathlib import Path
 
 from wattnot.approvals.appliers import CallbackApplier
 from wattnot.approvals.guard import Guard
-from wattnot.approvals.risk import RiskConfig
+from wattnot.approvals.risk import RiskConfig, tier_for
 from wattnot.approvals.risk import load_config as load_guard_config
 from wattnot.approvals.service import Approvals
 from wattnot.events import Emitter
@@ -190,6 +191,10 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
     snap: dict = {}
     best = None
     guard = _make_guard(a, out)
+    planner_info = {"name": getattr(planner, "name", "?"),
+                    "model": getattr(planner, "model", None),
+                    "partner": getattr(planner, "partner", None)}
+    tier = tier_for(guard.cfg, planner_info["name"])
     try:
         live.sink(
             {
@@ -379,8 +384,9 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                 usage = getattr(planner, "last_usage", {}) or {}
                 mname = getattr(planner, "model", "muse-spark")
                 by = prop.get("by", getattr(planner, "name", "planner"))
-                real = by == "muse-spark"
+                real = by in ("muse-spark", "muse-spark-open")
                 st.tag = label if real else "ADVICE"
+                st.extra["planner"] = dict(planner_info)
                 st.outputs = (
                     f"{prop['kind']} {prop['cap_w']} W: {prop['reason']}"
                     if prop["kind"] == "try"
@@ -396,6 +402,7 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                         "by": by,
                         "reason": prop["reason"],
                         "muse_error": prop.get("muse_error"),
+                        "planner": dict(planner_info),
                     },
                     step_id=pid,
                     parent="cap_sweep",
@@ -410,6 +417,7 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                             "value": None,
                         },
                         "reason": prop["reason"],
+                        "planner": dict(planner_info),
                         "model": mname if real else "bisect-fallback",
                         "tokens": {
                             "input": usage.get("input", 0),
@@ -431,7 +439,7 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                         "message": prop["reason"],
                         "narration": {
                             "text": prop["reason"],
-                            "source": "muse-spark" if real else "template",
+                            "source": by if real else "template",
                             "model": mname if real else None,
                         },
                     },
@@ -484,7 +492,8 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
             "classify",
             "Approve the change",
             top="approve",
-            inputs=("best accepted cap: " + (f"{best['cap_w']} W" if best else "none")),
+            inputs=("best accepted cap: " + (f"{best['cap_w']} W" if best else "none")
+                    + f"; planner {planner_info['name']} (tier {tier})"),
             say="Rate the risk. A small tweak goes through; a big one waits for an operator.",
         )
         if best:
@@ -519,7 +528,8 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
             ) as st:
                 st.tag = label
                 filed = guard.submit(spec, gates_passed=True,
-                                     stock_cap_w=stock_w, tdp_w=tdp_w)
+                                     stock_cap_w=stock_w, tdp_w=tdp_w,
+                                     planner=planner_info)
                 pid, risk, route = (filed["proposal"]["id"], filed["risk"],
                                     filed["route"])
                 st.outputs = f"{risk.level} risk ({route})"
@@ -531,13 +541,15 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                     step_id="approve.classify",
                     parent="approve",
                 )
-                if route == "pending":
+                if route.startswith("pending"):
                     live.sink(
                         {
                             "type": "proposal.created",
                             "data": {"change_id": pid,
                                      "risk": {"level": risk.level,
                                               "reasons": list(risk.reasons)},
+                                     "route": route,
+                                     "planner": dict(planner_info),
                                      "expires_at": filed["proposal"]["expires_at"]},
                             "step_id": "approve.classify",
                             "parent_step_id": "approve",
@@ -553,7 +565,7 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
             ) as st:
                 st.tag = label
                 t0 = time.time()
-                if route == "pending":
+                if route.startswith("pending"):
                     decision = guard.wait(pid, timeout_s=a.approval_timeout_s,
                                           poll_s=0.2)
                 else:
@@ -561,6 +573,8 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                 waited = time.time() - t0
                 dec = guard.approvals.store.get(pid).get("decision") or {}
                 st.add("risk level", risk.level, "", "ADVICE")
+                st.add("planner", planner_info["name"], "", "ADVICE")
+                st.add("planner tier", tier, "", "ADVICE")
                 st.add("seconds waited", round(waited, 1), "s")
                 st.add("approved by", dec.get("by"), "")
                 st.add("approved via", dec.get("via"), "")
@@ -866,6 +880,9 @@ def finish_receipt(
         "planner": {
             "name": getattr(planner, "name", "?"),
             "model": getattr(planner, "model", None),
+            "partner": getattr(planner, "partner", None),
+            "tier": tier_for(guard.cfg, getattr(planner, "name", None))
+            if guard is not None else None,
         },
         "adaptive_topk": adaptive,
         "room": {
@@ -999,7 +1016,10 @@ def main(argv=None) -> int:
     ap.add_argument("--max-proposals", type=int, default=4)
     ap.add_argument("--grid", default="", help="comma list of caps to fill in after Muse's picks")
     ap.add_argument("--sweep-budget-s", type=float, default=0)
-    ap.add_argument("--planner", choices=["muse", "bisect", "fake"], default="muse")
+    ap.add_argument("--planner", choices=["muse", "bisect", "fake", "baseten-open"],
+                    default="muse")
+    ap.add_argument("--baseten-cap-usd", type=float, default=1.0,
+                    help="spend cap for the Baseten open-weights planner (USD)")
     ap.add_argument("--sam", choices=["replay", "live"], default="replay")
     ap.add_argument("--room", default="arsat")
     ap.add_argument("--scan-json", type=Path)
@@ -1028,10 +1048,16 @@ def main(argv=None) -> int:
         a.live_file.rename(a.live_file.with_suffix(f".{int(time.time())}.prev"))
     if a.mode == "rehearsal":
         from wattnot.proof.fake import FakeMeta, rehearsal_planner_answers
-        from wattnot.proof.planner import MusePlanner
 
-        planner = MusePlanner(FakeMeta(rehearsal_planner_answers()))
-        planner.name = "muse-spark"  # the scripted client plays Muse; labelled MOCK in the events
+        if a.planner == "baseten-open":
+            from wattnot.proof.baseten_planner import OpenWeightsPlanner
+
+            planner = OpenWeightsPlanner(FakeMeta(rehearsal_planner_answers()))
+        else:
+            from wattnot.proof.planner import MusePlanner
+
+            planner = MusePlanner(FakeMeta(rehearsal_planner_answers()))
+            planner.name = "muse-spark"  # the scripted client plays Muse; labelled MOCK
         transport: Transport = LocalTransport(env={"PYTHONUNBUFFERED": "1"})
         a.remote_out = str(a.out / "vm")
         a.sam = "replay"
@@ -1043,6 +1069,14 @@ def main(argv=None) -> int:
         transport = SshTransport(a.host, key=a.key)
         if a.planner == "bisect":
             planner = BisectPlanner()
+        elif a.planner == "baseten-open":
+            if not os.environ.get("BASETEN_API_KEY", "").strip():
+                ap.error("BASETEN_API_KEY is not set")
+            from wattnot.proof.baseten_planner import BasetenClient, OpenWeightsPlanner
+
+            planner = OpenWeightsPlanner(BasetenClient(
+                ledger_path=a.out / "baseten-ledger.json",
+                cap_usd=a.baseten_cap_usd))
         else:
             from wattnot.meta.client import GuardedClient
             from wattnot.proof.planner import MusePlanner

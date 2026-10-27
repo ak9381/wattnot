@@ -30,13 +30,15 @@ def add_args(p: argparse.ArgumentParser) -> None:
                         "demos; logged as auto-approve-flag")
     p.add_argument("--live-apply", action="store_true",
                    help="apply power caps with nvidia-smi on this machine; off by default")
+    p.add_argument("--partners", type=Path, default=None,
+                   help="partners snapshot to serve (default: data/dash/partners.json)")
 
 
 def run(a: argparse.Namespace) -> int:
     return serve(a.host, a.port, capture=a.capture, follow=a.follow, results=a.results,
                  token=a.token, events=a.events, replay_only=a.replay_only or None,
                  approvals_dir=a.approvals_dir, auto_approve=a.auto_approve,
-                 live_apply=a.live_apply)
+                 live_apply=a.live_apply, partners=a.partners)
 
 
 def main() -> int:

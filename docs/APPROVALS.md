@@ -273,6 +273,24 @@ at once, logged as `auto-approve-flag:<name>` via `pre-approved`: visibly not
 a person's decision. The flag is on the orchestrate run, the dashboard
 (`--auto-approve`), or a `Guard(auto_approve_by=...)` you build yourself.
 
+### Autonomy tiers
+
+Each planner has a tier in `proposals/guardrail.json` (`tiers` maps a planner
+name to `standard` or `strict`; a name not listed is `strict`):
+
+- `muse-spark` and `bisect` are `standard`: the rules above apply unchanged.
+- `muse-spark-open` (the open-weights planner on Baseten) is `strict`: it may
+  only auto-apply LOW risk. Its high-risk changes stay `pending` (route
+  `pending-strict`) and `--auto-approve` does not apply to them. The audit
+  note on the proposal and the risk reasons both say so: "proposed by an
+  open-weights planner: needs a person". Low-risk changes from a strict
+  planner still auto-apply once the gates pass.
+
+The planner (`name`, `model`, `partner`, `tier`) is stored under
+`source.planner`, so it is part of the hashed content the approver sees. The
+dashboard cards (`GET /api/dash/approvals`), the receipt ops and the proof
+receipt's top-level `planner` block (`partner`, `tier` added) all carry it.
+
 One click undoes an applied change (`rollback`, or the dashboard's undo). The
 stored token puts the old cap or config file back. An undo after the receipt
 is signed cannot rewrite the signed file, so it is written beside it as

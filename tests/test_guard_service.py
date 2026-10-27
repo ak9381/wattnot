@@ -185,7 +185,11 @@ def test_ops_order_and_fields(tmp_path, clock):
         ("approve", low), ("apply", low), ("reject", high), ("undo", low)]
     assert ops[0]["risk"] == "low" and ops[2]["risk"] == "high"
     assert ops[0]["by"] == "guardrail:low-risk"
-    assert set(ops[0]) == {"op", "change_id", "by", "via", "at", "note", "risk"}
+    assert set(ops[0]) == {"op", "change_id", "by", "via", "at", "note", "risk",
+                           "planner", "partner", "proposed_by"}
+    assert ops[0]["planner"] is None and ops[0]["proposed_by"] is None
+    assert ops[0]["partner"] == {"id": "policy", "name": "Auto policy"}
+    assert ops[2]["partner"] == {"id": "operator", "name": "Operator"}
 
 
 def test_timeout_shows_as_reject_by_system(tmp_path, clock):

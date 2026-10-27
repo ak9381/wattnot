@@ -58,17 +58,21 @@ class Approvals:
         return self.store.verify_chain()
 
     # ---- creating
-    def propose(self, spec: Mapping, *, auto: bool = True, actor: str = "wattnot") -> dict:
+    def propose(self, spec: Mapping, *, auto: bool = True, actor: str = "wattnot",
+                note: str = "") -> dict:
         """Store a new pending proposal. If a human enabled a policy and every threshold
         holds, it is approved on the spot (the audit trail says so)."""
         now = self.clock()
         p = m.build(spec, ts=now, created_by=spec.get("created_by", actor))
+        detail = {"kind": p["kind"], "scope": p["scope"],
+                  "title": p["title"], "label": p["label"]}
+        if note:
+            detail["note"] = note
         with self.store.lock():
             self.store.put(p)
             self.store.audit_append(ts=now, proposal_id=p["id"], event="proposed", actor=actor,
                                     via="system", content_sha256=p["content_sha256"],
-                                    detail={"kind": p["kind"], "scope": p["scope"],
-                                            "title": p["title"], "label": p["label"]})
+                                    detail=detail)
         if auto:
             return self.auto_approve(p["id"])
         return p

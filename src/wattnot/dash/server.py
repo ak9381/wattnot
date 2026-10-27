@@ -152,7 +152,8 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
                replay_only: bool | None = None,
                approvals_dir: Path | None = None,
                auto_approve: bool = False,
-               live_apply: bool = False) -> FastAPI:
+               live_apply: bool = False,
+               partners: Path | None = None) -> FastAPI:
     app = FastAPI(title="WattNot dashboard", version="1")
     token = token or os.environ.get("WATTNOT_DASH_TOKEN") or None
     # Hosted replay-only mode (for judges): no GPU, no Meta call of any kind, saved run file only.
@@ -284,6 +285,7 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
             "applies_on_approve": (p.get("source") or {}).get("applier") != "orchestrate",
             "undo_available": p["status"] == "applied" and p.get("kind") in approvals.appliers,
             "content_sha256": p.get("content_sha256"),
+            "planner": (p.get("source") or {}).get("planner"),
         }
 
     def _err(code: str, message: str, status: int) -> JSONResponse:
@@ -378,6 +380,15 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         except Exception:  # noqa: BLE001 - never fail the undo
             pass
         return _item(p)
+
+    partners_path = Path(partners) if partners is not None else DATA / "partners.json"
+
+    @app.get("/api/dash/partners")
+    def dash_partners():
+        """Who is behind the run: a saved snapshot, so replay mode works too."""
+        if not partners_path.is_file():
+            raise HTTPException(404, "no partners snapshot yet: run scripts/build_partners.py")
+        return Response(partners_path.read_bytes(), media_type="application/json")
 
     @app.get("/api/dash/meta/health")
     def meta_health(fresh: int = 0):
@@ -563,13 +574,13 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
 
 def serve(host: str = "127.0.0.1", port: int = 8765, *,
           approvals_dir: Path | None = None, auto_approve: bool = False,
-          live_apply: bool = False, **kw) -> int:
+          live_apply: bool = False, partners: Path | None = None, **kw) -> int:
     import uvicorn
 
     print(f"WattNot dashboard on http://{host}:{port}  "
           f"(approvals: {'live' if live_apply else 'mock'})", flush=True)
     uvicorn.run(create_app(approvals_dir=approvals_dir, auto_approve=auto_approve,
-                           live_apply=live_apply, **kw),
+                           live_apply=live_apply, partners=partners, **kw),
                  host=host, port=port, log_level="warning")
     return 0
 
