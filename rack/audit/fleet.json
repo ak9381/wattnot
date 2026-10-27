@@ -1,0 +1,11 @@
+{
+  "format": "wattnot.fleet/1",
+  "label": "SIMULATED",
+  "note": "Demo inventory. The two photos are real; the slot-to-GPU map, the node counts the inventory claims, the rack budgets and the node power limits are made up for the demo, so the audit has a mismatch to find. Replace this file with your own inventory.",
+  "racks": [
+    {"id": "R1", "dir": "cisco", "photo": "rack.jpg", "budget_w": 6000, "node_max_w": 700,
+     "declared": {"0": 0, "1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7}},
+    {"id": "R2", "dir": "hpe", "photo": "rack.jpg", "budget_w": 2800, "node_max_w": 700,
+     "declared": {"0": 8, "1": 9, "2": 10, "3": 11, "4": 12, "5": 13}}
+  ]
+}

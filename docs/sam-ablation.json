@@ -1,0 +1,539 @@
+{
+  "labels": {
+    "photos_and_unit_counts": "MEASURED",
+    "inventory_budgets_node_power": "SIMULATED",
+    "ceiling_w": "ESTIMATE",
+    "trial_response_curve": "SIMULATED"
+  },
+  "racks": [
+    {
+      "rack": "R1",
+      "photo": "rack/cisco/rack.jpg",
+      "inventory_nodes": 8,
+      "budget_w": 6000,
+      "sam_off": {
+        "nodes": 8,
+        "ceiling_w": 700
+      },
+      "sam_on": {
+        "nodes": 10,
+        "ceiling_w": 600,
+        "unverified_gpus": [],
+        "unlisted_slots": [
+          8,
+          9
+        ],
+        "inferred_units": 0,
+        "over_budget_w_if_inventory_trusted": 1000
+      }
+    },
+    {
+      "rack": "R2",
+      "photo": "rack/hpe/rack.jpg",
+      "inventory_nodes": 6,
+      "budget_w": 2800,
+      "sam_off": {
+        "nodes": 6,
+        "ceiling_w": 466
+      },
+      "sam_on": {
+        "nodes": 4,
+        "ceiling_w": 700,
+        "unverified_gpus": [
+          12,
+          13
+        ],
+        "unlisted_slots": [],
+        "inferred_units": 2,
+        "over_budget_w_if_inventory_trusted": 0
+      }
+    }
+  ],
+  "eligible_gpus": {
+    "sam_off": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13
+    ],
+    "sam_on": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ]
+  },
+  "planner_final_cap_w": [
+    {
+      "gpu": 0,
+      "sam_off": {
+        "cap_w": 700,
+        "highest_allowed_w": 700,
+        "ceiling_step": null,
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "no rack photo audit: the inventory is trusted as written, so the per-node ceiling assumes every listed node is present"
+        ]
+      },
+      "sam_on": {
+        "cap_w": 600,
+        "highest_allowed_w": 600,
+        "ceiling_step": {
+          "cap_w": 600,
+          "from_cap_w": 700,
+          "passed": true,
+          "failed": [],
+          "rack": "R1",
+          "reason": "rack R1 ceiling 600 W"
+        },
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "units in the photo that the inventory does not list draw power too: add them, or find out what they are"
+        ]
+      }
+    },
+    {
+      "gpu": 1,
+      "sam_off": {
+        "cap_w": 700,
+        "highest_allowed_w": 700,
+        "ceiling_step": null,
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "no rack photo audit: the inventory is trusted as written, so the per-node ceiling assumes every listed node is present"
+        ]
+      },
+      "sam_on": {
+        "cap_w": 600,
+        "highest_allowed_w": 600,
+        "ceiling_step": {
+          "cap_w": 600,
+          "from_cap_w": 700,
+          "passed": true,
+          "failed": [],
+          "rack": "R1",
+          "reason": "rack R1 ceiling 600 W"
+        },
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "units in the photo that the inventory does not list draw power too: add them, or find out what they are"
+        ]
+      }
+    },
+    {
+      "gpu": 2,
+      "sam_off": {
+        "cap_w": 700,
+        "highest_allowed_w": 700,
+        "ceiling_step": null,
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "no rack photo audit: the inventory is trusted as written, so the per-node ceiling assumes every listed node is present"
+        ]
+      },
+      "sam_on": {
+        "cap_w": 600,
+        "highest_allowed_w": 600,
+        "ceiling_step": {
+          "cap_w": 600,
+          "from_cap_w": 700,
+          "passed": true,
+          "failed": [],
+          "rack": "R1",
+          "reason": "rack R1 ceiling 600 W"
+        },
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "units in the photo that the inventory does not list draw power too: add them, or find out what they are"
+        ]
+      }
+    },
+    {
+      "gpu": 3,
+      "sam_off": {
+        "cap_w": 700,
+        "highest_allowed_w": 700,
+        "ceiling_step": null,
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "no rack photo audit: the inventory is trusted as written, so the per-node ceiling assumes every listed node is present"
+        ]
+      },
+      "sam_on": {
+        "cap_w": 600,
+        "highest_allowed_w": 600,
+        "ceiling_step": {
+          "cap_w": 600,
+          "from_cap_w": 700,
+          "passed": true,
+          "failed": [],
+          "rack": "R1",
+          "reason": "rack R1 ceiling 600 W"
+        },
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "units in the photo that the inventory does not list draw power too: add them, or find out what they are"
+        ]
+      }
+    },
+    {
+      "gpu": 4,
+      "sam_off": {
+        "cap_w": 700,
+        "highest_allowed_w": 700,
+        "ceiling_step": null,
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "no rack photo audit: the inventory is trusted as written, so the per-node ceiling assumes every listed node is present"
+        ]
+      },
+      "sam_on": {
+        "cap_w": 600,
+        "highest_allowed_w": 600,
+        "ceiling_step": {
+          "cap_w": 600,
+          "from_cap_w": 700,
+          "passed": true,
+          "failed": [],
+          "rack": "R1",
+          "reason": "rack R1 ceiling 600 W"
+        },
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "units in the photo that the inventory does not list draw power too: add them, or find out what they are"
+        ]
+      }
+    },
+    {
+      "gpu": 5,
+      "sam_off": {
+        "cap_w": 700,
+        "highest_allowed_w": 700,
+        "ceiling_step": null,
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "no rack photo audit: the inventory is trusted as written, so the per-node ceiling assumes every listed node is present"
+        ]
+      },
+      "sam_on": {
+        "cap_w": 600,
+        "highest_allowed_w": 600,
+        "ceiling_step": {
+          "cap_w": 600,
+          "from_cap_w": 700,
+          "passed": true,
+          "failed": [],
+          "rack": "R1",
+          "reason": "rack R1 ceiling 600 W"
+        },
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "units in the photo that the inventory does not list draw power too: add them, or find out what they are"
+        ]
+      }
+    },
+    {
+      "gpu": 6,
+      "sam_off": {
+        "cap_w": 700,
+        "highest_allowed_w": 700,
+        "ceiling_step": null,
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "no rack photo audit: the inventory is trusted as written, so the per-node ceiling assumes every listed node is present"
+        ]
+      },
+      "sam_on": {
+        "cap_w": 600,
+        "highest_allowed_w": 600,
+        "ceiling_step": {
+          "cap_w": 600,
+          "from_cap_w": 700,
+          "passed": true,
+          "failed": [],
+          "rack": "R1",
+          "reason": "rack R1 ceiling 600 W"
+        },
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "units in the photo that the inventory does not list draw power too: add them, or find out what they are"
+        ]
+      }
+    },
+    {
+      "gpu": 7,
+      "sam_off": {
+        "cap_w": 700,
+        "highest_allowed_w": 700,
+        "ceiling_step": null,
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "no rack photo audit: the inventory is trusted as written, so the per-node ceiling assumes every listed node is present"
+        ]
+      },
+      "sam_on": {
+        "cap_w": 600,
+        "highest_allowed_w": 600,
+        "ceiling_step": {
+          "cap_w": 600,
+          "from_cap_w": 700,
+          "passed": true,
+          "failed": [],
+          "rack": "R1",
+          "reason": "rack R1 ceiling 600 W"
+        },
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "units in the photo that the inventory does not list draw power too: add them, or find out what they are"
+        ]
+      }
+    },
+    {
+      "gpu": 8,
+      "sam_off": {
+        "cap_w": 466,
+        "highest_allowed_w": 466,
+        "ceiling_step": {
+          "cap_w": 466,
+          "from_cap_w": 700,
+          "passed": true,
+          "failed": [],
+          "rack": "R2",
+          "reason": "rack R2 ceiling 466 W"
+        },
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "no rack photo audit: the inventory is trusted as written, so the per-node ceiling assumes every listed node is present"
+        ]
+      },
+      "sam_on": {
+        "cap_w": 700,
+        "highest_allowed_w": 700,
+        "ceiling_step": null,
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "GPUs with no unit in the photo were left alone; check the rack and fix the inventory"
+        ]
+      }
+    },
+    {
+      "gpu": 9,
+      "sam_off": {
+        "cap_w": 466,
+        "highest_allowed_w": 466,
+        "ceiling_step": {
+          "cap_w": 466,
+          "from_cap_w": 700,
+          "passed": true,
+          "failed": [],
+          "rack": "R2",
+          "reason": "rack R2 ceiling 466 W"
+        },
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "no rack photo audit: the inventory is trusted as written, so the per-node ceiling assumes every listed node is present"
+        ]
+      },
+      "sam_on": {
+        "cap_w": 700,
+        "highest_allowed_w": 700,
+        "ceiling_step": null,
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "GPUs with no unit in the photo were left alone; check the rack and fix the inventory"
+        ]
+      }
+    },
+    {
+      "gpu": 10,
+      "sam_off": {
+        "cap_w": 466,
+        "highest_allowed_w": 466,
+        "ceiling_step": {
+          "cap_w": 466,
+          "from_cap_w": 700,
+          "passed": true,
+          "failed": [],
+          "rack": "R2",
+          "reason": "rack R2 ceiling 466 W"
+        },
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "no rack photo audit: the inventory is trusted as written, so the per-node ceiling assumes every listed node is present"
+        ]
+      },
+      "sam_on": {
+        "cap_w": 700,
+        "highest_allowed_w": 700,
+        "ceiling_step": null,
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "GPUs with no unit in the photo were left alone; check the rack and fix the inventory"
+        ]
+      }
+    },
+    {
+      "gpu": 11,
+      "sam_off": {
+        "cap_w": 466,
+        "highest_allowed_w": 466,
+        "ceiling_step": {
+          "cap_w": 466,
+          "from_cap_w": 700,
+          "passed": true,
+          "failed": [],
+          "rack": "R2",
+          "reason": "rack R2 ceiling 466 W"
+        },
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "no rack photo audit: the inventory is trusted as written, so the per-node ceiling assumes every listed node is present"
+        ]
+      },
+      "sam_on": {
+        "cap_w": 700,
+        "highest_allowed_w": 700,
+        "ceiling_step": null,
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "GPUs with no unit in the photo were left alone; check the rack and fix the inventory"
+        ]
+      }
+    },
+    {
+      "gpu": 12,
+      "sam_off": {
+        "cap_w": 466,
+        "highest_allowed_w": 466,
+        "ceiling_step": {
+          "cap_w": 466,
+          "from_cap_w": 700,
+          "passed": true,
+          "failed": [],
+          "rack": "R2",
+          "reason": "rack R2 ceiling 466 W"
+        },
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "no rack photo audit: the inventory is trusted as written, so the per-node ceiling assumes every listed node is present"
+        ]
+      },
+      "sam_on": {
+        "refused": "no unit outlined at slot 4 in the R2 photo",
+        "cap_w": 700
+      }
+    },
+    {
+      "gpu": 13,
+      "sam_off": {
+        "cap_w": 466,
+        "highest_allowed_w": 466,
+        "ceiling_step": {
+          "cap_w": 466,
+          "from_cap_w": 700,
+          "passed": true,
+          "failed": [],
+          "rack": "R2",
+          "reason": "rack R2 ceiling 466 W"
+        },
+        "advice": [
+          "re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload",
+          "no rack photo audit: the inventory is trusted as written, so the per-node ceiling assumes every listed node is present"
+        ]
+      },
+      "sam_on": {
+        "refused": "no unit outlined at slot 5 in the R2 photo",
+        "cap_w": 700
+      }
+    }
+  ],
+  "gate_probes": [
+    {
+      "gpu": 0,
+      "sam_off": {
+        "cap_w": 650,
+        "allowed": true,
+        "detail": "listed at slot 0 (inventory only, no photo check); per-node ceiling 700 W (ESTIMATE)"
+      },
+      "sam_on": {
+        "cap_w": 650,
+        "allowed": false,
+        "detail": "650 W is above the rack's per-node ceiling of 600 W"
+      }
+    },
+    {
+      "gpu": 0,
+      "sam_off": {
+        "cap_w": 550,
+        "allowed": true,
+        "detail": "listed at slot 0 (inventory only, no photo check); per-node ceiling 700 W (ESTIMATE)"
+      },
+      "sam_on": {
+        "cap_w": 550,
+        "allowed": true,
+        "detail": "unit seen at slot 0; per-node ceiling 600 W (ESTIMATE)"
+      }
+    },
+    {
+      "gpu": 8,
+      "sam_off": {
+        "cap_w": 500,
+        "allowed": false,
+        "detail": "500 W is above the rack's per-node ceiling of 466 W"
+      },
+      "sam_on": {
+        "cap_w": 500,
+        "allowed": true,
+        "detail": "unit seen at slot 0; per-node ceiling 700 W (ESTIMATE)"
+      }
+    },
+    {
+      "gpu": 12,
+      "sam_off": {
+        "cap_w": 450,
+        "allowed": true,
+        "detail": "listed at slot 4 (inventory only, no photo check); per-node ceiling 466 W (ESTIMATE)"
+      },
+      "sam_on": {
+        "cap_w": 450,
+        "allowed": false,
+        "detail": "no unit outlined at slot 4 in the R2 photo"
+      }
+    }
+  ],
+  "gpus_whose_planner_outcome_changed": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13
+  ],
+  "gpus_total": 14
+}

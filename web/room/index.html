@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WattNot - Room</title>
+<link rel="stylesheet" href="room.css">
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><b>WattNot</b> <span class="muted">/ Room</span></div>
+  <div class="seg" id="mode" role="group" aria-label="image"><button data-v="visible">Visible</button><button data-v="thermal" class="on">Thermal</button></div>
+  <div class="seg" id="phase" role="group" aria-label="phase"><button data-v="before" class="on">Before</button><button data-v="after">After caps</button></div>
+  <button class="toggle" id="sam" aria-pressed="true"><i class="lamp"></i>SAM <b>on</b></button>
+  <div class="src" id="src"></div>
+</header>
+<main id="app">
+  <section class="stage">
+    <div class="frame" id="frame">
+      <img id="img" alt="data center room">
+      <svg id="ov" preserveAspectRatio="none"></svg>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="sumrow" id="sum"></div>
+  </section>
+  <aside class="side">
+    <h3>Hotspots <span class="muted" id="hsub"></span></h3>
+    <ol id="hot"></ol>
+    <div id="drawer" class="drawer"></div>
+  </aside>
+</main>
+<footer class="foot" id="foot"></footer>
+<script type="module" src="room.js"></script>
+</body>
+</html>
