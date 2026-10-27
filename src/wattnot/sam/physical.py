@@ -236,6 +236,7 @@ class RackAudit:
     ceiling_w: int  # per-node ceiling for the nodes that are there
     declared_ceiling_w: int  # the same, trusting the inventory
     sam: bool = True
+    thermal: dict | None = None  # the room thermal check (sam/room.py): derate or hold
 
     @property
     def over_budget_w_if_trusting_inventory(self) -> int:
@@ -245,9 +246,14 @@ class RackAudit:
 
     def limit_for(self, gpu: int) -> PhysicalLimit:
         s = self.spec
+        t = self.thermal
+        if t and t.get("action") == "hold" and gpu in self.verified:
+            return PhysicalLimit(gpu, s.id, False, 0, t["reason"])
         if gpu in self.verified:
             why = (f"unit seen at slot {self.verified[gpu]}" if self.sam
                    else f"listed at slot {self.verified[gpu]} (inventory only, no photo check)")
+            if t and t.get("action") == "derate":
+                why += f"; {t['reason']}"
             return PhysicalLimit(gpu, s.id, True, self.ceiling_w, why)
         if gpu in self.unverified:
             slot = next(k for k, g in s.declared.items() if g == gpu)
@@ -268,9 +274,10 @@ class RackAudit:
 
         s, n, m = self.spec, self.present_nodes, len(self.spec.declared)
         if not self.sam:
-            return [Item(ADVICE, "no rack photo audit: the inventory is trusted as written, "
+            base = [Item(ADVICE, "no rack photo audit: the inventory is trusted as written, "
                          "so the per-node ceiling assumes every listed node is present",
-                         "physical_audit", "off")]
+                         "physical_audit", "off")] if self.thermal is None else []
+            return base + self._thermal_items()
         items = [Item(MEASURED, f"rack photo audit: SAM 3.1 found {n} server units in rack "
                       f"{s.id}; the inventory lists {m}", "physical_nodes_seen", n, "units"),
                  Item(ESTIMATE, f"per-node cap ceiling for rack {s.id}: {self.ceiling_w} W "
@@ -296,16 +303,36 @@ class RackAudit:
                               f"rack's ceiling of {self.ceiling_w} W; the planner will not go "
                               "above the ceiling", "physical_start_over_ceiling_w",
                               start_cap_w - self.ceiling_w, "W"))
-        return items
+        return items + self._thermal_items()
+
+    def _thermal_items(self) -> list:
+        """Items for the thermal check. The camera reading is an ESTIMATE (colour to degrees);
+        the action is ADVICE, the planner and the gate still decide."""
+
+        from wattnot.recommend import ADVICE, Item
+
+        t = self.thermal
+        if not t or t.get("action") not in ("derate", "hold"):
+            return []
+        what = ("lower the cap ceiling" if t["action"] == "derate"
+                else "leave the caps alone and fix the cooling")
+        return [Item(ESTIMATE, f"rack {self.spec.id} reads {t['camera_c']} C on the thermal frame "
+                     f"({t['source']}) at {t['power_w']} W per GPU", "thermal_camera_c",
+                     t["camera_c"], "C"),
+                Item(ADVICE, f"{what}: {t['reason']}", "thermal_action", t["action"])]
 
     def summary(self) -> dict:
         """The small, number-only block Muse Spark sees. No images, no host names."""
 
         s = self.spec
-        return {"rack": s.id, "nodes_declared": len(s.declared), "nodes_seen": self.present_nodes,
-                "unverified_gpus": list(self.unverified), "unlisted_units": len(self.unlisted),
-                "ceiling_w": self.ceiling_w, "budget_w": s.budget_w,
-                "source": SOURCE if self.sam else "inventory only"}
+        out = {"rack": s.id, "nodes_declared": len(s.declared), "nodes_seen": self.present_nodes,
+               "unverified_gpus": list(self.unverified), "unlisted_units": len(self.unlisted),
+               "ceiling_w": self.ceiling_w, "budget_w": s.budget_w,
+               "source": SOURCE if self.sam else "inventory only"}
+        if self.thermal:
+            out["thermal"] = {k: self.thermal[k] for k in ("action", "camera_c", "power_w")
+                              if k in self.thermal}
+        return out
 
     def to_dict(self) -> dict:
         s = self.spec
@@ -318,7 +345,8 @@ class RackAudit:
                 "over_budget_w_if_trusting_inventory": self.over_budget_w_if_trusting_inventory,
                 "labels": {"units": MEASURED if self.sam else SIMULATED,
                            "inventory": SIMULATED, "budget_w": ESTIMATE, "ceiling_w": ESTIMATE},
-                "scan": self.scan.to_dict() if self.scan else None}
+                "scan": self.scan.to_dict() if self.scan else None,
+                **({"thermal": self.thermal} if self.thermal else {})}
 
 
 def _ceiling(budget_w: int, nodes: int, node_max_w: int) -> int:

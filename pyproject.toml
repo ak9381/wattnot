@@ -26,6 +26,8 @@ sign = [
 ]
 vision = [
   "Pillow>=10",
+  "numpy>=1.26",
+  "meta-sam-parser>=0.0.6",
 ]
 dev = [
   "pytest>=8.0",
