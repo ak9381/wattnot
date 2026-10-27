@@ -131,6 +131,7 @@ def test_kit_script_fake_dry_run_exits_zero(tmp_path):
     import os
     import shutil
     import subprocess
+    import sys
     from pathlib import Path
     if not shutil.which("bash"):
         return
@@ -138,7 +139,8 @@ def test_kit_script_fake_dry_run_exits_zero(tmp_path):
     out = tmp_path / "oct30"
     r = subprocess.run(["bash", str(root / "scripts" / "h100_oct30.sh"), "--fake",
                         "--out", str(out)], capture_output=True, text=True, timeout=300,
-                       env={**os.environ, "HOME": str(tmp_path)})
+                       env={**os.environ, "HOME": str(tmp_path),
+                            "PYTHON": sys.executable})
     assert r.returncode == 0, r.stdout + r.stderr
     assert "receipt labels: {'SIMULATED': 5}" in r.stdout
     assert (tmp_path / "oct30.tar.gz").exists()

@@ -62,6 +62,10 @@ if ! awk -v m="$MASS" 'BEGIN { exit !(m ~ /^[0-9.]+$/ && m >= 0.5 && m < 1) }'; 
   echo "--adaptive-mass must be a number from 0.5 up to (not including) 1, got: $MASS"; exit 2
 fi
 if [ "$ADAPT" = 1 ]; then STAGES="$STAGES,adaptive_topk"; EXTRA+=(--adaptive-topk --adaptive-mass "$MASS"); fi
+# The Python that runs the kit: $PYTHON when set (tests pass the runner that
+# already has wattnot's deps), else the first `python` on PATH, else python3.
+PY="${PYTHON:-python}"
+command -v "$PY" >/dev/null 2>&1 || PY=python3
 if [ "$RIG" = real ]; then
   if [ ! -d .venv ]; then python3 -m venv .venv; fi
   # shellcheck disable=SC1091
@@ -78,10 +82,9 @@ if [ "$RIG" = real ]; then
     python -c "import transformers, accelerate" 2>/dev/null || $PIP install -q transformers accelerate \
       || echo "warning: could not install transformers; the adaptive_topk stage will fail (optional)"
   fi
-elif ! python3 -c "import wattnot" 2>/dev/null; then
+elif ! "$PY" -c "import wattnot" 2>/dev/null; then
   export PYTHONPATH="$PWD/src${PYTHONPATH:+:$PYTHONPATH}"
 fi
-PY=python; command -v python >/dev/null || PY=python3
 if [ "$RIG" = fake ]; then PROPS="$OUT/proposals"; else PROPS="${WATTNOT_PROPOSALS_DIR:-proposals}"; fi
 EXTRA+=(--proposals-dir "$PROPS")
 if [ "$PRE" = 1 ]; then EXTRA+=(--pre-approved "h100_oct30.sh (by $WHO)"); fi

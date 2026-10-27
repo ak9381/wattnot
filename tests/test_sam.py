@@ -59,8 +59,13 @@ def _manual() -> dict:
 
 
 def test_manual_overlay_lives_at_the_rack_path():
+    import wattnot.sam.segment as segment
+
+    # The overlay lives next to the imported package, not necessarily next to
+    # this test file: the test runner may import wattnot from another checkout.
+    package_repo = Path(segment.__file__).resolve().parents[3]
     path = manual_overlay_path()
-    assert path == REPO / "rack" / "masks.manual.json"
+    assert path == package_repo / "rack" / "masks.manual.json"
     assert path.is_file()
 
 

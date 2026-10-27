@@ -10,6 +10,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -387,7 +388,8 @@ def test_kit_script_fake_run_keeps_exit_zero_and_keeps_its_proposals(tmp_path):
     r = subprocess.run(["bash", str(ROOT / "scripts" / "h100_oct30.sh"), "--fake", "--pre-approved",
                         "--approved-by", "akash", "--out", str(out)],
                        capture_output=True, text=True, timeout=300,
-                       env={**os.environ, "HOME": str(tmp_path)})
+                       env={**os.environ, "HOME": str(tmp_path),
+                            "PYTHON": sys.executable})
     assert r.returncode == 0, r.stdout + r.stderr
     assert "PRE-APPROVED by flag" in r.stdout
     assert "receipt labels: {'SIMULATED': 5}" in r.stdout

@@ -204,6 +204,47 @@ def test_client_timeout_keeps_the_worst_case(ledger):
     assert e["status"] == "unknown" and e["usd"] == pytest.approx(estimate(body())[2])
 
 
+def test_unknown_model_reserve_marks_price_assumed(ledger):
+    eid, _ = ledger.reserve(body(model="some-new-model"), "unit")
+    e = ledger.entries()[0]
+    assert e["price_assumed"] and e["usd"] == pytest.approx(estimate(
+        body(model="some-new-model"))[2])
+    done = ledger.settle(eid, ok_response()["usage"])
+    assert done["usd"] == pytest.approx(cost_usd("some-new-model", 100, 200))
+    assert not done["estimated"]
+
+
+def test_client_refuses_unknown_model_over_cap_without_network(tmp_path):
+    led = SpendLedger(tmp_path / "l.json", cap_usd=0.001, soft_usd=0.0005)
+    net = FakeNet((200, ok_response()))
+    with pytest.raises(BudgetExceeded):
+        GuardedClient(key=SECRET, ledger=led, opener=net)(
+            body(model="some-new-model", max_tokens=5000), purpose="u")
+    assert net.calls == [] and led.entries() == []
+
+
+def test_client_ok_without_usage_keeps_the_estimate(ledger):
+    net = FakeNet((200, {"model": "muse-spark-1.3",
+                         "choices": [{"message": {"content": "ok"}}]}))
+    GuardedClient(key=SECRET, ledger=ledger, opener=net)(body(), purpose="u")
+    e = ledger.entries()[0]
+    assert e["status"] == "ok-no-usage" and e["estimated"]
+    assert e["usd"] == pytest.approx(estimate(body())[2])
+
+
+def test_client_http_error_with_a_plain_string_message(ledger):
+    net = FakeNet((500, {"error": "boom"}))
+    with pytest.raises(MetaError, match="HTTP 500"):
+        GuardedClient(key=SECRET, ledger=ledger, opener=net)(body(), purpose="u")
+    e = ledger.entries()[0]
+    assert e["status"] == "error" and e["usd"] == 0 and e["http_status"] == 500
+
+
+def test_settle_of_an_unknown_id_is_a_key_error(ledger):
+    with pytest.raises(KeyError):
+        ledger.settle("nope", None, status="error")
+
+
 def test_client_warns_over_the_soft_limit(tmp_path):
     led = SpendLedger(tmp_path / "l.json", cap_usd=1.0, soft_usd=0.0001)
     net = FakeNet((200, ok_response()))
