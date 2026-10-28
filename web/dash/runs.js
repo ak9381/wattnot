@@ -35,15 +35,9 @@ function fmt(v, digits = 2) {
 
 const isNum = (v) => typeof v === "number" && Number.isFinite(v);
 
-// A coloured label dot with an accessible name.
-function dot(label) {
-  const L = String(label || "").toUpperCase();
-  return `<span class="v-lab ${esc(L)}" title="${esc(L)}" aria-label="${esc(L)}"></span>`;
-}
-
-// A label chip that carries the word itself.
+// A label chip that carries the visible word and colored dot.
 function chip(label) {
-  const L = String(label || "").toUpperCase();
+  const L = String(label || "pending").toUpperCase();
   const tint = {
     MEASURED: "--v-l-measured", ESTIMATE: "--v-l-estimate", SIMULATED: "--v-l-simulated",
     MOCK: "--v-l-mock", REPLAY: "--v-l-replay", ADVICE: "--v-l-advice",
@@ -51,10 +45,16 @@ function chip(label) {
   return `<span class="v-chip"><i style="background:var(${tint})"></i>${esc(L)}</span>`;
 }
 
-// A value + its dot, or a plain em dash when the value is missing.
+// Every number shows its label word visibly next to it
+function dot(label) {
+  if (!label) return `<span class="v-chip"><i></i>pending</span>`;
+  return chip(label);
+}
+
+// A value + its visible label word, or a plain em dash when the value is missing.
 function valDot(text, label, missing) {
-  if (missing) return `<span class="emdash">${EM}</span>`;
-  return `<span class="v-num">${esc(text)}</span>${dot(label)}`;
+  if (missing) return `<span class="emdash">${EM}</span> <span class="v-chip"><i></i>pending</span>`;
+  return `<span class="v-num">${esc(text)}</span> ${dot(label)}`;
 }
 
 async function getJSON(path) {

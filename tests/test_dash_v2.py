@@ -374,7 +374,7 @@ def test_numbers_coloured_by_label_with_one_legend_per_view():
     lib = root.joinpath("v2lib.js").read_text()
     assert "cnum" in lib and "legendHtml" in lib
     assert "badge" in lib and "title=" in lib and "aria-label" in lib
-    assert ">MEASURED<" not in lib and ">${esc(t)}<" not in lib  # no text badges
+    assert "b-txt" in lib or "b-chip" in lib  # Dusk 2: visible label word next to numbers
     js = root.joinpath("v2.js").read_text()
     assert js.count("legendHtml()") >= 4  # home, configure, run, report
     css = root.joinpath("v2.css").read_text()

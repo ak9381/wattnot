@@ -4,13 +4,13 @@
      trust / MEASURED  blue   #8E7A9E  (blue reads as calm and reliable)
      saved / growth    green  #7FA88A  (green reads as health and gain)
      estimate / care   gold   #C4B4D6  (gold/amber: worth a second look)
-     without WattNot   red    #C97A80  (red: the costly path, danger)
+     without WattNot   red    #D48389  (red: the costly path, danger)
      simulated         mauve  #8E7A9E  (from the navy-mauve palette)
      active / live     orange #8E7A9E  (canvas glow accent)
      deep surfaces     navy   #1F1A2F / #1F1A2F / #2B2637
    Font: Space Grotesk (SIL OFL, self-hosted in fonts/), system sans fallback. */
 @font-face{font-family:"Space Grotesk";src:url(fonts/SpaceGrotesk.ttf) format("truetype");font-weight:300 700;font-display:swap}
-:root{--r7-blue:#8E7A9E;--r7-green:#7FA88A;--r7-gold:#C4B4D6;--r7-red:#C97A80;--r7-mauve:#8E7A9E;--r7-orange:#8E7A9E;
+:root{--r7-blue:#8E7A9E;--r7-green:#7FA88A;--r7-gold:#C4B4D6;--r7-red:#D48389;--r7-mauve:#8E7A9E;--r7-orange:#8E7A9E;
   --r7-navy:#1F1A2F;--r7-navy2:#1F1A2F;--r7-slate:#2B2637;--r7-mist:#8E7A9E;--r7-rose:#C79BB4;
   --cy:var(--r7-blue);--tl:var(--r7-green);--am:var(--r7-gold);--rd:var(--r7-red);--vi:var(--r7-mauve);--viol:var(--r7-mauve);--green:var(--r7-green);--red:var(--r7-red)}
 html,body,button,select,input{font-family:"Space Grotesk",Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
@@ -164,12 +164,12 @@ body:not(.illus) [data-illus] { display: none !important; }
 .pf-meta { opacity: .75; font-size: .85rem; }
 .pf-trace { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 10px; }
 .pf-step { display: flex; gap: 10px; padding: 10px; border-radius: 10px; border-left: 4px solid #A79BB9; background: rgba(127,127,127,.08); }
-.pf-step.ok { border-left-color: #7FA88A; } .pf-step.bad { border-left-color: #C97A80; }
+.pf-step.ok { border-left-color: #7FA88A; } .pf-step.bad { border-left-color: #D48389; }
 .pf-n { font-weight: 700; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: rgba(127,127,127,.2); flex: none; }
 .pf-why { font-style: italic; margin: 4px 0; }
 .pf-i { border-radius: 50%; width: 20px; height: 20px; border: 1px solid currentColor; background: none; color: inherit; cursor: pointer; font-weight: 700; }
 .pf-t { width: 100%; border-collapse: collapse; font-size: .88rem; } .pf-t td, .pf-t th { padding: 4px 6px; text-align: left; border-bottom: 1px solid rgba(127,127,127,.2); }
-.pf-t .ok, .pf-t span.ok { color: #7FA88A; } .pf-t .bad, .pf-t span.bad { color: #C97A80; }
+.pf-t .ok, .pf-t span.ok { color: #7FA88A; } .pf-t .bad, .pf-t span.bad { color: #D48389; }
 .pf-stack { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .pf-stack div:not(.pf-x) { display: flex; flex-direction: column; } .pf-stack b { font-size: 1.4rem; } .pf-x { font-size: 1.4rem; opacity: .6; }
 .pf-code { background: rgba(127,127,127,.12); padding: 8px; border-radius: 8px; overflow-x: auto; }
 .pf-fb { color: #C4B4D6; }

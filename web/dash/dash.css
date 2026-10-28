@@ -3,7 +3,7 @@
 @font-face{font-family:"JetBrains Mono";src:url(../run/vendor/fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2");font-weight:400}
 @font-face{font-family:"JetBrains Mono";src:url(../run/vendor/fonts/jetbrains-mono-latin-500-normal.woff2) format("woff2");font-weight:500}
 :root{--bg:#080B10;--s1:#0C1118;--s2:#111821;--ln:#1E2933;--ln2:#3B3A54;--tx:#E6ECF1;--mu:#A79BB9;--sub:#B2BEC8;
-  --green:#7FA88A;--blue:#8E7A9E;--orange:#8E7A9E;--cy:#B2A6C3;--red:#C97A80;--viol:#B49BDB;
+  --green:#7FA88A;--blue:#8E7A9E;--orange:#8E7A9E;--cy:#B2A6C3;--red:#D48389;--viol:#B49BDB;
   --mono:"JetBrains Mono",ui-monospace,Menlo,monospace}
 *{box-sizing:border-box}[hidden]{display:none!important}
 html,body{height:100%;margin:0}

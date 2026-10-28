@@ -465,7 +465,7 @@ function mapTopics() {
       kids: [leaf("s-s", "shield", "Without WattNot", `No review: a change would just apply`),
              leaf("s-w", "shield", "With WattNot", `A person approves high-risk changes ${badge("MOCK")}`)],
       detail: `<b>Why choose WattNot.</b> It is a second layer, not a claim to beat everything. Every change is measured, gated, approved by a person, logged, undoable, and signed. If a cap fails a gate, it is rejected, as below.` },
-    { id: "rejected", color: "#C97A80", name: "Rejected options", sub: "What we refused, and why",
+    { id: "rejected", color: "#D48389", name: "Rejected options", sub: "What we refused, and why",
       kids: [leaf("r-s", "x", "Without WattNot", `No gate: 325 W would just run slower at p99 <b>+10.9%</b>`),
              leaf("r-w", "x", "With WattNot", `Gate rejects 325 W: p99 <b>+10.9%</b> is over the <b>10%</b> limit ${badge("MEASURED")}`)],
       detail: `<b>325 W rejected:</b> p99 rose <b>+10.9%</b>, over the 10% limit ${badge("MEASURED")} (data/h100-run2/vm/steps/cap325.json). <b>Granite adaptive top-k rejected:</b> 94.53% agreement, under the 95% gate ${badge("MEASURED")} (story bundle adaptive stats). Rejections are the system working.` },
@@ -688,7 +688,7 @@ function radialHtml(runs, featuredId, rec) {
   const drop = runs.map((r) => `<button class="centre-opt${r.id === featuredId ? " now" : ""}" data-run="${esc(r.id)}" role="option" aria-selected="${r.id === featuredId}">${esc(r.name)}</button>`).join("")
     || `<span class="rad-miss">No runs listed.</span>`;
   const feat = runs.find((r) => r.id === featuredId) || runs[0];
-  return `<div class="bento"><div class="radial-bar noprint span6"><span class="hint">WattNot in the middle. Pick a run, then open Power, Cost or Water for its per-method detail. Drag to pan, scroll to zoom.</span>`
+  return `<div class="bento"><div class="radial-bar noprint span6"><span class="hint">Mind map: WattNot on the left. Click Power, Cost or Water to fan out levers; leaf details align on the right.</span>`
     + `<span style="flex:1"></span><button class="btn" data-radial="open">Expand all</button><button class="btn" data-radial="close">Collapse all</button></div>`
     + `<div class="radial-wrap glass tile span6 low" id="radialWrap"><svg class="radial-wires" id="radialWires" aria-hidden="true"></svg>`
     + `<div class="radial-stage" id="radialStage">`
@@ -943,7 +943,7 @@ const TREE_DESC = {
 };
 const treeVal = (v) => {
   if (!v) return `<span class="rad-miss">–</span><span class="rad-pending">pending</span>`;
-  if (v.gate) return v.pass ? `<span class="rad-pass">✓ pass</span>` : `<span class="rad-fail">✕ fail</span>`;
+  if (v.gate) return v.pass ? `<span class="rad-pass">✓ pass</span> ${badge("MEASURED")}` : `<span class="rad-fail">✕ fail</span> ${badge("MEASURED")}`;
   return `${cnum(esc(v.text), v.tag)}${badge(v.tag)}`;
 };
 function branchDetailHtml(rec, id) {
@@ -999,107 +999,264 @@ function mountCompare() {
   const top = document.createElement("div"); top.id = "cmpR7"; top.innerHTML = cmpHeadHtml(rec);
   page.prepend(top);
   const stage = $("#radialStage"); if (!stage) return;
-  const wires = $("#radialWires"); if (wires && wires.parentElement !== stage) stage.prepend(wires); // wires pan/zoom with the cards
-  $$(".rad-child, .rad-node", stage).forEach((k) => k.remove());
-  S.cmpTreeMode = true; S.cmpActive = null; S.cmpPath = [];
+  if (S.radPan) { try { S.radPan.destroy(); } catch {} S.radPan = null; }
+  stage.style.transform = "none";
+  const wires = $("#radialWires"); if (wires && wires.parentElement !== stage) stage.prepend(wires);
+  $$(".rad-child, .rad-node, .rad-leaf", stage).forEach((k) => k.remove());
+  S.cmpTreeMode = true; S.cmpActive = S.cmpActive || "power"; S.cmpPath = S.cmpPath || [];
   const bar = $(".radial-bar");
   if (bar && !$("#cmpCrumb", bar)) bar.insertAdjacentHTML("afterbegin", `<nav class="cmp-crumb" id="cmpCrumb" aria-label="Compare path"></nav>`);
 
-  const branchSaved = (id) => { const sv = savedPct(rec, id); return sv ? `${cnum(esc(sv.text), sv.tag)}${badge(sv.tag)}` : `<span class="rad-miss">–</span><span class="rad-pending">pending</span>`; };
+  const branchSaved = (id) => { const sv = savedPct(rec, id); return sv ? `${cnum(esc(sv.text), sv.tag)} ${badge(sv.tag)}` : `<span class="rad-miss">–</span><span class="v-chip">pending</span>`; };
+
   function renderCrumb() {
     const el = $("#cmpCrumb"); if (!el) return;
-    if (!S.cmpActive) { el.innerHTML = `<span class="crumb-hint">Open Power, Cost or Water, then drill in. Each click opens one more ring.</span>`; return; }
     const cap = (s) => s[0].toUpperCase() + s.slice(1);
-    const parts = [{ label: "WattNot", depth: -1 }, { label: cap(S.cmpActive), depth: 0 }];
-    S.cmpPath.forEach((id, i) => parts.push({ label: treeFind(id)?.name || id, depth: i + 1 }));
+    const parts = [{ label: "WattNot", depth: -1 }, { label: cap(S.cmpActive || "power"), depth: 0 }];
+    (S.cmpPath || []).forEach((id, i) => parts.push({ label: treeFind(id)?.name || id, depth: i + 1 }));
     el.innerHTML = `<button class="crumb-back" data-back aria-label="Back one level">← Back</button>`
       + parts.map((p, i) => `<button class="crumb" data-crumb="${p.depth}">${esc(p.label)}</button>${i < parts.length - 1 ? '<span class="crumb-sep" aria-hidden="true">›</span>' : ""}`).join("");
-    $("[data-back]", el).onclick = () => { if (S.cmpPath.length) { S.cmpPath = S.cmpPath.slice(0, -1); } else { S.cmpActive = null; } renderTree(); };
-    $$(".crumb", el).forEach((b) => (b.onclick = () => { const d = +b.dataset.crumb; if (d < 0) { S.cmpActive = null; } else { S.cmpPath = S.cmpPath.slice(0, d); } renderTree(); }));
+    $("[data-back]", el).onclick = () => { if (S.cmpPath.length) { S.cmpPath = S.cmpPath.slice(0, -1); } renderTree(); };
+    $$(".crumb", el).forEach((b) => (b.onclick = () => { const d = +b.dataset.crumb; if (d < 0) { S.cmpPath = []; } else { S.cmpPath = S.cmpPath.slice(0, d); } renderTree(); }));
   }
+
   function renderTree() {
-    $$(".rad-card", stage).forEach((c) => { const on = c.dataset.node === S.cmpActive; c.dataset.open = on ? "1" : "0"; $(".rad-head", c)?.setAttribute("aria-expanded", String(on)); });
-    $$(".rad-node", stage).forEach((n) => n.remove());
+    $$(".rad-card", stage).forEach((c) => {
+      const on = c.dataset.node === S.cmpActive;
+      c.dataset.open = on ? "1" : "0";
+      $(".rad-head", c)?.setAttribute("aria-expanded", String(on));
+    });
+    $$(".rad-node, .rad-leaf", stage).forEach((n) => n.remove());
+
     if (S.cmpActive) {
+      // 1. Render child nodes for each level in path
       for (let d = 0; d <= S.cmpPath.length; d++) {
         for (const node of treeChildren(S.cmpPath.slice(0, d))) {
-          const v = treeValue(rec, S.cmpActive, node), has = !!(node.kids && node.kids.length), onPath = S.cmpPath[d] === node.id;
+          const v = treeValue(rec, S.cmpActive, node);
+          const has = !!(node.kids && node.kids.length);
+          const onPath = S.cmpPath[d] === node.id;
           const el = document.createElement("div");
-          el.className = `rad-node min${onPath ? " on" : ""}`; el.dataset.depth = d; el.dataset.node = node.id;
+          el.className = `rad-node min${onPath ? " on" : ""}`;
+          el.dataset.depth = d;
+          el.dataset.node = node.id;
           el.innerHTML = `<button class="rad-head2" aria-expanded="${onPath}"${has ? "" : " disabled"} aria-label="${esc(node.name)}${has ? ": open its routes" : ""}"><b>${esc(node.name)}</b><span class="rad-val">${treeVal(v)}</span>${node.own_only ? `<small class="rad-sub">own GPU only</small>` : ""}${has ? `<span class="rad-chev" aria-hidden="true">›</span>` : ""}</button><button class="ibtn rad-i" aria-label="${esc(node.name)} details">i</button>`;
           stage.appendChild(el);
-          if (has) $(".rad-head2", el).onclick = () => { S.cmpPath = S.cmpPath.slice(0, d).concat(node.id); renderTree(); };
-          $(".rad-i", el).onclick = (e) => { e.stopPropagation(); openSidePanel(node.name, nodeDetailHtml(rec, S.cmpActive, node)); };
+          if (has) {
+            $(".rad-head2", el).onclick = () => {
+              if (onPath) S.cmpPath = S.cmpPath.slice(0, d);
+              else S.cmpPath = S.cmpPath.slice(0, d).concat(node.id);
+              renderTree();
+            };
+          }
+          $(".rad-i", el).onclick = (e) => {
+            e.stopPropagation();
+            openSidePanel(node.name, nodeDetailHtml(rec, S.cmpActive, node));
+          };
         }
       }
+
+      // 2. Render leaf detail cards aligned in a column on the right
+      const currentKids = treeChildren(S.cmpPath);
+      const leafNodes = (currentKids && currentKids.length) ? currentKids : (S.cmpPath.length ? treeChildren(S.cmpPath.slice(0, -1)) : treeChildren([]));
+      (leafNodes || []).forEach((leaf) => {
+        const v = treeValue(rec, S.cmpActive, leaf);
+        const desc = TREE_DESC[leaf.id] || "";
+        const cardEl = document.createElement("div");
+        cardEl.className = "rad-leaf";
+        cardEl.dataset.leaf = leaf.id;
+        cardEl.innerHTML = `<div class="rad-leaf-hd"><span class="rad-leaf-title">${esc(leaf.name)}</span><span style="color:var(--cy);font-size:12px">→</span></div><div class="rad-leaf-val">${treeVal(v)}</div><div class="rad-leaf-desc">${esc(desc)}</div>`;
+        cardEl.onclick = () => {
+          openSidePanel(leaf.name, nodeDetailHtml(rec, S.cmpActive, leaf));
+        };
+        stage.appendChild(cardEl);
+      });
     }
+
     renderCrumb();
-    layoutTree(); S.radPan?.update?.();
-    if (S.cmpActive) { const t = $(`.rad-card[data-node="${S.cmpActive}"]`, stage); if (t) S.radPan?.focus(t, { zoom: 0.5 }); } else S.radPan?.fit?.();
+    layoutTree();
   }
+
   $$(".rad-card", stage).forEach((c) => {
     const id = c.dataset.branch, name = id[0].toUpperCase() + id.slice(1);
-    c.classList.add("min"); c.dataset.open = "0"; c.dataset.node = id;
-    c.innerHTML = `<button class="rad-head" aria-expanded="false" aria-label="${name}: open its routes"><b>${name}</b><span class="rad-val">${branchSaved(id)}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power</small>`}</button><button class="ibtn rad-i" aria-label="${name} details">i</button>`;
-    $(".rad-head", c).onclick = () => { S.cmpActive = S.cmpActive === id ? null : id; S.cmpPath = []; renderTree(); };
+    c.classList.add("min"); c.dataset.open = id === S.cmpActive ? "1" : "0"; c.dataset.node = id;
+    c.innerHTML = `<button class="rad-head" aria-expanded="${id === S.cmpActive}" aria-label="${name}: open its routes"><b><span>${name}</span>${badge(id === "power" ? "MEASURED" : "ESTIMATE")}</b><span class="rad-val">${branchSaved(id)}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power</small>`}</button><button class="ibtn rad-i" aria-label="${name} details">i</button>`;
+    $(".rad-head", c).onclick = () => { S.cmpActive = id; S.cmpPath = []; renderTree(); };
     $(".rad-i", c).onclick = (e) => { e.stopPropagation(); openSidePanel(name, branchDetailHtml(rec, id)); };
   });
-  // Expand all opens the Power branch's first ring; Collapse all returns to the centre.
-  $$("#pReport [data-radial]").forEach((b) => (b.onclick = () => { S.cmpActive = b.dataset.radial === "open" ? "power" : null; S.cmpPath = []; renderTree(); }));
+
+  // Expand all opens the Power branch's levers; Collapse all returns to top
+  $$("#pReport [data-radial]").forEach((b) => (b.onclick = () => {
+    if (b.dataset.radial === "open") {
+      S.cmpActive = "power";
+      S.cmpPath = ["where", "own"];
+    } else {
+      S.cmpActive = "power";
+      S.cmpPath = [];
+    }
+    renderTree();
+  }));
+
   renderTree();
   const ctr = $("#radCentre");
   if (ctr && !$("[data-where]", ctr)) ctr.insertAdjacentHTML("beforeend", `<button class="btn rad-where" data-where>Where should this model run?</button>`);
   const w = $("[data-where]", ctr); if (w) w.onclick = () => openWhere(rec);
   const sig = $("#pReport .receipt-meta"); if (!sig) $("#pReport").insertAdjacentHTML("beforeend", `<div class="receipt-meta glass">${metaInRun(rec)}</div>`);
 }
-// Nested-tree layout: WattNot centre, the three branches 120° apart on an inner
-// ring, and the active branch's drill rings fanned out in its own sector — one
-// more ring per level the breadcrumb has descended.
+
+// Mind Map layout:
+// Center node (WattNot / run) on the left-centre.
+// Power, Cost, Water fanned in an orderly arc to the right.
+// Child nodes in an orderly secondary arc / column.
+// Leaf detail cards sit aligned in a column on the right with dashed elbow connectors.
+// Fits the viewport (container size + SVG viewBox), no panning.
 function layoutTree() {
   const wrap = $("#radialWrap"), stage = $("#radialStage"), svg = $("#radialWires"), centre = $("#radCentre");
   if (!wrap || !stage || !svg || !centre) return;
-  const W = wrap.clientWidth || 0;
-  const cards = $$(".rad-card", stage), nodes = $$(".rad-node", stage);
-  if (!W || W < 900) {
-    stage.style.width = ""; stage.style.height = ""; centre.style.left = ""; centre.style.top = "";
-    cards.forEach((c) => { c.style.left = ""; c.style.top = ""; });
-    nodes.forEach((k) => { k.style.left = ""; k.style.top = ""; });
-    svg.innerHTML = ""; return;
-  }
-  const R1 = 240, RING = 230, depth = (S.cmpPath || []).length;
-  const ringsOut = S.cmpActive ? depth + 1 : 0;
-  const maxR = R1 + ringsOut * RING + 150, w = Math.ceil(maxR * 2 + 40), h = w, cx = w / 2, cy = h / 2;
-  stage.style.width = `${w}px`; stage.style.height = `${h}px`;
-  centre.style.left = `${cx.toFixed(1)}px`; centre.style.top = `${cy.toFixed(1)}px`;
-  const angleOf = (branch) => -Math.PI / 2 + RAD_BRANCHES.indexOf(branch) * 2 * Math.PI / 3;
-  cards.forEach((c) => { const a = angleOf(c.dataset.node); c.style.left = `${(cx + R1 * Math.cos(a)).toFixed(1)}px`; c.style.top = `${(cy + R1 * Math.sin(a)).toFixed(1)}px`; });
-  if (S.cmpActive) {
-    const A = angleOf(S.cmpActive), spread = 0.8 * (2 * Math.PI / 3);
-    for (let d = 0; d <= depth; d++) {
-      const ring = nodes.filter((k) => +k.dataset.depth === d), k = ring.length, step = k > 1 ? spread / (k - 1) : 0, Rd = R1 + (d + 1) * RING;
-      ring.forEach((el, j) => { const aj = A + (j - (k - 1) / 2) * step; el.style.left = `${(cx + Rd * Math.cos(aj)).toFixed(1)}px`; el.style.top = `${(cy + Rd * Math.sin(aj)).toFixed(1)}px`; });
+  const availW = (wrap.clientWidth || 1160) - 32;
+  const baseW = 1160, baseH = 600;
+  const scale = availW < baseW ? Math.max(0.45, availW / baseW) : 1;
+  stage.style.width = `${baseW}px`;
+  stage.style.height = `${baseH}px`;
+  stage.style.transformOrigin = "top left";
+  stage.style.transform = scale < 1 ? `scale(${scale.toFixed(4)})` : "none";
+  wrap.style.height = `${Math.round(baseH * scale + 32)}px`;
+
+  const W = baseW, H = baseH;
+
+  // Central node on left-centre
+  const cx = 85, cy = H / 2;
+  centre.style.left = `${cx}px`; centre.style.top = `${cy}px`;
+
+  // Metric cards fanned in an orderly arc
+  const cards = $$(".rad-card", stage);
+  const metricPos = {
+    power: [240, 140],
+    cost: [265, 300],
+    water: [240, 460],
+  };
+  cards.forEach((c) => {
+    const p = metricPos[c.dataset.node] || [250, 300];
+    c.style.left = `${p[0]}px`; c.style.top = `${p[1]}px`;
+  });
+
+  // Position child nodes
+  const nodes = $$(".rad-node", stage);
+  const depth = (S.cmpPath || []).length;
+  for (let d = 0; d <= depth; d++) {
+    const ring = nodes.filter((k) => +k.dataset.depth === d);
+    const count = ring.length;
+    if (d === 0) {
+      const x = depth === 0 ? 475 : 445;
+      const startY = 95, endY = 505;
+      const stepY = count > 1 ? (endY - startY) / (count - 1) : 0;
+      ring.forEach((el, idx) => {
+        el.style.left = `${x}px`;
+        el.style.top = `${count === 1 ? H / 2 : startY + idx * stepY}px`;
+      });
+    } else {
+      const x = 650;
+      const startY = 110, endY = 490;
+      const stepY = count > 1 ? (endY - startY) / (count - 1) : 0;
+      ring.forEach((el, idx) => {
+        el.style.left = `${x}px`;
+        el.style.top = `${count === 1 ? H / 2 : startY + idx * stepY}px`;
+      });
     }
   }
-  drawTreeWires(cx, cy);
+
+  // Position leaf detail cards aligned in column on the right
+  const leaves = $$(".rad-leaf", stage);
+  const leafCount = leaves.length;
+  const leafX = 870;
+  const leafStartY = 60, leafEndY = 530;
+  const leafStepY = leafCount > 1 ? (leafEndY - leafStartY) / (leafCount - 1) : 0;
+  leaves.forEach((el, idx) => {
+    const y = leafCount === 1 ? H / 2 - 35 : (leafStartY + idx * leafStepY);
+    el.style.left = `${leafX}px`;
+    el.style.top = `${y}px`;
+  });
+
+  drawTreeWires(cx, cy, W, H);
 }
-function drawTreeWires(cx, cy) {
+
+function drawTreeWires(cx, cy, W, H) {
   const stage = $("#radialStage"), svg = $("#radialWires"); if (!stage || !svg) return;
-  const pos = (el) => [parseFloat(el.style.left) || 0, parseFloat(el.style.top) || 0];
-  const link = (a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1, sx = a[0] + dx / len * 40, sy = a[1] + dy / len * 40, ex = b[0] - dx / len * 46, ey = b[1] - dy / len * 30; return `M ${sx.toFixed(1)} ${sy.toFixed(1)} C ${(sx + dx * 0.3).toFixed(1)} ${(sy + dy * 0.3).toFixed(1)}, ${(sx + dx * 0.7).toFixed(1)} ${(sy + dy * 0.7).toFixed(1)}, ${ex.toFixed(1)} ${ey.toFixed(1)}`; };
-  const d = [];
-  $$(".rad-card", stage).forEach((c) => d.push(link([cx, cy], pos(c))));
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.style.width = `${W}px`; svg.style.height = `${H}px`;
+
+  const getCenter = (el) => [parseFloat(el.style.left) || 0, parseFloat(el.style.top) || 0];
+  const dottedPaths = [];
+  const elbowPaths = [];
+  const dots = [];
+
+  const addDottedCurve = (x1, y1, x2, y2) => {
+    const dx = x2 - x1;
+    const cp1x = x1 + dx * 0.45, cp2x = x1 + dx * 0.55;
+    const d = `M ${x1.toFixed(1)} ${y1.toFixed(1)} C ${cp1x.toFixed(1)} ${y1.toFixed(1)}, ${cp2x.toFixed(1)} ${y2.toFixed(1)}, ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+    dottedPaths.push(d);
+    dots.push([x1, y1]);
+    dots.push([x2, y2]);
+  };
+
+  const addElbowPath = (x1, y1, x2, y2) => {
+    const midX = (x1 + x2) / 2;
+    const d = `M ${x1.toFixed(1)} ${y1.toFixed(1)} H ${midX.toFixed(1)} V ${y2.toFixed(1)} H ${x2.toFixed(1)}`;
+    elbowPaths.push(d);
+    dots.push([x2, y2]);
+  };
+
+  // 1. Connect central node to metric cards (Power, Cost, Water)
+  $$(".rad-card", stage).forEach((c) => {
+    const [mx, my] = getCenter(c);
+    addDottedCurve(cx + 48, cy, mx - 84, my);
+  });
+
+  // 2. Connect active metric card to child nodes
   if (S.cmpActive) {
-    const branchCard = $(`.rad-card[data-node="${S.cmpActive}"]`, stage), nodes = $$(".rad-node", stage);
-    const bp = branchCard ? pos(branchCard) : [cx, cy];
-    for (let dep = 0; dep <= (S.cmpPath || []).length; dep++) {
-      const ring = nodes.filter((k) => +k.dataset.depth === dep);
-      let parent = bp;
-      if (dep > 0) { const pel = nodes.find((k) => +k.dataset.depth === dep - 1 && k.dataset.node === S.cmpPath[dep - 1]); if (pel) parent = pos(pel); }
-      ring.forEach((el) => d.push(link(parent, pos(el))));
+    const activeCard = $(`.rad-card[data-node="${S.cmpActive}"]`, stage);
+    const [mx, my] = activeCard ? getCenter(activeCard) : [cx + 48, cy];
+    const nodes = $$(".rad-node", stage);
+    const depth0 = nodes.filter((k) => +k.dataset.depth === 0);
+
+    depth0.forEach((el) => {
+      const [kx, ky] = getCenter(el);
+      addDottedCurve(mx + 84, my, kx - 88, ky);
+    });
+
+    // 3. Connect parent node to deeper child nodes
+    const depth = (S.cmpPath || []).length;
+    for (let d = 1; d <= depth; d++) {
+      const ring = nodes.filter((k) => +k.dataset.depth === d);
+      const parentId = S.cmpPath[d - 1];
+      const parentEl = nodes.find((k) => +k.dataset.depth === d - 1 && k.dataset.node === parentId);
+      const [px, py] = parentEl ? getCenter(parentEl) : [mx, my];
+      ring.forEach((el) => {
+        const [kx, ky] = getCenter(el);
+        addDottedCurve(px + 88, py, kx - 88, ky);
+      });
     }
+
+    // 4. Dashed elbow connectors to leaf detail cards
+    const leaves = $$(".rad-leaf", stage);
+    leaves.forEach((leafEl) => {
+      const leafId = leafEl.dataset.leaf;
+      const leafX = parseFloat(leafEl.style.left) || 0;
+      const leafY = (parseFloat(leafEl.style.top) || 0) + (leafEl.offsetHeight || 50) / 2;
+      const matchingNode = nodes.find((k) => k.dataset.node === leafId) ||
+        nodes.find((k) => +k.dataset.depth === depth) ||
+        depth0[0];
+      if (matchingNode) {
+        const [nx, ny] = getCenter(matchingNode);
+        addElbowPath(nx + 88, ny, leafX - 4, leafY);
+      }
+    });
   }
-  svg.setAttribute("viewBox", `0 0 ${stage.offsetWidth} ${stage.offsetHeight}`);
-  svg.innerHTML = d.map((x) => `<path d="${x}"/>`).join("");
+
+  const dottedSvg = dottedPaths.map((d) => `<path d="${d}" stroke="#B2A6C3" stroke-width="1.8" stroke-dasharray="4,4" fill="none" />`).join("");
+  const elbowSvg = elbowPaths.map((d) => `<path d="${d}" stroke="#8E7A9E" stroke-width="1.5" stroke-dasharray="5,4" fill="none" />`).join("");
+  const dotsSvg = dots.map(([x, y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#B2A6C3" /><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.5" fill="#DCD6E4" />`).join("");
+
+  svg.innerHTML = dottedSvg + elbowSvg + dotsSvg;
 }
 async function sha256(s) { if (!globalThis.crypto?.subtle) return null; const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
 async function startQuiet() { const r = await fetch("/api/dash/v2/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(S.choice) }); S.run = await r.json(); S.n = S.run.events.length; renderRun(); }

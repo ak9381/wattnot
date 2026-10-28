@@ -189,30 +189,32 @@ h2.hl{font:600 clamp(28px,2.7vw,50px)/1.1 Inter,system-ui,sans-serif;letter-spac
 .err{border:1px solid #7a3a37;border-radius:8px;padding:14px 16px;color:var(--ink2);max-width:60ch}
 @media (prefers-reduced-motion:reduce){.av-edges .e.flow,.lnk.live{animation:none}.lnk.live{background:var(--cy)}}
 /* ---- architecture glass + collapse (scoped to #arch so other views do not change) ---- */
-#arch .av.aglass .avn{background:rgba(17,25,34,.55);-webkit-backdrop-filter:blur(14px) saturate(1.25);backdrop-filter:blur(14px) saturate(1.25);border:1px solid rgba(255,255,255,.10);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.38),0 0 16px rgba(178,166,195,.07),inset 0 1px 0 rgba(255,255,255,.08);color:#EDF2F7}
-#arch .av.aglass .avn .hd .t{color:#F4F8FB}
-#arch .av.aglass .avn .d{color:#C6D0DA}
-#arch .av.aglass .avn .stat .k{color:#C6D0DA}
-#arch .av.aglass .avn .stat .v{color:#FFFFFF}
-#arch .av.aglass .avn .stat .v.na{color:#C6D0DA}
-#arch .av.aglass .avn .xp,#arch .av.aglass .avn .pin{color:#D5DDE4;border-color:rgba(255,255,255,.18)}
-#arch .av.aglass .avn .st{color:#C6D0DA}
-#arch .av.aglass .sub{background:rgba(13,19,27,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-color:rgba(255,255,255,.12);color:#E6EDF3}
-#arch .av.aglass .sub i{color:#C6D0DA}
-#arch .av.aglass .avn .now{color:#F4F8FB}
-#arch .av.aglass .avn.done .now{color:#D5DDE4}
+#arch .av.aglass .avn{background:rgba(31,26,47,.65);-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);border:1px solid rgba(220,214,228,.12);border-radius:18px;box-shadow:0 8px 32px rgba(0,0,0,.40),0 2px 8px rgba(0,0,0,.25),inset 0 1px 0 rgba(220,214,228,.12);color:#DCD6E4}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){#arch .av.aglass .avn{background:#1F1A2F}}
+#arch .av.aglass .avn .hd .t{color:#DCD6E4}
+#arch .av.aglass .avn .d{color:#C9C1D6}
+#arch .av.aglass .avn .stat .k{color:#C9C1D6}
+#arch .av.aglass .avn .stat .v{color:#DCD6E4}
+#arch .av.aglass .avn .stat .v.na{color:#A79BB9}
+#arch .av.aglass .avn .xp,#arch .av.aglass .avn .pin{color:#C9C1D6;border-color:rgba(220,214,228,.18)}
+#arch .av.aglass .avn .st{color:#A79BB9}
+#arch .av.aglass .sub{background:rgba(23,23,36,.65);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-color:rgba(220,214,228,.12);color:#DCD6E4}
+#arch .av.aglass .sub i{color:#C9C1D6}
+#arch .av.aglass .avn .now{color:#DCD6E4}
+#arch .av.aglass .avn.done .now{color:#A79BB9}
 /* collapsed summary: title + partner tag stay in .hd, key number shows here */
-#arch .av.aglass .avn .sum{display:flex;align-items:baseline;gap:8px;width:100%;margin:8px 0 2px;padding:7px 10px;border:1px solid rgba(255,255,255,.14);border-radius:7px;background:rgba(255,255,255,.05);color:#F4F8FB;font-size:.92em;cursor:pointer;text-align:left}
-#arch .av.aglass .avn .sum .k{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#D5DDE4;font-size:.82em}
-#arch .av.aglass .avn .sum .v{color:#FFFFFF;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:1.55em;font-weight:650;letter-spacing:-.01em;line-height:1.15}
+#arch .av.aglass .avn .sum{display:flex;align-items:baseline;gap:8px;width:100%;margin:8px 0 2px;padding:7px 10px;border:1px solid rgba(220,214,228,.14);border-radius:10px;background:rgba(46,43,68,.35);color:#DCD6E4;font-size:.92em;cursor:pointer;text-align:left}
+#arch .av.aglass .avn .sum .k{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#C9C1D6;font-size:.82em}
+#arch .av.aglass .avn .sum .v{color:#DCD6E4;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:1.55em;font-weight:650;letter-spacing:-.01em;line-height:1.15}
 #arch .av.aglass .avn.open .sum{display:none}
 /* collapsed cards hide the full detail; expanded cards show the sub-step list */
 #arch .av.aglass .avn:not(.open) .d,#arch .av.aglass .avn:not(.open) .stl,#arch .av.aglass .avn:not(.open) .pw{display:none}
 /* glass side panel */
-#arch #apanel{background:rgba(13,19,27,.62);-webkit-backdrop-filter:blur(16px) saturate(1.25);backdrop-filter:blur(16px) saturate(1.25);border-left:1px solid rgba(255,255,255,.14);box-shadow:-12px 0 40px rgba(0,0,0,.45),0 0 20px rgba(178,166,195,.06);color:#EDF2F7}
-#arch #apanel h3{color:#FFFFFF}
-#arch #apanel p,#arch #apanel li{color:#DDE5EC}
-#arch #apanel .muted{color:#C6D0DA}
+#arch #apanel{background:rgba(23,23,36,.85);-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);border-left:1px solid rgba(220,214,228,.15);box-shadow:-16px 0 48px rgba(0,0,0,.5),0 0 20px rgba(178,166,195,.06);color:#DCD6E4}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){#arch #apanel{background:#1F1A2F}}
+#arch #apanel h3{color:#DCD6E4}
+#arch #apanel p,#arch #apanel li{color:#C9C1D6}
+#arch #apanel .muted{color:#A79BB9}
 /* narrow cards: let the title and tags wrap instead of overlapping */
 #arch .av.aglass .avn .hd{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:flex-start}
 #arch .av.aglass .avn .hd .t{flex:1 1 100%;min-width:0;overflow-wrap:anywhere}

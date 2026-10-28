@@ -236,7 +236,8 @@ th .pdot,td .pdot{margin-left:0}
 .who .cr b{min-width:0;padding:0 6px}
 /* ---- minimalist bento: grid tiles with glass, a little overlap ---- */
 .bento{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;align-items:start}
-.tile{background:rgba(17,25,34,.55);-webkit-backdrop-filter:blur(14px) saturate(1.25);backdrop-filter:blur(14px) saturate(1.25);border:1px solid rgba(255,255,255,.10);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.38),0 0 16px rgba(178,166,195,.07),inset 0 1px 0 rgba(255,255,255,.08);padding:14px 16px;min-width:0;color:#EDF2F7}
+.tile{background:rgba(31,26,47,.65);-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);border:1px solid rgba(220,214,228,.12);border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,.40),0 2px 8px rgba(0,0,0,.25),inset 0 1px 0 rgba(220,214,228,.12);padding:16px 18px;min-width:0;color:#DCD6E4}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.tile{background:#1F1A2F}}
 .tile.span-12{grid-column:span 12}.tile.span-8{grid-column:span 8}.tile.span-6{grid-column:span 6}.tile.span-4{grid-column:span 4}.tile.span-3{grid-column:span 3}
 .bento>.rside{grid-column:span 4}
 .tile.lap{margin-top:-10px;box-shadow:0 14px 40px rgba(0,0,0,.5),0 0 20px rgba(178,166,195,.10),inset 0 1px 0 rgba(255,255,255,.10)}
