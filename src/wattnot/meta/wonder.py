@@ -215,11 +215,13 @@ class WonderSupervisor:
         self.patience = int(patience)
         self.trace_ids: list[str] = []
 
-        if mock is not None:
-            self.mock = bool(mock)
+        if mock is None:
+            # Mock is the default. Live mode needs an explicit mock=False (CLI --live);
+            # an ambient environment variable must never switch a library caller to paid calls.
+            self.mock = True
         else:
-            env_mock = os.environ.get("WATTNOT_META_MOCK", "1").strip().lower()
-            self.mock = env_mock not in ("0", "false", "no")
+            # WATTNOT_META_MOCK=1 can only force mock, never force live.
+            self.mock = bool(mock) or os.environ.get("WATTNOT_META_MOCK", "").strip() == "1"
 
         self.client = client or (GuardedClient() if not self.mock else None)
 
@@ -367,10 +369,11 @@ class WonderSupervisor:
         json_path = out / "efficiency_summary.json"
         json_path.write_text(json.dumps(json_doc, indent=2) + "\n", encoding="utf-8")
 
+        trial_labels = "/".join(sorted({str(t.get("label", "MOCK")) for t in normalized})) or "MOCK"
         md_lines = [
             "# Muse Wonder Supervisor Efficiency Summary",
             "",
-            f"- **Trials Evaluated**: {len(normalized)} (label: MEASURED/SIMULATED)",
+            f"- **Trials Evaluated**: {len(normalized)} (label: {trial_labels})",
             f"- **Stop Reason**: {stop_reason}",
             f"- **Pareto Front Count**: {len(front)}",
             f"- **Threshold**: {self.threshold:.2%}",

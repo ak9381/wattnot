@@ -94,8 +94,11 @@ def output_cap(body: Mapping) -> int:
 def estimate(body: Mapping) -> tuple[int, int, float]:
     """Worst case for one call: (input tokens, output tokens, USD).
 
-    Input is the request size at 3 chars per token with no cache discount; output is the
-    full output cap (reasoning tokens count against it), so the real cost is never higher.
+    Output is priced at the full output cap (reasoning tokens count against it), so the
+    real output cost is never higher. Input is the request size at 3 chars per token with
+    no cache discount; token-dense input (CJK, digit-heavy payloads) can tokenize closer
+    to 1 token/char and settle above this reserve, so a call admitted right at the cap may
+    overshoot by that bounded input delta — every later call is then refused.
     """
 
     n_in = math.ceil(len(json.dumps(body, separators=(",", ":"))) / CHARS_PER_TOKEN)
