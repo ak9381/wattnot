@@ -30,24 +30,48 @@ const ROWS = [
   { id: "privacy", name: "Privacy / data control", tip: "Where prompts go and who can see them." },
 ];
 const PRIVACY = { own: "Prompts stay on your machine", baseten: "Prompts go to Baseten", modal: "Prompts go to Modal" };
-function cell(row, opt) {
+// Bound to the run record's placements[] and routing (backend: spark_open/h2h.py
+// placements() and spark_open/router.py attach()). Ids there are local/baseten/modal.
+const PID = { own: "local", baseten: "baseten", modal: "modal" };
+const FIELD = { quality: ["pass_pct", (v) => `${fmt(v, 1)}%`], cost: ["usd_per_1k", (v) => `$${fmt(v, 3)}`], energy: ["wh_per_1k", (v) => `${fmt(v, 2)} Wh / 1k`], p99: ["p99_s", (v) => `${fmt(v, 2)} s`] };
+const tagOf = (l) => { const u = String(l || "").toUpperCase(); return Object.keys(CLS).find((k) => u.includes(k)) || u; };
+export const placement = (rec, opt) => (rec?.placements || []).find((p) => p.id === PID[opt]);
+export function routing(rec) {
+  const ds = rec?.routing?.decisions || [];
+  return { decisions: ds, chosen: ds.find((d) => d.chosen)?.chosen || null };
+}
+function cell(row, opt, rec) {
   if (row === "privacy") return `<span class="wr-priv">${esc(PRIVACY[opt])}</span>`;
+  const p = placement(rec, opt), f = FIELD[row];
+  if (p && p.status === "not_run") return `<span class="r7miss">Not run</span><small>${esc(p.why)}</small>`;
+  if (p && f && p[f[0]]?.value != null) return `${n(f[1](p[f[0]].value), tagOf(p[f[0]].label))}<small>${esc(p[f[0]].label)}</small>`;
   const c = CELLS[row]?.[opt];
   if (c) return `${n(esc(c.text), c.tag)}<small>${esc(c.note)}</small>`;
   const est = row === "energy" && opt !== "own";
   return `<span class="r7miss">${PENDING}</span>${est ? `<small>Will be an ${n("estimate", "ESTIMATE")}: hosts do not share power meters.</small>` : ""}`;
 }
-export function whereHtml() {
+function pickHtml(rec) {
+  const { decisions } = routing(rec);
+  if (!decisions.length) return `<h3>WattNot chose: <span class="r7miss">pending the long run</span></h3>
+      <p>After the long run WattNot picks the best place for each kind of work and says why, for example "WattNot chose Your GPU for batch because it was cheapest and passed all gates".</p>
+      <ul class="wr-gates">${["Quality gate (answers agree 95%+)", "Speed gate (p99 within the limit)", "Budget gate"].map((g) => `<li><span class="r7miss">${esc(g)}: ${PENDING}</span></li>`).join("")}</ul>`;
+  const name = (id) => OPTIONS.find((o) => PID[o.id] === id)?.name || id;
+  return decisions.map((d) => `<h3>${esc(d.workload?.name || "")}: WattNot chose ${d.chosen ? esc(name(d.chosen)) : "nothing"}</h3>
+      <p>because ${esc(d.reason)}${d.rule ? ` <small>(rule: ${esc(d.rule)})</small>` : ""}</p>
+      <ul class="wr-gates">${(d.candidates || []).map((c) => `<li>${esc(name(c.id))}: ${c.status === "excluded" ? `failed the gate, ${esc(c.why)}` : c.status === "chosen" ? "passed, chosen" : "passed"}</li>`).join("")}${(d.flags || []).map((f) => `<li>${esc(f)}</li>`).join("")}</ul>`).join("");
+}
+export function whereHtml(rec) {
   return `<div class="wr">
     <p class="wr-lead">All three are compared in every run. ${infoBtn("tiered", "tiered and k-means experts")}${infoBtn("router", "the per-workload router")}</p>
     <table class="wr-t"><thead><tr><th></th>${OPTIONS.map((o) => `<th scope="col"><b>${esc(o.name)}</b><small>${esc(o.sub)}</small><span class="ptag">${esc(o.partner)}</span></th>`).join("")}</tr></thead>
-    <tbody>${ROWS.map((r) => `<tr><th scope="row"><span${tip(r.tip)}>${esc(r.name)}</span></th>${OPTIONS.map((o) => `<td>${cell(r.id, o.id)}</td>`).join("")}</tr>`).join("")}</tbody></table>
-    <div class="wr-pick glass"><h3>WattNot chose: <span class="r7miss">pending the long run</span></h3>
-      <p>After the long run WattNot picks the best place for each kind of work and says why, for example "WattNot chose Your GPU for batch because it was cheapest and passed all gates".</p>
-      <ul class="wr-gates">${["Quality gate (answers agree 95%+)", "Speed gate (p99 within the limit)", "Budget gate"].map((g) => `<li><span class="r7miss">${esc(g)}: ${PENDING}</span></li>`).join("")}</ul></div></div>`;
+    <tbody>${ROWS.map((r) => `<tr><th scope="row"><span${tip(r.tip)}>${esc(r.name)}</span></th>${OPTIONS.map((o) => `<td${routing(rec).chosen === PID[o.id] ? ' class="pick"' : ""}>${cell(r.id, o.id, rec)}</td>`).join("")}</tr>`).join("")}</tbody></table>
+    <div class="wr-pick glass">${pickHtml(rec)}</div></div>`;
 }
-function optionBars(metric) {
-  return `<div class="ob"><div class="lvl">By place to run ${infoBtn("router", "the router")}</div>${OPTIONS.map((o) => `<div class="ob-row"><span>${esc(o.name)}</span><span class="r7miss">${PENDING}</span></div>`).join("")}
+const OBF = { power: ["wh_per_1k", (v) => `${fmt(v, 2)} Wh / 1k`], cost: ["usd_per_1k", (v) => `$${fmt(v, 3)} / 1k`], water: ["wh_per_1k", (v) => `${fmt(v * 0.36 / 1000, 4)} L / 1k`] };
+function optionBars(metric, rec) {
+  const ch = routing(rec).chosen, f = OBF[metric];
+  const val = (o) => { const p = placement(rec, o.id); if (!p) return `<span class="r7miss">${PENDING}</span>`; if (p.status === "not_run") return `<span class="r7miss" title="${esc(p.why)}">Not run</span>`; const m = p[f[0]]; return m?.value != null ? n(f[1](m.value), tagOf(m.label)) : `<span class="r7miss">not measured</span>`; };
+  return `<div class="ob"><div class="lvl">By place to run ${infoBtn("router", "the router")}</div>${OPTIONS.map((o) => `<div class="ob-row${ch === PID[o.id] ? " pick" : ""}"><span>${esc(o.name)}${ch === PID[o.id] ? " · chosen" : ""}</span>${val(o)}</div>`).join("")}
     <p class="r7note">The option WattNot picks will be highlighted here. ${metric === "power" ? "" : ""}Hosted energy will be an estimate.</p></div>`;
 }
 
@@ -86,7 +110,7 @@ export function compareHtml(rec, price = 0.1387, water = 0.36) {
       <button class="cmp-chart" data-pop="chart-${c.id}" aria-label="Open the ${c.title} graph in a window">${lineChart(series(rec, c.f), { unit: c.unit, yLabel: c.unit, xLabel: "Repeat (per-repeat RUN2 data; the long run adds a time series)", w: 520, h: 220, y0: 0, xticks: [1, 2, 3].map((x) => ({ x, label: `#${x}` })), aria: `${c.title} with and without WattNot` })}</button>
       <div class="lvl">By method</div>
       <ul class="cmp-m">${METHODS.map(([id, name]) => `<li><button class="linkish" data-pop="m-${c.id}-${id}">${esc(name)}</button><span>${id === "caps" && c.saved ? n(`${esc(c.saved)} (whole run)`, c.tag) : `<span class="r7miss">not measured in this run</span>`}</span></li>`).join("")}</ul>
-      ${optionBars(c.id)}
+      ${optionBars(c.id, rec)}
     </div></section>`).join("")}</div>
   <section class="cmp glass cmp-where"><header><h2 class="cmp-t">Where should this model run?</h2>${infoBtn("router", "the router")}</header>
     <p class="cmp-sub">Your GPU vs Baseten vs Modal, compared on every run.</p><button class="btn" data-pop="where">Open the head-to-head</button></section>`;
@@ -99,7 +123,7 @@ export function wireCompare(root, rec, price = 0.1387, water = 0.36) {
   }));
   root.querySelectorAll("[data-pop]").forEach((b) => (b.onclick = () => {
     const k = b.dataset.pop;
-    if (k === "where") return popup("Where should this model run?", whereHtml(), { sub: "All three are compared in this run." });
+    if (k === "where") return popup("Where should this model run?", whereHtml(rec), { sub: "All three are compared in this run." });
     if (k.startsWith("chart-")) return openPowerGraph(rec, cards[k.slice(6)]);
     const [, cid, mid] = k.split("-"); const c = cards[cid], m = METHODS.find(([i]) => i === mid);
     popup(`${c.title} · ${m[1]}`, mid === "caps" && c.saved
