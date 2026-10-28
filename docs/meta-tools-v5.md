@@ -233,3 +233,12 @@ A consolidated preview page (`web/dash/metatools.html`) brings together all Meta
 - EU Energy Efficiency Directive export link
 - Self-mounted Voice Guide in top-right slot
 
+
+## Built partly with Muse Code
+Two scoped commits on this branch were written headless with Muse Code 1.4.14 (`muse exec --json --workspace <repo> --prompt-file <task>`), model muse-spark-1.3-contributor:
+- `ab8d2a1` Apply-as-PR live command builder + JSONL trace parsing. Session 01a18439-b5c5-7ca0-9443-ca696a2b1547, 21 calls, ~$0.010 (MEASURED from the run.usage event).
+- `c85f679` voice guide run-setup prefill parser + intent tests. Session 01a1843b-abbb-7120-97bc-9f68374323cc, 39 calls, ~$0.015 (MEASURED from the run.usage event).
+Both are logged in the Meta spend ledger.
+
+## EU efficiency report sample
+`reports/eu/eu_report_rcpt_20261027_run2_cap350.{html,csv}` from the signed RUN2 350 W receipt. Supports EU Energy Efficiency Directive data-center reporting fields; not a compliance claim; CSRD is roadmap.
