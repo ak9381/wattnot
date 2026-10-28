@@ -114,3 +114,13 @@ nav.tabs button.on{background:rgba(90,169,240,.14);border-color:rgba(90,169,240,
 .mrun{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:6px 0}
 @media (max-width:1000px){.mtags{grid-template-columns:1fr}}
 .r7pop-body.pan .pg{width:1000px}.r7pop-body.pan .pg .r7chart{width:1000px}
+/* ---- expert strip ---- */
+.xstrip{cursor:pointer;margin-top:6px}.xstrip svg{width:100%;height:auto;display:block;background:#06080f;border-radius:6px}
+.xstrip .xoff{fill:var(--r7-red)}.xstrip .xon{fill:var(--r7-green)}
+.xleg{display:flex;gap:12px;font-size:11.5px;color:#cfd8e3;margin-top:4px}.xleg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px}
+.xleg i.xoff{background:var(--r7-red)}.xleg i.xon{background:var(--r7-green)}.xcap{font-size:11px;color:#9aa8b8;margin:3px 0 0}
+/* ---- thermal ---- */
+.th-tg{display:flex;gap:8px;margin-bottom:8px}.th-tg .btn.on{border-color:#fff;background:rgba(255,255,255,.12)}
+.th-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;font-size:12.5px}.thl{font-weight:600}.th-sum{color:#fff;font-weight:600}
+.th-svg .th-id{fill:#e8eef6;font-size:13px;font-weight:600}.th-svg .th-t{fill:#0b0716;font-size:14px;font-weight:700}.th-svg .th-aisle{fill:#cfd8e3;font-size:12px}
+.th-svg .th-r:focus rect{stroke:#fff;stroke-width:2}.th-note{max-width:900px}.th-wrap{width:1100px}

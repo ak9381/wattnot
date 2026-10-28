@@ -2,6 +2,10 @@
 // replay of recorded runs, live following of an events file, and the side panel.
 import { ArchView, fmt, panelHtml, statHtml } from "./arch.js";
 import { init as initPan } from "./pancanvas.js";
+import { expertStrip } from "./expertstrip.js";
+import { openThermal } from "./thermal.js";
+import { wireR7, infoBtn } from "./r7.js";
+import "./v2r7.js";
 import { esc, dot, numLab, legendHtml } from "./theme.js";
 
 // ---- live meter strip: power, cost and water per request scale, straight from the bundle.
@@ -78,6 +82,7 @@ export function livePhrase(ev) {
 
 export class ArchPage {
   constructor(host, data, hooks) {
+    wireR7();
     this.host = host; this.d = data; this.h = hooks; this.speed = 2; this.replay = "h100"; this.filter = null;
     this.phase = 1; this._p0 = 0; this._p1 = 1;
     host.innerHTML = `<div class="archmode" role="group" aria-label="architecture view"><button data-m="pipe" class="on" aria-pressed="true">Run pipeline</button><button data-m="all" aria-pressed="false">All modules</button>
@@ -115,8 +120,7 @@ export class ArchPage {
     const target = Math.min(data.ticks.length, Math.floor(this._expertProgress * data.ticks.length));
     const st = createState(data.meta, this.expertMode || "tier");
     replayAll(st, data.ticks.slice(0, target));
-    const gt = groupTotals(st, "off"), tot = gt.reduce((a, g) => a + g.routed, 0) || 1;
-    this.view.paintExperts("adaptive", gt.map((g) => (g.routed / tot) * 100));
+    this.view.paintExpertStrip("adaptive", expertStrip(data, target));
     this.view.layoutEdges();
   }
   setMode(m) {
@@ -308,7 +312,8 @@ export class ArchPage {
     }
     try {
       const scan = await fetch("/room/data/arsat/scan.json").then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); });
-      body.innerHTML = `${heatSvg(scan, {})}${heatLegend()}<p class="cap" data-cap>Hover or tab to a rack for its numbers.</p>`;
+      body.innerHTML = `<p><button class="btn" data-thermal>Open thermal floor plan</button> ${infoBtn("thermal", "how the heat is made")}</p>${heatSvg(scan, {})}${heatLegend()}<p class="cap" data-cap>Hover or tab to a rack for its numbers.</p>`;
+      body.querySelector("[data-thermal]").addEventListener("click", () => openThermal());
       wireHeat(body, scan, body.querySelector("[data-cap]"));
     } catch (e) { body.innerHTML = `<p class="muted">The racks could not be drawn (${esc(e.message)}).</p>`; }
   }

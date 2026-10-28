@@ -90,6 +90,11 @@ export class ArchView {
     box.innerHTML = `<div class="xbars" role="img" aria-label="live expert routing: ${shares.map((s, i) => `group ${i + 1} ${Math.round((s / tot) * 100)} percent`).join(", ")}">${shares.map((s, i) => `<i style="height:${Math.max(4, Math.round((s / max) * 100))}%" title="group ${i + 1}: ${Math.round((s / tot) * 100)}% · ${label}"></i>`).join("")}</div><p class="xbars-cap">live expert routing ${dot(label)}</p>`;
     return true;
   }
+  // Round 7: token-to-expert heat strip (see expertstrip.js) in the top-k block.
+  paintExpertStrip(id, html) {
+    const box = this.el(id)?.querySelector("[data-xbars]"); if (!box) return false;
+    box.hidden = false; box.innerHTML = html; return true;
+  }
   build() {
     const mode = this.o.mode || "map", d = this.d;
     // Collapsible glass cards live only on the architecture map. The run-pipeline
