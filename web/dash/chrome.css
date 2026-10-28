@@ -1,0 +1,305 @@
+/* WattNot Shared Header & Footer Chrome (Dusk & Landing) */
+
+/* ---- Shared Floating Header ---- */
+nav.wn-nav.gl {
+  position: sticky;
+  top: 10px;
+  left: 0;
+  right: 0;
+  margin: 10px auto 12px;
+  width: min(1160px, calc(100% - 32px));
+  z-index: 100;
+  border-radius: 16px;
+  background: rgba(31, 26, 47, 0.72);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(220, 214, 228, 0.14);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(220, 214, 228, 0.12);
+  font-family: var(--v-body, "Source Sans 3", Inter, system-ui, sans-serif);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  nav.wn-nav.gl {
+    background: #1F1A2F;
+  }
+}
+
+.wn-nav-inner {
+  height: 50px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.wn-brand {
+  font-family: var(--v-head, "Montserrat", system-ui, sans-serif);
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: 0.01em;
+  color: var(--v-cream, #DCD6E4);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+.wn-brand:hover {
+  text-decoration: none;
+}
+.wn-brand i {
+  font-style: normal;
+  color: var(--v-peach, #B2A6C3);
+}
+
+.wn-links {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wn-link {
+  font-size: 14px;
+  color: var(--v-sub, #B2A6C3);
+  text-decoration: none;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.wn-link:hover {
+  color: var(--v-cream, #DCD6E4);
+  background: rgba(220, 214, 228, 0.08);
+  border-color: rgba(220, 214, 228, 0.15);
+  text-decoration: none;
+}
+
+.wn-link.on, .wn-link[aria-current="page"] {
+  color: var(--v-cream, #DCD6E4);
+  background: rgba(178, 166, 195, 0.16);
+  border-color: rgba(178, 166, 195, 0.4);
+  font-weight: 600;
+}
+
+.wn-link-new {
+  border-color: rgba(178, 166, 195, 0.25);
+  background: rgba(79, 74, 99, 0.3);
+}
+
+.wn-slot-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 32px;
+  flex: none;
+}
+
+.wn-slot-wrap .wn-mic-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  flex: 0 0 32px;
+  vertical-align: middle;
+}
+
+/* ---- Shared Minimal Glass Footer ---- */
+footer.wn-footer.gl {
+  position: relative;
+  z-index: 10;
+  margin: 36px auto 20px;
+  width: min(1160px, calc(100% - 32px));
+  border-radius: 16px;
+  background: rgba(31, 26, 47, 0.65);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(220, 214, 228, 0.12);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(220, 214, 228, 0.1);
+  padding: 16px 22px;
+  font-size: 13px;
+  color: var(--v-mut, #8E7A9E);
+  font-family: var(--v-body, "Source Sans 3", Inter, system-ui, sans-serif);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  footer.wn-footer.gl {
+    background: #1F1A2F;
+  }
+}
+
+.wn-footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.wn-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.wn-footer-brand .wn-logo {
+  font-family: var(--v-head, "Montserrat", system-ui, sans-serif);
+  font-weight: 700;
+  color: var(--v-cream, #DCD6E4);
+  font-size: 15px;
+}
+
+.wn-tagline {
+  color: var(--v-sub, #B2A6C3);
+  font-size: 13px;
+}
+
+.wn-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.wn-footer-links a {
+  color: var(--v-sub, #B2A6C3);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.wn-footer-links a:hover {
+  color: var(--v-cream, #DCD6E4);
+  text-decoration: underline;
+}
+
+.wn-meta-pill {
+  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(220, 214, 228, 0.14);
+  background: rgba(220, 214, 228, 0.06);
+  color: var(--v-sub, #B2A6C3);
+}
+
+/* ---- Landing Page Specific Styles ---- */
+body.is-landing nav.wn-nav.gl {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1100px, calc(100% - 48px));
+  margin: 0;
+  background: rgba(14, 18, 32, 0.45);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 0 40px -10px rgba(95, 227, 245, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  font-family: "Inter Tight", system-ui, sans-serif;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  body.is-landing nav.wn-nav.gl {
+    background: #0E1220;
+  }
+}
+
+body.is-landing nav.wn-nav.gl .wn-nav-inner {
+  height: 60px;
+  padding: 0 22px;
+}
+
+body.is-landing nav.wn-nav.gl .wn-brand {
+  font-family: "Inter Tight", system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: #F2F5FA;
+}
+body.is-landing nav.wn-nav.gl .wn-brand i {
+  color: #5FE3F5;
+}
+
+body.is-landing nav.wn-nav.gl .wn-link {
+  font-size: 14px;
+  color: #7C8599;
+}
+
+body.is-landing nav.wn-nav.gl .wn-link:hover {
+  color: #F2F5FA;
+  background: transparent;
+  border-color: transparent;
+}
+
+body.is-landing nav.wn-nav.gl .wn-link.on {
+  color: #F2F5FA;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+body.is-landing footer.wn-footer.gl {
+  position: relative;
+  margin: 40px auto 24px;
+  width: min(1100px, calc(100% - 48px));
+  background: rgba(14, 18, 32, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #7C8599;
+  font-family: "Inter Tight", system-ui, sans-serif;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  body.is-landing footer.wn-footer.gl {
+    background: #0E1220;
+  }
+}
+
+body.is-landing footer.wn-footer.gl .wn-logo {
+  color: #F2F5FA;
+  font-weight: 400;
+  font-family: "Inter Tight", system-ui, sans-serif;
+}
+body.is-landing footer.wn-footer.gl .wn-tagline {
+  color: #7C8599;
+}
+body.is-landing footer.wn-footer.gl a {
+  color: #7C8599;
+}
+body.is-landing footer.wn-footer.gl a:hover {
+  color: #F2F5FA;
+}
+body.is-landing .wn-meta-pill {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: #7C8599;
+}
+
+/* Page-specific adaptations for canvas/scene pages */
+body:has(.viewport) {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100vh;
+  overflow: hidden;
+}
+body:has(.viewport) nav.wn-nav.gl {
+  position: relative;
+  margin: 6px auto;
+  flex: none;
+}
+body:has(.viewport) .bar {
+  flex: none;
+}
+body:has(.viewport) .mid {
+  flex: 1 1 0;
+  min-height: 0;
+}
+body:has(.viewport) .timeline {
+  flex: none;
+}
+body:has(.viewport) footer.wn-footer.gl,
+body.story footer.wn-footer.gl {
+  display: none !important;
+}

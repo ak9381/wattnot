@@ -13,119 +13,138 @@
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="violet.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="chrome.css">
+<script src="chrome.js" defer></script>
 <style>
-* { box-sizing: border-box; }
-html, body {
+:root {
+  --bg: #05070F;
+  --tx: #F2F5FA;
+  --mu: #7C8599;
+  --ln: rgba(255, 255, 255, 0.08);
+}
+* {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background-color: #080B10;
-  color: var(--v-cream, #DCD6E4);
-  font-family: "Source Sans 3", Inter, system-ui, sans-serif;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
-.landing-stage {
+html, body {
+  background: var(--bg);
+  color: var(--tx);
+  font: 300 17px/1.6 "Inter Tight", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
   position: relative;
-  width: 100vw;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+.w {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 48px;
+  text-align: left;
+}
+.hero {
+  position: relative;
   height: 100vh;
+  min-height: 720px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 24px;
-  background-image:
-    radial-gradient(ellipse at 50% 45%, rgba(59, 58, 84, 0.45) 0%, rgba(23, 23, 36, 0.7) 50%, rgba(8, 11, 16, 0.95) 85%),
-    url("img/hero-1.png");
+  overflow: hidden;
+  background-color: var(--bg);
+  background-image: url("img/hero-1.png");
+  background-image: image-set(
+    url("img/hero.webp") type("image/webp"),
+    url("img/hero-1.png") type("image/png")
+  );
+  background-position: right center;
   background-size: cover;
-  background-position: center;
   background-repeat: no-repeat;
 }
-.landing-content {
+.hero:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, var(--bg) 18%, rgba(5, 7, 15, 0.55) 48%, rgba(5, 7, 15, 0) 75%),
+    linear-gradient(0deg, var(--bg), transparent 25%);
+  pointer-events: none;
+}
+.hero .w {
   position: relative;
   z-index: 2;
-  max-width: 820px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
+  width: 100%;
 }
-h1.headline {
-  margin: 0;
-  font-family: "Montserrat", system-ui, sans-serif;
-  font-size: clamp(34px, 5.5vw, 56px);
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  color: #DCD6E4;
-  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+h1 {
+  font-family: "Inter Tight", system-ui, -apple-system, sans-serif;
+  font-weight: 300;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+  font-size: 88px;
+  max-width: 640px;
+  color: var(--tx);
 }
-p.tagline {
-  margin: 0;
-  font-family: "Source Sans 3", Inter, system-ui, sans-serif;
-  font-size: clamp(17px, 2.2vw, 22px);
-  color: #B2A6C3;
-  line-height: 1.4;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+.sub {
+  color: var(--mu);
+  font-size: 20px;
+  margin: 26px 0 40px;
+  font-weight: 300;
+  max-width: 580px;
 }
-.actions {
-  margin-top: 14px;
+.cta {
+  margin: 0 0 20px;
 }
-a.btn-guide {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 14px 34px;
+.btn {
+  display: inline-block;
+  padding: 13px 24px;
   border-radius: 999px;
-  background: rgba(46, 43, 68, 0.65);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(220, 214, 228, 0.22);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(220, 214, 228, 0.25);
-  color: #DCD6E4;
-  font-family: "Montserrat", system-ui, sans-serif;
-  font-size: 16.5px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 15px;
+  font-weight: 400;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
-a.btn-guide:hover {
-  background: rgba(59, 58, 84, 0.85);
-  border-color: rgba(220, 214, 228, 0.4);
-  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.55), 0 0 20px rgba(178, 166, 195, 0.25), inset 0 1px 0 rgba(220, 214, 228, 0.35);
+.btn.pr {
+  background: var(--tx);
+  color: var(--bg);
+  border-color: var(--tx);
+}
+.btn.pr:hover {
+  opacity: 0.92;
   transform: translateY(-1px);
-  color: #FFFFFF;
 }
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  a.btn-guide { background: #2E2B44; }
-}
-p.powered {
-  margin: 18px 0 0;
-  font-family: "Source Sans 3", Inter, system-ui, sans-serif;
+.powered {
+  color: var(--mu);
   font-size: 13.5px;
-  color: #8E7A9E;
-  letter-spacing: 0.02em;
+  font-weight: 300;
+  letter-spacing: 0.01em;
+  margin-top: 24px;
+}
+
+@media (max-width: 900px) {
+  h1 { font-size: 56px; }
+  .w { padding: 0 24px; }
+  .hero { min-height: 600px; }
+}
+@media (max-width: 600px) {
+  h1 { font-size: 42px; }
+  .sub { font-size: 17px; margin: 18px 0 28px; }
 }
 </style>
 </head>
 <body>
-<main class="landing-stage">
-  <div class="landing-content">
-    <h1 class="headline">Was that agent call worth the watts?</h1>
-    <p class="tagline">Every watt checked, plus every dollar and litre.</p>
-    <div class="actions">
-      <a class="btn-guide" href="runs.html">Let WattNot guide your agents</a>
+<header class="hero">
+  <div class="w">
+    <h1>Was that agent call worth the watts?</h1>
+    <p class="sub">Every watt checked, plus every dollar and litre.</p>
+    <div class="cta">
+      <a class="btn pr" href="runs.html">Let WattNot guide your agents</a>
     </div>
     <p class="powered">Powered by Meta Muse Spark, Glimmer, Llama and SAM 3.1</p>
   </div>
-</main>
+</header>
 </body>
 </html>

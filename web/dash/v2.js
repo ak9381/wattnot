@@ -1342,6 +1342,10 @@ function renderLearn() {
   if (firstRun) S.radRecs[firstRun] = await fetch(`/api/dash/v2/runs/${encodeURIComponent(firstRun)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   renderCfg(); renderHome(); renderRun(); renderLearn(); wireIllus($("#illusBtn"));
   const h = location.hash.slice(1); if (h && $(`#${h}`)) show(h);
+  window.addEventListener("hashchange", () => {
+    const curH = location.hash.slice(1);
+    if (curH && $(`#${curH}`)) show(curH);
+  });
   setTimeout(() => window.scrollTo(0, 0), 20);
   setTimeout(() => window.scrollTo(0, 0), 100);
   if (new URLSearchParams(location.search).get("autorun")) { await startRun(); }

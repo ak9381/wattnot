@@ -61,3 +61,52 @@ test("HOOKS.md documents the slot and explain attributes", () => {
   assert.match(doc, /runs\.<runid>\.saving/);
   assert.match(doc, /compare\.power\.agent-waste/);
 });
+
+test("every page includes chrome.js and chrome.css", () => {
+  const dashPages = ["index.html", "runs.html", "report.html", "v2.html", "graph.html"];
+  for (const page of dashPages) {
+    const html = fs.readFileSync(path.join(dashDir, page), "utf8");
+    assert.match(html, /<link rel="stylesheet" href="chrome\.css">/, `expected chrome.css on ${page}`);
+    assert.match(html, /<script src="chrome\.js" defer><\/script>/, `expected chrome.js on ${page}`);
+  }
+
+  const runHtml = fs.readFileSync(path.resolve(__dirname, "../../web/run/index.html"), "utf8");
+  assert.match(runHtml, /<link rel="stylesheet" href="\.\.\/dash\/chrome\.css">/, "expected ../dash/chrome.css on run/index.html");
+  assert.match(runHtml, /<script src="\.\.\/dash\/chrome\.js" defer><\/script>/, "expected ../dash/chrome.js on run/index.html");
+});
+
+test("landing page has OG tags, Inter Tight, and no filter on hero image", () => {
+  const html = fs.readFileSync(path.join(dashDir, "index.html"), "utf8");
+  assert.match(html, /<meta property="og:title" content="[^"]+">/);
+  assert.match(html, /<meta property="og:description" content="[^"]+">/);
+  assert.match(html, /<meta property="og:image" content="[^"]+">/);
+  assert.match(html, /<meta property="og:type" content="[^"]+">/);
+  assert.match(html, /<meta property="og:url" content="[^"]+">/);
+  assert.match(html, /Inter\+Tight/);
+  assert.match(html, /hero\.webp/);
+  assert.match(html, /hero-1\.png/);
+  assert.doesNotMatch(html, /filter:\s*[^;}]*hue-rotate/);
+  assert.doesNotMatch(html, /filter:\s*[^;}]*sepia/);
+  assert.doesNotMatch(html, /filter:\s*[^;}]*grayscale/);
+});
+
+test("root redirect page has description and OG tags", () => {
+  const buildPy = fs.readFileSync(path.resolve(__dirname, "../../scripts/build_pages.py"), "utf8");
+  assert.match(buildPy, /<meta name="description"/);
+  assert.match(buildPy, /<meta property="og:title"/);
+  assert.match(buildPy, /<meta property="og:description"/);
+  assert.match(buildPy, /<meta property="og:image"/);
+  assert.match(buildPy, /<meta property="og:type"/);
+  assert.match(buildPy, /<meta property="og:url"/);
+
+  const siteIndex = path.resolve(__dirname, "../../site/index.html");
+  if (fs.existsSync(siteIndex)) {
+    const html = fs.readFileSync(siteIndex, "utf8");
+    assert.match(html, /<meta name="description"/);
+    assert.match(html, /<meta property="og:title"/);
+    assert.match(html, /<meta property="og:description"/);
+    assert.match(html, /<meta property="og:image"/);
+    assert.match(html, /<meta property="og:type"/);
+    assert.match(html, /<meta property="og:url"/);
+  }
+});
