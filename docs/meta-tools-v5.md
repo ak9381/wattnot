@@ -149,20 +149,48 @@ A hands-free multimodal assistant for querying runs and navigating dashboards:
      - Explicitly requires the user to review parameters and press Start.
 - **Strict Execution Boundary**:
   - The voice guide must **NEVER** launch, stop, or mutate runs.
-  - Enforced by an immutable action allowlist: `ALLOWED_ACTIONS = {"navigate", "answer", "prefill"}`. Attempting any other action raises `VoiceGuideActionError`.
+  - Enforced by an immutable action allowlist: `ALLOWED_ACTIONS = {"navigate", "answer", "prefill", "explain"}`. Attempting any other action raises `VoiceGuideActionError`.
   - Text-only answers (no synthetic TTS).
+- **Intents**:
+  1. `navigate`: routes to Compare or latest run report.
+  2. `answer`: read-only Q&A grounded exclusively in verified signed receipts and EU efficiency reports.
+  3. `configure`: returns a pre-fill object for run setup (requires user review and pressing Start).
+  4. `explain`: point-and-explain on-screen metrics and elements (e.g. "what does 25% mean?", "what does 350 W mean?", "explain power cap").
+- **Point-and-Explain Runtime Tagging (`web/dash/explainmap.js`)**:
+  - Automatically queries selectors across all pages at runtime and tags elements with `data-explain` attributes (`data-explain-id`, `data-explain-value`, `data-explain-label`, `data-explain-source`, `data-explain-summary`), preserving any pre-existing `data-explain` attributes.
+  - Fast local JS matcher scoring numbers, units, and keywords against on-screen values, titles, and labels.
+  - Lavender palette glowing pulse animation (respects `@media (prefers-reduced-motion: reduce)` with solid border).
+  - Apple glassmorphism popover positioned next to the element (strictly clamped to viewport bounds) providing a 2-3 sentence technical explanation, source receipt/run ID, and verified label (`MEASURED`, `ESTIMATE`, `SIMULATED`, `MOCK`, `REPLAY`, `ADVICE`).
+  - Ambiguity handling: when multiple elements closely match (e.g. identical percentage values), all candidates are highlighted with clickable choices asking *"Which one?"*.
+- **Selector Mapping by Page**:
+  | Page | Target Components | Exact Selectors | Extracted Fields |
+  |---|---|---|---|
+  | All-runs dashboard (`runs.html`) | Bento KPI cards, run rows, trend & donut charts | `.kpis .kpi`, `#runsTable tbody tr`, `.charts .card` | Title (`.name`), Value (`.big`), Label (`.v-lab`), Source (`rcpt_llama_350w`) |
+  | Run report (`report.html`) | Stepped flow cards, meta line, side panel details | `.flow .card`, `.step .card`, `.meta-line`, `aside.side .kv` | Step Name (`.k`), Value (`.val`), Explanation (`.sub`), Label (`.v-chip`) |
+  | Compare & Setup (`v2.html`) | Compare branch cards, placement rows, gates, setup inputs | `.cmp.glass`, `.cmp-cards .cmp`, `.wr-t tbody tr`, `.wr-gates li`, `.cmp-m li`, `.ov-kpi.glass`, `#pCfg .card, [data-step]` | Lever Name (`.cmp-t`), Saving (`.cmp-v`), Gate Status, Input Config |
+  | Live watch-run (`web/run`) | Live counters, efficiency tiles, waterfall bars, graph nodes | `#savings .cnt`, `#savings .eff`, `#savings .wf li`, `#nodes .node` | Counter Name (`.ch span`), Value (`b.mono`), Node Title (`.nt`), Delta |
+  | Meta Tools preview (`metatools.html`) | Demo cards, supervisor stats, hotspot card, EU directive | `.demo-explain-card`, `#metatools-mount .kpi-box`, `#hotspot-mount .hotspot-stat-box`, `#eu-directive-card .eulink-metric-box` | Metric Title, Value, Label (`MOCK`/`MEASURED`), Summary |
+- **Playwright Verification (`scripts/shots_explain.py`)**:
+  - Serves `web/` locally, intercepts API routes, injects `voiceguide.js` and `explainmap.js`, types queries, and generates screenshots in `/workspace/hackathon/meta5-shots/`:
+    - `voice-explain-metatools.png` (Demo cards with 25% popover)
+    - `voice-explain-runs.png` (Runs dashboard KPI highlight)
+    - `voice-explain-report.png` (Report step card highlight)
+    - `voice-explain-v2.png` (Compare branch highlight)
+    - `voice-explain-run.png` (Live watch-run counter highlight)
+    - `voice-explain.png` (Primary overview screenshot)
 - **API Endpoint**:
   - `POST /api/voiceguide` and `GET /api/voiceguide?q=...` supporting query text and audio payloads.
-- **UI Component (`web/dash/voiceguide.js`, `web/dash/voiceguide.css`)**:
+- **UI Component (`web/dash/voiceguide.js`, `web/dash/voiceguide.css`, `web/dash/explainmap.js`)**:
   - Self-mounts into `<header>` or creates a fixed top-right bar with mic button (`MediaRecorder`) and text input.
   - Immediate state transition: "Listening…" on mic press, "Thinking…" on submission (zero silent lag).
   - Rapid local path provides initial intent and ack in `<300 ms` followed by cited answer.
   - Labeled `MOCK` during mock execution.
 - **Script Tag Deployment**:
-  Per instructions, existing HTML files were not modified during this phase. To enable the voice guide across other pages, add a single script tag:
+  Per instructions, existing HTML files were not modified during this phase. To enable the voice guide across other pages, add the script tags:
   ```html
   <link rel="stylesheet" href="./voiceguide.css">
   <script type="module" src="./voiceguide.js"></script>
+  <script type="module" src="./explainmap.js"></script>
   ```
   Target pages for script deployment:
   - `web/dash/report.html`
@@ -170,6 +198,7 @@ A hands-free multimodal assistant for querying runs and navigating dashboards:
   - `web/dash/index.html`
   - `web/dash/comparetree.html`
   - `web/dash/v2.html`
+  - `web/run/index.html`
 
 ---
 
