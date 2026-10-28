@@ -19,8 +19,9 @@ J/correct = (GPU energy for the run + overhead energy) / number of answers that 
 - CPU, memory, network, cooling and the rest of the building. Multiply by your PUE if you want site
   energy; we report GPU energy only.
 - Hosted model calls (the planner, hosted endpoints). Providers report tokens, not joules, so these
-  show as "not metered". A hosted row on the leaderboard is an ESTIMATE: tokens x a published
-  joules-per-token figure, and it says so.
+  show as "not metered". A hosted row on the leaderboard is an ESTIMATE: billed tokens x a published
+  joules-per-token figure (**7.86 J/token** for Muse Spark Open on H100-class GPUs: RUN2's measured
+  0.1497 J/token on Llama 3.1 8B, scaled by active parameters 42B/0.8B), and it says so.
 - Embodied energy of the hardware.
 
 ## What counts as correct

@@ -120,7 +120,28 @@
         "path": "traces/example.csv",
         "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
       }
-    ]
+    ],
+    "per_model_joules": [
+      {
+        "model": "meta-llama/Llama-3.1-8B-Instruct (served, model under test)",
+        "role": "served",
+        "where": "local",
+        "j_per_answer": 172.8,
+        "j_total": 34560.0,
+        "label": "MEASURED",
+        "how": "NVML energy counter, 10 samples a second; j_total = J per answer x checked answers"
+      },
+      {
+        "model": "muse-spark-1.3 (planner, 1 call(s))",
+        "role": "planner",
+        "where": "hosted",
+        "j_per_answer": null,
+        "j_total": null,
+        "status": "not metered",
+        "how": "hosted; the provider reports tokens, not joules"
+      }
+    ],
+    "spark_trace_id": "spark-a777acf1bae527c3"
   },
   "attribution": {
     "method": "token-share-capped (after Neuralwatt)",
@@ -173,7 +194,7 @@
   "grade": "NOISE",
   "integrity": {
     "canonicalization": "JCS RFC 8785",
-    "sha256": "13b56dfd1bb16c098dee83c8a641fceb8ddf6a515084c9eaed6a578ad2dbb3f4",
+    "sha256": "7de7aab5e216d2139dd6076e576ff41a53845eee8085c89a117616b422daf807",
     "prev_sha256": null,
     "signer": null,
     "rekor": null

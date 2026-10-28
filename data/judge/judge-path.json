@@ -574,8 +574,8 @@
     "best": false
    },
    {
-    "setup": "WattNot small model first (Llama 3.1 8B, escalate to Muse Spark Open)",
-    "model": "Llama 3.1 8B + Muse Spark Open",
+    "setup": "WattNot three-tier chain (Llama 3.1 8B -> Muse Glimmer 30B -> Muse Spark Open)",
+    "model": "Llama 3.1 8B + Muse Glimmer 30B + Muse Spark Open",
     "hardware": "1x H100",
     "j_per_correct": null,
     "n_checked": null,
@@ -588,7 +588,7 @@
     "era": "meta-judge",
     "label": "MEASURED",
     "status": "pending",
-    "note": "long GPU run: escalation rate, small-model pass rate, net of judge and agent energy",
+    "note": "long GPU run: per-tier escalation rate and small-model pass rate, net of judge/gate energy",
     "best": false
    },
    {
@@ -631,18 +631,22 @@
     "setup": "Baseten hosted Muse Spark Open",
     "model": "Muse Spark Open",
     "hardware": "hosted (Baseten)",
-    "j_per_correct": null,
+    "j_per_correct": {
+     "mean": 4130.17,
+     "sd": null
+    },
     "n_checked": null,
     "repeats": null,
-    "pass_pct": null,
+    "pass_pct": 100.0,
     "p99_change_pct": null,
     "escalation_rate_pct": null,
     "small_model_pass_pct": null,
-    "gate": null,
-    "era": "meta-judge",
+    "gate": "hosted baseline (no cap/quant/top-k possible on a shared endpoint)",
+    "era": "hosted",
     "label": "ESTIMATE",
-    "status": "pending",
-    "note": "provider does not expose power; joules come from tokens x a published J-per-token figure",
+    "status": "estimate",
+    "note": "ESTIMATE: 525 billed tokens/answer x 7.86 J/token (provider gives no power); token counts MEASURED from live-20261028.json",
+    "vs_default_pct": 24152.32,
     "best": false
    },
    {
@@ -660,7 +664,7 @@
     "era": "meta-judge",
     "label": "ESTIMATE",
     "status": "pending",
-    "note": "endpoint not configured (see the fallback ledger); same token-based estimate",
+    "note": "same token-based estimate as Baseten, pending a Modal run",
     "best": false
    }
   ],
@@ -719,6 +723,8 @@
    "label": "MEASURED",
    "receipt": "path or URL of a signed receipt that `wattnot verify` accepts"
   },
+  "submission_schema": "schemas/jpc-submission.schema.json",
+  "j_per_token_estimate": 7.86,
   "reproduce": "scripts/reproduce_leaderboard.sh"
  }
 }
