@@ -1,0 +1,64 @@
+/* Round 7 theme: palette, fonts, popups, info panel, tooltips, charts.
+   Loaded last on both dashboards so it can retune shared variables.
+   Palette (black background kept):
+     trust / MEASURED  blue   #5AA9F0  (blue reads as calm and reliable)
+     saved / growth    green  #4CC38A  (green reads as health and gain)
+     estimate / care   gold   #E9C46A  (gold/amber: worth a second look)
+     without WattNot   red    #F0504A  (red: the costly path, danger)
+     simulated         mauve  #C18DB4  (from the navy-mauve palette)
+     active / live     orange #F2994A  (canvas glow accent)
+     deep surfaces     navy   #0E1B48 / #0E1F2F / #27425D
+   Font: Space Grotesk (SIL OFL, self-hosted in fonts/), system sans fallback. */
+@font-face{font-family:"Space Grotesk";src:url(fonts/SpaceGrotesk.ttf) format("truetype");font-weight:300 700;font-display:swap}
+:root{--r7-blue:#5AA9F0;--r7-green:#4CC38A;--r7-gold:#E9C46A;--r7-red:#F0504A;--r7-mauve:#C18DB4;--r7-orange:#F2994A;
+  --r7-navy:#0E1B48;--r7-navy2:#0E1F2F;--r7-slate:#27425D;--r7-mist:#87A7D0;--r7-rose:#E2CAD6;
+  --cy:var(--r7-blue);--tl:var(--r7-green);--am:var(--r7-gold);--rd:var(--r7-red);--vi:var(--r7-mauve);--viol:var(--r7-mauve);--green:var(--r7-green);--red:var(--r7-red)}
+html,body,button,select,input{font-family:"Space Grotesk",Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+body{background:radial-gradient(900px 520px at 6% -10%,rgba(14,27,72,.75),transparent 60%),radial-gradient(800px 500px at 100% 0%,rgba(193,141,180,.12),transparent 60%),radial-gradient(700px 600px at 50% 120%,rgba(39,66,93,.35),transparent 60%),#05070c;background-attachment:fixed}
+h1,.r7-title{font-weight:700;letter-spacing:-.02em;background:linear-gradient(90deg,#fff 0%,#E2CAD6 45%,#B79CFF 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+h1{font-size:32px}
+.btn.pri{background:linear-gradient(90deg,#5AA9F0,#7d8cf0);color:#04101f}
+nav.tabs button.on{background:rgba(90,169,240,.14);border-color:rgba(90,169,240,.5)}
+.brand i{color:var(--r7-blue)}
+/* label colours: one legend, same meaning everywhere */
+.n-measured,.num.lab-MEASURED,.mv.lab-MEASURED,.big.lab-MEASURED,.bat.lab-MEASURED{color:var(--r7-blue)!important}
+.n-estimate,.num.lab-ESTIMATE,.mv.lab-ESTIMATE,.bat.lab-ESTIMATE{color:var(--r7-gold)!important}
+.n-simulated,.num.lab-SIMULATED,.bat.lab-SIMULATED{color:var(--r7-mauve)!important}
+.n-replay,.num.lab-REPLAY{color:#8FE3B0!important}
+.legend .dot.n-measured,.pdot.MEASURED{background:var(--r7-blue)!important}.legend .dot.n-estimate,.pdot.ESTIMATE{background:var(--r7-gold)!important}
+.legend .dot.n-simulated,.pdot.SIMULATED{background:var(--r7-mauve)!important}.legend .dot.n-replay,.pdot.REPLAY{background:#8FE3B0!important}
+.r7legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:#c9d3df;margin:6px 0}.r7legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+/* info button + panel (right to left) */
+.ibtn{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:rgba(90,169,240,.12);color:#fff;font:600 12px/1 "Space Grotesk",sans-serif;cursor:pointer;vertical-align:middle;margin-left:8px;padding:0}
+.ibtn:hover,.ibtn:focus-visible{border-color:var(--r7-blue);outline:none;box-shadow:0 0 0 3px rgba(90,169,240,.25)}
+.r7info{position:fixed;top:0;right:0;height:100vh;width:min(460px,92vw);z-index:90;transform:translateX(105%);transition:transform .28s ease;overflow:auto;padding:18px 22px;border-radius:18px 0 0 18px;background:rgba(10,16,30,.92)!important}
+.r7info.on{transform:none}
+.r7info header{display:flex;align-items:center;gap:8px;margin-bottom:10px}.r7info .sp{flex:1}
+.r7info h2{font-size:22px;margin:4px 0 10px;color:#fff}.r7info h3{font-size:15px;margin:14px 0 4px;color:#fff}.r7info p,.r7info li{color:#c9d3df;font-size:14px;line-height:1.55}
+@media (prefers-reduced-motion:reduce){.r7info{transition:none}}
+.r7ex{padding-left:20px}.r7ex li{margin:6px 0}.r7note{font-size:12.5px!important;color:#9fadbd!important}
+/* tooltip */
+.r7tip{position:fixed;z-index:120;max-width:280px;padding:8px 10px;border-radius:10px;background:rgba(14,27,72,.96);border:1px solid rgba(135,167,208,.45);color:#fff;font-size:12.5px;line-height:1.4;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+[data-tip]{cursor:help}
+/* popup */
+.r7pop-scrim{position:fixed;inset:0;z-index:80;background:rgba(2,4,10,.62);backdrop-filter:blur(4px);display:grid;place-items:center}
+.r7pop{width:min(1200px,94vw);height:min(820px,90vh);display:flex;flex-direction:column;padding:16px 18px;background:rgba(12,18,34,.94)!important;border-radius:18px}
+.r7pop header{display:flex;align-items:baseline;gap:12px;margin-bottom:10px}.r7pop header h2{font-size:22px;color:#fff}.r7pop header p{margin:0;font-size:13px;color:#9fadbd}.r7pop header .sp{flex:1}
+.r7pop-body{flex:1;overflow:auto;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:#070b14;padding:16px}
+.r7pop-body.pan{overflow:hidden;padding:0;background-image:radial-gradient(circle,#18222B 1px,transparent 1.2px);background-size:22px 22px}
+.r7pop-body.pan .r7pop-inner{width:max-content;padding:24px}
+.r7pop-body p,.r7pop-body li{font-size:15px;line-height:1.6;color:#d6dee8}
+.pc-view .pc-controls{position:absolute;right:12px;bottom:12px;z-index:5;display:flex;gap:6px;background:#0A0F14;border:1px solid #2C3945;border-radius:8px;padding:6px}
+.pc-view .pc-controls button{font:12px "Space Grotesk",sans-serif;border:1px solid #2C3945;border-radius:6px;padding:5px 10px;background:transparent;color:#c9d3df;min-width:32px;cursor:pointer}
+.r7pop #pc-goto,.r7pop #pc-follow,.r7pop #pc-minimap-toggle{display:none}
+/* charts */
+.r7chart{width:100%;height:auto;display:block}.r7chart .g{stroke:rgba(255,255,255,.07)}.r7chart .ax{fill:#9fadbd;font-size:11px}.r7chart .ax.lab{fill:#c9d3df;font-size:12px}
+.r7chart .ln{fill:none;stroke-width:2.6}.r7chart .area{opacity:.12}.r7chart .area.with{fill:var(--r7-green)}.r7chart .area.without{fill:var(--r7-red)}
+.r7chart .ln.with{stroke:var(--r7-green);filter:drop-shadow(0 0 6px rgba(76,195,138,.6))}.r7chart .ln.without{stroke:var(--r7-red);stroke-dasharray:6 4}
+.r7chart .pt.with{fill:var(--r7-green)}.r7chart .pt.without{fill:var(--r7-red)}.r7chart .cut{stroke:rgba(255,255,255,.3);stroke-dasharray:3 3}
+.r7keys{display:flex;gap:16px;font-size:12.5px;color:#c9d3df;margin-top:6px}.r7keys .k{display:inline-block;width:18px;height:3px;border-radius:2px;margin-right:6px;vertical-align:3px}.r7keys .k.with{background:var(--r7-green)}.r7keys .k.without{background:var(--r7-red)}
+.r7miss{color:#9fadbd;font-style:italic}
+.r7donut{display:flex;gap:16px;align-items:center}.r7donut svg{width:140px;flex:none}.r7donut .dv{fill:#fff;font-size:18px;font-weight:700}.r7donut .dl{fill:#9fadbd;font-size:10px}
+.r7donut ul{list-style:none;margin:0;padding:0;font-size:13px;color:#c9d3df;flex:1}.r7donut li{display:flex;align-items:center;gap:8px;margin:5px 0}.r7donut li i{width:10px;height:10px;border-radius:3px}.r7donut li b{margin-left:auto;color:#fff}
+.r7gauge{width:100%;max-width:220px}.r7gauge .tr{fill:none;stroke:rgba(255,255,255,.08);stroke-width:12;stroke-linecap:round}.r7gauge .fl{fill:none;stroke:var(--r7-blue);stroke-width:12;stroke-linecap:round}.r7gauge .fl.warn{stroke:var(--r7-gold)}.r7gauge .lim{stroke:var(--r7-red);stroke-width:3}
+.r7gauge .dv{fill:#fff;font-size:20px;font-weight:700}.r7gauge .dl{fill:#9fadbd;font-size:10px}
