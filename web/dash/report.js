@@ -106,6 +106,7 @@ function steps(X) {
     {
       id: "room", node: "1", name: "Room scan", muted: true,
       val: "—", labelChip: chip("SIMULATED"), sub: "Rack map not captured in this recorded run",
+      explainId: "report.step.room", explainVal: "—", explainLabel: "SIMULATED", explainSource: "sam.room_scan",
       detail: () => `<h4>What this step is</h4>
         <p>Before tuning, WattNot can scan the server room with SAM 3.1 to map the racks, then model the heat each one gives off.</p>
         <p>This recorded run is a GPU energy run; it has no room capture, so there are no rack numbers to show here. ${chip("MEASURED")} racks / ${chip("SIMULATED")} heat would appear on a run that has them.</p>
@@ -116,6 +117,7 @@ function steps(X) {
       val: X.have ? `${num(X.bm.j_per_req)} J` : "—",
       labelChip: X.have ? chip(X.bm.label || "MEASURED") : chip("pending"),
       sub: X.b ? `Stock ${num(X.b.cap_w, 0)} W cap · ${num(X.bm.requests, 0)} requests` : "No baseline phase",
+      explainId: "report.step.baseline", explainVal: X.have ? `${num(X.bm.j_per_req)} J` : "—", explainLabel: X.have ? (X.bm.label || "MEASURED") : "pending", explainSource: "phases.baseline.metrics.j_per_req",
       detail: () => X.b ? `<h4>Measured, stock settings</h4>
         <dl class="kv">
           <dt>Energy / request</dt><dd>${num(X.bm.j_per_req)} J ${chip(X.bm.label || "MEASURED")}</dd>
@@ -135,6 +137,7 @@ function steps(X) {
       labelChip: X.gatePass == null ? chip("pending") : chip("MEASURED"),
       sub: X.gatePass == null ? "Not evaluated for this run"
         : `Answers held · p99 ${X.p99Chg >= 0 ? "+" : ""}${num(X.p99Chg, 1)}% ${X.p99Ok ? "within" : "over"} the 10% limit`,
+      explainId: "report.step.gate", explainVal: X.gatePass == null ? "—" : (X.gatePass ? "Passed" : "Failed"), explainLabel: X.gatePass == null ? "pending" : "MEASURED", explainSource: "phases.wattnot.gate.verdict",
       detail: () => `<h4>Did it stay safe?</h4>
         <p>A change is only kept if answer quality holds and the slowest 1% of requests (p99) does not rise past the limit.</p>
         <dl class="kv">
@@ -151,6 +154,7 @@ function steps(X) {
       val: X.savedPct != null ? `${num(X.savedPct, 1)}%` : "—",
       labelChip: X.savedPct != null ? chip(X.wm.label || "MEASURED") : chip("pending"),
       sub: X.w ? `less energy · ${num(X.b?.cap_w, 0)} W → ${num(X.w.cap_w, 0)} W cap` : "No change recorded",
+      explainId: "report.step.change", explainVal: X.savedPct != null ? `${num(X.savedPct, 1)}%` : "—", explainLabel: X.savedPct != null ? (X.wm.label || "MEASURED") : "pending", explainSource: "phases.wattnot.metrics.saved_pct",
       detail: () => X.have ? `<h4>What WattNot changed</h4>
         <dl class="kv">
           <dt>Power cap</dt><dd>${num(X.b.cap_w, 0)} W → ${num(X.w.cap_w, 0)} W</dd>
@@ -168,6 +172,7 @@ function steps(X) {
       labelChip: X.gatePass == null ? chip("pending") : chip("MEASURED"),
       sub: X.gatePass == null ? "No decision recorded"
         : X.gatePass ? "Change kept; one click would undo it" : "Change undone automatically",
+      explainId: "report.step.kept", explainVal: X.gatePass == null ? "—" : (X.gatePass ? "Kept" : "Rolled back"), explainLabel: X.gatePass == null ? "pending" : "MEASURED", explainSource: "phases.wattnot.decision",
       detail: () => `<h4>The decision</h4>
         <p>${X.gatePass == null ? "No tuned phase was recorded, so there is no decision for this run."
           : X.gatePass ? `The ${num(X.w.cap_w, 0)} W cap passed every gate, so it was kept. Every applied change stays undoable in one click and is written to the audit ledger.`
@@ -189,6 +194,7 @@ function contextStep() {
     id: "context", node: "3", name: "Context saver", muted: !cs,
     val, labelChip: chip(tag),
     sub: cs ? "tokens cut from each request" : "pending — not measured yet",
+    explainId: "report.step.context", explainVal: val, explainLabel: tag, explainSource: "receipt.context_saver.tokens_cut_pct",
     detail: () => {
       const cell = (m) => (m?.value != null ? `${num(m.value)} ${chip(m.label || "ESTIMATE")}` : `— ${chip("pending")}`);
       const rows = CONTEXT_PARTS.map(([id, name]) => {
@@ -218,6 +224,7 @@ function receiptStep(X) {
     val: rc && savePct != null ? `${num(savePct, 1)}%` : "—",
     labelChip: rc && savePct != null ? chip("MEASURED") : chip("pending"),
     sub: rc ? `${esc(fwName)} · saving, signed offline` : "No signed receipt for this run",
+    explainId: "report.step.receipt", explainVal: rc && savePct != null ? `${num(savePct, 1)}%` : "—", explainLabel: rc && savePct != null ? "MEASURED" : "pending", explainSource: "receipt.result.saving_pct",
     detail: () => {
       if (!rc) return `<h4>No receipt</h4><p>This run was not signed into a receipt. Only runs with a published receipt can be re-checked offline.</p>`;
       const bl = r?.baseline, ca = r?.candidate;
@@ -296,17 +303,17 @@ function render() {
     : `<button class="hero-dl-btn" disabled style="opacity:.5;cursor:not-allowed">No receipt available</button><span class="hero-dl-note">Unsigned run</span>`;
 
   $("#heroGrid").innerHTML = `
-    <div class="hero-item">
+    <div class="hero-item" data-explain="report.saving" data-explain-value="${esc(savingVal)}" data-explain-label="${esc(X.w?.label || (X.savedPct != null ? 'MEASURED' : 'pending'))}" data-explain-source="phases.wattnot.metrics.saved_pct">
       <div class="label">Energy Saved</div>
       <div class="hero-val">${savingVal} ${savingChip}</div>
       <div class="hero-sub">${savingSub}</div>
     </div>
-    <div class="hero-item">
+    <div class="hero-item" data-explain="report.quality" data-explain-value="${esc(qualityVal)}" data-explain-label="${esc(X.wm?.label || (X.qualityHeld != null ? 'MEASURED' : 'pending'))}" data-explain-source="phases.wattnot.metrics.quality_pct">
       <div class="label">Quality &amp; Gate</div>
       <div class="hero-val">${qualityVal} ${qualityChip}</div>
       <div class="hero-sub">${qualitySub}</div>
     </div>
-    <div class="hero-item">
+    <div class="hero-item" data-explain="report.receipt" data-explain-value="${isSigned ? 'Signed' : 'Not signed'}" data-explain-label="${isSigned ? 'ESTIMATE' : 'REPLAY'}" data-explain-source="receipt.signature">
       <div class="label">Receipt Status</div>
       <div class="hero-val">${signedPill} ${chip(isSigned ? "ESTIMATE" : "REPLAY")}</div>
       <div class="hero-sub">${signedSub}</div>
@@ -320,7 +327,7 @@ function render() {
   // Render 7 Breakdown Cards
   const S = steps(X);
   $("#cardsGrid").innerHTML = S.map((s) => `
-    <div class="bd-card v-glass ${s.muted ? "" : "active-num"}" data-step="${s.id}" role="button" tabindex="0" aria-haspopup="dialog" aria-label="${esc(s.name)} details">
+    <div class="bd-card v-glass ${s.muted ? "" : "active-num"}" data-step="${s.id}" data-explain="${esc(s.explainId)}" data-explain-value="${esc(s.explainVal)}" data-explain-label="${esc(s.explainLabel)}" data-explain-source="${esc(s.explainSource)}" role="button" tabindex="0" aria-haspopup="dialog" aria-label="${esc(s.name)} details">
       <div class="bd-card-head">
         <span class="bd-card-num" aria-hidden="true">${s.node}</span>
         <span class="bd-card-name">${esc(s.name)}</span>

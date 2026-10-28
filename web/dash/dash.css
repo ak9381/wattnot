@@ -119,3 +119,4 @@ body{grid-template-columns:minmax(0,1fr)}
 .node .row{grid-template-columns:76px 1fr auto}
 .orch,.flowwrap,.logcol{min-width:0}
 @media (prefers-reduced-motion:reduce){.edge{animation:none}}
+.wn-mic-slot{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;min-width:32px;min-height:32px;flex:0 0 32px;vertical-align:middle}
