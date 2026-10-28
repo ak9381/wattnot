@@ -480,6 +480,14 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         raw step file when the checkout has it, else a fixed constant."""
         return run2.load(ROOT)
 
+    @app.get("/api/dash/v2/judge-path")
+    def v2_judge_path() -> dict:
+        """Proof tab bundle: Spark trace, gate explanation, fallback ledger,
+        stack row, verify results. Prebuilt file first, else built now."""
+        from wattnot.dash import judgepath
+        f = ROOT / "data/judge/judge-path.json"
+        return json.loads(f.read_text()) if f.exists() else judgepath.build(ROOT)
+
     @app.get("/api/dash/v2/runs")
     def v2_runs() -> dict:
         """Runs by run name: id, name, model, date."""
