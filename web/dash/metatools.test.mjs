@@ -97,9 +97,10 @@ test("compareRows formats comparative data across multiple receipts", () => {
   assert.ok(rows.length >= 6);
 
   const verdictRow = rows.find((r) => r.metric === "Llama 8B Judge Verdict");
+  const expectedTag = sampleReceipt.measurement?.label || "SIMULATED";
   assert.deepEqual(verdictRow.values, [
-    { text: "PASS", tag: "MOCK" },
-    { text: "FAIL", tag: "MOCK" }
+    { text: "PASS", tag: expectedTag },
+    { text: "FAIL", tag: expectedTag }
   ]);
 
   const sparkRow = rows.find((r) => r.metric === "Spark Trace ID");

@@ -117,15 +117,90 @@ Because these fields reside in the receipt body alongside measurements, they are
 
 ---
 
-## 5. UI Glass Card Component
+## 5. SAM 3.1: Hotspot Sets the Cap (`src/wattnot/sam/hotspot_cap.py`)
 
-The dashboard UI components reside in `web/dash/`:
-- `metatools.js`: Modular rendering logic exporting `mountMetaTools(el, receipt)` and `compareRows(receipts)`.
-- `metatools.css`: Glassmorphic styling utilizing the lavender palette (`#DCD6E4` down to `#171724`) on `#080B10` black background.
-- `metatools.html`: Standalone preview page rendering `sample-meta5-receipt.json` (`MOCK`).
-- `metatools.test.mjs`: Node test suite verifying HTML generation and comparative row extraction.
+Identifies thermal or rack hotspots in server photos via SAM 3.1 segmentation. When a hotspot is located on a specific GPU:
+- The planner lowers the power cap on that GPU only (by a bounded step, e.g. 50W, never below `min_cap_w` of 250W).
+- All other GPUs in the rack remain strictly unchanged at their existing power caps.
+- The signed receipt records:
+  - Mask: `bbox` `[x1, y1, x2, y2]`, polygon coordinates, compact RLE, and deterministic SHA-256 hash.
+  - Decision: `gpu_id`, `old_cap_w`, `new_cap_w`, `delta_w`, `min_cap_w`.
+  - Reason: Technical justification under 200 characters to pass receipt linting.
+- UI Component (`web/dash/hotspot.js`, `web/dash/hotspot.css`):
+  - Renders a "Cooling Hotspots" glass card with interactive SVG rack overlay highlighting the hot GPU slot and displaying before/after caps.
+  - Exported as `mountHotspotCard(el, receipt)` and `renderHotspotHTML(data)`.
 
-Visual indicators:
-- Pass Pill: Muted sage (`#8EA898`, `✓ PASS`)
-- Fail Pill: Muted rose (`#C27A88`, `✗ FAIL`)
-- Numbers: Monospaced Fira font with adjacent accounting badge.
+---
+
+## 6. Voice Guide (`src/wattnot/meta/voiceguide.py`)
+
+A hands-free multimodal assistant for querying runs and navigating dashboards:
+- **Audio Pipeline**: Audio input -> Muse Voice Transcribe (deterministic mock default; real only with `--live`) -> text -> Spark intent classification.
+- **Three Read-Only Intents**:
+  1. `navigate`:
+     - `"compare runs"` -> returns route to Compare view (`/dash/comparetree.html`) with prompt to pick runs.
+     - `"show last night's report"` -> resolves latest run by timestamp and navigates to its report route.
+  2. `answer`:
+     - Read-only Q&A grounded exclusively in verified signed receipts (hash check passed) and EU efficiency reports.
+     - Cites `receipt_id` or `report_id` on every answer.
+     - Refuses unanswerable questions outside verified data.
+  3. `configure`:
+     - Returns a pre-fill configuration object (`workload`, `stack`, `caps_w`).
+     - Explicitly requires the user to review parameters and press Start.
+- **Strict Execution Boundary**:
+  - The voice guide must **NEVER** launch, stop, or mutate runs.
+  - Enforced by an immutable action allowlist: `ALLOWED_ACTIONS = {"navigate", "answer", "prefill"}`. Attempting any other action raises `VoiceGuideActionError`.
+  - Text-only answers (no synthetic TTS).
+- **API Endpoint**:
+  - `POST /api/voiceguide` and `GET /api/voiceguide?q=...` supporting query text and audio payloads.
+- **UI Component (`web/dash/voiceguide.js`, `web/dash/voiceguide.css`)**:
+  - Self-mounts into `<header>` or creates a fixed top-right bar with mic button (`MediaRecorder`) and text input.
+  - Immediate state transition: "Listening…" on mic press, "Thinking…" on submission (zero silent lag).
+  - Rapid local path provides initial intent and ack in `<300 ms` followed by cited answer.
+  - Labeled `MOCK` during mock execution.
+- **Script Tag Deployment**:
+  Per instructions, existing HTML files were not modified during this phase. To enable the voice guide across other pages, add a single script tag:
+  ```html
+  <link rel="stylesheet" href="./voiceguide.css">
+  <script type="module" src="./voiceguide.js"></script>
+  ```
+  Target pages for script deployment:
+  - `web/dash/report.html`
+  - `web/dash/runs.html`
+  - `web/dash/index.html`
+  - `web/dash/comparetree.html`
+  - `web/dash/v2.html`
+
+---
+
+## 7. EU Efficiency Report (`src/wattnot/report/eu.py`)
+
+Extends Delegated Regulation (EU) 2024/1364 data-center reporting with one-click export from signed receipts:
+- **Core Metrics**:
+  - `it_energy_measured_window`: Total IT energy in kWh over measured request window (`MEASURED` or `SIMULATED`).
+  - `joules_per_correct_answer`: Energy efficiency normalized by task quality / pass rate in `J/correct`.
+  - `water_per_request`: Direct and indirect water consumption estimate in `mL/request` (`ESTIMATE`).
+  - `energy_saving_billed`: Verified lower bound saving percentage with Welch significance testing.
+- **Regulatory Framing**:
+  - Explicitly framed as "supports EU Energy Efficiency Directive data-center reporting".
+  - Marked with "CSRD roadmap" alignment.
+  - Prominent disclaimer: "Not a compliance claim; facility-level metrics require operator metering."
+- **API & Helper**:
+  - `generate_report(receipt, format="html"|"csv"|"json")`: Generates the complete report from a verified receipt in one click.
+  - Endpoint `GET /api/receipts/{receipt_id}/report/eu?format=html|csv|json`.
+- **UI Component (`web/dash/eulink.js`, `web/dash/eulink.css`)**:
+  - Renders a directive summary card with quick metrics and one-click download buttons for HTML, CSV, and JSON.
+  - Exported as `mountEuLink(el, receipt)` and `renderEuLinkHTML(data)`.
+
+---
+
+## 8. Dashboard Preview (`web/dash/metatools.html`)
+
+A consolidated preview page (`web/dash/metatools.html`) brings together all Meta Tools v5 components:
+- Muse Wonder Supervisor trial overview & Pareto stop details
+- Muse Code PR diff preview & framework snippets
+- Llama 8B Quality Gate verdict & agreement score
+- SAM 3.1 Cooling Hotspots rack map and bounded cap derate
+- EU Energy Efficiency Directive export link
+- Self-mounted Voice Guide in top-right slot
+

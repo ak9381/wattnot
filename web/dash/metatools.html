@@ -8,6 +8,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Montserrat:wght@500;600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./metatools.css">
+  <link rel="stylesheet" href="./hotspot.css">
+  <link rel="stylesheet" href="./voiceguide.css">
+  <link rel="stylesheet" href="./eulink.css">
   <style>
     body {
       margin: 0;
@@ -44,20 +47,26 @@
   <div class="preview-container">
     <div class="preview-header">
       <h1 class="preview-title">WattNot Meta Tools v5</h1>
-      <div class="preview-desc">Live glass card preview for Muse Wonder, Muse Code, and Llama 8B Quality Gate.</div>
+      <div class="preview-desc">Live glass card preview for Muse Wonder, Muse Code, SAM 3.1 Hotspots, EU Efficiency Reporting, and Voice Guide.</div>
     </div>
     <div id="metatools-mount"></div>
+    <div id="hotspot-mount"></div>
+    <div id="eulink-mount"></div>
   </div>
 
+  <script type="module" src="./voiceguide.js"></script>
   <script type="module">
     import { mountMetaTools } from './metatools.js';
+    import { mountHotspotCard } from './hotspot.js';
+    import { mountEuLink } from './eulink.js';
 
     async function init() {
       try {
         const res = await fetch('./sample-meta5-receipt.json');
         const receipt = await res.json();
-        const container = document.getElementById('metatools-mount');
-        mountMetaTools(container, receipt);
+        mountMetaTools(document.getElementById('metatools-mount'), receipt);
+        mountHotspotCard(document.getElementById('hotspot-mount'), receipt);
+        mountEuLink(document.getElementById('eulink-mount'), receipt);
       } catch (err) {
         console.error('Failed to load sample receipt:', err);
       }

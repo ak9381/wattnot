@@ -90,7 +90,7 @@
   "measurement": {
     "meter": "NVML internal energy counter via pynvml",
     "hz": 10.0,
-    "label": "MOCK",
+    "label": "SIMULATED",
     "csv": [
       {
         "role": "baseline",
@@ -154,7 +154,25 @@
     },
     "musecode_patch_sha256": "4c424a180373e34b3f3b92eb13a362aa6b0ffc17d7b21235b21111a4cf13a52f",
     "musecode_pr_sha256": "4c424a180373e34b3f3b92eb13a362aa6b0ffc17d7b21235b21111a4cf13a52f",
-    "musecode_pr_url": "https://github.com/ak9381/wattnot-demo-deploy/pull/1"
+    "musecode_pr_url": "https://github.com/ak9381/wattnot-demo-deploy/pull/1",
+    "hotspot_cap": {
+      "mask": {
+        "bbox": [190, 280, 430, 420],
+        "polygon": [[190, 280], [430, 280], [430, 420], [190, 420]],
+        "rle": "190,280,240,140",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "label": "MOCK"
+      },
+      "decision": {
+        "gpu_id": 1,
+        "old_cap_w": 400,
+        "new_cap_w": 350,
+        "delta_w": -50,
+        "min_cap_w": 250,
+        "label": "ADVICE"
+      },
+      "reason": "Hotspot detected on GPU 1 (thermal threshold exceeded); lowered cap from 400W to 350W (-50W step, min 250W); other GPUs unchanged."
+    }
   },
   "attribution": {
     "method": "token-share-capped (after Neuralwatt)",
