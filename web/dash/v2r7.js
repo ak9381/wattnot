@@ -276,7 +276,7 @@ export function treeValue(rec, branch, node) {
 const OWN_ONLY = { caps: "Power caps", quant: "Quantization", topk: "Adaptive top-k / tiered experts" };
 export function hostedChain(e) {
   if (!e) return "";
-  return `<li>Tokens saved: ${n(fmt(e.tokens_saved?.value, 0), "MEASURED")} (with vs without, ${esc(e.basis || "")}).</li>
+  return `<li>Tokens saved: ${n(fmt(e.tokens_saved?.value, 0), e.tokens_saved?.label || "ESTIMATE")} (with vs without, ${esc(e.basis || "")}; scaled up from ${esc(String(e.n_per_arm ?? "a few"))} calls per arm).</li>
     <li>× ${n(fmt(e.j_per_token?.value, 2), "ESTIMATE")} J/token = ${n(fmt(e.energy_j?.value, 0), "ESTIMATE")} J. Assumption: ${esc(e.j_per_token?.method || "")}; energy per token scales with active parameters.</li>
     <li>÷ 3,600,000 = ${n(fmt(e.energy_kwh?.value, 5), "ESTIMATE")} kWh.</li>
     <li>× 0.36 L/kWh = ${n(fmt(e.water_l?.value, 5), "ESTIMATE")} L water.</li>
