@@ -274,3 +274,33 @@ def test_rejected_non_allowlisted_action(monkeypatch) -> None:
             root_dir=REPO_ROOT,
             mock=True,
         )
+
+
+def test_voiceguide_api_endpoint_post_and_get() -> None:
+    import base64
+
+    app = create_app(REPO_ROOT)
+    client = TestClient(app)
+
+    # Test GET
+    resp_get = client.get("/api/voiceguide?q=compare+runs")
+    assert resp_get.status_code == 200
+    data_get = resp_get.json()
+    assert data_get["action"] == "navigate"
+    assert "/dash/comparetree.html" in data_get["route"]
+
+    # Test POST JSON query text
+    resp_post = client.post("/api/voiceguide", json={"query": "show last night's report"})
+    assert resp_post.status_code == 200
+    data_post = resp_post.json()
+    assert data_post["action"] == "navigate"
+    assert "report.html" in data_post["route"]
+
+    # Test POST JSON base64 audio
+    audio_payload = base64.b64encode(b"compare runs").decode("ascii")
+    resp_audio = client.post("/api/voiceguide", json={"audio_b64": audio_payload})
+    assert resp_audio.status_code == 200
+    data_audio = resp_audio.json()
+    assert data_audio["action"] == "navigate"
+    assert "/dash/comparetree.html" in data_audio["route"]
+
