@@ -43,6 +43,19 @@
 
     // 2. Mic slot positioning on app pages (never on landing)
     if (!isLanding) {
+      // Glow blobs behind content on app pages (never on landing)
+      if (!document.querySelector(".wn-glow-blobs")) {
+        const blobs = document.createElement("div");
+        blobs.className = "wn-glow-blobs";
+        blobs.setAttribute("aria-hidden", "true");
+        blobs.innerHTML = `
+          <div class="wn-blob wn-blob-1"></div>
+          <div class="wn-blob wn-blob-2"></div>
+          <div class="wn-blob wn-blob-3"></div>
+        `;
+        document.body.prepend(blobs);
+      }
+
       const slotWrap = nav.querySelector("#wn-slot-wrap");
       let mic = document.getElementById("wn-mic-slot");
       if (mic) {

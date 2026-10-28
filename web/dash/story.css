@@ -16,7 +16,7 @@ body.story{display:block;overflow:hidden}
 .btn.pri{border-color:var(--cy);color:var(--cy)}.btn.pri:hover{background:rgba(178,166,195,.08)}
 .btn.on{border-color:var(--cy);color:var(--cy);background:rgba(178,166,195,.08)}
 :focus-visible{outline:2px solid var(--cy);outline-offset:2px}
-.pop{position:fixed;top:54px;right:24px;width:min(460px,92vw);background:#080B10;border:1px solid var(--hair2);border-radius:8px;padding:16px 18px;z-index:60;font-size:14px}
+.pop{position:fixed;top:54px;right:24px;width:min(460px,92vw);background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,0) 40%),linear-gradient(0deg,rgba(178,166,195,.10),rgba(178,166,195,.10)),rgba(23,23,36,.75);backdrop-filter:blur(24px) saturate(170%);-webkit-backdrop-filter:blur(24px) saturate(170%);border:1px solid rgba(255,255,255,.14);border-radius:18px;box-shadow:0 10px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.12);padding:16px 18px;z-index:60;font-size:14px}
 .pop h4{margin:0 0 8px;font-size:15px;font-weight:600}.pop ul{list-style:none;margin:0 0 10px;padding:0}.pop li{display:flex;gap:10px;padding:3px 0;color:var(--ink2)}
 .pop li b{font:600 12px var(--mono);width:34px;color:var(--bt)}.pop li.no b{color:var(--red)}.pop p{margin:6px 0;color:var(--dim)}
 /* stage and scenes */
@@ -120,7 +120,7 @@ h2.hl{font:600 clamp(28px,2.7vw,50px)/1.1 Inter,system-ui,sans-serif;letter-spac
 .mcard b{display:block;color:var(--ink);font-size:13.5px;margin-bottom:3px}
 .mcard p{margin:0 0 5px;color:var(--dim);line-height:1.35;font-size:.92em}
 /* side panel */
-.panel{position:fixed;right:0;top:56px;bottom:64px;width:min(440px,94vw);background:#080B10;border-left:1px solid var(--hair2);z-index:50;padding:18px 20px;overflow:auto;transform:translateX(104%);transition:transform .25s ease;visibility:hidden;font-size:14px;line-height:1.5;scrollbar-width:thin}
+.panel{position:fixed;right:0;top:56px;bottom:64px;width:min(440px,94vw);background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,0) 40%),linear-gradient(0deg,rgba(178,166,195,.10),rgba(178,166,195,.10)),rgba(23,23,36,.75);backdrop-filter:blur(24px) saturate(170%);-webkit-backdrop-filter:blur(24px) saturate(170%);border-left:1px solid rgba(255,255,255,.14);box-shadow:-16px 0 48px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.12);z-index:50;padding:18px 20px;overflow:auto;transform:translateX(104%);transition:transform .25s ease;visibility:hidden;font-size:14px;line-height:1.5;scrollbar-width:thin}
 .panel.open{transform:none;visibility:visible}
 .panel.in-drawer{top:52px;bottom:0}
 .panel h3{margin:0 0 4px;font:600 20px Inter,system-ui,sans-serif;letter-spacing:-.01em;color:var(--ink)}
@@ -133,7 +133,7 @@ h2.hl{font:600 clamp(28px,2.7vw,50px)/1.1 Inter,system-ui,sans-serif;letter-spac
 .panel .metaline{border:1px solid rgba(142,122,158,.5);border-radius:6px;padding:7px 10px;margin:10px 0;background:rgba(142,122,158,.07);color:var(--ink)}
 .panel .go{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
 /* approve card */
-.acard{border:1px solid var(--hair2);border-radius:10px;padding:16px 18px;background:#080B10;font-size:clamp(13px,1vw,17px);line-height:1.5}
+.acard{border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:16px 18px;background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,0) 40%),linear-gradient(0deg,rgba(178,166,195,.10),rgba(178,166,195,.10)),rgba(27,23,40,.65);backdrop-filter:blur(24px) saturate(170%);-webkit-backdrop-filter:blur(24px) saturate(170%);box-shadow:0 10px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.12);font-size:clamp(13px,1vw,17px);line-height:1.5}
 .acard h4{margin:0 0 6px;font:600 1.15em Inter,sans-serif;color:var(--ink)}
 .acard .kv{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--hair);padding:5px 0;color:var(--ink2)}.acard .kv b{color:var(--ink);font-weight:500;text-align:right}
 .acard .act{display:flex;gap:10px;margin-top:12px;align-items:center}
@@ -210,7 +210,7 @@ h2.hl{font:600 clamp(28px,2.7vw,50px)/1.1 Inter,system-ui,sans-serif;letter-spac
 /* collapsed cards hide the full detail; expanded cards show the sub-step list */
 #arch .av.aglass .avn:not(.open) .d,#arch .av.aglass .avn:not(.open) .stl,#arch .av.aglass .avn:not(.open) .pw{display:none}
 /* glass side panel */
-#arch #apanel{background:rgba(23,23,36,.85);-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);border-left:1px solid rgba(220,214,228,.15);box-shadow:-16px 0 48px rgba(0,0,0,.5),0 0 20px rgba(178,166,195,.06);color:#DCD6E4}
+#arch #apanel{background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,0) 40%),linear-gradient(0deg,rgba(178,166,195,.10),rgba(178,166,195,.10)),rgba(23,23,36,.75);-webkit-backdrop-filter:blur(24px) saturate(170%);backdrop-filter:blur(24px) saturate(170%);border-left:1px solid rgba(255,255,255,.14);box-shadow:-16px 0 48px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.12);color:#DCD6E4}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){#arch #apanel{background:#1F1A2F}}
 #arch #apanel h3{color:#DCD6E4}
 #arch #apanel p,#arch #apanel li{color:#C9C1D6}

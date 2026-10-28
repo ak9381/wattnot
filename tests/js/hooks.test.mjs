@@ -137,3 +137,22 @@ test("shared chrome footer has credits, track, github, data legend, note, and ye
   assert.match(chromeJs, /No compliance claims/);
   assert.match(chromeJs, /2026/);
 });
+
+test("header and footer are fixed with Apple glassmorphism and glow blobs", () => {
+  const chromeCss = fs.readFileSync(path.join(dashDir, "chrome.css"), "utf8");
+  assert.match(chromeCss, /nav\.wn-nav\.gl\s*\{[^}]*position:\s*fixed;/);
+  assert.match(chromeCss, /footer\.wn-footer\.gl\s*\{[^}]*position:\s*fixed;/);
+  assert.match(chromeCss, /bottom:\s*14px;/);
+  assert.match(chromeCss, /blur\(24px\)\s*saturate\(170%\)/);
+  assert.match(chromeCss, /rgba\(255,\s*255,\s*255,\s*0?\.14\)/);
+  assert.match(chromeCss, /inset 0 1px 0 rgba\(255,\s*255,\s*255,\s*0?\.12\)/);
+  assert.match(chromeCss, /padding-top:\s*74px;/);
+  assert.match(chromeCss, /padding-bottom:\s*74px;/);
+  assert.match(chromeCss, /#6C5E7C/);
+  assert.match(chromeCss, /#8E7A9E/);
+  assert.match(chromeCss, /#4F4A63/);
+
+  const v2Css = fs.readFileSync(path.join(dashDir, "v2.css"), "utf8");
+  assert.match(v2Css, /height:\s*calc\(100vh - 340px\)/);
+  assert.doesNotMatch(v2Css, /footer\.wn-footer\.gl\s*\{\s*display:\s*none/);
+});

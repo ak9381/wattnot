@@ -31,9 +31,12 @@
   --v-reject: #D48389;      /* muted rose (passes AA on #2E2B44 and #171724) */
 
   /* glass surfaces (visionOS / Apple Liquid Glass) */
-  --v-glass: rgba(31, 26, 47, 0.65);
+  --v-glass:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%),
+    linear-gradient(0deg, rgba(178, 166, 195, 0.10), rgba(178, 166, 195, 0.10)),
+    rgba(27, 23, 40, 0.65);
   --v-glass2: rgba(142, 122, 158, 0.18);
-  --v-line: rgba(220, 214, 228, 0.12);   /* subtle 1px border */
+  --v-line: rgba(255, 255, 255, 0.14);   /* 1px highlight border */
   --v-line2: rgba(178, 166, 195, 0.28);
   --v-glow: rgba(178, 166, 195, 0.55);   /* peach glow for connector lines */
   --v-r: 20px;
@@ -55,11 +58,11 @@
 /* ---- shared building blocks used by runs.html / report.html ---- */
 .v-glass {
   background: var(--v-glass);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(170%);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
   border: 1px solid var(--v-line);
   border-radius: var(--v-r);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(220, 214, 228, 0.12);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .v-glass {

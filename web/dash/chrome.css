@@ -2,19 +2,22 @@
 
 /* ---- Shared Floating Header ---- */
 nav.wn-nav.gl {
-  position: sticky;
-  top: 10px;
+  position: fixed;
+  top: 14px;
   left: 0;
   right: 0;
-  margin: 10px auto 12px;
+  margin: 0 auto;
   width: min(1160px, calc(100% - 32px));
   z-index: 100;
-  border-radius: 16px;
-  background: rgba(31, 26, 47, 0.72);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  border: 1px solid rgba(220, 214, 228, 0.14);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(220, 214, 228, 0.12);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%),
+    linear-gradient(0deg, rgba(178, 166, 195, 0.10), rgba(178, 166, 195, 0.10)),
+    rgba(27, 23, 40, 0.65);
+  backdrop-filter: blur(24px) saturate(170%);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   font-family: var(--v-body, "Source Sans 3", Inter, system-ui, sans-serif);
 }
 
@@ -110,17 +113,23 @@ nav.wn-nav.gl {
 
 /* ---- Shared Minimal Glass Footer ---- */
 footer.wn-footer.gl {
-  position: relative;
-  z-index: 10;
-  margin: 36px auto 20px;
+  position: fixed;
+  bottom: 14px;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   width: min(1160px, calc(100% - 32px));
-  border-radius: 16px;
-  background: rgba(31, 26, 47, 0.65);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  border: 1px solid rgba(220, 214, 228, 0.12);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(220, 214, 228, 0.1);
-  padding: 16px 22px;
+  z-index: 100;
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%),
+    linear-gradient(0deg, rgba(178, 166, 195, 0.10), rgba(178, 166, 195, 0.10)),
+    rgba(27, 23, 40, 0.65);
+  backdrop-filter: blur(24px) saturate(170%);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  padding: 12px 20px;
   font-size: 13px;
   color: var(--v-mut, #8E7A9E);
   font-family: var(--v-body, "Source Sans 3", Inter, system-ui, sans-serif);
@@ -231,15 +240,19 @@ footer.wn-footer.gl {
 body.is-landing nav.wn-nav.gl {
   position: fixed;
   top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(1100px, calc(100% - 48px));
-  margin: 0;
-  background: rgba(14, 18, 32, 0.45);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  box-shadow: 0 0 40px -10px rgba(95, 227, 245, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: min(1160px, calc(100% - 32px));
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%),
+    linear-gradient(0deg, rgba(178, 166, 195, 0.10), rgba(178, 166, 195, 0.10)),
+    rgba(14, 18, 32, 0.55);
+  backdrop-filter: blur(24px) saturate(170%);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   font-family: "Inter Tight", system-ui, sans-serif;
 }
 
@@ -281,15 +294,24 @@ body.is-landing nav.wn-nav.gl .wn-link.on {
 }
 
 body.is-landing footer.wn-footer.gl {
-  position: relative;
-  margin: 40px auto 24px;
-  width: min(1100px, calc(100% - 48px));
-  background: rgba(14, 18, 32, 0.4);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  position: fixed;
+  bottom: 14px;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: min(1160px, calc(100% - 32px));
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%),
+    linear-gradient(0deg, rgba(178, 166, 195, 0.10), rgba(178, 166, 195, 0.10)),
+    rgba(14, 18, 32, 0.55);
+  backdrop-filter: blur(24px) saturate(170%);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   color: #7C8599;
   font-family: "Inter Tight", system-ui, sans-serif;
+  padding: 12px 20px;
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -320,6 +342,59 @@ body.is-landing footer.wn-footer.gl .wn-footer-gh:hover {
   color: #FFFFFF;
 }
 
+/* ---- App pages padding & glow blobs behind glass cards (#6C5E7C / #8E7A9E / #4F4A63) ---- */
+body:not(.is-landing) {
+  padding-top: 74px;
+  padding-bottom: 74px;
+  box-sizing: border-box;
+  background-color: #080B10;
+  background-image:
+    radial-gradient(circle 520px at 18% 18%, rgba(108, 94, 124, 0.30), transparent 70%),
+    radial-gradient(circle 600px at 82% 40%, rgba(142, 122, 158, 0.28), transparent 70%),
+    radial-gradient(circle 500px at 32% 80%, rgba(79, 74, 99, 0.30), transparent 70%);
+  background-attachment: fixed;
+}
+
+.wn-glow-blobs {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.wn-blob {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(80px);
+  -webkit-filter: blur(80px);
+}
+
+.wn-blob-1 {
+  width: 560px;
+  height: 560px;
+  top: 5%;
+  left: 12%;
+  background: radial-gradient(circle, rgba(108, 94, 124, 0.32) 0%, rgba(108, 94, 124, 0) 70%);
+}
+
+.wn-blob-2 {
+  width: 620px;
+  height: 620px;
+  top: 35%;
+  right: 8%;
+  background: radial-gradient(circle, rgba(142, 122, 158, 0.28) 0%, rgba(142, 122, 158, 0) 70%);
+}
+
+.wn-blob-3 {
+  width: 500px;
+  height: 500px;
+  bottom: 5%;
+  left: 28%;
+  background: radial-gradient(circle, rgba(79, 74, 99, 0.30) 0%, rgba(79, 74, 99, 0) 70%);
+}
+
 /* Page-specific adaptations for canvas/scene pages */
 body:has(.viewport) {
   display: flex !important;
@@ -341,8 +416,4 @@ body:has(.viewport) .mid {
 }
 body:has(.viewport) .timeline {
   flex: none;
-}
-body:has(.viewport) footer.wn-footer.gl,
-body.story footer.wn-footer.gl {
-  display: none !important;
 }
