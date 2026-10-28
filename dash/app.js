@@ -331,8 +331,10 @@ function closeDrawer() {
   if (window.gsap && !matchMedia("(prefers-reduced-motion: reduce)").matches) window.gsap.to(d, { yPercent: 100, duration: 0.35, ease: "power2.in", onComplete: () => { done(); window.gsap.set(d, { clearProps: "transform" }); } }); else done();
   history.replaceState(null, "", location.pathname);
 }
-$("dClose").onclick = closeDrawer;
-$("dPower").onclick = () => openDrawer("power"); $("dExperts").onclick = () => openDrawer("experts"); $("dArch").onclick = () => openDrawer("arch");
+if ($("dClose")) $("dClose").onclick = closeDrawer;
+if ($("dPower")) $("dPower").onclick = () => openDrawer("power");
+if ($("dExperts")) $("dExperts").onclick = () => openDrawer("experts");
+if ($("dArch")) $("dArch").onclick = () => openDrawer("arch");
 document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => showTab(b.dataset.tab)));
 
 // ---- side panel on the run screens
@@ -355,29 +357,30 @@ document.addEventListener("mouseout", (e) => { if (e.target.closest("[data-tt]")
 document.addEventListener("focusin", (e) => { const t = e.target.closest("[data-tt]"); if (t) t.dispatchEvent(new MouseEvent("mouseover", { bubbles: true })); });
 
 // ---- health chips
-const chipSet = (el, cls, text) => { el.classList.remove("ok", "warn", "bad"); if (cls) el.classList.add(cls); el.querySelector("span").textContent = text; };
+const chipSet = (el, cls, text) => { if (!el) return; el.classList.remove("ok", "warn", "bad"); if (cls) el.classList.add(cls); const s = el.querySelector("span"); if (s) s.textContent = text; };
 async function loadHealth() {
   try {
     const h = await fetch("/api/dash/health").then((r) => r.json());
-    chipSet($("modeChip"), h.replay_only ? "warn" : h.mode === "live" ? "ok" : "", h.replay_only ? "REPLAY · saved run · no GPU, no live Meta calls" : h.mode === "live" ? "Live run" : `Replay of recorded runs${h.gpu_attached ? "" : " · no GPU attached"}`);
+    if ($("modeChip")) chipSet($("modeChip"), h.replay_only ? "warn" : h.mode === "live" ? "ok" : "", h.replay_only ? "REPLAY · saved run · no GPU, no live Meta calls" : h.mode === "live" ? "Live run" : `Replay of recorded runs${h.gpu_attached ? "" : " · no GPU attached"}`);
     document.body.classList.toggle("replay-only", !!h.replay_only);
-    $("modeChip").title = h.replay_only ? "Hosted replay for judges: everything is read from a saved run. No GPU is used and no Meta or SAM call is made." : h.mode === "live" ? "Following a run that is writing events now" : "Every number is read from a recorded run. Nothing here needs a GPU or a network connection.";
-    $("signout").hidden = !h.auth_required; return h;
-  } catch { chipSet($("modeChip"), "bad", "Server not reachable"); return null; }
+    if ($("modeChip")) $("modeChip").title = h.replay_only ? "Hosted replay for judges: everything is read from a saved run. No GPU is used and no Meta or SAM call is made." : h.mode === "live" ? "Following a run that is writing events now" : "Every number is read from a recorded run. Nothing here needs a GPU or a network connection.";
+    if ($("signout")) $("signout").hidden = !h.auth_required; return h;
+  } catch { if ($("modeChip")) chipSet($("modeChip"), "bad", "Server not reachable"); return null; }
 }
 const META_TEXT = { replay_only: ["", "Meta API: not called (hosted replay)"], ok: ["ok", "Meta API: connected"], key_missing: ["warn", "Meta API: reachable, no key"], key_rejected: ["bad", "Meta API: key rejected"], blocked: ["bad", "Meta API: blocked from here"], unreachable: ["bad", "Meta API: unreachable"], degraded: ["warn", "Meta API: degraded"], error: ["bad", "Meta API: check failed"] };
 async function checkMeta(fresh) {
-  const chip = $("metaChip"); chipSet(chip, "", "Meta API: checking…");
+  const chip = $("metaChip"); if (!chip) return null; chipSet(chip, "", "Meta API: checking…");
   let r; try { r = await fetch(`/api/dash/meta/health${fresh ? "?fresh=1" : ""}`).then((x) => { if (!x.ok) throw new Error(x.status); return x.json(); }); }
   catch (e) { r = { state: "error", steps: [], advice: "The health check could not be reached. The story still works from recorded runs.", spends_money: false }; }
   const [cls, text] = META_TEXT[r.state] || ["warn", `Meta API: ${r.state}`]; chipSet(chip, cls, text); renderPop(r); return r;
 }
 function renderPop(r) {
+  if (!$("pop")) return;
   $("pop").innerHTML = `<h4>Meta API connection</h4><ul>${(r.steps || []).map((s) => `<li class="${s.ok ? "" : "no"}"><b>${s.ok ? "ok" : "no"}</b><span>${esc(s.text)}</span></li>`).join("") || "<li><span>No steps ran.</span></li>"}</ul><p>${esc(r.advice || "")}</p><p>This check makes no model call and costs nothing. Replay mode needs no connection.</p><div class="go" style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="popAgain">Check again</button><button class="btn" id="popClose">Close</button></div>`;
   $("popAgain").onclick = () => checkMeta(true); $("popClose").onclick = () => togglePop(false);
 }
-function togglePop(on) { $("pop").hidden = !on; $("metaChip").setAttribute("aria-expanded", on); if (on) $("popClose")?.focus(); }
-$("metaChip").onclick = () => togglePop($("pop").hidden);
+function togglePop(on) { if (!$("pop")) return; $("pop").hidden = !on; $("metaChip")?.setAttribute("aria-expanded", on); if (on) $("popClose")?.focus(); }
+if ($("metaChip")) $("metaChip").onclick = () => togglePop($("pop")?.hidden);
 
 // ---- start the product flow
 let product = null, bundle = null;
@@ -428,21 +431,20 @@ async function boot() {
   if (initSoloIfNeeded()) return; // ?view=arch&solo=1 renders only that canvas full screen
   const stage = $("stage"); stage.innerHTML = "";
   const [health, sb] = await Promise.all([loadHealth(), fetch("/api/dash/story").then((r) => { if (!r.ok) throw new Error(r.status === 404 ? "The run data has not been built yet: run scripts/build_dash_arch.py." : `HTTP ${r.status}`); return r.json(); }).catch((e) => ({ error: e.message }))]);
-  checkMeta(false);
   if (sb.error || !sb.config || !sb.config.models) {
     stage.innerHTML = `<div class="pf"><div class="err"><b>The run configuration could not load.</b><p>${esc(sb.error || "The bundle has no recorded run in it. Rebuild it with scripts/build_dash_arch.py.")}</p><button class="btn" id="retry">Try again</button> <button class="btn" id="goPower">Open Power instead</button></div></div>`;
     $("retry").onclick = boot; $("goPower").onclick = () => openDrawer("power"); return;
   }
   bundle = withReportNode(withContextNode(sb)); healthData = health;
-  if (curTab === "arch") ensureArch().then(() => archPage?.show());
-  product = new Product(stage, $("rail"), { bundle: sb, health, open: openPanel, drawer: openDrawer });
-  if (params.get("filter") === "meta" && params.get("tab") === "arch") ensureArch().then(() => archPage?.setFilter("meta"));
+  archPage = new ArchPage(stage, bundle, { openDrawer, health: healthData });
+  archPage.setMode("all");
+  archPage.show();
+  if (params.get("filter") === "meta") archPage.setFilter("meta");
 }
 window.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") { if (!$("pop").hidden) return togglePop(false); if ($("spanel").classList.contains("open")) return closePanel(); if (drawerOpen) { if ($("apanel")?.classList.contains("open")) return archPage.closePanel(); return closeDrawer(); } return; }
+  if (e.key === "Escape") { if ($("pop") && !$("pop").hidden) return togglePop(false); if ($("spanel")?.classList.contains("open")) return closePanel(); if (drawerOpen) { if ($("apanel")?.classList.contains("open")) return archPage.closePanel(); return closeDrawer(); } return; }
 });
 window.__app = app; window.__product = () => product;
 const tab = params.get("tab");
-showTab(tab || "power");
 if (tab) openDrawer(tab, { instant: true });
 boot();

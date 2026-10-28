@@ -22,13 +22,25 @@
     }
 
     // 1. Injected Header
+    const isV2Page = pathname.includes("v2.html") || !!document.querySelector("#pReport");
+    const v2TabsHtml = `
+      <nav class="tabs wn-tabs" id="tabs" aria-label="Views">
+        <button data-p="pHome" class="on">Overview</button>
+        <button data-p="pCfg">Configure</button>
+        <button data-p="pRun">Run</button>
+        <button data-p="pReport">Compare</button>
+        <button data-p="pProof">Proof</button>
+        <button data-p="pLearn">How it works</button>
+      </nav>
+    `;
+
     const nav = document.createElement("nav");
-    nav.className = "wn-nav gl";
+    nav.className = "wn-nav gl" + (isV2Page ? " wn-nav-v2" : "");
     nav.setAttribute("aria-label", "Main navigation");
     nav.innerHTML = `
       <div class="wn-nav-inner">
         <a class="wn-brand" href="${prefix}index.html">Watt<i>Not</i></a>
-        <div class="wn-links">
+        <div class="wn-links" style="margin-left:auto">
           <a class="wn-link" data-nav="dashboard" href="${prefix}runs.html">Dashboard</a>
           <a class="wn-link" data-nav="runs" href="${prefix}runs.html#runs">Runs</a>
           <a class="wn-link" data-nav="compare" href="${prefix}v2.html#pReport">Compare</a>
@@ -37,12 +49,26 @@
         </div>
         <div class="wn-slot-wrap" id="wn-slot-wrap"></div>
       </div>
+      ${isV2Page ? `<div class="wn-nav-subline">${v2TabsHtml}</div>` : ""}
     `;
 
     document.body.prepend(nav);
 
     // 2. Mic slot positioning on app pages (never on landing)
     if (!isLanding) {
+      // Glow blobs behind content on app pages (never on landing)
+      if (!document.querySelector(".wn-glow-blobs")) {
+        const blobs = document.createElement("div");
+        blobs.className = "wn-glow-blobs";
+        blobs.setAttribute("aria-hidden", "true");
+        blobs.innerHTML = `
+          <div class="wn-blob wn-blob-1"></div>
+          <div class="wn-blob wn-blob-2"></div>
+          <div class="wn-blob wn-blob-3"></div>
+        `;
+        document.body.prepend(blobs);
+      }
+
       const slotWrap = nav.querySelector("#wn-slot-wrap");
       let mic = document.getElementById("wn-mic-slot");
       if (mic) {
@@ -109,13 +135,7 @@
           <span class="wn-footer-sep">·</span>
           <span class="wn-footer-year">2026</span>
         </div>
-        <div class="wn-footer-legend" aria-label="Data provenance legend">
-          <span class="wn-leg-item"><i class="wn-leg-dot lab-measured" aria-hidden="true"></i>MEASURED</span>
-          <span class="wn-leg-item"><i class="wn-leg-dot lab-estimate" aria-hidden="true"></i>ESTIMATE</span>
-          <span class="wn-leg-item"><i class="wn-leg-dot lab-mock" aria-hidden="true"></i>MOCK</span>
-        </div>
         <div class="wn-footer-right">
-          <span class="wn-footer-note">No compliance claims</span>
           <a class="wn-footer-gh" href="https://github.com/ak9381/wattnot" target="_blank" rel="noopener">GitHub</a>
         </div>
       </div>

@@ -20,9 +20,4 @@ window.__WN_STATIC = true;
     if (p.startsWith("/room/")) return real(`${BASE}${p.slice(1)}`);
     return real(u, init);
   };
-  document.addEventListener("DOMContentLoaded", () => {
-    const b = document.createElement("div"); b.className = "replay-banner"; b.setAttribute("role", "note");
-    b.textContent = "Replay of measured logs. This static page plays back recorded RUN2 data; no GPU or model is running and nothing you click changes a real system.";
-    document.body.prepend(b);
-  });
 })();

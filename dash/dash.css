@@ -27,9 +27,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 #experts.v-orchestra{grid-template-columns:230px 0 minmax(0,1fr)}#experts.v-orchestra .flowwrap{display:none}
 /* labels */
 .pill{display:inline-block;font:500 9.5px var(--mono);letter-spacing:.04em;border:1px solid;border-radius:4px;padding:0 5px;line-height:15px;vertical-align:1px}
-.pill.MEASURED{color:var(--cy);border-color:rgba(178,166,195,.5)}
-.pill.ESTIMATE{color:#C4B4D6;border-color:rgba(233,196,106,.5)}
-.pill.SIMULATED,.pill.MOCK{color:var(--viol);border-color:rgba(183,156,255,.5);border-style:dashed}
+.pill.MEASURED{color:#8FD3B0;border-color:rgba(143,211,176,.5)}
+.pill.ESTIMATE{color:#E6C27A;border-color:rgba(230,194,122,.5)}
+.pill.SIMULATED{color:#8EC5F0;border-color:rgba(142,197,240,.55);border-style:dashed}
+.pill.MOCK{color:#E9A6B4;border-color:rgba(233,166,180,.5)}
+.pill.REPLAY{color:#B2A6C3;border-color:rgba(178,166,195,.5)}
 .pill.ADVICE{color:var(--mu);border-color:#3D4A55;border-style:dashed}
 /* log column */
 .logcol{border-right:1px solid var(--ln);padding:12px 12px 0;overflow:hidden;display:flex;flex-direction:column;min-height:0;grid-row:1/3}
