@@ -86,12 +86,16 @@ def key_prefix(key: str) -> str | None:
 
 
 class LiveTransport:
+    provider = "baseten"
+    key_env = KEY_ENV
+
     def __init__(self, *, base_url: str = BASE_URL, timeout_s: float = 600,
                  max_retries: int = 4, sleep: Callable[[float], None] = time.sleep,
                  env: Mapping[str, str] | None = None, min_interval_s: float = 4.0,
                  clock: Callable[[], float] = time.monotonic) -> None:
         self._key = read_key(env)
         self.base_url = base_url.rstrip("/")
+        self.model = MODEL
         self.timeout_s = timeout_s
         self.max_retries = max_retries
         self._sleep = sleep
@@ -117,9 +121,9 @@ class LiveTransport:
         return key_prefix(self._key)
 
     def __call__(self, req: Request) -> Reply:
-        if req.body.get("model") != MODEL:
+        if req.body.get("model") != self.model:
             raise CloudError(f"refusing to send model {req.body.get('model')!r}; "
-                             f"this key only works with {MODEL}")
+                             f"this key only works with {self.model}")
         data = json.dumps(req.body).encode()
         headers = {"Authorization": f"Bearer {self._key}", "Content-Type": "application/json",
                    **req.headers}
@@ -226,3 +230,47 @@ class FixtureTransport:
         self._t += float(rec["latency_s"])
         return Reply(int(rec["status"]), rec["body"], float(rec["latency_s"]),
                      rec.get("headers") or {}, int(rec.get("retries", 0)), self._t)
+
+
+MODAL_URL_ENV = "MODAL_ENDPOINT_URL"
+MODAL_ID_ENV = "MODAL_PROXY_TOKEN_ID"
+MODAL_SECRET_ENV = "MODAL_PROXY_TOKEN_SECRET"
+MODAL_MODEL_ENV = "MODAL_MODEL"
+MODAL_DEFAULT_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
+
+
+class ModalLiveTransport(LiveTransport):
+    """A Modal Endpoint (OpenAI-compatible) with the same retry, throttle and scrub rules.
+
+    Auth is a workspace Proxy Token from MODAL_PROXY_TOKEN_ID / MODAL_PROXY_TOKEN_SECRET,
+    sent as `Bearer <id>.<secret>`. The account tokens (MODAL_TOKEN_ID/SECRET) are for the
+    CLI only and are never sent to an endpoint."""
+
+    provider = "modal"
+    key_env = f"{MODAL_ID_ENV}+{MODAL_SECRET_ENV}"
+
+    def __init__(self, *, env: Mapping[str, str] | None = None, min_interval_s: float = 0.0,
+                 **kw) -> None:
+        tid, sec = read_env(MODAL_ID_ENV, env), read_env(MODAL_SECRET_ENV, env)
+        if not (tid and sec):
+            raise MissingKey(f"{MODAL_ID_ENV} and {MODAL_SECRET_ENV} must both be set "
+                             "(a Modal Proxy Token). They are never read from a file or a flag.")
+        url = read_env(MODAL_URL_ENV, env).rstrip("/")
+        if not url:
+            raise MissingKey(f"{MODAL_URL_ENV} is not set (the Modal Endpoint URL).")
+        self._key = f"{tid}.{sec}"
+        self.base_url = url if url.endswith("/v1") else url + "/v1"
+        self.model = read_env(MODAL_MODEL_ENV, env) or MODAL_DEFAULT_MODEL
+        self.timeout_s = kw.get("timeout_s", 600)
+        self.max_retries = kw.get("max_retries", 4)
+        self._sleep = kw.get("sleep", time.sleep)
+        self.min_interval_s = min_interval_s
+        self._clock = kw.get("clock", time.monotonic)
+        self._last_start = None
+
+    def __repr__(self) -> str:
+        return f"ModalLiveTransport(base_url={self.base_url!r}, model={self.model!r})"
+
+    @property
+    def api_key_prefix(self) -> str | None:
+        return self._key.split(".", 1)[0] or None

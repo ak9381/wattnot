@@ -40,8 +40,10 @@ from wattnot.cloud.efforts import max_tokens_for, stop_for
 from wattnot.cloud.pricing import Rates, cost_usd
 from wattnot.cloud.transport import (
     CloudError,
+    MODAL_DEFAULT_MODEL,
     FixtureTransport,
     LiveTransport,
+    ModalLiveTransport,
     Request,
     Transport,
 )
@@ -57,6 +59,9 @@ INR_PER_USD = 88.0  # ASSUMED, change it with --inr-per-usd
 TARIFF_USD_PER_KWH = 0.12  # assumption, same as receipts
 CHARS_PER_TOKEN = 3.0  # worst-case pricing of a prompt
 LEDGER_ENV = "WATTNOT_BASETEN_H2H_LEDGER"
+MODAL_GPU = "H100"  # Modal dedicated endpoint GPU for the hosted leg
+MODAL_GPU_USD_PER_H = 0.001097 * 3600  # modal.com/pricing, H100 SXM5, read 2026-10-28 (ESTIMATE)
+PLACEMENTS = ("local", "baseten", "modal")  # every compare runs all three
 
 
 class BudgetStop(RuntimeError):
@@ -137,6 +142,9 @@ class BasetenLeg:
     """Baseten hosted Muse Spark Open through a cloud transport, behind the spend cap."""
 
     name = "baseten"
+    model = MODEL
+    send_effort = True
+    usd_per_s: float | None = None  # None: price by tokens at the list rate
 
     def __init__(
         self,
@@ -164,6 +172,9 @@ class BasetenLeg:
         stop = stop_for(self.effort)
         if stop:
             body["stop"] = stop
+        body["model"] = getattr(self.transport, "model", None) or self.model
+        if not self.send_effort:
+            body.pop("reasoning_effort", None)
         rep_ = self.transport(Request(f"{item.id}|{self.effort}|{rep}", body))
         data = rep_.body
         if rep_.status != 200:
@@ -175,7 +186,8 @@ class BasetenLeg:
         ch = (data.get("choices") or [{}])[0]
         text = (ch.get("message") or {}).get("content") or ""
         fin = ch.get("finish_reason")
-        usd = cost_usd(self.rates, pt, cached, ct)
+        usd = (rep_.latency_s * self.usd_per_s if self.usd_per_s is not None
+               else cost_usd(self.rates, pt, cached, ct))
         if self.billed and self.cap is not None:
             self.cap.add(usd)
         return Answer(
@@ -192,6 +204,18 @@ class BasetenLeg:
             200,
             text,
         )
+
+
+class ModalLeg(BasetenLeg):
+    """A Meta open-weights model on a Modal dedicated Endpoint. Same prompts and checks.
+
+    Modal bills GPU time, not tokens, so each answer is priced at its wall seconds x the
+    H100 list rate (ESTIMATE: it ignores idle and cold-start time, which Modal also bills)."""
+
+    name = "modal"
+    model = MODAL_DEFAULT_MODEL
+    send_effort = False  # a plain instruct model has no reasoning levels
+    usd_per_s = MODAL_GPU_USD_PER_H / 3600
 
 
 class LocalLeg:
@@ -332,11 +356,18 @@ def summarize_leg(
             "wh_per_1k_answers": None if j is None or not n else round(j / n / 3600 * 1000, 3),
         }
     else:
-        lo, hi = cloud_energy.wh_range(ptoks, ctoks, toks)
+        if name == "modal":  # a small dense model: wall time x an H100 power band, not FLOPs
+            wall = sum(lat)
+            lo, hi = wall * 350 / 3600, wall * 700 / 3600
+        else:
+            lo, hi = cloud_energy.wh_range(ptoks, ctoks, toks)
         row["cost_per_1k_answers"] = {
             "usd": round(sum(a.usd or 0.0 for a in answers) / n * 1000, 4) if n else None,
             "label": labels["cost"],
             "how": (
+                f"wall seconds x Modal {MODAL_GPU} list rate ${MODAL_GPU_USD_PER_H:.2f}/h "
+                "(dedicated endpoint; idle and cold start not counted)"
+            ) if name == "modal" else (
                 "MEASURED token usage x list price "
                 f"(${(rates or Rates()).input_per_m}/{(rates or Rates()).cached_per_m}/"
                 f"{(rates or Rates()).output_per_m} per 1M in/cached/out); "
@@ -347,7 +378,7 @@ def summarize_leg(
             "wh": None if not n else round((lo + hi) / 2 / n, 6),
             "wh_range": None if not n else [round(lo / n, 6), round(hi / n, 6)],
             "label": "ESTIMATE",
-            "boundary": "FLOP model of H100-class GPUs; not measured on Baseten's GPUs",
+            "boundary": f"FLOP model of H100-class GPUs; not measured on {name.capitalize()}'s GPUs",
             "wh_per_1k_answers": None if not n else round((lo + hi) / 2 / n * 1000, 3),
         }
     e = row["energy_per_answer"]
@@ -397,6 +428,7 @@ def build_receipt(
     prev_sha256: str | None = None,
     created_at: str | None = None,
     spend: dict | None = None,
+    placements_rows: list | None = None,
 ) -> dict:
     per_item = [
         {
@@ -437,6 +469,7 @@ def build_receipt(
         "notes": list(notes),
         "baseten_spend": spend,
         "routing": None,
+        "placements": placements_rows,
     }
     r["integrity"] = {
         "canonicalization": "JCS RFC 8785",
@@ -474,12 +507,23 @@ def run_h2h(
     resident_gb: float = 0.0,
     baseten_transport: Transport | None = None,
     local_chat: LocalChat | None = None,
+    modal: str = "off",
+    modal_transport: Transport | None = None,
+    modal_cap_usd: float = DEFAULT_CAP_USD,
+    local_levers: Sequence[str] = ("adaptive_topk", "tiered_experts_kmeans", "quantization"),
 ) -> dict:
     """Run both legs and return the receipt (not yet routed). Nothing is written to disk
     except the Baseten spend file when `baseten == "live"`."""
 
     legs: dict = {}
     answers: dict = {}
+    skipped: dict = {}
+    if not (local_url or local_chat):
+        skipped["local"] = "no local GPU server given (--local-url)"
+    if baseten == "off":
+        skipped["baseten"] = "Baseten leg switched off"
+    if modal == "off":
+        skipped["modal"] = "Modal endpoint not configured (MODAL_ENDPOINT_URL + proxy token)"
     if baseten == "replay" and isinstance(baseten_transport or fixture, (FixtureTransport, Path)):
         have = (
             baseten_transport.doc
@@ -561,6 +605,33 @@ def run_h2h(
             notes.append(f"Baseten replay stopped early: {stopped}")
         if stopped and baseten == "live":
             notes.append(f"Baseten leg stopped early: {stopped}")
+    if modal != "off":
+        mt = modal_transport or (FixtureTransport.load(fixture) if modal == "replay"
+                                 else ModalLiveTransport())
+        mcap = SpendCap(modal_cap_usd, cap_path and Path(str(cap_path) + ".modal")) \
+            if modal == "live" else None
+        ml = ModalLeg(mt, effort=effort, cap=mcap, billed=modal == "live")
+        ans, stopped = [], None
+        for it in items:
+            try:
+                ans.append(ml.complete(it))
+            except BudgetStop as e:
+                stopped = str(e)
+                break
+            except (CloudError, KeyError) as e:
+                stopped = f"{type(e).__name__}: {e}"[:200]
+                break
+        src = "REPLAY" if modal == "replay" else "MEASURED"
+        lab = {"quality": src, "latency": src, "tokens": src,
+               "cost": "ESTIMATE (wall seconds x Modal GPU list rate)"}
+        legs["modal"] = summarize_leg("modal", ans, labels=lab)
+        legs["modal"].update(model=getattr(mt, "model", None) or ModalLeg.model, mode=modal,
+                             stopped=stopped, gpu=MODAL_GPU)
+        answers["modal"] = ans
+        if stopped:
+            notes.append(f"Modal leg stopped early: {stopped}")
+    if "local" in legs:
+        legs["local"]["levers"] = list(local_levers)
     if not legs:
         raise ValueError("nothing to run: give a local url and/or baseten replay|live")
     # Only items both legs answered are compared, so one stopped leg cannot skew the other.
@@ -599,7 +670,32 @@ def run_h2h(
                 rental_usd_per_h=rental_inr_per_h / inr_per_usd if b == "local" else None,
                 rates=Rates(),
             ) | {k: legs[b][k] for k in ("model", "mode", "stopped") if k in legs[b]}
-    return build_receipt(wl, full, legs, answers, effort=effort, notes=notes, spend=spend)
+    return build_receipt(wl, full, legs, answers, effort=effort, notes=notes, spend=spend,
+                         placements_rows=placements(legs, skipped))
+
+
+def placements(legs: dict, skipped: dict) -> list[dict]:
+    """One row per placement, always all three, for the comparison graphs. A placement
+    that did not run says why instead of showing a number."""
+
+    rows = []
+    for p in PLACEMENTS:
+        leg = legs.get(p)
+        if leg is None:
+            rows.append({"id": p, "status": "not_run",
+                         "why": skipped.get(p, "not configured for this run")})
+            continue
+        rows.append({
+            "id": p, "status": "ran" if leg["answers"] else "no_answers",
+            "model": leg.get("model"), "mode": leg.get("mode"), "levers": leg.get("levers"),
+            "pass_pct": {"value": leg["quality"]["pass_pct"], "label": leg["quality"]["label"]},
+            "p99_s": {"value": leg["latency_s"]["p99"], "label": leg["latency_s"]["label"]},
+            "usd_per_1k": {"value": leg["cost_per_1k_answers"]["usd"],
+                           "label": leg["cost_per_1k_answers"]["label"]},
+            "wh_per_1k": {"value": leg["energy_per_answer"]["wh_per_1k_answers"],
+                          "label": leg["energy_per_answer"]["label"]},
+        })
+    return rows
 
 
 def main(argv=None) -> int:  # pragma: no cover - exercised by scripts/spark1gpu_dryrun.sh
@@ -616,6 +712,9 @@ def main(argv=None) -> int:  # pragma: no cover - exercised by scripts/spark1gpu
     ap.add_argument("--baseten", choices=("off", "replay", "live"), default="replay")
     ap.add_argument("--baseten-fixture", default="data/cloud/recorded-smoke.json")
     ap.add_argument("--baseten-cap-usd", type=float, default=DEFAULT_CAP_USD)
+    ap.add_argument("--modal", choices=("auto", "off", "live"), default="auto",
+                    help="auto: live when MODAL_ENDPOINT_URL and a proxy token are set")
+    ap.add_argument("--modal-cap-usd", type=float, default=DEFAULT_CAP_USD)
     ap.add_argument("--rental-inr-per-h", type=float, default=RENTAL_INR_PER_H)
     ap.add_argument("--inr-per-usd", type=float, default=INR_PER_USD)
     ap.add_argument("--threads", type=int, default=24)
@@ -638,7 +737,12 @@ def main(argv=None) -> int:  # pragma: no cover - exercised by scripts/spark1gpu
             inr_per_usd=a.inr_per_usd,
             threads=a.threads,
             resident_gb=a.resident_gb,
+            modal=_modal_mode(a.modal),
+            modal_cap_usd=a.modal_cap_usd,
         )
+        from wattnot.spark_open.router import attach
+
+        attach(r)  # the router always picks a placement per workload
     except ValueError as e:
         print(e)
         return 2
@@ -647,6 +751,13 @@ def main(argv=None) -> int:  # pragma: no cover - exercised by scripts/spark1gpu
     (out / "h2h.json").write_text(json.dumps(r, indent=2) + "\n")
     print_summary(r)
     return 0
+
+
+def _modal_mode(flag: str) -> str:
+    if flag != "auto":
+        return flag
+    need = ("MODAL_ENDPOINT_URL", "MODAL_PROXY_TOKEN_ID", "MODAL_PROXY_TOKEN_SECRET")
+    return "live" if all(os.environ.get(k, "").strip() for k in need) else "off"
 
 
 def print_summary(r: dict) -> None:
