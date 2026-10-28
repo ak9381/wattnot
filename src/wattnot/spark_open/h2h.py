@@ -207,15 +207,23 @@ class BasetenLeg:
 
 
 class ModalLeg(BasetenLeg):
-    """A Meta open-weights model on a Modal dedicated Endpoint. Same prompts and checks.
+    """Muse Spark Open on a Modal Shared Endpoint: same model, prompts, effort and checks as
+    the Baseten leg, priced per token at Modal's list rate (the same $1.25/0.15/4.25).
 
-    Modal bills GPU time, not tokens, so each answer is priced at its wall seconds x the
-    H100 list rate (ESTIMATE: it ignores idle and cold-start time, which Modal also bills)."""
+    `billing="gpu"` is for a Dedicated Endpoint (for example Muse Glimmer 30B): each answer
+    is priced at wall seconds x the H100 list rate, an ESTIMATE that leaves out idle and
+    cold-start time, which Modal also bills."""
 
     name = "modal"
     model = MODAL_DEFAULT_MODEL
-    send_effort = False  # a plain instruct model has no reasoning levels
-    usd_per_s = MODAL_GPU_USD_PER_H / 3600
+    send_effort = True
+    usd_per_s = None  # Shared Endpoint: tokens x list price, same as Baseten
+
+    def __init__(self, *a, billing: str = "tokens", **kw) -> None:
+        super().__init__(*a, **kw)
+        self.billing = billing
+        if billing == "gpu":  # Dedicated Endpoint: billed GPU seconds
+            self.usd_per_s = MODAL_GPU_USD_PER_H / 3600
 
 
 class LocalLeg:
@@ -356,7 +364,7 @@ def summarize_leg(
             "wh_per_1k_answers": None if j is None or not n else round(j / n / 3600 * 1000, 3),
         }
     else:
-        if name == "modal":  # a small dense model: wall time x an H100 power band, not FLOPs
+        if name == "modal" and labels.get("billing") == "gpu":  # wall time x H100 power band
             wall = sum(lat)
             lo, hi = wall * 350 / 3600, wall * 700 / 3600
         else:
@@ -367,7 +375,7 @@ def summarize_leg(
             "how": (
                 f"wall seconds x Modal {MODAL_GPU} list rate ${MODAL_GPU_USD_PER_H:.2f}/h "
                 "(dedicated endpoint; idle and cold start not counted)"
-            ) if name == "modal" else (
+            ) if labels.get("billing") == "gpu" else (
                 "MEASURED token usage x list price "
                 f"(${(rates or Rates()).input_per_m}/{(rates or Rates()).cached_per_m}/"
                 f"{(rates or Rates()).output_per_m} per 1M in/cached/out); "
@@ -510,6 +518,7 @@ def run_h2h(
     modal: str = "off",
     modal_transport: Transport | None = None,
     modal_cap_usd: float = DEFAULT_CAP_USD,
+    modal_billing: str = "tokens",
     local_levers: Sequence[str] = ("adaptive_topk", "tiered_experts_kmeans", "quantization"),
 ) -> dict:
     """Run both legs and return the receipt (not yet routed). Nothing is written to disk
@@ -610,7 +619,8 @@ def run_h2h(
                                  else ModalLiveTransport())
         mcap = SpendCap(modal_cap_usd, cap_path and Path(str(cap_path) + ".modal")) \
             if modal == "live" else None
-        ml = ModalLeg(mt, effort=effort, cap=mcap, billed=modal == "live")
+        ml = ModalLeg(mt, effort=effort, cap=mcap, billed=modal == "live",
+                      billing=modal_billing)
         ans, stopped = [], None
         for it in items:
             try:
@@ -622,11 +632,16 @@ def run_h2h(
                 stopped = f"{type(e).__name__}: {e}"[:200]
                 break
         src = "REPLAY" if modal == "replay" else "MEASURED"
+        gpu = modal_billing == "gpu"
         lab = {"quality": src, "latency": src, "tokens": src,
-               "cost": "ESTIMATE (wall seconds x Modal GPU list rate)"}
-        legs["modal"] = summarize_leg("modal", ans, labels=lab)
+               "billing": modal_billing,
+               "cost": "ESTIMATE (wall seconds x Modal GPU list rate)" if gpu
+               else ("REPLAY (recorded tokens x list price)" if modal == "replay"
+                     else "MEASURED tokens x list price")}
+        legs["modal"] = summarize_leg("modal", ans, labels=lab, rates=Rates())
         legs["modal"].update(model=getattr(mt, "model", None) or ModalLeg.model, mode=modal,
-                             stopped=stopped, gpu=MODAL_GPU)
+                             stopped=stopped, billing=modal_billing,
+                             gpu=MODAL_GPU if gpu else None)
         answers["modal"] = ans
         if stopped:
             notes.append(f"Modal leg stopped early: {stopped}")
@@ -715,6 +730,8 @@ def main(argv=None) -> int:  # pragma: no cover - exercised by scripts/spark1gpu
     ap.add_argument("--modal", choices=("auto", "off", "live"), default="auto",
                     help="auto: live when MODAL_ENDPOINT_URL and a proxy token are set")
     ap.add_argument("--modal-cap-usd", type=float, default=DEFAULT_CAP_USD)
+    ap.add_argument("--modal-billing", choices=("tokens", "gpu"), default="tokens",
+                    help="tokens: Shared Endpoint (Muse Spark Open); gpu: Dedicated Endpoint")
     ap.add_argument("--rental-inr-per-h", type=float, default=RENTAL_INR_PER_H)
     ap.add_argument("--inr-per-usd", type=float, default=INR_PER_USD)
     ap.add_argument("--threads", type=int, default=24)
@@ -739,6 +756,7 @@ def main(argv=None) -> int:  # pragma: no cover - exercised by scripts/spark1gpu
             resident_gb=a.resident_gb,
             modal=_modal_mode(a.modal),
             modal_cap_usd=a.modal_cap_usd,
+            modal_billing=a.modal_billing,
         )
         from wattnot.spark_open.router import attach
 

@@ -20,7 +20,7 @@ def test_three_placements_listed_and_routed():
     rows = {p["id"]: p for p in r["placements"]}
     assert tuple(rows) == PLACEMENTS
     assert rows["local"]["status"] == "not_run" and "local" in rows["local"]["why"]
-    assert rows["modal"]["status"] == "ran" and rows["modal"]["usd_per_1k"]["label"].startswith("ESTIMATE")
+    assert rows["modal"]["status"] == "ran" and rows["modal"]["usd_per_1k"]["label"].startswith("REPLAY")
     assert r["legs"]["modal"]["energy_per_answer"]["label"] == "ESTIMATE"
     R.attach(r)
     assert R.verify(r)
@@ -50,13 +50,20 @@ def test_cloud_receipt_names_modal_host(monkeypatch):
     from wattnot.cloud.run import host_info
 
     env = {"MODAL_ENDPOINT_URL": "https://ws--llama.modal.run/v1", "MODAL_PROXY_TOKEN_ID": "wk-a",
-           "MODAL_PROXY_TOKEN_SECRET": "ws-b", "MODAL_MODEL": "meta-llama/Llama-3.1-8B-Instruct"}
+           "MODAL_PROXY_TOKEN_SECRET": "ws-b", "MODAL_MODEL": "meta-models/Muse-Glimmer-30B"}
     t = ModalLiveTransport(env=env)
     sent = {}
     monkeypatch.setattr(t, "_once", lambda d, h: (sent.update(b=json.loads(d)) or
                                                   (200, b"{}", {})))
     t(Request("x", {"model": MODEL, "messages": []}))
-    assert sent["b"]["model"] == "meta-llama/Llama-3.1-8B-Instruct"
+    assert sent["b"]["model"] == "meta-models/Muse-Glimmer-30B"
     info = host_info(t)
     assert info["provider"] == "modal" and info["endpoint"].endswith(".modal.run/v1")
     assert "ws-b" not in json.dumps(info)
+
+
+def test_modal_dedicated_gpu_billing_is_an_estimate():
+    r = run_h2h(WL, list(load_workload(WL)), baseten="off", modal="replay", fixture=FIXTURE,
+                modal_billing="gpu")
+    leg = r["legs"]["modal"]
+    assert leg["cost_per_1k_answers"]["label"].startswith("ESTIMATE") and leg["gpu"] == "H100"

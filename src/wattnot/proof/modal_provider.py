@@ -1,6 +1,7 @@
 """Modal as a second host for the open-weights planner, next to Baseten.
 
-Modal Endpoints serve open models (Meta's Llama and others) behind an
+Modal Endpoints serve Meta open-weight models (a Shared Endpoint for Muse Spark Open,
+billed per token at the same list rate as Baseten; Dedicated for Muse Glimmer 30B) behind an
 OpenAI-compatible `/v1/chat/completions`, so `ModalClient` is the Baseten
 client with a different URL, a different credential and its own ledger rows
 (`provider: "modal"`). `ModalOpenPlanner` is the same planner, same prompt,
@@ -15,9 +16,9 @@ Credentials, env only, never printed:
   (deploy, list apps) and are never sent to an endpoint.
 - `MODAL_MODEL`: the model name the endpoint serves (default below).
 
-Price: Shared Endpoints bill per token and Dedicated ones bill GPU time, and we
-have no published per-token rate on file, so `usd` stays an ESTIMATE from the
-Baseten list price until a Modal bill says otherwise.
+Price: the Shared Muse Spark Open endpoint lists $1.25 / $0.15 cached / $4.25 per 1M
+tokens (modal.com/docs/guide/supported-models, read 2026-10-28), the same as Baseten, so
+the ledger prices it the same way.
 """
 
 from __future__ import annotations
@@ -36,7 +37,7 @@ URL_ENV = "MODAL_ENDPOINT_URL"
 ID_ENV = "MODAL_PROXY_TOKEN_ID"
 SECRET_ENV = "MODAL_PROXY_TOKEN_SECRET"
 MODEL_ENV = "MODAL_MODEL"
-DEFAULT_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
+DEFAULT_MODEL = "meta-models/Muse-Spark-Open-816B-A42B"
 LEDGER_NAME = "modal-ledger.json"
 
 
