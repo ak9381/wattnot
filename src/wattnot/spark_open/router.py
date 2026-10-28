@@ -198,6 +198,12 @@ def attach(receipt: dict, profiles=DEFAULT_PROFILES) -> dict:
         "decisions": decisions,
         "how": "the run measured both backends on the same prompts, then chose per workload",
     }
+    if isinstance(receipt.get("escalation"), dict):  # small-first: Llama 8B, Spark only on a gate fail
+        from wattnot.route.escalate import router_row
+
+        row = router_row(receipt["escalation"])
+        if row:
+            receipt["routing"]["small_first"] = row
     integ = dict(receipt.get("integrity") or {})
     integ.update(canonicalization="JCS RFC 8785", sha256=canonical_sha256(receipt))
     integ.setdefault("prev_sha256", None)
