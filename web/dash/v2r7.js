@@ -129,7 +129,7 @@ export function wireCompare(root, rec, price = 0.1387, water = 0.36) {
   }));
 }
 const HOW = {
-  caps: "Lower the GPU's watt limit and keep the lowest cap that passes the quality and speed gates.",
+  caps: "Lower the GPU's watt limit and keep the lowest cap that passes the quality and speed gates. Own GPU only: hosted platforms give no GPU access.",
   topk: "Send each word to fewer experts when one or two carry almost all the weight.",
   tiered: "Keep busy experts on the GPU at higher precision, quiet ones at lower precision or in CPU RAM.",
   gate: "Refuse any setting that drops answer quality or slows p99 past the limit; its 'saving' is the risk it blocked.",
@@ -147,7 +147,42 @@ export function savedPct(rec, branch) {
   if (b == null || w == null) return null;
   return { text: `${fmt(((b - w) / b) * 100, 1)}%`, tag: branch === "power" ? "MEASURED" : "ESTIMATE" };
 }
-export const childSaved = (rec, branch, mid) => (mid === "caps" ? savedPct(rec, branch) : null);
+// Hosted A/B (spark_open/hosted_ab.py): rec.hosted_ab.hosts.<baseten|modal>
+export const hostAB = (rec, host) => { const h = rec?.hosted_ab?.hosts?.[host]; return h && h.status === "ran" ? h : null; };
+export function childSaved(rec, branch, mid) {
+  if (mid === "caps") return savedPct(rec, branch);
+  if (mid === "baseten" || mid === "modal") {
+    const h = hostAB(rec, mid); if (!h) return null;
+    if (branch !== "cost") { const p = h.estimate?.power_saved_pct?.value; return p == null ? null : { text: `${fmt(p, 1)}%`, tag: "ESTIMATE" }; }
+    const a = h.without?.usd_per_1k?.value, b = h.with?.usd_per_1k?.value;
+    if (!a) return null;
+    return { text: `${fmt((100 * (a - b)) / a, 1)}%`, tag: "MEASURED" };
+  }
+  return null;
+}
+const OWN_ONLY = { caps: "Power caps", quant: "Quantization", topk: "Adaptive top-k / tiered experts" };
+export function hostedChain(e) {
+  if (!e) return "";
+  return `<li>Tokens saved: ${n(fmt(e.tokens_saved?.value, 0), "MEASURED")} (with vs without, ${esc(e.basis || "")}).</li>
+    <li>× ${n(fmt(e.j_per_token?.value, 2), "ESTIMATE")} J/token = ${n(fmt(e.energy_j?.value, 0), "ESTIMATE")} J. Assumption: ${esc(e.j_per_token?.method || "")}; energy per token scales with active parameters.</li>
+    <li>÷ 3,600,000 = ${n(fmt(e.energy_kwh?.value, 5), "ESTIMATE")} kWh.</li>
+    <li>× 0.36 L/kWh = ${n(fmt(e.water_l?.value, 5), "ESTIMATE")} L water.</li>
+    <li>Cost saved: ${n(`$${fmt(e.usd_saved?.value, 4)}`, "MEASURED")} (tokens × list price).</li>`;
+}
+function hostedDetail(rec, host) {
+  const h = hostAB(rec, host), raw = rec?.hosted_ab?.hosts?.[host];
+  const own = `<h3>Own GPU only</h3><ul class="wr-gates">${Object.values(OWN_ONLY).map((x) => `<li>${esc(x)}: <span class="r7miss">own GPU only</span>, hosted platforms give no GPU access</li>`).join("")}</ul>`;
+  if (!h) return `<p><b>${raw?.status === "not_run" || raw?.status === "stopped" ? `Not run: ${esc(raw.why)}` : "Measured in the long run."}</b> The same prompts run on ${esc(host === "modal" ? "Modal" : "Baseten")} once without and once with WattNot's API levers: routing, the quality gate and the agent-waste saver.</p>${own}`;
+  const L = h.levers || {}, v = (x) => (x?.value == null ? `<span class="r7miss">—</span>` : n(`${fmt(x.value, 1)}%`, x.label));
+  const wo = h.without, wi = h.with;
+  const mock = rec?.hosted_ab?.mode === "MOCK" ? `<p class="r7miss"><b>MOCK</b> dry-run data, no real endpoint was called.</p>` : "";
+  return `${mock}<h3>Per lever</h3><ul class="wr-gates">
+    <li><b>Routing:</b> ${v(L.routing?.saved_pct)} cost saved${L.routing?.note ? ` · ${esc(L.routing.note)}` : ""}</li>
+    <li><b>Agent-waste saver:</b> ${v(L.waste?.saved_pct)} cost saved · ${esc(L.waste?.calls_without)} → ${esc(L.waste?.calls_with)} calls</li>
+    <li><b>Quality gate:</b> ${h.gate_passed ? "passed" : "failed"} · ${n(`${fmt(wi?.pass_pct?.value, 1)}%`, "MEASURED")} with vs ${fmt(wo?.pass_pct?.value, 1)}% without</li></ul>
+    <h3>Worked example</h3><ol class="wex"><li>Cost per 1k answers: $${fmt(wo?.usd_per_1k?.value, 4)} without → $${fmt(wi?.usd_per_1k?.value, 4)} with (${n("measured", "MEASURED")}, tokens × list price).</li>
+    ${hostedChain(h.estimate)}</ol>${own}`;
+}
 export function gatesHtml(rec) {
   const m = rec?.phases?.wattnot?.metrics, b = rec?.phases?.baseline?.metrics;
   if (!m) return `<p class="r7miss">No gate results in this record.</p>`;
@@ -162,6 +197,7 @@ export function methodPopup(rec, cid, mid, price = 0.1387, water = 0.36) {
   const c = cardsData(rec, price, water).find((x) => x.id === cid), m = METHODS.find(([i]) => i === mid);
   if (!c || !m) return null;
   const bj = rec?.phases?.baseline?.metrics?.j_per_req, wj = rec?.phases?.wattnot?.metrics?.j_per_req;
+  if (mid === "baseten" || mid === "modal") return popup(`${c.title} · ${m[1]}`, `<div class="mp"><p class="lead">${esc(HOW[mid] || "")}</p>${hostedDetail(rec, mid)}</div>`, { sub: esc(rec?.run_name || "") });
   const measured = mid === "caps" && c.saved;
   const body = measured
     ? `<p>This run records power caps as the method, so the whole-run saving is shown: <b>${n(esc(c.saved), c.tag)}</b>. It is not split across methods.</p><h3>Worked example (this run's numbers)</h3>${workedExample(bj, wj, price, water)}<h3>Gate results</h3>${gatesHtml(rec)}`

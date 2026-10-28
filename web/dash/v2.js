@@ -911,14 +911,14 @@ function mountCompare() {
   // only the (i) opens the detail popup.
   const stage = $("#radialStage"); if (!stage) return;
   const wires = $("#radialWires"); if (wires && wires.parentElement !== stage) stage.prepend(wires); // wires pan/zoom with the cards
-  const val = (sv) => sv ? `${cnum(esc(sv.text), sv.tag)} saved` : `<span class="rad-miss" title="not measured in this run">—</span>`;
+  const val = (sv, miss = "not measured in this run") => sv ? `${cnum(esc(sv.text), sv.tag)} saved` : `<span class="rad-miss" title="${miss}">—</span>`;
   $$(".rad-child", stage).forEach((k) => k.remove());
   const radFit = () => { S.radPan?.update(); S.radPan?.fit(); if (S.radPan && S.radPan.state.scale < 0.6) S.radPan.setZoom(0.6); };
   $$(".rad-card", stage).forEach((c) => {
     const id = c.dataset.branch, name = id[0].toUpperCase() + id.slice(1);
     c.classList.add("min"); c.dataset.open = "0";
     c.innerHTML = `<button class="rad-head" aria-expanded="false" aria-label="${name}: show the routes"><b>${name}</b><span class="rad-val">${val(savedPct(rec, id))}</span></button><button class="ibtn rad-i" data-binfo="${id}" aria-label="${name} details">i</button>`;
-    for (const [mid, mname] of CHILDREN) stage.insertAdjacentHTML("beforeend", `<div class="rad-child min" data-branch="${id}" data-m="${mid}" hidden><b>${esc(mname)}</b><span class="rad-val">${val(childSaved(rec, id, mid))}</span><button class="ibtn rad-i" data-minfo="${mid}" aria-label="${esc(mname)} details">i</button></div>`);
+    for (const [mid, mname] of CHILDREN) stage.insertAdjacentHTML("beforeend", `<div class="rad-child min" data-branch="${id}" data-m="${mid}" hidden><b>${esc(mname)}</b><span class="rad-val">${val(childSaved(rec, id, mid), mid === "baseten" || mid === "modal" ? "measured in the long run" : "not measured in this run")}</span>${mid === "baseten" || mid === "modal" ? `<small class="rad-sub">${childSaved(rec, id, mid) ? "" : "measured in the long run"}</small>` : ""}<button class="ibtn rad-i" data-minfo="${mid}" aria-label="${esc(mname)} details">i</button></div>`);
     $(".rad-head", c).onclick = () => {
       const on = c.dataset.open !== "1"; c.dataset.open = on ? "1" : "0"; $(".rad-head", c).setAttribute("aria-expanded", String(on));
       $$(".rad-child", stage).filter((k) => k.dataset.branch === id).forEach((k) => { k.hidden = !on; });
