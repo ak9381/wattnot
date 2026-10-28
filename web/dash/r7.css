@@ -147,3 +147,5 @@ nav.tabs button.on{background:rgba(90,169,240,.14);border-color:rgba(90,169,240,
 .rad-val{font-size:16px;font-weight:700;color:#e8eef6}.rad-card.min .rad-val{font-size:18px}.rad-val .rad-miss{color:#7d8794;font-weight:700}
 .rad-i{position:absolute;top:8px;right:8px}
 #radialStage>.radial-wires{position:absolute;left:0;top:0;width:100%;height:100%}
+.rad-sub{flex-basis:100%;font-size:11px;color:#8a95a3}
+@media (max-width:640px){#tabs.tabs{max-width:100%;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}#tabs.tabs button{flex:0 0 auto}}html,body{overflow-x:hidden}
