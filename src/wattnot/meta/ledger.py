@@ -28,8 +28,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-CAP_USD = 50.0
-SOFT_USD = 40.0
+CAP_USD = 100.0
+SOFT_USD = 80.0
 LEDGER_ENV = "WATTNOT_META_LEDGER"
 PRICE_SOURCE = "https://dev.meta.ai/docs/pricing-rate-limits (Standard mode, read 2026-10-27)"
 DEFAULT_MAX_OUTPUT = 2000  # applied to a request that sets no output cap
@@ -49,6 +49,7 @@ PRICES: dict[str, Price] = {
     "muse-spark-1.1": Price(1.25, 0.15, 4.25),
     "muse-spark-1.3-contributor": Price(0.10, 0.002, 0.20),
     "muse-spark-1.2-contributor": Price(0.10, 0.002, 0.20),
+    "muse-wonder": Price(4.00, 0.20, 20.00),
     "muse-wonder-1.0": Price(4.00, 0.20, 20.00),
 }
 ASSUMED = Price(4.00, 0.20, 20.00)  # unknown model: the highest published rate
@@ -93,8 +94,11 @@ def output_cap(body: Mapping) -> int:
 def estimate(body: Mapping) -> tuple[int, int, float]:
     """Worst case for one call: (input tokens, output tokens, USD).
 
-    Input is the request size at 3 chars per token with no cache discount; output is the
-    full output cap (reasoning tokens count against it), so the real cost is never higher.
+    Output is priced at the full output cap (reasoning tokens count against it), so the
+    real output cost is never higher. Input is the request size at 3 chars per token with
+    no cache discount; token-dense input (CJK, digit-heavy payloads) can tokenize closer
+    to 1 token/char and settle above this reserve, so a call admitted right at the cap may
+    overshoot by that bounded input delta — every later call is then refused.
     """
 
     n_in = math.ceil(len(json.dumps(body, separators=(",", ":"))) / CHARS_PER_TOKEN)

@@ -24,6 +24,8 @@ Endpoints:
 * ``GET /api/ablation``               — the cold/warm/grid planner ablation, if present.
 * ``GET /api/cloud/receipts``         — cloud-mode receipts under ``cloud-receipts/``.
 * ``GET /api/cloud/receipts/{id}``    — one cloud receipt (``?format=json|html``).
+* ``POST /api/voiceguide``            — read-only voice guide query (audio/text -> navigate/answer/configure).
+* ``GET /api/voiceguide``             — read-only voice guide query (``?q=...``).
 
 No endpoint mutates anything or starts work — runs begin from the CLI only.
 """
@@ -393,6 +395,35 @@ def create_app(root: str | os.PathLike[str] = ".") -> FastAPI:
         if not p.is_file():
             return JSONResponse({"code": "ablation_not_found"}, status_code=404)
         return json.loads(p.read_text(encoding="utf-8"))
+
+    @app.post("/api/voiceguide")
+    async def voiceguide_post(request: Request) -> Any:
+        from wattnot.meta.voiceguide import process_voice_query
+
+        raw = await request.body()
+        query_text = ""
+        audio_bytes = None
+        if raw:
+            try:
+                body = json.loads(raw)
+                if isinstance(body, dict):
+                    query_text = body.get("query") or body.get("text") or ""
+                    b64 = body.get("audio_b64")
+                    if not query_text and isinstance(b64, str) and b64:
+                        import base64 as _b64
+                        try:
+                            audio_bytes = _b64.b64decode(b64, validate=True)
+                        except Exception:
+                            audio_bytes = None
+            except ValueError:
+                audio_bytes = raw
+        return process_voice_query(query_text=query_text, audio_data=audio_bytes, root_dir=base)
+
+    @app.get("/api/voiceguide")
+    def voiceguide_get(q: str = "") -> Any:
+        from wattnot.meta.voiceguide import process_voice_query
+
+        return process_voice_query(query_text=q, root_dir=base)
 
     return app
 

@@ -353,10 +353,10 @@ def test_meta_spend_cli_shows_total_breakdown_and_remaining(tmp_path, capsys, mo
         led.settle(eid, ok_response(prompt=1000, completion=2000)["usage"])
     assert main(["meta", "spend", "--ledger", str(p)]) == 0
     out = capsys.readouterr().out
-    assert "of $50.00 hard cap" in out and "remaining" in out
+    assert "of $100.00 hard cap" in out and "remaining" in out
     assert "judge" in out and "effort-order" in out
     spent = led.total()
-    assert f"${spent:.4f}" in out and f"${50 - spent:.4f}" in out
+    assert f"${spent:.4f}" in out and f"${100 - spent:.4f}" in out
     assert main(["meta", "spend", "--ledger", str(p), "--json"]) == 0
     j = json.loads(capsys.readouterr().out)
     assert j["calls"] == 3 and j["per_purpose"]["judge"]["calls"] == 2

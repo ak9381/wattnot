@@ -34,7 +34,7 @@ def seed_earlier(ledger: SpendLedger, root: Path = ROOT) -> int:
 
 
 def add_parser(sub) -> None:
-    m = sub.add_parser("meta", help="Meta API usage: spend, check, session (hard cap $50)")
+    m = sub.add_parser("meta", help="Meta API usage: spend, check, session, wonder (hard cap $100)")
     s = m.add_subparsers(dest="meta_cmd")
     sp = s.add_parser("spend", help="total, per-purpose breakdown and remaining budget")
     sp.add_argument("--json", action="store_true")
@@ -50,6 +50,15 @@ def add_parser(sub) -> None:
     se.add_argument("--out", help="write the session JSON here")
     se.add_argument("--repeats", type=int, default=3)
     se.add_argument("--ledger")
+    wo = s.add_parser("wonder", help="Muse Wonder cap/clock Pareto supervisor")
+    wo.add_argument("--input", help="compact per-trial JSON summaries file")
+    wo.add_argument("--out", default="wonder_out", help="output directory for summary (json + md)")
+    wo.add_argument("--model", default="muse-wonder", help="Wonder model id")
+    wo.add_argument("--threshold", type=float, default=0.01, help="Pareto improvement threshold")
+    wo.add_argument("--patience", type=int, default=3, help="Pareto patience in trials")
+    wo.add_argument("--mock", dest="mock", action="store_true", default=True, help="mock mode (default)")
+    wo.add_argument("--live", dest="mock", action="store_false", help="live calls (requires key)")
+    wo.add_argument("--ledger")
 
 
 def _bar(frac: float, width: int = 30) -> str:
@@ -111,7 +120,34 @@ def dispatch(a) -> int:
             Path(a.out).write_text(json.dumps(out, indent=2) + "\n")
         print(format_spend(ledger.summary()))
         return 1 if out.get("stopped") else 0
-    print("use: wattnot meta spend|check|session", file=sys.stderr)
+    if a.meta_cmd == "wonder":
+        from wattnot.meta.wonder import WonderSupervisor
+
+        seed_earlier(ledger)
+        trials = []
+        if getattr(a, "input", None):
+            p = Path(a.input)
+            if p.exists():
+                trials = json.loads(p.read_text())
+                if isinstance(trials, dict) and "trials" in trials:
+                    trials = trials["trials"]
+
+        client = GuardedClient(ledger=ledger) if not a.mock else None
+        sup = WonderSupervisor(
+            client=client,
+            model=a.model,
+            threshold=a.threshold,
+            patience=a.patience,
+            mock=a.mock,
+        )
+        decision = sup.next_trial(trials)
+        json_p, md_p = sup.write_summary(trials, a.out, decision.reason, ledger=ledger)
+        print(f"Wonder action: {decision.action} ({decision.reason})")
+        if decision.action == "trial":
+            print(f"Next trial: cap_w={decision.cap_w}, clock_profile={decision.clock_profile}")
+        print(f"Summary written to {json_p} and {md_p}")
+        return 0
+    print("use: wattnot meta spend|check|session|wonder", file=sys.stderr)
     return 2
 
 
