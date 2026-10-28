@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WattNot Meta Tools v5 — Supervisor & Automation Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Montserrat:wght@500;600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./metatools.css">
+  <link rel="stylesheet" href="./hotspot.css">
+  <link rel="stylesheet" href="./voiceguide.css">
+  <link rel="stylesheet" href="./eulink.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 32px 24px;
+      background-color: #080B10;
+      color: #DCD6E4;
+      font-family: 'Source Sans 3', sans-serif;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .preview-container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .preview-header {
+      margin-bottom: 24px;
+      border-bottom: 1px solid rgba(178, 166, 195, 0.15);
+      padding-bottom: 12px;
+    }
+    .preview-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #DCD6E4;
+      margin: 0 0 6px 0;
+    }
+    .preview-desc {
+      font-size: 0.9rem;
+      color: #8E7A9E;
+    }
+  </style>
+</head>
+<body>
+  <div class="preview-container">
+    <div class="preview-header">
+      <h1 class="preview-title">WattNot Meta Tools v5</h1>
+      <div class="preview-desc">Live glass card preview for Muse Wonder, Muse Code, SAM 3.1 Hotspots, EU Efficiency Reporting, and Voice Guide.</div>
+    </div>
+    <div id="metatools-mount"></div>
+    <div id="hotspot-mount"></div>
+    <div id="eulink-mount"></div>
+
+    <div id="explain-demo" style="margin-top:28px;">
+      <h3 style="font-family:'Montserrat',sans-serif;font-size:1.15rem;color:#DCD6E4;margin-bottom:6px;">Point-and-Explain Demo (Voice Guide)</h3>
+      <p style="font-size:0.85rem;color:#8E7A9E;margin-bottom:16px;">Try asking: <em>"what does 25% mean?"</em>, <em>"what does 350 W mean?"</em>, or <em>"what does 0.0432 kWh mean?"</em>.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;">
+        <div class="demo-explain-card glass-panel" id="demo-card-saving" data-explain-id="demo_billed_saving" data-explain-value="25%" data-explain-label="MOCK" data-explain-title="Billed Saving" data-explain-source="rcpt_meta5_demo" style="padding:16px;border-radius:14px;background:rgba(178,166,195,0.08);border:1px solid rgba(255,255,255,0.12);">
+          <div class="demo-kpi-title" style="font-size:12px;color:#8E7A9E;text-transform:uppercase;letter-spacing:0.04em;">Billed Saving</div>
+          <div class="demo-kpi-val" style="font-size:24px;font-weight:700;color:#F6DBC0;margin-top:4px;">25%</div>
+          <div style="margin-top:8px;font-size:11px;color:#8E7A9E;display:flex;justify-content:space-between;">
+            <span>Verified Reduction</span><span class="v-chip" style="font-size:10px;padding:2px 6px;border-radius:999px;background:rgba(224,163,178,0.2);color:#E0A3B2;">MOCK</span>
+          </div>
+        </div>
+
+        <div class="demo-explain-card glass-panel" id="demo-card-power" data-explain-id="demo_power_cap" data-explain-value="350 W" data-explain-label="MOCK" data-explain-title="Power Cap" data-explain-source="rcpt_meta5_demo" style="padding:16px;border-radius:14px;background:rgba(178,166,195,0.08);border:1px solid rgba(255,255,255,0.12);">
+          <div class="demo-kpi-title" style="font-size:12px;color:#8E7A9E;text-transform:uppercase;letter-spacing:0.04em;">Power Cap</div>
+          <div class="demo-kpi-val" style="font-size:24px;font-weight:700;color:#F6DBC0;margin-top:4px;">350 W</div>
+          <div style="margin-top:8px;font-size:11px;color:#8E7A9E;display:flex;justify-content:space-between;">
+            <span>Applied Setting</span><span class="v-chip" style="font-size:10px;padding:2px 6px;border-radius:999px;background:rgba(224,163,178,0.2);color:#E0A3B2;">MOCK</span>
+          </div>
+        </div>
+
+        <div class="demo-explain-card glass-panel" id="demo-card-energy" data-explain-id="demo_it_energy" data-explain-value="0.0432 kWh" data-explain-label="MOCK" data-explain-title="Window IT Energy" data-explain-source="rcpt_meta5_demo" style="padding:16px;border-radius:14px;background:rgba(178,166,195,0.08);border:1px solid rgba(255,255,255,0.12);">
+          <div class="demo-kpi-title" style="font-size:12px;color:#8E7A9E;text-transform:uppercase;letter-spacing:0.04em;">Window IT Energy</div>
+          <div class="demo-kpi-val" style="font-size:24px;font-weight:700;color:#F6DBC0;margin-top:4px;">0.0432 kWh</div>
+          <div style="margin-top:8px;font-size:11px;color:#8E7A9E;display:flex;justify-content:space-between;">
+            <span>EU Directive 2023/1791</span><span class="v-chip" style="font-size:10px;padding:2px 6px;border-radius:999px;background:rgba(224,163,178,0.2);color:#E0A3B2;">MOCK</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./voiceguide.js"></script>
+  <script type="module" src="./explainmap.js"></script>
+  <script type="module">
+    import { mountMetaTools } from './metatools.js';
+    import { mountHotspotCard } from './hotspot.js';
+    import { mountEuLink } from './eulink.js';
+
+    async function init() {
+      try {
+        const res = await fetch('./sample-meta5-receipt.json');
+        const receipt = await res.json();
+        mountMetaTools(document.getElementById('metatools-mount'), receipt);
+        mountHotspotCard(document.getElementById('hotspot-mount'), receipt);
+        mountEuLink(document.getElementById('eulink-mount'), receipt);
+      } catch (err) {
+        console.error('Failed to load sample receipt:', err);
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

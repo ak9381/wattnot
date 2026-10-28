@@ -1,0 +1,134 @@
+/* Cooling Hotspots Glass Card Styles - Meta Tools v5 */
+.hotspot-card {
+  background: rgba(31, 26, 47, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(142, 122, 158, 0.35);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  color: #DCD6E4;
+  font-family: "Source Sans 3", "Source Sans Pro", system-ui, sans-serif;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.hotspot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(110, 94, 124, 0.25);
+  padding-bottom: 0.75rem;
+}
+
+.hotspot-title {
+  font-family: "Montserrat", sans-serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #DCD6E4;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hotspot-badge {
+  font-family: "Fira Code", monospace;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(142, 122, 158, 0.2);
+  border: 1px solid #8E7A9E;
+  color: #B2A6C3;
+}
+
+.hotspot-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.2fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .hotspot-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hotspot-visual {
+  background: #171724;
+  border: 1px solid rgba(79, 74, 99, 0.4);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hotspot-svg-wrap {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 2 / 3;
+}
+
+.hotspot-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.hotspot-stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+
+.hotspot-stat-box {
+  background: rgba(43, 38, 55, 0.6);
+  border: 1px solid rgba(110, 94, 124, 0.3);
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+
+.hotspot-stat-label {
+  font-size: 0.75rem;
+  color: #8E7A9E;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.hotspot-stat-value {
+  font-family: "Fira Code", monospace;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #DCD6E4;
+}
+
+.hotspot-stat-tag {
+  font-family: "Fira Code", monospace;
+  font-size: 0.68rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  margin-left: 0.25rem;
+  background: rgba(142, 122, 158, 0.25);
+  color: #B2A6C3;
+  vertical-align: middle;
+}
+
+.hotspot-reason {
+  background: rgba(23, 23, 36, 0.8);
+  border-left: 3px solid #8E7A9E;
+  padding: 0.75rem 1rem;
+  border-radius: 0 6px 6px 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #B2A6C3;
+}
+
+.hotspot-hash {
+  font-family: "Fira Code", monospace;
+  font-size: 0.75rem;
+  color: #6C5E7C;
+  word-break: break-all;
+}

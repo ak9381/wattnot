@@ -3,6 +3,7 @@ import { openThermal } from "./thermal.js";
 import { renderProof, wireIllus } from "./proof.js";
 import { init as initPanCanvas } from "./pancanvas.js";
 import { overviewHtml, openPowerGraph, wireR7, metaInRun, branchPopup, cmpHeadHtml, openWhere, methodPopup, branchInfo, savedPct, childSaved, CHILDREN, CHILD_ONLY, DERIVED_HINT, BUNDLED_ID, compareState, bundledRecord, emptyStateHtml, bundledBanner, TREE, treeChildren, treeFind, treeValue, contextSaver } from "./v2r7.js";
+import { compareRows } from "./metatools.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1200,6 +1201,66 @@ function mountCompare() {
   wireCompareTooltips(stage);
   renderTree();
   const sig = $("#pReport .receipt-meta"); if (!sig) $("#pReport").insertAdjacentHTML("beforeend", `<div class="receipt-meta glass">${metaInRun(rec)}</div>`);
+
+  $("#compareMetaSection")?.remove();
+  const base = rec?.receipt || rec || {};
+  const metaRec = {
+    receipt_id: base.receipt_id || base.id || "rcpt_run2_cap350",
+    framework: rec?.framework || base.framework || "vllm",
+    label: base.label || "MEASURED",
+    measurement: {
+      judge_verdict: base.measurement?.judge_verdict || "pass",
+      judge_score: base.measurement?.judge_score ?? 0.942,
+      judge_model: base.measurement?.judge_model || "meta-llama/Llama-3.1-8B-Instruct",
+      judge_label: base.measurement?.judge_label || "MOCK",
+      spark_trace_id: base.measurement?.spark_trace_id || "spark-7a1b2c3d4e5f6071",
+      wonder_trace_ids: base.measurement?.wonder_trace_ids || ["wonder-9e8d7c6b5a412345"],
+      wonder_stop_reason: base.measurement?.wonder_stop_reason || "$/quality Pareto front flattened: improvement 0.42% < threshold 1.00% over last 3 trials",
+      per_model_spend: base.measurement?.per_model_spend || {
+        spark: { usd: 0.0125, label: "MOCK" },
+        wonder: { usd: 0.0480, label: "MOCK" }
+      },
+      ...(base.measurement || {}),
+    },
+    wonder: {
+      trials: base.wonder?.trials ?? 5,
+      stop_reason: base.wonder?.stop_reason || "$/quality Pareto front flattened: improvement 0.42% < threshold 1.00% over last 3 trials",
+      ...(base.wonder || {}),
+    },
+    ...base,
+  };
+  const rows = compareRows([metaRec]);
+  const rowsHtml = rows.map((r) => {
+    const v = r.values[0] || { text: "—", tag: "MOCK" };
+    const slug = r.metric.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    return `<tr data-explain="compare.meta.${slug}" data-explain-value="${esc(v.text)}" data-explain-label="${esc(v.tag)}" data-explain-source="compareRows.${slug}">
+      <td style="padding:8px 12px;font-weight:600;color:var(--v-cream);border-bottom:1px solid rgba(220,214,228,0.08);">${esc(r.metric)}</td>
+      <td style="padding:8px 12px;text-align:right;font-family:var(--v-num);color:var(--v-peach);border-bottom:1px solid rgba(220,214,228,0.08);">${esc(v.text)}</td>
+      <td style="padding:8px 12px;text-align:right;border-bottom:1px solid rgba(220,214,228,0.08);">${badge(v.tag)}</td>
+    </tr>`;
+  }).join("");
+
+  const metaHtml = `
+    <section class="compare-meta-section glass" id="compareMetaSection" style="margin:24px auto;max-width:1160px;padding:20px 24px;border-radius:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 style="margin:0;font-size:16px;color:var(--v-cream);font-family:var(--v-head);letter-spacing:.01em;">Meta Evaluation &amp; Governance Details</h3>
+        <span class="v-chip MOCK"><i class="v-lab MOCK"></i>MOCK</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+        <thead>
+          <tr style="border-bottom:1px solid rgba(220,214,228,0.15);text-align:left;color:var(--v-mut);">
+            <th style="padding:8px 12px;">Metric</th>
+            <th style="padding:8px 12px;text-align:right;">Recorded Value</th>
+            <th style="padding:8px 12px;text-align:right;">Provenance</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </section>
+  `;
+  $("#pReport").insertAdjacentHTML("beforeend", metaHtml);
 }
 
 // Floating tooltip handler that never overlaps nodes

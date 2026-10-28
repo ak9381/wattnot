@@ -11,7 +11,13 @@
 <script src="static-api.js"></script>
 <link rel="stylesheet" href="violet.css">
 <link rel="stylesheet" href="chrome.css">
+<link rel="stylesheet" href="voiceguide.css">
+<link rel="stylesheet" href="metatools.css">
+<link rel="stylesheet" href="hotspot.css">
+<link rel="stylesheet" href="eulink.css">
 <script src="chrome.js" defer></script>
+<script type="module" src="voiceguide.js"></script>
+<script type="module" src="explainmap.js"></script>
 <style>
   *{box-sizing:border-box}[hidden]{display:none!important}
   html,body{margin:0;background:var(--v-bg);color:var(--v-cream);font:16px/1.55 var(--v-body)}
@@ -257,6 +263,15 @@
       <!-- Injected by report.js -->
     </div>
   </div>
+
+  <!-- 4. Meta Tools v5 Card -->
+  <div id="metatools-mount" style="margin-top:28px"></div>
+
+  <!-- 5. Cooling Hotspots Card (SAM 3.1) -->
+  <div id="hotspot-mount" style="margin-top:28px"></div>
+
+  <!-- 6. EU Energy Efficiency Report -->
+  <div id="eulink-mount" style="margin-top:28px"></div>
 </main>
 
 <div class="scrim" id="scrim" hidden></div>
