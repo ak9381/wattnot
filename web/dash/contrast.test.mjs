@@ -1,4 +1,4 @@
-// WCAG contrast check for the Violet Dusk palette (violet.css).
+// WCAG contrast check for the Dusk palette (violet.css).
 // Every text and status colour must clear AA (4.5:1) against the background
 // shades it is actually drawn on. If this fails, lighten the colour in
 // violet.css — do not lower the threshold.

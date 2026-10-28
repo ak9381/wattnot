@@ -6,7 +6,7 @@ const T0 = 22, T1 = 45;                       // colour scale, in °C
 const lerp = (a, b, t) => a + (b - a) * t;
 const stops = [[0, [38, 92, 168]], [0.35, [46, 160, 140]], [0.62, [226, 180, 60]], [0.85, [226, 100, 50]], [1, [200, 40, 60]]];
 export function heatColor(t) {
-  if (t == null) return "#351C3A";
+  if (t == null) return "#2B2637";
   const x = Math.max(0, Math.min(1, (t - T0) / (T1 - T0)));
   for (let i = 1; i < stops.length; i++) if (x <= stops[i][0]) {
     const [p, a] = stops[i - 1], [q, b] = stops[i], k = (x - p) / (q - p);
