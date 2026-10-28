@@ -503,7 +503,7 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                         usage = getattr(planner, "last_usage", {}) or {}
                         mname = getattr(planner, "model", "muse-spark")
                         by = prop.get("by", getattr(planner, "name", "planner"))
-                        real = by in ("muse-spark", "muse-spark-open")
+                        real = by in ("muse-spark", "muse-spark-open", "modal-open")
                         st.tag = label if real else "ADVICE"
                         st.extra["planner"] = dict(planner_info)
                         st.outputs = (
@@ -1208,7 +1208,7 @@ def main(argv=None) -> int:
     ap.add_argument("--max-proposals", type=int, default=4)
     ap.add_argument("--grid", default="", help="comma list of caps to fill in after Muse's picks")
     ap.add_argument("--sweep-budget-s", type=float, default=0)
-    ap.add_argument("--planner", choices=["muse", "bisect", "fake", "baseten-open"],
+    ap.add_argument("--planner", choices=["muse", "bisect", "fake", "baseten-open", "modal-open"],
                     default="muse")
     ap.add_argument("--baseten-cap-usd", type=float, default=1.0,
                     help="spend cap for the Baseten open-weights planner (USD)")
@@ -1270,6 +1270,10 @@ def main(argv=None) -> int:
             from wattnot.proof.baseten_planner import OpenWeightsPlanner
 
             planner = OpenWeightsPlanner(FakeMeta(rehearsal_planner_answers()))
+        elif a.planner == "modal-open":
+            from wattnot.proof.modal_provider import ModalOpenPlanner
+
+            planner = ModalOpenPlanner(FakeMeta(rehearsal_planner_answers()))
         else:
             from wattnot.proof.planner import MusePlanner
 
@@ -1300,6 +1304,11 @@ def main(argv=None) -> int:
             planner = OpenWeightsPlanner(BasetenClient(
                 ledger_path=a.out / "baseten-ledger.json",
                 cap_usd=a.baseten_cap_usd))
+        elif a.planner == "modal-open":
+            from wattnot.proof.modal_provider import ModalClient, ModalOpenPlanner
+
+            planner = ModalOpenPlanner(ModalClient(
+                ledger_path=a.out / "modal-ledger.json", cap_usd=a.baseten_cap_usd))
         else:
             from wattnot.meta.client import GuardedClient
             from wattnot.proof.planner import MusePlanner

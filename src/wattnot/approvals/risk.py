@@ -20,7 +20,7 @@ _KNOWN_KEYS = ("low_cap_drop_pct", "high_below_tdp_pct", "max_gpus_auto",
                "approval_timeout_s", "tiers")
 TIERS = ("standard", "strict")
 DEFAULT_TIERS = {"muse-spark": "standard", "bisect": "standard",
-                 "muse-spark-open": "strict"}
+                 "muse-spark-open": "strict", "modal-open": "strict"}
 
 
 @dataclass(frozen=True)
