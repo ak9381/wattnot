@@ -295,8 +295,87 @@
             "string",
             "null"
           ]
+        },
+        "hotspot_cap": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "mask": {
+              "type": "object",
+              "properties": {
+                "bbox": {
+                  "type": "array"
+                },
+                "polygon": {
+                  "type": "array"
+                },
+                "rle": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "sha256": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                }
+              }
+            },
+            "decision": {
+              "type": "object",
+              "properties": {
+                "gpu_id": {
+                  "type": [
+                    "integer",
+                    "string",
+                    "null"
+                  ]
+                },
+                "old_cap_w": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "new_cap_w": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "delta_w": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "min_cap_w": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "label": {
+                  "type": "string"
+                }
+              }
+            },
+            "reason": {
+              "type": "string"
+            }
+          }
         }
       }
+    },
+    "hotspot_cap": {
+      "type": [
+        "object",
+        "null"
+      ]
     },
     "attribution": {
       "type": "object"

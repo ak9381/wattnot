@@ -79,7 +79,8 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
                   per_model_spend: Mapping[str, Any] | None = None,
                   musecode_patch_sha256: str | None = None,
                   musecode_pr_sha256: str | None = None,
-                  musecode_pr_url: str | None = None) -> dict[str, Any]:
+                  musecode_pr_url: str | None = None,
+                  hotspot_cap: Mapping[str, Any] | None = None) -> dict[str, Any]:
     base, cand = run["baseline"], run["candidate"]
     base_samples = base.get("wh_samples") or (base.get("wh_per_req") or {}).get("samples") or []
     cand_samples = cand.get("wh_samples") or (cand.get("wh_per_req") or {}).get("samples") or []
@@ -172,6 +173,52 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
     mc_url = musecode_pr_url or run.get("musecode_pr_url")
     if mc_url is not None:
         m["musecode_pr_url"] = str(mc_url)
+
+    hc = hotspot_cap or run.get("hotspot_cap")
+    if hc is None:
+        for ev in events:
+            if ev.get("type") in ("sam.hotspot_cap", "hotspot_cap"):
+                hc = ev.get("data")
+                break
+    if hc is not None:
+        hc_mask = hc.get("mask") or {}
+        hc_decision = hc.get("decision") or {}
+        hc_reason = str(hc.get("reason", ""))
+        mask_sha = hc_mask.get("sha256")
+        if not mask_sha:
+            canonical = json.dumps(
+                {
+                    "bbox": hc_mask.get("bbox"),
+                    "polygon": hc_mask.get("polygon"),
+                    "rle": hc_mask.get("rle"),
+                },
+                sort_keys=True,
+            )
+            mask_sha = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        hc_entry = {
+            "mask": {
+                "bbox": list(hc_mask.get("bbox") or []),
+                "polygon": list(hc_mask.get("polygon") or []),
+                "rle": hc_mask.get("rle"),
+                "sha256": str(mask_sha),
+                "label": str(hc_mask.get("label", "MOCK")),
+            },
+            "decision": {
+                "gpu_id": hc_decision.get("gpu_id"),
+                "old_cap_w": hc_decision.get("old_cap_w"),
+                "new_cap_w": hc_decision.get("new_cap_w"),
+                "delta_w": hc_decision.get("delta_w", (
+                    (hc_decision.get("new_cap_w") - hc_decision.get("old_cap_w"))
+                    if hc_decision.get("new_cap_w") is not None and hc_decision.get("old_cap_w") is not None
+                    else None
+                )),
+                "min_cap_w": hc_decision.get("min_cap_w", 250),
+                "label": str(hc_decision.get("label", "ADVICE")),
+            },
+            "reason": hc_reason[:195],
+        }
+        m["hotspot_cap"] = hc_entry
+        receipt["hotspot_cap"] = hc_entry
 
     with_joules(receipt)
     receipt["grade"] = claimed_grade(receipt, rekor=rekor)
