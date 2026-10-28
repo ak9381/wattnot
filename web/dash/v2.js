@@ -916,13 +916,18 @@ function mountCompare() {
   const radFit = () => { S.radPan?.update(); S.radPan?.fit(); if (S.radPan && S.radPan.state.scale < 0.6) S.radPan.setZoom(0.6); };
   // Keep the opened ring clear of the canvas controls (bottom right): pan up/left if a card sits under them.
   const clearOfControls = (st, bid) => {
-    const ctl = $(".pc-controls", st.parentElement)?.getBoundingClientRect(), P = S.radPan; if (!ctl || !P) return;
-    let dy = 0;
-    $$(".rad-child", st).filter((k) => k.dataset.branch === bid && !k.hidden).forEach((k) => {
-      const r = k.getBoundingClientRect();
-      if (r.right > ctl.left && r.left < ctl.right && r.bottom > ctl.top && r.top < ctl.bottom) dy = Math.max(dy, r.bottom - ctl.top + 12);
-    });
-    if (dy) { P.state.y -= dy; P.update(); }
+    const P = S.radPan; if (!P) return;
+    for (let t = 0; t < 3; t++) {
+      const ctl = $(".pc-controls", st.parentElement)?.getBoundingClientRect(); if (!ctl) return;
+      let dy = 0, dx = 0;
+      $$(".rad-child, .rad-card", st).filter((k) => !k.hidden && (k.classList.contains("rad-card") || k.dataset.branch === bid)).forEach((k) => {
+        const r = k.getBoundingClientRect();
+        if (r.right > ctl.left && r.left < ctl.right && r.bottom > ctl.top && r.top < ctl.bottom) { dy = Math.max(dy, r.bottom - ctl.top + 12); dx = Math.max(dx, r.right - ctl.left + 12); }
+      });
+      if (!dy) return;
+      if (dx < dy) P.state.x -= dx; else P.state.y -= dy;
+      P.update();
+    }
   };
   $$(".rad-card", stage).forEach((c) => {
     const id = c.dataset.branch, name = id[0].toUpperCase() + id.slice(1);

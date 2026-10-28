@@ -150,3 +150,4 @@ nav.tabs button.on{background:rgba(90,169,240,.14);border-color:rgba(90,169,240,
 .rad-sub{flex-basis:100%;font-size:11px;color:#8a95a3}
 @media (max-width:640px){#tabs.tabs{max-width:100%;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}#tabs.tabs button{flex:0 0 auto}}html,body{overflow-x:hidden}
 @media (max-width:640px){.pc-view .pc-controls{pointer-events:none;background:transparent;border:0;padding:0;right:6px;bottom:6px;gap:4px}.pc-view .pc-controls button{pointer-events:auto;background:#0A0F14;padding:4px 7px}.pc-view .pc-controls #pc-goto,.pc-view .pc-controls #pc-zoom-label{display:none}}
+@media (max-width:640px){.pc-view .pc-controls #pc-follow,.pc-view .pc-controls #pc-mini{display:none}}
