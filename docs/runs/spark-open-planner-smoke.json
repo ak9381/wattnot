@@ -1,0 +1,51 @@
+{
+ "ran_at": "2026-10-28T03:04:26+00:00",
+ "history": {
+  "label": "SIMULATED",
+  "trials": [
+   {
+    "cap_w": 400,
+    "accepted": true,
+    "why_not": null,
+    "energy_change_pct": -24.0,
+    "p99_change_pct": 4.1,
+    "quality_pass_pct": 93.7,
+    "stock_pass_pct": 93.7
+   },
+   {
+    "cap_w": 325,
+    "accepted": false,
+    "why_not": "p99 +10.9% over the 10% limit",
+    "energy_change_pct": -30.5,
+    "p99_change_pct": 10.9,
+    "quality_pass_pct": 93.7,
+    "stock_pass_pct": 93.7
+   }
+  ]
+ },
+ "proposal": {
+  "kind": "try",
+  "cap_w": 350,
+  "reason": "400W accepted at p99 +4.1% (5.9% headroom) and 325W failed at +10.9%, so test 350W next toward lowest passing cap",
+  "by": "muse-spark-open"
+ },
+ "call": {
+  "provider": "baseten",
+  "model": "meta-models/muse-spark-open-1026",
+  "prompt_sha256": "a74dec45a01ab85e9913c82ed5205c0ddc1feff7c878317ee08ce835ab1d7137",
+  "latency_ms": 4950.2,
+  "label": "MEASURED",
+  "fallback": false,
+  "fallback_reason": null
+ },
+ "tokens": {
+  "input": 575,
+  "output": 766,
+  "reasoning": 652
+ },
+ "usd": 0.003974,
+ "labels": {
+  "call": "MEASURED",
+  "usd": "ESTIMATE"
+ }
+}
