@@ -2,6 +2,8 @@
 
 WattNot is an agent that cuts the energy and cost of each LLM inference request without making the model worse. It tries serving changes (batching, KV-cache settings, FP8, GPU power caps), keeps a change only if quality and p99 latency hold, and writes a signed receipt (Wh and $ per request) that anyone can re-check with the open verifier. It is built on Meta models: Muse Spark picks each step, and the default served model is Meta's open-weights Muse Glimmer 30B (`meta-models/Muse-Glimmer-30B`, Apache 2.0) on vLLM, with Llama 3.1 8B Instruct (`meta-llama/Llama-3.1-8B-Instruct`) as a comparison model. We also tune Muse Spark Open (NVFP4) on a large multi-GPU box, because it needs 700 GB+ of VRAM, more than one H100.
 
+Token trimmers cut your bill, but not your watts. WattNot measures the joules each request burns on the GPU, and checks quality before it keeps any change.
+
 H100 run: `bash scripts/h100_run.sh --dry-run` first, then see [docs/runbooks/H100.md](docs/runbooks/H100.md). Optional, off by default: an adaptive top-k trial on a small MoE model (a known technique, [docs/ADAPTIVE-TOPK.md](docs/ADAPTIVE-TOPK.md)).
 
 ## Quickstart
@@ -32,6 +34,14 @@ wattnot cloud tune --live --budget-usd 10 --record data/cloud/recorded-run1.json
 ```
 
 What is and isn't checked yet is listed in [docs/runbooks/BASETEN.md](docs/runbooks/BASETEN.md). The bundled numbers are SIMULATED until a live run is recorded.
+
+## Meta open-weight models
+
+- **Muse Spark Open on Baseten picks the power caps.** In the cap sweep (`--planner baseten-open`), each step sends Muse Spark Open (`meta-models/muse-spark-open-1026`, served by Baseten) the caps still allowed and the measured results so far, and it answers with the next cap to try or "stop". Its pick only counts if it is on the allow-list; the gate still decides keep or roll back.
+- **Every call goes in the receipt.** `planner_trace[].call` records the provider (`baseten`), the model id, a SHA-256 of the exact prompt, the latency in ms (MEASURED) and whether it fell back.
+- **Safe fallback.** If the call fails or the answer is off the list, a deterministic bisect rule picks the cap instead. That step is logged as `FALLBACK` and marked `source: fallback` in the receipt, so it never passes as a model pick.
+- One real test call (`scripts/spark_open_planner_smoke.py`, made-up SIMULATED history shaped like RUN2): Spark Open picked 350 W after 400 W passed and 325 W failed on p99, in 4.95 s, 575 in / 766 out tokens, about $0.004 (latency and tokens MEASURED, dollars ESTIMATE from list price). 350 W is the cap RUN2 kept on the H100. Record: [docs/runs/spark-open-planner-smoke.json](docs/runs/spark-open-planner-smoke.json).
+- The served models we tune are Meta open weights too: Muse Glimmer 30B and Llama 3.1 8B Instruct on vLLM.
 
 ## Meta API usage (capped at $20)
 
