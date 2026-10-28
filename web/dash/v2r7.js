@@ -302,3 +302,28 @@ registerInfo({
   experts: { title: "Expert routing", html: `<p>Each column is one step of the prompt; each row is one expert. Brighter cells mean more words were sent to that expert.</p><p>Adaptive top-k drops experts that carry little weight for a word: the bottom strip shows how many experts each word used, 8 without and about 6.7 with.</p>` },
 });
 export { wireR7 };
+
+// ---------- Compare empty / unreadable state ----------
+// Compare never silently shows the bundled RUN2 numbers in place of a missing run.
+// The bundled sample is still available, but only when the user picks it, and it is labelled.
+export const BUNDLED_ID = "bundled-run2";
+export const readableRecord = (rec) => !!(rec && typeof rec === "object" && !Array.isArray(rec) && rec.phases && typeof rec.phases === "object" && rec.phases.baseline && rec.phases.wattnot);
+export function compareState(runs, selId, rec) {
+  if (selId === BUNDLED_ID) return { kind: "bundled" };
+  if (!Array.isArray(runs) || !runs.length) return { kind: "empty" };
+  if (!readableRecord(rec)) return { kind: "unreadable", id: selId };
+  return { kind: "ok" };
+}
+export function bundledRecord(run2) {
+  if (!run2 || run2.j_per_req_stock == null || run2.j_per_req_cap == null) return null;
+  return { id: BUNDLED_ID, bundled: true, run_name: `Bundled sample · RUN2 ${run2.model || ""} @ ${run2.cap_w ?? ""} W`,
+    phases: { baseline: { metrics: { j_per_req: run2.j_per_req_stock } }, wattnot: { metrics: { j_per_req: run2.j_per_req_cap } } } };
+}
+export function emptyStateHtml(st, hasBundled) {
+  const t = st.kind === "empty" ? "No runs yet" : "This run couldn't be read";
+  const p = st.kind === "empty" ? "There are no run records to compare. Start a run, or open the bundled sample below."
+    : `The record for “${esc(st.id || "this run")}” is missing or not in the expected format, so no savings are shown. Pick another run, or open the bundled sample.`;
+  return `<section class="cmp-empty glass" id="cmpEmpty" role="status" data-state="${st.kind}"><h2>${t}</h2><p>${p}</p>`
+    + (hasBundled ? `<button class="btn sm" data-bundled>Show the bundled RUN2 sample</button><p class="r7miss">The bundled sample is H100 RUN2 data that ships with WattNot, not your run.</p>` : "") + `</section>`;
+}
+export const bundledBanner = () => `<p class="cmp-bundled" id="cmpBundled" role="note"><b>Bundled sample</b>: H100 RUN2 data that ships with WattNot, not one of your runs.</p>`;

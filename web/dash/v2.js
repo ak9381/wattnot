@@ -1,6 +1,6 @@
 import { esc, badge, num, cnum, legendHtml, stageState, ledgerRows, run2Rows, verifySummary, phaseLabel } from "./v2lib.js";
 import { init as initPanCanvas } from "./pancanvas.js";
-import { overviewHtml, openPowerGraph, wireR7, metaInRun, branchPopup, cmpHeadHtml, openWhere, methodPopup, branchInfo, savedPct, childSaved, CHILDREN } from "./v2r7.js";
+import { overviewHtml, openPowerGraph, wireR7, metaInRun, branchPopup, cmpHeadHtml, openWhere, methodPopup, branchInfo, savedPct, childSaved, CHILDREN, BUNDLED_ID, compareState, bundledRecord, emptyStateHtml, bundledBanner } from "./v2r7.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -810,6 +810,7 @@ async function selectRun(id) {
   S.selRunId = id;
   const sel = $("#runSel"); if (sel && id) sel.value = id;
   if (!id || id === "default") { S.selRun = null; S.selHeadline = null; }
+  else if (id === BUNDLED_ID) { S.selRun = bundledRecord(S.run2); S.selHeadline = null; }
   else {
     try {
       const rec = await fetch(`/api/dash/v2/runs/${encodeURIComponent(id)}`).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); });
@@ -847,8 +848,11 @@ async function renderReport() {
       ${t.kids.map((k) => `<div class="leaf"><span class="leaf-ic" aria-hidden="true">${MAP_ICON[k.icon] || ""}</span><div><b>${esc(k.label)}</b><span>${k.text}</span></div></div>`).join("")}
       <div class="topic-detail">${t.detail}</div>
     </div></div>`;
-  const featRec = S.selRun || (S.radRecs && S.radRecs[selId]) || null;
-  $("#pReport").innerHTML = `${radialHtml(runs, selId, featRec)}<div class="ctrl noprint"><label for="runSel">Run</label><select id="runSel" style="width:auto;max-width:320px" aria-label="Run">${runs.length ? runs.map((r) => `<option value="${esc(r.id)}" ${r.id === selId ? "selected" : ""}>${esc(r.name)}</option>`).join("") : `<option value="default">Default replay</option>`}</select>${legendHtml()}<button class="btn pri" onclick="print()">Export PDF / PNG (print)</button><span style="color:var(--mu);font-size:13px">Topics start closed so the map stays readable. Open any circle for its two paths and the detail.</span><span style="flex:1"></span><button class="btn" data-map="open">Expand all</button><button class="btn" data-map="close">Collapse all</button></div>
+  const featRec = S.selRunId === BUNDLED_ID ? bundledRecord(S.run2) : (S.selRun || (S.radRecs && S.radRecs[selId]) || null);
+  const cst = compareState(runs, S.selRunId === BUNDLED_ID ? BUNDLED_ID : selId, featRec);
+  S.cmpState = cst; S.cmpRec = cst.kind === "ok" || cst.kind === "bundled" ? featRec : null;
+  const radOrEmpty = S.cmpRec ? `${cst.kind === "bundled" ? bundledBanner() : ""}${radialHtml(runs, selId, featRec)}` : emptyStateHtml(cst, !!bundledRecord(S.run2));
+  $("#pReport").innerHTML = `${radOrEmpty}<div class="ctrl noprint"><label for="runSel">Run</label><select id="runSel" style="width:auto;max-width:320px" aria-label="Run">${runs.length ? runs.map((r) => `<option value="${esc(r.id)}" ${r.id === selId ? "selected" : ""}>${esc(r.name)}</option>`).join("") : `<option value="default">Default replay</option>`}${bundledRecord(S.run2) ? `<option value="${BUNDLED_ID}" ${S.selRunId === BUNDLED_ID ? "selected" : ""}>Bundled sample · RUN2 (built-in, not your run)</option>` : ""}</select>${legendHtml()}<button class="btn pri" onclick="print()">Export PDF / PNG (print)</button><span style="color:var(--mu);font-size:13px">Topics start closed so the map stays readable. Open any circle for its two paths and the detail.</span><span style="flex:1"></span><button class="btn" data-map="open">Expand all</button><button class="btn" data-map="close">Collapse all</button></div>
   <div class="map-wrap glass" id="mapWrap"><svg class="map-wires" id="mapWires" aria-hidden="true"></svg>
     <div class="map-stage" id="mapStage">
       <div class="map-hub" id="mapHub" data-open="0">
@@ -899,10 +903,13 @@ async function renderReport() {
 // Round 7: the Power / Cost / Water cards lead the page; the older mind map
 // and the signed details fold away underneath.
 function mountCompare() {
+  $("#pReport").toggleAttribute("data-cmp-empty", !S.cmpRec);
+  $$("#pReport [data-bundled]").forEach((b) => (b.onclick = () => selectRun(BUNDLED_ID)));
+  if (!S.cmpRec) return;
   // Radial stays the main compare layout (round 5); round 7 adds the header,
   // the Meta line, and branch popups with the card content.
   const page = $("#pReport");
-  const rec = S.selRun || S.radRecs?.[S.selRunId || S.runs?.runs?.[0]?.id];
+  const rec = S.cmpRec;
   const price = S.run?.results?.price?.usd_per_kwh ?? 0.1387, water = S.run?.results?.water?.factor_l_per_kwh ?? 0.36;
   $("#cmpR7")?.remove();
   const top = document.createElement("div"); top.id = "cmpR7"; top.innerHTML = cmpHeadHtml(rec);
