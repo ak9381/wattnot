@@ -51,12 +51,20 @@ function openInfo(id) {
     ${o.flag ? `<h4>In the code</h4><p><code>${esc(o.flag)}</code> · ${o.applies === "replay" ? "changes this replay now" : "saved for a live run; the replay uses the recorded value"}</p>` : ""}`;
   $("#side").classList.add("on"); $("#side").setAttribute("aria-hidden", "false"); $("#scrim").hidden = false; $("#sideX").focus();
 }
-function closeInfo() { $("#side").classList.remove("on"); $("#side").setAttribute("aria-hidden", "true"); $("#scrim").hidden = true; }
+function closeInfo() {
+  $("#side").classList.remove("on"); $("#side").setAttribute("aria-hidden", "true");
+  document.body.classList.remove("drawer-open");
+  $("#scrim").hidden = true;
+  setTimeout(() => S.radPan?.fit(), 310);
+}
 // Open arbitrary detail HTML in the shared side panel (used by the Compare tree
 // info buttons: detail opens here, never in a pop-up).
 function openSidePanel(title, html) {
   $("#sideBody").innerHTML = `<h2>${esc(title)}</h2>${html}`;
-  $("#side").classList.add("on"); $("#side").setAttribute("aria-hidden", "false"); $("#scrim").hidden = false; $("#sideX").focus();
+  $("#side").classList.add("on"); $("#side").setAttribute("aria-hidden", "false");
+  document.body.classList.add("drawer-open");
+  $("#scrim").hidden = false; $("#sideX").focus();
+  setTimeout(() => S.radPan?.fit(), 310);
 }
 $("#sideX").onclick = closeInfo; $("#scrim").onclick = closeInfo;
 const LEARN_INFO = {};
@@ -347,7 +355,7 @@ function renderRun() {
   const R = S.run;
   S.view ??= "both";
   $("#pRun").innerHTML = `<div class="bento"><div class="tile glass span4 lift run2block" id="run2block" aria-live="polite"></div>
-  <div class="tile glass span2 low"><div class="lvl">Run</div><h1>${esc(S.choice.name || "Run")}</h1><p>${esc(R.results.model)} · ${esc(R.results.workload)} · run id <code>${esc(R.run_id)}</code> ${badge("REPLAY")}. A recorded run, re-checked against your limits. Nothing is running on a GPU now.</p><p class="lock" id="phaseInd" role="status"></p>
+  <div class="tile glass span2 low"><div class="lvl">Run</div><h1>${esc(S.choice.name || "Run")}</h1><p>${esc(R.results.model)} · ${esc(R.results.workload)} · run id <code>${esc(R.run_id)}</code> ${badge("REPLAY")}</p><p class="lock" id="phaseInd" role="status"></p>
     <div class="noprint" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="pp">Pause</button><button class="btn" id="rs">Restart</button><select id="spd" style="width:auto"><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option><option value="20">20×</option></select></div>${legendHtml()}</div>
     <div class="tile glass span6" style="padding:10px 16px"><div style="display:flex;justify-content:space-between;font-size:13px"><span id="progT"></span><span id="progN" style="color:var(--mu)"></span></div><div class="prog"><i id="progB"></i></div>
     <div class="rail" id="rail">${R.pipeline.map((p, i) => `${i ? '<span class="edge"></span>' : ""}<button class="node" data-stage="${p.id}"><b>${esc(p.title)}</b><span id="ns-${p.id}">waiting</span></button>`).join("")}</div></div></div>
@@ -1015,14 +1023,28 @@ function mountCompare() {
   const page = $("#pReport");
   const rec = S.cmpRec;
   $("#cmpR7")?.remove();
-  const top = document.createElement("div"); top.id = "cmpR7"; top.innerHTML = cmpHeadHtml(rec);
+  const runs = (S.runs && S.runs.runs) || [];
+  const selId = S.selRunId || rec?.run_id || "";
+  const top = document.createElement("div"); top.id = "cmpR7"; top.innerHTML = cmpHeadHtml(rec, runs, selId);
   page.prepend(top);
-  const stage = $("#radialStage"); if (!stage) return;
-  if (S.radPan) { try { S.radPan.destroy(); } catch {} S.radPan = null; }
-  stage.style.transform = "none";
+  const runSel = $("#cmpRunSel", top);
+  if (runSel) {
+    runSel.value = selId;
+    runSel.onchange = (e) => selectRun(e.target.value);
+  }
+
+  const wrap = $("#radialWrap");
+  const stage = $("#radialStage"); if (!stage || !wrap) return;
+
+  // Initialize or re-fit Pan and Zoom canvas
+  if (!S.radPan) {
+    S.radPan = initPanCanvas(wrap, stage, { controls: true, pad: 32 });
+  }
+
   const wires = $("#radialWires"); if (wires && wires.parentElement !== stage) stage.prepend(wires);
   $$(".rad-child, .rad-node, .rad-leaf", stage).forEach((k) => k.remove());
   S.cmpTreeMode = true; S.cmpActive = S.cmpActive || "power"; S.cmpPath = S.cmpPath || [];
+  S.cmpCollapsed = S.cmpCollapsed || false;
   const bar = $(".radial-bar");
   if (bar && !$("#cmpCrumb", bar)) bar.insertAdjacentHTML("afterbegin", `<nav class="cmp-crumb" id="cmpCrumb" aria-label="Compare path"></nav>`);
   if (bar && !$("[data-where]", bar)) {
@@ -1033,6 +1055,27 @@ function mountCompare() {
   $$("[data-where]").forEach((w) => (w.onclick = () => openWhere(rec)));
 
   const branchSaved = (id) => { const sv = savedPct(rec, id); return sv ? `${cnum(esc(sv.text), sv.tag)} ${badge(sv.tag)}` : `<span class="rad-miss">–</span><span class="v-chip">pending</span>`; };
+
+  // Root WattNot node toggle collapse/expand
+  const centreNode = $("#centreNode", stage);
+  if (centreNode) {
+    centreNode.setAttribute("aria-expanded", String(!S.cmpCollapsed));
+    centreNode.onclick = (e) => {
+      e.stopPropagation();
+      if (S.cmpCollapsed) {
+        S.cmpCollapsed = false;
+        S.cmpActive = "power";
+        S.cmpPath = ["where", "own"];
+      } else {
+        S.cmpCollapsed = true;
+        S.cmpActive = null;
+        S.cmpPath = [];
+      }
+      centreNode.setAttribute("aria-expanded", String(!S.cmpCollapsed));
+      renderTree();
+      setTimeout(() => S.radPan?.fit(), 50);
+    };
+  }
 
   function renderCrumb() {
     const el = $("#cmpCrumb"); if (!el) return;
@@ -1052,13 +1095,13 @@ function mountCompare() {
 
   function renderTree() {
     $$(".rad-card", stage).forEach((c) => {
-      const on = c.dataset.node === S.cmpActive;
+      const on = !S.cmpCollapsed && c.dataset.node === S.cmpActive;
       c.dataset.open = on ? "1" : "0";
       $(".rad-head", c)?.setAttribute("aria-expanded", String(on));
     });
     $$(".rad-node, .rad-leaf", stage).forEach((n) => n.remove());
 
-    if (S.cmpActive) {
+    if (!S.cmpCollapsed && S.cmpActive) {
       // 1. Render child nodes for each level in path
       for (let d = 0; d <= S.cmpPath.length; d++) {
         for (const node of treeChildren(S.cmpPath.slice(0, d))) {
@@ -1118,11 +1161,12 @@ function mountCompare() {
 
     renderCrumb();
     layoutTree();
+    setTimeout(() => S.radPan?.fit(), 30);
   }
 
   $$(".rad-card", stage).forEach((c) => {
     const id = c.dataset.branch, name = id[0].toUpperCase() + id.slice(1);
-    c.classList.add("min"); c.dataset.open = id === S.cmpActive ? "1" : "0"; c.dataset.node = id;
+    c.classList.add("min"); c.dataset.open = (!S.cmpCollapsed && id === S.cmpActive) ? "1" : "0"; c.dataset.node = id;
     const sv = savedPct(rec, id);
     const svVal = sv ? sv.text : "–";
     const svTag = id === "power" ? "MEASURED" : "ESTIMATE";
@@ -1131,106 +1175,161 @@ function mountCompare() {
     c.setAttribute("data-explain-value", svVal);
     c.setAttribute("data-explain-label", svTag);
     c.setAttribute("data-explain-source", svSrc);
-    c.innerHTML = `<button class="rad-head" aria-expanded="${id === S.cmpActive}" aria-label="${name}: open its routes"><b><span>${name}</span>${badge(id === "power" ? "MEASURED" : "ESTIMATE")}</b><span class="rad-val">${branchSaved(id)}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power</small>`}</button><button class="ibtn rad-i" aria-label="${name} details">i</button>`;
-    $(".rad-head", c).onclick = () => { S.cmpActive = id; S.cmpPath = []; renderTree(); };
+    c.innerHTML = `<button class="rad-head" aria-expanded="${!S.cmpCollapsed && id === S.cmpActive}" aria-label="${name}: open its routes"><b><span>${name}</span>${badge(id === "power" ? "MEASURED" : "ESTIMATE")}</b><span class="rad-val">${branchSaved(id)}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power</small>`}</button><button class="ibtn rad-i" aria-label="${name} details">i</button>`;
+    $(".rad-head", c).onclick = () => { S.cmpCollapsed = false; S.cmpActive = id; S.cmpPath = []; renderTree(); };
     $(".rad-i", c).onclick = (e) => { e.stopPropagation(); openSidePanel(name, branchDetailHtml(rec, id)); };
   });
 
   // Expand all opens the Power branch's levers; Collapse all returns to top
   $$("#pReport [data-radial]").forEach((b) => (b.onclick = () => {
     if (b.dataset.radial === "open") {
+      S.cmpCollapsed = false;
       S.cmpActive = "power";
       S.cmpPath = ["where", "own"];
     } else {
+      S.cmpCollapsed = false;
       S.cmpActive = "power";
       S.cmpPath = [];
     }
     renderTree();
+    setTimeout(() => S.radPan?.fit(), 50);
   }));
 
+  wireCompareTooltips(stage);
   renderTree();
   const sig = $("#pReport .receipt-meta"); if (!sig) $("#pReport").insertAdjacentHTML("beforeend", `<div class="receipt-meta glass">${metaInRun(rec)}</div>`);
 }
 
-// Mind Map layout:
-// Center node (WattNot / run) on the left-centre.
-// Power, Cost, Water fanned in an orderly arc to the right.
-// Child nodes in an orderly secondary arc / column.
-// Leaf detail cards sit aligned in a column on the right with dashed elbow connectors.
-// Fits the viewport (container size + SVG viewBox), no panning.
+// Floating tooltip handler that never overlaps nodes
+function wireCompareTooltips(stage) {
+  let tip = $("#cmpTooltip");
+  if (!tip) {
+    tip = document.createElement("div");
+    tip.id = "cmpTooltip";
+    tip.className = "cmp-tooltip glass";
+    tip.style.cssText = "position:fixed;z-index:9999;display:none;pointer-events:none;padding:8px 12px;border-radius:10px;font-size:12px;color:#DCD6E4;background:rgba(23,23,36,0.94);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.14);box-shadow:0 8px 24px rgba(0,0,0,0.5);max-width:280px;line-height:1.4;";
+    document.body.appendChild(tip);
+  }
+
+  stage.onmouseover = (e) => {
+    const el = e.target.closest(".rad-node, .rad-card, .rad-leaf, .radial-centre");
+    if (!el) return;
+    const lab = el.getAttribute("data-explain-label");
+    const val = el.getAttribute("data-explain-value");
+    const title = el.querySelector("b, .rad-leaf-title, .centre-node")?.textContent || "";
+    const desc = el.querySelector(".rad-leaf-desc, small, .centre-sub")?.textContent || el.title || "";
+    if (!title && !desc) return;
+    tip.innerHTML = `<div style="font-weight:600;color:#DCD6E4;margin-bottom:2px">${esc(title)}${lab ? ` <span class="v-chip ${esc(lab)}"><i class="v-lab ${esc(lab)}"></i>${esc(lab)}</span>` : ""}</div>${desc ? `<div style="color:var(--v-sub,#B2A6C3);font-size:11.5px">${esc(desc)}</div>` : ""}${val && val !== "–" ? `<div style="margin-top:4px;font-family:var(--v-num,monospace);color:#8FD3B0">${esc(val)}</div>` : ""}`;
+    tip.style.display = "block";
+    const r = el.getBoundingClientRect();
+    const tw = tip.offsetWidth || 200, th = tip.offsetHeight || 50;
+    let top = r.top - th - 8;
+    if (top < 80) top = r.bottom + 8;
+    let left = r.left + (r.width - tw) / 2;
+    left = Math.max(16, Math.min(window.innerWidth - tw - 16, left));
+    tip.style.top = `${top}px`;
+    tip.style.left = `${left}px`;
+  };
+
+  stage.onmouseout = (e) => {
+    if (e.target.closest(".rad-node, .rad-card, .rad-leaf, .radial-centre")) {
+      if (tip) tip.style.display = "none";
+    }
+  };
+}
+
+// Layered tidy-tree layout:
+// Center node on the left-centre.
+// Power, Cost, Water fanned in an arc around WattNot with clean non-overlapping spacing.
+// Child nodes in tidy columns by depth with vertical slots from subtree leaf counts.
+// Leaf cards aligned in the rightmost column.
 function layoutTree() {
-  const wrap = $("#radialWrap"), stage = $("#radialStage"), svg = $("#radialWires"), centre = $("#radCentre");
-  if (!wrap || !stage || !svg || !centre) return;
-  const panelW = wrap.clientWidth || 1200;
-  const panelH = wrap.clientHeight || 560;
+  const stage = $("#radialStage"), svg = $("#radialWires"), centre = $("#radCentre");
+  if (!stage || !svg || !centre) return;
 
-  // Base design dimensions to fit mind map nicely without clipping
-  const minDesignW = 1160;
-  const minDesignH = 520;
-  const scale = (panelW < minDesignW || panelH < minDesignH)
-    ? Math.min(panelW / minDesignW, panelH / minDesignH)
-    : 1;
+  const ROW_HEIGHT = 80;
+  const TOP_PAD = 40;
+  const path = S.cmpPath || [];
 
-  const W = Math.round(panelW / scale);
-  const H = Math.round(panelH / scale);
+  // Compute tidy-tree slots for child nodes
+  const nodeSlots = new Map();
+  let currentSlot = 0;
 
-  stage.style.width = `${W}px`;
-  stage.style.height = `${H}px`;
-  stage.style.transformOrigin = "top left";
-  stage.style.transform = scale < 1 ? `scale(${scale.toFixed(4)})` : "none";
+  function allocateSlots(kids, depth) {
+    for (const k of kids) {
+      const key = `${depth}:${k.id}`;
+      const isExpanded = path[depth] === k.id;
+      const subKids = isExpanded ? treeChildren(path.slice(0, depth + 1)) : [];
+      if (subKids && subKids.length > 0) {
+        const start = currentSlot;
+        allocateSlots(subKids, depth + 1);
+        const end = currentSlot - 1;
+        nodeSlots.set(key, { depth, id: k.id, center: (start + end) / 2 });
+      } else {
+        nodeSlots.set(key, { depth, id: k.id, center: currentSlot });
+        currentSlot++;
+      }
+    }
+  }
 
-  // 1. Central node on left-centre
-  const cx = 85, cy = Math.round(H / 2);
-  centre.style.left = `${cx}px`; centre.style.top = `${cy}px`;
+  if (!S.cmpCollapsed && S.cmpActive) {
+    allocateSlots(treeChildren([]), 0);
+  }
 
-  // 2. Power, Cost, and Water fan out in an ARC around WattNot (cx, cy)
-  // Clean arc with no overlap: Cost straight right (0°), Power angled up (-45°), Water angled down (+45°).
+  const totalSlots = Math.max(currentSlot, 4);
+  const H = Math.max(600, TOP_PAD * 2 + totalSlots * ROW_HEIGHT);
+  const cy = Math.round(H / 2);
+
+  // 1. Central WattNot node
+  const cx = 50;
+  centre.style.left = `${cx}px`;
+  centre.style.top = `${cy}px`;
+
+  // 2. Power, Cost, Water in an arc around WattNot
   const cards = $$(".rad-card", stage);
   const metricPos = {
-    power: [Math.round(cx + 160), Math.round(cy - 150)],
-    cost:  [Math.round(cx + 255), cy],
-    water: [Math.round(cx + 160), Math.round(cy + 150)],
+    power: [cx + 175, cy - 140],
+    cost:  [cx + 235, cy],
+    water: [cx + 175, cy + 140],
   };
   cards.forEach((c) => {
-    const p = metricPos[c.dataset.node] || [cx + 255, cy];
-    c.style.left = `${p[0]}px`; c.style.top = `${p[1]}px`;
+    const p = metricPos[c.dataset.node] || [cx + 235, cy];
+    c.style.left = `${p[0]}px`;
+    c.style.top = `${p[1]}px`;
   });
 
-  // 3. Child nodes (Level 0 and deeper)
-  // Compute vertical bounds (topMargin, botMargin) from H so no node is cut off
-  const topMargin = Math.max(30, Math.round(H * 0.05));
-  const botMargin = Math.max(55, Math.round(H * 0.10));
-  const usableH = H - topMargin - botMargin;
-
+  // 3. Child nodes in columns per depth
   const nodes = $$(".rad-node", stage);
-  const depth = (S.cmpPath || []).length;
-  const childX = Math.round(cx + 455);
-  const drillX = Math.round(cx + 645);
+  const depth = path.length;
+  const maxDepth = depth;
 
-  for (let d = 0; d <= depth; d++) {
-    const ring = nodes.filter((k) => +k.dataset.depth === d);
-    const count = ring.length;
-    const x = d === 0 ? childX : drillX;
-    const stepY = count > 1 ? usableH / (count - 1) : 0;
-    ring.forEach((el, idx) => {
-      el.style.left = `${x}px`;
-      el.style.top = `${count === 1 ? cy : Math.round(topMargin + idx * stepY)}px`;
-    });
-  }
+  nodes.forEach((el) => {
+    const d = +el.dataset.depth;
+    const nid = el.dataset.node;
+    const slot = nodeSlots.get(`${d}:${nid}`);
+    const colX = 470 + d * 215;
+    const slotY = slot ? Math.round(TOP_PAD + slot.center * ROW_HEIGHT + ROW_HEIGHT / 2) : cy;
+    el.style.left = `${colX}px`;
+    el.style.top = `${slotY}px`;
+  });
 
   // 4. Leaf detail cards aligned in column on the right
   const leaves = $$(".rad-leaf", stage);
   const leafCount = leaves.length;
-  const leafW = 260;
-  const leafX = W - leafW - 16;
-  const leafTopStart = topMargin + 5;
-  const leafTopEnd = H - 110;
-  const leafStepY = leafCount > 1 ? (leafTopEnd - leafTopStart) / (leafCount - 1) : 0;
+  const leafColX = 470 + (maxDepth + 1) * 215;
+  const leafUsableH = totalSlots * ROW_HEIGHT;
+  const leafStepY = leafCount > 1 ? (leafUsableH - 70) / (leafCount - 1) : 0;
+
   leaves.forEach((el, idx) => {
-    const y = leafCount === 1 ? cy - 40 : Math.round(leafTopStart + idx * leafStepY);
-    el.style.left = `${leafX}px`;
+    const y = leafCount === 1 ? cy - 35 : Math.round(TOP_PAD + 35 + idx * leafStepY);
+    el.style.left = `${leafColX}px`;
     el.style.top = `${y}px`;
   });
+
+  const W = (leafCount > 0 ? leafColX + 280 : (nodes.length > 0 ? 470 + maxDepth * 215 + 240 : 540));
+  stage.style.width = `${W}px`;
+  stage.style.height = `${H}px`;
+  stage.style.transformOrigin = "top left";
 
   drawTreeWires(cx, cy, W, H);
 }
@@ -1245,11 +1344,11 @@ function drawTreeWires(cx, cy, W, H) {
   const elbowPaths = [];
   const dots = [];
 
-  const addDottedCurve = (x1, y1, x2, y2) => {
+  const addDottedCurve = (x1, y1, x2, y2, highlight = false) => {
     const dx = x2 - x1;
     const cp1x = x1 + dx * 0.45, cp2x = x1 + dx * 0.55;
     const d = `M ${x1.toFixed(1)} ${y1.toFixed(1)} C ${cp1x.toFixed(1)} ${y1.toFixed(1)}, ${cp2x.toFixed(1)} ${y2.toFixed(1)}, ${x2.toFixed(1)} ${y2.toFixed(1)}`;
-    dottedPaths.push(d);
+    dottedPaths.push({ d, highlight });
     dots.push([x1, y1]);
     dots.push([x2, y2]);
   };
@@ -1264,19 +1363,20 @@ function drawTreeWires(cx, cy, W, H) {
   // 1. Connect central node to metric cards (Power, Cost, Water) in arc
   $$(".rad-card", stage).forEach((c) => {
     const [mx, my] = getCenter(c);
-    addDottedCurve(cx + 48, cy, mx - 102, my);
+    const isAct = !S.cmpCollapsed && c.dataset.node === S.cmpActive;
+    addDottedCurve(cx + 44, cy, mx - 95, my, isAct);
   });
 
   // 2. Connect active metric card to child nodes
-  if (S.cmpActive) {
+  if (!S.cmpCollapsed && S.cmpActive) {
     const activeCard = $(`.rad-card[data-node="${S.cmpActive}"]`, stage);
-    const [mx, my] = activeCard ? getCenter(activeCard) : [cx + 48, cy];
+    const [mx, my] = activeCard ? getCenter(activeCard) : [cx + 44, cy];
     const nodes = $$(".rad-node", stage);
     const depth0 = nodes.filter((k) => +k.dataset.depth === 0);
 
     depth0.forEach((el) => {
       const [kx, ky] = getCenter(el);
-      addDottedCurve(mx + 102, my, kx - 110, ky);
+      addDottedCurve(mx + 95, my, kx - 100, ky, true);
     });
 
     // 3. Connect parent node to deeper child nodes
@@ -1288,7 +1388,7 @@ function drawTreeWires(cx, cy, W, H) {
       const [px, py] = parentEl ? getCenter(parentEl) : [mx, my];
       ring.forEach((el) => {
         const [kx, ky] = getCenter(el);
-        addDottedCurve(px + 110, py, kx - 110, ky);
+        addDottedCurve(px + 100, py, kx - 100, ky, true);
       });
     }
 
@@ -1303,12 +1403,14 @@ function drawTreeWires(cx, cy, W, H) {
         depth0[0];
       if (matchingNode) {
         const [nx, ny] = getCenter(matchingNode);
-        addElbowPath(nx + 110, ny, leafX - 2, leafY);
+        addElbowPath(nx + 100, ny, leafX - 2, leafY);
       }
     });
   }
 
-  const dottedSvg = dottedPaths.map((d) => `<path d="${d}" stroke="#B2A6C3" stroke-width="1.8" stroke-dasharray="4,4" fill="none" />`).join("");
+  const dottedSvg = dottedPaths.map(({ d, highlight }) =>
+    `<path d="${d}" stroke="${highlight ? '#DCD6E4' : 'rgba(178,166,195,0.30)'}" stroke-width="${highlight ? '2' : '1.4'}" stroke-dasharray="4,4" fill="none" />`
+  ).join("");
   const elbowSvg = elbowPaths.map((d) => `<path d="${d}" stroke="#8E7A9E" stroke-width="1.5" stroke-dasharray="5,4" fill="none" />`).join("");
   const dotsSvg = dots.map(([x, y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#B2A6C3" /><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.5" fill="#DCD6E4" />`).join("");
 

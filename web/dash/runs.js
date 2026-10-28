@@ -35,14 +35,13 @@ function fmt(v, digits = 2) {
 
 const isNum = (v) => typeof v === "number" && Number.isFinite(v);
 
-// A label chip that carries the visible word and colored dot.
+// A label chip that carries the visible word and distinct glyph.
 function chip(label) {
   const L = String(label || "pending").toUpperCase();
-  const tint = {
-    MEASURED: "--v-l-measured", ESTIMATE: "--v-l-estimate", SIMULATED: "--v-l-simulated",
-    MOCK: "--v-l-mock", REPLAY: "--v-l-replay", ADVICE: "--v-l-advice",
-  }[L] || "--v-mut";
-  return `<span class="v-chip"><i style="background:var(${tint})"></i>${esc(L)}</span>`;
+  const glyphs = { MEASURED: "●", ESTIMATE: "~", SIMULATED: "┄", MOCK: "○", SAMPLE: "○", REPLAY: "↻", ADVICE: "✦" };
+  const glyph = glyphs[L] || "•";
+  const cls = L.toLowerCase();
+  return `<span class="v-chip ${L} v-chip-${cls}"><i class="v-lab ${L}" aria-hidden="true">${glyph}</i>${esc(L)}</span>`;
 }
 
 // Every number shows its label word visibly next to it

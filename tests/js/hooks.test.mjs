@@ -122,19 +122,15 @@ test("shared chrome header has updated nav links and Live graph", () => {
 
   const graphHtml = fs.readFileSync(path.join(dashDir, "graph.html"), "utf8");
   assert.match(graphHtml, /<title>WattNot: Live graph<\/title>/);
-  assert.match(graphHtml, /<h1[^>]*>Live graph<\/h1>/);
-  assert.match(graphHtml, /<button class="btn" id="dArch">Live graph<\/button>/);
+  assert.doesNotMatch(graphHtml, /<header class="top">/);
 });
 
-test("shared chrome footer has credits, track, github, data legend, note, and year", () => {
+test("shared chrome footer has credits, track, github, and year", () => {
   const chromeJs = fs.readFileSync(path.join(dashDir, "chrome.js"), "utf8");
   assert.match(chromeJs, /Project by Akash K Raju/);
   assert.match(chromeJs, /Meta hackathon 2026 · Indie track/);
   assert.match(chromeJs, /https:\/\/github\.com\/ak9381\/wattnot/);
-  assert.match(chromeJs, /MEASURED/);
-  assert.match(chromeJs, /ESTIMATE/);
-  assert.match(chromeJs, /MOCK/);
-  assert.match(chromeJs, /No compliance claims/);
+  assert.doesNotMatch(chromeJs, /No compliance claims/);
   assert.match(chromeJs, /2026/);
 });
 

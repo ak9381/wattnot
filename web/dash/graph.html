@@ -14,17 +14,7 @@
 <script src="chrome.js" defer></script>
 </head>
 <body class="story">
-<header class="top">
-  <h1 class="page-title" style="margin:0;font-size:16px;font-weight:600;letter-spacing:0.01em;display:inline-flex;align-items:center;color:var(--v-cream,#DCD6E4)">Live graph</h1>
-  <button class="chip" id="metaChip" aria-haspopup="dialog" aria-expanded="false"><i></i><span>Meta API: not checked</span></button>
-  <button class="btn" id="dPower">Power</button>
-  <button class="btn" id="dExperts">Experts</button>
-  <button class="btn" id="dArch">Live graph</button>
-  <a class="btn" id="signout" href="/logout" hidden>Sign out</a>
-  <span class="sp"></span>
-  <span id="wn-mic-slot" class="wn-mic-slot" aria-live="polite"></span>
-  <span class="chip" id="modeChip" title="Where the numbers come from"><i></i><span>loading</span></span>
-</header>
+<span id="wn-mic-slot" class="wn-mic-slot" aria-live="polite"></span>
 <div id="pop" class="pop" role="dialog" aria-label="Meta API connection" hidden></div>
 <main id="stage" tabindex="-1"></main>
 <footer class="rail" id="rail"></footer>

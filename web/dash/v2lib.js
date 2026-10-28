@@ -2,11 +2,13 @@
 export const LABELS = ["MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "REPLAY", "ADVICE", "SAMPLE"];
 
 export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-// Label badge: a small coloured dot + visible label word.
+// Label badge: a distinct glyph + visible label word.
 export const badge = (t) => {
   if (!t) return "";
   const norm = String(t).toUpperCase();
-  return `<span class="b-chip b-chip-${esc(String(t).toLowerCase())}"><span class="b b-${esc(String(t).toLowerCase())}" aria-hidden="true"></span><span class="b-txt">${esc(norm)}</span></span>`;
+  const glyphs = { MEASURED: "●", ESTIMATE: "~", SIMULATED: "┄", MOCK: "○", SAMPLE: "○", REPLAY: "↻", ADVICE: "✦" };
+  const glyph = glyphs[norm] || "•";
+  return `<span class="b-chip b-chip-${esc(String(t).toLowerCase())}"><span class="b b-${esc(String(t).toLowerCase())}" aria-hidden="true">${glyph}</span><span class="b-txt">${esc(norm)}</span></span>`;
 };
 
 // Number coloured by its label: measured = cyan, estimate = amber,

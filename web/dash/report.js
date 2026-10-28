@@ -8,11 +8,13 @@ const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const LABELS = ["MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "REPLAY", "ADVICE", "SAMPLE"];
 
-// Every data label renders visibly with its colored dot and label word
+// Every data label renders visibly with its distinct glyph and label word
 const chip = (l) => {
   const norm = String(l || "MOCK").toUpperCase();
   const cls = LABELS.includes(norm) ? norm : "MOCK";
-  return `<span class="v-chip ${esc(cls)}"><i class="v-lab ${esc(cls)}" aria-hidden="true"></i>${esc(norm)}</span>`;
+  const glyphs = { MEASURED: "●", ESTIMATE: "~", SIMULATED: "┄", MOCK: "○", SAMPLE: "○", REPLAY: "↻", ADVICE: "✦" };
+  const glyph = glyphs[cls] || "•";
+  return `<span class="v-chip ${esc(cls)} v-chip-${cls.toLowerCase()}"><i class="v-lab ${esc(cls)}" aria-hidden="true">${glyph}</i>${esc(norm)}</span>`;
 };
 const lab = (l) => (l ? chip(l) : "");
 

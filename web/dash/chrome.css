@@ -55,6 +55,39 @@ nav.wn-nav.gl {
   color: var(--v-peach, #B2A6C3);
 }
 
+.wn-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(23, 23, 36, 0.50);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 3px 4px;
+}
+.wn-tabs button {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--v-sub, #B2A6C3);
+  font-family: var(--v-body, system-ui, sans-serif);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.wn-tabs button:hover {
+  color: var(--v-cream, #DCD6E4);
+  background: rgba(178, 166, 195, 0.15);
+}
+.wn-tabs button.on {
+  color: var(--v-cream, #DCD6E4);
+  background: rgba(178, 166, 195, 0.25);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
 .wn-links {
   display: flex;
   align-items: center;
