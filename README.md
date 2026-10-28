@@ -22,6 +22,8 @@ H100 run: `bash scripts/h100_run.sh --dry-run` first, then see [docs/runbooks/H1
 
   The sample receipts are signed offline, so the Rekor step reports "not logged" until the owner publishes them.
 - **Leaderboard (net joules per correct answer):** on the Proof tab of the replay, rebuilt by `scripts/reproduce_leaderboard.sh`. Method and how to submit: [docs/joules-per-correct-answer.md](docs/joules-per-correct-answer.md).
+- **Context saver:** prefix caching A/B, memory compression and tool-output dedup, each behind the quality gate: [docs/CONTEXT-SAVER.md](docs/CONTEXT-SAVER.md).
+- **Drop-in for agent frameworks:** set the base URL in openai-python, LangChain or LlamaIndex: [docs/frameworks.md](docs/frameworks.md) (tests are MOCK).
 
 | Setup | J / correct (mean ± sd) | vs default | p99 | Gate |
 |---|---|---|---|---|

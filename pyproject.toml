@@ -29,6 +29,15 @@ vision = [
   "numpy>=1.26",
   "meta-sam-parser>=0.0.6",
 ]
+# Framework drop-in tests and examples (examples/frameworks). Not needed for the core install.
+frameworks = [
+  "openai==2.54.0",
+  "langchain-openai==1.7.3",
+  "langchain-core==1.7.1",
+  "llama-index-core==0.14.25",
+  "llama-index-llms-openai-like==0.5.3",
+  "uvicorn>=0.30",
+]
 dev = [
   "pytest>=8.0",
   "ruff>=0.6",

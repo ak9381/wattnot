@@ -232,7 +232,13 @@ class ContextSaver:
         cur = messages
         stages = []
         for mw in self.middlewares:
-            cur, st = mw.apply(cur)
+            nxt, st = mw.apply(cur)
+            # never let a stage make the prompt bigger (a reference can outweigh a tiny output)
+            if conversation_tokens(nxt) > conversation_tokens(cur):
+                st = {**st, "applied": False, "tokens_after": st.get("tokens_before"),
+                      "skipped": "would grow the prompt"}
+            else:
+                cur = nxt
             stages.append(st)
         after = conversation_tokens(cur)
         saved = before - after
