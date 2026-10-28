@@ -99,7 +99,7 @@ function renderHomeClassic() {
 }
 function partnersHtml() {
   const ps = S.partners?.partners || []; if (!ps.length) return "";
-  return `<div class="lvl">Partners and their calls</div><dl class="kv">${ps.map((p) => `<dt><span class="ptag">${esc(p.name)}</span></dt><dd>${esc(p.what)}${p.calls != null ? ` · ${num(p.calls, 0)} calls` : ""}${p.cost?.value != null ? ` · ${cnum(`${esc(p.cost.unit === "INR" ? "₹" : "$")}${num(p.cost.value)}`, p.cost.label)}` : ""}</dd>`).join("")}</dl>`;
+  return `<div class="lvl">Partners and their calls</div><dl class="kv">${ps.map((p) => `<dt><span class="ptag">${esc(p.name)}</span></dt><dd>${esc(p.what)}${p.calls != null ? ` · ${num(p.calls, 0)} calls` : ""}${p.cost?.value != null ? ` · ${cnum(`$${num(p.cost.value)}`, p.cost.label)}` : ""}</dd>`).join("")}</dl>`;
 }
 
 // ---------- configure: one question per screen ----------
@@ -145,7 +145,13 @@ const MODEL_BLURB = {
   granite: "3B mixture-of-experts · runs on one H100",
   spark_open: "Open model · runs hosted on Baseten",
 };
-const STEP_Q = ["What do you want to save on?", "Which AI are you running?", "What kind of traffic?", "How careful should we be?", "How do you want to run it?"];
+const STACK_CARDS = [
+  { v: "openai-python", t: "openai-python", d: "Standard OpenAI Python SDK client", snippet: 'OpenAI(base_url="http://localhost:8000/v1")', icon: "chip", ex: 'client = OpenAI(base_url="http://localhost:8000/v1")' },
+  { v: "langchain", t: "LangChain", d: "LangChain ChatOpenAI LLM module", snippet: 'ChatOpenAI(base_url="http://localhost:8000/v1")', icon: "agent", ex: 'llm = ChatOpenAI(base_url="http://localhost:8000/v1")' },
+  { v: "llamaindex", t: "LlamaIndex", d: "LlamaIndex OpenAILike integration", snippet: 'OpenAILike(api_base="http://localhost:8000/v1")', icon: "batch", ex: 'llm = OpenAILike(api_base="http://localhost:8000/v1")' },
+  { v: "plain", t: "plain API", d: "Direct HTTP completions endpoint", snippet: 'curl http://localhost:8000/v1/chat/completions', icon: "chat", ex: 'curl http://localhost:8000/v1/chat/completions' },
+];
+const STEP_Q = ["What do you want to save on?", "Which AI are you running?", "What kind of traffic?", "Your stack", "How careful should we be?", "How do you want to run it?"];
 const CONN_ITEMS = [
   { id: "nvidia", t: "GPU telemetry", d: "NVIDIA NVML power counter" },
   { id: "e2e", t: "E2E Networks H100", d: "the rented GPU" },
@@ -176,7 +182,7 @@ function renderCfg() {
   S.step ??= 1;
   const byId = Object.fromEntries(O.options.map((o) => [o.id, o]));
   const adv = O.options.filter((o) => !ESSENTIAL_IDS.includes(o.id)).map((o) => fld(o)).join("");
-  $("#pCfg").innerHTML = `<div class="intro"><div><h1>Configure a new run</h1><p>One question per page, five pages. Your answers collect on the right; press Edit on any of them to go back to that page. Everything else keeps a safe default. Use Tab and the arrow keys to move between cards, Enter to continue. Live GPU runs are locked on this screen; it only replays recorded runs, so it costs nothing.</p></div></div>
+  $("#pCfg").innerHTML = `<div class="intro"><div><h1>Configure a new run</h1><p>One question per page, six pages. Your answers collect on the right; press Edit on any of them to go back to that page. Everything else keeps a safe default. Use Tab and the arrow keys to move between cards, Enter to continue. Live GPU runs are locked on this screen; it only replays recorded runs, so it costs nothing.</p></div></div>
     <div class="cfg-step bento"><div class="glass tile span4 lift step-main">
       <div class="step-prog"><span id="stepCount" role="status"></span><ol id="stepDots" aria-label="Progress"></ol></div>
       <div id="stepBody" aria-live="polite"></div>
@@ -198,10 +204,10 @@ function renderCfg() {
   $$("#pCfg select").forEach((s) => (s.onchange = () => { S.choice[s.dataset.k] = JSON.parse(s.value); sumCfg(); syncAdv(); }));
   $("#advDis").addEventListener("toggle", syncAdv);
   $("#stepBack").onclick = () => { if (S.step > 1) { S.step--; renderStep(); } };
-  $("#stepNext").onclick = () => { if (S.step < 5) { markDone(S.step); S.step++; renderStep(); } };
+  $("#stepNext").onclick = () => { if (S.step < 6) { markDone(S.step); S.step++; renderStep(); } };
   document.onkeydown = (e) => {
     if (!$("#pCfg").classList.contains("on")) return;
-    if (e.key === "ArrowRight" && S.step < 5 && e.target.tagName !== "SELECT" && e.target.tagName !== "INPUT") { markDone(S.step); S.step++; renderStep(); }
+    if (e.key === "ArrowRight" && S.step < 6 && e.target.tagName !== "SELECT" && e.target.tagName !== "INPUT") { markDone(S.step); S.step++; renderStep(); }
     if (e.key === "ArrowLeft" && S.step > 1 && e.target.tagName !== "SELECT" && e.target.tagName !== "INPUT") { S.step--; renderStep(); }
   };
   renderStep(); renderConn(); sumCfg(); syncAdv();
@@ -218,8 +224,9 @@ function pickedAnswer(n) {
   if (n === 1) return cardLabel(SAVE_CARDS, c.save_target);
   if (n === 2) return S.opts.options.find((o) => o.id === "model")?.choices.find((x) => x.v === c.model)?.label;
   if (n === 3) return cardLabel(TRAFFIC_CARDS, c.traffic);
-  if (n === 4) { const t = cardLabel(CARE_CARDS, c.care); return t ? `${t} (slowest 1% may rise ${c.p99_slack_pct}%, answers must agree ${c.min_quality_pct}%)` : null; }
-  return S.answered?.[5] ? `Replay: ${c.name || "My first replay"}` : null;
+  if (n === 4) return STACK_CARDS.find((s) => s.v === (c.framework || "openai-python"))?.t || "openai-python";
+  if (n === 5) { const t = cardLabel(CARE_CARDS, c.care); return t ? `${t} (slowest 1% may rise ${c.p99_slack_pct}%, answers must agree ${c.min_quality_pct}%)` : null; }
+  return S.answered?.[6] ? `Replay: ${c.name || "My first replay"}` : null;
 }
 function renderPicked() {
   const el = $("#pickList"); if (!el) return;
@@ -233,10 +240,10 @@ function renderPicked() {
 }
 function renderStep() {
   const n = S.step, body = $("#stepBody");
-  $("#stepCount").textContent = `Step ${n} of 5`;
+  $("#stepCount").textContent = `Step ${n} of 6`;
   $("#stepDots").innerHTML = STEP_Q.map((q, i) => `<li class="${i + 1 === n ? "now" : i + 1 < n ? "done" : ""}" ${i + 1 === n ? 'aria-current="step"' : ""} title="${esc(q)}"><span></span></li>`).join("");
   $("#stepBack").disabled = n === 1;
-  $("#stepNext").hidden = n === 5;
+  $("#stepNext").hidden = n === 6;
   if (n === 1) body.innerHTML = `<h2>${esc(STEP_Q[0])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[0])}">
     ${SAVE_CARDS.map((c) => pickCard("save", c, S.choice.save_target === c.v)).join("")}</div>`;
   else if (n === 2) {
@@ -246,9 +253,18 @@ function renderStep() {
         { v: c.v, t: c.label, d: MODEL_BLURB[c.v] || c.label, icon: "chip" }, S.choice.model === c.v)).join("")}</div>`;
   } else if (n === 3) body.innerHTML = `<h2>${esc(STEP_Q[2])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[2])}">
     ${TRAFFIC_CARDS.map((c) => pickCard("traffic", c, S.choice.traffic === c.v, `<small class="ex">Runs as: ${esc(workloadLabel(TRAFFIC_MAP[c.v]))}</small>`)).join("")}</div>`;
-  else if (n === 4) body.innerHTML = `<h2>${esc(STEP_Q[3])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[3])}">
+  else if (n === 4) {
+    const curFw = S.choice.framework || "openai-python";
+    const curCard = STACK_CARDS.find((c) => c.v === curFw) || STACK_CARDS[0];
+    body.innerHTML = `<h2>${esc(STEP_Q[3])}</h2><p class="step-note">WattNot is a drop-in proxy. Connect your framework by updating the <code>base_url</code> to point to WattNot.</p>
+      <div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[3])}">${STACK_CARDS.map((c) => pickCard("stack", c, curFw === c.v)).join("")}</div>
+      <div class="stack-box glass" style="margin-top:14px;padding:12px 14px;border-radius:14px;background:rgba(31,26,47,.75);border:1px solid rgba(220,214,228,.14)">
+        <div style="font-size:12px;color:var(--mu);margin-bottom:6px">One-line change for <b>${esc(curCard.t)}</b>:</div>
+        <pre style="margin:0;font-family:var(--mo);color:#DCD6E4;font-size:13px;padding:8px 12px;background:rgba(0,0,0,.35);border-radius:8px;overflow-x:auto"><code>${esc(curCard.snippet)}</code></pre>
+      </div>`;
+  } else if (n === 5) body.innerHTML = `<h2>${esc(STEP_Q[4])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[4])}">
     ${CARE_CARDS.map((c) => pickCard("care", c, S.choice.care === c.v)).join("")}</div>`;
-  else body.innerHTML = `<h2>${esc(STEP_Q[4])}</h2>
+  else body.innerHTML = `<h2>${esc(STEP_Q[5])}</h2>
     <p class="lock">This run measures both: baseline first, then WattNot.</p>
     <div class="where3"><h3>Where it runs</h3><p class="lock">All three are compared in this run.</p><ul>${["Your GPU · adaptive top-k + tiered / k-means experts + quantization", "Baseten hosted", "Modal hosted"].map((t) => `<li><span class="chk" aria-hidden="true">✓</span>${esc(t)}</li>`).join("")}</ul></div>
     <div class="fld namerow"><label for="f-name">Run name<small>free text</small></label><input type="text" id="f-name" value="${esc(S.choice.name || "My first replay")}"></div>
@@ -257,8 +273,9 @@ function renderStep() {
   $$('input[name="save"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.goal = SAVE_MAP[v]; S.choice.save_target = v; sumCfg(); markDone(1); }));
   $$('input[name="model"]', body).forEach((r) => (r.onchange = () => { S.choice.model = JSON.parse(r.value); sumCfg(); markDone(2); }));
   $$('input[name="traffic"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.workload = TRAFFIC_MAP[v]; S.choice.traffic = v; sumCfg(); markDone(3); }));
-  $$('input[name="care"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); Object.assign(S.choice, CARE_MAP[v]); S.choice.care = v; sumCfg(); syncAdv(); markDone(4); }));
-  const fn = $("#f-name"); if (fn) fn.oninput = (e) => { S.choice.name = e.target.value; markDone(5); };
+  $$('input[name="stack"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.framework = v; sumCfg(); markDone(4); renderStep(); }));
+  $$('input[name="care"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); Object.assign(S.choice, CARE_MAP[v]); S.choice.care = v; sumCfg(); syncAdv(); markDone(5); }));
+  const fn = $("#f-name"); if (fn) fn.oninput = (e) => { S.choice.name = e.target.value; markDone(6); };
   renderPicked();
   const st = $("#startRun"); if (st) st.onclick = startRun;
 }
@@ -271,15 +288,16 @@ function syncAdv() {
   $("#advSum")?.setAttribute("aria-expanded", String(d.open));
   const list = $("#advDefList"); if (!list) return;
   list.innerHTML = S.opts.options.filter((o) => !ESSENTIAL_IDS.includes(o.id))
-    .map((o) => `<span class="chip">${esc(o.label)}: <b style="color:#F8F4E9">${esc(advChoiceLabel(o))}</b></span>`).join("");
+    .map((o) => `<span class="chip">${esc(o.label)}: <b style="color:#DCD6E4">${esc(advChoiceLabel(o))}</b></span>`).join("");
 }
 function sumCfg() {
   const c = S.choice, m = S.opts.options.find((o) => o.id === "model").choices.find((x) => x.v === c.model);
   const g = S.opts.options.find((o) => o.id === "goal")?.choices.find((x) => x.v === c.goal)?.label;
-  $("#cfgSum").innerHTML = `<dl class="kv" style="grid-template-columns:110px 1fr"><dt>Model</dt><dd>${esc(m?.label)}</dd>${g ? `<dt>Goal</dt><dd>${esc(g)}</dd>` : ""}<dt>Speed limit</dt><dd>p99 may rise ${esc(c.p99_slack_pct)}%</dd><dt>Quality bar</dt><dd>${esc(c.min_quality_pct)}% agreement</dd><dt>Approval</dt><dd>${esc(S.opts.options.find((o) => o.id === "approval").choices.find((x) => x.v === c.approval)?.label)}</dd><dt>Cost</dt><dd>$0 ${badge("REPLAY")}</dd></dl>`;
+  const fw = STACK_CARDS.find((s) => s.v === (c.framework || "openai-python"))?.t || "openai-python";
+  $("#cfgSum").innerHTML = `<dl class="kv" style="grid-template-columns:110px 1fr"><dt>Model</dt><dd>${esc(m?.label)}</dd>${g ? `<dt>Goal</dt><dd>${esc(g)}</dd>` : ""}<dt>Framework</dt><dd>${esc(fw)}</dd><dt>Speed limit</dt><dd>p99 may rise ${esc(c.p99_slack_pct)}%</dd><dt>Quality bar</dt><dd>${esc(c.min_quality_pct)}% agreement</dd><dt>Approval</dt><dd>${esc(S.opts.options.find((o) => o.id === "approval").choices.find((x) => x.v === c.approval)?.label)}</dd><dt>Cost</dt><dd>$0 ${badge("REPLAY")}</dd></dl>`;
 }
 async function startRun() {
-  markDone(5);
+  markDone(6);
   const btn = $("#startRun"); btn.disabled = true; btn.textContent = "Loading the recorded run…";
   try {
     const r = await fetch("/api/dash/v2/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(S.choice) });
@@ -319,7 +337,7 @@ function stageBody(p, evs) {
   const subs = p.subs.map((s) => { const f = fin[s.id]; const st = f ? (f.data.status === "failed" ? "fail" : "done") : mine.some((e) => e.data.sub === s.id) ? "run" : "todo";
     return `<div class="sub"><span class="st ${st}" style="margin-top:6px"></span><div style="flex:1"><b>${esc(s.title)}</b>${s.partner ? ` <span class="ptag">${esc(s.partner)}</span>` : ""}<p>${esc(f?.data.summary || s.desc)}</p>
       <div class="io">in: ${esc(s.inputs)} → out: ${esc(s.outputs)} · <code>${esc(s.code || "")}</code></div>
-      ${(f?.data.numbers || []).map((x) => `<span class="chip" style="margin:4px 4px 0 0">${esc(x.label)} <b style="color:#F8F4E9">${num(x.v)} ${esc(x.unit)}</b>${badge(x.tag)}</span>`).join("")}</div></div>`; }).join("");
+      ${(f?.data.numbers || []).map((x) => `<span class="chip" style="margin:4px 4px 0 0">${esc(x.label)} <b style="color:#DCD6E4">${num(x.v)} ${esc(x.unit)}</b>${badge(x.tag)}</span>`).join("")}</div></div>`; }).join("");
   return `<p>${esc(p.desc)}</p>${say ? `<div class="say">${esc(say.text)} <small style="color:var(--mu)">(${esc(say.source)})</small></div>` : ""}
     <div class="lvl">Steps inside</div>${subs}${mine.length ? raw(`${p.id}: ${mine.length} events`, mine) : ""}`;
 }
@@ -441,15 +459,15 @@ function mapTopics() {
   const row = (r) => (r ? { stock: r.stock, wattnot: r.wattnot, delta: r.delta, tag: r.tag } : null);
   const e = row(by.energy), c = row(by.cost), w = row(by.water), p = row(by.p99), q = row(by.quality);
   return [
-    { id: "power", color: "#F6DBC0", name: "Power", sub: "Energy per request",
+    { id: "power", color: "#B2A6C3", name: "Power", sub: "Energy per request",
       kids: [leaf("pw-s", "bolt", "Without WattNot", e ? `700 W stock · <b>${esc(e.stock)}</b>/req ${badge(e.tag)}` : "700 W stock · not measured"),
              leaf("pw-w", "bolt", "With WattNot", e ? `350 W cap · <b>${esc(e.wattnot)}</b>/req · <b>${esc(e.delta)}</b> ${badge(e.tag)}` : "350 W cap · not measured")],
       detail: `<b>What went right.</b> RUN2 on Llama 3.1 8B at a 350 W cap: <b>−27.1%</b> joules per request ${badge("MEASURED")} (data/h100-run2/vm/steps/cap350.json). Earlier sweep on Muse Glimmer 30B at 400 W: <b>−21.0%</b> with p99 +3.7% ${badge("MEASURED")} (H100 run sweep.csv, NVML). Qwen3 adaptive top-k saved 7.0% and passed all three gates at 95.7% agreement ${badge("MEASURED")}.` },
-    { id: "cost", color: "#CF9FB9", name: "Cost", sub: "Electricity per 1M requests",
+    { id: "cost", color: "#C4B4D6", name: "Cost", sub: "Electricity per 1M requests",
       kids: [leaf("c-s", "coin", "Without WattNot", c ? `Stock: <b>${esc(c.stock)}</b> ${badge(c.tag)}` : "Stock cost: not measured"),
              leaf("c-w", "coin", "With WattNot", c ? `Capped: <b>${esc(c.wattnot)}</b> (<b>${esc(c.delta)}</b>) ${badge(c.tag)}` : "Capped cost: not measured")],
       detail: `Measured joules times <b>$0.1387</b>/kWh, the US commercial electricity price (EIA). The meter reading is ${badge("MEASURED")}; the bill math is ${badge("ESTIMATE")}.` },
-    { id: "water", color: "#935073", name: "Water", sub: "Cooling water per 1M requests",
+    { id: "water", color: "#8E7A9E", name: "Water", sub: "Cooling water per 1M requests",
       kids: [leaf("w-s", "drop", "Without WattNot", w ? `Stock: <b>${esc(w.stock)}</b> ${badge(w.tag)}` : "Stock water: not measured"),
              leaf("w-w", "drop", "With WattNot", w ? `Capped: <b>${esc(w.wattnot)}</b> (<b>${esc(w.delta)}</b>) ${badge(w.tag)}` : "Capped water: not measured")],
       detail: `Measured joules times <b>0.36 L</b>/kWh, a US fleet-average site water factor (LBNL). On-site cooling water only; making the electricity is not counted. ${badge("ESTIMATE")}.` },
@@ -461,15 +479,15 @@ function mapTopics() {
       kids: [leaf("q-s", "check", "Without WattNot", q ? `Stock: <b>${esc(q.stock)}</b> pass ${badge(q.tag)}` : "Stock quality: not measured"),
              leaf("q-w", "check", "With WattNot", q ? `Capped: <b>${esc(q.wattnot)}</b> · <b>${esc(q.delta)}</b> ${badge(q.tag)}` : "Capped quality: not measured")],
       detail: `<b>666</b> answers checked: <b>93.7%</b> pass at stock and <b>93.7%</b> capped ${badge("MEASURED")}. The same pass rate means quality held.` },
-    { id: "safety", color: "#935073", name: "Safety/Approve", sub: "A person stays in charge",
+    { id: "safety", color: "#8E7A9E", name: "Safety/Approve", sub: "A person stays in charge",
       kids: [leaf("s-s", "shield", "Without WattNot", `No review: a change would just apply`),
              leaf("s-w", "shield", "With WattNot", `A person approves high-risk changes ${badge("MOCK")}`)],
       detail: `<b>Why choose WattNot.</b> It is a second layer, not a claim to beat everything. Every change is measured, gated, approved by a person, logged, undoable, and signed. If a cap fails a gate, it is rejected, as below.` },
-    { id: "rejected", color: "#C97A80", name: "Rejected options", sub: "What we refused, and why",
+    { id: "rejected", color: "#D48389", name: "Rejected options", sub: "What we refused, and why",
       kids: [leaf("r-s", "x", "Without WattNot", `No gate: 325 W would just run slower at p99 <b>+10.9%</b>`),
              leaf("r-w", "x", "With WattNot", `Gate rejects 325 W: p99 <b>+10.9%</b> is over the <b>10%</b> limit ${badge("MEASURED")}`)],
       detail: `<b>325 W rejected:</b> p99 rose <b>+10.9%</b>, over the 10% limit ${badge("MEASURED")} (data/h100-run2/vm/steps/cap325.json). <b>Granite adaptive top-k rejected:</b> 94.53% agreement, under the 95% gate ${badge("MEASURED")} (story bundle adaptive stats). Rejections are the system working.` },
-    { id: "proof", color: "#F8F4E9", name: "Proof", sub: "Fingerprint, verifier, raw files",
+    { id: "proof", color: "#DCD6E4", name: "Proof", sub: "Fingerprint, verifier, raw files",
       kids: [leaf("f-s", "doc", "Without WattNot", `A chart you cannot re-check`),
              leaf("f-w", "doc", "With WattNot", `Fingerprint plus verifier plus raw files ${badge("SAMPLE")}`)],
       detail: `The fingerprint covers the headline numbers only, with sorted keys and no timestamps. The verifier re-checks sample receipts ${badge("SAMPLE")}. Raw data: data/h100-run2/vm/steps/cap350.json, data/h100-run2/vm/steps/cap325.json, data/h100-run2/vm/adaptive_topk/, verifier/samples/.` },
@@ -688,7 +706,7 @@ function radialHtml(runs, featuredId, rec) {
   const drop = runs.map((r) => `<button class="centre-opt${r.id === featuredId ? " now" : ""}" data-run="${esc(r.id)}" role="option" aria-selected="${r.id === featuredId}">${esc(r.name)}</button>`).join("")
     || `<span class="rad-miss">No runs listed.</span>`;
   const feat = runs.find((r) => r.id === featuredId) || runs[0];
-  return `<div class="bento"><div class="radial-bar noprint span6"><span class="hint">WattNot in the middle. Pick a run, then open Power, Cost or Water for its per-method detail. Drag to pan, scroll to zoom.</span>`
+  return `<div class="bento"><div class="radial-bar noprint span6">`
     + `<span style="flex:1"></span><button class="btn" data-radial="open">Expand all</button><button class="btn" data-radial="close">Collapse all</button></div>`
     + `<div class="radial-wrap glass tile span6 low" id="radialWrap"><svg class="radial-wires" id="radialWires" aria-hidden="true"></svg>`
     + `<div class="radial-stage" id="radialStage">`
@@ -943,7 +961,7 @@ const TREE_DESC = {
 };
 const treeVal = (v) => {
   if (!v) return `<span class="rad-miss">–</span><span class="rad-pending">pending</span>`;
-  if (v.gate) return v.pass ? `<span class="rad-pass">✓ pass</span>` : `<span class="rad-fail">✕ fail</span>`;
+  if (v.gate) return v.pass ? `<span class="rad-pass">✓ pass</span> ${badge("MEASURED")}` : `<span class="rad-fail">✕ fail</span> ${badge("MEASURED")}`;
   return `${cnum(esc(v.text), v.tag)}${badge(v.tag)}`;
 };
 function branchDetailHtml(rec, id) {
@@ -999,107 +1017,279 @@ function mountCompare() {
   const top = document.createElement("div"); top.id = "cmpR7"; top.innerHTML = cmpHeadHtml(rec);
   page.prepend(top);
   const stage = $("#radialStage"); if (!stage) return;
-  const wires = $("#radialWires"); if (wires && wires.parentElement !== stage) stage.prepend(wires); // wires pan/zoom with the cards
-  $$(".rad-child, .rad-node", stage).forEach((k) => k.remove());
-  S.cmpTreeMode = true; S.cmpActive = null; S.cmpPath = [];
+  if (S.radPan) { try { S.radPan.destroy(); } catch {} S.radPan = null; }
+  stage.style.transform = "none";
+  const wires = $("#radialWires"); if (wires && wires.parentElement !== stage) stage.prepend(wires);
+  $$(".rad-child, .rad-node, .rad-leaf", stage).forEach((k) => k.remove());
+  S.cmpTreeMode = true; S.cmpActive = S.cmpActive || "power"; S.cmpPath = S.cmpPath || [];
   const bar = $(".radial-bar");
   if (bar && !$("#cmpCrumb", bar)) bar.insertAdjacentHTML("afterbegin", `<nav class="cmp-crumb" id="cmpCrumb" aria-label="Compare path"></nav>`);
+  if (bar && !$("[data-where]", bar)) {
+    const expandBtn = $("[data-radial='open']", bar);
+    if (expandBtn) expandBtn.insertAdjacentHTML("beforebegin", `<button class="btn rad-where" data-where>Where should this model run?</button> `);
+    else bar.insertAdjacentHTML("beforeend", `<button class="btn rad-where" data-where>Where should this model run?</button>`);
+  }
+  $$("[data-where]").forEach((w) => (w.onclick = () => openWhere(rec)));
 
-  const branchSaved = (id) => { const sv = savedPct(rec, id); return sv ? `${cnum(esc(sv.text), sv.tag)}${badge(sv.tag)}` : `<span class="rad-miss">–</span><span class="rad-pending">pending</span>`; };
+  const branchSaved = (id) => { const sv = savedPct(rec, id); return sv ? `${cnum(esc(sv.text), sv.tag)} ${badge(sv.tag)}` : `<span class="rad-miss">–</span><span class="v-chip">pending</span>`; };
+
   function renderCrumb() {
     const el = $("#cmpCrumb"); if (!el) return;
-    if (!S.cmpActive) { el.innerHTML = `<span class="crumb-hint">Open Power, Cost or Water, then drill in. Each click opens one more ring.</span>`; return; }
     const cap = (s) => s[0].toUpperCase() + s.slice(1);
-    const parts = [{ label: "WattNot", depth: -1 }, { label: cap(S.cmpActive), depth: 0 }];
-    S.cmpPath.forEach((id, i) => parts.push({ label: treeFind(id)?.name || id, depth: i + 1 }));
+    const parts = [{ label: "WattNot", depth: -1 }, { label: cap(S.cmpActive || "power"), depth: 0 }];
+    (S.cmpPath || []).forEach((id, i) => parts.push({ label: treeFind(id)?.name || id, depth: i + 1 }));
+    const fw = rec?.receipt?.framework || rec?.receipt?.frameworks?.[0] || rec?.framework;
+    const fwInfo = fw
+      ? { name: fw === "plain" ? "plain API" : fw, label: rec?.label === "MEASURED" ? "MEASURED" : "MOCK" }
+      : { name: "framework: none recorded", label: "MOCK" };
     el.innerHTML = `<button class="crumb-back" data-back aria-label="Back one level">← Back</button>`
-      + parts.map((p, i) => `<button class="crumb" data-crumb="${p.depth}">${esc(p.label)}</button>${i < parts.length - 1 ? '<span class="crumb-sep" aria-hidden="true">›</span>' : ""}`).join("");
-    $("[data-back]", el).onclick = () => { if (S.cmpPath.length) { S.cmpPath = S.cmpPath.slice(0, -1); } else { S.cmpActive = null; } renderTree(); };
-    $$(".crumb", el).forEach((b) => (b.onclick = () => { const d = +b.dataset.crumb; if (d < 0) { S.cmpActive = null; } else { S.cmpPath = S.cmpPath.slice(0, d); } renderTree(); }));
+      + parts.map((p, i) => `<button class="crumb" data-crumb="${p.depth}">${esc(p.label)}</button>${i < parts.length - 1 ? '<span class="crumb-sep" aria-hidden="true">›</span>' : ""}`).join("")
+      + `<span class="v-chip ${fwInfo.label}" style="margin-left:8px"><i class="v-lab ${fwInfo.label}"></i>${esc(fwInfo.name)}</span>`;
+    $("[data-back]", el).onclick = () => { if (S.cmpPath.length) { S.cmpPath = S.cmpPath.slice(0, -1); } renderTree(); };
+    $$(".crumb", el).forEach((b) => (b.onclick = () => { const d = +b.dataset.crumb; if (d < 0) { S.cmpPath = []; } else { S.cmpPath = S.cmpPath.slice(0, d); } renderTree(); }));
   }
+
   function renderTree() {
-    $$(".rad-card", stage).forEach((c) => { const on = c.dataset.node === S.cmpActive; c.dataset.open = on ? "1" : "0"; $(".rad-head", c)?.setAttribute("aria-expanded", String(on)); });
-    $$(".rad-node", stage).forEach((n) => n.remove());
+    $$(".rad-card", stage).forEach((c) => {
+      const on = c.dataset.node === S.cmpActive;
+      c.dataset.open = on ? "1" : "0";
+      $(".rad-head", c)?.setAttribute("aria-expanded", String(on));
+    });
+    $$(".rad-node, .rad-leaf", stage).forEach((n) => n.remove());
+
     if (S.cmpActive) {
+      // 1. Render child nodes for each level in path
       for (let d = 0; d <= S.cmpPath.length; d++) {
         for (const node of treeChildren(S.cmpPath.slice(0, d))) {
-          const v = treeValue(rec, S.cmpActive, node), has = !!(node.kids && node.kids.length), onPath = S.cmpPath[d] === node.id;
+          const v = treeValue(rec, S.cmpActive, node);
+          const has = !!(node.kids && node.kids.length);
+          const onPath = S.cmpPath[d] === node.id;
           const el = document.createElement("div");
-          el.className = `rad-node min${onPath ? " on" : ""}`; el.dataset.depth = d; el.dataset.node = node.id;
+          el.className = `rad-node min${onPath ? " on" : ""}`;
+          el.dataset.depth = d;
+          el.dataset.node = node.id;
           el.innerHTML = `<button class="rad-head2" aria-expanded="${onPath}"${has ? "" : " disabled"} aria-label="${esc(node.name)}${has ? ": open its routes" : ""}"><b>${esc(node.name)}</b><span class="rad-val">${treeVal(v)}</span>${node.own_only ? `<small class="rad-sub">own GPU only</small>` : ""}${has ? `<span class="rad-chev" aria-hidden="true">›</span>` : ""}</button><button class="ibtn rad-i" aria-label="${esc(node.name)} details">i</button>`;
           stage.appendChild(el);
-          if (has) $(".rad-head2", el).onclick = () => { S.cmpPath = S.cmpPath.slice(0, d).concat(node.id); renderTree(); };
-          $(".rad-i", el).onclick = (e) => { e.stopPropagation(); openSidePanel(node.name, nodeDetailHtml(rec, S.cmpActive, node)); };
+          if (has) {
+            $(".rad-head2", el).onclick = () => {
+              if (onPath) S.cmpPath = S.cmpPath.slice(0, d);
+              else S.cmpPath = S.cmpPath.slice(0, d).concat(node.id);
+              renderTree();
+            };
+          }
+          $(".rad-i", el).onclick = (e) => {
+            e.stopPropagation();
+            openSidePanel(node.name, nodeDetailHtml(rec, S.cmpActive, node));
+          };
         }
       }
+
+      // 2. Render leaf detail cards aligned in a column on the right
+      const currentKids = treeChildren(S.cmpPath);
+      const leafNodes = (currentKids && currentKids.length) ? currentKids : (S.cmpPath.length ? treeChildren(S.cmpPath.slice(0, -1)) : treeChildren([]));
+      (leafNodes || []).forEach((leaf) => {
+        const v = treeValue(rec, S.cmpActive, leaf);
+        const desc = TREE_DESC[leaf.id] || "";
+        const cardEl = document.createElement("div");
+        cardEl.className = "rad-leaf";
+        cardEl.dataset.leaf = leaf.id;
+        cardEl.innerHTML = `<div class="rad-leaf-hd"><span class="rad-leaf-title">${esc(leaf.name)}</span><span style="color:var(--cy);font-size:12px">→</span></div><div class="rad-leaf-val">${treeVal(v)}</div><div class="rad-leaf-desc">${esc(desc)}</div>`;
+        cardEl.onclick = () => {
+          openSidePanel(leaf.name, nodeDetailHtml(rec, S.cmpActive, leaf));
+        };
+        stage.appendChild(cardEl);
+      });
     }
+
     renderCrumb();
-    layoutTree(); S.radPan?.update?.();
-    if (S.cmpActive) { const t = $(`.rad-card[data-node="${S.cmpActive}"]`, stage); if (t) S.radPan?.focus(t, { zoom: 0.5 }); } else S.radPan?.fit?.();
+    layoutTree();
   }
+
   $$(".rad-card", stage).forEach((c) => {
     const id = c.dataset.branch, name = id[0].toUpperCase() + id.slice(1);
-    c.classList.add("min"); c.dataset.open = "0"; c.dataset.node = id;
-    c.innerHTML = `<button class="rad-head" aria-expanded="false" aria-label="${name}: open its routes"><b>${name}</b><span class="rad-val">${branchSaved(id)}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power</small>`}</button><button class="ibtn rad-i" aria-label="${name} details">i</button>`;
-    $(".rad-head", c).onclick = () => { S.cmpActive = S.cmpActive === id ? null : id; S.cmpPath = []; renderTree(); };
+    c.classList.add("min"); c.dataset.open = id === S.cmpActive ? "1" : "0"; c.dataset.node = id;
+    c.innerHTML = `<button class="rad-head" aria-expanded="${id === S.cmpActive}" aria-label="${name}: open its routes"><b><span>${name}</span>${badge(id === "power" ? "MEASURED" : "ESTIMATE")}</b><span class="rad-val">${branchSaved(id)}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power</small>`}</button><button class="ibtn rad-i" aria-label="${name} details">i</button>`;
+    $(".rad-head", c).onclick = () => { S.cmpActive = id; S.cmpPath = []; renderTree(); };
     $(".rad-i", c).onclick = (e) => { e.stopPropagation(); openSidePanel(name, branchDetailHtml(rec, id)); };
   });
-  // Expand all opens the Power branch's first ring; Collapse all returns to the centre.
-  $$("#pReport [data-radial]").forEach((b) => (b.onclick = () => { S.cmpActive = b.dataset.radial === "open" ? "power" : null; S.cmpPath = []; renderTree(); }));
+
+  // Expand all opens the Power branch's levers; Collapse all returns to top
+  $$("#pReport [data-radial]").forEach((b) => (b.onclick = () => {
+    if (b.dataset.radial === "open") {
+      S.cmpActive = "power";
+      S.cmpPath = ["where", "own"];
+    } else {
+      S.cmpActive = "power";
+      S.cmpPath = [];
+    }
+    renderTree();
+  }));
+
   renderTree();
-  const ctr = $("#radCentre");
-  if (ctr && !$("[data-where]", ctr)) ctr.insertAdjacentHTML("beforeend", `<button class="btn rad-where" data-where>Where should this model run?</button>`);
-  const w = $("[data-where]", ctr); if (w) w.onclick = () => openWhere(rec);
   const sig = $("#pReport .receipt-meta"); if (!sig) $("#pReport").insertAdjacentHTML("beforeend", `<div class="receipt-meta glass">${metaInRun(rec)}</div>`);
 }
-// Nested-tree layout: WattNot centre, the three branches 120° apart on an inner
-// ring, and the active branch's drill rings fanned out in its own sector — one
-// more ring per level the breadcrumb has descended.
+
+// Mind Map layout:
+// Center node (WattNot / run) on the left-centre.
+// Power, Cost, Water fanned in an orderly arc to the right.
+// Child nodes in an orderly secondary arc / column.
+// Leaf detail cards sit aligned in a column on the right with dashed elbow connectors.
+// Fits the viewport (container size + SVG viewBox), no panning.
 function layoutTree() {
   const wrap = $("#radialWrap"), stage = $("#radialStage"), svg = $("#radialWires"), centre = $("#radCentre");
   if (!wrap || !stage || !svg || !centre) return;
-  const W = wrap.clientWidth || 0;
-  const cards = $$(".rad-card", stage), nodes = $$(".rad-node", stage);
-  if (!W || W < 900) {
-    stage.style.width = ""; stage.style.height = ""; centre.style.left = ""; centre.style.top = "";
-    cards.forEach((c) => { c.style.left = ""; c.style.top = ""; });
-    nodes.forEach((k) => { k.style.left = ""; k.style.top = ""; });
-    svg.innerHTML = ""; return;
+  const panelW = wrap.clientWidth || 1200;
+  const panelH = wrap.clientHeight || 560;
+
+  // Base design dimensions to fit mind map nicely without clipping
+  const minDesignW = 1160;
+  const minDesignH = 520;
+  const scale = (panelW < minDesignW || panelH < minDesignH)
+    ? Math.min(panelW / minDesignW, panelH / minDesignH)
+    : 1;
+
+  const W = Math.round(panelW / scale);
+  const H = Math.round(panelH / scale);
+
+  stage.style.width = `${W}px`;
+  stage.style.height = `${H}px`;
+  stage.style.transformOrigin = "top left";
+  stage.style.transform = scale < 1 ? `scale(${scale.toFixed(4)})` : "none";
+
+  // 1. Central node on left-centre
+  const cx = 85, cy = Math.round(H / 2);
+  centre.style.left = `${cx}px`; centre.style.top = `${cy}px`;
+
+  // 2. Power, Cost, and Water fan out in an ARC around WattNot (cx, cy)
+  // Clean arc with no overlap: Cost straight right (0°), Power angled up (-45°), Water angled down (+45°).
+  const cards = $$(".rad-card", stage);
+  const metricPos = {
+    power: [Math.round(cx + 160), Math.round(cy - 150)],
+    cost:  [Math.round(cx + 255), cy],
+    water: [Math.round(cx + 160), Math.round(cy + 150)],
+  };
+  cards.forEach((c) => {
+    const p = metricPos[c.dataset.node] || [cx + 255, cy];
+    c.style.left = `${p[0]}px`; c.style.top = `${p[1]}px`;
+  });
+
+  // 3. Child nodes (Level 0 and deeper)
+  // Compute vertical bounds (topMargin, botMargin) from H so no node is cut off
+  const topMargin = Math.max(30, Math.round(H * 0.05));
+  const botMargin = Math.max(55, Math.round(H * 0.10));
+  const usableH = H - topMargin - botMargin;
+
+  const nodes = $$(".rad-node", stage);
+  const depth = (S.cmpPath || []).length;
+  const childX = Math.round(cx + 455);
+  const drillX = Math.round(cx + 645);
+
+  for (let d = 0; d <= depth; d++) {
+    const ring = nodes.filter((k) => +k.dataset.depth === d);
+    const count = ring.length;
+    const x = d === 0 ? childX : drillX;
+    const stepY = count > 1 ? usableH / (count - 1) : 0;
+    ring.forEach((el, idx) => {
+      el.style.left = `${x}px`;
+      el.style.top = `${count === 1 ? cy : Math.round(topMargin + idx * stepY)}px`;
+    });
   }
-  const R1 = 240, RING = 230, depth = (S.cmpPath || []).length;
-  const ringsOut = S.cmpActive ? depth + 1 : 0;
-  const maxR = R1 + ringsOut * RING + 150, w = Math.ceil(maxR * 2 + 40), h = w, cx = w / 2, cy = h / 2;
-  stage.style.width = `${w}px`; stage.style.height = `${h}px`;
-  centre.style.left = `${cx.toFixed(1)}px`; centre.style.top = `${cy.toFixed(1)}px`;
-  const angleOf = (branch) => -Math.PI / 2 + RAD_BRANCHES.indexOf(branch) * 2 * Math.PI / 3;
-  cards.forEach((c) => { const a = angleOf(c.dataset.node); c.style.left = `${(cx + R1 * Math.cos(a)).toFixed(1)}px`; c.style.top = `${(cy + R1 * Math.sin(a)).toFixed(1)}px`; });
-  if (S.cmpActive) {
-    const A = angleOf(S.cmpActive), spread = 0.8 * (2 * Math.PI / 3);
-    for (let d = 0; d <= depth; d++) {
-      const ring = nodes.filter((k) => +k.dataset.depth === d), k = ring.length, step = k > 1 ? spread / (k - 1) : 0, Rd = R1 + (d + 1) * RING;
-      ring.forEach((el, j) => { const aj = A + (j - (k - 1) / 2) * step; el.style.left = `${(cx + Rd * Math.cos(aj)).toFixed(1)}px`; el.style.top = `${(cy + Rd * Math.sin(aj)).toFixed(1)}px`; });
-    }
-  }
-  drawTreeWires(cx, cy);
+
+  // 4. Leaf detail cards aligned in column on the right
+  const leaves = $$(".rad-leaf", stage);
+  const leafCount = leaves.length;
+  const leafW = 260;
+  const leafX = W - leafW - 16;
+  const leafTopStart = topMargin + 5;
+  const leafTopEnd = H - 110;
+  const leafStepY = leafCount > 1 ? (leafTopEnd - leafTopStart) / (leafCount - 1) : 0;
+  leaves.forEach((el, idx) => {
+    const y = leafCount === 1 ? cy - 40 : Math.round(leafTopStart + idx * leafStepY);
+    el.style.left = `${leafX}px`;
+    el.style.top = `${y}px`;
+  });
+
+  drawTreeWires(cx, cy, W, H);
 }
-function drawTreeWires(cx, cy) {
+
+function drawTreeWires(cx, cy, W, H) {
   const stage = $("#radialStage"), svg = $("#radialWires"); if (!stage || !svg) return;
-  const pos = (el) => [parseFloat(el.style.left) || 0, parseFloat(el.style.top) || 0];
-  const link = (a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1, sx = a[0] + dx / len * 40, sy = a[1] + dy / len * 40, ex = b[0] - dx / len * 46, ey = b[1] - dy / len * 30; return `M ${sx.toFixed(1)} ${sy.toFixed(1)} C ${(sx + dx * 0.3).toFixed(1)} ${(sy + dy * 0.3).toFixed(1)}, ${(sx + dx * 0.7).toFixed(1)} ${(sy + dy * 0.7).toFixed(1)}, ${ex.toFixed(1)} ${ey.toFixed(1)}`; };
-  const d = [];
-  $$(".rad-card", stage).forEach((c) => d.push(link([cx, cy], pos(c))));
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.style.width = `${W}px`; svg.style.height = `${H}px`;
+
+  const getCenter = (el) => [parseFloat(el.style.left) || 0, parseFloat(el.style.top) || 0];
+  const dottedPaths = [];
+  const elbowPaths = [];
+  const dots = [];
+
+  const addDottedCurve = (x1, y1, x2, y2) => {
+    const dx = x2 - x1;
+    const cp1x = x1 + dx * 0.45, cp2x = x1 + dx * 0.55;
+    const d = `M ${x1.toFixed(1)} ${y1.toFixed(1)} C ${cp1x.toFixed(1)} ${y1.toFixed(1)}, ${cp2x.toFixed(1)} ${y2.toFixed(1)}, ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+    dottedPaths.push(d);
+    dots.push([x1, y1]);
+    dots.push([x2, y2]);
+  };
+
+  const addElbowPath = (x1, y1, x2, y2) => {
+    const midX = (x1 + x2) / 2;
+    const d = `M ${x1.toFixed(1)} ${y1.toFixed(1)} H ${midX.toFixed(1)} V ${y2.toFixed(1)} H ${x2.toFixed(1)}`;
+    elbowPaths.push(d);
+    dots.push([x2, y2]);
+  };
+
+  // 1. Connect central node to metric cards (Power, Cost, Water) in arc
+  $$(".rad-card", stage).forEach((c) => {
+    const [mx, my] = getCenter(c);
+    addDottedCurve(cx + 48, cy, mx - 102, my);
+  });
+
+  // 2. Connect active metric card to child nodes
   if (S.cmpActive) {
-    const branchCard = $(`.rad-card[data-node="${S.cmpActive}"]`, stage), nodes = $$(".rad-node", stage);
-    const bp = branchCard ? pos(branchCard) : [cx, cy];
-    for (let dep = 0; dep <= (S.cmpPath || []).length; dep++) {
-      const ring = nodes.filter((k) => +k.dataset.depth === dep);
-      let parent = bp;
-      if (dep > 0) { const pel = nodes.find((k) => +k.dataset.depth === dep - 1 && k.dataset.node === S.cmpPath[dep - 1]); if (pel) parent = pos(pel); }
-      ring.forEach((el) => d.push(link(parent, pos(el))));
+    const activeCard = $(`.rad-card[data-node="${S.cmpActive}"]`, stage);
+    const [mx, my] = activeCard ? getCenter(activeCard) : [cx + 48, cy];
+    const nodes = $$(".rad-node", stage);
+    const depth0 = nodes.filter((k) => +k.dataset.depth === 0);
+
+    depth0.forEach((el) => {
+      const [kx, ky] = getCenter(el);
+      addDottedCurve(mx + 102, my, kx - 110, ky);
+    });
+
+    // 3. Connect parent node to deeper child nodes
+    const depth = (S.cmpPath || []).length;
+    for (let d = 1; d <= depth; d++) {
+      const ring = nodes.filter((k) => +k.dataset.depth === d);
+      const parentId = S.cmpPath[d - 1];
+      const parentEl = nodes.find((k) => +k.dataset.depth === d - 1 && k.dataset.node === parentId);
+      const [px, py] = parentEl ? getCenter(parentEl) : [mx, my];
+      ring.forEach((el) => {
+        const [kx, ky] = getCenter(el);
+        addDottedCurve(px + 110, py, kx - 110, ky);
+      });
     }
+
+    // 4. Dashed elbow connectors to leaf detail cards
+    const leaves = $$(".rad-leaf", stage);
+    leaves.forEach((leafEl) => {
+      const leafId = leafEl.dataset.leaf;
+      const leafX = parseFloat(leafEl.style.left) || 0;
+      const leafY = (parseFloat(leafEl.style.top) || 0) + (leafEl.offsetHeight || 50) / 2;
+      const matchingNode = nodes.find((k) => k.dataset.node === leafId) ||
+        nodes.find((k) => +k.dataset.depth === depth) ||
+        depth0[0];
+      if (matchingNode) {
+        const [nx, ny] = getCenter(matchingNode);
+        addElbowPath(nx + 110, ny, leafX - 2, leafY);
+      }
+    });
   }
-  svg.setAttribute("viewBox", `0 0 ${stage.offsetWidth} ${stage.offsetHeight}`);
-  svg.innerHTML = d.map((x) => `<path d="${x}"/>`).join("");
+
+  const dottedSvg = dottedPaths.map((d) => `<path d="${d}" stroke="#B2A6C3" stroke-width="1.8" stroke-dasharray="4,4" fill="none" />`).join("");
+  const elbowSvg = elbowPaths.map((d) => `<path d="${d}" stroke="#8E7A9E" stroke-width="1.5" stroke-dasharray="5,4" fill="none" />`).join("");
+  const dotsSvg = dots.map(([x, y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#B2A6C3" /><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.5" fill="#DCD6E4" />`).join("");
+
+  svg.innerHTML = dottedSvg + elbowSvg + dotsSvg;
 }
 async function sha256(s) { if (!globalThis.crypto?.subtle) return null; const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
 async function startQuiet() { const r = await fetch("/api/dash/v2/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(S.choice) }); S.run = await r.json(); S.n = S.run.events.length; renderRun(); }

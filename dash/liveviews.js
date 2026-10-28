@@ -29,8 +29,8 @@ export function drawPreview(view, cv, state = {}) {
     const n = 8, gw = (W - 16) / n;
     for (let i = 0; i < n; i++) {
       const on = i === (state.archActive ?? -1);
-      x.fillStyle = on ? "#F6DBC0" : "#351C3A";
-      x.strokeStyle = on ? "#F6DBC0" : "#502D55";
+      x.fillStyle = on ? "#B2A6C3" : "#2B2637";
+      x.strokeStyle = on ? "#B2A6C3" : "#3B3A54";
       x.lineWidth = 1;
       x.beginPath();
       x.roundRect(8 + i * gw + 2, H / 2 - 14, gw - 4, 28, 3);
@@ -41,12 +41,12 @@ export function drawPreview(view, cv, state = {}) {
     const bw = (W - 16) / g.length;
     g.forEach((v, i) => {
       const h = Math.max(3, v * (H - 24));
-      x.fillStyle = i === (state.expertActive ?? -1) ? "#935073" : "#502D55";
+      x.fillStyle = i === (state.expertActive ?? -1) ? "#8E7A9E" : "#3B3A54";
       x.fillRect(8 + i * bw + 2, H - 8 - h, bw - 4, h);
     });
   } else {
     const s = state.powerSamples || [];
-    x.strokeStyle = "#F6DBC0"; x.lineWidth = 1.5; x.beginPath();
+    x.strokeStyle = "#B2A6C3"; x.lineWidth = 1.5; x.beginPath();
     if (s.length < 2) { x.moveTo(8, H - 12); x.lineTo(W - 8, H - 12); }
     else {
       const lo = Math.min(...s), hi = Math.max(...s, lo + 1);
@@ -59,7 +59,7 @@ export function drawPreview(view, cv, state = {}) {
     x.stroke();
   }
   if (state.step != null) {
-    x.fillStyle = "#B49BB0"; x.font = "10px JetBrains Mono, monospace";
+    x.fillStyle = "#A79BB9"; x.font = "10px JetBrains Mono, monospace";
     x.fillText(String(state.text || state.step || ""), 8, 12);
   }
 }

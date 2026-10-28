@@ -9,7 +9,7 @@
 <script src="static-api.js"></script>
 <link rel="stylesheet" href="violet.css">
 <style>
-  /* ---- runs.html: page-specific layout on top of the shared Violet Dusk palette ---- */
+  /* ---- runs.html: page-specific layout on top of the shared Dusk palette ---- */
   * { box-sizing: border-box; }
   html, body { margin: 0; }
   body {
@@ -94,7 +94,7 @@
   .loading { color: var(--v-mut); font-size: 13px; }
 
   /* side panel (shared pattern) */
-  .scrim { position: fixed; inset: 0; background: rgba(10,4,14,.55); backdrop-filter: blur(2px); z-index: 40; }
+  .scrim { position: fixed; inset: 0; background: rgba(8,11,16,.65); backdrop-filter: blur(2px); z-index: 40; }
   .side {
     position: fixed; top: 0; right: 0; height: 100vh; width: min(440px, 92vw);
     z-index: 50; padding: 22px 24px; overflow-y: auto; border-radius: 0;
@@ -124,6 +124,7 @@
   <nav class="navlinks">
     <a href="runs.html" class="on" aria-current="page">All runs</a>
     <a href="v2.html">Live dashboard</a>
+    <a href="graph.html">Arch graph</a>
   </nav>
   <span class="sp"></span>
   <span class="v-chip"><i style="background:var(--v-l-replay)"></i>Replay of measured logs</span>

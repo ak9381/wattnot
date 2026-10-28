@@ -2,10 +2,12 @@
 export const LABELS = ["MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "REPLAY", "ADVICE", "SAMPLE"];
 
 export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-// Label badge: a small coloured dot, no text. The label itself stays in
-// title/aria-label for accessibility; visible numbers carry their own colour
-// via cnum() instead of a text badge.
-export const badge = (t) => (t ? `<span class="b b-${esc(String(t).toLowerCase())}" title="${esc(t)}" aria-label="${esc(t)}"></span>` : "");
+// Label badge: a small coloured dot + visible label word.
+export const badge = (t) => {
+  if (!t) return "";
+  const norm = String(t).toUpperCase();
+  return `<span class="b-chip b-chip-${esc(String(t).toLowerCase())}"><span class="b b-${esc(String(t).toLowerCase())}" aria-hidden="true"></span><span class="b-txt">${esc(norm)}</span></span>`;
+};
 
 // Number coloured by its label: measured = cyan, estimate = amber,
 // simulated = violet, mock = grey, replay = soft green. The label stays in

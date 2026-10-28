@@ -9,7 +9,7 @@ window.__WN_STATIC = true;
     let p = typeof u === "string" ? u : u.url;
     if (p.startsWith("/api/")) {
       if ((init.method || "GET").toUpperCase() === "POST" && p === "/api/dash/v2/run") {
-        const body = JSON.parse(init.body || "{}"); delete body.compare;
+        const body = JSON.parse(init.body || "{}"); delete body.compare; delete body.framework;
         index ??= await real(`${BASE}api/dash/v2/run/index.json`).then((r) => r.json()).catch(() => ({}));
         const f = index[key(body)];
         if (f) return real(`${BASE}api/dash/v2/run/${f}`);
