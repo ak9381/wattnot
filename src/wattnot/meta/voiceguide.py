@@ -1,17 +1,19 @@
 """Voice guide for WattNot (Muse Voice Transcribe -> Spark Intent Classifier -> Read-only Action).
 
-Classifies audio or text input into exactly one of three strictly read-only intents:
+Classifies audio or text input into exactly one of four strictly read-only intents:
   (a) navigate: e.g. "compare runs" (opens compare with selection prompt) or
                 "show last night's report" (resolves latest run by timestamp).
   (b) answer: read-only Q&A grounded exclusively in signed receipts (hash-verified)
               and EU efficiency report outputs, citing receipt_id or report_id.
               Refuses if query is not answerable from verified receipts.
-  (c) configure: returns a pre-fill object for run setup (workload, stack, caps)
-                 requiring user review before launching.
+  (c) configure: returns a read-only pre-fill object for run setup
+                 (cap_w, workload, framework) requiring user review before launching.
+                 Never starts, stops, or changes a run.
+  (d) explain: point-and-explain for on-screen elements or metrics.
 
 SAFETY ENFORCEMENT:
 The guide must NEVER launch, stop, or change a run. Only actions in ALLOWED_ACTIONS
-{"navigate", "answer", "prefill"} are permitted; any other action is rejected.
+{"navigate", "answer", "prefill", "explain"} are permitted; any other action is rejected.
 All answers are text-only (no TTS).
 """
 
@@ -29,6 +31,40 @@ from wattnot.report.eu import fields_for
 
 ALLOWED_ACTIONS = frozenset({"navigate", "answer", "prefill", "explain"})
 ALLOWED_INTENTS = frozenset({"navigate", "answer", "configure", "explain"})
+
+# Canonical frameworks selectable via spoken run setup. Anything else -> None.
+FRAMEWORKS = ("openai-python", "langchain", "llamaindex", "plain-api")
+
+_FRAMEWORK_ALIASES: tuple[tuple[str, str], ...] = (
+    ("openai-python", "openai-python"),
+    ("openai python", "openai-python"),
+    ("plain-api", "plain-api"),
+    ("plain api", "plain-api"),
+    ("plainapi", "plain-api"),
+    ("llama-index", "llamaindex"),
+    ("llama index", "llamaindex"),
+    ("llamaindex", "llamaindex"),
+    ("langchain", "langchain"),
+    ("openai", "openai-python"),
+)
+
+_NUMBER_ONES: dict[str, int] = {
+    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14,
+    "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19,
+}
+_NUMBER_TENS: dict[str, int] = {
+    "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50,
+    "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90,
+}
+_NUMBER_WORDS = frozenset([*_NUMBER_ONES, *_NUMBER_TENS, "hundred", "and"])
+
+_KNOWN_WORKLOAD_IDS = frozenset({
+    "replay-v1", "proof-v1", "prefix-cache-v1", "cloud-effort-v1", "muse-code-v1",
+})
+
+_WORKLOAD_STOPWORDS = frozenset({"the", "a", "an", "my", "that", "this", "that", "our"})
 
 
 class VoiceGuideActionError(ValueError):
@@ -72,15 +108,139 @@ def transcribe_audio(
     return "compare runs"
 
 
+def _words_to_int(words: list[str]) -> int | None:
+    """Parse English number words (e.g. ['three','hundred','fifty'] -> 350).
+
+    Also handles colloquial shorthand '<one-nine> <tens>' like 'three fifty' -> 350.
+    Returns None when the tokens do not form a number.
+    """
+    for w in words:
+        if w not in _NUMBER_ONES and w not in _NUMBER_TENS and w not in ("hundred", "and"):
+            return None
+    tokens = [w for w in words if w != "and"]
+    if not tokens:
+        return None
+    # Shorthand: single digit 1-9 followed directly by an exact ten ("three fifty" -> 350).
+    if len(tokens) == 2 and tokens[0] in _NUMBER_ONES and tokens[1] in _NUMBER_TENS:
+        ones = _NUMBER_ONES[tokens[0]]
+        if 1 <= ones <= 9 and _NUMBER_TENS[tokens[1]] % 10 == 0:
+            return ones * 100 + _NUMBER_TENS[tokens[1]]
+    total = 0
+    current = 0
+    seen_digit = False
+    for w in tokens:
+        if w in _NUMBER_ONES:
+            current += _NUMBER_ONES[w]
+            seen_digit = True
+        elif w in _NUMBER_TENS:
+            current += _NUMBER_TENS[w]
+            seen_digit = True
+        elif w == "hundred":
+            if not seen_digit:
+                return None
+            current *= 100
+        else:
+            return None
+    total += current
+    return total if seen_digit else None
+
+
+def _parse_cap_w(text: str) -> int | None:
+    """Extract a spoken power cap in watts. Handles '325 watts', '325W', '325 W' and number words."""
+    t = text.lower().replace("-", " ")
+    # Digit form: 325 watts / 325 watt / 325W / 325 W
+    m = re.search(r"\b(\d{2,4})\s*(?:watts?|w)\b", t)
+    if m:
+        try:
+            return int(m.group(1))
+        except ValueError:
+            pass
+    # Number-word form: "<number words> watt(s)/w", e.g. "three fifty watts".
+    tokens = re.findall(r"[a-z]+|\d+", t)
+    for i, tok in enumerate(tokens):
+        if tok in ("watt", "watts", "w") and i > 0:
+            # Collect up to 5 preceding number-word tokens.
+            start = i - 1
+            while start >= 0 and (i - start) <= 5 and tokens[start] in _NUMBER_WORDS:
+                start -= 1
+            candidate = [w for w in tokens[start + 1:i] if w != "and"]
+            if candidate and all(w in _NUMBER_WORDS for w in candidate):
+                val = _words_to_int(candidate)
+                if val is not None and 1 <= val <= 9999:
+                    # A bare 'w' only counts when a number word precedes it.
+                    return val
+    return None
+
+
+def _parse_workload(text: str) -> str | None:
+    """Extract '<name> workload' or a known workload id. Returns None when unknown."""
+    t = text.lower().replace("_", "-")
+    m = re.search(r"([a-z0-9][a-z0-9\-]*)\s+workload", t)
+    if m:
+        name = m.group(1).strip("-")
+        if name and name not in _WORKLOAD_STOPWORDS:
+            return name
+        return None
+    for known in sorted(_KNOWN_WORKLOAD_IDS):
+        if known in t:
+            return known
+    return None
+
+
+def _parse_framework(text: str) -> str | None:
+    """Map spoken framework mentions to canonical ids. Returns None when unknown."""
+    t = text.lower().replace("_", " ").replace("-", " ")
+    t_flat = re.sub(r"\s+", " ", t)
+    for alias, canonical in _FRAMEWORK_ALIASES:
+        norm = alias.replace("-", " ").replace("_", " ")
+        if norm in t_flat or alias in text.lower():
+            return canonical
+    # Hyphenated ids may survive as-is in the raw text.
+    raw = text.lower()
+    for canonical in FRAMEWORKS:
+        if canonical in raw:
+            return canonical
+    return None
+
+
+def parse_run_setup(text: str) -> dict[str, Any]:
+    """Parse spoken run setup into a pre-fill dict.
+
+    Returns {"cap_w": int|None, "workload": str|None, "framework": str|None}.
+    Unknown fields stay None. Never starts, stops, or changes a run.
+    """
+    return {
+        "cap_w": _parse_cap_w(text),
+        "workload": _parse_workload(text),
+        "framework": _parse_framework(text),
+    }
+
+
+def _has_run_setup_signals(t: str) -> bool:
+    """True when lowered text carries spoken run-setup evidence (cap, workload, or framework)."""
+    if _parse_cap_w(t) is not None:
+        return True
+    if "workload" in t:
+        return True
+    lowered = t.lower()
+    for alias, _ in _FRAMEWORK_ALIASES:
+        if alias in lowered:
+            return True
+    for canonical in FRAMEWORKS:
+        if canonical in lowered:
+            return True
+    return False
+
+
 def classify_intent(text: str) -> str:
     """Spark deterministic classifier: categorise query into navigate, answer, configure, or explain."""
     t = text.lower().strip()
 
-    # Configure triggers
+    # Explicit configure keywords always win (except pure explain requests handled below).
     if any(k in t for k in ("configure", "prefill", "set up", "setup", "prepare run", "parameters for")):
         return "configure"
 
-    # Explain triggers (point and explain on-screen elements or metrics)
+    # Explain triggers (point and explain on-screen elements or metrics).
     if any(k in t for k in ("explain", "what does this mean", "tell me about this number", "what is this number")) or (
         "what does" in t and "mean" in t
     ) or (
@@ -88,9 +248,13 @@ def classify_intent(text: str) -> str:
     ):
         return "explain"
 
-    # Explicit question forms are answer intent (even if they mention 'last run' or 'latest')
+    # Explicit question forms are answer intent (even if they mention 'last run' or 'latest').
     if any(t.startswith(q) for q in ("what", "how", "tell me", "is there", "which", "describe", "why")):
         return "answer"
+
+    # Spoken run setup ("try 325 watts on the batch workload with langchain").
+    if _has_run_setup_signals(t):
+        return "configure"
 
     # Navigate triggers
     if any(k in t for k in ("compare", "compare runs", "show last night", "last night's report",
@@ -189,23 +353,28 @@ def process_voice_query(
             }
 
     elif intent == "configure":
+        # Read-only pre-fill only: parse spoken setup, never start/stop/change a run.
+        parsed = parse_run_setup(text)
+        cap_w = parsed["cap_w"]
+        framework = parsed["framework"]
         result = {
             "intent": "configure",
             "action": "prefill",
             "text": "Run setup parameters prepared. Please review workload, stack, and power caps, then press Start.",
             "prefill": {
-                "workload": {
-                    "name": "replay-v1",
-                    "model": "meta-llama/Llama-3.1-8B-Instruct",
-                    "n_requests": 200,
-                },
-                "stack": "vllm",
+                "cap_w": cap_w,
+                "workload": parsed["workload"],
+                "framework": framework,
+                "stack": framework if framework is not None else "vllm",
                 "vllm_flags": {
                     "max_num_seqs": 256,
                     "gpu_memory_utilization": 0.90,
                 },
-                "caps_w": [300, 350, 400],
-                "note": "Pre-filled by voice guide. Action required: review parameters and press Start.",
+                "caps_w": [cap_w] if cap_w is not None else [300, 350, 400],
+                "note": (
+                    "Pre-filled by voice guide. Action required: review parameters and press Start. "
+                    "This pre-fill never starts, stops, or changes a run."
+                ),
             },
             "quick_ack": quick["ack"],
             "label": label,

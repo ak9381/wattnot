@@ -14,6 +14,7 @@ from wattnot.meta.voiceguide import (
     VoiceGuideActionError,
     classify_intent,
     get_quick_ack,
+    parse_run_setup,
     process_voice_query,
     transcribe_audio,
 )
@@ -148,3 +149,80 @@ def test_voiceguide_api_endpoints() -> None:
     data_get = resp_get.json()
     assert data_get["action"] == "prefill"
     assert "prefill" in data_get
+
+
+SPOKEN_SETUP_PHRASINGS = [
+    # (phrase, expected cap_w, expected workload, expected framework)
+    ("try 325 watts on the batch workload with langchain", 325, "batch", "langchain"),
+    ("try three fifty watts on the batch workload with langchain", 350, "batch", "langchain"),
+    ("set cap to 325W for batch workload using llamaindex", 325, "batch", "llamaindex"),
+    ("use 400 W with plain-api on the replay workload", 400, "replay", "plain-api"),
+    ("try 300 watts with openai-python", 300, None, "openai-python"),
+    ("configure 350 watts batch workload", 350, "batch", None),
+    ("prepare run with langchain at three hundred watts", 300, None, "langchain"),
+    ("set up a run on the proof workload", None, "proof", None),
+    ("try 325 w on batch workload with openai python", 325, "batch", "openai-python"),
+]
+
+
+@pytest.mark.parametrize(
+    "phrase, cap_w, workload, framework", SPOKEN_SETUP_PHRASINGS
+)
+def test_spoken_run_setup_prefill_phrasings(phrase, cap_w, workload, framework) -> None:
+    assert classify_intent(phrase) == "configure"
+    parsed = parse_run_setup(phrase)
+    assert parsed["cap_w"] == cap_w
+    assert parsed["workload"] == workload
+    assert parsed["framework"] == framework
+
+    res = process_voice_query(phrase, root_dir=REPO_ROOT, mock=True)
+    assert res["intent"] == "configure"
+    assert res["action"] == "prefill"
+    assert res["prefill"]["cap_w"] == cap_w
+    assert res["prefill"]["workload"] == workload
+    assert res["prefill"]["framework"] == framework
+
+
+def test_spoken_setup_unknown_fields_stay_null() -> None:
+    parsed = parse_run_setup("configure a new run")
+    assert parsed == {"cap_w": None, "workload": None, "framework": None}
+    res = process_voice_query("configure a new run", root_dir=REPO_ROOT, mock=True)
+    assert res["action"] == "prefill"
+    assert res["prefill"]["cap_w"] is None
+    assert res["prefill"]["workload"] is None
+    assert res["prefill"]["framework"] is None
+
+
+def test_prefill_never_starts_stops_or_changes_run() -> None:
+    res = process_voice_query(
+        "try 325 watts on the batch workload with langchain", root_dir=REPO_ROOT, mock=True
+    )
+    assert res["action"] == "prefill"
+    assert res["action"] not in {"launch", "start", "stop", "change"}
+    for forbidden in ("launch", "start", "stop", "change"):
+        assert forbidden not in res
+    assert "Start" in res["prefill"]["note"] or "Start" in res["text"]
+    assert "never starts, stops, or changes a run" in res["prefill"]["note"]
+
+
+def test_all_four_intents_covered() -> None:
+    assert classify_intent("compare runs") == "navigate"
+    assert (
+        classify_intent("what was the billed saving on rcpt_20261027_run2_cap350?") == "answer"
+    )
+    assert (
+        classify_intent("try 325 watts on the batch workload with langchain") == "configure"
+    )
+    assert classify_intent("what does 25% mean?") == "explain"
+
+
+def test_rejected_non_allowlisted_action(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "wattnot.meta.voiceguide.ALLOWED_ACTIONS", frozenset({"navigate", "answer"})
+    )
+    with pytest.raises(VoiceGuideActionError):
+        process_voice_query(
+            "try 325 watts on the batch workload with langchain",
+            root_dir=REPO_ROOT,
+            mock=True,
+        )
