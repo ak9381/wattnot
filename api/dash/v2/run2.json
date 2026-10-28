@@ -1,0 +1,1 @@
+{"model": "Llama 3.1 8B Instruct", "cap_w": 350, "stock_w": 700, "source": "data/h100-run2/vm/steps/cap350.json", "from_file": true, "j_per_req_stock": 15.959, "j_per_req_cap": 11.635, "saved_pct": -27.1, "p99_s_stock": 3.605, "p99_s_cap": 3.882, "p99_change_pct": 7.7, "quality_stock_pct": 93.7, "quality_cap_pct": 93.7, "label": "MEASURED"}

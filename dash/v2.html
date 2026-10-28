@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WattNot: every step, shown</title>
+<link rel="icon" href="data:,">
+<script src="static-api.js"></script>
+<link rel="stylesheet" href="v2.css">
+<link rel="stylesheet" href="r7.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">Watt<i>Not</i></div>
+  <nav class="tabs" id="tabs">
+    <button data-p="pHome" class="on">Overview</button>
+    <button data-p="pCfg">Configure</button>
+    <button data-p="pRun">Run</button>
+    <button data-p="pReport">Compare</button>
+    <button data-p="pProof">Proof</button>
+    <button data-p="pLearn">How it works</button>
+  </nav>
+  <span class="sp"></span>
+  <span class="chip" title="Where the numbers come from"><span class="dot"></span>Replay mode: no GPU is running</span>
+  <button class="btn" id="illusBtn" aria-pressed="false" title="Show SIMULATED and MOCK illustrations">Illustrations: off</button>
+  <a class="btn" href="https://github.com/ak9381/wattnot">Source</a>
+</header>
+<main>
+  <section class="page on" id="pHome"></section>
+  <section class="page" id="pCfg"></section>
+  <section class="page" id="pRun"></section>
+  <section class="page" id="pReport"></section>
+  <section class="page" id="pLearn"></section>
+  <section class="page" id="pProof"></section>
+</main>
+<div class="scrim" id="scrim" hidden></div>
+<aside class="side glass" id="side" role="dialog" aria-modal="true" aria-label="Explanation" aria-hidden="true">
+  <button class="btn" id="sideX" style="float:right" aria-label="Close explanation">Close</button>
+  <div id="sideBody"></div>
+</aside>
+<script src="fallback.js"></script>
+<script type="module" src="v2.js"></script>
+</body>
+</html>
