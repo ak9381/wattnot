@@ -1,15 +1,19 @@
 {
   "model": "muse-spark-1.3",
   "calls": 1,
-  "fallback": "FALLBACK: Spark call failed (BudgetExceeded), rules used",
+  "fallback": null,
+  "tokens": {
+    "input": 206,
+    "output": 321
+  },
   "items": [
     {
       "id": "325-p99",
       "setting": "cap 325 W",
       "check": "p99",
-      "prompt_class": "code",
-      "reason": "p99 rose 10.95% against a 10.0% limit. A lower cap lowers the clock, and the longest answers (code) set the tail, so they slow most.",
-      "source": "rules",
+      "prompt_class": "math",
+      "reason": "p99 change 10.95% passed 10.0% limit and math has 50 prompts, most in mix",
+      "source": "muse-spark",
       "label": "ADVICE"
     }
   ],
