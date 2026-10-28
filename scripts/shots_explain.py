@@ -32,9 +32,6 @@ from wattnot.dash.server import create_app  # noqa: E402
 WEB_DIR = REPO_ROOT / "web"
 SHOTS_DIR = Path("/workspace/hackathon/meta5-shots")
 
-# Ensure target directory exists
-SHOTS_DIR.mkdir(parents=True, exist_ok=True)
-
 
 class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     daemon_threads = True
@@ -103,6 +100,16 @@ def setup_mock_routes(page, root_dir: Path, app_client: TestClient) -> None:
         else:
             route.continue_()
 
+    def block_external(route):
+        # Screenshots must never reach the public internet (fonts CDNs etc.):
+        # only the local test server and data/blob URLs are allowed through.
+        url = route.request.url
+        if url.startswith(("http://127.0.0.1", "http://localhost", "data:", "blob:", "about:")):
+            route.continue_()
+        else:
+            route.abort()
+
+    page.route("**/*", block_external)
     page.route("**/api/**", handle_api)
     page.route("**/receipts/**", handle_receipts)
 
@@ -128,6 +135,7 @@ def type_query_and_explain(page, query: str):
 
 
 def capture_all_meta5_shots():
+    SHOTS_DIR.mkdir(parents=True, exist_ok=True)
     app = create_app(replay_only=True)
     app_client = TestClient(app)
 
