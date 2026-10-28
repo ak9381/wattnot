@@ -111,6 +111,8 @@ select option{background:#080B10}
 .lock{color:var(--am);font-size:12.5px}
 aside.side{position:fixed;top:76px;bottom:72px;right:14px;height:calc(100vh - 148px);width:min(440px,92vw);z-index:120;transform:translateX(110%);transition:transform .3s cubic-bezier(.16,1,.3,1);padding:24px 26px;overflow-y:auto;border-radius:18px;background:rgba(23,23,36,.88);backdrop-filter:blur(24px) saturate(170%);-webkit-backdrop-filter:blur(24px) saturate(170%);border:1px solid rgba(255,255,255,.14);box-shadow:0 10px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.12);color:var(--v-cream,#DCD6E4)}
 aside.side.on{transform:translateX(0)}
+/* v2 pages have the taller sub-nav header, so the drawer clears it and the footer. */
+body:has(.wn-nav-v2) aside.side{top:134px;bottom:92px;height:auto}
 aside.side #sideX{position:absolute;top:18px;right:18px;background:rgba(178,166,195,.15);color:var(--v-cream,#DCD6E4);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px 14px;font-size:13px;font-weight:500;cursor:pointer;z-index:2;transition:all .2s ease}
 aside.side #sideX:hover{background:rgba(178,166,195,.28);border-color:var(--v-peach,#B2A6C3)}
 aside.side h2{font-size:18px;margin:0 0 14px 0;padding-right:70px;color:var(--v-cream,#DCD6E4)}
@@ -253,7 +255,7 @@ aside.side .kv dd{margin:0;color:var(--v-cream,#DCD6E4);font-family:var(--v-num,
 /* radial comparison canvas: WattNot centre, one ring of run cards, an outer
    ring of per-method cards. Pan/zoom comes from pancanvas.js (.pc-*). */
 /* Compact header above compare mind map: at most 2 rows */
-#cmpR7{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap;white-space:nowrap;margin:0 0 3px;min-height:28px}
+#cmpR7{display:flex;align-items:center;justify-content:space-between;gap:8px 14px;flex-wrap:wrap;white-space:nowrap;margin:0 0 3px;min-height:28px}
 #cmpR7 .cmp-head{display:inline-flex;align-items:center;gap:8px;margin:0;flex-shrink:0}
 #cmpR7 .cmp-head h1{font-size:17px;margin:0;line-height:1.15;white-space:nowrap}
 #cmpR7 .cmp-head .lead{font-size:12px;color:var(--sub);margin:0;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
@@ -279,7 +281,16 @@ aside.side .kv dd{margin:0;color:var(--v-cream,#DCD6E4);font-family:var(--v-num,
 #pReport .receipt-meta,
 #pReport>p:last-of-type{display:none!important}
 
-html:has(#pReport.on), body:has(#pReport.on) { overflow: hidden; height: 100vh; max-height: 100vh; }
+html:has(#pReport.on) { overflow: hidden; }
+/* Compare fits the viewport as a flex column: header/footer stay fixed, the
+   title row and toolbar take their own height, the canvas fills the rest.
+   No page scroll at 1440x900 or 1280x720. */
+body:has(#pReport.on) { overflow: hidden; height: 100vh; max-height: 100vh; display: flex; flex-direction: column; }
+body:has(#pReport.on) main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+body:has(#pReport.on) #pReport { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+body:has(#pReport.on) #pReport > .bento:has(#radialWrap) { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 0; margin-bottom: 0; }
+body:has(#pReport.on) #cmpR7, body:has(#pReport.on) .radial-bar { flex: 0 0 auto; }
+body:has(#pReport.on) #radialWrap { flex: 1 1 auto; min-height: 0; height: auto; }
 
 .radial-wrap{position:relative;overflow:hidden;padding:10px;height:calc(100vh - 340px);min-height:380px;border-radius:20px;background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,0) 40%),linear-gradient(0deg,rgba(178,166,195,.10),rgba(178,166,195,.10)),rgba(27,23,40,.65);backdrop-filter:blur(24px) saturate(170%);-webkit-backdrop-filter:blur(24px) saturate(170%);border:1px solid rgba(255,255,255,.14);box-shadow:0 10px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.12)}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.radial-wrap{background:#1F1A2F}}

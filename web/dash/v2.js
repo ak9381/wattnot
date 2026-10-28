@@ -1171,8 +1171,14 @@ function mountCompare() {
     c.setAttribute("data-explain-label", svTag);
     c.setAttribute("data-explain-source", svSrc);
     c.innerHTML = `<button class="rad-head" aria-expanded="${!S.cmpCollapsed && id === S.cmpActive}" aria-label="${name}: open its routes"><b><span>${name}</span>${id === "power" ? badge("MEASURED") : ""}</b><span class="rad-val">${branchSaved(id)}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power</small>`}</button><button class="ibtn rad-i" aria-label="${name} details">i</button>`;
-    $(".rad-head", c).onclick = () => { S.cmpCollapsed = false; S.cmpActive = id; S.cmpPath = []; renderTree(); };
-    $(".rad-i", c).onclick = (e) => { e.stopPropagation(); openSidePanel(name, branchDetailHtml(rec, id)); };
+    $(".rad-head", c).onclick = () => {
+      S.cmpCollapsed = false; S.cmpActive = id; S.cmpPath = [];
+      renderTree();
+      openSidePanel(name, branchDetailHtml(rec, id));
+      // Let the drawer-open width transition finish, then re-fit the canvas.
+      setTimeout(() => S.radPan?.fit(), 320);
+    };
+    $(".rad-i", c).onclick = (e) => { e.stopPropagation(); openSidePanel(name, branchDetailHtml(rec, id)); setTimeout(() => S.radPan?.fit(), 320); };
   });
 
   // Expand all opens the Power branch's levers; Collapse all returns to top
@@ -1211,7 +1217,11 @@ function wireCompareTooltips(stage) {
     if (!el) return;
     const lab = el.getAttribute("data-explain-label");
     const val = el.getAttribute("data-explain-value");
-    const title = el.querySelector("b, .rad-leaf-title, .centre-node")?.textContent || "";
+    // The node's <b> can hold its name plus an inline label chip; drop the chip
+    // so the tooltip reads "Power", not "PowerMEASURED".
+    const titleEl = el.querySelector("b, .rad-leaf-title, .centre-node");
+    let title = "";
+    if (titleEl) { const clone = titleEl.cloneNode(true); clone.querySelectorAll(".v-chip, .b-chip").forEach((x) => x.remove()); title = clone.textContent.trim(); }
     const desc = el.querySelector(".rad-leaf-desc, small, .centre-sub")?.textContent || el.title || "";
     if (!title && !desc) return;
     tip.innerHTML = `<div style="font-weight:600;color:#DCD6E4;margin-bottom:2px">${esc(title)}${lab ? ` <span class="v-chip ${esc(lab)}"><i class="v-lab ${esc(lab)}"></i>${esc(lab)}</span>` : ""}</div>${desc ? `<div style="color:var(--v-sub,#B2A6C3);font-size:11.5px">${esc(desc)}</div>` : ""}${val && val !== "–" ? `<div style="margin-top:4px;font-family:var(--v-num,monospace);color:#8FD3B0">${esc(val)}</div>` : ""}`;

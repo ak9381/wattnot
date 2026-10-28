@@ -220,6 +220,10 @@ h2.hl{font:600 clamp(28px,2.7vw,50px)/1.1 Inter,system-ui,sans-serif;letter-spac
 #arch .av.aglass .avn .hd .t{flex:1 1 100%;min-width:0;overflow-wrap:anywhere}
 #arch .av.aglass .avn .sum{flex-wrap:wrap;row-gap:4px}
 #arch .av.aglass .avn .sum .k{flex:1 1 100%}
+/* Live graph (#stage) shows the full readable card — description + stat rows —
+   so the collapsed headline pill is redundant here and its label/value would
+   render unspaced without the #arch collapse styling. Hide it on the map. */
+#stage .av.aglass .avn .sum{display:none}
 #arch .av.aglass .avn:not(.open) .mp{display:none}
 /* mini bars under a card's power / cost / energy numbers (width is set inline, per-metric max = 100%) */
 .avn .stat .mbar{flex:1 1 100%;height:3px;border-radius:2px;background:rgba(255,255,255,.09);margin-top:4px;overflow:hidden}
