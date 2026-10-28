@@ -104,6 +104,18 @@ def test_bundle_has_no_secrets(bundle):
         assert not re.search(pat, blob), pat
 
 
+def test_arch_cards_collapse_with_expand_all():
+    js = (ROOT / "web" / "dash" / "arch.js").read_text()
+    page = (ROOT / "web" / "dash" / "archpage.js").read_text()
+    css = (ROOT / "web" / "dash" / "story.css").read_text()
+    assert "aria-expanded" in js and "aria-controls" in js
+    assert "expandAll" in js and "collapseAll" in js
+    assert "Expand all" in page and "Collapse all" in page
+    assert "backdrop-filter" in css and "-webkit-backdrop-filter" in css
+    assert re.search(r"#arch[^{]*\{[^}]*backdrop-filter", css)
+    assert "aglass" in js
+
+
 def test_repo_names_no_agent_or_model_vendor():
     names = ["cla" + "ude", "anthr" + "opic", "open" + "ai", "chat" + "gpt", "gem" + "ini", "copi" + "lot", "gr" + "ok"]
     banned = re.compile("|".join(names), re.I)
@@ -115,6 +127,41 @@ def test_repo_names_no_agent_or_model_vendor():
                 if banned.search(f.read_text(errors="ignore").replace("OpenAIClient", "")):
                     hits.append(str(f.relative_to(ROOT)))
     assert not hits, hits
+
+
+def test_arch_edges_march_with_static_dashed_idle():
+    css = (ROOT / "web" / "dash" / "story.css").read_text()
+    assert "@keyframes march" in css and "stroke-dashoffset" in css
+    base = re.search(r"\.av-edges \.e\{([^}]*)\}", css).group(1)
+    assert "stroke-dasharray" in base  # idle edges are dashed and static
+    assert "animation" not in base
+    flow = re.search(r"\.av-edges \.e\.flow\{([^}]*)\}", css).group(1)
+    assert "march" in flow and "stroke-dasharray" in flow  # inflow edges animate the dash
+    rm = css.split("prefers-reduced-motion", 1)[1]
+    assert "animation:none" in rm.replace(" ", "")
+    assert "stroke-dasharray:none" not in rm  # highlight colour kept, motion off
+
+
+def test_arch_meter_strip_and_card_bars(bundle):
+    page = (ROOT / "web" / "dash" / "archpage.js").read_text()
+    js = (ROOT / "web" / "dash" / "arch.js").read_text()
+    css = (ROOT / "web" / "dash" / "story.css").read_text()
+    assert "mmeter" in page and "meterFor" in page and "meterStage" in page
+    assert "WUE" in page and "per 1M requests" in page
+    assert '"MEASURED"' in page and '"ESTIMATE"' in page and 'dot("REPLAY")' in page
+    assert "legendHtml" in page  # one compact colour legend per view, no per-number text badges
+    assert "mbar" in js and "barPct" in js and ".mbar" in css and ".mmeter" in css
+    assert ":not(.open) .d" in css and ":not(.open) .pw" in css  # collapsed: no description
+    assert "aplay" in page and "areset" in page and "afil" in page and "apanel" in page
+    # the strip's inputs really exist in the bundle it reads
+    assert bundle["story"]["water"]["factor_l_per_kwh"] > 0
+    assert bundle["story"]["price"]["usd_per_kwh"] > 0
+    levers = {x["id"]: x for x in bundle["story"]["levers"]}
+    assert levers["cap"]["wh_before"] and levers["cap"]["wh_after"]
+    assert levers["hosted"]["usd_before"] and levers["hosted"]["usd_after"]
+    assert set(bundle["replays"]) >= {"h100", "hosted"}
+    tele = next(n for n in bundle["nodes"] if n["id"] == "telemetry")
+    assert next(s for s in tele["stats"] if s["k"] == "probe_w")["v"] > 0
 
 
 # ---- server --------------------------------------------------------------------------------
@@ -256,3 +303,216 @@ def test_room_module_is_served_for_run_events() -> None:
     r = c.get("/room/node.js")
     assert r.status_code == 200 and "mountNode" in r.text
     assert c.get("/room/data/arsat/scan.json").status_code == 200
+
+
+# ---- single Architecture page: the Experts and Power/Room tabs are merged in --
+def test_power_and_experts_tabs_are_kept():
+    """Power and Experts stay as their own tabs next to Architecture."""
+    html = (ROOT / "web" / "dash" / "index.html").read_text()
+    for tab in ('data-tab="power"', 'data-tab="experts"', 'data-tab="arch"'):
+        assert tab in html
+    assert 'id="flowwrap"' in html and 'id="orch"' in html
+
+def test_arch_expert_toggle_and_room_drilldown():
+    """An Expert toggle in the Architecture toolbar; the rack map opens the racks."""
+    page = (ROOT / "web" / "dash" / "archpage.js").read_text()
+    assert 'id="aexpert"' in page and "aria-pressed" in page
+    assert "/api/dash/moe/meta" in page and "core.js" in page  # expert details reuse the expert content
+    assert "sam" in page and ("heatSvg" in page or "mountRoomScan" in page)  # rack drill-down reuses room rendering
+
+
+def test_arch_pan_zoom_canvas_controls():
+    """The Architecture map is an infinite pan/zoom canvas with its own module and controls."""
+    pan = (ROOT / "web" / "dash" / "pancanvas.js").read_text()
+    page = (ROOT / "web" / "dash" / "archpage.js").read_text()
+    css = (ROOT / "web" / "dash" / "story.css").read_text()
+    assert "pancanvas.js" in page  # the Architecture page loads the reusable module
+    assert "export function init" in pan
+    assert "fit" in pan and "focus" in pan and "setZoom" in pan
+    for cid in ("pc-zoom-out", "pc-zoom-label", "pc-zoom-in", "pc-fit",
+                "pc-minimap-toggle", "pc-goto", "pc-follow", "pc-minimap"):
+        assert cid in pan, cid
+    assert "0.25" in pan and "2" in pan  # zoom clamp 0.25..2
+    assert "prefers-reduced-motion" in pan
+    assert "pc-controls" in css and "pc-minimap" in css
+
+
+# ---- two-phase replay: Phase 1 baseline, Phase 2 with WattNot ----
+def test_arch_replay_has_two_phases_with_indicator():
+    """The toolbar names both phases; the meter strip follows them."""
+    page = (ROOT / "web" / "dash" / "archpage.js").read_text()
+    assert "Phase 1 of 2" in page and "Phase 2 of 2" in page
+    assert "Without WattNot" in page and "With WattNot" in page
+    assert "aphase" in page  # the toolbar phase indicator element
+
+
+def test_arch_baseline_greys_out_wattnot_blocks():
+    """In Phase 1 the WattNot-only blocks are greyed out and tagged; ants run
+    only between the blocks that stay active."""
+    js = (ROOT / "web" / "dash" / "arch.js").read_text()
+    css = (ROOT / "web" / "dash" / "story.css").read_text()
+    assert "skipped in baseline" in js
+    assert "skiptag" in js and ".skiptag" in css
+    assert ".skipped" in css
+
+
+def test_baseline_nodes_are_the_load_measure_and_rig(bundle):
+    """Exactly workload, telemetry, the H100 rig and models stay lit in Phase 1."""
+    base = {n["id"] for n in bundle["nodes"] if n.get("baseline")}
+    assert base == {"workload", "telemetry", "e2e_rig", "models"}
+
+
+def test_arch_deep_links_stay_inside_architecture():
+    """No card links out to a removed Power/Experts tab anymore."""
+    js = (ROOT / "web" / "dash" / "arch.js").read_text()
+    assert "Open in Power" not in js and "Open in Experts" not in js
+    m = re.search(r"export const DEEP = \{([^}]*)\}", js)
+    # drill-down keys stay inside Architecture (expert toggle, rack map), never a removed tab
+    assert m and set(re.findall(r':\s*"([^"]+)"', m.group(1))) <= {"experts", "room"}
+
+
+# ---- wider pan/zoom, live previews, floating windows, solo pop-outs ----
+def test_experts_flow_and_power_room_are_pan_zoom_canvases():
+    """Experts flow + Power/Room views reuse pancanvas.js: wheel/pinch zoom,
+    drag pan, +/-, fit, 'Go to current step', follow off on manual pan."""
+    app = (ROOT / "web" / "dash" / "app.js").read_text()
+    assert "pancanvas.js" in app and "flowwrap" in app
+    assert "initPan" in app and "flowGoto" in app and "getFollow" in app
+    gpu = (ROOT / "web" / "dash" / "gpu.js").read_text()
+    assert "pancanvas.js" in gpu and "initPan" in gpu and "goto" in gpu and "fit" in gpu
+    prod = (ROOT / "web" / "dash" / "product.js").read_text()
+    assert "pancanvas.js" in prod and "panRoom" in prod and "roompan-inner" in prod
+    css = (ROOT / "web" / "dash" / "story.css").read_text()
+    assert "pc-controls" in css and "#flowwrap" in css and ".ppan" in css and "#roomMap" in css
+
+
+def test_run_page_shows_the_arch_canvas_not_preview_minis():
+    """The run page shows the real Architecture canvas (pan/zoom, auto-follow on
+    the executing step); the three preview minis and floating windows are gone
+    from its main layout, while liveviews.js, the tab URLs and solo pop-outs
+    keep working and the run still broadcasts tick + phase."""
+    prod = (ROOT / "web" / "dash" / "product.js").read_text()
+    for vid in ("preview-arch", "preview-experts", "preview-power"):
+        assert vid not in prod, vid  # no separate preview canvases on the run page
+    assert "openLiveWindow" not in prod  # no floating windows from the run page
+    assert "livewins" not in prod
+    assert "liveviews" in prod and "updatePreviews" in prod and "liveState" in prod
+    assert "clock.subscribe" in prod and "phase" in prod  # the shared replay/run clock + phase
+    assert "initPan" in prod and "runGoto" in prod and "getFollow" in prod  # pan/zoom + Go to step + auto-follow
+    assert "broadcast" in prod and '"tick"' in prod and "phase" in prod  # tick + phase + active step
+    lv = (ROOT / "web" / "dash" / "liveviews.js").read_text()
+    assert "Phase 1 of 2" in lv and "Phase 2 of 2" in lv
+    assert "openLiveWindow" in lv and "initSoloIfNeeded" in lv  # the code files stay
+
+
+def test_floating_window_controls():
+    """Draggable by title bar, resizable, z-order on focus, close, minimize,
+    'Go to current step'; all three windows can be open together."""
+    lv = (ROOT / "web" / "dash" / "liveviews.js").read_text()
+    assert "win-${view}" in lv  # one window id per view: win-arch/experts/power
+    for view in ("arch", "experts", "power"):
+        assert view in lv, view
+    assert "livewin-bar" in lv  # draggable title bar
+    assert "Go to current step" in lv
+    assert "close" in lv and "min" in lv  # close + minimize buttons
+    assert "zIndex" in lv  # brings to front on focus
+    css = (ROOT / "web" / "dash" / "story.css").read_text()
+    assert "resize:both" in css.replace(" ", "") or "resize: both" in css  # resizable
+    assert "livewin-grip" in css  # corner handle
+    assert ".livewin.min" in css
+
+
+def test_solo_view_param_and_clock_channel():
+    """Each window pops out to ?view=arch&solo=1 (or experts/power): only that
+    canvas full screen, in sync through BroadcastChannel('wattnot-clock'),
+    and usable standalone with no broadcaster."""
+    bus = (ROOT / "web" / "dash" / "clockbus.js").read_text()
+    assert "wattnot-clock" in bus and "BroadcastChannel" in bus
+    assert "broadcast" in bus and "listen" in bus
+    lv = (ROOT / "web" / "dash" / "liveviews.js").read_text()
+    assert "window.open" in lv and "?view=" in lv and "&solo=1" in lv
+    assert "wattnot-clock" in lv or "CLOCK_CHANNEL" in lv
+    assert "solo-canvas" in lv and "solo-step" in lv  # only that canvas full screen
+    assert "Standalone" in lv or "standalone" in lv  # works with no broadcaster
+    assert "initSoloIfNeeded" in lv
+    app = (ROOT / "web" / "dash" / "app.js").read_text()
+    assert "initSoloIfNeeded" in app  # the main page hands off to the solo view
+    prod = (ROOT / "web" / "dash" / "product.js").read_text()
+    assert "broadcast" in prod and '"tick"' in prod and "phase" in prod  # tick + phase + active step
+    page = (ROOT / "web" / "dash" / "archpage.js").read_text()
+    assert "broadcast" in page
+
+
+# ---- shared styling: label colours, partner glass, bento tiles ----
+def test_numbers_carry_the_label_colour_with_one_legend_per_view():
+    """Numbers are coloured by their label (lab-*), a dot names the label in
+    its title; each view carries one compact legend. badge() stays callable."""
+    theme = (ROOT / "web" / "dash" / "theme.js").read_text()
+    assert "legendHtml" in theme and "lab-legend" in theme
+    assert "numLab" in theme and "export const dot" in theme and "export const pill" in theme
+    css = (ROOT / "web" / "dash" / "product.css").read_text()
+    assert ".lab-MEASURED" in css and ".pdot" in css and ".lab-legend" in css
+    for view in ("archpage.js", "gpu.js", "app.js", "product.js"):
+        assert "legendHtml" in (ROOT / "web" / "dash" / view).read_text(), view
+    prod = (ROOT / "web" / "dash" / "product.js").read_text()
+    m = re.search(r"export const badge = \(l\) => (`.*?`);", prod, re.S)
+    assert m and "title" in m.group(1)  # the label stays in the title
+    assert ">REPLAY<" not in prod and ">LIVE<" not in prod  # no visible text badges
+
+
+def test_partner_tags_are_white_glass_with_names_kept():
+    """Partner tags are plain white text in a small glass box; vendor names stay."""
+    css = (ROOT / "web" / "dash" / "product.css").read_text()
+    m = re.search(r"\.bdg,\.pb,\.pwb.*?\{(.*?)\}", css, re.S)
+    assert m and "#F4F8FB" in m.group(1) and "backdrop-filter" in m.group(1)
+    assert "rgba(255,255,255,.22)" in m.group(1)  # 1px light border, no coloured fill
+    names = (ROOT / "web" / "dash" / "arch.js").read_text() + (ROOT / "web" / "dash" / "product.js").read_text()
+    for vendor in ("Meta", "Baseten", "E2E", "Hugging Face", "NVIDIA", "Sigstore"):
+        assert vendor in names, vendor
+
+
+def test_bento_grid_with_glass_tiles_and_overlap():
+    """Run, report and configure shells sit on a bento grid of glass tiles
+    with a little overlap; a single column under 900px."""
+    css = (ROOT / "web" / "dash" / "product.css").read_text()
+    assert ".bento" in css and ".tile" in css and "backdrop-filter" in css
+    assert ".lap" in css and "-10px" in css  # subtle overlap
+    assert "@media (max-width:900px)" in css
+    prod = (ROOT / "web" / "dash" / "product.js").read_text()
+    assert "bento" in prod and "tile span-8" in prod and "tile span-4" in prod
+
+
+# ---- live overlays on the Architecture blocks ----
+def test_every_arch_block_has_a_battery():
+    """Each block shows a battery whose fill is its power share, coloured by
+    the label legend; blocks with no reading show an empty outlined battery."""
+    js = (ROOT / "web" / "dash" / "arch.js").read_text()
+    assert "batHtml" in js and "paintPower" in js and '"not metered"' in js
+    css = (ROOT / "web" / "dash" / "product.css").read_text()
+    assert ".bat" in css and ".bat.empty" in css and ".bat.lab-MEASURED" in css
+    prod = (ROOT / "web" / "dash" / "product.js").read_text()
+    assert "paintPower" in prod and "runMaxW" in prod  # the live meter fills the active block
+
+
+def test_experts_live_card_nested_in_arch_block():
+    """A live expert-routing card nests inside the adaptive top-k block on the
+    map (and the top-k block on the run page), driven by the shared replay
+    clock over /api/dash/moe/meta + ticks."""
+    js = (ROOT / "web" / "dash" / "arch.js").read_text()
+    assert "paintExperts" in js and "data-xbars" in js and '"live expert routing:' in js
+    page = (ROOT / "web" / "dash" / "archpage.js").read_text()
+    assert "onClockExpert" in page and "/api/dash/moe/ticks" in page
+    prod = (ROOT / "web" / "dash" / "product.js").read_text()
+    assert "updateRunExperts" in prod and '"topk"' in prod and "/api/dash/moe/meta" in prod
+    assert ".xbars" in (ROOT / "web" / "dash" / "product.css").read_text()
+
+
+def test_room_scan_block_and_run_tile():
+    """A dedicated 'Room scan' block (white-glass SAM 3.1 tag) drills down into
+    the racks heat map, plus a room-scan tile on the run page."""
+    js = (ROOT / "web" / "dash" / "arch.js").read_text()
+    assert "Room scan" in js and "displayTitle" in js
+    prod = (ROOT / "web" / "dash" / "product.js").read_text()
+    assert "roomTileHtml" in prod and "SAM 3.1" in prod and "roomDetail" in prod
+    assert "mountRoomScan" in prod and "wireRoomDetail" in prod
+    assert "roomscan" in prod.lower() or "room_scan" in prod  # the scan payload still feeds it

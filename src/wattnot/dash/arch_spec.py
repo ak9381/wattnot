@@ -22,6 +22,11 @@ PARTNERS = {
 
 LABELS = ("MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "ADVICE")
 
+# Nodes that stay lit in Phase 1 of a replay ("Without WattNot", the stock
+# baseline): the load, the meter and the rig. Every other block is WattNot's
+# own machinery and is greyed out until Phase 2.
+BASELINE_NODES = ("workload", "telemetry", "e2e_rig", "models")
+
 
 def S(id, title, desc, code, ins, outs, partner=None, event=None):
     """One sub-step: `code` is "path/in/package.py::Symbol"."""

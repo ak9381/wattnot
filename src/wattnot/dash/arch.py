@@ -657,6 +657,7 @@ def build(*, repo: Path = ROOT, e2e: Path | None = None, ledger: Path | None = N
     ev["baseten_model"] = [f"reports/cloud-live/{a}.calls.jsonl ({n} calls)" for a, n in bt.get("per_run", [])]
     for n in spec.NODES:
         n = json.loads(json.dumps(n))
+        n["baseline"] = n["id"] in spec.BASELINE_NODES
         n["stats"] = S.get(n["id"], [])
         if n["id"] == "cache" and "meta" not in n["partners"]:
             n["partners"].append("meta")

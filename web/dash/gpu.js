@@ -1,6 +1,11 @@
 // The Power page: live GPU numbers, the approve-before-apply proposals and the receipts.
 // Source is either a replay scene of the real H100 run, or a live run read from /api/runs/<id>/events.
-import { esc, pill } from "./theme.js";
+// The replay scene also follows the shared replay clock the Architecture replay
+// publishes (play/pause/reset, progress, phase); the live run ignores it.
+import { esc, dot, numLab, legendHtml } from "./theme.js";
+import { clock } from "./replayclock.js";
+import { init as initPan } from "./pancanvas.js";
+import { broadcast } from "./clockbus.js";
 
 const f1 = (x, d = 0) => (x == null ? "–" : Number(x).toFixed(d));
 
@@ -8,6 +13,35 @@ export class Power {
   constructor(host) {
     this.host = host; this.samples = []; this.cur = null; this.es = null; this.info = null; this.speed = 12;
     this.scene = null; this.paused = false;
+    this.followClock = false; this.clockPhase = 0; this.stockCap = null; this.baseNote = "";
+    clock.subscribe((ev) => this.onClock(ev));
+  }
+
+  // The shared replay clock: pause/reset/phase sync the scene replay to the
+  // Architecture replay. Phase 1 shows the baseline arm/scene, Phase 2 the
+  // WattNot one, where the data has both. A live run ignores the clock.
+  onClock(ev) {
+    if (this.scene?.kind === "live") return;
+    if (ev.type === "reset") { this.followClock = true; this.clockPhase = 1; this.stockCap = null; this.pick(this.$("sceneSel").value); return; }
+    if (!this.scene) return;
+    this.followClock = true;
+    if (ev.type === "pause") { this.paused = true; this.$("pPlay").textContent = "play"; return; }
+    if (ev.type === "play") { this.paused = false; this.$("pPlay").textContent = "pause"; (this.buf || []).splice(0).forEach((v) => this.add(v)); return; }
+    if (ev.type === "phase" || ev.type === "progress") { this.clockPhase = ev.phase; this.renderNote(); }
+  }
+  // Phase 1 keeps only the baseline samples of a scene that has both arms:
+  // the off arm (adaptive), the stock cap (sweep), the before phase (flex).
+  phaseHit(s) {
+    if (!this.followClock || this.clockPhase !== 1) return true;
+    if (s.arm) return s.arm === "off";
+    if (s.phase) return s.phase !== "after";
+    if (s.gate) return s.gate === "baseline";
+    if (s.cap_w != null) return this.stockCap == null || s.cap_w === this.stockCap;
+    return true;
+  }
+  renderNote() {
+    const ph = this.followClock && this.clockPhase ? (this.clockPhase === 1 ? " · Phase 1 of 2 · baseline" : " · Phase 2 of 2 · WattNot") : "";
+    this.$("sceneNote").innerHTML = `${this.baseNote}${ph}`;
   }
 
   async init() {
@@ -18,8 +52,9 @@ export class Power {
         ${[["power", "GPU power", "W"], ["jtok", "Energy per token", "J"], ["toks", "Tokens per second", "tok/s"], ["p99", "p99 latency", "ms"], ["cap", "Power cap", "W"], ["req", "Requests per second", "req/s"]]
           .map(([id, k, u]) => `<div class="card"><div class="k"><span>${k}</span><span id="${id}-l"></span></div><div class="v"><span id="${id}-v">–</span><small>${u}</small></div><div class="d" id="${id}-d"></div></div>`).join("")}
       </div>
+      <p class="plegend">${legendHtml()}</p>
       <div class="pgrid">
-        <div class="panel"><h3>trace <span class="r">
+        <div class="panel ppan"><h3>trace <span class="r">
             <select id="sceneSel">${scenes.map((s) => `<option value="${s.id}">${esc(s.title)}</option>`).join("")}<option value="run:">live run (API)…</option></select>
             <button class="ghost" id="pPlay">pause</button><button class="ghost" id="pRestart">restart</button></span></h3>
           <canvas id="chart"></canvas>
@@ -27,9 +62,20 @@ export class Power {
         <div class="panel"><h3>approve before apply</h3><div id="props"></div>
           <h3 style="margin-top:12px">receipts</h3><div id="rcpts"></div></div>
       </div>`;
-    this.$("sceneSel").onchange = (e) => this.pick(e.target.value);
-    this.$("pPlay").onclick = () => { this.paused = !this.paused; this.$("pPlay").textContent = this.paused ? "play" : "pause"; if (!this.paused) { (this.buf || []).splice(0).forEach((v) => this.add(v)); } };
-    this.$("pRestart").onclick = () => this.pick(this.$("sceneSel").value);
+    // The trace is a pan/zoom canvas too: the chart sits on a transformed
+    // inner layer with the shared wheel/pinch/drag/controls, 'Go to current
+    // step' fits the live end of the trace, follow drops on manual pan.
+    {
+      const chart = this.$("chart"), panel = chart.closest(".ppan");
+      const inner = document.createElement("div");
+      inner.className = "ppan-inner";
+      chart.replaceWith(inner); inner.appendChild(chart);
+      this.pan = initPan(panel, inner, { goto: () => this.pan.fit() });
+      requestAnimationFrame(() => this.pan.fit());
+    }
+    this.$("sceneSel").onchange = (e) => { this.followClock = false; this.pick(e.target.value); };
+    this.$("pPlay").onclick = () => { this.followClock = false; this.paused = !this.paused; this.$("pPlay").textContent = this.paused ? "play" : "pause"; if (!this.paused) { (this.buf || []).splice(0).forEach((v) => this.add(v)); } };
+    this.$("pRestart").onclick = () => { this.followClock = false; this.pick(this.$("sceneSel").value); };
     this.renderApprovals();
     const wanted = new URLSearchParams(location.search).get("scene");
     const first = scenes.find((s) => s.id === wanted) || scenes.find((s) => s.kind === "adaptive") || scenes[0];
@@ -39,6 +85,8 @@ export class Power {
 
   $(id) { return this.host.querySelector(`#${id}`); }
 
+  show() { requestAnimationFrame(() => { this.pan?.fit(); this.draw(); }); }
+
   pick(id) {
     this.es?.close(); this.samples = []; this.cur = null; this.cap = null; this.baseJ = null;
     if (id === "run:") {
@@ -46,7 +94,9 @@ export class Power {
       this.live(run); return;
     }
     const sc = this.info.scenes.find((s) => s.id === id); this.scene = sc;
-    this.$("sceneNote").innerHTML = `${esc(sc.note || "")} ${pill(sc.label || "MEASURED")} <span class="muted">replay of the real run, ${sc.n} one-second samples</span>`;
+    this.stockCap = null;
+    this.baseNote = `${esc(sc.note || "")} ${dot(sc.label || "MEASURED")} <span class="muted">replay of the real run, ${sc.n} one-second samples</span>`;
+    this.renderNote();
     this.baseJ = sc.baseline_j_per_tok ?? null;
     this.es = new EventSource(`/api/dash/gpu/scene/${encodeURIComponent(id)}/events?speed=${this.speed}`);
     this.buf = [];
@@ -56,6 +106,7 @@ export class Power {
 
   // live: the existing run API (telemetry.sample, action.applied) in the same shape as a replay sample
   live(run) {
+    this.followClock = false;
     this.scene = { title: `run ${run}`, kind: "live", label: "MEASURED" };
     this.$("sceneNote").innerHTML = `live from /api/runs/${esc(run)}/events`;
     this.es = new EventSource(`/api/runs/${encodeURIComponent(run)}/events?speed=1`);
@@ -71,14 +122,19 @@ export class Power {
   }
 
   add(s) {
+    if (s.cap_w != null && this.stockCap == null) this.stockCap = s.cap_w;
+    if (!this.phaseHit(s)) return;
     this.samples.push(s); if (this.samples.length > 900) this.samples.shift();
     this.cur = { ...(this.cur || {}), ...Object.fromEntries(Object.entries(s).filter(([, v]) => v != null)) };
     if (this.scene?.kind === "sweep" || this.scene?.kind === "adaptive") this.cur.cap_w = s.cap_w ?? this.cur.cap_w;
     this.paintCards(s); this.draw();
+    if ((this._bc = (this._bc || 0) + 1) % 8 === 0 && s.power_w != null) {
+      broadcast({ type: "tick", view: "power", phase: this.clockPhase || 2, step: `t+${Math.round(s.t_s || 0)}s`, text: `${s.power_w} W`, powerSamples: this.samples.slice(-60).map((q) => q.power_w).filter((v) => v != null) });
+    }
   }
 
   paintCards(s) {
-    const c = this.cur, set = (id, v, label, d) => { this.$(id + "-v").textContent = v; this.$(id + "-l").innerHTML = label ? pill(label) : ""; this.$(id + "-d").textContent = d || ""; };
+    const c = this.cur, set = (id, v, label, d) => { const el = this.$(id + "-v"); el.textContent = v; el.classList.remove("lab-MEASURED", "lab-ESTIMATE", "lab-SIMULATED", "lab-MOCK", "lab-REPLAY"); if (label) { el.classList.add(`lab-${label}`); el.title = label; el.setAttribute("aria-label", label); } else { el.removeAttribute("title"); el.removeAttribute("aria-label"); } this.$(id + "-l").innerHTML = label ? dot(label) : ""; this.$(id + "-d").textContent = d || ""; };
     const lab = s.label || this.scene?.label || "MEASURED";
     set("power", f1(s.power_w), s.power_w == null ? "" : lab, s.phase ? `phase: ${s.phase}` : "");
     const jt = s.j_per_tok ?? (s.power_w != null && s.rps ? null : null);
@@ -129,7 +185,7 @@ export class Power {
       : `<p class="note2">No proposals.</p>`;
     this.$("rcpts").innerHTML = `<table class="rc"><tr><th>receipt</th><th>saving</th><th>grade</th><th>signed</th></tr>${R.map((r) => `<tr>
       <td title="${esc(r.model || "")}">${esc(r.id.replace("rcpt_", ""))}<br><span class="muted">${esc(r.profile)}</span></td>
-      <td>${r.saving_pct == null ? "–" : `${r.saving_pct >= 0 ? "−" : "+"}${Math.abs(r.saving_pct).toFixed(1)}%`} ${pill(r.label)}</td>
+      <td class="num${numLab(r.label)}">${r.saving_pct == null ? "–" : `${r.saving_pct >= 0 ? "−" : "+"}${Math.abs(r.saving_pct).toFixed(1)}%`} ${dot(r.label)}</td>
       <td>${esc(r.grade || "–")}</td><td>${r.signed ? "yes" : "no"}</td></tr>`).join("")}</table>
       <p class="note2">Approving happens in <span class="mono">wattnot proposals</span>. This page only reads.</p>`;
   }

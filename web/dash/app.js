@@ -2,15 +2,20 @@ import * as C from "./core.js";
 import { Flow } from "./flow.js";
 import { Orchestra } from "./orchestra.js";
 import { Power } from "./gpu.js";
-import { esc, pill, pct, topicColor, GROUP_COLORS } from "./theme.js";
+import { esc, dot, legendHtml, pct, topicColor, GROUP_COLORS } from "./theme.js";
 import { Product } from "./product.js";
 import { ArchPage } from "./archpage.js";
 import { panelHtml } from "./arch.js";
+import { clock } from "./replayclock.js";
+import { init as initPan } from "./pancanvas.js";
+import { broadcast } from "./clockbus.js";
+import { initSoloIfNeeded } from "./liveviews.js";
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const app = { st: null, ticks: [], arm: params.get("arm") === "on" ? "on" : "off", speed: +(params.get("speed") || 3), playing: true,
   sel: { steps: [], group: null }, hov: { steps: null, group: null }, ready: false, live: false, cursor: 0, clock: 0, runningUntil: 0 };
+let followClock = false;
 
 // ---- tabs
 let archPage = null, curTab = "power", healthData = {};
@@ -19,7 +24,8 @@ function showTab(name) {
   document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
   $("power").classList.toggle("on", name === "power"); $("experts").classList.toggle("on", name === "experts"); $("arch").classList.toggle("on", name === "arch");
   $("expertCtl").hidden = name !== "experts"; $("srcChip").hidden = name === "arch";
-  if (name === "experts") { initExperts(); requestAnimationFrame(() => { flow?.layoutEdges(); orch?.layout(); }); }
+  if (name === "power") power.show?.();
+  if (name === "experts") { initExperts(); requestAnimationFrame(() => { flow?.layoutEdges(); orch?.layout(); flowPan?.refreshMinimap?.(); }); }
   if (name === "arch") ensureArch().then(() => archPage?.show());
 }
 function ensureArch() {
@@ -34,7 +40,23 @@ const power = new Power($("power"));
 power.init().catch((e) => ($("power").innerHTML = `<p class="note2">Could not load the GPU replay: ${esc(e.message)}</p>`));
 
 // ---- experts
-let flow, orch, inited = false, ctx;
+let flow, orch, inited = false, ctx, flowPan = null, flowPanInner = null, lastFlowStep = -1;
+
+// The Experts flow is a pan/zoom canvas too: wheel/pinch zoom, drag pan,
+// +/-/fit, 'Go to current step', and an auto-follow that switches off on any
+// manual pan (the shared pancanvas module owns the gestures).
+function flowGoto() {
+  if (!flowPan) return;
+  const el = $("flowwrap").querySelector(".node.run") || $("flowwrap").querySelector("#n-router");
+  if (el) flowPan.focus(el, { zoom: Math.max(flowPan.state.scale, 1) });
+}
+function ensureFlowPan() {
+  const fw = $("flowwrap");
+  if (!fw || !flowPanInner || !fw.contains(flowPanInner)) return;
+  flowPan?.destroy();
+  flowPan = initPan(fw, flowPanInner, { goto: flowGoto });
+  flowPan.fit();
+}
 
 async function initExperts() {
   if (inited) return; inited = true;
@@ -50,11 +72,16 @@ async function initExperts() {
     selectGroup: (g) => { app.sel.group = app.sel.group === g ? null : g; if (app.sel.group != null) app.sel.steps = []; refreshFocus(); },
     tipUnit,
   };
-  flow = new Flow($("flowwrap"), ctx); orch = new Orchestra($("orch"), ctx);
+  flowPanInner = document.createElement("div");
+  flowPanInner.className = "flowpan-inner";
+  $("flowwrap").appendChild(flowPanInner);
+  flow = new Flow(flowPanInner, ctx); orch = new Orchestra($("orch"), ctx);
+  ensureFlowPan();
   setView(params.get("view") || "both");
-  $("srcChip").innerHTML = `${esc(meta.meta.model)} · routing captured on ${esc(meta.meta.capture)} ${pill("MEASURED")} · energy ${meta.energy ? "rate from H100 counter" : "n/a"} ${meta.energy ? pill("MEASURED") : ""}`;
+  $("srcChip").innerHTML = `${esc(meta.meta.model)} · routing captured on ${esc(meta.meta.capture)}${dot("MEASURED")} · energy ${meta.energy ? "rate from H100 counter" : "n/a"}${meta.energy ? dot("MEASURED") : ""} ${legendHtml()}`;
   buildAll();
   wireControls();
+  clock.subscribe(onClock);
   fastForwardTo(+(params.get("at") || 0));
   const health = await fetch("/api/dash/health").then((r) => r.json());
   if (health.following) goLive();
@@ -79,9 +106,9 @@ function wireControls() {
   document.querySelectorAll("#modeSeg button").forEach((b) => (b.onclick = () => { C.setMode(app.st, b.dataset.mode); C.replayAll(app.st, app.ticks.slice(0, app.cursor)); app.sel.group = null; buildAll(); }));
   document.querySelectorAll("#viewSeg button").forEach((b) => (b.onclick = () => setView(b.dataset.view)));
   document.querySelectorAll("#speedSeg button").forEach((b) => (b.onclick = () => { app.speed = +b.dataset.speed; document.querySelectorAll("#speedSeg button").forEach((x) => x.classList.toggle("on", x === b)); }));
-  $("playBtn").onclick = () => { app.playing = !app.playing; $("playBtn").textContent = app.playing ? "pause" : "play"; };
-  $("restartBtn").onclick = () => restart();
-  $("armBtn").onclick = () => { app.arm = app.arm === "off" ? "on" : "off"; restart(); };
+  $("playBtn").onclick = () => { followClock = false; app.playing = !app.playing; $("playBtn").textContent = app.playing ? "pause" : "play"; };
+  $("restartBtn").onclick = () => { followClock = false; restart(); };
+  $("armBtn").onclick = () => { followClock = false; app.arm = app.arm === "off" ? "on" : "off"; restart(); };
   window.addEventListener("keydown", (e) => { if (e.key === " " && inited && drawerOpen && curTab === "experts" && !e.target.closest("button,a,select,input")) { e.preventDefault(); $("playBtn").click(); } });
 }
 
@@ -124,8 +151,39 @@ function loop(now) {
   }
   uiAcc += dt;
   orch.draw();
-  if (uiAcc > 0.1) { uiAcc = 0; flow.update(); paintTimeline(); }
+  if (uiAcc > 0.1) {
+    uiAcc = 0; flow.update(); paintTimeline();
+    const cur = app.st?.lastTick?.step;
+    if (cur != null && cur !== lastFlowStep) {
+      lastFlowStep = cur;
+      if (flowPan?.getFollow()) flowGoto();
+      broadcast({ type: "tick", view: "experts", phase: clock.phase, step: `step ${cur + 1}`, text: app.st.meta.meta.steps[cur]?.prompt || "", progress: clock.progress, expertActive: cur % 4 });
+    }
+  }
   requestAnimationFrame(loop);
+}
+
+// ---- shared replay clock: the Architecture replay drives the tick replay here
+// (seek/pause to match; Phase 1 on the baseline arm, Phase 2 on the WattNot
+// arm where the data has both). The live follow mode ignores the clock.
+function onClock(ev) {
+  if (app.live) return; // live follows the capture file, not the shared clock
+  if (!inited) return;
+  followClock = true;
+  app.playing = false; $("playBtn").textContent = "play";
+  if (ev.type === "reset") { restart(); return; }
+  if (ev.type === "phase") { const arm = ev.phase === 1 ? "off" : "on"; if (app.arm !== arm) { app.arm = arm; restart(); } }
+  if (ev.type === "play" || ev.type === "pause" || ev.type === "progress" || ev.type === "phase") {
+    const local = ev.phase === 1 ? Math.min(1, ev.progress * 2) : Math.max(0, (ev.progress - 0.5) * 2);
+    seekClock(local);
+  }
+}
+function seekClock(p) {
+  const seq = app.cursorTicks || (app.cursorTicks = armTicks());
+  const target = Math.min(seq.length, Math.floor(p * seq.length));
+  if (target < app.pos) restart();
+  while (app.pos < target) { consume(seq[app.pos], false); app.pos++; app.cursor = app.pos; }
+  paintTimeline(); flow?.update();
 }
 
 // ---- live following (wattnot dash --follow file)
@@ -134,7 +192,7 @@ function goLive() {
   const es = new EventSource("/api/dash/moe/events");
   es.addEventListener("tick", (ev) => { const t = JSON.parse(ev.data); app.ticks.push(t); if (t.arm === app.arm) consume(t); });
   es.addEventListener("end", () => { logLine("live", "run finished"); es.close(); });
-  $("srcChip").insertAdjacentHTML("afterbegin", `<span class="pill MEASURED">LIVE</span> `);
+  $("srcChip").insertAdjacentHTML("afterbegin", `live${dot("LIVE")} `);
 }
 
 // ---- focus (hover beats selection) and the link between the two views
@@ -248,7 +306,7 @@ function tipUnit(u, ev) {
   const n = st.meta.counts[arm][u], tot = st.meta.counts[arm].reduce((a, b) => a + b, 0);
   const toks = (st.meta.unit_tokens[String(u)] || []).slice(0, 4).map(([id, c]) => `${esc((st.meta.vocab[String(id)] || "").replace(/\n/g, "↵").trim() || "·")} ${c}`).join(" · ");
   const per = C.jPerSlot(st, arm);
-  tip.innerHTML = `<b>layer ${L} · expert ${e}</b> · ${esc(st.names[g])}<br>routed ${n} tokens (${(100 * n / tot).toFixed(2)}%) ${pill("MEASURED")}<br>${per == null ? "" : `~${(n * per).toFixed(2)} J ${pill("ESTIMATE")}<br>`}top tokens: ${toks || "–"}`;
+  tip.innerHTML = `<b>layer ${L} · expert ${e}</b> · ${esc(st.names[g])}<br>routed ${n} tokens (${(100 * n / tot).toFixed(2)}%)${dot("MEASURED")}<br>${per == null ? "" : `~${(n * per).toFixed(2)} J${dot("ESTIMATE")}<br>`}top tokens: ${toks || "–"}`;
   tip.hidden = false;
   if (ev) { tip.style.left = `${Math.min(innerWidth - 300, ev.clientX + 14)}px`; tip.style.top = `${Math.min(innerHeight - 120, ev.clientY + 14)}px`; }
 }
@@ -324,6 +382,7 @@ $("metaChip").onclick = () => togglePop($("pop").hidden);
 // ---- start the product flow
 let product = null, bundle = null;
 async function boot() {
+  if (initSoloIfNeeded()) return; // ?view=arch&solo=1 renders only that canvas full screen
   const stage = $("stage"); stage.innerHTML = "";
   const [health, sb] = await Promise.all([loadHealth(), fetch("/api/dash/story").then((r) => { if (!r.ok) throw new Error(r.status === 404 ? "The run data has not been built yet: run scripts/build_dash_arch.py." : `HTTP ${r.status}`); return r.json(); }).catch((e) => ({ error: e.message }))]);
   checkMeta(false);
