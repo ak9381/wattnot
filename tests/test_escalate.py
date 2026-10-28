@@ -71,3 +71,26 @@ def test_verify_chain_and_labels(tmp_path):
     assert not labels_step({"result": {"x": {"label": "SIMULATED"}}}).ok
     assert not labels_step({"a": {"label": "GUESS"}}).ok
     assert main(["verify", *map(str, sorted(d.glob("*.json"))), "--chain"]) == 0
+
+
+def test_rates_and_net_overhead():
+    items = [_item(0, "math", "#### 4", True), _item(1, "math", "no", False)]
+    b = E.evaluate(items, overhead_joules=20.0, overhead_label="ESTIMATE")
+    assert b["escalation_rate_pct"] == 50.0 and b["small_model_pass_pct"] == 50.0
+    sf = next(p for p in b["policies"] if p["policy"] == "small_first")
+    assert sf["joules_gross"] == 80.0 and sf["joules"] == 100.0 and sf["label"] == "ESTIMATE"
+
+
+def test_rekor_online_step():
+    import base64
+    import json
+
+    from wattnot.verify import rekor_online_step
+    r = {"integrity": {"sha256": "ab" * 32}}
+    body = base64.b64encode(json.dumps({"spec": {"data": {"hash": {"value": "ab" * 32}}}}).encode()).decode()
+    ok = rekor_online_step(r, {"rekor": {"log_index": 5}}, fetch=lambda i: {"u": {"body": body, "integratedTime": 1}})
+    assert ok.ok
+    assert not rekor_online_step(r, {"rekor": {}}).ok
+    bad = rekor_online_step({"integrity": {"sha256": "cd" * 32}}, {"rekor": {"log_index": 5}},
+                            fetch=lambda i: {"u": {"body": body}})
+    assert not bad.ok

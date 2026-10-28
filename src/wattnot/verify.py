@@ -223,3 +223,34 @@ def format_report(r: Report) -> str:
                      + (f"{good:.1f} J per good answer" if good is not None
                         else "no good answers (pass rate 0)"))
     return "\n".join(lines)
+
+
+REKOR_URL = "https://rekor.sigstore.dev/api/v1/log/entries?logIndex={}"
+
+
+def rekor_online_step(receipt: dict, bundle: dict | None, *, fetch=None) -> Step:
+    """Look the receipt's log index up on the public Rekor log and check the entry carries the
+    receipt's sha256. Offline-signed receipts have no index, so this step fails for them."""
+
+    import base64
+    import urllib.request
+
+    rk = (bundle or {}).get("rekor") or {}
+    idx = rk.get("log_index")
+    want = ((receipt.get("integrity") or {}).get("sha256") or "").lower()
+    if idx is None:
+        return Step("rekor-online", False, {"error": "no Rekor log index: signed offline, not in the public log"})
+    try:
+        if fetch is None:
+            with urllib.request.urlopen(REKOR_URL.format(int(idx)), timeout=15) as r:  # noqa: S310
+                data = json.loads(r.read())
+        else:
+            data = fetch(int(idx))
+        entry = next(iter(data.values()))
+        body = json.loads(base64.b64decode(entry["body"]))
+        blob = json.dumps(body).lower()
+    except Exception as e:
+        return Step("rekor-online", False, {"log_index": idx, "error": f"lookup failed: {type(e).__name__}"})
+    ok = bool(want) and want in blob
+    return Step("rekor-online", ok, {"log_index": idx, "integrated_time": entry.get("integratedTime"),
+                                     **({} if ok else {"error": "the log entry does not carry this receipt's sha256"})})

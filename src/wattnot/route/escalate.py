@@ -78,7 +78,8 @@ def _policy(name: str, rows: list[dict], label: str) -> dict:
             "escalated": sum(r.get("escalated", False) for r in rows), "label": label}
 
 
-def evaluate(items: Iterable[Mapping]) -> dict:
+def evaluate(items: Iterable[Mapping], *, overhead_joules: float = 0.0,
+             overhead_label: str = "MEASURED") -> dict:
     """items: {id, kind, small: {...}, big: {...}}; each side has text, finish_reason,
     correct, joules, usd, label. ``small.gate_pass`` may be given; else the gate is run.
     Returns the ``escalation`` receipt block."""
@@ -111,7 +112,19 @@ def evaluate(items: Iterable[Mapping]) -> dict:
         out["policies"].append(_policy("big_only", big_rows, lb))
         out["policies"].append(_policy("small_first", casc, weakest([ls, lb])))
     out["escalation_reasons"] = reasons
+    n = len(small_rows)
+    out["small_model_pass_pct"] = round(100 * sum(r["correct"] for r in small_rows) / n, 2) if n else None
+    out["gate_pass_pct"] = round(100 * sum(not c.get("escalated") for c in casc) / n, 2) if n else None
+    out["escalation_rate_pct"] = round(100 * sum(c.get("escalated", False) for c in casc) / n, 2) if n else None
+    # net: the gate, the judge and verification also burn energy; charge it to small-first
+    out["overhead"] = {"joules": round(overhead_joules, 3), "label": overhead_label,
+                       "what": "agent/planner, quality judge and verification energy, charged to small_first"}
     sf = next((p for p in out["policies"] if p["policy"] == "small_first"), None)
+    if sf and overhead_joules:
+        sf["joules_gross"] = sf["joules"]
+        sf["joules"] = round(sf["joules"] + overhead_joules, 3)
+        sf["j_per_correct"] = _per(sf["joules"], sf["correct"])
+        sf["label"] = weakest([sf["label"], overhead_label])
     bo = next((p for p in out["policies"] if p["policy"] == "big_only"), None)
     if sf and bo and sf["j_per_correct"] and bo["j_per_correct"]:
         out["headline"] = {
