@@ -79,6 +79,7 @@ def test_apply_pr_dry_run_produces_patch_and_pr_body(tmp_path):
         "max_num_seqs": 128,
         "gpu_memory_utilization": 0.85,
         "saving_pct": 12.5,
+        "water_ml_per_req": 0.078,
     }
     labels = {
         "power_cap_w": "MEASURED",
@@ -105,6 +106,70 @@ def test_apply_pr_dry_run_produces_patch_and_pr_body(tmp_path):
     assert "ESTIMATE" in res.pr_body
     assert "--- a/launch.sh" in res.patch_diff
     assert "+++ b/launch.sh" in res.patch_diff
+    # Dry run never mutates the target repo
+    assert "nvidia-smi -pl 350" not in (repo_copy / "launch.sh").read_text()
+    # p99 was not provided: no fabricated line may appear
+    assert "P99 Latency Delta" not in res.pr_body
+
+
+def test_apply_pr_never_fabricates_measured_metrics(tmp_path):
+    repo_copy = tmp_path / "repo"
+    shutil.copytree(FIXTURE_DEMO, repo_copy)
+
+    res = apply_pr(
+        {"power_cap_w": 350},
+        repo_copy,
+        receipt_sha256="3" * 64,
+        out_dir=tmp_path / "out",
+        mock=True,
+        open_pr=False,
+    )
+    assert "Energy Saving" not in res.pr_body
+    assert "P99 Latency Delta" not in res.pr_body
+    assert "Water Usage" not in res.pr_body
+    assert "(label: MEASURED)" not in res.pr_body
+
+
+def test_open_pr_commits_exactly_the_generated_patch(tmp_path):
+    from unittest import mock as _mock
+
+    real_run = subprocess.run
+    repo_dir = tmp_path / "repo"
+    shutil.copytree(FIXTURE_DEMO, repo_dir)
+    real_run(["git", "init", str(repo_dir)], check=True, capture_output=True)
+    real_run(["git", "-C", str(repo_dir), "remote", "add", "origin",
+              f"https://{REQUIRED_REMOTE}.git"], check=True, capture_output=True)
+    real_run(["git", "-C", str(repo_dir), "add", "-A"], check=True, capture_output=True)
+    real_run(["git", "-C", str(repo_dir), "-c", "user.email=t@t", "-c", "user.name=t",
+              "commit", "-m", "base"], check=True, capture_output=True)
+
+    def fake_run(cmd, **kwargs):
+        if cmd[0] == "gh":  # never reach the network from tests
+            return subprocess.CompletedProcess(cmd, 1, "", "gh disabled in tests")
+        if cmd[:2] == ["git", "-C"] and "commit" in cmd:
+            cmd = cmd[:2] + [cmd[2], "-c", "user.email=t@t", "-c", "user.name=t"] + cmd[3:]
+        return real_run(cmd, **kwargs)
+
+    with _mock.patch("wattnot.musecode.apply_pr.subprocess.run", side_effect=fake_run):
+        res = apply_pr(
+            {"power_cap_w": 350},
+            repo_dir,
+            receipt_sha256="4" * 64,
+            out_dir=tmp_path / "out",
+            mock=True,
+            open_pr=True,
+        )
+
+    assert res.open_pr is True
+    assert res.pr_url is None  # gh was refused by the test stub
+    # The committed tree matches the generated patch content
+    assert "nvidia-smi -pl 350" in (repo_dir / "launch.sh").read_text()
+    show = real_run(["git", "-C", str(repo_dir), "show", "--stat", "HEAD"],
+                    capture_output=True, text=True, check=True)
+    assert "launch.sh" in show.stdout
+    status = real_run(["git", "-C", str(repo_dir), "status", "--porcelain"],
+                      capture_output=True, text=True, check=True)
+    assert status.stdout.strip() == ""
 
 
 def test_apply_pr_open_pr_refuses_when_remote_not_matched(tmp_path):

@@ -63,6 +63,13 @@ def get_git_remote(repo_path: Path) -> str:
         return ""
 
 
+def _fmt_float(v: Any) -> str:
+    """Format a float without silently altering it (0.90 -> '0.90', 0.925 -> '0.925')."""
+    f = float(v)
+    two = f"{f:.2f}"
+    return two if float(two) == f else repr(f)
+
+
 def deterministic_edit_launch_sh(content: str, change: Mapping[str, Any]) -> str:
     """Apply power cap and vllm flags to launch.sh."""
     lines = content.splitlines(keepends=True)
@@ -83,7 +90,7 @@ def deterministic_edit_launch_sh(content: str, change: Mapping[str, Any]) -> str
         if gpu_mem is not None and "--gpu-memory-utilization" in line:
             line = re.sub(
                 r"--gpu-memory-utilization\s+[0-9.]+",
-                f"--gpu-memory-utilization {float(gpu_mem):.2f}",
+                f"--gpu-memory-utilization {_fmt_float(gpu_mem)}",
                 line,
             )
 
@@ -114,7 +121,7 @@ def deterministic_edit_values_yaml(content: str, change: Mapping[str, Any]) -> s
 
         if gpu_mem is not None and re.match(r"^\s*gpuMemoryUtilization:\s*[0-9.]+", line):
             indent = len(line) - len(line.lstrip())
-            out.append(f"{' ' * indent}gpuMemoryUtilization: {float(gpu_mem):.2f}\n")
+            out.append(f"{' ' * indent}gpuMemoryUtilization: {_fmt_float(gpu_mem)}\n")
             continue
 
         out.append(line)
@@ -157,9 +164,13 @@ def apply_pr(
     out.mkdir(parents=True, exist_ok=True)
 
     labels = dict(labels or {})
-    cap_w = change.get("power_cap_w") or change.get("cap_w", 400)
-    max_num_seqs = change.get("max_num_seqs", 256)
-    gpu_mem = change.get("gpu_memory_utilization") or change.get("gpu_mem_util", 0.90)
+    cap_w = change.get("power_cap_w")
+    if cap_w is None:
+        cap_w = change.get("cap_w")
+    max_num_seqs = change.get("max_num_seqs")
+    gpu_mem = change.get("gpu_memory_utilization")
+    if gpu_mem is None:
+        gpu_mem = change.get("gpu_mem_util")
 
     # Remote safety check for --open-pr
     if open_pr:
@@ -173,6 +184,10 @@ def apply_pr(
 
     diff_chunks: list[str] = []
     files_modified: list[str] = []
+    # Edited file contents, written to disk only when the PR is actually opened:
+    # a dry run must not mutate the target repo, and an opened PR must commit
+    # exactly the content the patch hash covers.
+    pending_writes: list[tuple[Path, str]] = []
     trace: dict[str, Any] = {}
 
     # In mock/dry-run mode (DEFAULT), do NOT call muse at all
@@ -190,6 +205,7 @@ def apply_pr(
                 )
                 diff_chunks.extend(diff)
                 files_modified.append("launch.sh")
+                pending_writes.append((launch_path, new_launch))
 
         values_path = repo / "values.yaml"
         if values_path.exists():
@@ -204,16 +220,18 @@ def apply_pr(
                 )
                 diff_chunks.extend(diff)
                 files_modified.append("values.yaml")
+                pending_writes.append((values_path, new_values))
     else:
         # Live invocation of verified muse exec CLI
         prompt_file = out / "muse_prompt.txt"
-        prompt_text = (
-            f"Update launch.sh and values.yaml with the following verified inference configuration:\n"
-            f"- Power cap: {cap_w} W\n"
-            f"- max_num_seqs: {max_num_seqs}\n"
-            f"- gpu_memory_utilization: {gpu_mem}\n"
-        )
-        prompt_file.write_text(prompt_text, encoding="utf-8")
+        prompt_lines = ["Update launch.sh and values.yaml with the following verified inference configuration:"]
+        if cap_w is not None:
+            prompt_lines.append(f"- Power cap: {cap_w} W")
+        if max_num_seqs is not None:
+            prompt_lines.append(f"- max_num_seqs: {max_num_seqs}")
+        if gpu_mem is not None:
+            prompt_lines.append(f"- gpu_memory_utilization: {gpu_mem}")
+        prompt_file.write_text("\n".join(prompt_lines) + "\n", encoding="utf-8")
 
         cmd = build_muse_command(repo, prompt_file, model)
         if provider:
@@ -246,6 +264,7 @@ def apply_pr(
                     )
                     diff_chunks.extend(diff)
                     files_modified.append("launch.sh")
+                    pending_writes.append((launch_path, new_launch))
 
     patch_text = "".join(diff_chunks)
     if not patch_text:
@@ -255,13 +274,17 @@ def apply_pr(
     patch_file = out / "patch.diff"
     patch_file.write_text(patch_text, encoding="utf-8")
 
-    # Generate PR body with wattnot://<hash> and labels for all numbers
-    cap_label = labels.get("power_cap_w", labels.get("cap_w", "MEASURED"))
-    saving_pct = change.get("saving_pct", 10.0)
-    saving_label = labels.get("saving_pct", "MEASURED")
-    p99_delta = change.get("p99_delta_ms", 12.5)
-    p99_label = labels.get("p99_delta", "MEASURED")
-    water_ml = change.get("water_ml_per_req", 0.078)
+    # Generate PR body with wattnot://<hash> and labels for all numbers.
+    # Only metrics the caller actually provided are shown; a number without an
+    # explicit label is MOCK in dry-run mode and ESTIMATE otherwise — never a
+    # fabricated MEASURED claim.
+    default_label = "MOCK" if mock else "ESTIMATE"
+    cap_label = labels.get("power_cap_w", labels.get("cap_w", "ADVICE"))
+    saving_pct = change.get("saving_pct")
+    saving_label = labels.get("saving_pct", default_label)
+    p99_delta = change.get("p99_delta_ms")
+    p99_label = labels.get("p99_delta", default_label)
+    water_ml = change.get("water_ml_per_req")
     water_label = labels.get("water", "ESTIMATE")
 
     receipt_uri = f"wattnot://{receipt_sha256}"
@@ -273,6 +296,20 @@ def apply_pr(
         "total_tokens": None,
         "usage": {"input_tokens": None, "output_tokens": None, "total_tokens": None},
     }
+    config_lines = []
+    if cap_w is not None:
+        config_lines.append(f"- **Power Cap**: {cap_w} W (label: {cap_label})")
+    if max_num_seqs is not None:
+        config_lines.append(f"- **Max Number of Sequences**: {max_num_seqs} (label: ADVICE)")
+    if gpu_mem is not None:
+        config_lines.append(f"- **GPU Memory Utilization**: {gpu_mem} (label: ADVICE)")
+    impact_lines = []
+    if saving_pct is not None:
+        impact_lines.append(f"- **Energy Saving**: {float(saving_pct):.2f}% (label: {saving_label})")
+    if p99_delta is not None:
+        impact_lines.append(f"- **P99 Latency Delta**: {float(p99_delta):.2f} ms (label: {p99_label})")
+    if water_ml is not None:
+        impact_lines.append(f"- **Water Usage**: {float(water_ml):.4f} mL/req (label: {water_label})")
     pr_body_lines = [
         "# Apply WattNot Efficiency Optimizations",
         "",
@@ -282,16 +319,9 @@ def apply_pr(
         "",
         "## Configuration Changes",
         "",
-        f"- **Power Cap**: {cap_w} W (label: {cap_label})",
-        f"- **Max Number of Sequences**: {max_num_seqs} (label: ADVICE)",
-        f"- **GPU Memory Utilization**: {gpu_mem} (label: ADVICE)",
+        *(config_lines or ["- none"]),
         "",
-        "## Performance & Sustainability Impact",
-        "",
-        f"- **Energy Saving**: {saving_pct:.2f}% (label: {saving_label})",
-        f"- **P99 Latency Delta**: {p99_delta:.2f} ms (label: {p99_label})",
-        f"- **Water Usage**: {water_ml:.4f} mL/req (label: {water_label})",
-        "",
+        *(["## Performance & Sustainability Impact", "", *impact_lines, ""] if impact_lines else []),
         "## Integrity",
         "",
         f"- **Patch SHA-256**: `{patch_sha256}`",
@@ -313,6 +343,9 @@ def apply_pr(
     pr_body_text = "\n".join(pr_body_lines)
     pr_body_file = out / "pr_body.md"
     pr_body_file.write_text(pr_body_text, encoding="utf-8")
+
+    if open_pr and not files_modified:
+        open_pr = False  # nothing to commit: an empty PR would misstate the patch
 
     result_json_path = out / "result.json"
     result_json_path.write_text(
@@ -341,32 +374,48 @@ def apply_pr(
     pr_url = None
 
     if open_pr:
-        # Proceed with branch creation and gh pr create
+        # Apply the exact content the patch hash covers, then branch, commit, PR.
+        for path, content in pending_writes:
+            path.write_text(content, encoding="utf-8")
         subprocess.run(["git", "-C", str(repo), "checkout", "-b", branch_name], check=False)
-        subprocess.run(["git", "-C", str(repo), "add", "launch.sh", "values.yaml"], check=False)
-        subprocess.run(
+        if files_modified == ["workspace"]:  # live muse edit: stage its worktree changes
+            subprocess.run(["git", "-C", str(repo), "add", "-A"], check=False)
+        else:
+            subprocess.run(["git", "-C", str(repo), "add", "--", *files_modified], check=False)
+        commit_res = subprocess.run(
             ["git", "-C", str(repo), "commit", "-m", f"chore(opt): apply WattNot config {patch_sha256[:8]}"],
-            check=False,
-        )
-        gh_res = subprocess.run(
-            [
-                "gh",
-                "pr",
-                "create",
-                "--repo",
-                REQUIRED_REMOTE,
-                "--title",
-                f"WattNot: Optimize vLLM deployment ({cap_w}W)",
-                "--body-file",
-                str(pr_body_file),
-                "--head",
-                branch_name,
-            ],
             capture_output=True,
             text=True,
             check=False,
         )
-        if gh_res.returncode == 0:
+        if commit_res.returncode != 0:
+            raise RuntimeError(
+                "Refused to open PR: commit of the generated patch failed: "
+                + (commit_res.stderr or commit_res.stdout or "").strip()[:200]
+            )
+        title = "WattNot: Optimize vLLM deployment" + (f" ({cap_w}W)" if cap_w is not None else "")
+        try:
+            gh_res = subprocess.run(
+                [
+                    "gh",
+                    "pr",
+                    "create",
+                    "--repo",
+                    REQUIRED_REMOTE,
+                    "--title",
+                    title,
+                    "--body-file",
+                    str(pr_body_file),
+                    "--head",
+                    branch_name,
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except FileNotFoundError:  # gh CLI not installed: branch + commit stand, no PR
+            gh_res = None
+        if gh_res is not None and gh_res.returncode == 0:
             pr_url = gh_res.stdout.strip()
 
     return ApplyPRResult(
