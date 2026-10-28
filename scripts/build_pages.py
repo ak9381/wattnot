@@ -92,7 +92,7 @@ def main(out: Path) -> None:
     (api / "dash/v2/run/index.json").write_text(json.dumps(index))
     (out / "dash/static-api.js").write_text(SHIM)
     for css in (out / "dash").glob("*.css"):
-        css.write_text(css.read_text().replace("/run/vendor/", "../run/vendor/"))
+        css.write_text(css.read_text().replace("url(/run/vendor/", "url(../run/vendor/"))
     v2 = out / "dash/v2.html"
     s = v2.read_text().replace('<link rel="stylesheet" href="v2.css">',
                                '<script src="static-api.js"></script>\n<link rel="stylesheet" href="v2.css">', 1)

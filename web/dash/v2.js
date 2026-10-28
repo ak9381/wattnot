@@ -959,7 +959,19 @@ function nodeDetailHtml(rec, branch, node) {
   else head = v ? `<p>Saved <b>${cnum(esc(v.text), v.tag)}</b>${badge(v.tag)}</p>` : `<p class="rad-miss">Not measured in this run <span class="rad-pending">pending</span></p>`;
   let extra = node.id === "context" ? contextDetailHtml(rec) : "";
   if (node.own_only) extra += `<p class="rad-sub">Own GPU only: hosted endpoints give no GPU access.</p>`;
+  if (node.kind !== "gate") extra += derivedWorking(rec, branch, node);
   return `<p>${esc(desc)}</p>${head}${extra}<p class="fp-note">${esc(rec?.run_name || "")} ${badge(rec?.label || "REPLAY")}</p>`;
+}
+// Cost and Water come from the Power saving: J -> kWh -> $ and litres (0.36 L/kWh).
+// Hosted items: cost MEASURED, power and water ESTIMATE.
+function derivedWorking(rec, branch, node) {
+  if (node.host) return `<p class="rad-sub">Hosted: cost ${badge("MEASURED")} from tokens × list price; power and water ${badge("ESTIMATE")} because hosts share no power meters.</p>`;
+  if (branch === "power") return "";
+  const b = rec?.phases?.baseline?.metrics?.j_per_req, w = rec?.phases?.wattnot?.metrics?.j_per_req;
+  if (b == null || w == null) return `<p class="rad-sub">Derived from the Power saving once it is measured <span class="rad-pending">pending</span></p>`;
+  const kwh = (j) => (j * 1e6) / 3.6e6, price = rec?.price_usd_per_kwh ?? 0.1387;
+  const f = branch === "cost" ? (j) => `$${num(kwh(j) * price)}` : (j) => `${num(kwh(j) * 0.36)} L`;
+  return `<ol class="wex"><li>${num(b)} → ${num(w)} J per answer ${badge("MEASURED")}</li><li>× 1M answers ÷ 3,600,000 = ${num(kwh(b))} → ${num(kwh(w))} kWh</li><li>${branch === "cost" ? `× $${num(price)}/kWh` : "× 0.36 L/kWh"} = ${f(b)} → ${f(w)} per 1M answers ${badge("ESTIMATE")}</li></ol>`;
 }
 // Context saver sub-parts: tokens and joules before/after and gate pass rate,
 // read defensively from the record; each shows "–" with a pending label until

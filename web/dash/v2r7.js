@@ -172,14 +172,6 @@ export function childSaved(rec, branch, mid) {
 // saving), own_only (own-GPU-only lever). A card shows only its name, one value
 // with a label, and an info button; clicking a card opens the next ring.
 export const TREE = [
-  { id: "owngpu", name: "Own GPU levers", kids: [
-    { id: "caps", name: "Power caps", own_only: true, kids: [
-      { id: "capsweep", name: "Fixed cap sweep" },
-      { id: "clocks", name: "Phase-aware clocks" },
-    ] },
-    { id: "topk", name: "Adaptive top-k / tiered experts", own_only: true },
-    { id: "quant", name: "Quantization", own_only: true },
-  ] },
   { id: "waste", name: "Agent-waste saver", kids: [
     { id: "loopstop", name: "Loop stopper" },
     { id: "smallfirst", name: "Small model first" },
@@ -190,9 +182,24 @@ export const TREE = [
     ] },
   ] },
   { id: "where", name: "Where it runs", kids: [
-    { id: "own", name: "Your GPU" },
-    { id: "baseten", name: "Baseten" },
-    { id: "modal", name: "Modal" },
+    { id: "own", name: "Your GPU", kids: [
+      { id: "caps", name: "Power caps", own_only: true, kids: [
+        { id: "capsweep", name: "Fixed cap sweep" },
+        { id: "clocks", name: "Phase-aware clocks" },
+      ] },
+      { id: "topk", name: "Adaptive top-k / tiered experts", own_only: true },
+      { id: "quant", name: "Quantization", own_only: true },
+    ] },
+    { id: "baseten", name: "Baseten", host: "baseten", kids: [
+      { id: "bt_routing", name: "Routing", host: "baseten", lever: "routing" },
+      { id: "bt_gate", name: "Quality gate", kind: "gate", host: "baseten" },
+      { id: "bt_waste", name: "Agent-waste saver", host: "baseten", lever: "waste" },
+    ] },
+    { id: "modal", name: "Modal", host: "modal", kids: [
+      { id: "md_routing", name: "Routing", host: "modal", lever: "routing" },
+      { id: "md_gate", name: "Quality gate", kind: "gate", host: "modal" },
+      { id: "md_waste", name: "Agent-waste saver", host: "modal", lever: "waste" },
+    ] },
   ] },
   { id: "gate", name: "Quality gate", kind: "gate", kids: [
     { id: "q", name: "Quality", kind: "gate" },
@@ -233,11 +240,25 @@ export function gateStatus(rec, id = "gate") {
   if (id === "budget") return null; // no budget data in the run record yet
   return m.quality_pct == null || m.p99_change_pct == null ? null : { pass: q && s };
 }
+// A hosted API-lever's value (Baseten/Modal routing or agent-waste saver). The
+// saving is a cost saving: MEASURED on the cost branch, a derived ESTIMATE on
+// power and water. Null (pending) when the host did not run.
+export function hostLeverValue(rec, host, lever, branch) {
+  const h = hostAB(rec, host); if (!h) return null;
+  const s = h.levers?.[lever]?.saved_pct; if (s?.value == null) return null;
+  return { text: `${fmt(s.value, 1)}%`, tag: branch === "cost" ? (s.label || "MEASURED") : "ESTIMATE" };
+}
 // A tree node's value for one branch. Returns {text, tag} (a saving),
-// {gate:true, pass} (a quality/speed gate), or null (pending, shows "–").
+// {gate:true, pass} (a quality/speed gate), or null (pending, shows "–"). The
+// SAME tree feeds power, cost and water; gate nodes read the same pass/fail
+// under all three, and hosted items are cost-MEASURED, power/water-ESTIMATE.
 export function treeValue(rec, branch, node) {
   const id = node?.id;
-  if (node?.kind === "gate") { const g = gateStatus(rec, id); return g == null ? null : { gate: true, pass: g.pass }; }
+  if (node?.kind === "gate") {
+    if (node.host) { const h = hostAB(rec, node.host); return h == null ? null : { gate: true, pass: !!h.gate_passed }; }
+    const g = gateStatus(rec, id); return g == null ? null : { gate: true, pass: g.pass };
+  }
+  if (node?.host && node.lever) return hostLeverValue(rec, node.host, node.lever, branch);
   if (id === "caps" || id === "own") return savedPct(rec, branch);
   if (id === "baseten" || id === "modal") return childSaved(rec, branch, id);
   if (id === "sam") return childSaved(rec, "power", "sam");

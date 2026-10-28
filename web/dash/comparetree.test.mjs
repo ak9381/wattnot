@@ -6,14 +6,16 @@ import { TREE, treeChildren, treeFind, treeValue, gateStatus, contextSaver } fro
 
 const ids = (arr) => arr.map((n) => n.id);
 
-test("top level under Power is the five branches, in order", () => {
-  assert.deepEqual(ids(treeChildren([])), ["owngpu", "waste", "where", "gate", "sam"]);
-  assert.deepEqual(ids(TREE), ["owngpu", "waste", "where", "gate", "sam"]);
+test("top level under Power is the four branches, in order", () => {
+  assert.deepEqual(ids(treeChildren([])), ["waste", "where", "gate", "sam"]);
+  assert.deepEqual(ids(TREE), ["waste", "where", "gate", "sam"]);
 });
 
 test("nested levels match the spec", () => {
-  assert.deepEqual(ids(treeChildren(["owngpu"])), ["caps", "topk", "quant"]);
-  assert.deepEqual(ids(treeChildren(["owngpu", "caps"])), ["capsweep", "clocks"]);
+  assert.deepEqual(ids(treeChildren(["where", "own"])), ["caps", "topk", "quant"]);
+  assert.deepEqual(ids(treeChildren(["where", "own", "caps"])), ["capsweep", "clocks"]);
+  assert.deepEqual(ids(treeChildren(["where", "baseten"])), ["bt_routing", "bt_gate", "bt_waste"]);
+  assert.deepEqual(ids(treeChildren(["where", "modal"])), ["md_routing", "md_gate", "md_waste"]);
   assert.deepEqual(ids(treeChildren(["waste"])), ["loopstop", "smallfirst", "context"]);
   assert.deepEqual(ids(treeChildren(["waste", "context"])), ["prefix", "memcomp", "dupcut"]);
   assert.deepEqual(ids(treeChildren(["where"])), ["own", "baseten", "modal"]);
@@ -22,7 +24,7 @@ test("nested levels match the spec", () => {
 
 test("leaves and unknown paths have no children", () => {
   assert.deepEqual(treeChildren(["sam"]), []);
-  assert.deepEqual(treeChildren(["owngpu", "topk"]), []);
+  assert.deepEqual(treeChildren(["where", "own", "topk"]), []);
   assert.deepEqual(treeChildren(["nope"]), []);
 });
 
@@ -66,4 +68,21 @@ test("context saver is read defensively and is pending without data", () => {
   assert.deepEqual(treeValue(withCS, "power", treeFind("context")), { text: "12%", tag: "ESTIMATE" });
   assert.deepEqual(treeValue(withCS, "power", treeFind("prefix")), { text: "5%", tag: "MOCK" });
   assert.equal(treeValue(withCS, "power", treeFind("memcomp")), null);
+});
+
+test("Power, Cost and Water share one tree, so they cannot drift", () => {
+  const shape = (kids) => kids.map((k) => [k.id, k.name, k.kind || "", shape(k.kids || [])]);
+  const p = shape(treeChildren([])); // the one TREE feeds every branch
+  for (const b of ["power", "cost", "water"]) assert.deepEqual(shape(treeChildren([])), p, b);
+  assert.equal(treeFind("owngpu"), null);
+});
+
+test("gate shows the same pass/fail under power, cost and water", () => {
+  const vals = ["power", "cost", "water"].map((b) => JSON.stringify(treeValue(REC, b, treeFind("gate"))));
+  assert.equal(new Set(vals).size, 1);
+});
+
+test("context saver reads the backend receipt block", () => {
+  const rec = { context_saver: { spec: "wattnot.context-saver/1", tokens_saved_pct: 31.5, before: { tokens: { value: 1000, label: "ESTIMATE" } } } };
+  assert.deepEqual(treeValue(rec, "power", treeFind("context")), { text: "31.5%", tag: "ESTIMATE" });
 });
