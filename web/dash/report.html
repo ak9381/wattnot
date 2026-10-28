@@ -84,7 +84,8 @@
   .hero-item{
     display:flex;flex-direction:column;justify-content:space-between;
     background:rgba(23,23,36,.4);
-    border:1px solid rgba(220,214,228,.08);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    border:1px solid rgba(255,255,255,.10);
     border-radius:14px;padding:16px 18px;
   }
   .hero-item .label{
@@ -100,7 +101,8 @@
   .hero-dl-item{
     display:flex;flex-direction:column;justify-content:center;align-items:stretch;
     background:rgba(23,23,36,.4);
-    border:1px solid rgba(220,214,228,.08);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    border:1px solid rgba(255,255,255,.10);
     border-radius:14px;padding:16px 18px;
   }
   .hero-dl-btn{
@@ -233,7 +235,6 @@
 <header class="top">
   <span class="sp"></span>
   <span id="wn-mic-slot" class="wn-mic-slot" aria-live="polite"></span>
-  <span class="note"><i class="v-lab REPLAY" aria-hidden="true"></i>Replay of measured logs</span>
 </header>
 <main>
   <div class="lede" id="lede"><h1>Loading run report…</h1></div>
