@@ -78,8 +78,10 @@ export function mountVoiceGuide(customMountEl = null) {
   if (typeof document === "undefined") return null;
   if (document.getElementById("wattnot-voiceguide-slot")) return null;
 
+  const target = customMountEl || document.getElementById("wn-mic-slot") || document.querySelector("#wn-slot-wrap") || document.querySelector("header") || document.body;
+  if (!target) return null;
+
   const dom = buildVoiceGuideDOM();
-  const target = customMountEl || document.querySelector("header") || document.body;
   target.appendChild(dom);
 
   const micBtn = dom.querySelector("#vg-mic-btn");
@@ -233,6 +235,13 @@ export function mountVoiceGuide(customMountEl = null) {
 
 // Auto self-mount if running in browser script tag
 if (typeof window !== "undefined" && typeof document !== "undefined") {
+  window.WattNotVoiceGuide = {
+    mountVoiceGuide,
+    buildVoiceGuideDOM,
+    classifyLocalIntent,
+    quickAckForQuery,
+  };
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => mountVoiceGuide());
   } else {

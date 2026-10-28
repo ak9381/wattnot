@@ -312,6 +312,32 @@ export function compareRows(receipts) {
       })
     },
     {
+      metric: "Wonder Stop Reason",
+      values: receipts.map((r) => {
+        const d = extractMetaToolsData(r);
+        return { text: d.wonderStop, tag: "REPLAY" };
+      })
+    },
+    {
+      metric: "Per-Model Spend",
+      values: receipts.map((r) => {
+        const d = extractMetaToolsData(r);
+        const wSpend = d.perModelSpend?.wonder?.usd ?? 0.048;
+        const sSpend = d.perModelSpend?.spark?.usd ?? 0.0125;
+        const tot = Number(wSpend) + Number(sSpend);
+        const tag = d.perModelSpend?.wonder?.label ?? "MOCK";
+        return { text: `$${tot.toFixed(4)} total (Wonder: $${Number(wSpend).toFixed(4)}, Spark: $${Number(sSpend).toFixed(4)})`, tag };
+      })
+    },
+    {
+      metric: "Framework Tag",
+      values: receipts.map((r) => {
+        const fw = r?.framework || r?.receipt?.framework || r?.measurement?.framework || r?.candidate?.framework || "vllm";
+        const tag = r?.label === "MEASURED" ? "MEASURED" : "MOCK";
+        return { text: String(fw), tag };
+      })
+    },
+    {
       metric: "Llama 8B Agreement Score",
       values: receipts.map((r) => {
         const d = extractMetaToolsData(r);

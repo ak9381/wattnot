@@ -8,6 +8,40 @@
   color: #DCD6E4;
 }
 
+.wn-slot-wrap .vg-slot-container,
+.wn-mic-slot .vg-slot-container {
+  position: relative;
+  top: auto;
+  right: auto;
+  z-index: 100;
+  display: inline-flex;
+}
+
+.wn-slot-wrap .vg-bar,
+.wn-mic-slot .vg-bar {
+  padding: 3px 8px;
+  background: rgba(31, 26, 47, 0.9);
+  border: 1px solid rgba(178, 166, 195, 0.3);
+}
+
+.wn-slot-wrap .vg-mic-btn,
+.wn-mic-slot .vg-mic-btn {
+  width: 28px;
+  height: 28px;
+}
+
+.wn-slot-wrap .vg-input,
+.wn-mic-slot .vg-input {
+  width: 140px;
+  font-size: 0.8rem;
+  padding: 3px 8px;
+}
+
+.wn-slot-wrap .vg-input:focus,
+.wn-mic-slot .vg-input:focus {
+  width: 200px;
+}
+
 .vg-bar {
   display: flex;
   align-items: center;

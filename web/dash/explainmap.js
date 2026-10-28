@@ -26,6 +26,8 @@ export const PAGE_SELECTORS = {
   // Compare view (mind-map nodes, branches and leaf cards)
   "compare": [
     { sel: ".cmp.glass, .cmp-cards .cmp, section[data-cmp]", name: "Compare Branch Card", kind: "compare-card" },
+    { sel: ".topic, .leaf, .map-hub", name: "Compare Mind Map Node & Leaf Card", kind: "mindmap" },
+    { sel: ".rad-card, .rad-leaf", name: "Compare Tree & Leaf Card", kind: "tree-leaf" },
     { sel: ".wr-t tbody tr", name: "Placement Table Row", kind: "placement" },
     { sel: ".wr-gates li", name: "Gate Status Item", kind: "gate" },
     { sel: ".cmp-m li", name: "Method Attribution Item", kind: "method" },
@@ -36,7 +38,8 @@ export const PAGE_SELECTORS = {
     { sel: "#savings .cnt", name: "Live Savings Metric", kind: "live-kpi" },
     { sel: "#savings .eff", name: "Live Efficiency Tile", kind: "live-eff" },
     { sel: "#savings .wf li", name: "Waterfall Step Row", kind: "live-wf" },
-    { sel: "#nodes .node", name: "Graph Node", kind: "graph-node" },
+    { sel: "#nodes .node, #stage .node, .node", name: "Graph Node", kind: "graph-node" },
+    { sel: "#caps, #metacalls, #modeChip", name: "Live Status Chip", kind: "live-chip" },
   ],
   // Meta tools preview & Demo (metatools.html)
   "metatools.html": [
@@ -370,6 +373,18 @@ export function tagElementsWithExplain(root = document) {
     applyTag(el, `Compare ${title}`, val, extractLabel(el), `cmp_${title.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`);
   });
 
+  root.querySelectorAll(".topic, .leaf, .map-hub").forEach((el) => {
+    const title = el.querySelector(".tt b, b, h1, .leaf-title")?.textContent.trim() || "Compare Node";
+    const val = el.querySelector(".rad-val, span, b, p")?.textContent.trim() || "—";
+    applyTag(el, `Compare ${title}`, val, extractLabel(el), `cmp_mindmap_${title.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`);
+  });
+
+  root.querySelectorAll(".rad-card, .rad-leaf").forEach((el) => {
+    const title = el.querySelector(".rad-head b, .rad-leaf-title")?.textContent.trim() || el.getAttribute("data-node") || el.getAttribute("data-leaf") || "Compare Tree";
+    const val = el.querySelector(".rad-val, .rad-leaf-val")?.textContent.trim() || "—";
+    applyTag(el, `Compare ${title}`, val, extractLabel(el), `cmp_tree_${title.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`);
+  });
+
   root.querySelectorAll(".ov-kpi.glass").forEach((el) => {
     const title = el.querySelector(".lvl")?.textContent.trim() || "Metric";
     const val = el.querySelector("b")?.textContent.trim() || "—";
@@ -390,10 +405,16 @@ export function tagElementsWithExplain(root = document) {
     applyTag(el, `Live ${title}`, val, extractLabel(el), `live_cnt_${title.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`);
   });
 
-  root.querySelectorAll("#nodes .node").forEach((el) => {
-    const title = el.querySelector(".nt")?.textContent.trim() || el.getAttribute("data-id") || "Node";
-    const val = el.querySelector(".ns")?.textContent.trim() || "Active";
+  root.querySelectorAll("#nodes .node, #stage .node, .node").forEach((el) => {
+    const title = el.querySelector(".nt, h3, .name")?.textContent.trim() || el.getAttribute("data-id") || "Node";
+    const val = el.querySelector(".ns, .status, .val")?.textContent.trim() || "Active";
     applyTag(el, `Graph ${title}`, val, extractLabel(el), `node_${title.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`);
+  });
+
+  root.querySelectorAll("#caps, #metacalls, #modeChip").forEach((el) => {
+    const title = el.id || "Live Status";
+    const val = el.textContent.trim() || "—";
+    applyTag(el, `Live ${title}`, val, extractLabel(el), `live_status_${title.toLowerCase()}`);
   });
 
   // 6. Meta tools demo KPI cards

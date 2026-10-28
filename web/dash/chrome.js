@@ -59,6 +59,17 @@
       document.querySelectorAll("#wn-mic-slot").forEach((el) => {
         if (el !== mic) el.remove();
       });
+
+      // Mount voiceguide inside mic slot
+      if (window.WattNotVoiceGuide && typeof window.WattNotVoiceGuide.mountVoiceGuide === "function") {
+        window.WattNotVoiceGuide.mountVoiceGuide(mic);
+      } else {
+        import(prefix + "voiceguide.js")
+          .then((mod) => {
+            if (mod && mod.mountVoiceGuide) mod.mountVoiceGuide(mic);
+          })
+          .catch(() => {});
+      }
     }
 
     // 3. Active link updater

@@ -4,6 +4,10 @@
 // Receipt details. Every number carries its data label word visibly next to it;
 // anything the run did not measure shows "—" pending.
 
+import { mountMetaTools } from "./metatools.js";
+import { mountHotspotCard } from "./hotspot.js";
+import { mountEuLink } from "./eulink.js";
+
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const LABELS = ["MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "REPLAY", "ADVICE", "SAMPLE"];
@@ -61,6 +65,19 @@ async function load() {
   try { STATE.bundle = await getJSON("/api/dash/story"); } catch { STATE.bundle = null; }
   const rc = RECEIPTS[RUN_ID];
   if (rc) { try { STATE.receipt = await getJSON(rc.json); } catch { STATE.receipt = null; } }
+  try {
+    const sample = await getJSON("sample-meta5-receipt.json");
+    STATE.metaReceipt = { ...sample, ...(STATE.receipt || {}) };
+    if (!STATE.receipt?.wonder && sample.wonder) STATE.metaReceipt.wonder = sample.wonder;
+    if (!STATE.receipt?.musecode && sample.musecode) STATE.metaReceipt.musecode = sample.musecode;
+    if (!STATE.receipt?.hotspot && sample.hotspot) STATE.metaReceipt.hotspot = sample.hotspot;
+    if (!STATE.receipt?.sam && sample.sam) STATE.metaReceipt.sam = sample.sam;
+    if (!STATE.receipt?.measurement?.judge_verdict && sample.measurement?.judge_verdict) {
+      STATE.metaReceipt.measurement = { ...(STATE.metaReceipt.measurement || {}), ...sample.measurement };
+    }
+  } catch {
+    STATE.metaReceipt = STATE.receipt || {};
+  }
   render();
 }
 
@@ -344,6 +361,11 @@ function render() {
     el.onclick = fn;
     el.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fn(); } };
   });
+
+  const targetRcpt = STATE.metaReceipt || STATE.receipt;
+  if ($("#metatools-mount")) mountMetaTools($("#metatools-mount"), targetRcpt);
+  if ($("#hotspot-mount")) mountHotspotCard($("#hotspot-mount"), targetRcpt);
+  if ($("#eulink-mount")) mountEuLink($("#eulink-mount"), targetRcpt);
 
   // Draw glowing connector lines from hero to breakdown cards
   setTimeout(drawConnectors, 20);

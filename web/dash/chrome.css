@@ -108,6 +108,13 @@ nav.wn-nav.gl {
   vertical-align: middle;
 }
 
+.wn-slot-wrap:has(.vg-slot-container),
+.wn-slot-wrap .wn-mic-slot:has(.vg-slot-container) {
+  width: auto;
+  min-width: auto;
+  flex: none;
+}
+
 /* ---- Shared Minimal Glass Footer ---- */
 footer.wn-footer.gl {
   position: relative;
