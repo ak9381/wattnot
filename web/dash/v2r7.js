@@ -9,7 +9,7 @@ const fmt = (v, d = 2) => (v == null || Number.isNaN(+v) ? "–" : (+v).toLocale
 const CLS = { MEASURED: "n-measured", ESTIMATE: "n-estimate", SIMULATED: "n-simulated", MOCK: "n-mock", REPLAY: "n-replay" };
 const n = (text, tag) => `<span class="${CLS[tag] || ""}" title="${tag || ""}">${text}</span>`;
 const PENDING = "Measured in the long run";
-export const legend = () => `<div class="r7legend" role="note" aria-label="Number colours"><span><i style="background:var(--r7-blue)"></i>measured</span><span><i style="background:var(--r7-gold)"></i>estimate</span><span><i style="background:var(--r7-mauve)"></i>simulated</span><span><i style="background:#8FE3B0"></i>replay</span><span><i style="background:var(--r7-green)"></i>with WattNot</span><span><i style="background:var(--r7-red)"></i>without WattNot</span></div>`;
+export const legend = () => `<div class="r7legend" role="note" aria-label="Number colours"><span><i style="background:var(--r7-blue)"></i>measured</span><span><i style="background:var(--r7-gold)"></i>estimate</span><span><i style="background:var(--r7-mauve)"></i>simulated</span><span><i style="background:#8FBBA0"></i>replay</span><span><i style="background:var(--r7-green)"></i>with WattNot</span><span><i style="background:var(--r7-red)"></i>without WattNot</span></div>`;
 
 // ---------- the three places a model can run (always all three) ----------
 export const OPTIONS = [
@@ -165,6 +165,114 @@ export function childSaved(rec, branch, mid) {
   }
   return null;
 }
+// ---------- Compare tree ----------
+// Power's branches as a nested tree. Cost and Water reuse the SAME shape; their
+// values are derived from Power (dollars and litres scale linearly with kWh).
+// Each node: id, name, optional kids, kind ("gate" shows pass/fail not a
+// saving), own_only (own-GPU-only lever). A card shows only its name, one value
+// with a label, and an info button; clicking a card opens the next ring.
+export const TREE = [
+  { id: "waste", name: "Agent-waste saver", kids: [
+    { id: "loopstop", name: "Loop stopper" },
+    { id: "smallfirst", name: "Small model first" },
+    { id: "context", name: "Context saver", kids: [
+      { id: "prefix", name: "Prefix cache", own_only: true },
+      { id: "memcomp", name: "Memory compression" },
+      { id: "dupcut", name: "Duplicate cut" },
+    ] },
+  ] },
+  { id: "where", name: "Where it runs", kids: [
+    { id: "own", name: "Your GPU", kids: [
+      { id: "caps", name: "Power caps", own_only: true, kids: [
+        { id: "capsweep", name: "Fixed cap sweep" },
+        { id: "clocks", name: "Phase-aware clocks" },
+      ] },
+      { id: "topk", name: "Adaptive top-k / tiered experts", own_only: true },
+      { id: "quant", name: "Quantization", own_only: true },
+    ] },
+    { id: "baseten", name: "Baseten", host: "baseten", kids: [
+      { id: "bt_routing", name: "Routing", host: "baseten", lever: "routing" },
+      { id: "bt_gate", name: "Quality gate", kind: "gate", host: "baseten" },
+      { id: "bt_waste", name: "Agent-waste saver", host: "baseten", lever: "waste" },
+    ] },
+    { id: "modal", name: "Modal", host: "modal", kids: [
+      { id: "md_routing", name: "Routing", host: "modal", lever: "routing" },
+      { id: "md_gate", name: "Quality gate", kind: "gate", host: "modal" },
+      { id: "md_waste", name: "Agent-waste saver", host: "modal", lever: "waste" },
+    ] },
+  ] },
+  { id: "gate", name: "Quality gate", kind: "gate", kids: [
+    { id: "q", name: "Quality", kind: "gate" },
+    { id: "speed", name: "Speed (p99)", kind: "gate" },
+    { id: "budget", name: "Budget gates", kind: "gate" },
+  ] },
+  { id: "sam", name: "Cooling hotspots (SAM 3.1)" },
+];
+// The kids at a path (array of ids from the branch root). Empty path -> the top
+// level. Returns [] for a leaf or an unknown path.
+export function treeChildren(path = []) {
+  let kids = TREE;
+  for (const id of path) {
+    const n = kids.find((k) => k.id === id);
+    if (!n || !n.kids) return [];
+    kids = n.kids;
+  }
+  return kids;
+}
+// Find a node by id anywhere in the tree (first match).
+export function treeFind(id, kids = TREE) {
+  for (const k of kids) { if (k.id === id) return k; const f = k.kids && treeFind(id, k.kids); if (f) return f; }
+  return null;
+}
+// The context saver's recorded numbers, read defensively from wherever a later
+// build puts them. Returns the object or null (then the UI shows "–" pending).
+export function contextSaver(rec) {
+  return rec?.context_saver || rec?.receipt?.context_saver || rec?.phases?.wattnot?.context_saver || null;
+}
+// Gate pass/fail from the run's own phases. Returns {pass} or null (not run).
+export function gateStatus(rec, id = "gate") {
+  const m = rec?.phases?.wattnot?.metrics, b = rec?.phases?.baseline?.metrics;
+  if (!m) return null;
+  const q = m.quality_pct != null && (b?.quality_pct == null || m.quality_pct >= b.quality_pct - 1);
+  const s = m.p99_change_pct != null && m.p99_change_pct <= 10;
+  if (id === "q") return m.quality_pct == null ? null : { pass: q };
+  if (id === "speed") return m.p99_change_pct == null ? null : { pass: s };
+  if (id === "budget") return null; // no budget data in the run record yet
+  return m.quality_pct == null || m.p99_change_pct == null ? null : { pass: q && s };
+}
+// A hosted API-lever's value (Baseten/Modal routing or agent-waste saver). The
+// saving is a cost saving: MEASURED on the cost branch, a derived ESTIMATE on
+// power and water. Null (pending) when the host did not run.
+export function hostLeverValue(rec, host, lever, branch) {
+  const h = hostAB(rec, host); if (!h) return null;
+  const s = h.levers?.[lever]?.saved_pct; if (s?.value == null) return null;
+  return { text: `${fmt(s.value, 1)}%`, tag: branch === "cost" ? (s.label || "MEASURED") : "ESTIMATE" };
+}
+// A tree node's value for one branch. Returns {text, tag} (a saving),
+// {gate:true, pass} (a quality/speed gate), or null (pending, shows "–"). The
+// SAME tree feeds power, cost and water; gate nodes read the same pass/fail
+// under all three, and hosted items are cost-MEASURED, power/water-ESTIMATE.
+export function treeValue(rec, branch, node) {
+  const id = node?.id;
+  if (node?.kind === "gate") {
+    if (node.host) { const h = hostAB(rec, node.host); return h == null ? null : { gate: true, pass: !!h.gate_passed }; }
+    const g = gateStatus(rec, id); return g == null ? null : { gate: true, pass: g.pass };
+  }
+  if (node?.host && node.lever) return hostLeverValue(rec, node.host, node.lever, branch);
+  if (id === "caps" || id === "own") return savedPct(rec, branch);
+  if (id === "baseten" || id === "modal") return childSaved(rec, branch, id);
+  if (id === "sam") return childSaved(rec, "power", "sam");
+  if (id === "context" || id === "prefix" || id === "memcomp" || id === "dupcut") {
+    const cs = contextSaver(rec); if (!cs) return null;
+    const part = id === "context" ? cs : (cs.parts?.[id] || cs[id]);
+    const v = part?.tokens_cut_pct ?? part?.tokens_saved_pct;
+    const label = v?.label || part?.label || cs.label || "ESTIMATE";
+    if (v?.value != null) return { text: `${fmt(v.value, 1)}%`, tag: label };
+    if (typeof v === "number") return { text: `${fmt(v, 1)}%`, tag: label };
+    return null;
+  }
+  return null; // owngpu/waste/where/topk/quant/... not attributed in this run
+}
 const OWN_ONLY = { caps: "Power caps", quant: "Quantization", topk: "Adaptive top-k / tiered experts" };
 export function hostedChain(e) {
   if (!e) return "";
@@ -286,7 +394,7 @@ export function overviewHtml(S) {
     ${metaTile()}
     <div class="ov-grid">
       <section class="glass ov-trend"><h3>Energy per answer, by repeat ${infoBtn("calc-power", "energy")}</h3>${rec ? lineChart(series(rec, (j) => j), { unit: "J", yLabel: "J per answer", w: 620, h: 220, y0: 0, xticks: [1, 2, 3].map((x) => ({ x, label: `#${x}` })) }) : `<p class="r7miss">${PENDING}</p>`}<button class="btn" data-pg="1">Open bigger</button></section>
-      <section class="glass ov-donut"><h3>Where the energy went</h3>${cut != null ? donut([{ name: "Still used", v: used, color: "#5AA9F0" }, { name: "Saved by WattNot", v: cut, color: "#4CC38A" }], { center: saved || "", centerSub: "saved", aria: "energy used vs saved" }) : `<p class="r7miss">${PENDING}</p>`}</section>
+      <section class="glass ov-donut"><h3>Where the energy went</h3>${cut != null ? donut([{ name: "Still used", v: used, color: "#935073" }, { name: "Saved by WattNot", v: cut, color: "#7FA88A" }], { center: saved || "", centerSub: "saved", aria: "energy used vs saved" }) : `<p class="r7miss">${PENDING}</p>`}</section>
       <section class="glass ov-gauge"><h3>Speed budget used</h3>${r.p99_change_pct != null ? gauge(r.p99_change_pct, 15, { text: `+${fmt(r.p99_change_pct, 1)}%`, sub: "p99 change · limit 10%", limit: 10, cls: r.p99_change_pct > 10 ? "warn" : "", aria: "p99 change against the 10% limit" }) : `<p class="r7miss">${PENDING}</p>`}<p class="r7note">Red tick: the 10% limit.</p></section>
       <section class="glass ov-table"><h3>Recorded runs</h3><table><thead><tr><th>Run</th><th>Model</th><th>Date</th></tr></thead><tbody>${runs.map((x) => `<tr><td>${esc(x.name)}</td><td>${esc(x.model)}</td><td>${esc(x.date)}</td></tr>`).join("") || `<tr><td colspan="3" class="r7miss">${PENDING}</td></tr>`}</tbody></table></section>
     </div></div></div>`;

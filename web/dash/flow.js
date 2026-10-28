@@ -105,7 +105,7 @@ export class Flow {
     const counts = this.ctx.live() ? st.arm[arm].units : st.meta.counts[arm], max = Math.max(...counts) || 1;
     for (let l = 0; l < L; l++) for (let e = 0; e < E; e++) {
       const u = l * E + e;
-      if (st.assign[u] !== g) { x.fillStyle = "#10171E"; x.fillRect(e * cw, l * ch + 1, cw - 0.6, ch - 0.6); continue; }
+      if (st.assign[u] !== g) { x.fillStyle = "#2A1530"; x.fillRect(e * cw, l * ch + 1, cw - 0.6, ch - 0.6); continue; }
       const a = 0.2 + 0.8 * (counts[u] / max) ** 0.6 + st.recent[u] * 0.5;
       x.globalAlpha = Math.min(1, a); x.fillStyle = color; x.fillRect(e * cw, l * ch + 1, cw - 0.6, ch - 0.6);
     }

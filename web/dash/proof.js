@@ -3,7 +3,15 @@
 import { esc, badge } from "./v2lib.js";
 
 const fmt = (v, d = 1) => (v == null ? "–" : Number(v).toLocaleString("en-US", { maximumFractionDigits: d }));
-const sec = (title, body, cls = "") => `<section class="pf-card glass ${cls}"><h3>${title}</h3>${body}</section>`;
+// Each proof section is a collapsible glass card: only the title (and a short
+// summary) shows until clicked. The open/close is handled by v2.js's shared
+// .card>.hd click/keyboard delegation, so the heavy text stays behind a click.
+const slug = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const sec = (title, body, cls = "", { open = false, sum = "" } = {}) =>
+  `<div class="card glass pf-card ${cls} ${open ? "open" : ""}" data-card="pf-${slug(title)}">
+    <div class="hd" tabindex="0" role="button" aria-expanded="${open}"><span class="ic">◆</span>
+      <span class="t"><h3>${title}</h3>${sum ? `<small>${sum}</small>` : ""}</span><span class="chev">›</span></div>
+    <div class="bd">${body}</div></div>`;
 
 function traceHtml(t) {
   if (!t?.calls?.length) return "<p>No planner trace in this bundle.</p>";
@@ -83,8 +91,10 @@ export async function renderProof(el) {
   if (!d) { el.innerHTML = `<p>The proof bundle is not available.</p>`; return; }
   el.dataset.done = "1";
   const r = d.run2;
+  const resultSum = r ? `${fmt(r.j_per_correct.change_pct)}% J per correct answer at ${r.cap_w} W` : "";
   el.innerHTML = `<div class="pf">
-    ${sec("The result, per correct answer", r ? `<p class="pf-big"><b>${fmt(r.j_per_correct.change_pct)}%</b> joules per correct answer at a ${r.cap_w} W cap (${fmt(r.j_per_correct.stock, 2)} → ${fmt(r.j_per_correct.cap, 2)} J), pass rate unchanged at ${fmt(r.pass_pct.cap)}% on ${r.checked} checked answers ${badge(r.label)}</p><p class="pf-meta">${esc(r.era)} · quality judged by ${esc(r.judge)}. Meta-judge results (${esc(d.meta_judge.judge)}) are reported separately: ${esc(d.meta_judge.note)}.</p>` : "", "pf-wide")}
+    <div class="ctrl noprint"><button class="btn" data-all="open">Expand all</button><button class="btn" data-all="close">Collapse all</button><span style="color:var(--mu);font-size:13px">Each proof below opens on click. Start with the result.</span></div>
+    ${sec("The result, per correct answer", r ? `<p class="pf-big"><b>${fmt(r.j_per_correct.change_pct)}%</b> joules per correct answer at a ${r.cap_w} W cap (${fmt(r.j_per_correct.stock, 2)} → ${fmt(r.j_per_correct.cap, 2)} J), pass rate unchanged at ${fmt(r.pass_pct.cap)}% on ${r.checked} checked answers ${badge(r.label)}</p><p class="pf-meta">${esc(r.era)} · quality judged by ${esc(r.judge)}. Meta-judge results (${esc(d.meta_judge.judge)}) are reported separately: ${esc(d.meta_judge.note)}.</p>` : "", "pf-wide", { open: true, sum: resultSum })}
     ${sec("Leaderboard: joules per correct answer", lbHtml(d.leaderboard), "pf-wide")}
     ${sec("What Spark decided, step by step", traceHtml(d.trace), "pf-wide")}
     ${sec("Small model first", escHtml(d.escalation))}

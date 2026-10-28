@@ -92,12 +92,24 @@ def main(out: Path) -> None:
     (api / "dash/v2/run/index.json").write_text(json.dumps(index))
     (out / "dash/static-api.js").write_text(SHIM)
     for css in (out / "dash").glob("*.css"):
-        css.write_text(css.read_text().replace("/run/vendor/", "../run/vendor/"))
+        css.write_text(css.read_text().replace("url(/run/vendor/", "url(../run/vendor/"))
     v2 = out / "dash/v2.html"
     s = v2.read_text().replace('<link rel="stylesheet" href="v2.css">',
                                '<script src="static-api.js"></script>\n<link rel="stylesheet" href="v2.css">', 1)
     s = s.replace('<a class="btn" href="/">Classic view</a>', '<a class="btn" href="https://github.com/ak9381/wattnot">Source</a>', 1)
     v2.write_text(s)
+    # The all-runs dashboard and the per-run report need the same static-api
+    # shim; each carries a <!-- static-api --> marker where it is injected.
+    for name in ("runs.html", "report.html"):
+        p = out / "dash" / name
+        if p.exists():
+            p.write_text(p.read_text().replace("<!-- static-api -->", '<script src="static-api.js"></script>', 1))
+    # The classic arch view (dash/index.html) also replays recorded API answers,
+    # so its "Report" node and architecture graph work on the static site.
+    ci = out / "dash/index.html"
+    if ci.exists():
+        ci.write_text(ci.read_text().replace('<link rel="stylesheet" href="dash.css">',
+                                              '<script src="static-api.js"></script>\n<link rel="stylesheet" href="dash.css">', 1))
     (out / "index.html").write_text('<!doctype html><meta charset="utf-8"><title>WattNot replay</title>'
                                     '<meta http-equiv="refresh" content="0; url=dash/v2.html">'
                                     '<a href="dash/v2.html">WattNot: replay of measured logs</a>\n')
