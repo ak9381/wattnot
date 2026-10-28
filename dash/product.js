@@ -384,7 +384,7 @@ export class Product {
       <div id="cards" class="bento">${R.levers.map((L) => this.card(L)).join("")}</div>
       <div id="wasteCard"></div>
       <div id="partners"></div>
-      <div class="resfoot"><button class="btn" id="back">Change settings</button><button class="btn" id="seeRun">See the run again</button><button class="btn" id="rerun">Run again</button><button class="btn" id="openArch">Open the Architecture map</button></div></div>`;
+      <div class="resfoot"><button class="btn" id="back">Change settings</button><button class="btn" id="seeRun">See the run again</button><button class="btn" id="rerun">Run again</button><button class="btn" id="openArch">Open the Live graph</button></div></div>`;
     if (R.room) { const b = this.$("#resB"), a = this.$("#resA"), cap = this.$("#resCap"); wireHeat(b, R.room.before, cap); wireHeat(a, R.room.after, cap); }
     this.loadWaste();
     loadPartners(this.$("#partners"));

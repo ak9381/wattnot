@@ -12,10 +12,11 @@
 <script src="static-api.js"></script>
 <link rel="stylesheet" href="v2.css">
 <link rel="stylesheet" href="r7.css">
+<link rel="stylesheet" href="chrome.css">
+<script src="chrome.js" defer></script>
 </head>
 <body>
 <header class="top">
-  <div class="brand">Watt<i>Not</i></div>
   <nav class="tabs" id="tabs">
     <button data-p="pHome" class="on">Overview</button>
     <button data-p="pCfg">Configure</button>
@@ -28,10 +29,7 @@
   <span id="wn-mic-slot" class="wn-mic-slot" aria-live="polite"></span>
   <span class="chip" title="Where the numbers come from"><span class="dot"></span>Replay mode: no GPU is running</span>
   <button class="btn" id="illusBtn" aria-pressed="false" title="Show SIMULATED and MOCK illustrations">Illustrations: off</button>
-  <a class="btn" href="runs.html">All runs</a>
   <a class="btn" href="report.html?run=run2-llama-350w">Run report</a>
-  <a class="btn" href="graph.html">Arch graph</a>
-<a class="btn" href="https://github.com/ak9381/wattnot">Source</a>
 </header>
 <main>
   <section class="page on" id="pHome"></section>

@@ -9,7 +9,7 @@ import { CLOCK_CHANNEL, listen } from "./clockbus.js";
 import { esc } from "./theme.js";
 
 export const VIEWS = ["arch", "experts", "power"];
-export const VIEW_TITLE = { arch: "Architecture", experts: "Experts", power: "Power" };
+export const VIEW_TITLE = { arch: "Live graph", experts: "Experts", power: "Power" };
 export const PHASE_LABEL = { 1: "Phase 1 of 2 · Without WattNot (baseline)", 2: "Phase 2 of 2 · With WattNot" };
 
 let zTop = 100;

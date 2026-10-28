@@ -10,6 +10,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Source+Sans+3:wght@400;600&family=Fira+Sans:wght@400;500;600&display=swap">
 <script src="static-api.js"></script>
 <link rel="stylesheet" href="violet.css">
+<link rel="stylesheet" href="chrome.css">
+<script src="chrome.js" defer></script>
 <style>
   *{box-sizing:border-box}[hidden]{display:none!important}
   html,body{margin:0;background:var(--v-bg);color:var(--v-cream);font:16px/1.55 var(--v-body)}
@@ -27,13 +29,11 @@
   h1{font-size:28px;font-weight:700}
   p{margin:.35em 0;color:var(--v-sub)}
   header.top{
-    position:sticky;top:0;z-index:30;display:flex;gap:16px;align-items:center;flex-wrap:wrap;
-    padding:12px 28px;
-    background:rgba(23,23,36,.75);
-    backdrop-filter:blur(20px) saturate(160%);
-    -webkit-backdrop-filter:blur(20px) saturate(160%);
-    border-bottom:1px solid var(--v-line);
-    box-shadow:0 4px 20px rgba(0,0,0,.35);
+    position:relative;z-index:30;display:flex;gap:16px;align-items:center;flex-wrap:wrap;
+    padding:6px 28px;
+    background:transparent;
+    border-bottom:none;
+    box-shadow:none;
   }
   .brand{font-family:var(--v-head);font-weight:700;font-size:18px}.brand i{font-style:normal;color:var(--v-peach)}
   nav{display:flex;gap:6px;margin-left:8px}
@@ -225,13 +225,6 @@
 </head>
 <body>
 <header class="top">
-  <div class="brand">Watt<i>Not</i></div>
-  <nav>
-    <a href="runs.html">All runs</a>
-    <a href="v2.html">Live dashboard</a>
-    <a href="graph.html">Arch graph</a>
-    <a class="on" aria-current="page" href="#">Report</a>
-  </nav>
   <span class="sp"></span>
   <span id="wn-mic-slot" class="wn-mic-slot" aria-live="polite"></span>
   <span class="note"><i class="v-lab REPLAY" aria-hidden="true"></i>Replay of measured logs</span>

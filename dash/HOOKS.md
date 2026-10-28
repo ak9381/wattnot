@@ -1,10 +1,41 @@
 # WattNot UI Integration Hooks
 
-This document specifies the integration hooks provided by the WattNot dashboard UI for voice guide controls and explanation popovers.
+This document specifies the integration hooks and components provided by the WattNot dashboard UI for voice guide controls, explanation popovers, and chrome navigation.
 
-## 1. Top Bar Voice / Mic Slot
+## 1. Shared Chrome Components (`chrome.js` / `chrome.css`)
 
-Every primary dashboard page provides a dedicated, fixed-dimension container in its top bar:
+All pages include `chrome.css` and `chrome.js`:
+- Landing page (`index.html`)
+- Runs dashboard (`runs.html`)
+- Run report (`report.html`)
+- Live / Compare mind map (`v2.html`)
+- Live graph (`graph.html`)
+- Live run monitor (`web/run/index.html` via `../dash/chrome.js` and `../dash/chrome.css`)
+
+### Floating Navigation Header (`nav.wn-nav.gl`)
+A fixed/sticky floating glass bar styled to match the visionOS/Liquid Glass aesthetic:
+- **Brand**: Wordmark `WattNot` linking to `index.html`.
+- **Primary Links**:
+  - `Dashboard` (`runs.html`)
+  - `Runs` (`runs.html#runs`)
+  - `Compare` (`v2.html#pReport`)
+  - `Reports` (`report.html?run=run2-llama-350w`)
+  - `Live graph` (`graph.html`)
+- **Active Navigation State**: Highlighted via `.on` class and `aria-current="page"`, updated automatically on page load and on `hashchange` events.
+- **Voice / Mic Slot Container**: Right-aligned inside `.wn-slot-wrap` on app pages.
+
+### Minimal Glass Footer (`footer.wn-footer.gl`)
+A glass footer at the bottom of the page containing:
+- "Project by Akash K Raju", "Meta hackathon 2026 · Indie track", and year 2026.
+- GitHub repository link (`https://github.com/ak9381/wattnot`).
+- Compact data-label legend (`MEASURED`, `ESTIMATE`, `MOCK`) with lavender/dusk indicators.
+- "No compliance claims" note.
+
+---
+
+## 2. Top Bar Voice / Mic Slot (`#wn-mic-slot`)
+
+On all app pages, a dedicated container is provided in the floating navigation header:
 
 ```html
 <span id="wn-mic-slot" class="wn-mic-slot" aria-live="polite"></span>
@@ -14,20 +45,22 @@ Every primary dashboard page provides a dedicated, fixed-dimension container in 
 - `runs.html` (All runs dashboard)
 - `report.html` (Run report breakdown)
 - `v2.html` (Live / compare mind map dashboard)
-- `graph.html` (Architecture graph)
+- `graph.html` (Live graph)
+- `web/run/index.html` (Live run monitor)
 
-*Note: The minimal landing page (`index.html`) intentionally does not include the top navigation bar or the mic slot.*
+*Note: The landing page (`index.html`) does not host the mic slot.*
 
 ### Slot Specifications
 - **Element ID**: `wn-mic-slot`
 - **Class**: `wn-mic-slot`
 - **Dimensions**: Reserved 32×32px (`min-width: 32px; min-height: 32px; flex: 0 0 32px;`) to prevent layout shifts when a button is injected.
-- **Positioning**: Right-aligned in the top navigation bar directly preceding the source/replay status chip.
+- **Location**: Injected/moved into `.wn-slot-wrap` inside `nav.wn-nav.gl`.
+- **Deduplication**: Strictly one `#wn-mic-slot` exists in the DOM.
 - **Accessibility**: Includes `aria-live="polite"` for non-intrusive voice/status updates.
 
 ---
 
-## 2. Explain Attributes on Number Cards (`data-explain`)
+## 3. Explain Attributes on Number Cards (`data-explain`)
 
 Every key numeric metric, breakdown card, and mind-map node exposes structured attributes for contextual explainers and inspection popovers:
 
@@ -40,7 +73,7 @@ Every key numeric metric, breakdown card, and mind-map node exposes structured a
 
 ---
 
-## 3. Stable Identifier Conventions
+## 4. Stable Identifier Conventions
 
 ### Report Page (`report.js`)
 - `report.saving`: Hero energy savings percentage.
@@ -74,3 +107,23 @@ Every key numeric metric, breakdown card, and mind-map node exposes structured a
   - `compare.<metric>.gate`: Quality gate evaluation node.
   - `compare.<metric>.sam`: Cooling hotspots lever.
   - Deeper levers: `caps`, `topk`, `quant`, `capsweep`, `clocks`, `prefix`, `memcomp`, `dupcut`, etc.
+
+---
+
+## 5. UI Events and Interaction Hooks
+
+- **Hash Navigation (`hashchange`)**:
+  - The shared navigation chrome and `v2.js` listen to `hashchange` events to synchronize active states and page view transitions (`#pReport`, `#pCfg`, `#pProof`, etc.).
+- **Popover Triggering**:
+  - Popover controllers should attach delegated click or hover listeners on `[data-explain]` elements:
+    ```javascript
+    document.addEventListener("click", (e) => {
+      const target = e.target.closest("[data-explain]");
+      if (!target) return;
+      const id = target.getAttribute("data-explain");
+      const val = target.getAttribute("data-explain-value");
+      const label = target.getAttribute("data-explain-label");
+      const source = target.getAttribute("data-explain-source");
+      // Open contextual explanation popover
+    });
+    ```
