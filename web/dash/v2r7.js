@@ -165,6 +165,93 @@ export function childSaved(rec, branch, mid) {
   }
   return null;
 }
+// ---------- Compare tree ----------
+// Power's branches as a nested tree. Cost and Water reuse the SAME shape; their
+// values are derived from Power (dollars and litres scale linearly with kWh).
+// Each node: id, name, optional kids, kind ("gate" shows pass/fail not a
+// saving), own_only (own-GPU-only lever). A card shows only its name, one value
+// with a label, and an info button; clicking a card opens the next ring.
+export const TREE = [
+  { id: "owngpu", name: "Own GPU levers", kids: [
+    { id: "caps", name: "Power caps", own_only: true, kids: [
+      { id: "capsweep", name: "Fixed cap sweep" },
+      { id: "clocks", name: "Phase-aware clocks" },
+    ] },
+    { id: "topk", name: "Adaptive top-k / tiered experts", own_only: true },
+    { id: "quant", name: "Quantization", own_only: true },
+  ] },
+  { id: "waste", name: "Agent-waste saver", kids: [
+    { id: "loopstop", name: "Loop stopper" },
+    { id: "smallfirst", name: "Small model first" },
+    { id: "context", name: "Context saver", kids: [
+      { id: "prefix", name: "Prefix cache", own_only: true },
+      { id: "memcomp", name: "Memory compression" },
+      { id: "dupcut", name: "Duplicate cut" },
+    ] },
+  ] },
+  { id: "where", name: "Where it runs", kids: [
+    { id: "own", name: "Your GPU" },
+    { id: "baseten", name: "Baseten" },
+    { id: "modal", name: "Modal" },
+  ] },
+  { id: "gate", name: "Quality gate", kind: "gate", kids: [
+    { id: "q", name: "Quality", kind: "gate" },
+    { id: "speed", name: "Speed (p99)", kind: "gate" },
+    { id: "budget", name: "Budget gates", kind: "gate" },
+  ] },
+  { id: "sam", name: "Cooling hotspots (SAM 3.1)" },
+];
+// The kids at a path (array of ids from the branch root). Empty path -> the top
+// level. Returns [] for a leaf or an unknown path.
+export function treeChildren(path = []) {
+  let kids = TREE;
+  for (const id of path) {
+    const n = kids.find((k) => k.id === id);
+    if (!n || !n.kids) return [];
+    kids = n.kids;
+  }
+  return kids;
+}
+// Find a node by id anywhere in the tree (first match).
+export function treeFind(id, kids = TREE) {
+  for (const k of kids) { if (k.id === id) return k; const f = k.kids && treeFind(id, k.kids); if (f) return f; }
+  return null;
+}
+// The context saver's recorded numbers, read defensively from wherever a later
+// build puts them. Returns the object or null (then the UI shows "–" pending).
+export function contextSaver(rec) {
+  return rec?.context_saver || rec?.receipt?.context_saver || rec?.phases?.wattnot?.context_saver || null;
+}
+// Gate pass/fail from the run's own phases. Returns {pass} or null (not run).
+export function gateStatus(rec, id = "gate") {
+  const m = rec?.phases?.wattnot?.metrics, b = rec?.phases?.baseline?.metrics;
+  if (!m) return null;
+  const q = m.quality_pct != null && (b?.quality_pct == null || m.quality_pct >= b.quality_pct - 1);
+  const s = m.p99_change_pct != null && m.p99_change_pct <= 10;
+  if (id === "q") return m.quality_pct == null ? null : { pass: q };
+  if (id === "speed") return m.p99_change_pct == null ? null : { pass: s };
+  if (id === "budget") return null; // no budget data in the run record yet
+  return m.quality_pct == null || m.p99_change_pct == null ? null : { pass: q && s };
+}
+// A tree node's value for one branch. Returns {text, tag} (a saving),
+// {gate:true, pass} (a quality/speed gate), or null (pending, shows "–").
+export function treeValue(rec, branch, node) {
+  const id = node?.id;
+  if (node?.kind === "gate") { const g = gateStatus(rec, id); return g == null ? null : { gate: true, pass: g.pass }; }
+  if (id === "caps" || id === "own") return savedPct(rec, branch);
+  if (id === "baseten" || id === "modal") return childSaved(rec, branch, id);
+  if (id === "sam") return childSaved(rec, "power", "sam");
+  if (id === "context" || id === "prefix" || id === "memcomp" || id === "dupcut") {
+    const cs = contextSaver(rec); if (!cs) return null;
+    const part = id === "context" ? cs : (cs.parts?.[id] || cs[id]);
+    const v = part?.tokens_cut_pct ?? part?.tokens_saved_pct;
+    const label = v?.label || part?.label || cs.label || "ESTIMATE";
+    if (v?.value != null) return { text: `${fmt(v.value, 1)}%`, tag: label };
+    if (typeof v === "number") return { text: `${fmt(v, 1)}%`, tag: label };
+    return null;
+  }
+  return null; // owngpu/waste/where/topk/quant/... not attributed in this run
+}
 const OWN_ONLY = { caps: "Power caps", quant: "Quantization", topk: "Adaptive top-k / tiered experts" };
 export function hostedChain(e) {
   if (!e) return "";

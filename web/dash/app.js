@@ -402,6 +402,28 @@ function withReportNode(sb) {
   if (last) sb.edges.push({ from: last.id, to: "report", partner: "oss" });
   return sb;
 }
+// Insert a "Context saver" node between the agent and the vLLM-served model: it
+// trims the tokens each request carries (prefix cache, memory compression,
+// duplicate cut) before the model runs. Reroutes agent -> context -> optimizer.
+function withContextNode(sb) {
+  if (!sb || !Array.isArray(sb.nodes) || sb.nodes.some((n) => n.id === "context")) return sb;
+  if (!sb.nodes.some((n) => n.id === "agent" && sb.nodes.some((o) => o.id === "optimizer"))) return sb;
+  sb.nodes.push({
+    id: "context", title: "Context saver", col: 2, row: 1, status: "code", baseline: false, partners: ["oss"],
+    desc: "Trims the tokens each request carries — reused prefixes, compressed memory, dropped duplicate tool output — before they reach the vLLM-served model.",
+    code: "wattnot/context/saver.py", inputs: "the agent's request", outputs: "a shorter, equivalent request",
+    stats: [{ k: "tokens", label: "Tokens cut", v: null, unit: "%", tag: "ESTIMATE" }],
+    subs: [
+      { id: "prefix", title: "Prefix cache", desc: "Reuse a repeated prompt prefix (own GPU only).", partner: "oss", inputs: "prompt prefix", outputs: "cached prefix", code: "prefix_cache" },
+      { id: "memcomp", title: "Memory compression", desc: "Summarise old turns so the context stays short.", partner: "oss", inputs: "chat history", outputs: "short context", code: "mem_compress" },
+      { id: "dupcut", title: "Duplicate cut", desc: "Drop duplicate tool output before it reaches the model.", partner: "oss", inputs: "tool output", outputs: "deduped output", code: "dedup" },
+    ],
+    evidence: ["wattnot/context/"],
+  });
+  sb.edges = sb.edges.filter((e) => !(e.from === "agent" && e.to === "optimizer"));
+  sb.edges.push({ from: "agent", to: "context", partner: "meta" }, { from: "context", to: "optimizer", partner: "oss" });
+  return sb;
+}
 async function boot() {
   if (initSoloIfNeeded()) return; // ?view=arch&solo=1 renders only that canvas full screen
   const stage = $("stage"); stage.innerHTML = "";
@@ -411,7 +433,7 @@ async function boot() {
     stage.innerHTML = `<div class="pf"><div class="err"><b>The run configuration could not load.</b><p>${esc(sb.error || "The bundle has no recorded run in it. Rebuild it with scripts/build_dash_arch.py.")}</p><button class="btn" id="retry">Try again</button> <button class="btn" id="goPower">Open Power instead</button></div></div>`;
     $("retry").onclick = boot; $("goPower").onclick = () => openDrawer("power"); return;
   }
-  bundle = withReportNode(sb); healthData = health;
+  bundle = withReportNode(withContextNode(sb)); healthData = health;
   if (curTab === "arch") ensureArch().then(() => archPage?.show());
   product = new Product(stage, $("rail"), { bundle: sb, health, open: openPanel, drawer: openDrawer });
   if (params.get("filter") === "meta" && params.get("tab") === "arch") ensureArch().then(() => archPage?.setFilter("meta"));

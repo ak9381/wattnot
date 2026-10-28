@@ -29,6 +29,14 @@ const RECEIPTS = {
 };
 const LEVER = { factor_l_per_kwh: 0.36, usd_per_kwh: 0.1387 };
 
+// The context saver's recorded numbers, read defensively from wherever a later
+// build writes them. Returns the object or null (then the card is pending).
+function contextSaver() {
+  const d = STATE.run;
+  return d?.context_saver || d?.receipt?.context_saver || d?.phases?.wattnot?.context_saver || null;
+}
+const CONTEXT_PARTS = [["prefix", "Prefix cache hit rate"], ["memcomp", "Memory compression"], ["dupcut", "Tool-output dedup"]];
+
 const params = new URLSearchParams(location.search);
 const RUN_ID = params.get("run") || "run2-llama-350w";
 
@@ -117,8 +125,9 @@ function steps(X) {
         <p>Read from the card with NVIDIA's NVML counter over ${num(X.bm.repeats, 0)} repeats. This is the “before” every saving is measured against.</p>`
         : `<p>This run has no recorded baseline phase.</p>`,
     },
+    contextStep(),
     {
-      id: "gate", node: "3", name: "Quality gate", muted: false,
+      id: "gate", node: "4", name: "Quality gate", muted: false,
       val: statusPill(X.gatePass, "Passed", "Failed"),
       labelDot: X.gatePass == null ? "" : lab("MEASURED"),
       sub: X.gatePass == null ? "Not evaluated for this run"
@@ -135,7 +144,7 @@ function steps(X) {
         <p>${X.gatePass == null ? "This run did not record a tuned phase, so the gate could not be evaluated." : X.gatePass ? "Both checks passed, so the change is eligible to keep." : "A check failed, so the change is rejected."}</p>`,
     },
     {
-      id: "change", node: "4", name: "Change tried", muted: !X.have,
+      id: "change", node: "5", name: "Change tried", muted: !X.have,
       val: X.savedPct != null ? `${num(X.savedPct, 1)}%` : "—",
       labelDot: X.savedPct != null ? lab(X.wm.label || "MEASURED") : "",
       sub: X.w ? `less energy · ${num(X.b?.cap_w, 0)} W → ${num(X.w.cap_w, 0)} W cap` : "No change recorded",
@@ -151,7 +160,7 @@ function steps(X) {
         : `<p>This run has no tuned phase to compare against the baseline.</p>`,
     },
     {
-      id: "decision", node: "5", name: "Kept or rolled back", muted: !X.have,
+      id: "decision", node: "6", name: "Kept or rolled back", muted: !X.have,
       val: statusPill(X.gatePass, "Kept", "Rolled back"),
       labelDot: X.gatePass == null ? "" : lab("MEASURED"),
       sub: X.gatePass == null ? "No decision recorded"
@@ -167,11 +176,40 @@ function steps(X) {
   ];
 }
 
+// Context saver: tokens cut per request, ESTIMATE or MOCK until measured. The
+// card shows only the name + the tokens-cut value; clicking opens the three
+// sub-parts with tokens/joules before→after and each one's gate pass rate.
+function contextStep() {
+  const cs = contextSaver();
+  const tc = cs ? (cs.tokens_cut_pct || cs.tokens_saved_pct) : null;
+  const val = tc?.value != null ? `${num(tc.value, 1)}%` : (typeof tc === "number" ? `${num(tc, 1)}%` : "—");
+  const tag = tc?.label || (cs ? "MOCK" : null);
+  const shown = tc?.value != null || typeof tc === "number";
+  return {
+    id: "context", node: "3", name: "Context saver", muted: !cs,
+    val, labelDot: shown ? lab(tag) : "",
+    sub: cs ? "tokens cut from each request" : "pending — not measured yet",
+    detail: () => {
+      const cell = (m) => (m?.value != null ? `${num(m.value)} ${lab(m.label || "ESTIMATE")}` : "—");
+      const rows = CONTEXT_PARTS.map(([id, name]) => {
+        const p = cs ? (cs.parts?.[id] || cs[id]) : null;
+        return `<h4>${esc(name)}</h4><dl class="kv">
+          <dt>Tokens</dt><dd>${cell(p?.tokens_before)} → ${cell(p?.tokens_after)}</dd>
+          <dt>Joules</dt><dd>${cell(p?.joules_before)} → ${cell(p?.joules_after)}</dd>
+          <dt>Gate pass rate</dt><dd>${p?.pass_rate?.value != null ? `${num(p.pass_rate.value, 1)}% ${lab(p.pass_rate.label || "MEASURED")}` : `— ${chip("PENDING")}`}</dd></dl>`;
+      }).join("");
+      return `<h4>What this step is</h4>
+        <p>Before the quality gate, WattNot trims the tokens each request carries — reused prompt prefixes, compressed memory and dropped duplicate tool output — so fewer tokens run for the same answer.</p>
+        <p>Tokens cut: <b>${val}</b> ${shown ? lab(tag) : `${chip("PENDING")}`}. ${cs ? "" : "No context-saver numbers are in this run yet, so each sub-part is pending (ESTIMATE or MOCK until measured)."}</p>
+        ${rows}`;
+    },
+  };
+}
 function receiptStep(X) {
   const rc = RECEIPTS[RUN_ID], r = STATE.receipt;
   const savePct = r?.result?.saving_pct?.mean ?? X.savedPct;
   return {
-    id: "receipt", node: "6", name: "Signed receipt", muted: !rc,
+    id: "receipt", node: "7", name: "Signed receipt", muted: !rc,
     val: rc && savePct != null ? `${num(savePct, 1)}%` : "—",
     labelDot: rc && savePct != null ? lab("MEASURED") : "",
     sub: rc ? "saving, signed offline · grade ESTIMATE" : "No signed receipt for this run",

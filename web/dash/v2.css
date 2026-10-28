@@ -321,3 +321,24 @@ h1,h2,h3,h4,.brand,nav.tabs button,.kpi .c,.lvl{font-family:"Montserrat",system-
    header/body own the padding, so drop the old .pf-card box padding. */
 .card.pf-card{padding:0}
 .card.pf-card>.hd .t h3{margin:0}
+
+/* Compare nested tree (round 8): tree node cards, pass/fail, pending label,
+   and the breadcrumb for the drill rings. */
+.rad-node{position:absolute;transform:translate(-50%,-50%);width:196px;z-index:1;border:1px solid var(--ln);border-radius:12px;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:0}
+.rad-node.on{border-color:var(--ln2);box-shadow:0 0 0 1px var(--ln2),0 0 18px rgba(246,219,192,.25)}
+.rad-head2{display:block;width:100%;background:none;border:0;cursor:pointer;color:var(--tx);text-align:left;padding:10px 12px}
+.rad-head2[disabled]{cursor:default}
+.rad-head2 b{display:block;font-size:13.5px;color:#F8F4E9}
+.rad-head2 .rad-chev{position:absolute;right:30px;top:12px;color:var(--mu);transition:transform .2s}
+.rad-node .rad-val{display:block;margin-top:4px;font-size:13px}
+.rad-pass{color:var(--tl);font-weight:650}.rad-fail{color:var(--rd);font-weight:650}
+.rad-pending{display:inline-block;margin-left:6px;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--mu);border:1px solid var(--ln);border-radius:999px;padding:1px 7px}
+.rad-sub-row{border-top:1px solid var(--ln);padding:8px 0}.rad-sub-row:first-of-type{border-top:0}
+.rad-sub-row b{display:block;font-size:13px;margin-bottom:4px}
+.cmp-crumb{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-right:10px}
+.cmp-crumb .crumb{background:var(--glass2);border:1px solid var(--ln);border-radius:999px;padding:4px 11px;color:var(--sub);cursor:pointer;font:inherit;font-size:12.5px}
+.cmp-crumb .crumb:hover{border-color:var(--cy);color:#F8F4E9}
+.cmp-crumb .crumb:last-of-type{color:#F8F4E9;border-color:var(--ln2)}
+.cmp-crumb .crumb-sep{color:var(--mu)}
+.cmp-crumb .crumb-back{background:none;border:0;color:var(--cy);cursor:pointer;font:inherit;font-size:12.5px;padding:4px 8px}
+.cmp-crumb .crumb-hint{font-size:12.5px;color:var(--mu)}

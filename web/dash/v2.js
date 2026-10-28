@@ -2,7 +2,7 @@ import { esc, badge, num, cnum, legendHtml, stageState, ledgerRows, run2Rows, ve
 import { openThermal } from "./thermal.js";
 import { renderProof, wireIllus } from "./proof.js";
 import { init as initPanCanvas } from "./pancanvas.js";
-import { overviewHtml, openPowerGraph, wireR7, metaInRun, branchPopup, cmpHeadHtml, openWhere, methodPopup, branchInfo, savedPct, childSaved, CHILDREN, CHILD_ONLY, DERIVED_HINT, BUNDLED_ID, compareState, bundledRecord, emptyStateHtml, bundledBanner } from "./v2r7.js";
+import { overviewHtml, openPowerGraph, wireR7, metaInRun, branchPopup, cmpHeadHtml, openWhere, methodPopup, branchInfo, savedPct, childSaved, CHILDREN, CHILD_ONLY, DERIVED_HINT, BUNDLED_ID, compareState, bundledRecord, emptyStateHtml, bundledBanner, TREE, treeChildren, treeFind, treeValue, contextSaver } from "./v2r7.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -51,6 +51,12 @@ function openInfo(id) {
   $("#side").classList.add("on"); $("#side").setAttribute("aria-hidden", "false"); $("#scrim").hidden = false; $("#sideX").focus();
 }
 function closeInfo() { $("#side").classList.remove("on"); $("#side").setAttribute("aria-hidden", "true"); $("#scrim").hidden = true; }
+// Open arbitrary detail HTML in the shared side panel (used by the Compare tree
+// info buttons: detail opens here, never in a pop-up).
+function openSidePanel(title, html) {
+  $("#sideBody").innerHTML = `<h2>${esc(title)}</h2>${html}`;
+  $("#side").classList.add("on"); $("#side").setAttribute("aria-hidden", "false"); $("#scrim").hidden = false; $("#sideX").focus();
+}
 $("#sideX").onclick = closeInfo; $("#scrim").onclick = closeInfo;
 const LEARN_INFO = {};
 
@@ -697,6 +703,9 @@ function radialHtml(runs, featuredId, rec) {
 // arc inside that branch's own sector, so families never overlap. Radii stay
 // as small as the card sizes allow; the user pans for the rest at fit zoom.
 function layoutRadial() {
+  // Compare runs the nested-tree layout (round 8); fall through to it so every
+  // caller (resize, pancanvas, Expand all) positions the drill rings too.
+  if (S.cmpTreeMode) return layoutTree();
   const wrap = $("#radialWrap"), stage = $("#radialStage"), svg = $("#radialWires"), centre = $("#radCentre");
   if (!wrap || !stage || !svg || !centre) return;
   const W = wrap.clientWidth || 0;
@@ -903,60 +912,182 @@ async function renderReport() {
   wireRadial();
   mountCompare();
 }
-// Round 7: the Power / Cost / Water cards lead the page; the older mind map
-// and the signed details fold away underneath.
+// Round 8: the Power/Cost/Water branches open into a NESTED TREE (v2r7.TREE).
+// Each card click opens one more ring on the same circle (no pop-ups); a
+// breadcrumb walks back. Cost and Water reuse the tree, values derived from
+// Power. Cards show only name + one value + an info button; info and the detail
+// open in the shared side panel.
+const TREE_DESC = {
+  owngpu: "Levers that need our own GPU: caps, expert routing and quantization. Hosted endpoints give no GPU access.",
+  caps: "Lower the GPU's watt limit and keep the lowest cap that passes the quality and speed gates.",
+  capsweep: "Try 650, 600 … 400 W and keep the lowest cap that passes.",
+  clocks: "Set clocks per phase (prefill vs decode) instead of one fixed cap.",
+  topk: "Send each word to fewer experts when one or two carry almost all the weight.",
+  quant: "Store experts in fewer bits; tiered keeps busy experts at higher precision.",
+  waste: "Stop agent loops and wasted tokens that add no new information.",
+  loopstop: "Stop an agent that calls the model again with nothing new.",
+  smallfirst: "Answer with a small model first (Llama 8B, Muse Glimmer, Muse Spark) and only escalate on a failed check.",
+  context: "Cut the tokens a request carries: reuse cached prefixes, compress memory, drop duplicates.",
+  prefix: "Reuse a repeated prompt prefix instead of recomputing it. Own GPU only.",
+  memcomp: "Summarise old turns so the context stays short.",
+  dupcut: "Drop duplicate tool output before it reaches the model.",
+  where: "Compare the three places a model can run and pick one per workload.",
+  own: "Your own GPU: power is measured and capped; prompts never leave.",
+  baseten: "Hosted on Baseten, paid per answer. Energy is an estimate (no shared meter).",
+  modal: "Hosted on Modal, paid per GPU-second. Energy is an estimate.",
+  gate: "Refuse any setting that drops answer quality or slows p99 past the limit.",
+  q: "Answers must agree with the full-precision model on a fixed test set.",
+  speed: "The slowest 1% (p99) must not rise past the limit.",
+  budget: "Spend must stay inside the run's budget.",
+  sam: "SAM 3.1 outlines each rack; WattNot marks the rack it can cool. Heat is simulated from the measured power drop.",
+};
+const treeVal = (v) => {
+  if (!v) return `<span class="rad-miss">–</span><span class="rad-pending">pending</span>`;
+  if (v.gate) return v.pass ? `<span class="rad-pass">✓ pass</span>` : `<span class="rad-fail">✕ fail</span>`;
+  return `${cnum(esc(v.text), v.tag)}${badge(v.tag)}`;
+};
+function branchDetailHtml(rec, id) {
+  const sv = savedPct(rec, id);
+  const b = rec?.phases?.baseline?.metrics?.j_per_req, w = rec?.phases?.wattnot?.metrics?.j_per_req;
+  const note = id === "power" ? "Energy per answer, measured on the GPU." : esc(DERIVED_HINT);
+  return `<p>${note}</p><p>Saved ${sv ? `<b>${cnum(esc(sv.text), sv.tag)}</b>${badge(sv.tag)}` : `<span class="rad-miss">– pending</span>`}</p>${b != null && w != null ? `<p class="fp-note">${num(b)} → ${num(w)} J per answer ${badge("MEASURED")}</p>` : ""}`;
+}
+function nodeDetailHtml(rec, branch, node) {
+  const v = treeValue(rec, branch, node), desc = TREE_DESC[node.id] || "";
+  let head;
+  if (node.kind === "gate") head = v ? (v.pass ? `<p class="rad-pass">✓ Passed</p>` : `<p class="rad-fail">✕ Failed</p>`) : `<p class="rad-miss">Not evaluated in this run <span class="rad-pending">pending</span></p>`;
+  else head = v ? `<p>Saved <b>${cnum(esc(v.text), v.tag)}</b>${badge(v.tag)}</p>` : `<p class="rad-miss">Not measured in this run <span class="rad-pending">pending</span></p>`;
+  let extra = node.id === "context" ? contextDetailHtml(rec) : "";
+  if (node.own_only) extra += `<p class="rad-sub">Own GPU only: hosted endpoints give no GPU access.</p>`;
+  return `<p>${esc(desc)}</p>${head}${extra}<p class="fp-note">${esc(rec?.run_name || "")} ${badge(rec?.label || "REPLAY")}</p>`;
+}
+// Context saver sub-parts: tokens and joules before/after and gate pass rate,
+// read defensively from the record; each shows "–" with a pending label until
+// a build adds the numbers.
+function contextDetailHtml(rec) {
+  const cs = contextSaver(rec);
+  const parts = [["prefix", "Prefix cache (own GPU only)"], ["memcomp", "Memory compression"], ["dupcut", "Duplicate cut"]];
+  const cell = (m) => (m?.value != null ? `${cnum(num(m.value), m.label || "ESTIMATE")}${badge(m.label || "ESTIMATE")}` : `<span class="rad-miss">–</span><span class="rad-pending">pending</span>`);
+  const rows = parts.map(([id, name]) => {
+    const p = cs ? (cs.parts?.[id] || cs[id]) : null;
+    const tb = p?.tokens_before, ta = p?.tokens_after, jb = p?.joules_before, ja = p?.joules_after, pr = p?.pass_rate;
+    return `<div class="rad-sub-row"><b>${esc(name)}</b>
+      <div class="kv" style="grid-template-columns:120px 1fr"><dt>Tokens</dt><dd>${cell(tb)} → ${cell(ta)}</dd>
+      <dt>Joules</dt><dd>${cell(jb)} → ${cell(ja)}</dd><dt>Gate pass</dt><dd>${cell(pr)}</dd></div></div>`;
+  }).join("");
+  return `<h4>Three sub-parts</h4>${rows}${cs ? "" : `<p class="rad-pending">No context-saver numbers in this run yet; each sub-part is pending.</p>`}`;
+}
 function mountCompare() {
   $("#pReport").toggleAttribute("data-cmp-empty", !S.cmpRec);
   $$("#pReport [data-bundled]").forEach((b) => (b.onclick = () => selectRun(BUNDLED_ID)));
-  if (!S.cmpRec) return;
-  // Radial stays the main compare layout (round 5); round 7 adds the header,
-  // the Meta line, and branch popups with the card content.
+  if (!S.cmpRec) { S.cmpTreeMode = false; return; }
   const page = $("#pReport");
   const rec = S.cmpRec;
-  const price = S.run?.results?.price?.usd_per_kwh ?? 0.1387, water = S.run?.results?.water?.factor_l_per_kwh ?? 0.36;
   $("#cmpR7")?.remove();
   const top = document.createElement("div"); top.id = "cmpR7"; top.innerHTML = cmpHeadHtml(rec);
   page.prepend(top);
-  // Minimal cards: name + "X% saved"; the card toggles its ring of children,
-  // only the (i) opens the detail popup.
   const stage = $("#radialStage"); if (!stage) return;
   const wires = $("#radialWires"); if (wires && wires.parentElement !== stage) stage.prepend(wires); // wires pan/zoom with the cards
-  const val = (sv, miss = "not measured in this run") => sv ? `${cnum(esc(sv.text), sv.tag)} saved` : `<span class="rad-miss" title="${miss}">—</span>`;
-  $$(".rad-child", stage).forEach((k) => k.remove());
-  const radFit = () => { S.radPan?.update(); S.radPan?.fit(); if (S.radPan && S.radPan.state.scale < 0.6) S.radPan.setZoom(0.6); };
-  // Keep the opened ring clear of the canvas controls (bottom right): pan up/left if a card sits under them.
-  const clearOfControls = (st, bid) => {
-    const P = S.radPan; if (!P) return;
-    for (let t = 0; t < 3; t++) {
-      const ctl = $(".pc-controls", st.parentElement)?.getBoundingClientRect(); if (!ctl) return;
-      let dy = 0, dx = 0;
-      $$(".rad-child, .rad-card", st).filter((k) => !k.hidden && (k.classList.contains("rad-card") || k.dataset.branch === bid)).forEach((k) => {
-        const r = k.getBoundingClientRect();
-        if (r.right > ctl.left && r.left < ctl.right && r.bottom > ctl.top && r.top < ctl.bottom) { dy = Math.max(dy, r.bottom - ctl.top + 12); dx = Math.max(dx, r.right - ctl.left + 12); }
-      });
-      if (!dy) return;
-      if (dx < dy) P.state.x -= dx; else P.state.y -= dy;
-      P.update();
+  $$(".rad-child, .rad-node", stage).forEach((k) => k.remove());
+  S.cmpTreeMode = true; S.cmpActive = null; S.cmpPath = [];
+  const bar = $(".radial-bar");
+  if (bar && !$("#cmpCrumb", bar)) bar.insertAdjacentHTML("afterbegin", `<nav class="cmp-crumb" id="cmpCrumb" aria-label="Compare path"></nav>`);
+
+  const branchSaved = (id) => { const sv = savedPct(rec, id); return sv ? `${cnum(esc(sv.text), sv.tag)}${badge(sv.tag)}` : `<span class="rad-miss">–</span><span class="rad-pending">pending</span>`; };
+  function renderCrumb() {
+    const el = $("#cmpCrumb"); if (!el) return;
+    if (!S.cmpActive) { el.innerHTML = `<span class="crumb-hint">Open Power, Cost or Water, then drill in. Each click opens one more ring.</span>`; return; }
+    const cap = (s) => s[0].toUpperCase() + s.slice(1);
+    const parts = [{ label: "WattNot", depth: -1 }, { label: cap(S.cmpActive), depth: 0 }];
+    S.cmpPath.forEach((id, i) => parts.push({ label: treeFind(id)?.name || id, depth: i + 1 }));
+    el.innerHTML = `<button class="crumb-back" data-back aria-label="Back one level">← Back</button>`
+      + parts.map((p, i) => `<button class="crumb" data-crumb="${p.depth}">${esc(p.label)}</button>${i < parts.length - 1 ? '<span class="crumb-sep" aria-hidden="true">›</span>' : ""}`).join("");
+    $("[data-back]", el).onclick = () => { if (S.cmpPath.length) { S.cmpPath = S.cmpPath.slice(0, -1); } else { S.cmpActive = null; } renderTree(); };
+    $$(".crumb", el).forEach((b) => (b.onclick = () => { const d = +b.dataset.crumb; if (d < 0) { S.cmpActive = null; } else { S.cmpPath = S.cmpPath.slice(0, d); } renderTree(); }));
+  }
+  function renderTree() {
+    $$(".rad-card", stage).forEach((c) => { const on = c.dataset.node === S.cmpActive; c.dataset.open = on ? "1" : "0"; $(".rad-head", c)?.setAttribute("aria-expanded", String(on)); });
+    $$(".rad-node", stage).forEach((n) => n.remove());
+    if (S.cmpActive) {
+      for (let d = 0; d <= S.cmpPath.length; d++) {
+        for (const node of treeChildren(S.cmpPath.slice(0, d))) {
+          const v = treeValue(rec, S.cmpActive, node), has = !!(node.kids && node.kids.length), onPath = S.cmpPath[d] === node.id;
+          const el = document.createElement("div");
+          el.className = `rad-node min${onPath ? " on" : ""}`; el.dataset.depth = d; el.dataset.node = node.id;
+          el.innerHTML = `<button class="rad-head2" aria-expanded="${onPath}"${has ? "" : " disabled"} aria-label="${esc(node.name)}${has ? ": open its routes" : ""}"><b>${esc(node.name)}</b><span class="rad-val">${treeVal(v)}</span>${node.own_only ? `<small class="rad-sub">own GPU only</small>` : ""}${has ? `<span class="rad-chev" aria-hidden="true">›</span>` : ""}</button><button class="ibtn rad-i" aria-label="${esc(node.name)} details">i</button>`;
+          stage.appendChild(el);
+          if (has) $(".rad-head2", el).onclick = () => { S.cmpPath = S.cmpPath.slice(0, d).concat(node.id); renderTree(); };
+          $(".rad-i", el).onclick = (e) => { e.stopPropagation(); openSidePanel(node.name, nodeDetailHtml(rec, S.cmpActive, node)); };
+        }
+      }
     }
-  };
+    renderCrumb();
+    layoutTree(); S.radPan?.update?.();
+    if (S.cmpActive) { const t = $(`.rad-card[data-node="${S.cmpActive}"]`, stage); if (t) S.radPan?.focus(t, { zoom: 0.5 }); } else S.radPan?.fit?.();
+  }
   $$(".rad-card", stage).forEach((c) => {
     const id = c.dataset.branch, name = id[0].toUpperCase() + id.slice(1);
-    c.classList.add("min"); c.dataset.open = "0";
-    c.innerHTML = `<button class="rad-head" aria-expanded="false" aria-label="${name}: show the routes"><b>${name}</b><span class="rad-val">${val(savedPct(rec, id))}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power</small>`}</button><button class="ibtn rad-i" data-binfo="${id}" aria-label="${name} details">i</button>`;
-    for (const [mid, mname] of CHILDREN.filter(([m]) => !CHILD_ONLY[m] || CHILD_ONLY[m] === id)) stage.insertAdjacentHTML("beforeend", `<div class="rad-child min" data-branch="${id}" data-m="${mid}" hidden><b>${esc(mname)}</b><span class="rad-val">${val(childSaved(rec, id, mid), mid === "baseten" || mid === "modal" ? "measured in the long run" : "not measured in this run")}</span>${mid === "baseten" || mid === "modal" ? `<small class="rad-sub">${childSaved(rec, id, mid) ? "" : "measured in the long run"}</small>` : ""}<button class="ibtn rad-i" data-minfo="${mid}" aria-label="${esc(mname)} details">i</button></div>`);
-    $(".rad-head", c).onclick = () => {
-      const on = c.dataset.open !== "1"; c.dataset.open = on ? "1" : "0"; $(".rad-head", c).setAttribute("aria-expanded", String(on));
-      $$(".rad-child", stage).filter((k) => k.dataset.branch === id).forEach((k) => { k.hidden = !on; });
-      layoutRadial(); S.radPan?.update(); if (on) { S.radPan?.focus(c, { zoom: 0.55 }); setTimeout(() => clearOfControls(stage, id), 450); } else S.radPan?.fit();
-    };
-    $(".rad-i", c).onclick = (e) => { e.stopPropagation(); branchInfo(rec, id, price, water); };
+    c.classList.add("min"); c.dataset.open = "0"; c.dataset.node = id;
+    c.innerHTML = `<button class="rad-head" aria-expanded="false" aria-label="${name}: open its routes"><b>${name}</b><span class="rad-val">${branchSaved(id)}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power</small>`}</button><button class="ibtn rad-i" aria-label="${name} details">i</button>`;
+    $(".rad-head", c).onclick = () => { S.cmpActive = S.cmpActive === id ? null : id; S.cmpPath = []; renderTree(); };
+    $(".rad-i", c).onclick = (e) => { e.stopPropagation(); openSidePanel(name, branchDetailHtml(rec, id)); };
   });
-  $$(".rad-child [data-minfo]", stage).forEach((b) => (b.onclick = (e) => { e.stopPropagation(); if (b.dataset.minfo === "sam") return openThermal({ measuredSaving: childSaved(rec, "power", "sam") }); methodPopup(rec, b.closest(".rad-child").dataset.branch, b.dataset.minfo, price, water); }));
-  layoutRadial(); S.radPan?.update?.();
+  // Expand all opens the Power branch's first ring; Collapse all returns to the centre.
+  $$("#pReport [data-radial]").forEach((b) => (b.onclick = () => { S.cmpActive = b.dataset.radial === "open" ? "power" : null; S.cmpPath = []; renderTree(); }));
+  renderTree();
   const ctr = $("#radCentre");
   if (ctr && !$("[data-where]", ctr)) ctr.insertAdjacentHTML("beforeend", `<button class="btn rad-where" data-where>Where should this model run?</button>`);
   const w = $("[data-where]", ctr); if (w) w.onclick = () => openWhere(rec);
   const sig = $("#pReport .receipt-meta"); if (!sig) $("#pReport").insertAdjacentHTML("beforeend", `<div class="receipt-meta glass">${metaInRun(rec)}</div>`);
+}
+// Nested-tree layout: WattNot centre, the three branches 120° apart on an inner
+// ring, and the active branch's drill rings fanned out in its own sector — one
+// more ring per level the breadcrumb has descended.
+function layoutTree() {
+  const wrap = $("#radialWrap"), stage = $("#radialStage"), svg = $("#radialWires"), centre = $("#radCentre");
+  if (!wrap || !stage || !svg || !centre) return;
+  const W = wrap.clientWidth || 0;
+  const cards = $$(".rad-card", stage), nodes = $$(".rad-node", stage);
+  if (!W || W < 900) {
+    stage.style.width = ""; stage.style.height = ""; centre.style.left = ""; centre.style.top = "";
+    cards.forEach((c) => { c.style.left = ""; c.style.top = ""; });
+    nodes.forEach((k) => { k.style.left = ""; k.style.top = ""; });
+    svg.innerHTML = ""; return;
+  }
+  const R1 = 240, RING = 230, depth = (S.cmpPath || []).length;
+  const ringsOut = S.cmpActive ? depth + 1 : 0;
+  const maxR = R1 + ringsOut * RING + 150, w = Math.ceil(maxR * 2 + 40), h = w, cx = w / 2, cy = h / 2;
+  stage.style.width = `${w}px`; stage.style.height = `${h}px`;
+  centre.style.left = `${cx.toFixed(1)}px`; centre.style.top = `${cy.toFixed(1)}px`;
+  const angleOf = (branch) => -Math.PI / 2 + RAD_BRANCHES.indexOf(branch) * 2 * Math.PI / 3;
+  cards.forEach((c) => { const a = angleOf(c.dataset.node); c.style.left = `${(cx + R1 * Math.cos(a)).toFixed(1)}px`; c.style.top = `${(cy + R1 * Math.sin(a)).toFixed(1)}px`; });
+  if (S.cmpActive) {
+    const A = angleOf(S.cmpActive), spread = 0.8 * (2 * Math.PI / 3);
+    for (let d = 0; d <= depth; d++) {
+      const ring = nodes.filter((k) => +k.dataset.depth === d), k = ring.length, step = k > 1 ? spread / (k - 1) : 0, Rd = R1 + (d + 1) * RING;
+      ring.forEach((el, j) => { const aj = A + (j - (k - 1) / 2) * step; el.style.left = `${(cx + Rd * Math.cos(aj)).toFixed(1)}px`; el.style.top = `${(cy + Rd * Math.sin(aj)).toFixed(1)}px`; });
+    }
+  }
+  drawTreeWires(cx, cy);
+}
+function drawTreeWires(cx, cy) {
+  const stage = $("#radialStage"), svg = $("#radialWires"); if (!stage || !svg) return;
+  const pos = (el) => [parseFloat(el.style.left) || 0, parseFloat(el.style.top) || 0];
+  const link = (a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1, sx = a[0] + dx / len * 40, sy = a[1] + dy / len * 40, ex = b[0] - dx / len * 46, ey = b[1] - dy / len * 30; return `M ${sx.toFixed(1)} ${sy.toFixed(1)} C ${(sx + dx * 0.3).toFixed(1)} ${(sy + dy * 0.3).toFixed(1)}, ${(sx + dx * 0.7).toFixed(1)} ${(sy + dy * 0.7).toFixed(1)}, ${ex.toFixed(1)} ${ey.toFixed(1)}`; };
+  const d = [];
+  $$(".rad-card", stage).forEach((c) => d.push(link([cx, cy], pos(c))));
+  if (S.cmpActive) {
+    const branchCard = $(`.rad-card[data-node="${S.cmpActive}"]`, stage), nodes = $$(".rad-node", stage);
+    const bp = branchCard ? pos(branchCard) : [cx, cy];
+    for (let dep = 0; dep <= (S.cmpPath || []).length; dep++) {
+      const ring = nodes.filter((k) => +k.dataset.depth === dep);
+      let parent = bp;
+      if (dep > 0) { const pel = nodes.find((k) => +k.dataset.depth === dep - 1 && k.dataset.node === S.cmpPath[dep - 1]); if (pel) parent = pos(pel); }
+      ring.forEach((el) => d.push(link(parent, pos(el))));
+    }
+  }
+  svg.setAttribute("viewBox", `0 0 ${stage.offsetWidth} ${stage.offsetHeight}`);
+  svg.innerHTML = d.map((x) => `<path d="${x}"/>`).join("");
 }
 async function sha256(s) { if (!globalThis.crypto?.subtle) return null; const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
 async function startQuiet() { const r = await fetch("/api/dash/v2/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(S.choice) }); S.run = await r.json(); S.n = S.run.events.length; renderRun(); }
