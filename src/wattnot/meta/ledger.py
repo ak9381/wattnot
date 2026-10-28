@@ -28,8 +28,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-CAP_USD = 50.0
-SOFT_USD = 40.0
+CAP_USD = 100.0
+SOFT_USD = 80.0
 LEDGER_ENV = "WATTNOT_META_LEDGER"
 PRICE_SOURCE = "https://dev.meta.ai/docs/pricing-rate-limits (Standard mode, read 2026-10-27)"
 DEFAULT_MAX_OUTPUT = 2000  # applied to a request that sets no output cap
@@ -49,6 +49,7 @@ PRICES: dict[str, Price] = {
     "muse-spark-1.1": Price(1.25, 0.15, 4.25),
     "muse-spark-1.3-contributor": Price(0.10, 0.002, 0.20),
     "muse-spark-1.2-contributor": Price(0.10, 0.002, 0.20),
+    "muse-wonder": Price(4.00, 0.20, 20.00),
     "muse-wonder-1.0": Price(4.00, 0.20, 20.00),
 }
 ASSUMED = Price(4.00, 0.20, 20.00)  # unknown model: the highest published rate
