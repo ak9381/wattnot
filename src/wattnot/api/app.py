@@ -408,6 +408,13 @@ def create_app(root: str | os.PathLike[str] = ".") -> FastAPI:
                 body = json.loads(raw)
                 if isinstance(body, dict):
                     query_text = body.get("query") or body.get("text") or ""
+                    b64 = body.get("audio_b64")
+                    if not query_text and isinstance(b64, str) and b64:
+                        import base64 as _b64
+                        try:
+                            audio_bytes = _b64.b64decode(b64, validate=True)
+                        except Exception:
+                            audio_bytes = None
             except ValueError:
                 audio_bytes = raw
         return process_voice_query(query_text=query_text, audio_data=audio_bytes, root_dir=base)

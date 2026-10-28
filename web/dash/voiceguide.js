@@ -96,6 +96,8 @@ export function mountVoiceGuide(customMountEl = null) {
   const panelClose = dom.querySelector("#vg-panel-close");
 
   let mediaRecorder = null;
+  let mediaStream = null;
+  let audioChunks = [];
   let isRecording = false;
 
   function showStatus(text) {
@@ -107,6 +109,15 @@ export function mountVoiceGuide(customMountEl = null) {
     statusBubble.style.display = "none";
   }
 
+  function routeLine(label, value) {
+    // API data is rendered as text, never as markup (receipt ids etc. could carry HTML).
+    panelRoute.textContent = "";
+    const strong = document.createElement("strong");
+    strong.textContent = label;
+    panelRoute.appendChild(strong);
+    panelRoute.appendChild(document.createTextNode(` ${value}`));
+  }
+
   function displayResponse(data) {
     panelIntent.textContent = data.intent || "ANSWER";
     panelTag.textContent = data.label || "MOCK";
@@ -114,10 +125,11 @@ export function mountVoiceGuide(customMountEl = null) {
 
     if (data.route) {
       panelRoute.style.display = "block";
-      panelRoute.innerHTML = `<strong>Route:</strong> ${data.route}`;
+      routeLine("Route:", data.route);
     } else if (data.prefill) {
       panelRoute.style.display = "block";
-      panelRoute.innerHTML = `<strong>Prefill:</strong> ${data.prefill.stack} (${data.prefill.caps_w?.join(", ")}W)`;
+      const caps = Array.isArray(data.prefill.caps_w) ? `${data.prefill.caps_w.join(", ")}W` : "caps pending";
+      routeLine("Prefill:", `${data.prefill.stack || "vllm"} (${caps})`);
     } else {
       panelRoute.style.display = "none";
     }
@@ -199,6 +211,42 @@ export function mountVoiceGuide(customMountEl = null) {
     }
   });
 
+  function stopStream() {
+    if (mediaStream) {
+      for (const track of mediaStream.getTracks()) track.stop();
+      mediaStream = null;
+    }
+  }
+
+  async function sendRecording() {
+    const blob = new Blob(audioChunks, { type: audioChunks[0]?.type || "audio/webm" });
+    audioChunks = [];
+    if (!blob.size) {
+      displayResponse({ intent: "answer", label: "MOCK",
+        text: "No audio was captured. Type your question instead." });
+      hideStatus();
+      return;
+    }
+    try {
+      const buf = new Uint8Array(await blob.arrayBuffer());
+      let bin = "";
+      for (const b of buf) bin += String.fromCharCode(b);
+      const res = await fetch("/api/voiceguide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ audio_b64: btoa(bin) }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      displayResponse(await res.json());
+    } catch {
+      // No transcription available offline: say so rather than invent a query.
+      displayResponse({ intent: "answer", label: "MOCK",
+        text: "[Offline MOCK] Transcription is unavailable without the API. Type your question instead." });
+    } finally {
+      hideStatus();
+    }
+  }
+
   micBtn.addEventListener("click", async () => {
     if (!isRecording) {
       // Instant 'Listening…' state
@@ -208,10 +256,19 @@ export function mountVoiceGuide(customMountEl = null) {
 
       if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          mediaRecorder = new MediaRecorder(stream);
+          mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          audioChunks = [];
+          mediaRecorder = new MediaRecorder(mediaStream);
+          mediaRecorder.addEventListener("dataavailable", (e) => {
+            if (e.data && e.data.size) audioChunks.push(e.data);
+          });
+          mediaRecorder.addEventListener("stop", () => {
+            stopStream();
+            sendRecording();
+          });
           mediaRecorder.start();
         } catch {
+          stopStream();
           // Mic permission or unavailable, stay in listening simulation
         }
       }
@@ -222,11 +279,13 @@ export function mountVoiceGuide(customMountEl = null) {
       showStatus("Thinking…");
 
       if (mediaRecorder && mediaRecorder.state !== "inactive") {
-        mediaRecorder.stop();
+        mediaRecorder.stop(); // 'stop' handler posts the recording and releases the mic
+      } else {
+        stopStream();
+        displayResponse({ intent: "answer", label: "MOCK",
+          text: "Microphone is unavailable here. Type your question instead." });
+        hideStatus();
       }
-      setTimeout(() => {
-        handleQuery("show last night's report");
-      }, 250);
     }
   });
 

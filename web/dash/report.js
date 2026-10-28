@@ -144,7 +144,7 @@ function steps(X) {
           <dt>Mean power</dt><dd>${num(X.bm.mean_w)} W ${chip(X.bm.label || "MEASURED")}</dd>
           <dt>p99 latency</dt><dd>${num(X.bm.p99_s)} s ${chip(X.bm.label || "MEASURED")}</dd>
           <dt>Quality (pass)</dt><dd>${num(X.bm.quality_pct, 1)}% ${chip(X.bm.label || "MEASURED")}</dd>
-          <dt>Requests</dt><dd>${num(X.bm.requests, 0)} · ${num(X.bm.repeats, 0)} repeats ${chip("MEASURED")}</dd>
+          <dt>Requests</dt><dd>${num(X.bm.requests, 0)} · ${num(X.bm.repeats, 0)} repeats ${chip(X.bm.label || "MEASURED")}</dd>
         </dl>
         <p>Read from the card with NVIDIA's NVML counter over ${num(X.bm.repeats, 0)} repeats. This is the “before” every saving is measured against.</p>`
         : `<p>This run has no recorded baseline phase.</p>`,
@@ -153,17 +153,17 @@ function steps(X) {
     {
       id: "gate", node: "4", name: "Quality gate", muted: false,
       val: statusPill(X.gatePass, "Passed", "Failed"),
-      labelChip: X.gatePass == null ? chip("pending") : chip("MEASURED"),
+      labelChip: X.gatePass == null ? chip("pending") : chip(X.wm.label || "MEASURED"),
       sub: X.gatePass == null ? "Not evaluated for this run"
         : `Answers held · p99 ${X.p99Chg >= 0 ? "+" : ""}${num(X.p99Chg, 1)}% ${X.p99Ok ? "within" : "over"} the 10% limit`,
-      explainId: "report.step.gate", explainVal: X.gatePass == null ? "—" : (X.gatePass ? "Passed" : "Failed"), explainLabel: X.gatePass == null ? "pending" : "MEASURED", explainSource: "phases.wattnot.gate.verdict",
+      explainId: "report.step.gate", explainVal: X.gatePass == null ? "—" : (X.gatePass ? "Passed" : "Failed"), explainLabel: X.gatePass == null ? "pending" : (X.wm.label || "MEASURED"), explainSource: "phases.wattnot.gate.verdict",
       detail: () => `<h4>Did it stay safe?</h4>
         <p>A change is only kept if answer quality holds and the slowest 1% of requests (p99) does not rise past the limit.</p>
         <dl class="kv">
           <dt>Quality before</dt><dd>${num(X.bm.quality_pct, 1)}% ${chip(X.bm.label || "MEASURED")}</dd>
           <dt>Quality after</dt><dd>${num(X.wm.quality_pct, 1)}% ${chip(X.wm.label || "MEASURED")}</dd>
           <dt>Quality check</dt><dd>${statusPill(X.qualityHeld, "held", "dropped")}</dd>
-          <dt>p99 change</dt><dd>${X.p99Chg == null ? "—" : `${X.p99Chg >= 0 ? "+" : ""}${num(X.p99Chg, 1)}%`} ${X.p99Chg == null ? chip("pending") : chip("MEASURED")}</dd>
+          <dt>p99 change</dt><dd>${X.p99Chg == null ? "—" : `${X.p99Chg >= 0 ? "+" : ""}${num(X.p99Chg, 1)}%`} ${X.p99Chg == null ? chip("pending") : chip(X.wm.label || "MEASURED")}</dd>
           <dt>p99 limit</dt><dd>+10% ${statusPill(X.p99Ok, "within", "over")}</dd>
         </dl>
         <p>${X.gatePass == null ? "This run did not record a tuned phase, so the gate could not be evaluated." : X.gatePass ? "Both checks passed, so the change is eligible to keep." : "A check failed, so the change is rejected."}</p>`,
@@ -177,8 +177,8 @@ function steps(X) {
       detail: () => X.have ? `<h4>What WattNot changed</h4>
         <dl class="kv">
           <dt>Power cap</dt><dd>${num(X.b.cap_w, 0)} W → ${num(X.w.cap_w, 0)} W</dd>
-          <dt>Energy / request</dt><dd>${num(X.bm.j_per_req)} → ${num(X.wm.j_per_req)} J ${chip("MEASURED")}</dd>
-          <dt>Energy saved</dt><dd>${num(X.savedPct, 1)}% · ${num(X.jSavedTot)} J over the run ${chip("MEASURED")}</dd>
+          <dt>Energy / request</dt><dd>${num(X.bm.j_per_req)} → ${num(X.wm.j_per_req)} J ${chip(X.wm.label || "MEASURED")}</dd>
+          <dt>Energy saved</dt><dd>${num(X.savedPct, 1)}% · ${num(X.jSavedTot)} J over the run ${chip(X.wm.label || "MEASURED")}</dd>
           <dt>Cost saved</dt><dd>$${num(X.costSaved, 4)}</dd>
           <dt>Water saved</dt><dd>${num(X.waterSaved, 4)} L</dd>
         </dl>
@@ -188,10 +188,10 @@ function steps(X) {
     {
       id: "decision", node: "6", name: "Kept or rolled back", muted: !X.have,
       val: statusPill(X.gatePass, "Kept", "Rolled back"),
-      labelChip: X.gatePass == null ? chip("pending") : chip("MEASURED"),
+      labelChip: X.gatePass == null ? chip("pending") : chip(X.wm.label || "MEASURED"),
       sub: X.gatePass == null ? "No decision recorded"
         : X.gatePass ? "Change kept; one click would undo it" : "Change undone automatically",
-      explainId: "report.step.kept", explainVal: X.gatePass == null ? "—" : (X.gatePass ? "Kept" : "Rolled back"), explainLabel: X.gatePass == null ? "pending" : "MEASURED", explainSource: "phases.wattnot.decision",
+      explainId: "report.step.kept", explainVal: X.gatePass == null ? "—" : (X.gatePass ? "Kept" : "Rolled back"), explainLabel: X.gatePass == null ? "pending" : (X.wm.label || "MEASURED"), explainSource: "phases.wattnot.decision",
       detail: () => `<h4>The decision</h4>
         <p>${X.gatePass == null ? "No tuned phase was recorded, so there is no decision for this run."
           : X.gatePass ? `The ${num(X.w.cap_w, 0)} W cap passed every gate, so it was kept. Every applied change stays undoable in one click and is written to the audit ledger.`
@@ -241,14 +241,14 @@ function receiptStep(X) {
   return {
     id: "receipt", node: "7", name: "Receipt details", muted: !rc,
     val: rc && savePct != null ? `${num(savePct, 1)}%` : "—",
-    labelChip: rc && savePct != null ? chip("MEASURED") : chip("pending"),
+    labelChip: rc && savePct != null ? chip(r?.measurement?.label || "MEASURED") : chip("pending"),
     sub: rc ? `${esc(fwName)} · saving, signed offline` : "No signed receipt for this run",
-    explainId: "report.step.receipt", explainVal: rc && savePct != null ? `${num(savePct, 1)}%` : "—", explainLabel: rc && savePct != null ? "MEASURED" : "pending", explainSource: "receipt.result.saving_pct",
+    explainId: "report.step.receipt", explainVal: rc && savePct != null ? `${num(savePct, 1)}%` : "—", explainLabel: rc && savePct != null ? (r?.measurement?.label || "MEASURED") : "pending", explainSource: "receipt.result.saving_pct",
     detail: () => {
       if (!rc) return `<h4>No receipt</h4><p>This run was not signed into a receipt. Only runs with a published receipt can be re-checked offline.</p>`;
       const bl = r?.baseline, ca = r?.candidate;
       const whRow = bl && ca
-        ? `<dt>Energy / request</dt><dd>${num(bl.wh_per_req?.mean * 1000, 2)} → ${num(ca.wh_per_req?.mean * 1000, 2)} mWh ${chip("MEASURED")}</dd>`
+        ? `<dt>Energy / request</dt><dd>${num(bl.wh_per_req?.mean * 1000, 2)} → ${num(ca.wh_per_req?.mean * 1000, 2)} mWh ${chip(r?.measurement?.label || "MEASURED")}</dd>`
         : "";
       const capRow = bl && ca
         ? `<dt>Power cap</dt><dd>${num(bl.params?.power_cap_w, 0)} W → ${num(ca.params?.power_cap_w, 0)} W</dd>`
@@ -258,7 +258,7 @@ function receiptStep(X) {
           <dt>Receipt</dt><dd>${esc(r?.receipt_id || RUN_ID)}</dd>
           <dt>Framework</dt><dd>${esc(fwName)} ${chip(fwTag)}</dd>
           ${capRow}${whRow}
-          <dt>Saving</dt><dd>${num(savePct, 1)}% ${chip("MEASURED")}${r?.result?.saving_pct ? ` (CI ${num(r.result.saving_pct.ci_low, 1)}–${num(r.result.saving_pct.ci_high, 1)}%)` : ""}</dd>
+          <dt>Saving</dt><dd>${num(savePct, 1)}% ${chip(r?.measurement?.label || "MEASURED")}${r?.result?.saving_pct ? ` (CI ${num(r.result.saving_pct.ci_low, 1)}–${num(r.result.saving_pct.ci_high, 1)}%)` : ""}</dd>
           <dt>Meter</dt><dd>${esc(r?.measurement?.meter || "nvml")} @ ${num(r?.measurement?.hz, 0)} Hz ${chip(r?.measurement?.label || "MEASURED")}</dd>
         </dl>
         <h4>Signature, honestly</h4>
@@ -306,7 +306,7 @@ function render() {
   const qualityVal = X.wm?.quality_pct != null
     ? `${num(X.wm.quality_pct, 1)}%`
     : (X.qualityHeld != null ? (X.qualityHeld ? "Held" : "Dropped") : "—");
-  const qualityChip = X.wm?.quality_pct != null ? chip(X.wm.label || "MEASURED") : chip("MEASURED");
+  const qualityChip = X.wm?.quality_pct != null ? chip(X.wm.label || "MEASURED") : chip("pending");
   const qualitySub = X.gatePass != null
     ? (X.gatePass ? `✓ Gate passed · p99 ${X.p99Chg >= 0 ? "+" : ""}${num(X.p99Chg, 1)}%` : `✕ Gate failed · p99 ${num(X.p99Chg, 1)}%`)
     : "Answers evaluated against baseline";
