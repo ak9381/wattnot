@@ -86,12 +86,27 @@ def transcribe_audio(
     is_mock = mock or (not live) or (os.environ.get("WATTNOT_META_MOCK") == "1")
     if not is_mock:
         # Live path: guarded client invocation for Muse Voice Transcribe
+        import base64
+
         from wattnot.meta.client import GuardedClient
 
-        client = GuardedClient(model="muse-voice-transcribe", ledger=ledger)
-        # Live audio transcription call
-        resp = client.ask("Transcribe audio input", purpose="voice:transcribe")
-        return str(resp.get("text", "")).strip()
+        client = GuardedClient(ledger=ledger) if ledger is not None else GuardedClient()
+        body = {
+            "model": "muse-voice-transcribe",
+            "messages": [{
+                "role": "user",
+                "content": [
+                    {"type": "input_audio",
+                     "input_audio": {"data": base64.b64encode(audio_data or b"").decode("ascii"),
+                                     "format": "wav"}},
+                    {"type": "text", "text": "Transcribe this audio to plain text."},
+                ],
+            }],
+        }
+        data = client(body, purpose="voice:transcribe")
+        choices = data.get("choices") or [{}]
+        content = (choices[0].get("message") or {}).get("content", "")
+        return str(content).strip()
 
     # Deterministic mock transcription from audio payload or default prompt
     if not audio_data:
@@ -278,17 +293,45 @@ def get_quick_ack(intent: str, text: str) -> dict[str, str]:
     return {"intent": "answer", "ack": "Querying signed receipts and EU report...", "status": "ok"}
 
 
+def _created_at_key(receipt: Mapping) -> tuple[int, Any]:
+    """Timezone-aware sort key for created_at (lexicographic ISO strings mis-order offsets)."""
+    from datetime import datetime, timezone
+
+    raw = str(receipt.get("created_at", ""))
+    try:
+        dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return (1, dt)
+    except ValueError:
+        return (0, raw)
+
+
 def _load_signed_receipts(root_dir: Path) -> list[dict[str, Any]]:
-    """Scan and verify signed receipts from disk (receipts/ and verifier/samples/)."""
+    """Scan receipts/ and keep only verified run receipts.
+
+    A receipt qualifies when its JCS sha256 recomputes (hash check) AND, when an
+    offline signature bundle sits next to it, the Ed25519 signature verifies and
+    the signer is in verifier/trusted-keys.json (when that file exists). Verifier
+    forgery fixtures and UI sample JSON are not grounding data.
+    """
+    from wattnot.receipt.sign import bundle_path, verify_offline_bundle
+
     verified: list[dict[str, Any]] = []
-    candidates: list[Path] = []
+    seen_ids: set[str] = set()
+    receipts_dir = root_dir / "receipts"
+    if not receipts_dir.is_dir():
+        return []
 
-    for d in (root_dir / "receipts", root_dir / "verifier" / "samples", root_dir / "web" / "dash"):
-        if d.is_dir():
-            candidates.extend(sorted(d.glob("*.json")))
-            candidates.extend(sorted(d.glob("**/*.json")))
+    trusted: set[str] | None = None
+    tk = root_dir / "verifier" / "trusted-keys.json"
+    if tk.is_file():
+        try:
+            trusted = {k["signer"] for k in json.loads(tk.read_text(encoding="utf-8"))["keys"]}
+        except Exception:
+            trusted = None
 
-    for path in candidates:
+    for path in sorted(receipts_dir.rglob("*.json")):
         if path.name.endswith(".sigstore.json") or path.name.endswith(".schema.json"):
             continue
         try:
@@ -296,8 +339,24 @@ def _load_signed_receipts(root_dir: Path) -> list[dict[str, Any]]:
             if not isinstance(doc, dict) or "integrity" not in doc or "receipt_id" not in doc:
                 continue
             ok, _, _ = verify_hash(doc)
-            if ok:
-                verified.append(doc)
+            if not ok:
+                continue
+            bp = bundle_path(path)
+            if bp.is_file():
+                bundle = json.loads(bp.read_text(encoding="utf-8"))
+                sig_ok, signer = verify_offline_bundle(doc, bundle)
+                if not sig_ok:
+                    continue
+                named = (doc.get("integrity") or {}).get("signer")
+                if named not in (None, signer):
+                    continue  # bundle self-verifies but under a different key than claimed
+                if trusted is not None and signer not in trusted:
+                    continue
+            rid = str(doc["receipt_id"])
+            if rid in seen_ids:
+                continue
+            seen_ids.add(rid)
+            verified.append(doc)
         except Exception:
             continue
     return verified
@@ -339,7 +398,7 @@ def process_voice_query(
             receipts = _load_signed_receipts(root)
             latest = None
             if receipts:
-                receipts.sort(key=lambda r: str(r.get("created_at", "")), reverse=True)
+                receipts.sort(key=_created_at_key, reverse=True)
                 latest = receipts[0]
             latest_id = latest["receipt_id"] if latest else "rcpt_latest"
             result = {
@@ -402,7 +461,8 @@ def process_voice_query(
         )
 
         if receipts and is_answerable:
-            # Pick best matching receipt or latest
+            # Pick best matching receipt, or the latest by timestamp
+            receipts.sort(key=_created_at_key, reverse=True)
             matched = receipts[0]
             for r in receipts:
                 if r.get("receipt_id", "").lower() in t_low:
@@ -421,12 +481,19 @@ def process_voice_query(
             kwh_row = next((row for row in eu_rows if row.get("field") == "it_energy_measured_window"), None)
             kwh_val = kwh_row.get("value") if kwh_row else 0.0
 
+            # Labels come from the receipt itself, never hardcoded: the measurement
+            # block labels the energy numbers, the EU row labels the kWh figure.
+            meas_label = str((matched.get("measurement") or {}).get("label", "SIMULATED"))
+            kwh_label = str(kwh_row.get("label", meas_label)) if kwh_row else meas_label
+            water_label = str(((matched.get("estimates") or {}).get("water_ml_per_req") or {})
+                              .get("label", "ESTIMATE"))
+
             ans_text = (
                 f"According to signed receipt {rid} and EU report: "
-                f"billed energy saving is {saving}% [MEASURED], "
-                f"energy per request is {wh} Wh [MEASURED], "
-                f"window IT energy is {kwh_val} kWh [MEASURED], "
-                f"water estimate is {water} mL/req [ESTIMATE]."
+                f"billed energy saving is {saving}% [{meas_label}], "
+                f"energy per request is {wh} Wh [{meas_label}], "
+                f"window IT energy is {kwh_val} kWh [{kwh_label}], "
+                f"water estimate is {water} mL/req [{water_label}]."
             )
 
             result = {
