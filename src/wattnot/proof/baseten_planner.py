@@ -12,9 +12,12 @@ The Baseten spend ledger here is separate from the Meta ledger in
 
 from __future__ import annotations
 
+import hashlib
 import json
+import logging
 import math
 import os
+import time
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Mapping
@@ -37,6 +40,16 @@ IN_PER_M = 1.25
 CACHED_PER_M = 0.15
 OUT_PER_M = 4.25
 LEDGER_NAME = "baseten-ledger.json"
+PROVIDER = "baseten"
+log = logging.getLogger("wattnot.planner.spark_open")
+
+
+def prompt_sha256(system: str, payload) -> str:
+    """Hash of exactly what we sent (system + payload), so a receipt can name the prompt
+    without carrying it."""
+    blob = json.dumps({"system": system, "payload": payload}, sort_keys=True,
+                      separators=(",", ":"), default=str)
+    return hashlib.sha256(blob.encode()).hexdigest()
 
 
 class BasetenError(RuntimeError):
@@ -205,17 +218,28 @@ class OpenWeightsPlanner(MusePlanner):
             return {"kind": "stop", "cap_w": None, "reason": "every allowed cap was tried",
                     "by": self.name}
         system, payload = build_prompt(history, self.lo, self.hi, self.context)
+        call = {"provider": PROVIDER, "model": self.model,
+                "prompt_sha256": prompt_sha256(system, payload),
+                "latency_ms": None, "label": "MEASURED", "fallback": False,
+                "fallback_reason": None}
+        self.last_call = call
+        t0 = time.perf_counter()
         try:
             raw = self.client(_body(system, payload, SCHEMA, "NextCap", effort="low",
                                     max_tokens=4000, model=self.model),
                               purpose="next-power-cap")
+            call["latency_ms"] = round((time.perf_counter() - t0) * 1000, 1)
             usage = usage_of(raw)
             self.last_usage, self.last_error = usage, None
         except Exception as e:  # noqa: BLE001 - no answer came back, so bisect picks
             self.last_error = f"{type(e).__name__}: {str(e)[:160]}"
+            call.update(latency_ms=round((time.perf_counter() - t0) * 1000, 1),
+                        fallback=True, fallback_reason=f"call failed: {self.last_error}")
+            log.warning("FALLBACK: Muse Spark Open on Baseten gave no answer (%s); "
+                        "the deterministic bisect rule picks this cap", self.last_error)
             out = self.fallback.propose(history)
             return {**out, "by": "bisect-fallback", "muse_error": self.last_error,
-                    "proposal_accepted": None, "explanation": None, "usage": None,
+                    "call": call, "proposal_accepted": None, "explanation": None, "usage": None,
                     "model": self.model, "usd": None}
         try:
             d = _json(raw)
@@ -226,19 +250,22 @@ class OpenWeightsPlanner(MusePlanner):
             if d.get("kind") == "stop":
                 return {"kind": "stop", "cap_w": None, "reason": reason, "by": self.name,
                         "proposal_accepted": True, "explanation": explanation,
-                        "usage": usage, "model": self.model, "usd": usd}
+                        "usage": usage, "model": self.model, "usd": usd, "call": call}
             if d.get("cap_w") not in free:
                 raise ValueError(f"off the allow-list: {d.get('cap_w')!r}")
             return {"kind": "try", "cap_w": int(d["cap_w"]), "reason": reason, "by": self.name,
                     "proposal_accepted": True, "explanation": explanation,
-                    "usage": usage, "model": self.model, "usd": usd}
+                    "usage": usage, "model": self.model, "usd": usd, "call": call}
         except Exception as e:  # noqa: BLE001 - the answer failed validation, so bisect picks
             self.last_error = f"{type(e).__name__}: {str(e)[:160]}"
+            call.update(fallback=True, fallback_reason=f"answer rejected: {self.last_error}")
+            log.warning("FALLBACK: Muse Spark Open answer failed validation (%s); "
+                        "the deterministic bisect rule picks this cap", self.last_error)
             out = self.fallback.propose(history)
             return {**out, "by": "bisect-fallback", "muse_error": self.last_error,
-                    "proposal_accepted": False, "explanation": None, "usage": None,
+                    "call": call, "proposal_accepted": False, "explanation": None, "usage": None,
                     "model": self.model, "usd": None}
 
 
 __all__ = ["BasetenClient", "BasetenError", "CapReached", "OpenWeightsPlanner",
-           "LEDGER_NAME", "MIN_MAX_TOKENS", "price_usd"]
+           "LEDGER_NAME", "MIN_MAX_TOKENS", "PROVIDER", "price_usd", "prompt_sha256"]

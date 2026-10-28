@@ -1,0 +1,15 @@
+{
+ "provider": "baseten",
+ "entries": [
+  {
+   "ts": "2026-10-28T03:04:26+00:00",
+   "model": "meta-models/muse-spark-open-1026",
+   "purpose": "next-power-cap",
+   "input_tokens": 575,
+   "cached_tokens": 0,
+   "output_tokens": 766,
+   "usd": 0.00397425,
+   "label": "MEASURED"
+  }
+ ]
+}

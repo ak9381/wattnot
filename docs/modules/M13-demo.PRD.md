@@ -6,6 +6,7 @@ Make the 3:00 video reproducible: scripted demo run from fixtures, the forge cha
 
 ## Requirements
 - FR-DEMO-00 The script leads with who benefits and by how much (small self-hosting teams, Wh and $ saved per request), and says which problem statement we fit ("Push the frontier", energy). Impact is 30% of the score, so this comes before the engineering.
+- FR-DEMO-00b Narration line, spoken right after the opening: "Token trimmers cut your bill, but not your watts. WattNot measures the joules each request burns on the GPU, and checks quality before it keeps any change."
 - FR-DEMO-01 `make demo` replays the best real run at 4× into the canvas, opens the receipt and Pareto views.
 - FR-DEMO-02 Forge challenge script: real → VALID; one edited number → FAIL at SHA-256; Neuralwatt-style JSON → UNVERIFIABLE (pre-recorded; live page is backup).
 - FR-DEMO-03 Shot list follows the f3 video table (0:00 forge open … 2:45 business + vision).
