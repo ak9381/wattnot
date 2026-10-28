@@ -195,6 +195,13 @@ def run_ab(transports: dict, items: Sequence[WorkloadItem], *, tasks: Sequence[s
                               "gate_passed": gate_ok, "levers": levers, "agent_waste": w,
                               "spent_usd": round(cap.session_usd, 6)}
     res["spent_usd"] = round(sum(h.get("spent_usd", 0) for h in res["hosts"].values()), 6)
+    from wattnot.health import log_fallback
+    led = {"spec": "wattnot.fallback-ledger/1", "label": "MEASURED", "entries": [], "fallbacks": [],
+           "all_ok": True}
+    for h, v in res["hosts"].items():
+        if v.get("status") != "ran":
+            log_fallback(led, h, f"{h} {v.get('status')}: {v.get('why')}; other placements carry the run")
+    res["fallback_ledger"] = led
     return res
 
 
