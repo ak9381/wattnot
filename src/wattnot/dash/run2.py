@@ -198,11 +198,32 @@ def list_runs(root: Path | str | None = None) -> list[dict]:
     return out
 
 
+def hosted_ab(root: Path) -> dict | None:
+    """The newest live hosted A/B report (reports/hosted-ab/live-*.json), or None."""
+    files = sorted((Path(root) / "reports" / "hosted-ab").glob("live-*.json"))
+    if not files:
+        return None
+    try:
+        d = json.loads(files[-1].read_text())
+    except (OSError, ValueError):
+        return None
+    d.setdefault("mode", "LIVE")
+    d["source"] = f"reports/hosted-ab/{files[-1].name}"
+    return d
+
+
 def get_run(root: Path | str | None, run_id: str) -> dict | None:
-    """The full two-phase record for one run, or None."""
+    """The full two-phase record for one run, or None. The live hosted A/B
+    (Baseten/Modal) is attached as rec["hosted_ab"] when the report exists."""
     root = Path(root) if root is not None else Path(__file__).resolve().parents[3]
     if run_id == RUN2_ID:
-        return build_record(root)
-    if run_id.startswith("cloud-"):
-        return _fixture_record(root, run_id[len("cloud-"):])
-    return None
+        rec = build_record(root)
+    elif run_id.startswith("cloud-"):
+        rec = _fixture_record(root, run_id[len("cloud-"):])
+    else:
+        return None
+    if rec is not None and "hosted_ab" not in rec:
+        h = hosted_ab(root)
+        if h is not None:
+            rec["hosted_ab"] = h
+    return rec
