@@ -132,6 +132,48 @@ def _escalation(n: int) -> dict:
                   j_per_correct=chain["j_per_correct"], leaderboard_row=row), block
 
 
+def _prefix_cache() -> dict:
+    from wattnot.context_saver import prefix_cache as PC
+
+    ab = PC.mock_ab(reps=3)
+    h = ab["headline"]
+    return _block("prefix_cache", "ok" if ab["kept"] else "failed", "MOCK",
+                  j_per_correct_change_pct=h["j_per_correct_change_pct"],
+                  ttft_change_pct=h["ttft_change_pct"], p99_change_pct=h["p99_change_pct"],
+                  cache_hit_rate=h["cache_hit_rate"], gate_passed=ab["gate"]["passed"],
+                  workload="workloads/prefix-cache-v1.jsonl")
+
+
+def _context_saver() -> dict:
+    from wattnot.context_saver import ContextSaver, saver_receipt_block
+
+    # A small agent chat with a repeated tool read and several old turns to compress.
+    big = "FILE repo/README.md:\n" + ("WattNot cuts joules per correct answer. " * 40)
+    messages = [{"role": "system", "content": "You are an agent working in a repo."}]
+    for i in range(6):
+        messages.append({"role": "assistant", "content": "",
+                         "tool_calls": [{"id": f"c{i}", "function": {"name": "read_file",
+                                        "arguments": '{"path": "repo/README.md"}'}}]})
+        messages.append({"role": "tool", "tool_call_id": f"c{i}", "content": big})
+        messages.append({"role": "user", "content": f"Step {i}: keep investigating the energy path."})
+    messages.append({"role": "user", "content": "What module holds the signed receipts?"})
+
+    saved, acct = ContextSaver().transform(messages)
+    # mock A/B arms: tokens from the saver, pass rate held, joules ~ tokens x J/token (MOCK)
+    jpt = 0.1497
+    off = {"tokens": acct["tokens_before"], "tokens_label": "ESTIMATE",
+           "joules": round(acct["tokens_before"] * jpt, 1), "joules_label": "MOCK",
+           "pass_pct": 96.0, "pass_pct_label": "MOCK", "cache_hit_rate": None}
+    on = {"tokens": acct["tokens_after"], "tokens_label": "ESTIMATE",
+          "joules": round(acct["tokens_after"] * jpt, 1), "joules_label": "MOCK",
+          "pass_pct": 96.0, "pass_pct_label": "MOCK", "cache_hit_rate": None}
+    rblock = saver_receipt_block(off, on, lever="memory_compression+tool_dedup")
+    return _block("context_saver", "ok" if rblock["kept"] else "failed", "MOCK",
+                  tokens_before=acct["tokens_before"], tokens_after=acct["tokens_after"],
+                  saved_pct=acct["saved_pct"], stages=[s["name"] for s in acct["stages"]],
+                  gate_kept=rblock["kept"], receipt_block_spec=rblock["spec"]), rblock
+
+
 def _gate() -> dict:
     from wattnot.gates.noise import noise_gate
 
@@ -230,6 +272,9 @@ def run_rehearsal(out_dir: str | Path, *, n_escalation: int = 20) -> dict:
     blocks.append(_cap_sweep())
     blocks.append(_phase_ab(out))
     blocks.append(_cross_check())
+    blocks.append(_prefix_cache())
+    cs_block, cs_receipt = _context_saver()
+    blocks.append(cs_block)
     esc_block, esc_full = _escalation(n_escalation)
     blocks.append(esc_block)
     blocks.append(_gate())
@@ -255,6 +300,7 @@ def run_rehearsal(out_dir: str | Path, *, n_escalation: int = 20) -> dict:
         "blocks": blocks,
         "net_j_per_correct": net,
         "kept_cap_w": sweep["kept_cap_w"],
+        "context_saver_receipt": cs_receipt,
     }
     (out / "rehearse-summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     return summary

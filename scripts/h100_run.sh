@@ -17,13 +17,14 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 OUT="results/h100-$(date -u +%Y%m%d-%H%M%S)"
-RIG=real; EXTRA=(); SPARK_OPEN=0; SO_DIR=/data/spark-open; QUICK=(); SO_BUDGET=4.5
+RIG=real; EXTRA=(); SPARK_OPEN=0; SO_DIR=/data/spark-open; QUICK=(); SO_BUDGET=4.5; PREFIX_CACHE=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run) RIG=fake; EXTRA+=(--quick); QUICK=(--quick) ;;
     --spark-open) SPARK_OPEN=1 ;;
     --spark-open-dir) SO_DIR="$2"; shift ;;
     --spark-open-budget-h) SO_BUDGET="$2"; shift ;;
+    --prefix-cache) PREFIX_CACHE=1 ;;
     *) EXTRA+=("$1") ;;
   esac
   shift
@@ -51,6 +52,13 @@ if [ "$SPARK_OPEN" = 1 ] && [ "$code" = 0 ]; then
       || echo "spark_open failed; core results are unaffected"
     [ -d "$OUT/spark_open" ] && tar -czf "$OUT.tar.gz" -C "$(dirname "$OUT")" "$(basename "$OUT")"
   fi
+fi
+if [ "$PREFIX_CACHE" = 1 ] && [ "$code" = 0 ]; then
+  # Context-saver lever: vLLM prefix caching off vs on on the repeated-prefix workload. Fits in
+  # the block-9 buffer (no added VM hours, no added spend; a serving lever, nothing hosted).
+  PCF=(); [ "$RIG" = fake ] && PCF=(--fake)
+  python scripts/prefix_cache_ab.py --out "$OUT/prefix" "${PCF[@]}" \
+    || echo "prefix-cache A/B failed; core results are unaffected"
 fi
 set -e
 echo "results: $OUT  archive: $OUT.tar.gz  exit: $code"
