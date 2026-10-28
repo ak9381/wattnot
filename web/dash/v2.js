@@ -870,7 +870,7 @@ async function renderReport() {
   <div class="who-banner">Who should pick which?</div>
   <div class="who bento"><div class="glass tile span3 low"><h3 style="color:var(--pk)">Pick the baseline if</h3><p>Every millisecond of the slowest requests matters more than the power bill, or you cannot run a quality check on your own prompts yet.</p></div>
   <div class="glass tile span3 lift"><h3 style="color:var(--cy)">Pick WattNot if</h3><p>You pay for power and cooling, can accept the p99 change shown above, and want each change approved, logged, undoable and signed.</p></div></div>
-  <div class="sig glass"><div><div class="lvl">This report's fingerprint</div><code class="fp" id="fpCode">sha256 ${esc(sha)}</code><p class="fp-note">Same data, same fingerprint, every load. Sorted keys, no timestamps.</p></div>
+  <div class="sig glass"><div><div class="lvl">This report's fingerprint</div><code class="fp" id="fpCode">sha256 ${esc(sha ?? "unavailable on a non-https page")}</code><p class="fp-note">Same data, same fingerprint, every load. Sorted keys, no timestamps.</p></div>
    <div><div class="lvl">Verifier check on sample receipts ${badge("SAMPLE")}</div>${vs.map((v) => `<div>${esc(v.sample)}: hash ${v.hash ? '<span class="ok">✓</span>' : '<span class="no">✗</span>'} · signature ${v.sig ? '<span class="ok">✓ verified</span>' : '<span class="no">✗ rejected</span>'} · grade ${esc(v.grade)}</div>`).join("")}</div></div>
   <p style="font-size:12px;color:var(--mu);margin-top:10px">${esc(S.verify?.note || "")} Cost uses ${esc(S.run.results.price?.name || "")}; water uses ${esc(S.run.results.water?.name || "")}. Source: ${esc(r2.source || "data/h100-run2/vm/steps/cap350.json")}.</p>`;
   const setTopic = (t, on) => {
@@ -957,7 +957,7 @@ function mountCompare() {
   const w = $("[data-where]", ctr); if (w) w.onclick = () => openWhere(rec);
   const sig = $("#pReport .receipt-meta"); if (!sig) $("#pReport").insertAdjacentHTML("beforeend", `<div class="receipt-meta glass">${metaInRun(rec)}</div>`);
 }
-async function sha256(s) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
+async function sha256(s) { if (!globalThis.crypto?.subtle) return null; const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
 async function startQuiet() { const r = await fetch("/api/dash/v2/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(S.choice) }); S.run = await r.json(); S.n = S.run.events.length; renderRun(); }
 
 // ---------- how it works ----------

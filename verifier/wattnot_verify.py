@@ -385,8 +385,9 @@ def labels_step(receipt):
     """Every label is known; the headline result has no SIMULATED or MOCK number."""
     found = list(_labels(receipt))
     unknown = ["{}={}".format(p, v) for p, v in found if v not in KNOWN_LABELS]
-    weak = ["{}={}".format(p, v) for p, v in _labels(receipt.get("result"), "$.result")
-            if v in ("SIMULATED", "MOCK")]
+    declared = receipt.get("grade") in ("SIMULATED", "MOCK") or (receipt.get("integrity") or {}).get("grade") in ("SIMULATED", "MOCK")
+    weak = [] if declared else ["{}={}".format(p, v) for p, v in _labels(receipt.get("result"), "$.result")
+                                if v in ("SIMULATED", "MOCK")]
     counts = {}
     for _, v in found:
         counts[v] = counts.get(v, 0) + 1
@@ -495,6 +496,7 @@ def main(argv=None):
         print("usage: wattnot_verify.py RECEIPT.json [...] [--bundle B] [--trust KEYS] [--json] [--chain]",
               file=sys.stderr)
         return 2
+    files = [str(q) for f in files for q in (sorted(Path(f).glob("*.json")) if Path(f).is_dir() else [f])]
     files = [f for f in files if not f.endswith(".sigstore.json")]
     trusted = load_trusted(trust)
     bad = 0

@@ -191,14 +191,15 @@ def _run_verify(a: argparse.Namespace) -> int:
     if a.bundle and len(a.receipts) != 1:
         raise ValueError("--bundle works with one receipt")
     trusted = load_trusted(a.trust)
-    a.receipts = [p for p in a.receipts if not p.endswith(".sigstore.json")]  # globs pick up bundles
+    # a folder means every receipt in it, oldest name first; globs pick up bundles
+    a.receipts = [str(q) for p in a.receipts for q in (sorted(Path(p).glob("*.json")) if Path(p).is_dir() else [p])]
+    a.receipts = [p for p in a.receipts if not p.endswith(".sigstore.json")]
     bad = 0
     for path in a.receipts:
         r = verify_receipt(path, a.bundle, trusted=trusted)
         bad += r.grade == "UNVERIFIABLE" or any(s.name == "labels" and not s.ok for s in r.steps)
         print(json.dumps(r.to_dict()) if a.json else format_report(r))
         if a.rekor_online:
-            from pathlib import Path
 
             from wattnot.receipt.sign import bundle_path
             from wattnot.verify import rekor_online_step
@@ -210,7 +211,6 @@ def _run_verify(a: argparse.Namespace) -> int:
                   f"  {'ok  ' if st.ok else 'FAIL'} rekor-online {st.detail.get('log_index')} "
                   f"{st.detail.get('error', 'entry carries this sha256')}")
     if a.chain:
-        from pathlib import Path
 
         from wattnot.verify import verify_chain
         docs = [json.loads(Path(p).read_text(encoding="utf-8")) for p in a.receipts]

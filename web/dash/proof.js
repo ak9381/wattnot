@@ -27,7 +27,7 @@ function explainHtml(x) {
 
 function healthHtml(h) {
   if (!h?.entries) return "<p>No health check recorded.</p>";
-  return `<table class="pf-t"><tr><th>Endpoint</th><th>Status</th><th>Latency</th><th>If it fails</th></tr>${h.entries.map((e) => `<tr><td>${esc(e.name)}</td><td class="${e.ok ? "ok" : "bad"}">${esc(e.ok ? "ok" : `FALLBACK · ${e.status}`)}</td><td>${e.latency_s == null ? "–" : `${fmt(e.latency_s, 2)} s`}</td><td>${esc(e.fallback || e.why || "–")}</td></tr>`).join("")}</table><p class="pf-meta">Checked ${esc(h.entries[0]?.checked_at || "")} ${badge(h.label)}. A failed endpoint is written to this ledger, never hidden.</p>`;
+  return `<table class="pf-t"><tr><th>Endpoint</th><th>Status</th><th>Latency</th><th>If it fails</th></tr>${h.entries.map((e) => `<tr><td>${esc(e.name)}</td><td class="${e.ok ? "ok" : "bad"}">${esc(e.ok ? "ok" : `FALLBACK · ${e.status}`)}</td><td>${e.latency_s == null ? "–" : `${fmt(e.latency_s, 2)} s`}</td><td>${esc(e.fallback || e.why || "–")}</td></tr>`).join("")}</table><p class="pf-meta">Checked ${esc((h.entries[0]?.checked_at || "").replace("T", " ").replace("Z", " UTC"))} ${badge(h.label)}. A failed endpoint is written to this ledger, never hidden.</p>`;
 }
 
 function stackHtml(s) {

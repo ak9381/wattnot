@@ -160,7 +160,9 @@ def _labels(obj, path="$"):
 def labels_step(receipt: dict) -> Step:
     found = list(_labels(receipt))
     unknown = [f"{p}={v}" for p, v in found if v not in KNOWN_LABELS]
-    weak_head = [f"{p}={v}" for p, v in _labels(receipt.get("result"), "$.result") if v in WEAK]
+    # a weak headline is fine when the receipt says so itself (its grade is SIMULATED or MOCK)
+    declared = (receipt.get("grade") in WEAK or (receipt.get("integrity") or {}).get("grade") in WEAK) if isinstance(receipt, dict) else False
+    weak_head = [] if declared else [f"{p}={v}" for p, v in _labels(receipt.get("result"), "$.result") if v in WEAK]
     counts: dict[str, int] = {}
     for _, v in found:
         counts[v] = counts.get(v, 0) + 1
