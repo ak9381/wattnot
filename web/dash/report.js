@@ -249,7 +249,7 @@ function receiptStep(X) {
           <dt>Hash + schema</dt><dd>${statusPill(true, "checks out", "")}</dd>
           <dt>Signed</dt><dd>${statusPill(true, "offline, repo test key", "")}</dd>
           <dt>Rekor log</dt><dd>${statusPill(false, "", "not logged")}</dd>
-          <dt>Grade</dt><dd>capped at <b>ESTIMATE</b> ${chip("ESTIMATE")}</dd>
+          <dt>Grade</dt><dd>capped at <b>ESTIMATE</b></dd>
         </dl>
         <p>The receipt is signed offline with the repository's public <b>test</b> key and is <b>not</b> logged to the public Rekor transparency log, so the grade stops at ESTIMATE: the check proves the numbers were not edited after signing, not who signed them.</p>
         <p>Verify it yourself:</p>
