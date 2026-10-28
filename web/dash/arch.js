@@ -352,5 +352,5 @@ export function panelHtml(view, n, s) {
     <h5>${s ? "Numbers for this step's module" : "Numbers"}</h5>${n.stats.map((s) => statHtml(s)).join("") || "–"}
     ${!s ? `<h5>Sub-steps</h5><ul>${n.subs.map((x, i) => `<li><a href="#" data-sub="${x.id}" style="color:var(--cy);text-decoration:none">${i + 1}. ${esc(x.title)}</a></li>`).join("")}</ul>` : ""}
     <h5>Evidence (last receipts and logs)</h5><ul>${(n.evidence || []).map((x) => `<li>${esc(x)}</li>`).join("")}${ev.map((x) => `<li class="muted">${esc(x)}</li>`).join("") || (n.evidence ? "" : "<li>–</li>")}</ul>
-    <div class="go">${link ? `<button class="btn" data-go="${link}">${link === "experts" ? "Show expert details" : "Open rack map"}</button>` : ""}${n.partners.includes("meta") ? `<button class="btn" data-go="meta">Show everything Meta did</button>` : ""}</div>`;
+    <div class="go">${n.href ? `<a class="btn" href="${esc(n.href)}">Open the report →</a>` : ""}${link ? `<button class="btn" data-go="${link}">${link === "experts" ? "Show expert details" : "Open rack map"}</button>` : ""}${n.partners.includes("meta") ? `<button class="btn" data-go="meta">Show everything Meta did</button>` : ""}</div>`;
 }
