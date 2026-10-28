@@ -155,7 +155,7 @@ def _waste(transport, cap, tasks: Sequence[str]) -> dict:
 def run_ab(transports: dict, items: Sequence[WorkloadItem], *, tasks: Sequence[str],
            cap_usd: float = TOTAL_CAP_USD, state_dir: Path = Path("reports/hosted-ab")) -> dict:
     res: dict = {"spec": "wattnot.hosted-ab/1", "cap_usd": cap_usd, "own_gpu_only": OWN_GPU_ONLY, "hosts": {}}
-    per = cap_usd / max(1, len(transports))
+    per = cap_usd / len(HOSTS)  # $2.50 per host at the $5 default, even if one host is skipped
     for host in HOSTS:
         tr = transports.get(host)
         if tr is None:
