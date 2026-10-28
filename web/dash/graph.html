@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>WattNot</title>
+<title>WattNot: Live graph</title>
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="dash.css">
 <link rel="stylesheet" href="story.css">
@@ -15,10 +15,11 @@
 </head>
 <body class="story">
 <header class="top">
+  <h1 class="page-title" style="margin:0;font-size:16px;font-weight:600;letter-spacing:0.01em;display:inline-flex;align-items:center;color:var(--v-cream,#DCD6E4)">Live graph</h1>
   <button class="chip" id="metaChip" aria-haspopup="dialog" aria-expanded="false"><i></i><span>Meta API: not checked</span></button>
   <button class="btn" id="dPower">Power</button>
   <button class="btn" id="dExperts">Experts</button>
-  <button class="btn" id="dArch">Architecture</button>
+  <button class="btn" id="dArch">Live graph</button>
   <a class="btn" id="signout" href="/logout" hidden>Sign out</a>
   <span class="sp"></span>
   <span id="wn-mic-slot" class="wn-mic-slot" aria-live="polite"></span>
@@ -35,7 +36,7 @@
     <nav class="tabs" id="tabs">
       <button data-tab="power" class="on">Power</button>
       <button data-tab="experts">Experts</button>
-      <button data-tab="arch">Architecture</button>
+      <button data-tab="arch">Live graph</button>
     </nav>
     <div class="ctl" id="expertCtl" hidden>
       <span class="seg" id="modeSeg" title="how experts are grouped">

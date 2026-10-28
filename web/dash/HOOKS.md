@@ -9,24 +9,27 @@ All pages include `chrome.css` and `chrome.js`:
 - Runs dashboard (`runs.html`)
 - Run report (`report.html`)
 - Live / Compare mind map (`v2.html`)
-- Architecture graph (`graph.html`)
+- Live graph (`graph.html`)
 - Live run monitor (`web/run/index.html` via `../dash/chrome.js` and `../dash/chrome.css`)
 
 ### Floating Navigation Header (`nav.wn-nav.gl`)
 A fixed/sticky floating glass bar styled to match the visionOS/Liquid Glass aesthetic:
 - **Brand**: Wordmark `WattNot` linking to `index.html`.
 - **Primary Links**:
-  - `Runs` (`runs.html`)
+  - `Dashboard` (`runs.html`)
+  - `Runs` (`runs.html#runs`)
   - `Compare` (`v2.html#pReport`)
-  - `Architecture` (`graph.html`)
-  - `New run` (`v2.html#pCfg`)
+  - `Reports` (`report.html?run=run2-llama-350w`)
+  - `Live graph` (`graph.html`)
 - **Active Navigation State**: Highlighted via `.on` class and `aria-current="page"`, updated automatically on page load and on `hashchange` events.
 - **Voice / Mic Slot Container**: Right-aligned inside `.wn-slot-wrap` on app pages.
 
 ### Minimal Glass Footer (`footer.wn-footer.gl`)
 A glass footer at the bottom of the page containing:
-- Logo `WattNot` and tagline "Every watt checked, plus every dollar and litre."
-- Links: GitHub repository, Receipts directory (`../receipts/`), Documentation, and "Built with Meta models" badge.
+- "Project by Akash K Raju", "Meta hackathon 2026 · Indie track", and year 2026.
+- GitHub repository link (`https://github.com/ak9381/wattnot`).
+- Compact data-label legend (`MEASURED`, `ESTIMATE`, `MOCK`) with lavender/dusk indicators.
+- "No compliance claims" note.
 
 ---
 
@@ -42,7 +45,7 @@ On all app pages, a dedicated container is provided in the floating navigation h
 - `runs.html` (All runs dashboard)
 - `report.html` (Run report breakdown)
 - `v2.html` (Live / compare mind map dashboard)
-- `graph.html` (Architecture graph)
+- `graph.html` (Live graph)
 - `web/run/index.html` (Live run monitor)
 
 *Note: The landing page (`index.html`) does not host the mic slot.*

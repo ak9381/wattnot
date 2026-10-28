@@ -110,3 +110,30 @@ test("root redirect page has description and OG tags", () => {
     assert.match(html, /<meta property="og:url"/);
   }
 });
+
+test("shared chrome header has updated nav links and Live graph", () => {
+  const chromeJs = fs.readFileSync(path.join(dashDir, "chrome.js"), "utf8");
+  assert.match(chromeJs, /href="\${prefix}runs\.html">Dashboard<\/a>/);
+  assert.match(chromeJs, /href="\${prefix}runs\.html#runs">Runs<\/a>/);
+  assert.match(chromeJs, /href="\${prefix}v2\.html#pReport">Compare<\/a>/);
+  assert.match(chromeJs, /href="\${prefix}report\.html\?run=run2-llama-350w">Reports<\/a>/);
+  assert.match(chromeJs, /href="\${prefix}graph\.html">Live graph<\/a>/);
+  assert.doesNotMatch(chromeJs, />Architecture<\/a>/);
+
+  const graphHtml = fs.readFileSync(path.join(dashDir, "graph.html"), "utf8");
+  assert.match(graphHtml, /<title>WattNot: Live graph<\/title>/);
+  assert.match(graphHtml, /<h1[^>]*>Live graph<\/h1>/);
+  assert.match(graphHtml, /<button class="btn" id="dArch">Live graph<\/button>/);
+});
+
+test("shared chrome footer has credits, track, github, data legend, note, and year", () => {
+  const chromeJs = fs.readFileSync(path.join(dashDir, "chrome.js"), "utf8");
+  assert.match(chromeJs, /Project by Akash K Raju/);
+  assert.match(chromeJs, /Meta hackathon 2026 · Indie track/);
+  assert.match(chromeJs, /https:\/\/github\.com\/ak9381\/wattnot/);
+  assert.match(chromeJs, /MEASURED/);
+  assert.match(chromeJs, /ESTIMATE/);
+  assert.match(chromeJs, /MOCK/);
+  assert.match(chromeJs, /No compliance claims/);
+  assert.match(chromeJs, /2026/);
+});

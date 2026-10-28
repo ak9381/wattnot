@@ -6,7 +6,6 @@
     const pathname = window.location.pathname || "";
     const isRunPage = pathname.includes("/run/") || document.querySelector('script[src*="../dash/chrome.js"]');
     const prefix = isRunPage ? "../dash/" : "";
-    const receiptsPrefix = isRunPage ? "../../receipts/" : "../receipts/";
 
     const isLanding = !!(
       document.querySelector(".hero") ||
@@ -30,10 +29,11 @@
       <div class="wn-nav-inner">
         <a class="wn-brand" href="${prefix}index.html">Watt<i>Not</i></a>
         <div class="wn-links">
-          <a class="wn-link" data-nav="runs" href="${prefix}runs.html">Runs</a>
+          <a class="wn-link" data-nav="dashboard" href="${prefix}runs.html">Dashboard</a>
+          <a class="wn-link" data-nav="runs" href="${prefix}runs.html#runs">Runs</a>
           <a class="wn-link" data-nav="compare" href="${prefix}v2.html#pReport">Compare</a>
-          <a class="wn-link" data-nav="graph" href="${prefix}graph.html">Architecture</a>
-          <a class="wn-link wn-link-new" data-nav="cfg" href="${prefix}v2.html#pCfg">New run</a>
+          <a class="wn-link" data-nav="reports" href="${prefix}report.html?run=run2-llama-350w">Reports</a>
+          <a class="wn-link" data-nav="graph" href="${prefix}graph.html">Live graph</a>
         </div>
         <div class="wn-slot-wrap" id="wn-slot-wrap"></div>
       </div>
@@ -72,13 +72,14 @@
 
       let targetNav = null;
       if (path.includes("runs.html")) {
-        targetNav = "runs";
+        if (hash === "#runs") targetNav = "runs";
+        else targetNav = "dashboard";
       } else if (path.includes("graph.html")) {
         targetNav = "graph";
+      } else if (path.includes("report.html")) {
+        targetNav = "reports";
       } else if (path.includes("v2.html")) {
-        if (hash === "#pCfg") targetNav = "cfg";
-        else if (hash === "#pReport" || hash === "#pProof") targetNav = "compare";
-        else targetNav = "compare";
+        targetNav = "compare";
       }
 
       if (targetNav) {
@@ -99,15 +100,23 @@
     footer.setAttribute("aria-label", "Site footer");
     footer.innerHTML = `
       <div class="wn-footer-inner">
-        <div class="wn-footer-brand">
+        <div class="wn-footer-left">
           <span class="wn-logo">WattNot</span>
-          <span class="wn-tagline">Every watt checked, plus every dollar and litre.</span>
+          <span class="wn-footer-sep">·</span>
+          <span class="wn-footer-credit">Project by Akash K Raju</span>
+          <span class="wn-footer-sep">·</span>
+          <span class="wn-footer-track">Meta hackathon 2026 · Indie track</span>
+          <span class="wn-footer-sep">·</span>
+          <span class="wn-footer-year">2026</span>
         </div>
-        <div class="wn-footer-links">
-          <a href="https://github.com/ak9381/wattnot" target="_blank" rel="noopener">GitHub</a>
-          <a href="${receiptsPrefix}">Receipts</a>
-          <a href="https://github.com/ak9381/wattnot/tree/main/docs" target="_blank" rel="noopener">Docs</a>
-          <span class="wn-meta-pill">Built with Meta models</span>
+        <div class="wn-footer-legend" aria-label="Data provenance legend">
+          <span class="wn-leg-item"><i class="wn-leg-dot lab-measured" aria-hidden="true"></i>MEASURED</span>
+          <span class="wn-leg-item"><i class="wn-leg-dot lab-estimate" aria-hidden="true"></i>ESTIMATE</span>
+          <span class="wn-leg-item"><i class="wn-leg-dot lab-mock" aria-hidden="true"></i>MOCK</span>
+        </div>
+        <div class="wn-footer-right">
+          <span class="wn-footer-note">No compliance claims</span>
+          <a class="wn-footer-gh" href="https://github.com/ak9381/wattnot" target="_blank" rel="noopener">GitHub</a>
         </div>
       </div>
     `;

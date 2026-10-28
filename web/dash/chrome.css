@@ -140,50 +140,91 @@ footer.wn-footer.gl {
   gap: 16px;
 }
 
-.wn-footer-brand {
+.wn-footer-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
+  color: var(--v-sub, #B2A6C3);
 }
 
-.wn-footer-brand .wn-logo {
+.wn-footer-left .wn-logo {
   font-family: var(--v-head, "Montserrat", system-ui, sans-serif);
   font-weight: 700;
   color: var(--v-cream, #DCD6E4);
   font-size: 15px;
 }
 
-.wn-tagline {
-  color: var(--v-sub, #B2A6C3);
-  font-size: 13px;
+.wn-footer-sep {
+  color: var(--v-mut, #8E7A9E);
+  opacity: 0.6;
 }
 
-.wn-footer-links {
+.wn-footer-credit,
+.wn-footer-track,
+.wn-footer-year {
+  font-size: 13px;
+  color: var(--v-sub, #B2A6C3);
+}
+
+.wn-footer-legend {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-family: var(--v-num, "JetBrains Mono", Inter, monospace);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.wn-leg-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--v-sub, #B2A6C3);
+}
+
+.wn-leg-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.wn-leg-dot.lab-measured { background: var(--v-l-measured, #DCD6E4); }
+.wn-leg-dot.lab-estimate { background: var(--v-l-estimate, #C4B4D6); }
+.wn-leg-dot.lab-mock { background: var(--v-l-mock, #C6B2C2); }
+
+.wn-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
-.wn-footer-links a {
+.wn-footer-note {
+  font-size: 12px;
+  color: var(--v-mut, #8E7A9E);
+  font-style: italic;
+}
+
+.wn-footer-gh {
   color: var(--v-sub, #B2A6C3);
   text-decoration: none;
-  transition: color 0.15s;
-}
-
-.wn-footer-links a:hover {
-  color: var(--v-cream, #DCD6E4);
-  text-decoration: underline;
-}
-
-.wn-meta-pill {
-  font-size: 12px;
-  padding: 3px 9px;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 4px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(220, 214, 228, 0.14);
-  background: rgba(220, 214, 228, 0.06);
-  color: var(--v-sub, #B2A6C3);
+  border: 1px solid rgba(220, 214, 228, 0.16);
+  background: rgba(220, 214, 228, 0.05);
+  transition: all 0.15s ease;
+}
+
+.wn-footer-gh:hover {
+  color: var(--v-cream, #DCD6E4);
+  background: rgba(220, 214, 228, 0.12);
+  border-color: rgba(220, 214, 228, 0.3);
+  text-decoration: none;
 }
 
 /* ---- Landing Page Specific Styles ---- */
@@ -262,19 +303,21 @@ body.is-landing footer.wn-footer.gl .wn-logo {
   font-weight: 400;
   font-family: "Inter Tight", system-ui, sans-serif;
 }
-body.is-landing footer.wn-footer.gl .wn-tagline {
+body.is-landing footer.wn-footer.gl .wn-footer-credit,
+body.is-landing footer.wn-footer.gl .wn-footer-track,
+body.is-landing footer.wn-footer.gl .wn-footer-year,
+body.is-landing footer.wn-footer.gl .wn-leg-item,
+body.is-landing footer.wn-footer.gl .wn-footer-note {
   color: #7C8599;
 }
-body.is-landing footer.wn-footer.gl a {
-  color: #7C8599;
-}
-body.is-landing footer.wn-footer.gl a:hover {
+body.is-landing footer.wn-footer.gl .wn-footer-gh {
   color: #F2F5FA;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
 }
-body.is-landing .wn-meta-pill {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  color: #7C8599;
+body.is-landing footer.wn-footer.gl .wn-footer-gh:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
 }
 
 /* Page-specific adaptations for canvas/scene pages */
