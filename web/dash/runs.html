@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Source+Sans+3:wght@400;600&family=Fira+Sans:wght@400;500;600&display=swap">
 <!-- static-api -->
 <link rel="stylesheet" href="violet.css">
+<link rel="stylesheet" href="chrome.css">
+<script src="chrome.js" defer></script>
 <style>
   /* ---- runs.html: page-specific layout on top of the shared Dusk palette ---- */
   * { box-sizing: border-box; }
@@ -26,8 +28,8 @@
 
   .top {
     display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
-    padding: 18px clamp(16px, 4vw, 40px);
-    border-bottom: 1px solid var(--v-line);
+    padding: 6px clamp(16px, 4vw, 40px);
+    border-bottom: none;
   }
   .brand { font-family: var(--v-head); font-weight: 700; font-size: 22px; letter-spacing: .02em; }
   .brand i { font-style: normal; color: var(--v-peach); }
@@ -120,12 +122,6 @@
 </head>
 <body>
 <header class="top">
-  <div class="brand">Watt<i>Not</i></div>
-  <nav class="navlinks">
-    <a href="runs.html" class="on" aria-current="page">All runs</a>
-    <a href="v2.html">Live dashboard</a>
-    <a href="graph.html">Arch graph</a>
-  </nav>
   <span class="sp"></span>
   <span id="wn-mic-slot" class="wn-mic-slot" aria-live="polite"></span>
   <span class="v-chip"><i style="background:var(--v-l-replay)"></i>Replay of measured logs</span>
@@ -155,7 +151,7 @@
     </div>
   </section>
 
-  <section>
+  <section id="runs">
     <div class="sec-head"><h2>Runs</h2><p>Click a row&rsquo;s report link for the full before/after breakdown.</p></div>
     <div class="card v-glass tablewrap">
       <table id="runsTable">

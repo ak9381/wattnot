@@ -110,8 +110,15 @@ def main(out: Path) -> None:
     if ci.exists():
         ci.write_text(ci.read_text().replace('<link rel="stylesheet" href="dash.css">',
                                               '<script src="static-api.js"></script>\n<link rel="stylesheet" href="dash.css">', 1))
-    (out / "index.html").write_text('<!doctype html><meta charset="utf-8"><title>WattNot: cut GPU power per AI inference without losing quality</title>'
-                                    '<meta http-equiv="refresh" content="0; url=dash/">'
+    (out / "index.html").write_text('<!doctype html><meta charset="utf-8">\n'
+                                    '<title>WattNot: cut GPU power per AI inference without losing quality</title>\n'
+                                    '<meta name="description" content="Cut GPU power per AI inference without losing quality. Every watt checked, plus every dollar and litre.">\n'
+                                    '<meta property="og:title" content="WattNot: cut GPU power per AI inference without losing quality">\n'
+                                    '<meta property="og:description" content="Cut GPU power per AI inference without losing quality. Every watt checked, plus every dollar and litre.">\n'
+                                    '<meta property="og:image" content="https://ak9381.github.io/wattnot/dash/img/hero-1.png">\n'
+                                    '<meta property="og:type" content="website">\n'
+                                    '<meta property="og:url" content="https://ak9381.github.io/wattnot/">\n'
+                                    '<meta http-equiv="refresh" content="0; url=dash/">\n'
                                     '<a href="dash/">WattNot</a>\n')
     (out / ".nojekyll").write_text("")
     rc = out / "receipts"

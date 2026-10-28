@@ -19,7 +19,7 @@ test("landing page has head tags, Open Graph tags, and text content", () => {
 
   assert.match(html, /Was that agent call worth the watts\?/);
   assert.match(html, /Every watt checked, plus every dollar and litre\./);
-  assert.match(html, /Powered by Meta Muse Spark, Glimmer, Llama and SAM 3\.1/);
+  assert.match(html, /Powered by Meta Muse Spark, Wonder, Glimmer, Voice, Llama and SAM 3\.1/);
   assert.match(html, /Let WattNot guide your agents/);
   assert.match(html, /href="runs\.html"/);
 });

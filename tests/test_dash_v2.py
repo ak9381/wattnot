@@ -437,7 +437,7 @@ def test_landing_page_head_tags_and_content():
     # Headline and body lines
     assert "Was that agent call worth the watts?" in html
     assert "Every watt checked, plus every dollar and litre." in html
-    assert "Powered by Meta Muse Spark, Glimmer, Llama and SAM 3.1" in html
+    assert "Powered by Meta Muse Spark, Wonder, Glimmer, Voice, Llama and SAM 3.1" in html
     assert "Let WattNot guide your agents" in html
     assert 'href="runs.html"' in html
 
