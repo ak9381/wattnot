@@ -274,3 +274,9 @@ class ModalLiveTransport(LiveTransport):
     @property
     def api_key_prefix(self) -> str | None:
         return self._key.split(".", 1)[0] or None
+
+    def __call__(self, req: Request) -> Reply:
+        # The tuner names the logical model; send it as whatever this endpoint serves.
+        if req.body.get("model") == MODEL:
+            req = Request(req.tag, {**req.body, "model": self.model}, dict(req.headers))
+        return super().__call__(req)

@@ -54,17 +54,32 @@ class Options:
 
 
 def open_transport(*, live: bool, fixture: str | Path | None,
-                   record: str | Path | None = None) -> tuple[Transport, str, Recorder | None]:
+                   record: str | Path | None = None,
+                   provider: str = "baseten") -> tuple[Transport, str, Recorder | None]:
     """Returns (transport, mode, recorder). mode: live | replay-synthetic | replay-recorded."""
 
     if live:
-        t: Transport = LiveTransport()
+        if provider == "modal":
+            from wattnot.cloud.transport import ModalLiveTransport
+
+            t: Transport = ModalLiveTransport()
+        else:
+            t = LiveTransport()
         rec = Recorder(t) if record else None
         return (rec or t), "live", rec
     if fixture is None:
         raise ValueError("replay needs a fixture (use --demo for the bundled one)")
     ft = FixtureTransport.load(fixture)
     return ft, ("replay-synthetic" if ft.source == "synthetic" else "replay-recorded"), None
+
+
+def host_info(transport) -> dict | None:
+    """Provider, model, endpoint and key env of a live transport (None for a replay)."""
+    inner = getattr(transport, "inner", transport)
+    if not hasattr(inner, "base_url"):
+        return None
+    return {"provider": getattr(inner, "provider", "baseten"), "model": inner.model,
+            "endpoint": inner.base_url, "key_env": getattr(inner, "key_env", None)}
 
 
 def _judge_gate(transport: Transport, runner: tn.Runner) -> Callable:
@@ -129,7 +144,7 @@ def run(opts: Options, transport: Transport, mode: str, *, out_dir: str | Path,
     r = rc.build_receipt(result, mode=mode, rates=opts.rates, workload=workload,
                          settings=settings, calls_sha256=rc.calls_digest(rows), now=now,
                          prev_sha256=rc.last_in_chain(out_dir), window=window,
-                         api_key_prefix_sha=pre)
+                         api_key_prefix_sha=pre, host=host_info(transport))
     path = rc.write(r, rows, out_dir)
     if sign_key:
         from wattnot.receipt.sign import sign

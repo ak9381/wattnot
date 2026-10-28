@@ -43,3 +43,20 @@ def test_modal_transport_auth_and_model(monkeypatch):
     assert rep.status == 200 and t.base_url.endswith("/v1")
     assert seen["headers"]["Authorization"] == "Bearer wk-a.ws-b"
     assert "ws-b" not in repr(t) and t.provider == "modal"
+
+
+def test_cloud_receipt_names_modal_host(monkeypatch):
+    from wattnot.cloud import MODEL
+    from wattnot.cloud.run import host_info
+
+    env = {"MODAL_ENDPOINT_URL": "https://ws--llama.modal.run/v1", "MODAL_PROXY_TOKEN_ID": "wk-a",
+           "MODAL_PROXY_TOKEN_SECRET": "ws-b", "MODAL_MODEL": "meta-llama/Llama-3.1-8B-Instruct"}
+    t = ModalLiveTransport(env=env)
+    sent = {}
+    monkeypatch.setattr(t, "_once", lambda d, h: (sent.update(b=json.loads(d)) or
+                                                  (200, b"{}", {})))
+    t(Request("x", {"model": MODEL, "messages": []}))
+    assert sent["b"]["model"] == "meta-llama/Llama-3.1-8B-Instruct"
+    info = host_info(t)
+    assert info["provider"] == "modal" and info["endpoint"].endswith(".modal.run/v1")
+    assert "ws-b" not in json.dumps(info)
