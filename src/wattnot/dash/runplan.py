@@ -36,6 +36,9 @@ PLACES = [
      "note": "A rented VM with an NVIDIA H100 80GB. Power is read from the card and the cap is set on it."},
     {"id": "baseten", "title": "Hosted on Baseten", "partner": "baseten",
      "note": "An API. There is no GPU to read, so energy is an estimate and the bill is the real number."},
+    {"id": "modal", "title": "Hosted on Modal", "partner": "modal",
+     "note": "A Modal Endpoint serving a Meta open-weights model. Same checks and receipt as Baseten. "
+             "Shown once a recorded Modal run exists."},
 ]
 LEVERS = [
     {"id": "cap", "title": "Power cap", "partner": "nvidia", "needs": "a recorded cap sweep",

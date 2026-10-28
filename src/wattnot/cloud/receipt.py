@@ -36,7 +36,8 @@ BANNED = ("neutral", "offset", "carbon-free", "carbon free", "net zero", "net-ze
 def build_receipt(result: Mapping, *, mode: str, rates: Rates, workload: Mapping,
                   settings: Mapping, calls_sha256: str, now: float | None = None,
                   prev_sha256: str | None = None, window: Mapping | None = None,
-                  api_key_prefix_sha: str | None = None) -> dict:
+                  api_key_prefix_sha: str | None = None,
+                  host: Mapping | None = None) -> dict:
     """mode: live | replay-recorded | replay-synthetic."""
 
     simulated = mode == "replay-synthetic"
@@ -92,11 +93,13 @@ def build_receipt(result: Mapping, *, mode: str, rates: Rates, workload: Mapping
         "schema": SCHEMA,
         "receipt_id": f"cloud_{stamp}_{hashlib.sha256(calls_sha256.encode()).hexdigest()[:6]}",
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
-        "provider": PROVIDER, "model": MODEL, "endpoint": BASE_URL, "mode": mode,
+        "provider": (host or {}).get("provider", PROVIDER),
+        "model": (host or {}).get("model", MODEL),
+        "endpoint": (host or {}).get("endpoint", BASE_URL), "mode": mode,
         "label": label,
         "labels": {"tokens": label, "usd": label, "latency": label, "energy": "ESTIMATE",
                    "rates": "ESTIMATE" if not rates.confirmed else label},
-        "key_env": KEY_ENV, "api_key_prefix_sha256": api_key_prefix_sha,
+        "key_env": (host or {}).get("key_env") or KEY_ENV, "api_key_prefix_sha256": api_key_prefix_sha,
         "reference_effort": REFERENCE, "efforts_available": list(EFFORTS),
         "rates": rates.to_dict(), "workload": dict(workload), "settings": dict(settings),
         "planner": {"proposer": result["proposal"]["proposer"],

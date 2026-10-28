@@ -1,4 +1,4 @@
-"""Pick where a workload runs: our Spark Open on the H100, or Baseten hosted.
+"""Pick where a workload runs: our own GPU, Baseten hosted, or Modal hosted.
 
 The head-to-head (h2h.py) measures both. This module turns those rows into a choice per
 workload and writes the choice, with the numbers behind it, into the receipt (`routing`).

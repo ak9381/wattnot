@@ -105,7 +105,7 @@ def test_ledger_row_shape_and_pricing(key, tmp_path):
     (row,) = doc["entries"]
     assert row == {"ts": row["ts"], "model": MODEL, "purpose": "next-power-cap",
                    "input_tokens": 410, "cached_tokens": 0, "output_tokens": 38,
-                   "usd": price_usd(410, 38), "label": "MEASURED"}
+                   "usd": price_usd(410, 38), "label": "MEASURED", "provider": "baseten"}
     assert len(row["ts"]) >= 20 and KEY not in json.dumps(doc)
     assert c.total_usd() == pytest.approx(price_usd(410, 38))
 

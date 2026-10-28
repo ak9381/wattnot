@@ -34,7 +34,7 @@ def add_parser(sub) -> None:
     c = sub.add_parser("cloud", help="cloud mode: tune reasoning effort on a hosted model")
     s = c.add_subparsers(dest="cloud_cmd")
     t = s.add_parser("tune", help="find the cheapest reasoning effort that keeps answers right")
-    t.add_argument("--provider", default=PROVIDER, choices=[PROVIDER])
+    t.add_argument("--provider", default=PROVIDER, choices=[PROVIDER, "modal"])
     _src(t, record=True)
     t.add_argument("--workload", default=str(rn.WORKLOAD))
     t.add_argument("--classes", help="comma list, default all")
@@ -98,8 +98,11 @@ def _transport(a, *, force_demo: bool = False):
     if force_demo or getattr(a, "demo", False):
         return rn.open_transport(live=False, fixture=rn.DEMO_FIXTURE)
     if getattr(a, "live", False):
-        read_key()  # fail early, with a message that never shows the key
-        return rn.open_transport(live=True, fixture=None, record=getattr(a, "record", None))
+        prov = getattr(a, "provider", PROVIDER)
+        if prov != "modal":
+            read_key()  # fail early, with a message that never shows the key
+        return rn.open_transport(live=True, fixture=None, record=getattr(a, "record", None),
+                                 provider=prov)
     if getattr(a, "fixture", None):
         return rn.open_transport(live=False, fixture=a.fixture)
     raise ValueError("pick one: --live, --fixture FILE or --demo")

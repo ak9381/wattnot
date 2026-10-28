@@ -136,7 +136,7 @@ class BasetenClient:
             self._memory = list(entries)
             return
         self.ledger_path.parent.mkdir(parents=True, exist_ok=True)
-        doc = {"provider": "baseten", "entries": entries}
+        doc = {"provider": self.provider, "entries": entries}
         self.ledger_path.write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")
 
     def total_usd(self) -> float:
@@ -153,13 +153,18 @@ class BasetenClient:
         return price_usd(n_in, n_out)
 
     # ---- the call --------------------------------------------------------------
+    provider = PROVIDER
+
+    def _check_key(self) -> None:
+        if not os.environ.get(KEY_ENV, "").strip():
+            raise BasetenError(f"{KEY_ENV} is not set. Export it in your shell; it is "
+                               "never read from a file or a flag.")
+
     def __call__(self, body: Mapping, purpose: str = "unspecified") -> dict:
         # The key is read here, at call time, from the environment only. An
         # injected transport never sees it; only the default transport puts it
         # in one header, and no error, ledger row or repr ever contains it.
-        if not os.environ.get(KEY_ENV, "").strip():
-            raise BasetenError(f"{KEY_ENV} is not set. Export it in your shell; it is "
-                               "never read from a file or a flag.")
+        self._check_key()
         body = dict(body)
         if body.get("model") not in (None, self.model):
             raise BasetenError(f"refusing to send model {body.get('model')!r}; "
@@ -191,7 +196,7 @@ class BasetenClient:
                "usd": price_usd(int(usage.get("prompt_tokens", 0)),
                                 int(usage.get("completion_tokens", 0)),
                                 int(details.get("cached_tokens", 0) or 0)),
-               "label": "MEASURED"}
+               "label": "MEASURED", "provider": self.provider}
         entries = self._read()
         entries.append(row)
         self._write(entries)
@@ -218,7 +223,7 @@ class OpenWeightsPlanner(MusePlanner):
             return {"kind": "stop", "cap_w": None, "reason": "every allowed cap was tried",
                     "by": self.name}
         system, payload = build_prompt(history, self.lo, self.hi, self.context)
-        call = {"provider": PROVIDER, "model": self.model,
+        call = {"provider": getattr(self.client, "provider", self.partner), "model": self.model,
                 "prompt_sha256": prompt_sha256(system, payload),
                 "latency_ms": None, "label": "MEASURED", "fallback": False,
                 "fallback_reason": None}
