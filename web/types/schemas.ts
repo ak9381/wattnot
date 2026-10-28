@@ -82,6 +82,15 @@ export interface Receipt {
   result: Record<string, unknown>;
   measurement: {
     label: "MEASURED" | "ESTIMATE" | "SIMULATED";
+    spark_trace_id?: string | null;
+    judge_verdict?: "pass" | "fail" | null;
+    judge_score?: number | null;
+    judge_model?: string | null;
+    wonder_trace_ids?: string[] | null;
+    per_model_spend?: Record<string, unknown> | null;
+    musecode_patch_sha256?: string | null;
+    musecode_pr_sha256?: string | null;
+    musecode_pr_url?: string | null;
   };
   attribution?: Record<string, unknown>;
   planner_trace: unknown[];

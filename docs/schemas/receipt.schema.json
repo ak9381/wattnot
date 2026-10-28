@@ -233,6 +233,68 @@
             "ESTIMATE",
             "SIMULATED"
           ]
+        },
+        "spark_trace_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "judge_verdict": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "pass",
+            "fail",
+            null
+          ]
+        },
+        "judge_score": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "judge_model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "wonder_trace_ids": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "per_model_spend": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "musecode_patch_sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "musecode_pr_sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "musecode_pr_url": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     },

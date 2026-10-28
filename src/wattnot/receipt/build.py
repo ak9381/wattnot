@@ -39,7 +39,7 @@ def _stats(samples: Sequence[float], nd: int = 6) -> dict:
 
 
 def _arm(arm: Mapping, tariff: float) -> dict:
-    wh = list(arm["wh_samples"])
+    wh = list(arm.get("wh_samples") or (arm.get("wh_per_req") or {}).get("samples") or [])
     usd = [w / 1000 * tariff for w in wh]
     out = {"params": dict(arm["params"]), "reps": len(wh), "wh_per_req": _stats(wh),
            "usd_per_req": _stats(usd, 10),
@@ -73,9 +73,17 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
                   rekor: bool = False, created_at: str | None = None,
                   tariff_usd_per_kwh: float = TARIFF_USD_PER_KWH,
                   wue_l_per_kwh: float = WUE_L_PER_KWH, n_boot: int = 10_000,
-                  seed: int = 7) -> dict[str, Any]:
+                  seed: int = 7, judge_verdict: str | None = None,
+                  judge_score: float | None = None, judge_model: str | None = None,
+                  wonder_trace_ids: Sequence[str] | str | None = None,
+                  per_model_spend: Mapping[str, Any] | None = None,
+                  musecode_patch_sha256: str | None = None,
+                  musecode_pr_sha256: str | None = None,
+                  musecode_pr_url: str | None = None) -> dict[str, Any]:
     base, cand = run["baseline"], run["candidate"]
-    gate = noise_gate(base["wh_samples"], cand["wh_samples"], n_boot=n_boot, seed=seed)
+    base_samples = base.get("wh_samples") or (base.get("wh_per_req") or {}).get("samples") or []
+    cand_samples = cand.get("wh_samples") or (cand.get("wh_per_req") or {}).get("samples") or []
+    gate = noise_gate(base_samples, cand_samples, n_boot=n_boot, seed=seed)
     d = gate.detail
     base_arm, cand_arm = _arm(base, tariff_usd_per_kwh), _arm(cand, tariff_usd_per_kwh)
     receipt: dict[str, Any] = {
@@ -109,6 +117,62 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
     if run.get("compare_to"):
         receipt["compare_to"] = run["compare_to"]
     attach_per_model(receipt, events=events, roles=run.get("models") or ())
+
+    # Attach judge fields, wonder trace IDs, per-model spend, and musecode PR/patch hash
+    m = receipt["measurement"]
+    j_verdict = judge_verdict or run.get("judge_verdict")
+    j_score = judge_score if judge_score is not None else run.get("judge_score")
+    j_model = judge_model or run.get("judge_model")
+
+    if isinstance(run.get("judge"), Mapping):
+        j_verdict = j_verdict or run["judge"].get("verdict")
+        if j_score is None:
+            j_score = run["judge"].get("score") or run["judge"].get("agreement")
+        j_model = j_model or run["judge"].get("model")
+
+    if j_verdict is None or j_score is None:
+        for ev in events:
+            if ev.get("type") == "gate.result" and (ev.get("data") or {}).get("check") == "judge":
+                ed = ev["data"]
+                if j_verdict is None:
+                    j_verdict = "pass" if ed.get("passed") else "fail"
+                if j_score is None:
+                    j_score = ed.get("agreement") or ed.get("score") or (
+                        round(1.0 - float(ed.get("worse_rate", 0.0)), 4) if "worse_rate" in ed else None)
+                if j_model is None:
+                    j_model = ed.get("model")
+                break
+
+    if j_verdict is not None:
+        m["judge_verdict"] = str(j_verdict)
+    if j_score is not None:
+        m["judge_score"] = round(float(j_score), 4)
+    if j_model is not None:
+        m["judge_model"] = str(j_model)
+    elif j_verdict is not None:
+        m["judge_model"] = "meta-llama/Llama-3.1-8B-Instruct"
+
+    w_tids = wonder_trace_ids or run.get("wonder_trace_ids") or run.get("wonder_trace_id")
+    if w_tids is not None:
+        m["wonder_trace_ids"] = [w_tids] if isinstance(w_tids, str) else list(w_tids)
+
+    pm_spend = per_model_spend or run.get("per_model_spend")
+    if pm_spend is not None:
+        m["per_model_spend"] = dict(pm_spend)
+
+    mc_patch = (musecode_patch_sha256 or run.get("musecode_patch_sha256")
+                or run.get("musecode_patch_hash"))
+    if mc_patch is not None:
+        m["musecode_patch_sha256"] = str(mc_patch)
+
+    mc_pr = musecode_pr_sha256 or run.get("musecode_pr_sha256") or run.get("musecode_pr_hash")
+    if mc_pr is not None:
+        m["musecode_pr_sha256"] = str(mc_pr)
+
+    mc_url = musecode_pr_url or run.get("musecode_pr_url")
+    if mc_url is not None:
+        m["musecode_pr_url"] = str(mc_url)
+
     with_joules(receipt)
     receipt["grade"] = claimed_grade(receipt, rekor=rekor)
     receipt["integrity"] = {"canonicalization": "JCS RFC 8785",
