@@ -77,6 +77,34 @@ test("mountMetaTools sets innerHTML on target element", () => {
   assert.match(el.innerHTML, /spark-9a8b7c6d5e4f3210/);
 });
 
+test("renderMetaToolsHTML never labels a section MEASURED unless the data says MEASURED", () => {
+  // Sample receipt sections: judge=SIMULATED, wonder=(no label→MOCK), musecode=MOCK, spend=MOCK.
+  // Strip the receipt-provided PR body markdown (its own text legitimately mentions MEASURED)
+  // so we isolate the badges/pills the component itself renders.
+  const r = JSON.parse(JSON.stringify(sampleReceipt));
+  if (r.musecode) delete r.musecode.pr_body;
+
+  const d = extractMetaToolsData(r);
+  assert.notEqual(d.judgeLabel, "MEASURED");
+  assert.notEqual(d.wonderLabel, "MEASURED");
+  assert.notEqual(d.musecodeLabel, "MEASURED");
+
+  const html = renderMetaToolsHTML(r);
+  assert.ok(
+    !/MEASURED/.test(html),
+    "metatools must not render a MEASURED label for a receipt whose sections are not labeled MEASURED"
+  );
+});
+
+test("renderMetaToolsHTML does surface MEASURED when the receipt labels a section MEASURED", () => {
+  const r = JSON.parse(JSON.stringify(sampleReceipt));
+  if (r.musecode) delete r.musecode.pr_body;
+  r.wonder = { ...(r.wonder || {}), label: "MEASURED" };
+
+  const html = renderMetaToolsHTML(r);
+  assert.match(html, /MEASURED/);
+});
+
 test("compareRows formats comparative data across multiple receipts", () => {
   const rcpt1 = sampleReceipt;
   const rcpt2 = {

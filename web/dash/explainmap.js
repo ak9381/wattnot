@@ -71,6 +71,9 @@ const EXPLAIN_CSS = `
   transition: box-shadow 0.25s ease, outline 0.25s ease;
   position: relative;
   z-index: 999;
+  /* Keep scrolled-to matches clear of the sticky chrome header. */
+  scroll-margin-top: 96px;
+  scroll-margin-bottom: 24px;
 }
 
 .explain-highlight-candidate {
@@ -273,32 +276,45 @@ function extractLabel(el) {
   for (const l of ["MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "REPLAY", "ADVICE"]) {
     if (rawText.includes(l)) return l;
   }
-  return "MEASURED";
+  // No label found on the element — never invent MEASURED; fall back to MOCK.
+  return "MOCK";
 }
 
 /**
- * Generate 2-3 sentence technical explanation grounded in WattNot mechanics.
+ * Build a grounded explanation straight from the element's own value + label.
+ * Never fabricates figures or claims the receipt does not carry: it restates the
+ * value, names what kind of metric it is, and explains what the provenance label means.
  */
 function generateTechnicalExplanation(title, value, label) {
-  const v = String(value || "").trim();
-  const t = String(title || "").toLowerCase();
+  const v = String(value || "—").trim();
+  const t = String(title || "metric").trim();
+  const lab = String(label || "MOCK").trim().toUpperCase();
+  const tl = t.toLowerCase();
 
-  if (v.includes("%") || t.includes("saving") || t.includes("cut")) {
-    return `WattNot reduced energy consumption by ${v} [${label}] while maintaining response quality within 1 point of baseline. The automated Pareto governor checked latency distributions to ensure p99 remained within the 10% budget. Verified by signed cryptographic receipt hash.`;
+  let kind = "This value is read directly from the run's signed receipt.";
+  if (tl.includes("saving") || tl.includes("cut") || tl.includes("saved")) {
+    kind = "This is the before/after reduction reported for the run.";
+  } else if (tl.includes("cap") || tl.includes("power") || v.toLowerCase().includes("w")) {
+    kind = "This is the GPU power cap applied during the run.";
+  } else if (tl.includes("energy") || v.toLowerCase().includes("wh") || v.toLowerCase().includes("kwh")) {
+    kind = "This is the electrical energy accounted for the run.";
+  } else if (tl.includes("water") || v.toLowerCase().includes("ml") || v.toLowerCase().includes("l")) {
+    kind = "This is the cooling-water figure derived from the run's energy.";
+  } else if (tl.includes("gate") || tl.includes("quality") || v.toLowerCase().includes("pass")) {
+    kind = "This is the quality-gate outcome for the run.";
   }
-  if (v.toLowerCase().includes("w") || t.includes("cap") || t.includes("power")) {
-    return `Active GPU hardware power cap set to ${v} [${label}]. By bounding maximum power dissipation, WattNot eliminates idle frequency overshoot without stalling memory bandwidth. Quality and throughput gates confirmed no degradation.`;
-  }
-  if (v.toLowerCase().includes("kwh") || v.toLowerCase().includes("wh") || t.includes("energy")) {
-    return `Metered electrical energy consumption across the measurement window totaling ${v} [${label}]. This value is computed directly from GPU power rail sensors during active inference. Aligns with EU Directive 2023/1791 data center disclosure requirements.`;
-  }
-  if (v.toLowerCase().includes("l") || v.toLowerCase().includes("ml") || t.includes("water")) {
-    return `Evaporative cooling water footprint calculated at ${v} [${label}]. Derived using site WUE water consumption factors applied directly to metered energy. Prevents data center water stress during high-concurrency LLM serving.`;
-  }
-  if (v.toLowerCase().includes("pass") || t.includes("gate") || t.includes("quality")) {
-    return `Verification gate result: ${v} [${label}]. Responses generated under the reduced power setting matched baseline answers within the 95% semantic agreement threshold. Execution was approved for production deployment.`;
-  }
-  return `Observed metric ${title}: ${v} [${label}]. This value was recorded during the evaluation run and validated against the baseline constraints. Covered by the signed execution receipt.`;
+
+  const PROV = {
+    MEASURED: "MEASURED means it was metered directly.",
+    ESTIMATE: "ESTIMATE means it was modelled from measured inputs, not metered.",
+    SIMULATED: "SIMULATED means it comes from a simulated/replayed run, not live hardware.",
+    MOCK: "MOCK means it is placeholder data, not a real measurement.",
+    REPLAY: "REPLAY means it is replayed from previously recorded logs.",
+    ADVICE: "ADVICE means it is a planner recommendation, not a measured result.",
+  };
+  const prov = PROV[lab] || `${lab} is the provenance label it carries.`;
+
+  return `${t}: ${v} [${lab}]. ${kind} The [${lab}] tag states its provenance — ${prov} No figures here are invented; the value and label are taken as-is from the receipt.`;
 }
 
 /**
@@ -463,13 +479,28 @@ export function matchExplainElement(query, root = document) {
       data = null;
     }
     if (!data) {
+      // Some cards (dashboard KPIs, report steps) pre-set data-explain as a plain
+      // id string plus data-explain-value/-label. Derive a human title from the
+      // element's own visible label so the query can actually match it, and take
+      // value + label straight from its attributes (never defaulting to MEASURED).
+      const rawExplain = el.getAttribute("data-explain") || "";
+      const labelEl = typeof el.querySelector === "function"
+        ? el.querySelector(".name, .k, .lvl, .demo-kpi-title, .cmp-t, .nt, h2, h3")
+        : null;
+      const titleText = (
+        (labelEl && labelEl.textContent) ||
+        el.getAttribute("data-explain-title") ||
+        rawExplain ||
+        el.getAttribute("data-explain-id") ||
+        ""
+      ).trim();
       data = {
-        id: el.getAttribute("data-explain-id") || "",
+        id: el.getAttribute("data-explain-id") || rawExplain || "",
         value: el.getAttribute("data-explain-value") || el.textContent.trim(),
-        label: el.getAttribute("data-explain-label") || "MEASURED",
+        label: el.getAttribute("data-explain-label") || "MOCK",
         source: el.getAttribute("data-explain-source") || "rcpt_llama_350w",
         summary: el.getAttribute("data-explain-summary") || "",
-        title: el.getAttribute("data-explain-title") || el.getAttribute("data-explain-id") || "",
+        title: titleText,
       };
     }
 
@@ -571,20 +602,24 @@ export function showExplainPopover(targetElement, data, doc = document) {
   popover.className = "explain-popover";
   popover.id = "wattnot-explain-popover";
 
-  const labelClass = (data.label || "MEASURED").toLowerCase();
+  // Value and label come straight from the matched element's data-explain fields;
+  // we never substitute a MEASURED label the data did not claim.
+  const label = data.label || targetElement.getAttribute("data-explain-label") || "MOCK";
+  const labelClass = label.toLowerCase();
   const title = data.title || targetElement.getAttribute("data-explain-title") || "Metric Explanation";
-  const summary = data.summary || targetElement.getAttribute("data-explain-summary") || generateTechnicalExplanation(title, data.value, data.label);
+  const value = data.value != null ? data.value : (targetElement.getAttribute("data-explain-value") || "—");
+  const summary = data.summary || targetElement.getAttribute("data-explain-summary") || generateTechnicalExplanation(title, value, label);
 
   popover.innerHTML = `
     <div class="explain-popover-header">
-      <h4 class="explain-popover-title">${title} (${data.value || "—"})</h4>
-      <span class="explain-popover-chip ${labelClass}">${data.label || "MEASURED"}</span>
+      <h4 class="explain-popover-title">${title} (${value || "—"})</h4>
+      <span class="explain-popover-chip ${labelClass}">${label}</span>
       <button class="explain-popover-close" aria-label="Close explanation">&times;</button>
     </div>
     <div class="explain-popover-body">${summary}</div>
     <div class="explain-popover-meta">
       <span>Source: ${data.source || "rcpt_llama_350w"}</span>
-      <span>[${data.label || "MEASURED"}]</span>
+      <span>[${label}]</span>
     </div>
   `;
 
@@ -603,6 +638,17 @@ export function showExplainPopover(targetElement, data, doc = document) {
   const viewportW = (typeof window !== "undefined" ? window.innerWidth : 1280);
   const viewportH = (typeof window !== "undefined" ? window.innerHeight : 800);
 
+  // The shared chrome header is sticky at the top; never let the popover sit under it.
+  let headerBottom = 0;
+  const hdr = (typeof doc.querySelector === "function")
+    ? (doc.querySelector("nav.wn-nav.gl") || doc.querySelector("header.top"))
+    : null;
+  if (hdr && typeof hdr.getBoundingClientRect === "function") {
+    const hr = hdr.getBoundingClientRect();
+    if (hr && hr.bottom > 0) headerBottom = hr.bottom;
+  }
+  const topMin = Math.max(margin, headerBottom + margin);
+
   let left = rect.right + 12;
   let top = rect.top;
 
@@ -615,12 +661,12 @@ export function showExplainPopover(targetElement, data, doc = document) {
     left = Math.max(margin, Math.min(rect.left, viewportW - popRect.width - margin));
   }
 
-  // Keep vertically on-screen
+  // Keep vertically on-screen and clear of the fixed header
   if (top + popRect.height > viewportH - margin) {
-    top = Math.max(margin, viewportH - popRect.height - margin);
+    top = Math.max(topMin, viewportH - popRect.height - margin);
   }
-  if (top < margin) {
-    top = margin;
+  if (top < topMin) {
+    top = topMin;
   }
 
   popover.style.left = `${Math.round(left)}px`;
@@ -650,7 +696,7 @@ export function showAmbiguousChoices(candidates, doc = document) {
     choicesHtml += `
       <button class="explain-choice-item" data-idx="${idx}">
         <span><strong>${d.title || d.id}:</strong> ${d.value}</span>
-        <span class="explain-popover-chip ${(d.label || "MEASURED").toLowerCase()}">${d.label || "MEASURED"}</span>
+        <span class="explain-popover-chip ${(d.label || "MOCK").toLowerCase()}">${d.label || "MOCK"}</span>
       </button>
     `;
   });
