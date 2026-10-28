@@ -18,6 +18,10 @@ test("classifyLocalIntent categorizes queries correctly", () => {
   assert.equal(classifyLocalIntent("configure run parameters"), "configure");
   assert.equal(classifyLocalIntent("prefill 350W caps"), "configure");
   assert.equal(classifyLocalIntent("what is the billed energy saving?"), "answer");
+  assert.equal(classifyLocalIntent("what does 25% mean?"), "explain");
+  assert.equal(classifyLocalIntent("explain 350W"), "explain");
+  assert.equal(classifyLocalIntent("what does this mean?"), "explain");
+  assert.equal(classifyLocalIntent("tell me about this number"), "explain");
   assert.equal(classifyLocalIntent("random query"), "answer");
 });
 
@@ -36,6 +40,11 @@ test("quickAckForQuery provides fast local acknowledgment under 300ms", () => {
   assert.equal(ansQuick.intent, "answer");
   assert.match(ansQuick.ack, /signed receipts/);
   assert.equal(ansQuick.label, "MOCK");
+
+  const expQuick = quickAckForQuery("what does 25% mean?");
+  assert.equal(expQuick.intent, "explain");
+  assert.match(expQuick.ack, /Locating element/);
+  assert.equal(expQuick.label, "MOCK");
 });
 
 test("extractHotspotData extracts mask, decision, and bounded cap", () => {

@@ -27,8 +27,8 @@ from typing import Any
 from wattnot.receipt.build import verify_hash
 from wattnot.report.eu import fields_for
 
-ALLOWED_ACTIONS = frozenset({"navigate", "answer", "prefill"})
-ALLOWED_INTENTS = frozenset({"navigate", "answer", "configure"})
+ALLOWED_ACTIONS = frozenset({"navigate", "answer", "prefill", "explain"})
+ALLOWED_INTENTS = frozenset({"navigate", "answer", "configure", "explain"})
 
 
 class VoiceGuideActionError(ValueError):
@@ -73,15 +73,23 @@ def transcribe_audio(
 
 
 def classify_intent(text: str) -> str:
-    """Spark deterministic classifier: categorise query into navigate, answer, or configure."""
+    """Spark deterministic classifier: categorise query into navigate, answer, configure, or explain."""
     t = text.lower().strip()
 
     # Configure triggers
     if any(k in t for k in ("configure", "prefill", "set up", "setup", "prepare run", "parameters for")):
         return "configure"
 
+    # Explain triggers (point and explain on-screen elements or metrics)
+    if any(k in t for k in ("explain", "what does this mean", "tell me about this number", "what is this number")) or (
+        "what does" in t and "mean" in t
+    ) or (
+        t.startswith("what is") and any(ch.isdigit() or ch in "%$" for ch in t)
+    ):
+        return "explain"
+
     # Explicit question forms are answer intent (even if they mention 'last run' or 'latest')
-    if any(t.startswith(q) for q in ("what", "how", "tell me", "is there", "which", "explain", "describe", "why")):
+    if any(t.startswith(q) for q in ("what", "how", "tell me", "is there", "which", "describe", "why")):
         return "answer"
 
     # Navigate triggers
@@ -101,6 +109,8 @@ def get_quick_ack(intent: str, text: str) -> dict[str, str]:
         return {"intent": "navigate", "ack": "Resolving latest report route...", "status": "ok"}
     if intent == "configure":
         return {"intent": "configure", "ack": "Preparing run setup pre-fill...", "status": "ok"}
+    if intent == "explain":
+        return {"intent": "explain", "ack": "Locating element on page...", "status": "ok"}
     return {"intent": "answer", "ack": "Querying signed receipts and EU report...", "status": "ok"}
 
 
@@ -197,6 +207,16 @@ def process_voice_query(
                 "caps_w": [300, 350, 400],
                 "note": "Pre-filled by voice guide. Action required: review parameters and press Start.",
             },
+            "quick_ack": quick["ack"],
+            "label": label,
+        }
+
+    elif intent == "explain":
+        result = {
+            "intent": "explain",
+            "action": "explain",
+            "target_query": text,
+            "text": f"Found element matching '{text}' on current page. Highlighting element and showing explanation.",
             "quick_ack": quick["ack"],
             "label": label,
         }

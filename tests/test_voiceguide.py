@@ -28,6 +28,10 @@ def test_intent_classification() -> None:
     assert classify_intent("prefill 350W caps") == "configure"
     assert classify_intent("what was the energy saving on the last run?") == "answer"
     assert classify_intent("tell me water consumption in mL") == "answer"
+    assert classify_intent("what does 25% mean?") == "explain"
+    assert classify_intent("explain 350W") == "explain"
+    assert classify_intent("what does this mean?") == "explain"
+    assert classify_intent("tell me about this number") == "explain"
 
 
 def test_quick_ack_fast_path() -> None:
@@ -42,6 +46,10 @@ def test_quick_ack_fast_path() -> None:
     ans_ack = get_quick_ack("answer", "what is saving?")
     assert ans_ack["intent"] == "answer"
     assert "signed receipts" in ans_ack["ack"]
+
+    exp_ack = get_quick_ack("explain", "what does 25% mean?")
+    assert exp_ack["intent"] == "explain"
+    assert "element" in exp_ack["ack"].lower()
 
 
 def test_navigate_intent_compare_and_report() -> None:
@@ -92,7 +100,7 @@ def test_configure_intent_returns_prefill_requiring_user_review() -> None:
 
 
 def test_action_allowlist_enforcement() -> None:
-    assert ALLOWED_ACTIONS == {"navigate", "answer", "prefill"}
+    assert ALLOWED_ACTIONS == {"navigate", "answer", "prefill", "explain"}
     # Verify that attempting an action outside the allowlist raises VoiceGuideActionError
     with pytest.raises(VoiceGuideActionError):
         from wattnot.meta import voiceguide
@@ -107,16 +115,32 @@ def test_action_allowlist_enforcement() -> None:
             voiceguide.ALLOWED_ACTIONS = ALLOWED_ACTIONS
 
 
+def test_explain_intent() -> None:
+    res = process_voice_query("what does 25% mean?", root_dir=REPO_ROOT, mock=True)
+    assert res["action"] == "explain"
+    assert res["intent"] == "explain"
+    assert "25%" in res["target_query"]
+    assert "Highlighting" in res["text"] or "Locating" in res["text"]
+    assert res["label"] in {"MOCK", "MEASURED"}
+
+
 def test_voiceguide_api_endpoints() -> None:
     app = create_app(str(REPO_ROOT))
     client = TestClient(app)
 
-    # POST query
+    # POST query (navigate)
     resp = client.post("/api/voiceguide", json={"query": "compare runs"})
     assert resp.status_code == 200
     data = resp.json()
     assert data["action"] == "navigate"
     assert "/dash/comparetree.html" in data["route"]
+
+    # POST query (explain)
+    resp_exp = client.post("/api/voiceguide", json={"query": "what does 25% mean?"})
+    assert resp_exp.status_code == 200
+    data_exp = resp_exp.json()
+    assert data_exp["action"] == "explain"
+    assert data_exp["intent"] == "explain"
 
     # GET query
     resp_get = client.get("/api/voiceguide?q=configure+new+run")

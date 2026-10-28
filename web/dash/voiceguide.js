@@ -5,6 +5,9 @@ export function classifyLocalIntent(text) {
   if (t.includes("configure") || t.includes("setup") || t.includes("prefill") || t.includes("prepare")) {
     return "configure";
   }
+  if (t.includes("mean") || t.includes("explain") || t.includes("tell me about this number") || t.includes("what is this")) {
+    return "explain";
+  }
   if (t.includes("compare") || t.includes("report") || t.includes("latest") || t.includes("last night")) {
     return "navigate";
   }
@@ -24,6 +27,13 @@ export function quickAckForQuery(text) {
     return {
       intent,
       ack: "Preparing run setup pre-fill...",
+      label: "MOCK",
+    };
+  }
+  if (intent === "explain") {
+    return {
+      intent,
+      ack: "Locating element on page...",
       label: "MOCK",
     };
   }
@@ -124,6 +134,19 @@ export function mountVoiceGuide(customMountEl = null) {
     panelRoute.style.display = "none";
     panel.classList.add("active");
 
+    if (quick.intent === "explain" && typeof window !== "undefined" && window.WattNotExplain) {
+      const expRes = window.WattNotExplain.handleExplainQuery(query);
+      if (expRes && expRes.status !== "none") {
+        displayResponse({
+          intent: "explain",
+          label: expRes.candidate?.label || "MOCK",
+          text: expRes.text,
+        });
+        hideStatus();
+        return;
+      }
+    }
+
     try {
       const res = await fetch("/api/voiceguide", {
         method: "POST",
@@ -132,6 +155,9 @@ export function mountVoiceGuide(customMountEl = null) {
       });
       if (res.ok) {
         const full = await res.json();
+        if (full.intent === "explain" && typeof window !== "undefined" && window.WattNotExplain) {
+          window.WattNotExplain.handleExplainQuery(query);
+        }
         displayResponse(full);
       } else {
         // Fallback local response
