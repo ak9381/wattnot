@@ -15,9 +15,7 @@
 <body class="story">
 <header class="top">
   <div class="brand"><b>WattNot</b></div>
-  <span class="chip" id="modeChip" title="Where the numbers come from"><i></i><span>loading</span></span>
   <button class="chip" id="metaChip" aria-haspopup="dialog" aria-expanded="false"><i></i><span>Meta API: not checked</span></button>
-  <span class="sp"></span>
   <button class="btn" id="dPower">Power</button>
   <button class="btn" id="dExperts">Experts</button>
   <button class="btn" id="dArch">Architecture</button>
@@ -25,6 +23,9 @@
   <a class="btn" href="runs.html">All runs</a>
   <a class="btn" href="index.html">Home</a>
   <a class="btn" id="signout" href="/logout" hidden>Sign out</a>
+  <span class="sp"></span>
+  <span id="wn-mic-slot" class="wn-mic-slot" aria-live="polite"></span>
+  <span class="chip" id="modeChip" title="Where the numbers come from"><i></i><span>loading</span></span>
 </header>
 <div id="pop" class="pop" role="dialog" aria-label="Meta API connection" hidden></div>
 <main id="stage" tabindex="-1"></main>

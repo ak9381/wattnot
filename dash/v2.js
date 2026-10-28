@@ -37,6 +37,7 @@ function show(p) {
   $$("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.p === p));
   $$(".page").forEach((s) => s.classList.toggle("on", s.id === p));
   history.replaceState(null, "", `#${p}`);
+  window.scrollTo(0, 0);
   if (p === "pReport") renderReport();
   if (p === "pProof") renderProof($("#pProof"));
 }
@@ -1064,10 +1065,17 @@ function mountCompare() {
           const v = treeValue(rec, S.cmpActive, node);
           const has = !!(node.kids && node.kids.length);
           const onPath = S.cmpPath[d] === node.id;
+          const stableId = node.id === "waste" ? "agent-waste" : node.id;
+          const nodeVal = v?.val || (v?.status === "pass" ? "pass" : (v?.status === "fail" ? "fail" : "–"));
+          const nodeTag = v?.tag || (node.kind === "gate" ? "MEASURED" : "ESTIMATE");
           const el = document.createElement("div");
           el.className = `rad-node min${onPath ? " on" : ""}`;
           el.dataset.depth = d;
           el.dataset.node = node.id;
+          el.setAttribute("data-explain", `compare.${S.cmpActive}.${stableId}`);
+          el.setAttribute("data-explain-value", nodeVal);
+          el.setAttribute("data-explain-label", nodeTag);
+          el.setAttribute("data-explain-source", `tree.${node.id}`);
           el.innerHTML = `<button class="rad-head2" aria-expanded="${onPath}"${has ? "" : " disabled"} aria-label="${esc(node.name)}${has ? ": open its routes" : ""}"><b>${esc(node.name)}</b><span class="rad-val">${treeVal(v)}</span>${node.own_only ? `<small class="rad-sub">own GPU only</small>` : ""}${has ? `<span class="rad-chev" aria-hidden="true">›</span>` : ""}</button><button class="ibtn rad-i" aria-label="${esc(node.name)} details">i</button>`;
           stage.appendChild(el);
           if (has) {
@@ -1090,9 +1098,16 @@ function mountCompare() {
       (leafNodes || []).forEach((leaf) => {
         const v = treeValue(rec, S.cmpActive, leaf);
         const desc = TREE_DESC[leaf.id] || "";
+        const stableId = leaf.id === "waste" ? "agent-waste" : leaf.id;
+        const leafVal = v?.val || (v?.status === "pass" ? "pass" : (v?.status === "fail" ? "fail" : "–"));
+        const leafTag = v?.tag || (leaf.kind === "gate" ? "MEASURED" : "ESTIMATE");
         const cardEl = document.createElement("div");
         cardEl.className = "rad-leaf";
         cardEl.dataset.leaf = leaf.id;
+        cardEl.setAttribute("data-explain", `compare.${S.cmpActive}.${stableId}`);
+        cardEl.setAttribute("data-explain-value", leafVal);
+        cardEl.setAttribute("data-explain-label", leafTag);
+        cardEl.setAttribute("data-explain-source", `tree.${leaf.id}`);
         cardEl.innerHTML = `<div class="rad-leaf-hd"><span class="rad-leaf-title">${esc(leaf.name)}</span><span style="color:var(--cy);font-size:12px">→</span></div><div class="rad-leaf-val">${treeVal(v)}</div><div class="rad-leaf-desc">${esc(desc)}</div>`;
         cardEl.onclick = () => {
           openSidePanel(leaf.name, nodeDetailHtml(rec, S.cmpActive, leaf));
@@ -1108,6 +1123,14 @@ function mountCompare() {
   $$(".rad-card", stage).forEach((c) => {
     const id = c.dataset.branch, name = id[0].toUpperCase() + id.slice(1);
     c.classList.add("min"); c.dataset.open = id === S.cmpActive ? "1" : "0"; c.dataset.node = id;
+    const sv = savedPct(rec, id);
+    const svVal = sv ? sv.text : "–";
+    const svTag = id === "power" ? "MEASURED" : "ESTIMATE";
+    const svSrc = id === "power" ? "phases.wattnot.metrics.saved_pct" : `impact.${id}`;
+    c.setAttribute("data-explain", `compare.${id}`);
+    c.setAttribute("data-explain-value", svVal);
+    c.setAttribute("data-explain-label", svTag);
+    c.setAttribute("data-explain-source", svSrc);
     c.innerHTML = `<button class="rad-head" aria-expanded="${id === S.cmpActive}" aria-label="${name}: open its routes"><b><span>${name}</span>${badge(id === "power" ? "MEASURED" : "ESTIMATE")}</b><span class="rad-val">${branchSaved(id)}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power</small>`}</button><button class="ibtn rad-i" aria-label="${name} details">i</button>`;
     $(".rad-head", c).onclick = () => { S.cmpActive = id; S.cmpPath = []; renderTree(); };
     $(".rad-i", c).onclick = (e) => { e.stopPropagation(); openSidePanel(name, branchDetailHtml(rec, id)); };
@@ -1319,5 +1342,7 @@ function renderLearn() {
   if (firstRun) S.radRecs[firstRun] = await fetch(`/api/dash/v2/runs/${encodeURIComponent(firstRun)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   renderCfg(); renderHome(); renderRun(); renderLearn(); wireIllus($("#illusBtn"));
   const h = location.hash.slice(1); if (h && $(`#${h}`)) show(h);
+  setTimeout(() => window.scrollTo(0, 0), 20);
+  setTimeout(() => window.scrollTo(0, 0), 100);
   if (new URLSearchParams(location.search).get("autorun")) { await startRun(); }
 })();

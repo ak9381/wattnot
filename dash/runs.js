@@ -228,7 +228,7 @@ function renderKpis(runsList, details) {
     <p class="note">${measuredRows.length} of ${runsList.length} run(s) report metered GPU energy; the rest show ${EM} for energy.</p>`;
 
   el.innerHTML = `
-    <div class="kpi v-glass" data-side="k_energy" role="button" tabindex="0">
+    <div class="kpi v-glass" data-side="k_energy" data-explain="runs.total.energy" data-explain-value="${esc(isNum(joules) ? eng.text + ' ' + eng.unit : EM)}" data-explain-label="MEASURED" data-explain-source="phases.wattnot.metrics.j_per_req" role="button" tabindex="0">
       <span class="more">Details &rarr;</span>
       <div class="name">Energy saved</div>
       <div class="big">${isNum(joules)
@@ -236,7 +236,7 @@ function renderKpis(runsList, details) {
         : `<span class="emdash">${EM}</span>`}</div>
       <div class="foot">${isNum(joules) ? "Measured GPU joules, H100 run" : "No metered run"}</div>
     </div>
-    <div class="kpi v-glass" data-side="k_water" role="button" tabindex="0">
+    <div class="kpi v-glass" data-side="k_water" data-explain="runs.total.water" data-explain-value="${esc(isNum(litres) ? fmt(litres, 3) + ' L' : EM)}" data-explain-label="ESTIMATE" data-explain-source="water_factor" role="button" tabindex="0">
       <span class="more">Details &rarr;</span>
       <div class="name">Water saved</div>
       <div class="big">${isNum(litres)
@@ -244,7 +244,7 @@ function renderKpis(runsList, details) {
         : `<span class="emdash">${EM}</span>`}</div>
       <div class="foot">${isNum(litres) ? "From energy &times; 0.36 L/kWh" : "Needs metered energy"}</div>
     </div>
-    <div class="kpi v-glass" data-side="k_cost" role="button" tabindex="0">
+    <div class="kpi v-glass" data-side="k_cost" data-explain="runs.total.cost" data-explain-value="${esc(isNum(usd) ? '$' + fmt(usd, 4) : EM)}" data-explain-label="ESTIMATE" data-explain-source="usd_per_kwh" role="button" tabindex="0">
       <span class="more">Details &rarr;</span>
       <div class="name">Cost saved</div>
       <div class="big">${isNum(usd)
@@ -252,7 +252,7 @@ function renderKpis(runsList, details) {
         : `<span class="emdash">${EM}</span>`}</div>
       <div class="foot">${isNum(usd) ? "From energy &times; $0.1387/kWh" : "Needs metered energy"}</div>
     </div>
-    <div class="kpi v-glass" data-side="k_runs" role="button" tabindex="0">
+    <div class="kpi v-glass" data-side="k_runs" data-explain="runs.total.runs" data-explain-value="${esc(String(runsList.length))}" data-explain-label="MEASURED" data-explain-source="runs_count" role="button" tabindex="0">
       <span class="more">Details &rarr;</span>
       <div class="name">Runs</div>
       <div class="big"><span class="v-num">${fmt(runsList.length, 0)}</span>${dot("MEASURED")}</div>
@@ -495,14 +495,19 @@ function renderTable(runsList, details) {
       </ul>` : `<p class="note">This run recorded a baseline only (no WattNot phase), so its savings show ${EM}.</p>`}
       <p class="note"><a href="${esc(reportHref)}">Open the full report &rarr;</a></p>`;
 
+    const savedVal = isNum(w?.saved_pct) ? `${fmt(Math.abs(w.saved_pct), 1)}%` : EM;
+    const p99Val = isNum(w?.p99_change_pct) ? `${w.p99_change_pct >= 0 ? "+" : ""}${fmt(w.p99_change_pct, 1)}%` : EM;
+    const qVal = isNum(w?.quality_pct) ? `${fmt(w.quality_pct, 1)}%` : EM;
+    const metricLabel = w?.label || (label === "MEASURED" ? "MEASURED" : "pending");
+
     return `
-      <tr data-side="run_${esc(r.id)}" role="button" tabindex="0" style="cursor:pointer">
+      <tr data-side="run_${esc(r.id)}" data-explain="runs.${esc(r.id)}" data-explain-value="${esc(savedVal)}" data-explain-label="${esc(metricLabel)}" data-explain-source="phases.wattnot.metrics.saved_pct" role="button" tabindex="0" style="cursor:pointer">
         <td><div class="runname">${esc(name)}</div><div class="runsub">${esc(r.id)} &middot; <span class="v-chip ${fwTag}"><i class="v-lab ${fwTag}"></i>${esc(fwName)}</span></div></td>
         <td>${esc(model)}</td>
         <td class="num">${esc(date) || `<span class="emdash">${EM}</span>`}</td>
-        <td class="num">${savedCell}</td>
-        <td class="num">${p99Cell}</td>
-        <td class="num">${qCell}</td>
+        <td class="num" data-explain="runs.${esc(r.id)}.saving" data-explain-value="${esc(savedVal)}" data-explain-label="${esc(metricLabel)}" data-explain-source="phases.wattnot.metrics.saved_pct">${savedCell}</td>
+        <td class="num" data-explain="runs.${esc(r.id)}.p99" data-explain-value="${esc(p99Val)}" data-explain-label="${esc(metricLabel)}" data-explain-source="phases.wattnot.metrics.p99_change_pct">${p99Cell}</td>
+        <td class="num" data-explain="runs.${esc(r.id)}.quality" data-explain-value="${esc(qVal)}" data-explain-label="${esc(metricLabel)}" data-explain-source="phases.wattnot.metrics.quality_pct">${qCell}</td>
         <td>${chip(label)}</td>
         <td><a class="report-link" href="${esc(reportHref)}">Report &rarr;</a></td>
       </tr>`;

@@ -263,7 +263,7 @@ aside.side p{color:#DCD6E4}
 #pReport .receipt-meta,
 #pReport>p:last-of-type{display:none!important}
 
-.radial-wrap{position:relative;overflow:hidden;padding:12px;height:calc(100vh - 148px);min-height:440px;border-radius:20px;background:rgba(31,26,47,.65);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);border:1px solid rgba(220,214,228,.12);box-shadow:0 8px 32px rgba(0,0,0,.40),0 2px 8px rgba(0,0,0,.25),inset 0 1px 0 rgba(220,214,228,.12)}
+.radial-wrap{position:relative;overflow:hidden;padding:12px;height:calc(100vh - 205px);min-height:440px;border-radius:20px;background:rgba(31,26,47,.65);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);border:1px solid rgba(220,214,228,.12);box-shadow:0 8px 32px rgba(0,0,0,.40),0 2px 8px rgba(0,0,0,.25),inset 0 1px 0 rgba(220,214,228,.12)}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.radial-wrap{background:#1F1A2F}}
 .radial-stage{position:relative;width:100%;height:100%;z-index:1}
 .radial-wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
@@ -380,3 +380,4 @@ h1,h2,h3,h4,.brand,nav.tabs button,.kpi .c,.lvl{font-family:"Montserrat",system-
 .cmp-crumb .crumb-sep{color:var(--mu)}
 .cmp-crumb .crumb-back{background:none;border:0;color:var(--cy);cursor:pointer;font:inherit;font-size:12.5px;padding:4px 8px}
 .cmp-crumb .crumb-hint{font-size:12.5px;color:var(--mu)}
+.wn-mic-slot{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;min-width:32px;min-height:32px;flex:0 0 32px;vertical-align:middle}

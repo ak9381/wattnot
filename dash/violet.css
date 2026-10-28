@@ -86,3 +86,4 @@
 .v-status { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
 .v-status.pass { color: var(--v-pass); }
 .v-status.reject { color: var(--v-reject); }
+.wn-mic-slot { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; min-width: 32px; min-height: 32px; flex: 0 0 32px; vertical-align: middle; }
