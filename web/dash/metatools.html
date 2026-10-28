@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WattNot Meta Tools v5 — Supervisor & Automation Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Montserrat:wght@500;600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./metatools.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 32px 24px;
+      background-color: #080B10;
+      color: #DCD6E4;
+      font-family: 'Source Sans 3', sans-serif;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .preview-container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .preview-header {
+      margin-bottom: 24px;
+      border-bottom: 1px solid rgba(178, 166, 195, 0.15);
+      padding-bottom: 12px;
+    }
+    .preview-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #DCD6E4;
+      margin: 0 0 6px 0;
+    }
+    .preview-desc {
+      font-size: 0.9rem;
+      color: #8E7A9E;
+    }
+  </style>
+</head>
+<body>
+  <div class="preview-container">
+    <div class="preview-header">
+      <h1 class="preview-title">WattNot Meta Tools v5</h1>
+      <div class="preview-desc">Live glass card preview for Muse Wonder, Muse Code, and Llama 8B Quality Gate.</div>
+    </div>
+    <div id="metatools-mount"></div>
+  </div>
+
+  <script type="module">
+    import { mountMetaTools } from './metatools.js';
+
+    async function init() {
+      try {
+        const res = await fetch('./sample-meta5-receipt.json');
+        const receipt = await res.json();
+        const container = document.getElementById('metatools-mount');
+        mountMetaTools(container, receipt);
+      } catch (err) {
+        console.error('Failed to load sample receipt:', err);
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
