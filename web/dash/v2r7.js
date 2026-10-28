@@ -339,7 +339,7 @@ export function branchInfo(rec, id, price = 0.1387, water = 0.36) {
     <h3>Worked example</h3>${workedExample(bj, wj, price, water)}<h3>Gate results</h3>${gatesHtml(rec)}${metaInRun(rec)}</div>`;
   return popup(c.title, html, { sub: `${esc(rec?.run_name || "")} · red is without WattNot, green is with`, onMount: (root) => wireCompare(root, rec, price, water) });
 }
-export const cmpHeadHtml = (rec) => `<div class="cmp-head"><h1>What WattNot saved</h1><span class="lead">${esc(rec?.run_name || "Pick a run")} ${infoBtn("compare", "how this is compared")}</span></div><div class="cmp-meta-bar">${metaInRun(rec)}${legend()}</div>`;
+export const cmpHeadHtml = (rec) => `<div class="cmp-head"><h1>What WattNot saved</h1><span class="lead">${esc(rec?.run_name || "Pick a run")} ${infoBtn("compare", "how this is compared")}</span></div><div class="cmp-meta-bar">${metaInRun(rec)}</div><div class="cmp-legend-bar">${legend()}</div>`;
 export function openWhere(rec) { return popup("Where should this model run?", whereHtml(rec), { sub: "All three are compared in this run." }); }
 export function openPowerGraph(rec, c) {
   c ||= cardsData(rec, 0.1387, 0.36)[0];
@@ -361,11 +361,7 @@ export const metaTags = (ids) => META_TOOLS.filter((t) => !ids || ids.includes(t
 export const metaTile = () => `<section class="glass ov-meta"><h3>Built with Meta</h3><div class="mtags">${metaTags()}</div></section>`;
 export const metaInRun = (rec) => {
   const llama = /llama/i.test(rec?.model || "");
-  const fw = rec?.receipt?.framework || rec?.receipt?.frameworks?.[0] || rec?.framework;
-  const fwInfo = fw
-    ? { name: fw === "plain" ? "plain API" : fw, label: rec?.label === "MEASURED" ? "MEASURED" : "MOCK" }
-    : { name: "framework: none recorded", label: "MOCK" };
-  return `<div class="mrun"><span class="lvl">Meta models in this run</span><div class="mtags sm">${metaTags(llama ? ["llama", "spark", "sam"] : ["spark_open", "spark"])}<span class="v-chip ${fwInfo.label}" style="margin-left:6px"><i class="v-lab ${fwInfo.label}"></i>${esc(fwInfo.name)}</span></div></div>`;
+  return `<div class="mrun"><span class="lvl">Meta models in this run</span><div class="mtags sm">${metaTags(llama ? ["llama", "spark", "sam"] : ["spark_open", "spark"])}</div></div>`;
 };
 registerInfo({
   "meta-spark": { title: "Muse Spark", html: `<p>Meta's Muse Spark API is WattNot's planner. It reads the last measurements and proposes the next power cap to try, or says stop.</p><p>Every call is logged with its cost in the ledger. It only proposes; the gates and a person decide.</p>` },

@@ -706,7 +706,7 @@ function radialHtml(runs, featuredId, rec) {
   const drop = runs.map((r) => `<button class="centre-opt${r.id === featuredId ? " now" : ""}" data-run="${esc(r.id)}" role="option" aria-selected="${r.id === featuredId}">${esc(r.name)}</button>`).join("")
     || `<span class="rad-miss">No runs listed.</span>`;
   const feat = runs.find((r) => r.id === featuredId) || runs[0];
-  return `<div class="bento"><div class="radial-bar noprint span6"><span class="hint">Mind map: WattNot on the left. Click Power, Cost or Water to fan out levers; leaf details align on the right.</span>`
+  return `<div class="bento"><div class="radial-bar noprint span6">`
     + `<span style="flex:1"></span><button class="btn" data-radial="open">Expand all</button><button class="btn" data-radial="close">Collapse all</button></div>`
     + `<div class="radial-wrap glass tile span6 low" id="radialWrap"><svg class="radial-wires" id="radialWires" aria-hidden="true"></svg>`
     + `<div class="radial-stage" id="radialStage">`
@@ -1142,28 +1142,31 @@ function layoutTree() {
   const panelH = wrap.clientHeight || 560;
 
   // Base design dimensions to fit mind map nicely without clipping
-  const baseW = Math.max(1180, panelW);
-  const baseH = Math.max(540, panelH);
-  const scale = (panelW < 1140 || panelH < 500) ? Math.min(panelW / 1140, panelH / 500) : 1;
+  const minDesignW = 1160;
+  const minDesignH = 520;
+  const scale = (panelW < minDesignW || panelH < minDesignH)
+    ? Math.min(panelW / minDesignW, panelH / minDesignH)
+    : 1;
 
-  stage.style.width = `${baseW}px`;
-  stage.style.height = `${baseH}px`;
+  const W = Math.round(panelW / scale);
+  const H = Math.round(panelH / scale);
+
+  stage.style.width = `${W}px`;
+  stage.style.height = `${H}px`;
   stage.style.transformOrigin = "top left";
   stage.style.transform = scale < 1 ? `scale(${scale.toFixed(4)})` : "none";
-
-  const W = baseW, H = baseH;
 
   // 1. Central node on left-centre
   const cx = 85, cy = Math.round(H / 2);
   centre.style.left = `${cx}px`; centre.style.top = `${cy}px`;
 
   // 2. Power, Cost, and Water fan out in an ARC around WattNot (cx, cy)
-  // Clean arc with no overlap: Cost straight right (0°), Power angled up (-46°), Water angled down (+46°).
+  // Clean arc with no overlap: Cost straight right (0°), Power angled up (-45°), Water angled down (+45°).
   const cards = $$(".rad-card", stage);
   const metricPos = {
-    power: [Math.round(cx + 160), Math.round(cy - 165)],
+    power: [Math.round(cx + 160), Math.round(cy - 150)],
     cost:  [Math.round(cx + 255), cy],
-    water: [Math.round(cx + 160), Math.round(cy + 165)],
+    water: [Math.round(cx + 160), Math.round(cy + 150)],
   };
   cards.forEach((c) => {
     const p = metricPos[c.dataset.node] || [cx + 255, cy];
@@ -1171,9 +1174,9 @@ function layoutTree() {
   });
 
   // 3. Child nodes (Level 0 and deeper)
-  // Compute vertical bounds (topMargin, endY) from panel H so no node is cut off
-  const topMargin = Math.max(35, Math.round(H * 0.06));
-  const botMargin = Math.max(50, Math.round(H * 0.09));
+  // Compute vertical bounds (topMargin, botMargin) from H so no node is cut off
+  const topMargin = Math.max(30, Math.round(H * 0.05));
+  const botMargin = Math.max(55, Math.round(H * 0.10));
   const usableH = H - topMargin - botMargin;
 
   const nodes = $$(".rad-node", stage);
@@ -1196,10 +1199,12 @@ function layoutTree() {
   const leaves = $$(".rad-leaf", stage);
   const leafCount = leaves.length;
   const leafW = 260;
-  const leafX = W - leafW - 24;
-  const leafStepY = leafCount > 1 ? (usableH - 25) / (leafCount - 1) : 0;
+  const leafX = W - leafW - 16;
+  const leafTopStart = topMargin + 5;
+  const leafTopEnd = H - 110;
+  const leafStepY = leafCount > 1 ? (leafTopEnd - leafTopStart) / (leafCount - 1) : 0;
   leaves.forEach((el, idx) => {
-    const y = leafCount === 1 ? cy - 25 : Math.round(topMargin + 10 + idx * leafStepY);
+    const y = leafCount === 1 ? cy - 40 : Math.round(leafTopStart + idx * leafStepY);
     el.style.left = `${leafX}px`;
     el.style.top = `${y}px`;
   });

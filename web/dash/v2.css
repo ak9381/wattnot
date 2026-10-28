@@ -236,21 +236,25 @@ aside.side p{color:#DCD6E4}
 .topic:hover{background:#2B2637}
 /* radial comparison canvas: WattNot centre, one ring of run cards, an outer
    ring of per-method cards. Pan/zoom comes from pancanvas.js (.pc-*). */
-/* Compact header above compare mind map */
-#cmpR7{margin-bottom:4px}
-#cmpR7 .cmp-head{display:flex;align-items:baseline;gap:12px;margin-bottom:2px}
-#cmpR7 .cmp-head h1{font-size:20px;margin:0;line-height:1.15}
-#cmpR7 .cmp-head .lead{font-size:12.5px;color:var(--sub);margin:0;display:inline-flex;align-items:center;gap:6px}
-#cmpR7 .cmp-meta-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:nowrap;font-size:11.5px;margin:2px 0 4px}
+/* Compact header above compare mind map: at most 2 rows */
+#cmpR7{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap;white-space:nowrap;margin:0 0 3px;min-height:28px}
+#cmpR7 .cmp-head{display:inline-flex;align-items:center;gap:8px;margin:0;flex-shrink:0}
+#cmpR7 .cmp-head h1{font-size:17px;margin:0;line-height:1.15;white-space:nowrap}
+#cmpR7 .cmp-head .lead{font-size:12px;color:var(--sub);margin:0;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+#cmpR7 .cmp-meta-bar{display:inline-flex;align-items:center;gap:6px;margin:0;flex-shrink:0}
 #cmpR7 .mrun{display:inline-flex;align-items:center;gap:6px;margin:0;font-size:11.5px}
-#cmpR7 .mrun .lvl{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mu);margin:0}
-#cmpR7 .mtags.sm{gap:4px}
-#cmpR7 .mtags.sm .mtag{padding:2px 8px;font-size:11px;border-radius:999px}
-#cmpR7 .legend{display:inline-flex;align-items:center;gap:10px;margin:0;font-size:11.5px}
-#cmpR7 .legend span{display:inline-flex;align-items:center;gap:4px}
+#cmpR7 .mrun .lvl{display:none}
+#cmpR7 .mtags.sm{display:inline-flex;align-items:center;gap:4px;flex-wrap:nowrap}
+#cmpR7 .mtags.sm .mtag{padding:2px 7px;font-size:11px;border-radius:999px;white-space:nowrap}
+#cmpR7 .cmp-legend-bar{display:inline-flex;align-items:center;margin:0;flex-shrink:0}
+#cmpR7 .r7legend{display:inline-flex;align-items:center;gap:8px;margin:0;font-size:11px;color:#C9C1D6;flex-wrap:nowrap;white-space:nowrap}
+#cmpR7 .r7legend span{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+#cmpR7 .r7legend i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:2px;vertical-align:-1px}
 
-.radial-bar{display:flex;gap:8px;align-items:center;margin:4px 0 6px;flex-wrap:wrap}
-.radial-bar .hint{font-size:12px;color:var(--mu)}
+.radial-bar{display:flex;gap:8px;align-items:center;margin:3px 0 6px;flex-wrap:nowrap;white-space:nowrap;min-height:30px}
+.radial-bar .hint{display:none}
+.cmp-crumb{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.rad-where{font-size:12px;padding:4px 10px}
 #pReport #mapWrap,
 #pReport .who-banner,
 #pReport .who,
@@ -259,7 +263,7 @@ aside.side p{color:#DCD6E4}
 #pReport .receipt-meta,
 #pReport>p:last-of-type{display:none!important}
 
-.radial-wrap{position:relative;overflow:hidden;padding:12px;height:calc(100vh - 245px);max-height:650px;min-height:440px;border-radius:20px;background:rgba(31,26,47,.65);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);border:1px solid rgba(220,214,228,.12);box-shadow:0 8px 32px rgba(0,0,0,.40),0 2px 8px rgba(0,0,0,.25),inset 0 1px 0 rgba(220,214,228,.12)}
+.radial-wrap{position:relative;overflow:hidden;padding:12px;height:calc(100vh - 148px);min-height:440px;border-radius:20px;background:rgba(31,26,47,.65);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);border:1px solid rgba(220,214,228,.12);box-shadow:0 8px 32px rgba(0,0,0,.40),0 2px 8px rgba(0,0,0,.25),inset 0 1px 0 rgba(220,214,228,.12)}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.radial-wrap{background:#1F1A2F}}
 .radial-stage{position:relative;width:100%;height:100%;z-index:1}
 .radial-wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
