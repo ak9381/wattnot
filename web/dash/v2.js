@@ -1112,66 +1112,69 @@ function mountCompare() {
 function layoutTree() {
   const wrap = $("#radialWrap"), stage = $("#radialStage"), svg = $("#radialWires"), centre = $("#radCentre");
   if (!wrap || !stage || !svg || !centre) return;
-  const availW = (wrap.clientWidth || 1160) - 32;
-  const baseW = 1160, baseH = 600;
-  const scale = availW < baseW ? Math.max(0.45, availW / baseW) : 1;
+  const panelW = wrap.clientWidth || 1200;
+  const panelH = wrap.clientHeight || 560;
+
+  // Base design dimensions to fit mind map nicely without clipping
+  const baseW = Math.max(1180, panelW);
+  const baseH = Math.max(540, panelH);
+  const scale = (panelW < 1140 || panelH < 500) ? Math.min(panelW / 1140, panelH / 500) : 1;
+
   stage.style.width = `${baseW}px`;
   stage.style.height = `${baseH}px`;
   stage.style.transformOrigin = "top left";
   stage.style.transform = scale < 1 ? `scale(${scale.toFixed(4)})` : "none";
-  wrap.style.height = `${Math.round(baseH * scale + 32)}px`;
 
   const W = baseW, H = baseH;
 
-  // Central node on left-centre
-  const cx = 85, cy = H / 2;
+  // 1. Central node on left-centre
+  const cx = 85, cy = Math.round(H / 2);
   centre.style.left = `${cx}px`; centre.style.top = `${cy}px`;
 
-  // Metric cards fanned in an orderly arc
+  // 2. Power, Cost, and Water fan out in an ARC around WattNot (cx, cy)
+  // Cost is straight right (0°), Power is angled up (-38°), Water is angled down (+38°).
   const cards = $$(".rad-card", stage);
+  const R = 210;
+  const rad = (deg) => (deg * Math.PI) / 180;
   const metricPos = {
-    power: [240, 140],
-    cost: [265, 300],
-    water: [240, 460],
+    power: [Math.round(cx + R * Math.cos(rad(-38))), Math.round(cy + R * Math.sin(rad(-38)))],
+    cost:  [Math.round(cx + R), cy],
+    water: [Math.round(cx + R * Math.cos(rad(38))),  Math.round(cy + R * Math.sin(rad(38)))],
   };
   cards.forEach((c) => {
-    const p = metricPos[c.dataset.node] || [250, 300];
+    const p = metricPos[c.dataset.node] || [cx + R, cy];
     c.style.left = `${p[0]}px`; c.style.top = `${p[1]}px`;
   });
 
-  // Position child nodes
+  // 3. Child nodes (Level 0 and deeper)
+  // Compute vertical bounds (topMargin, endY) from panel H so no node is cut off
+  const topMargin = Math.max(40, Math.round(H * 0.07));
+  const botMargin = Math.max(60, Math.round(H * 0.11));
+  const usableH = H - topMargin - botMargin;
+
   const nodes = $$(".rad-node", stage);
   const depth = (S.cmpPath || []).length;
+  const childX = Math.round(cx + R + (depth === 0 ? 215 : 185));
+
   for (let d = 0; d <= depth; d++) {
     const ring = nodes.filter((k) => +k.dataset.depth === d);
     const count = ring.length;
-    if (d === 0) {
-      const x = depth === 0 ? 475 : 445;
-      const startY = 95, endY = 505;
-      const stepY = count > 1 ? (endY - startY) / (count - 1) : 0;
-      ring.forEach((el, idx) => {
-        el.style.left = `${x}px`;
-        el.style.top = `${count === 1 ? H / 2 : startY + idx * stepY}px`;
-      });
-    } else {
-      const x = 650;
-      const startY = 110, endY = 490;
-      const stepY = count > 1 ? (endY - startY) / (count - 1) : 0;
-      ring.forEach((el, idx) => {
-        el.style.left = `${x}px`;
-        el.style.top = `${count === 1 ? H / 2 : startY + idx * stepY}px`;
-      });
-    }
+    const x = d === 0 ? childX : (childX + 205);
+    const stepY = count > 1 ? usableH / (count - 1) : 0;
+    ring.forEach((el, idx) => {
+      el.style.left = `${x}px`;
+      el.style.top = `${count === 1 ? cy : Math.round(topMargin + idx * stepY)}px`;
+    });
   }
 
-  // Position leaf detail cards aligned in column on the right
+  // 4. Leaf detail cards aligned in column on the right
   const leaves = $$(".rad-leaf", stage);
   const leafCount = leaves.length;
-  const leafX = 870;
-  const leafStartY = 60, leafEndY = 530;
-  const leafStepY = leafCount > 1 ? (leafEndY - leafStartY) / (leafCount - 1) : 0;
+  const leafW = 265;
+  const leafX = W - leafW - 16;
+  const leafStepY = leafCount > 1 ? (usableH - 35) / (leafCount - 1) : 0;
   leaves.forEach((el, idx) => {
-    const y = leafCount === 1 ? H / 2 - 35 : (leafStartY + idx * leafStepY);
+    const y = leafCount === 1 ? cy - 25 : Math.round(topMargin + 10 + idx * leafStepY);
     el.style.left = `${leafX}px`;
     el.style.top = `${y}px`;
   });
@@ -1205,10 +1208,10 @@ function drawTreeWires(cx, cy, W, H) {
     dots.push([x2, y2]);
   };
 
-  // 1. Connect central node to metric cards (Power, Cost, Water)
+  // 1. Connect central node to metric cards (Power, Cost, Water) in arc
   $$(".rad-card", stage).forEach((c) => {
     const [mx, my] = getCenter(c);
-    addDottedCurve(cx + 48, cy, mx - 84, my);
+    addDottedCurve(cx + 48, cy, mx - 90, my);
   });
 
   // 2. Connect active metric card to child nodes
@@ -1220,7 +1223,7 @@ function drawTreeWires(cx, cy, W, H) {
 
     depth0.forEach((el) => {
       const [kx, ky] = getCenter(el);
-      addDottedCurve(mx + 84, my, kx - 88, ky);
+      addDottedCurve(mx + 90, my, kx - 110, ky);
     });
 
     // 3. Connect parent node to deeper child nodes
@@ -1232,7 +1235,7 @@ function drawTreeWires(cx, cy, W, H) {
       const [px, py] = parentEl ? getCenter(parentEl) : [mx, my];
       ring.forEach((el) => {
         const [kx, ky] = getCenter(el);
-        addDottedCurve(px + 88, py, kx - 88, ky);
+        addDottedCurve(px + 110, py, kx - 110, ky);
       });
     }
 
@@ -1247,7 +1250,7 @@ function drawTreeWires(cx, cy, W, H) {
         depth0[0];
       if (matchingNode) {
         const [nx, ny] = getCenter(matchingNode);
-        addElbowPath(nx + 88, ny, leafX - 4, leafY);
+        addElbowPath(nx + 110, ny, leafX - 4, leafY);
       }
     });
   }

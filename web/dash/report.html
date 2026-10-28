@@ -44,7 +44,7 @@
   .note{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--v-line);background:rgba(46,43,68,.3);border-radius:999px;padding:4px 12px;font-size:12.5px;color:var(--v-sub)}
   .note i{width:8px;height:8px;border-radius:50%;background:var(--v-l-replay)}
 
-  main{max-width:1120px;margin:0 auto;padding:28px 24px 80px}
+  main{max-width:1380px;margin:0 auto;padding:20px 24px 60px}
   .lede{margin:4px 0 16px}
   .lede h1{margin-bottom:6px}
   .meta-line{display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--v-mut);font-size:14px}
@@ -139,11 +139,11 @@
     content:"";flex:1;height:1px;background:var(--v-line);
   }
   .cards-grid{
-    display:grid;grid-template-columns:repeat(auto-fit, minmax(290px, 1fr));gap:16px;
+    display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;
   }
   .bd-card{
     width:100%;text-align:left;cursor:pointer;display:flex;flex-direction:column;
-    padding:18px 20px;color:inherit;transition:transform .15s, border-color .2s, box-shadow .2s;
+    padding:14px 12px;color:inherit;transition:transform .15s, border-color .2s, box-shadow .2s;
     position:relative;outline:none;
   }
   .bd-card:hover{
@@ -154,29 +154,29 @@
     outline:2px solid var(--v-peach);outline-offset:2px;
   }
   .bd-card-head{
-    display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;
+    display:flex;align-items:center;gap:4px;margin-bottom:8px;
   }
   .bd-card-num{
-    width:24px;height:24px;border-radius:50%;display:grid;place-items:center;
-    font-family:var(--v-num);font-size:12px;font-weight:600;color:var(--v-peach);
+    width:18px;height:18px;border-radius:50%;display:grid;place-items:center;
+    font-family:var(--v-num);font-size:10px;font-weight:600;color:var(--v-peach);
     background:rgba(46,43,68,.6);border:1px solid var(--v-line);flex:none;
   }
   .bd-card.active-num .bd-card-num{
     background:var(--v-peach);color:var(--v-bg);box-shadow:0 0 10px var(--v-glow);border-color:var(--v-peach);
   }
   .bd-card-name{
-    font-family:var(--v-head);font-weight:600;font-size:13px;letter-spacing:.05em;
-    text-transform:uppercase;color:var(--v-cream);flex:1;
+    font-family:var(--v-head);font-weight:600;font-size:10px;letter-spacing:0;
+    text-transform:uppercase;color:var(--v-cream);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .bd-card-val{
-    font-family:var(--v-num);font-size:26px;font-weight:700;color:var(--v-cream);
-    display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 6px;
+    font-family:var(--v-num);font-size:20px;font-weight:700;color:var(--v-cream);
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:2px 0 4px;
   }
   .bd-card-sub{
-    font-size:13px;color:var(--v-sub);line-height:1.4;flex:1;
+    font-size:11.5px;color:var(--v-sub);line-height:1.35;flex:1;
   }
   .bd-card-open{
-    font-size:12px;color:var(--v-peach);margin-top:12px;display:flex;align-items:center;gap:4px;
+    font-size:11px;color:var(--v-peach);margin-top:8px;display:flex;align-items:center;gap:4px;
     font-weight:500;opacity:.85;transition:opacity .15s;
   }
   .bd-card:hover .bd-card-open{opacity:1}

@@ -339,7 +339,7 @@ export function branchInfo(rec, id, price = 0.1387, water = 0.36) {
     <h3>Worked example</h3>${workedExample(bj, wj, price, water)}<h3>Gate results</h3>${gatesHtml(rec)}${metaInRun(rec)}</div>`;
   return popup(c.title, html, { sub: `${esc(rec?.run_name || "")} · red is without WattNot, green is with`, onMount: (root) => wireCompare(root, rec, price, water) });
 }
-export const cmpHeadHtml = (rec) => `<div class="cmp-head"><div><h1>What WattNot saved</h1><p class="lead">${esc(rec?.run_name || "Pick a run")} ${infoBtn("compare", "how this is compared")}</p></div></div>${metaInRun(rec)}${legend()}`;
+export const cmpHeadHtml = (rec) => `<div class="cmp-head"><h1>What WattNot saved</h1><span class="lead">${esc(rec?.run_name || "Pick a run")} ${infoBtn("compare", "how this is compared")}</span></div><div class="cmp-meta-bar">${metaInRun(rec)}${legend()}</div>`;
 export function openWhere(rec) { return popup("Where should this model run?", whereHtml(rec), { sub: "All three are compared in this run." }); }
 export function openPowerGraph(rec, c) {
   c ||= cardsData(rec, 0.1387, 0.36)[0];

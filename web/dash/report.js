@@ -394,9 +394,8 @@ function drawConnectors() {
 
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-window.addEventListener("resize", () => {
-  drawConnectors();
-});
+window.addEventListener("resize", drawConnectors);
+window.addEventListener("load", drawConnectors);
 
 function openSide(step) {
   $("#sideBody").innerHTML = `<h2>${esc(step.name)}</h2>${step.detail()}`;
