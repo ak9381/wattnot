@@ -9,10 +9,11 @@ Arms per round, order rotated each round: stock (700 W), cap350, phase (700 W + 
 A short tune first picks the decode clock (two candidates). Clocks are reset after every phase block.
 Granularity: per scheduler window of batch steps (100 ms), not per request. Prior art: DynamoLLM.
 """
-import argparse, json, statistics as st, subprocess, sys, time
+import argparse, json, os, statistics as st, subprocess, sys, time
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from wattnot.proof import run as R
+from wattnot.control import phase_planner as PP
 
 def rig_args(extra):
     box = {}
@@ -27,6 +28,15 @@ def rig_args(extra):
     prof = R.resolve_profile(a.profile, **{k: getattr(a, k) for k in R.prof_fields()})
     for k, v in prof.as_dict().items(): setattr(a, k, v)
     return a
+
+def _spark_transport():
+    """Real Spark transport through the spend guard, or None (take the sweep) if no key is set."""
+    if not os.environ.get("META_API_KEY"):
+        return None
+    from wattnot.meta.client import GuardedClient, load_key
+    client = GuardedClient(key=load_key())
+    return lambda body: client(body, purpose="phase-planner")
+
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--out", type=Path, required=True)
@@ -45,10 +55,10 @@ def main():
     label = "MOCK" if o.fake else "MEASURED"
     url = f"http://127.0.0.1:{o.port}"
     rows = []; f = open(o.out / "phase_blocks.jsonl", "a")
-    def phase_block(low, rep, kind):
+    def phase_block(low, rep, kind, ratio=4.0):
         logp = o.out / f"phase-{kind}-{rep}-{low}.jsonl"
         cmd = [sys.executable, "-m", "wattnot.control.phase_clock", "--url", url, "--high", str(o.high),
-               "--low", str(low), "--log", str(logp), "--summary", str(logp) + ".summary.json"] + (["--mock"] if o.fake else [])
+               "--low", str(low), "--ratio", str(ratio), "--log", str(logp), "--summary", str(logp) + ".summary.json"] + (["--mock"] if o.fake else [])
         sc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         try: b = rig.block(700)
         finally:
@@ -63,23 +73,41 @@ def main():
         lows = [int(x) for x in o.lows.split(",")]
         tune = [rec("tune", 0, phase_block(l, 0, "tune"), low_mhz=l) for l in lows]
         ok = [t for t in tune if t["j_per_correct"]] or tune
-        low = min(ok, key=lambda t: t["j_per_correct"] or 9e9)["low_mhz"]
+        sweep_low = min(ok, key=lambda t: t["j_per_correct"] or 9e9)["low_mhz"]
+        # Muse Spark picks the thresholds; validate, clamp, and fall back to the sweep.
+        base_j = next((t["j_per_correct"] for t in tune if t["j_per_correct"]), 0.0) or 0.0
+        p99 = next((t["p99_s"] for t in tune if t["p99_s"]), 4.0) or 4.0
+        summary = PP.summarize(high_cap_mhz=o.high, sweep_lows=lows, base_j_per_req=base_j,
+                               p99_budget_ms=int(p99 * 1100), decode_share_pct=60.0)
+        transport = PP.MockSparkTransport() if o.fake else _spark_transport()
+        trace_path = o.out / "phase_thresholds.trace.jsonl"
+        def _trace(t):
+            with open(trace_path, "a") as fh:
+                fh.write(json.dumps(t) + "\n")
+        thr = PP.choose(summary, transport=transport, on_trace=_trace)
+        low, high, ratio = thr.low_mhz, thr.high_mhz, thr.prefill_ratio
+        o.high = high
         arms = ["stock", "cap", "phase"]
         for rep in range(1, o.reps + 1):
             order = arms[rep % 3:] + arms[:rep % 3]
             for arm in order:
                 if arm == "stock": rec("stock", rep, rig.block(700))
                 elif arm == "cap": rec(f"cap{o.cap}", rep, rig.block(o.cap))
-                else: rec("phase", rep, phase_block(low, rep, "ab"), low_mhz=low, high_mhz=o.high)
+                else: rec("phase", rep, phase_block(low, rep, "ab", ratio), low_mhz=low, high_mhz=o.high)
     finally:
         try: rig.set_cap(700)
         except Exception: pass
         guard.__exit__(None, None, None)
         if smi: smi.terminate()
         if proc: proc.terminate()
-    summ = {"label": label, "low_mhz": low, "high_mhz": o.high, "reps": o.reps,
+    summ = {"label": label, "low_mhz": low, "high_mhz": o.high, "prefill_ratio": ratio, "reps": o.reps,
             "granularity": "per scheduler window of batch steps (100 ms), not per request",
-            "prior_art": "DynamoLLM", "thresholds": "decode clock picked by a 2-point tune sweep (Spark-chosen thresholds not used: kept the sweep to stay in budget)", "cross_check": "nvidia_smi_1hz.csv vs NVML energy counter", "arms": {}}
+            "prior_art": "DynamoLLM",
+            "thresholds": {"source": thr.source, "clamped": thr.clamped, "sweep_low_mhz": sweep_low,
+                           "reason": thr.reason,
+                           "how": "Muse Spark picks prefill_ratio/high_mhz/low_mhz via the planner, "
+                                  "validated and clamped; the 2-point sweep is the fallback"},
+            "cross_check": "nvidia_smi_1hz.csv vs NVML energy counter", "arms": {}}
     for arm in sorted({r["arm"] for r in rows if r["arm"] != "tune"}):
         rs = [r for r in rows if r["arm"] == arm]
         def ms(k):

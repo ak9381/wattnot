@@ -22,6 +22,7 @@ from wattnot.receipt.canon import canonical_sha256
 from wattnot.receipt.grade import SPEC, claimed_grade
 from wattnot.receipt.joules import with_joules
 from wattnot.receipt.lint import lint
+from wattnot.receipt.per_model import attach as attach_per_model
 from wattnot.schemas import validate_receipt
 
 TARIFF_USD_PER_KWH = 0.12  # assumption, shown as such
@@ -107,6 +108,7 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
     }
     if run.get("compare_to"):
         receipt["compare_to"] = run["compare_to"]
+    attach_per_model(receipt, events=events, roles=run.get("models") or ())
     with_joules(receipt)
     receipt["grade"] = claimed_grade(receipt, rekor=rekor)
     receipt["integrity"] = {"canonicalization": "JCS RFC 8785",

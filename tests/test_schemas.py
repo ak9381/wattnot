@@ -33,6 +33,9 @@ def test_all_schemas_present_at_repo_root():
         "receipt.schema.json",
         "ui-view.schema.json",
         "decision.schema.json",
+        # Public leaderboard submission contract (v0.1); separate from the four frozen internal
+        # contracts above and validated by wattnot.dash.leaderboard.validate_submission.
+        "jpc-submission.schema.json",
     }
 
 

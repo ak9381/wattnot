@@ -44,7 +44,7 @@ H100 run: `bash scripts/h100_run.sh --dry-run` first, then see [docs/runbooks/H1
 
 | Model | Job | Measured cost |
 |---|---|---|
-| muse-spark-1.3 | planner: picks the next power cap; explains gate failures; agent-waste and coding-set runs | $23.08 over 3458 calls (MEASURED, API ledger total on 2026-10-28) |
+| muse-spark-1.3 | planner: picks the next power cap; explains gate failures; agent-waste and coding-set runs | $23.08 over 3459 calls (MEASURED, API ledger total on 2026-10-28) |
 | sam-3.1 | segments rack photos into units (kept off the main path) | $0.12 over 47 calls (MEASURED, API ledger) |
 | Llama 3.1 8B Instruct | the served model in RUN2; small model in small-first; quality judge | own H100, cost is GPU hours (not an API bill) |
 | Muse Spark Open (Baseten) | big model when the small one fails a check; hosted planner | $0.004, 1 call (MEASURED) |
@@ -94,6 +94,8 @@ What is and isn't checked yet is listed in [docs/runbooks/BASETEN.md](docs/runbo
 ## Meta API usage (capped at $50)
 
 Muse Spark makes WattNot's agent decisions: the next knob to try, the order of reasoning-effort levels, the judge verdicts and plain-words receipt notes. Every call goes through a spend guard that keeps a ledger (`~/.wattnot/meta_spend.json`), refuses a call that would pass **$50**, and warns at $40. `wattnot meta spend` shows the total, a per-purpose breakdown and what is left; `wattnot meta check` confirms the model answers. Details, the price used and the recorded session: [docs/runbooks/META-USAGE.md](docs/runbooks/META-USAGE.md).
+
+**Spend to date (MEASURED, 2026-10-28).** The Meta API ledger totals **$23.20** (3,506 billed calls: $23.08 for the Muse Spark planner, $0.12 for SAM), well under the **$50** cap. Hosted endpoints are billed separately and tracked in their own small ledgers: the Baseten head-to-head (one planner call plus the compare) is about **$0.005**, and the hosted A/B (Baseten + Modal arms of Muse Spark Open) totals **$0.14**. All three are MEASURED from billed token counts at list price.
 
 ## Flex mode (grid events, SIMULATED until the H100 run)
 

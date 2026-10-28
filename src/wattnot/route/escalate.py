@@ -20,12 +20,20 @@ from __future__ import annotations
 
 import ast
 import re
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 
 from wattnot.gates.answers import _MARKERS  # same final-answer markers as the scoring gate
 
 SMALL = "meta-llama/Llama-3.1-8B-Instruct"
+MID = "meta-models/Muse-Glimmer-30B"
 BIG = "meta-models/Muse-Spark-Open-816B-A42B"
+# The all-Meta escalation chain, smallest first. Each prompt is tried at a tier; the
+# reference-free gate decides keep-or-escalate. The last tier is terminal (always answers).
+TIER_CHAIN = (
+    {"name": "llama-8b", "model": SMALL, "where": "local"},
+    {"name": "glimmer-30b", "model": MID, "where": "local"},
+    {"name": "spark-open", "model": BIG, "where": "hosted"},
+)
 RANK = {"MEASURED": 0, "ESTIMATE": 1, "SIMULATED": 2, "MOCK": 3, "REPLAY": 0}
 REFUSAL = re.compile(r"^\s*(i\s+(can(no|')t|am unable)|sorry)", re.IGNORECASE)
 CODE_BLOCK = re.compile(r"```(?:python|py)?\s*\n(.*?)```", re.DOTALL)
@@ -151,4 +159,141 @@ def router_row(block: Mapping) -> dict | None:
 
 def attach(receipt: dict, items: Iterable[Mapping]) -> dict:
     receipt["escalation"] = evaluate(items)
+    return receipt
+
+
+# --- Three-tier (N-tier) chain -------------------------------------------------------------
+#
+# ``evaluate_chain`` generalises the two-tier small-first policy to an ordered list of tiers.
+# Each item carries ``attempts``: one per tier, smallest first, each with text, finish_reason,
+# correct, joules, usd, label (and optional gate_pass/gate_reason). The gate runs after each
+# attempt; the first tier whose gate passes answers the prompt, otherwise we escalate. The last
+# tier is terminal: it answers whether or not its gate passes. Energy and dollars are summed
+# across every tier that actually ran (the loop stops at the answering tier).
+
+
+def _attempt_gate(kind: str, att: Mapping) -> tuple[bool, str]:
+    if "gate_pass" in att:
+        return bool(att["gate_pass"]), att.get("gate_reason", "given")
+    return gate(kind, att.get("text"), att.get("finish_reason"))
+
+
+def evaluate_chain(items: Iterable[Mapping], *, tiers: Sequence[Mapping] = TIER_CHAIN,
+                   overhead_joules: float = 0.0, overhead_label: str = "MEASURED") -> dict:
+    """Run the escalation chain over ``items`` and return the ``escalation`` receipt block.
+
+    Logs, per item, which tier answered and the gate pass/fail at every tier it reached.
+    Aggregates the escalation rate (share of items that went past the first tier) and the
+    small-model pass rate (share the first tier answered), plus a per-tier pass rate.
+    """
+
+    items = list(items)
+    names = [t["name"] for t in tiers]
+    attempted = {n: 0 for n in names}
+    gate_passes = {n: 0 for n in names}
+    answered = {n: 0 for n in names}
+    per_item: list[dict] = []
+    chain_rows: list[dict] = []
+    tier0_rows: list[dict] = []
+    labels_all: list[str] = []
+    labels_tier0: list[str] = []
+    reasons: dict[str, int] = {}
+
+    for it in items:
+        kind = it.get("kind", "qa")
+        attempts = list(it["attempts"])
+        if not attempts:
+            raise ValueError("each item needs at least one tier attempt")
+        j = usd = 0.0
+        trail: list[dict] = []
+        ans_idx = len(attempts) - 1
+        for i, att in enumerate(attempts):
+            name = names[i]
+            attempted[name] += 1
+            j += float(att["joules"])
+            usd += float(att["usd"])
+            lab = att.get("label", "MOCK")
+            labels_all.append(lab)
+            if i == 0:
+                labels_tier0.append(lab)
+                tier0_rows.append({"correct": bool(att["correct"]),
+                                   "joules": float(att["joules"]), "usd": float(att["usd"])})
+            ok, why = _attempt_gate(kind, att)
+            if ok:
+                gate_passes[name] += 1
+            is_last = i == len(attempts) - 1
+            trail.append({"tier": name, "model": tiers[i]["model"], "gate_pass": ok,
+                          "gate_reason": why, "correct": bool(att["correct"]),
+                          "joules": round(float(att["joules"]), 3),
+                          "usd": round(float(att["usd"]), 6), "label": lab})
+            if ok or is_last:
+                ans_idx = i
+                break
+            reasons[why] = reasons.get(why, 0) + 1
+        ans_name = names[ans_idx]
+        answered[ans_name] += 1
+        correct = bool(attempts[ans_idx]["correct"])
+        chain_rows.append({"correct": correct, "joules": j, "usd": usd,
+                           "escalated": ans_idx > 0})
+        per_item.append({"id": it.get("id"), "kind": kind, "answered_by": ans_name,
+                         "answered_tier": ans_idx, "escalated": ans_idx > 0,
+                         "correct": correct, "trail": trail})
+
+    n = len(items)
+    lab_all = weakest(labels_all)
+    lab0 = weakest(labels_tier0)
+    policies = [_policy("tier0_only", tier0_rows, lab0),
+                _policy("chain", chain_rows, lab_all)]
+    chain_pol = policies[1]
+    if overhead_joules:
+        chain_pol["joules_gross"] = chain_pol["joules"]
+        chain_pol["joules"] = round(chain_pol["joules"] + overhead_joules, 3)
+        chain_pol["j_per_correct"] = _per(chain_pol["joules"], chain_pol["correct"])
+        chain_pol["label"] = weakest([chain_pol["label"], overhead_label])
+    tier_rows = [{"name": t["name"], "model": t["model"], "where": t.get("where", "local"),
+                  "attempted": attempted[t["name"]], "gate_passes": gate_passes[t["name"]],
+                  "answered": answered[t["name"]],
+                  "pass_pct": round(100 * gate_passes[t["name"]] / attempted[t["name"]], 2)
+                  if attempted[t["name"]] else None} for t in tiers]
+    return {
+        "spec": "wattnot.escalation-chain/1",
+        "chain": [{"name": t["name"], "model": t["model"], "where": t.get("where", "local")}
+                  for t in tiers],
+        "gate": "reference-free: not cut off, math has a final answer, code parses, no refusal",
+        "policies": policies,
+        "tiers": tier_rows,
+        "per_item": per_item,
+        "escalation_reasons": reasons,
+        "n": n,
+        "small_model_pass_pct": round(100 * gate_passes[names[0]] / n, 2) if n else None,
+        "escalation_rate_pct": round(100 * sum(r["escalated"] for r in chain_rows) / n, 2)
+        if n else None,
+        "overhead": {"joules": round(overhead_joules, 3), "label": overhead_label,
+                     "what": "gate, quality judge and verification energy, charged to the chain"},
+        "label": lab_all,
+    }
+
+
+def chain_leaderboard_row(block: Mapping, *, setup: str, hardware: str = "1x H100",
+                          era: str = "RUN3") -> dict:
+    """One leaderboard row (net J per correct answer) from an ``evaluate_chain`` block."""
+
+    chain = next((p for p in block.get("policies", []) if p["policy"] == "chain"), None)
+    models = " -> ".join(t["model"].split("/")[-1] for t in block.get("chain", []))
+    jpc = chain.get("j_per_correct") if chain else None
+    return {"setup": setup, "model": models, "hardware": hardware,
+            "j_per_correct": None if jpc is None else {"mean": jpc, "sd": None},
+            "n_checked": chain.get("n") if chain else None, "repeats": 1,
+            "pass_pct": chain.get("accuracy_pct") if chain else None,
+            "p99_change_pct": None,
+            "escalation_rate_pct": block.get("escalation_rate_pct"),
+            "small_model_pass_pct": block.get("small_model_pass_pct"),
+            "gate": "escalation chain", "era": era,
+            "label": chain.get("label") if chain else block.get("label"),
+            "status": "measured" if (chain and chain.get("label") == "MEASURED") else "illustration",
+            "note": "all-Meta chain; net of gate/judge/verification energy"}
+
+
+def attach_chain(receipt: dict, items: Iterable[Mapping], **kw) -> dict:
+    receipt["escalation"] = evaluate_chain(items, **kw)
     return receipt
