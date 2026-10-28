@@ -99,7 +99,7 @@ function renderHomeClassic() {
 }
 function partnersHtml() {
   const ps = S.partners?.partners || []; if (!ps.length) return "";
-  return `<div class="lvl">Partners and their calls</div><dl class="kv">${ps.map((p) => `<dt><span class="ptag">${esc(p.name)}</span></dt><dd>${esc(p.what)}${p.calls != null ? ` · ${num(p.calls, 0)} calls` : ""}${p.cost?.value != null ? ` · ${cnum(`${esc(p.cost.unit === "INR" ? "₹" : "$")}${num(p.cost.value)}`, p.cost.label)}` : ""}</dd>`).join("")}</dl>`;
+  return `<div class="lvl">Partners and their calls</div><dl class="kv">${ps.map((p) => `<dt><span class="ptag">${esc(p.name)}</span></dt><dd>${esc(p.what)}${p.calls != null ? ` · ${num(p.calls, 0)} calls` : ""}${p.cost?.value != null ? ` · ${cnum(`$${num(p.cost.value)}`, p.cost.label)}` : ""}</dd>`).join("")}</dl>`;
 }
 
 // ---------- configure: one question per screen ----------
@@ -145,7 +145,13 @@ const MODEL_BLURB = {
   granite: "3B mixture-of-experts · runs on one H100",
   spark_open: "Open model · runs hosted on Baseten",
 };
-const STEP_Q = ["What do you want to save on?", "Which AI are you running?", "What kind of traffic?", "How careful should we be?", "How do you want to run it?"];
+const STACK_CARDS = [
+  { v: "openai-python", t: "openai-python", d: "Standard OpenAI Python SDK client", snippet: 'OpenAI(base_url="http://localhost:8000/v1")', icon: "chip", ex: 'client = OpenAI(base_url="http://localhost:8000/v1")' },
+  { v: "langchain", t: "LangChain", d: "LangChain ChatOpenAI LLM module", snippet: 'ChatOpenAI(base_url="http://localhost:8000/v1")', icon: "agent", ex: 'llm = ChatOpenAI(base_url="http://localhost:8000/v1")' },
+  { v: "llamaindex", t: "LlamaIndex", d: "LlamaIndex OpenAILike integration", snippet: 'OpenAILike(api_base="http://localhost:8000/v1")', icon: "batch", ex: 'llm = OpenAILike(api_base="http://localhost:8000/v1")' },
+  { v: "plain", t: "plain API", d: "Direct HTTP completions endpoint", snippet: 'curl http://localhost:8000/v1/chat/completions', icon: "chat", ex: 'curl http://localhost:8000/v1/chat/completions' },
+];
+const STEP_Q = ["What do you want to save on?", "Which AI are you running?", "What kind of traffic?", "Your stack", "How careful should we be?", "How do you want to run it?"];
 const CONN_ITEMS = [
   { id: "nvidia", t: "GPU telemetry", d: "NVIDIA NVML power counter" },
   { id: "e2e", t: "E2E Networks H100", d: "the rented GPU" },
@@ -176,7 +182,7 @@ function renderCfg() {
   S.step ??= 1;
   const byId = Object.fromEntries(O.options.map((o) => [o.id, o]));
   const adv = O.options.filter((o) => !ESSENTIAL_IDS.includes(o.id)).map((o) => fld(o)).join("");
-  $("#pCfg").innerHTML = `<div class="intro"><div><h1>Configure a new run</h1><p>One question per page, five pages. Your answers collect on the right; press Edit on any of them to go back to that page. Everything else keeps a safe default. Use Tab and the arrow keys to move between cards, Enter to continue. Live GPU runs are locked on this screen; it only replays recorded runs, so it costs nothing.</p></div></div>
+  $("#pCfg").innerHTML = `<div class="intro"><div><h1>Configure a new run</h1><p>One question per page, six pages. Your answers collect on the right; press Edit on any of them to go back to that page. Everything else keeps a safe default. Use Tab and the arrow keys to move between cards, Enter to continue. Live GPU runs are locked on this screen; it only replays recorded runs, so it costs nothing.</p></div></div>
     <div class="cfg-step bento"><div class="glass tile span4 lift step-main">
       <div class="step-prog"><span id="stepCount" role="status"></span><ol id="stepDots" aria-label="Progress"></ol></div>
       <div id="stepBody" aria-live="polite"></div>
@@ -198,10 +204,10 @@ function renderCfg() {
   $$("#pCfg select").forEach((s) => (s.onchange = () => { S.choice[s.dataset.k] = JSON.parse(s.value); sumCfg(); syncAdv(); }));
   $("#advDis").addEventListener("toggle", syncAdv);
   $("#stepBack").onclick = () => { if (S.step > 1) { S.step--; renderStep(); } };
-  $("#stepNext").onclick = () => { if (S.step < 5) { markDone(S.step); S.step++; renderStep(); } };
+  $("#stepNext").onclick = () => { if (S.step < 6) { markDone(S.step); S.step++; renderStep(); } };
   document.onkeydown = (e) => {
     if (!$("#pCfg").classList.contains("on")) return;
-    if (e.key === "ArrowRight" && S.step < 5 && e.target.tagName !== "SELECT" && e.target.tagName !== "INPUT") { markDone(S.step); S.step++; renderStep(); }
+    if (e.key === "ArrowRight" && S.step < 6 && e.target.tagName !== "SELECT" && e.target.tagName !== "INPUT") { markDone(S.step); S.step++; renderStep(); }
     if (e.key === "ArrowLeft" && S.step > 1 && e.target.tagName !== "SELECT" && e.target.tagName !== "INPUT") { S.step--; renderStep(); }
   };
   renderStep(); renderConn(); sumCfg(); syncAdv();
@@ -218,8 +224,9 @@ function pickedAnswer(n) {
   if (n === 1) return cardLabel(SAVE_CARDS, c.save_target);
   if (n === 2) return S.opts.options.find((o) => o.id === "model")?.choices.find((x) => x.v === c.model)?.label;
   if (n === 3) return cardLabel(TRAFFIC_CARDS, c.traffic);
-  if (n === 4) { const t = cardLabel(CARE_CARDS, c.care); return t ? `${t} (slowest 1% may rise ${c.p99_slack_pct}%, answers must agree ${c.min_quality_pct}%)` : null; }
-  return S.answered?.[5] ? `Replay: ${c.name || "My first replay"}` : null;
+  if (n === 4) return STACK_CARDS.find((s) => s.v === (c.framework || "openai-python"))?.t || "openai-python";
+  if (n === 5) { const t = cardLabel(CARE_CARDS, c.care); return t ? `${t} (slowest 1% may rise ${c.p99_slack_pct}%, answers must agree ${c.min_quality_pct}%)` : null; }
+  return S.answered?.[6] ? `Replay: ${c.name || "My first replay"}` : null;
 }
 function renderPicked() {
   const el = $("#pickList"); if (!el) return;
@@ -233,10 +240,10 @@ function renderPicked() {
 }
 function renderStep() {
   const n = S.step, body = $("#stepBody");
-  $("#stepCount").textContent = `Step ${n} of 5`;
+  $("#stepCount").textContent = `Step ${n} of 6`;
   $("#stepDots").innerHTML = STEP_Q.map((q, i) => `<li class="${i + 1 === n ? "now" : i + 1 < n ? "done" : ""}" ${i + 1 === n ? 'aria-current="step"' : ""} title="${esc(q)}"><span></span></li>`).join("");
   $("#stepBack").disabled = n === 1;
-  $("#stepNext").hidden = n === 5;
+  $("#stepNext").hidden = n === 6;
   if (n === 1) body.innerHTML = `<h2>${esc(STEP_Q[0])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[0])}">
     ${SAVE_CARDS.map((c) => pickCard("save", c, S.choice.save_target === c.v)).join("")}</div>`;
   else if (n === 2) {
@@ -246,9 +253,18 @@ function renderStep() {
         { v: c.v, t: c.label, d: MODEL_BLURB[c.v] || c.label, icon: "chip" }, S.choice.model === c.v)).join("")}</div>`;
   } else if (n === 3) body.innerHTML = `<h2>${esc(STEP_Q[2])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[2])}">
     ${TRAFFIC_CARDS.map((c) => pickCard("traffic", c, S.choice.traffic === c.v, `<small class="ex">Runs as: ${esc(workloadLabel(TRAFFIC_MAP[c.v]))}</small>`)).join("")}</div>`;
-  else if (n === 4) body.innerHTML = `<h2>${esc(STEP_Q[3])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[3])}">
+  else if (n === 4) {
+    const curFw = S.choice.framework || "openai-python";
+    const curCard = STACK_CARDS.find((c) => c.v === curFw) || STACK_CARDS[0];
+    body.innerHTML = `<h2>${esc(STEP_Q[3])}</h2><p class="step-note">WattNot is a drop-in proxy. Connect your framework by updating the <code>base_url</code> to point to WattNot.</p>
+      <div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[3])}">${STACK_CARDS.map((c) => pickCard("stack", c, curFw === c.v)).join("")}</div>
+      <div class="stack-box glass" style="margin-top:14px;padding:12px 14px;border-radius:14px;background:rgba(31,26,47,.75);border:1px solid rgba(220,214,228,.14)">
+        <div style="font-size:12px;color:var(--mu);margin-bottom:6px">One-line change for <b>${esc(curCard.t)}</b>:</div>
+        <pre style="margin:0;font-family:var(--mo);color:#DCD6E4;font-size:13px;padding:8px 12px;background:rgba(0,0,0,.35);border-radius:8px;overflow-x:auto"><code>${esc(curCard.snippet)}</code></pre>
+      </div>`;
+  } else if (n === 5) body.innerHTML = `<h2>${esc(STEP_Q[4])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[4])}">
     ${CARE_CARDS.map((c) => pickCard("care", c, S.choice.care === c.v)).join("")}</div>`;
-  else body.innerHTML = `<h2>${esc(STEP_Q[4])}</h2>
+  else body.innerHTML = `<h2>${esc(STEP_Q[5])}</h2>
     <p class="lock">This run measures both: baseline first, then WattNot.</p>
     <div class="where3"><h3>Where it runs</h3><p class="lock">All three are compared in this run.</p><ul>${["Your GPU · adaptive top-k + tiered / k-means experts + quantization", "Baseten hosted", "Modal hosted"].map((t) => `<li><span class="chk" aria-hidden="true">✓</span>${esc(t)}</li>`).join("")}</ul></div>
     <div class="fld namerow"><label for="f-name">Run name<small>free text</small></label><input type="text" id="f-name" value="${esc(S.choice.name || "My first replay")}"></div>
@@ -257,8 +273,9 @@ function renderStep() {
   $$('input[name="save"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.goal = SAVE_MAP[v]; S.choice.save_target = v; sumCfg(); markDone(1); }));
   $$('input[name="model"]', body).forEach((r) => (r.onchange = () => { S.choice.model = JSON.parse(r.value); sumCfg(); markDone(2); }));
   $$('input[name="traffic"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.workload = TRAFFIC_MAP[v]; S.choice.traffic = v; sumCfg(); markDone(3); }));
-  $$('input[name="care"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); Object.assign(S.choice, CARE_MAP[v]); S.choice.care = v; sumCfg(); syncAdv(); markDone(4); }));
-  const fn = $("#f-name"); if (fn) fn.oninput = (e) => { S.choice.name = e.target.value; markDone(5); };
+  $$('input[name="stack"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.framework = v; sumCfg(); markDone(4); renderStep(); }));
+  $$('input[name="care"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); Object.assign(S.choice, CARE_MAP[v]); S.choice.care = v; sumCfg(); syncAdv(); markDone(5); }));
+  const fn = $("#f-name"); if (fn) fn.oninput = (e) => { S.choice.name = e.target.value; markDone(6); };
   renderPicked();
   const st = $("#startRun"); if (st) st.onclick = startRun;
 }
@@ -276,10 +293,11 @@ function syncAdv() {
 function sumCfg() {
   const c = S.choice, m = S.opts.options.find((o) => o.id === "model").choices.find((x) => x.v === c.model);
   const g = S.opts.options.find((o) => o.id === "goal")?.choices.find((x) => x.v === c.goal)?.label;
-  $("#cfgSum").innerHTML = `<dl class="kv" style="grid-template-columns:110px 1fr"><dt>Model</dt><dd>${esc(m?.label)}</dd>${g ? `<dt>Goal</dt><dd>${esc(g)}</dd>` : ""}<dt>Speed limit</dt><dd>p99 may rise ${esc(c.p99_slack_pct)}%</dd><dt>Quality bar</dt><dd>${esc(c.min_quality_pct)}% agreement</dd><dt>Approval</dt><dd>${esc(S.opts.options.find((o) => o.id === "approval").choices.find((x) => x.v === c.approval)?.label)}</dd><dt>Cost</dt><dd>$0 ${badge("REPLAY")}</dd></dl>`;
+  const fw = STACK_CARDS.find((s) => s.v === (c.framework || "openai-python"))?.t || "openai-python";
+  $("#cfgSum").innerHTML = `<dl class="kv" style="grid-template-columns:110px 1fr"><dt>Model</dt><dd>${esc(m?.label)}</dd>${g ? `<dt>Goal</dt><dd>${esc(g)}</dd>` : ""}<dt>Framework</dt><dd>${esc(fw)}</dd><dt>Speed limit</dt><dd>p99 may rise ${esc(c.p99_slack_pct)}%</dd><dt>Quality bar</dt><dd>${esc(c.min_quality_pct)}% agreement</dd><dt>Approval</dt><dd>${esc(S.opts.options.find((o) => o.id === "approval").choices.find((x) => x.v === c.approval)?.label)}</dd><dt>Cost</dt><dd>$0 ${badge("REPLAY")}</dd></dl>`;
 }
 async function startRun() {
-  markDone(5);
+  markDone(6);
   const btn = $("#startRun"); btn.disabled = true; btn.textContent = "Loading the recorded run…";
   try {
     const r = await fetch("/api/dash/v2/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(S.choice) });
@@ -1006,6 +1024,12 @@ function mountCompare() {
   S.cmpTreeMode = true; S.cmpActive = S.cmpActive || "power"; S.cmpPath = S.cmpPath || [];
   const bar = $(".radial-bar");
   if (bar && !$("#cmpCrumb", bar)) bar.insertAdjacentHTML("afterbegin", `<nav class="cmp-crumb" id="cmpCrumb" aria-label="Compare path"></nav>`);
+  if (bar && !$("[data-where]", bar)) {
+    const expandBtn = $("[data-radial='open']", bar);
+    if (expandBtn) expandBtn.insertAdjacentHTML("beforebegin", `<button class="btn rad-where" data-where>Where should this model run?</button> `);
+    else bar.insertAdjacentHTML("beforeend", `<button class="btn rad-where" data-where>Where should this model run?</button>`);
+  }
+  $$("[data-where]").forEach((w) => (w.onclick = () => openWhere(rec)));
 
   const branchSaved = (id) => { const sv = savedPct(rec, id); return sv ? `${cnum(esc(sv.text), sv.tag)} ${badge(sv.tag)}` : `<span class="rad-miss">–</span><span class="v-chip">pending</span>`; };
 
@@ -1014,8 +1038,13 @@ function mountCompare() {
     const cap = (s) => s[0].toUpperCase() + s.slice(1);
     const parts = [{ label: "WattNot", depth: -1 }, { label: cap(S.cmpActive || "power"), depth: 0 }];
     (S.cmpPath || []).forEach((id, i) => parts.push({ label: treeFind(id)?.name || id, depth: i + 1 }));
+    const fw = rec?.receipt?.framework || rec?.receipt?.frameworks?.[0] || rec?.framework;
+    const fwInfo = fw
+      ? { name: fw === "plain" ? "plain API" : fw, label: rec?.label === "MEASURED" ? "MEASURED" : "MOCK" }
+      : { name: "framework: none recorded", label: "MOCK" };
     el.innerHTML = `<button class="crumb-back" data-back aria-label="Back one level">← Back</button>`
-      + parts.map((p, i) => `<button class="crumb" data-crumb="${p.depth}">${esc(p.label)}</button>${i < parts.length - 1 ? '<span class="crumb-sep" aria-hidden="true">›</span>' : ""}`).join("");
+      + parts.map((p, i) => `<button class="crumb" data-crumb="${p.depth}">${esc(p.label)}</button>${i < parts.length - 1 ? '<span class="crumb-sep" aria-hidden="true">›</span>' : ""}`).join("")
+      + `<span class="v-chip ${fwInfo.label}" style="margin-left:8px"><i class="v-lab ${fwInfo.label}"></i>${esc(fwInfo.name)}</span>`;
     $("[data-back]", el).onclick = () => { if (S.cmpPath.length) { S.cmpPath = S.cmpPath.slice(0, -1); } renderTree(); };
     $$(".crumb", el).forEach((b) => (b.onclick = () => { const d = +b.dataset.crumb; if (d < 0) { S.cmpPath = []; } else { S.cmpPath = S.cmpPath.slice(0, d); } renderTree(); }));
   }
@@ -1097,9 +1126,6 @@ function mountCompare() {
   }));
 
   renderTree();
-  const ctr = $("#radCentre");
-  if (ctr && !$("[data-where]", ctr)) ctr.insertAdjacentHTML("beforeend", `<button class="btn rad-where" data-where>Where should this model run?</button>`);
-  const w = $("[data-where]", ctr); if (w) w.onclick = () => openWhere(rec);
   const sig = $("#pReport .receipt-meta"); if (!sig) $("#pReport").insertAdjacentHTML("beforeend", `<div class="receipt-meta glass">${metaInRun(rec)}</div>`);
 }
 
@@ -1132,34 +1158,33 @@ function layoutTree() {
   centre.style.left = `${cx}px`; centre.style.top = `${cy}px`;
 
   // 2. Power, Cost, and Water fan out in an ARC around WattNot (cx, cy)
-  // Cost is straight right (0°), Power is angled up (-38°), Water is angled down (+38°).
+  // Clean arc with no overlap: Cost straight right (0°), Power angled up (-46°), Water angled down (+46°).
   const cards = $$(".rad-card", stage);
-  const R = 210;
-  const rad = (deg) => (deg * Math.PI) / 180;
   const metricPos = {
-    power: [Math.round(cx + R * Math.cos(rad(-38))), Math.round(cy + R * Math.sin(rad(-38)))],
-    cost:  [Math.round(cx + R), cy],
-    water: [Math.round(cx + R * Math.cos(rad(38))),  Math.round(cy + R * Math.sin(rad(38)))],
+    power: [Math.round(cx + 160), Math.round(cy - 165)],
+    cost:  [Math.round(cx + 255), cy],
+    water: [Math.round(cx + 160), Math.round(cy + 165)],
   };
   cards.forEach((c) => {
-    const p = metricPos[c.dataset.node] || [cx + R, cy];
+    const p = metricPos[c.dataset.node] || [cx + 255, cy];
     c.style.left = `${p[0]}px`; c.style.top = `${p[1]}px`;
   });
 
   // 3. Child nodes (Level 0 and deeper)
   // Compute vertical bounds (topMargin, endY) from panel H so no node is cut off
-  const topMargin = Math.max(40, Math.round(H * 0.07));
-  const botMargin = Math.max(60, Math.round(H * 0.11));
+  const topMargin = Math.max(35, Math.round(H * 0.06));
+  const botMargin = Math.max(50, Math.round(H * 0.09));
   const usableH = H - topMargin - botMargin;
 
   const nodes = $$(".rad-node", stage);
   const depth = (S.cmpPath || []).length;
-  const childX = Math.round(cx + R + (depth === 0 ? 215 : 185));
+  const childX = Math.round(cx + 455);
+  const drillX = Math.round(cx + 645);
 
   for (let d = 0; d <= depth; d++) {
     const ring = nodes.filter((k) => +k.dataset.depth === d);
     const count = ring.length;
-    const x = d === 0 ? childX : (childX + 205);
+    const x = d === 0 ? childX : drillX;
     const stepY = count > 1 ? usableH / (count - 1) : 0;
     ring.forEach((el, idx) => {
       el.style.left = `${x}px`;
@@ -1170,9 +1195,9 @@ function layoutTree() {
   // 4. Leaf detail cards aligned in column on the right
   const leaves = $$(".rad-leaf", stage);
   const leafCount = leaves.length;
-  const leafW = 265;
-  const leafX = W - leafW - 16;
-  const leafStepY = leafCount > 1 ? (usableH - 35) / (leafCount - 1) : 0;
+  const leafW = 260;
+  const leafX = W - leafW - 24;
+  const leafStepY = leafCount > 1 ? (usableH - 25) / (leafCount - 1) : 0;
   leaves.forEach((el, idx) => {
     const y = leafCount === 1 ? cy - 25 : Math.round(topMargin + 10 + idx * leafStepY);
     el.style.left = `${leafX}px`;
@@ -1211,7 +1236,7 @@ function drawTreeWires(cx, cy, W, H) {
   // 1. Connect central node to metric cards (Power, Cost, Water) in arc
   $$(".rad-card", stage).forEach((c) => {
     const [mx, my] = getCenter(c);
-    addDottedCurve(cx + 48, cy, mx - 90, my);
+    addDottedCurve(cx + 48, cy, mx - 102, my);
   });
 
   // 2. Connect active metric card to child nodes
@@ -1223,7 +1248,7 @@ function drawTreeWires(cx, cy, W, H) {
 
     depth0.forEach((el) => {
       const [kx, ky] = getCenter(el);
-      addDottedCurve(mx + 90, my, kx - 110, ky);
+      addDottedCurve(mx + 102, my, kx - 110, ky);
     });
 
     // 3. Connect parent node to deeper child nodes
@@ -1250,7 +1275,7 @@ function drawTreeWires(cx, cy, W, H) {
         depth0[0];
       if (matchingNode) {
         const [nx, ny] = getCenter(matchingNode);
-        addElbowPath(nx + 110, ny, leafX - 4, leafY);
+        addElbowPath(nx + 110, ny, leafX - 2, leafY);
       }
     });
   }

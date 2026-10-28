@@ -207,13 +207,17 @@ function contextStep() {
 }
 
 function receiptStep(X) {
-  const rc = RECEIPTS[RUN_ID], r = STATE.receipt;
+  const rc = RECEIPTS[RUN_ID], r = STATE.receipt, d = STATE.run;
   const savePct = r?.result?.saving_pct?.mean ?? X.savedPct;
+  const fw = r?.framework || r?.frameworks?.[0] || d?.framework || d?.receipt?.framework;
+  const isReal = d?.label === "MEASURED" && fw;
+  const fwName = fw ? (fw === "plain" ? "plain API" : fw) : "framework: none recorded";
+  const fwTag = isReal ? "MEASURED" : "MOCK";
   return {
     id: "receipt", node: "7", name: "Receipt details", muted: !rc,
     val: rc && savePct != null ? `${num(savePct, 1)}%` : "—",
     labelChip: rc && savePct != null ? chip("MEASURED") : chip("pending"),
-    sub: rc ? "saving, signed offline · grade ESTIMATE" : "No signed receipt for this run",
+    sub: rc ? `${esc(fwName)} · saving, signed offline` : "No signed receipt for this run",
     detail: () => {
       if (!rc) return `<h4>No receipt</h4><p>This run was not signed into a receipt. Only runs with a published receipt can be re-checked offline.</p>`;
       const bl = r?.baseline, ca = r?.candidate;
@@ -226,6 +230,7 @@ function receiptStep(X) {
       return `<h4>What the receipt proves</h4>
         <dl class="kv">
           <dt>Receipt</dt><dd>${esc(r?.receipt_id || RUN_ID)}</dd>
+          <dt>Framework</dt><dd>${esc(fwName)} ${chip(fwTag)}</dd>
           ${capRow}${whRow}
           <dt>Saving</dt><dd>${num(savePct, 1)}% ${chip("MEASURED")}${r?.result?.saving_pct ? ` (CI ${num(r.result.saving_pct.ci_low, 1)}–${num(r.result.saving_pct.ci_high, 1)}%)` : ""}</dd>
           <dt>Meter</dt><dd>${esc(r?.measurement?.meter || "nvml")} @ ${num(r?.measurement?.hz, 0)} Hz ${chip(r?.measurement?.label || "MEASURED")}</dd>
@@ -248,10 +253,16 @@ function receiptStep(X) {
 
 function render() {
   const d = STATE.run, X = derive(), rc = RECEIPTS[RUN_ID];
+  const fw = STATE.receipt?.framework || STATE.receipt?.frameworks?.[0] || d?.framework || d?.receipt?.framework;
+  const isReal = d?.label === "MEASURED" && fw;
+  const fwName = fw ? (fw === "plain" ? "plain API" : fw) : "framework: none recorded";
+  const fwTag = isReal ? "MEASURED" : "MOCK";
 
   $("#lede").innerHTML = `<h1>${esc(d.run_name || d.id)}</h1>
     <div class="meta-line"><span>${esc(d.model || "—")}</span><span>·</span><span>${esc(d.date || "—")}</span>
-    <span>·</span><span>run <code>${esc(d.id)}</code></span>${chip(d.label || "REPLAY")}</div>`;
+    <span>·</span><span>run <code>${esc(d.id)}</code></span>
+    <span>·</span><span class="v-chip ${fwTag}"><i class="v-lab ${fwTag}"></i>${esc(fwName)}</span>
+    ${chip(d.label || "REPLAY")}</div>`;
 
   $("#legend").innerHTML = `<span><i class="v-lab MEASURED"></i>MEASURED</span>
     <span><i class="v-lab ESTIMATE"></i>ESTIMATE</span>
@@ -259,7 +270,7 @@ function render() {
     <span><i class="v-lab MOCK"></i>MOCK</span>
     <span><i class="v-lab REPLAY"></i>REPLAY</span>`;
 
-  $("#heroRunBadge").innerHTML = chip(d.label || "REPLAY");
+  $("#heroRunBadge").innerHTML = `<span class="v-chip ${fwTag}" style="margin-right:6px"><i class="v-lab ${fwTag}"></i>${esc(fwName)}</span>${chip(d.label || "REPLAY")}`;
 
   // Hero Card items: Saving, Quality, Signed status, Receipt download
   const savingVal = X.savedPct != null ? `${num(X.savedPct, 1)}%` : "—";

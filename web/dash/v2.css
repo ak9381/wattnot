@@ -264,10 +264,10 @@ aside.side p{color:#DCD6E4}
 .radial-stage{position:relative;width:100%;height:100%;z-index:1}
 .radial-wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 .radial-wires path{fill:none}
-.radial-centre{position:absolute;transform:translate(-50%,-50%);z-index:4;text-align:center;width:130px}
-.centre-node{width:96px;height:96px;border-radius:50%;cursor:pointer;font-size:16px;font-weight:700;color:#DCD6E4;background:radial-gradient(circle at 35% 30%,rgba(178,166,195,.28),rgba(31,26,47,.92) 75%);border:1px solid rgba(220,214,228,.22);box-shadow:0 0 20px rgba(178,166,195,.18),inset 0 1px 0 rgba(220,214,228,.25);transition:all .2s;display:grid;place-items:center;padding:0}
+.radial-centre{position:absolute;transform:translate(-50%,-48px);z-index:4;text-align:center;width:200px;display:flex;flex-direction:column;align-items:center}
+.centre-node{width:96px;height:96px;flex:0 0 96px;border-radius:50%;cursor:pointer;font-size:16px;font-weight:700;color:#DCD6E4;background:radial-gradient(circle at 35% 30%,rgba(178,166,195,.28),rgba(31,26,47,.92) 75%);border:1px solid rgba(220,214,228,.22);box-shadow:0 0 20px rgba(178,166,195,.18),inset 0 1px 0 rgba(220,214,228,.25);transition:all .2s;display:grid;place-items:center;padding:0}
 .centre-node:hover{border-color:var(--cy);box-shadow:0 0 28px rgba(178,166,195,.35)}
-.centre-sub{margin-top:6px;font-size:11.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+.centre-sub{margin-top:8px;font-size:11.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px}
 .centre-drop{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin:8px 0 0;width:220px;display:flex;flex-direction:column;gap:4px;background:rgba(23,23,36,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--ln2);border-radius:12px;padding:6px;z-index:20;box-shadow:0 8px 32px rgba(0,0,0,.5)}
 .centre-opt{background:none;border:0;border-radius:8px;padding:8px 10px;cursor:pointer;text-align:left;color:var(--sub);font-size:13.5px}
 .centre-opt:hover{background:rgba(178,166,195,.1);color:#DCD6E4}
@@ -355,7 +355,7 @@ h1,h2,h3,h4,.brand,nav.tabs button,.kpi .c,.lvl{font-family:"Montserrat",system-
 .rad-pending{display:inline-block;margin-left:6px;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--mu);border:1px solid var(--ln);border-radius:999px;padding:1px 7px}
 
 /* Leaf detail cards aligned in column on the right */
-.rad-leaf{position:absolute;width:275px;z-index:3;border:1px solid rgba(220,214,228,.1);border-radius:12px;background:rgba(23,23,36,.75);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding:8px 12px;box-shadow:0 4px 16px rgba(0,0,0,.35),inset 0 1px 0 rgba(220,214,228,.1);cursor:pointer;transition:transform .15s,border-color .2s}
+.rad-leaf{position:absolute;width:260px;box-sizing:border-box;z-index:3;border:1px solid rgba(220,214,228,.1);border-radius:12px;background:rgba(23,23,36,.75);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding:8px 12px;box-shadow:0 4px 16px rgba(0,0,0,.35),inset 0 1px 0 rgba(220,214,228,.1);cursor:pointer;transition:transform .15s,border-color .2s}
 .rad-leaf:hover{border-color:var(--ln2);transform:translateX(2px);box-shadow:0 6px 20px rgba(0,0,0,.45)}
 .rad-leaf-hd{display:flex;align-items:center;justify-content:space-between;gap:6px}
 .rad-leaf-title{font-size:12px;font-weight:600;color:#DCD6E4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

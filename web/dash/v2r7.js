@@ -361,7 +361,11 @@ export const metaTags = (ids) => META_TOOLS.filter((t) => !ids || ids.includes(t
 export const metaTile = () => `<section class="glass ov-meta"><h3>Built with Meta</h3><div class="mtags">${metaTags()}</div></section>`;
 export const metaInRun = (rec) => {
   const llama = /llama/i.test(rec?.model || "");
-  return `<div class="mrun"><span class="lvl">Meta models in this run</span><div class="mtags sm">${metaTags(llama ? ["llama", "spark", "sam"] : ["spark_open", "spark"])}</div></div>`;
+  const fw = rec?.receipt?.framework || rec?.receipt?.frameworks?.[0] || rec?.framework;
+  const fwInfo = fw
+    ? { name: fw === "plain" ? "plain API" : fw, label: rec?.label === "MEASURED" ? "MEASURED" : "MOCK" }
+    : { name: "framework: none recorded", label: "MOCK" };
+  return `<div class="mrun"><span class="lvl">Meta models in this run</span><div class="mtags sm">${metaTags(llama ? ["llama", "spark", "sam"] : ["spark_open", "spark"])}<span class="v-chip ${fwInfo.label}" style="margin-left:6px"><i class="v-lab ${fwInfo.label}"></i>${esc(fwInfo.name)}</span></div></div>`;
 };
 registerInfo({
   "meta-spark": { title: "Muse Spark", html: `<p>Meta's Muse Spark API is WattNot's planner. It reads the last measurements and proposes the next power cap to try, or says stop.</p><p>Every call is logged with its cost in the ledger. It only proposes; the gates and a person decide.</p>` },
