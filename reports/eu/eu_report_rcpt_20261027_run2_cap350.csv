@@ -13,3 +13,4 @@ rcpt_20261027_run2_cap350,waste_heat_reused,,kWh,NOT_AVAILABLE,needs facility da
 rcpt_20261027_run2_cap350,total_water_input,,m3,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
 rcpt_20261027_run2_cap350,rated_it_power,,kW,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
 rcpt_20261027_run2_cap350,heat_water_readiness,0.429,share of fields,ESTIMATE,"share of this export's fields that are filled (MEASURED or ESTIMATE); a readiness indicator, not a regulatory metric"
+,disclaimer,Not a compliance claim; facility-level metrics require operator metering.,,,supports EU Energy Efficiency Directive data-center reporting; CSRD roadmap

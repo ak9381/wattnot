@@ -20,6 +20,9 @@ BANNED = ("neutral", "offset", "carbon-free", "carbon free", "net zero", "net-ze
 TEMPLATE = Path(__file__).parent / "templates" / "eu.html"
 FACILITY = "needs facility data (operator meters); a GPU-level tool cannot see it"
 COLUMNS = ("receipt_id", "field", "value", "unit", "label", "source")
+FRAMING = "supports EU Energy Efficiency Directive data-center reporting"
+CSRD = "CSRD roadmap"
+DISCLAIMER = "Not a compliance claim; facility-level metrics require operator metering."
 
 
 def _f(name, value, unit, label, source) -> dict:
@@ -59,16 +62,24 @@ def fields_for(receipt: Mapping, *, grid_gco2_per_kwh: float | None = None,
     ]
     joules_cand = (receipt.get("joules") or {}).get("candidate") or {}
     j_per_good = joules_cand.get("j_per_good_answer")
+    j_label = lab
+    j_src = f"{src}: candidate Wh/req x 3600 / pass_rate"
     if j_per_good is None:
-        pass_rate = (cand.get("quality") or {}).get("fixed_pass_rate")
+        quality = cand.get("quality") or {}
+        pass_rate = quality.get("fixed_pass_rate")
+        judge_score = quality.get("judge_score")
         if pass_rate and pass_rate > 0:
             j_per_good = round((wh * 3600) / pass_rate, 6)
-        elif "quality" in cand and cand["quality"].get("judge_score"):
-            j_per_good = round((wh * 3600) / cand["quality"]["judge_score"], 6)
+            j_src = f"{src}: candidate Wh/req x 3600 / fixed pass rate {pass_rate}"
+        elif judge_score and judge_score > 0:
+            j_per_good = round((wh * 3600) / judge_score, 6)
+            j_src = f"{src}: candidate Wh/req x 3600 / judge agreement score {judge_score}"
         else:
+            # No pass rate at all: the per-correct figure is an assumption, not measured.
             j_per_good = round(wh * 3600, 6)
-    out.append(_f("joules_per_correct_answer", j_per_good, "J/correct", lab,
-                  f"{src}: candidate Wh/req x 3600 / pass_rate"))
+            j_label = "ESTIMATE"
+            j_src = f"{src}: candidate Wh/req x 3600; pass rate unavailable, assumed 1.0"
+    out.append(_f("joules_per_correct_answer", j_per_good, "J/correct", j_label, j_src))
     if grid_gco2_per_kwh is not None and grid_source:
         out.append(_f("sci_per_request", round(wh / 1000 * grid_gco2_per_kwh, 6),
                       "gCO2e/request", "ESTIMATE",
@@ -95,6 +106,8 @@ def to_csv(rows: Sequence[Mapping]) -> str:
     w.writeheader()
     for r in rows:
         w.writerow({k: ("" if r[k] is None else r[k]) for k in COLUMNS})
+    w.writerow({"receipt_id": "", "field": "disclaimer", "value": DISCLAIMER,
+                "unit": "", "label": "", "source": f"{FRAMING}; {CSRD}"})
     return buf.getvalue()
 
 
@@ -159,10 +172,12 @@ def generate_report(receipt_or_path: Mapping | str | Path, out_dir: str | Path |
         return to_csv(rows)
     if format == "html":
         return to_html(rows)
+    if format != "json":
+        raise ValueError(f"unknown report format {format!r}: want html, csv, or json")
     return {
         "receipt_id": receipt.get("receipt_id"),
         "fields": rows,
-        "framing": "supports EU Energy Efficiency Directive data-center reporting",
-        "csrd": "CSRD roadmap",
-        "disclaimer": "not a compliance claim",
+        "framing": FRAMING,
+        "csrd": CSRD,
+        "disclaimer": DISCLAIMER,
     }

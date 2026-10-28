@@ -47,17 +47,35 @@ def test_generate_report_one_click_framing_and_disclaimer() -> None:
     banned = check_wording(html_output)
     assert banned == []
 
-    # One-click CSV generation
+    # One-click CSV generation (carries the disclaimer too)
     csv_output = generate_report(REAL_RECEIPT, format="csv")
     assert isinstance(csv_output, str)
     assert "it_energy_measured_window" in csv_output
     assert "joules_per_correct_answer" in csv_output
+    assert "Not a compliance claim; facility-level metrics require operator metering." in csv_output
 
     # One-click dict output
     dict_output = generate_report(REAL_RECEIPT, format="json")
     assert dict_output["framing"] == "supports EU Energy Efficiency Directive data-center reporting"
     assert dict_output["csrd"] == "CSRD roadmap"
-    assert dict_output["disclaimer"] == "not a compliance claim"
+    assert dict_output["disclaimer"] == ("Not a compliance claim; facility-level metrics "
+                                         "require operator metering.")
+
+
+def test_generate_report_rejects_unknown_format() -> None:
+    with pytest.raises(ValueError, match="unknown report format"):
+        generate_report(REAL_RECEIPT, format="pdf")
+
+
+def test_fields_for_handles_null_quality_and_labels_assumed_pass_rate() -> None:
+    doc = json.loads(json.dumps(REAL_RECEIPT))
+    doc["candidate"]["quality"] = None
+    doc.pop("joules", None)
+    rows = fields_for(doc)
+    j = next(r for r in rows if r["field"] == "joules_per_correct_answer")
+    # With no pass rate the figure assumes 1.0: it must say so and be an ESTIMATE
+    assert j["label"] == "ESTIMATE"
+    assert "assumed 1.0" in j["source"]
 
 
 def test_generate_report_refuses_tampered_receipt() -> None:
