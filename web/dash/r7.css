@@ -62,3 +62,55 @@ nav.tabs button.on{background:rgba(90,169,240,.14);border-color:rgba(90,169,240,
 .r7donut ul{list-style:none;margin:0;padding:0;font-size:13px;color:#c9d3df;flex:1}.r7donut li{display:flex;align-items:center;gap:8px;margin:5px 0}.r7donut li i{width:10px;height:10px;border-radius:3px}.r7donut li b{margin-left:auto;color:#fff}
 .r7gauge{width:100%;max-width:220px}.r7gauge .tr{fill:none;stroke:rgba(255,255,255,.08);stroke-width:12;stroke-linecap:round}.r7gauge .fl{fill:none;stroke:var(--r7-blue);stroke-width:12;stroke-linecap:round}.r7gauge .fl.warn{stroke:var(--r7-gold)}.r7gauge .lim{stroke:var(--r7-red);stroke-width:3}
 .r7gauge .dv{fill:#fff;font-size:20px;font-weight:700}.r7gauge .dl{fill:#9fadbd;font-size:10px}
+/* ---- overview (sidebar, KPIs, trend, donut, gauge, table) ---- */
+.ov{display:grid;grid-template-columns:210px 1fr;gap:18px;align-items:start}
+.ov-side{position:sticky;top:76px;padding:18px 14px;display:flex;flex-direction:column;gap:4px}
+.ov-side .brand{margin:0 8px 14px;font-size:20px}
+.ov-nav{text-align:left;background:none;border:1px solid transparent;border-radius:12px;padding:9px 12px;color:#c9d3df;cursor:pointer}
+.ov-nav:hover{background:rgba(255,255,255,.04)}.ov-nav.on{background:rgba(90,169,240,.14);border-color:rgba(90,169,240,.4);color:#fff}
+.ov-side-ft{margin-top:18px}.ov-side-ft .r7legend{flex-direction:column;gap:6px}
+.ov-hd{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:14px}
+.lead{font-size:15px;color:#c9d3df;max-width:640px}
+.ov-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px}
+.ov-kpi{padding:16px 18px;display:flex;flex-direction:column;gap:4px}.ov-kpi b{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}.ov-kpi small{color:#9fadbd;font-size:12.5px}
+.lvl{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:#9fadbd}
+.ov-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px}.ov-grid>section{padding:16px 18px}.ov-grid h3{margin-bottom:8px;font-size:16px}
+.ov-table table{width:100%;border-collapse:collapse;font-size:13px}.ov-table th{text-align:left;color:#9fadbd;font-weight:500;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.1)}.ov-table td{padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.05);color:#e6edf5}
+.ov-gauge{display:flex;flex-direction:column;align-items:center}
+@media (max-width:1000px){.ov{grid-template-columns:1fr}.ov-side{position:static;flex-direction:row;flex-wrap:wrap}.ov-kpis{grid-template-columns:repeat(2,1fr)}.ov-grid{grid-template-columns:1fr}}
+/* ---- comparison cards ---- */
+.cmp-head{margin-bottom:6px}
+.cmp-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:12px 0 16px;align-items:start}
+.cmp{padding:20px 22px}.cmp header{display:flex;align-items:center}
+.cmp-t{font-size:28px;font-weight:700;letter-spacing:-.02em;color:#fff}
+.cmp-saved{display:flex;flex-direction:column;margin:10px 0 2px}.cmp-v{font-size:38px;font-weight:700;font-variant-numeric:tabular-nums}
+.cmp-sub{font-size:13px;color:#9fadbd;min-height:18px}
+.cmp-dd{margin-top:10px}
+.cmp-x{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.cmp-chart{all:unset;cursor:zoom-in;display:block;border-radius:12px;padding:8px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.06)}
+.cmp-chart:focus-visible{outline:2px solid var(--r7-blue)}
+.cmp-m{list-style:none;margin:0;padding:0}.cmp-m li{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px}
+.linkish{all:unset;cursor:pointer;color:#fff;text-decoration:underline;text-decoration-color:rgba(255,255,255,.25);text-underline-offset:3px}.linkish:focus-visible{outline:2px solid var(--r7-blue)}
+.ob{margin-top:4px}.ob-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:#e6edf5}.ob-row.pick{color:var(--r7-green)}
+.cmp-where{margin-bottom:16px}
+.cmp-old{padding:12px 16px;margin-top:8px}.cmp-old>summary{cursor:pointer;color:#c9d3df;font-weight:600}
+@media (max-width:1000px){.cmp-cards{grid-template-columns:1fr}}
+/* ---- where should this model run ---- */
+.wr-t{width:100%;border-collapse:separate;border-spacing:8px 6px}.wr-t th,.wr-t td{vertical-align:top;text-align:left}
+.wr-t thead th{padding:12px;border-radius:12px;background:rgba(14,27,72,.55);border:1px solid rgba(135,167,208,.25)}
+.wr-t thead b{display:block;font-size:18px;color:#fff}.wr-t thead small{display:block;font-size:12px;color:#9fadbd;margin:4px 0 8px;font-weight:400}
+.wr-t tbody th{font-weight:600;color:#fff;padding:12px 6px;width:170px}
+.wr-t td{padding:12px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);font-size:14px}
+.wr-t td small{display:block;color:#9fadbd;font-size:12px;margin-top:4px}
+.ptag{display:inline-block;font-size:11.5px;padding:2px 8px;border-radius:999px;color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(8px)}
+.wr-pick{padding:14px 16px;margin-top:10px}.wr-gates{margin:6px 0 0;padding-left:18px}
+.where3{margin:12px 0}.where3 ul{list-style:none;padding:0;margin:6px 0}.where3 li{padding:4px 0;color:#e6edf5}.where3 .chk{color:var(--r7-green);margin-right:8px}
+/* ---- Built with Meta ---- */
+.ov-meta{padding:16px 18px;margin-bottom:14px}.ov-meta h3{font-size:18px;margin-bottom:10px}
+.mtags{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.mtags.sm{display:flex;flex-wrap:wrap;gap:8px}
+.mtag{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(10px);color:#fff}
+.mtag b{font-size:13.5px;font-weight:600;color:#fff}.mtag span{font-size:12.5px;color:#d6dee8}
+.mtags.sm .mtag span{display:none}.mtag:hover,.mtag:focus-visible{border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.1)}
+.mrun{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:6px 0}
+@media (max-width:1000px){.mtags{grid-template-columns:1fr}}
+.r7pop-body.pan .pg{width:1000px}.r7pop-body.pan .pg .r7chart{width:1000px}

@@ -1,5 +1,6 @@
 import { esc, badge, num, cnum, legendHtml, stageState, ledgerRows, run2Rows, verifySummary, phaseLabel } from "./v2lib.js";
 import { init as initPanCanvas } from "./pancanvas.js";
+import { overviewHtml, compareHtml, wireCompare, openPowerGraph, wireR7, metaInRun } from "./v2r7.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -51,14 +52,22 @@ $("#sideX").onclick = closeInfo; $("#scrim").onclick = closeInfo;
 const LEARN_INFO = {};
 
 // ---------- overview ----------
+// Round 7 overview: sidebar, KPI cards, trend, donut, gauge and table, all from run data.
 function renderHome() {
+  wireR7();
+  $("#pHome").innerHTML = overviewHtml(S);
+  $$("#pHome [data-go]").forEach((a) => (a.onclick = (e) => { e.preventDefault(); show(a.dataset.go); }));
+  $$("#pHome [data-pg]").forEach((b) => (b.onclick = () => openPowerGraph(S.radRecs?.[S.runs?.runs?.[0]?.id])));
+}
+// The round 6 overview, kept for reference; no longer mounted.
+function renderHomeClassic() {
   const led = S.story?.ledger || {};
   $("#pHome").innerHTML = `
   <div class="intro"><div><h1>WattNot makes AI servers use less power, and shows its work.</h1>
   <p>It measures a GPU, tries a safer setting, checks the answers did not get worse, asks a person, applies it, and signs a receipt. Every one of those steps is on this page. Nothing is hidden.</p></div>
   <button class="btn pri noprint" id="goCfg">Configure a run →</button></div>
   <div class="kpis">
-    <div class="kpi glass"><div class="v">${cnum("21%", "MEASURED")}</div><div class="c">less energy per request, Muse Glimmer 30B at a 400 W cap ${badge("MEASURED")}</div></div>
+    <div class="kpi glass"><div class="v">${cnum(S.run2?.saved_pct != null ? `${num(-S.run2.saved_pct, 1)}%` : "–", "MEASURED")}</div><div class="c">less energy per request, ${esc(S.run2?.model || "")} at a ${esc(S.run2?.cap_w ?? "")} W cap ${badge("MEASURED")}</div></div>
     <div class="kpi glass"><div class="v">${cnum("+3.7%", "MEASURED")}</div><div class="c">slowest 1% got slower, inside the 10% limit ${badge("MEASURED")}</div></div>
     <div class="kpi glass"><div class="v">${cnum("67%", "MEASURED")}</div><div class="c">fewer agent tokens when a harness's stop rule misses ${badge("MEASURED")}</div></div>
     <div class="kpi glass"><div class="v">${cnum(`$${num(led.total_usd)}`, "MEASURED")}</div><div class="c">Meta API spend recorded in this bundle, ${num(led.calls, 0)} calls ${badge("MEASURED")}</div></div>
@@ -232,6 +241,7 @@ function renderStep() {
     ${CARE_CARDS.map((c) => pickCard("care", c, S.choice.care === c.v)).join("")}</div>`;
   else body.innerHTML = `<h2>${esc(STEP_Q[4])}</h2>
     <p class="lock">This run measures both: baseline first, then WattNot.</p>
+    <div class="where3"><h3>Where it runs</h3><p class="lock">All three are compared in this run.</p><ul>${["Your GPU · adaptive top-k + tiered / k-means experts + quantization", "Baseten hosted", "Modal hosted"].map((t) => `<li><span class="chk" aria-hidden="true">✓</span>${esc(t)}</li>`).join("")}</ul></div>
     <div class="fld namerow"><label for="f-name">Run name<small>free text</small></label><input type="text" id="f-name" value="${esc(S.choice.name || "My first replay")}"></div>
     <button class="btn pri big" id="startRun">Start replay</button>
     <p class="lock">Replay only, no GPU. Live mode needs the owner's okay and the command line.</p>`;
@@ -880,6 +890,21 @@ async function renderReport() {
   $("#runSel").onchange = (e) => selectRun(e.target.value);
   wireMap();
   wireRadial();
+  mountCompare();
+}
+// Round 7: the Power / Cost / Water cards lead the page; the older mind map
+// and the signed details fold away underneath.
+function mountCompare() {
+  const page = $("#pReport");
+  const rec = S.selRun || S.radRecs?.[S.selRunId || S.runs?.runs?.[0]?.id];
+  const price = S.run?.results?.price?.usd_per_kwh ?? 0.1387, water = S.run?.results?.water?.factor_l_per_kwh ?? 0.36;
+  const old = document.createElement("details"); old.className = "cmp-old glass";
+  old.innerHTML = `<summary>Mind map view and signed details</summary>`;
+  old.insertAdjacentHTML("beforeend", `<div class="receipt-meta">${metaInRun(rec)}</div>`);
+  while (page.firstChild) old.appendChild(page.firstChild);
+  const top = document.createElement("div"); top.id = "cmpR7"; top.innerHTML = compareHtml(rec, price, water);
+  page.append(top, old);
+  wireCompare(top, rec, price, water);
 }
 async function sha256(s) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
 async function startQuiet() { const r = await fetch("/api/dash/v2/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(S.choice) }); S.run = await r.json(); S.n = S.run.events.length; renderRun(); }
@@ -904,6 +929,9 @@ function renderLearn() {
 (async () => {
   const [opts, story, partners, run2, runs] = await Promise.all([fetch("/api/dash/v2/options").then((r) => r.json()), fetch("/api/dash/story").then((r) => r.json()).catch(() => null), fetch("/api/dash/partners").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/run2").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/runs").then((r) => r.json()).catch(() => null)]);
   S.opts = opts; S.story = story; S.partners = partners; S.run2 = run2; S.runs = runs; S.pipeline = story?.config?.pipeline || [];
+  S.radRecs ??= {};
+  const firstRun = runs?.runs?.[0]?.id;
+  if (firstRun) S.radRecs[firstRun] = await fetch(`/api/dash/v2/runs/${encodeURIComponent(firstRun)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   renderCfg(); renderHome(); renderRun(); renderLearn();
   const h = location.hash.slice(1); if (h && $(`#${h}`)) show(h);
   if (new URLSearchParams(location.search).get("autorun")) { await startRun(); }

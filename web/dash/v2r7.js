@@ -1,0 +1,183 @@
+// Round 7 views for the new dashboard: Overview, the Power/Cost/Water
+// comparison cards, the "Where should this model run?" head-to-head, and the
+// info-panel texts. Numbers come only from the run record; anything the
+// record does not hold reads "Measured in the long run".
+import { popup, registerInfo, infoBtn, tip, lineChart, donut, gauge, workedExample, wireR7, KWH_PER_J } from "./r7.js";
+
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = (v, d = 2) => (v == null || Number.isNaN(+v) ? "–" : (+v).toLocaleString("en-US", { maximumFractionDigits: d }));
+const CLS = { MEASURED: "n-measured", ESTIMATE: "n-estimate", SIMULATED: "n-simulated", MOCK: "n-mock", REPLAY: "n-replay" };
+const n = (text, tag) => `<span class="${CLS[tag] || ""}" title="${tag || ""}">${text}</span>`;
+const PENDING = "Measured in the long run";
+export const legend = () => `<div class="r7legend" role="note" aria-label="Number colours"><span><i style="background:var(--r7-blue)"></i>measured</span><span><i style="background:var(--r7-gold)"></i>estimate</span><span><i style="background:var(--r7-mauve)"></i>simulated</span><span><i style="background:#8FE3B0"></i>replay</span><span><i style="background:var(--r7-green)"></i>with WattNot</span><span><i style="background:var(--r7-red)"></i>without WattNot</span></div>`;
+
+// ---------- the three places a model can run (always all three) ----------
+export const OPTIONS = [
+  { id: "own", name: "Your GPU", sub: "Muse Spark Open · adaptive top-k + tiered / k-means experts + quantization", partner: "E2E Networks · NVIDIA" },
+  { id: "baseten", name: "Baseten hosted", sub: "Muse Spark Open on Baseten, paid per answer", partner: "Baseten" },
+  { id: "modal", name: "Modal hosted", sub: "Muse Spark Open on Modal, paid per GPU-second", partner: "Modal" },
+];
+// Real data only where it exists. RUN1 measured tiered experts as a tie with
+// uniform 4-bit quantization; nothing else is measured for these three yet.
+const CELLS = {
+  quality: { own: { text: "Tie with uniform 4-bit", tag: "MEASURED", note: "RUN1 tiered-experts test: tiered placement matched plain uniform 4-bit quantization; no gain or loss." } },
+};
+const ROWS = [
+  { id: "quality", name: "Quality", tip: "Share of answers that agree with the full-precision model on a fixed test set." },
+  { id: "cost", name: "Cost per 1k answers", tip: "Dollars for one thousand answers: electricity on your GPU, the bill on a host." },
+  { id: "energy", name: "Energy per answer", tip: "Joules for one answer. Measured on your GPU; an estimate for hosts, which do not share meters." },
+  { id: "p99", name: "p99 latency", tip: "The time 99 of 100 answers beat." },
+  { id: "privacy", name: "Privacy / data control", tip: "Where prompts go and who can see them." },
+];
+const PRIVACY = { own: "Prompts stay on your machine", baseten: "Prompts go to Baseten", modal: "Prompts go to Modal" };
+function cell(row, opt) {
+  if (row === "privacy") return `<span class="wr-priv">${esc(PRIVACY[opt])}</span>`;
+  const c = CELLS[row]?.[opt];
+  if (c) return `${n(esc(c.text), c.tag)}<small>${esc(c.note)}</small>`;
+  const est = row === "energy" && opt !== "own";
+  return `<span class="r7miss">${PENDING}</span>${est ? `<small>Will be an ${n("estimate", "ESTIMATE")}: hosts do not share power meters.</small>` : ""}`;
+}
+export function whereHtml() {
+  return `<div class="wr">
+    <p class="wr-lead">All three are compared in every run. ${infoBtn("tiered", "tiered and k-means experts")}${infoBtn("router", "the per-workload router")}</p>
+    <table class="wr-t"><thead><tr><th></th>${OPTIONS.map((o) => `<th scope="col"><b>${esc(o.name)}</b><small>${esc(o.sub)}</small><span class="ptag">${esc(o.partner)}</span></th>`).join("")}</tr></thead>
+    <tbody>${ROWS.map((r) => `<tr><th scope="row"><span${tip(r.tip)}>${esc(r.name)}</span></th>${OPTIONS.map((o) => `<td>${cell(r.id, o.id)}</td>`).join("")}</tr>`).join("")}</tbody></table>
+    <div class="wr-pick glass"><h3>WattNot chose: <span class="r7miss">pending the long run</span></h3>
+      <p>After the long run WattNot picks the best place for each kind of work and says why, for example "WattNot chose Your GPU for batch because it was cheapest and passed all gates".</p>
+      <ul class="wr-gates">${["Quality gate (answers agree 95%+)", "Speed gate (p99 within the limit)", "Budget gate"].map((g) => `<li><span class="r7miss">${esc(g)}: ${PENDING}</span></li>`).join("")}</ul></div></div>`;
+}
+function optionBars(metric) {
+  return `<div class="ob"><div class="lvl">By place to run ${infoBtn("router", "the router")}</div>${OPTIONS.map((o) => `<div class="ob-row"><span>${esc(o.name)}</span><span class="r7miss">${PENDING}</span></div>`).join("")}
+    <p class="r7note">The option WattNot picks will be highlighted here. ${metric === "power" ? "" : ""}Hosted energy will be an estimate.</p></div>`;
+}
+
+// ---------- comparison cards ----------
+function series(rec, f) {
+  const b = (rec?.phases?.baseline?.events || []).filter((e) => e.j_per_req != null);
+  const w = (rec?.phases?.wattnot?.events || []).filter((e) => e.j_per_req != null);
+  return [
+    { name: "Without WattNot", cls: "without", pts: b.map((e, i) => ({ x: i + 1, y: f(e.j_per_req), label: `repeat ${i + 1}` })) },
+    { name: "With WattNot", cls: "with", pts: w.map((e, i) => ({ x: i + 1, y: f(e.j_per_req), label: `repeat ${i + 1}` })) },
+  ];
+}
+function cardsData(rec, price, water) {
+  const b = rec?.phases?.baseline?.metrics, w = rec?.phases?.wattnot?.metrics;
+  const bj = b?.j_per_req, wj = w?.j_per_req, ok = bj != null && wj != null;
+  const k1m = (j) => j * 1e6 * KWH_PER_J;
+  return [
+    { id: "power", title: "Power", tag: "MEASURED", unit: "J per answer",
+      saved: ok ? `${fmt(((bj - wj) / bj) * 100, 1)}%` : null, sub: ok ? `${fmt(bj, 1)} → ${fmt(wj, 1)} J per answer` : null, f: (j) => j },
+    { id: "cost", title: "Cost", tag: "ESTIMATE", unit: "$ per 1M answers",
+      saved: ok ? `$${fmt((k1m(bj) - k1m(wj)) * price, 2)}` : null, sub: ok ? `per million answers · $${fmt(k1m(bj) * price)} → $${fmt(k1m(wj) * price)}` : null, f: (j) => k1m(j) * price },
+    { id: "water", title: "Water", tag: "ESTIMATE", unit: "L per 1M answers",
+      saved: ok ? `${fmt((k1m(bj) - k1m(wj)) * water, 2)} L` : null, sub: ok ? `per million answers · ${fmt(k1m(bj) * water)} → ${fmt(k1m(wj) * water)} L` : null, f: (j) => k1m(j) * water },
+  ];
+}
+const METHODS = [["caps", "Power caps"], ["topk", "Adaptive top-k"], ["tiered", "Tiered / k-means experts"], ["gate", "Quality gates"], ["waste", "Agent-waste saver"], ["router", "Where-to-run router"]];
+export function compareHtml(rec, price = 0.1387, water = 0.36) {
+  const cards = cardsData(rec, price, water);
+  return `<div class="cmp-head"><div><h1>What WattNot saved</h1><p class="lead">${esc(rec?.run_name || "Pick a run")} ${infoBtn("compare", "how this is compared")}</p></div></div>${metaInRun(rec)}${legend()}
+  <div class="cmp-cards">${cards.map((c) => `<section class="cmp glass" data-cmp="${c.id}">
+    <header><h2 class="cmp-t">${c.title}</h2>${infoBtn(`calc-${c.id}`, `${c.title} calculation`)}</header>
+    <div class="cmp-saved"><span class="lvl">Saved</span><span class="cmp-v">${c.saved ? n(esc(c.saved), c.tag) : `<span class="r7miss">${PENDING}</span>`}</span></div>
+    <p class="cmp-sub">${esc(c.sub || "")}</p>
+    <button class="btn cmp-dd" aria-expanded="false" aria-controls="cmpx-${c.id}">Show over the run ▾</button>
+    <div class="cmp-x" id="cmpx-${c.id}" hidden>
+      <button class="cmp-chart" data-pop="chart-${c.id}" aria-label="Open the ${c.title} graph in a window">${lineChart(series(rec, c.f), { unit: c.unit, yLabel: c.unit, xLabel: "Repeat (per-repeat RUN2 data; the long run adds a time series)", w: 520, h: 220, y0: 0, xticks: [1, 2, 3].map((x) => ({ x, label: `#${x}` })), aria: `${c.title} with and without WattNot` })}</button>
+      <div class="lvl">By method</div>
+      <ul class="cmp-m">${METHODS.map(([id, name]) => `<li><button class="linkish" data-pop="m-${c.id}-${id}">${esc(name)}</button><span>${id === "caps" && c.saved ? n(`${esc(c.saved)} (whole run)`, c.tag) : `<span class="r7miss">not measured in this run</span>`}</span></li>`).join("")}</ul>
+      ${optionBars(c.id)}
+    </div></section>`).join("")}</div>
+  <section class="cmp glass cmp-where"><header><h2 class="cmp-t">Where should this model run?</h2>${infoBtn("router", "the router")}</header>
+    <p class="cmp-sub">Your GPU vs Baseten vs Modal, compared on every run.</p><button class="btn" data-pop="where">Open the head-to-head</button></section>`;
+}
+export function wireCompare(root, rec, price = 0.1387, water = 0.36) {
+  const cards = Object.fromEntries(cardsData(rec, price, water).map((c) => [c.id, c]));
+  root.querySelectorAll(".cmp-dd").forEach((b) => (b.onclick = () => {
+    const x = document.getElementById(b.getAttribute("aria-controls")); const open = x.hidden;
+    x.hidden = !open; b.setAttribute("aria-expanded", String(open)); b.textContent = open ? "Hide ▴" : "Show over the run ▾";
+  }));
+  root.querySelectorAll("[data-pop]").forEach((b) => (b.onclick = () => {
+    const k = b.dataset.pop;
+    if (k === "where") return popup("Where should this model run?", whereHtml(), { sub: "All three are compared in this run." });
+    if (k.startsWith("chart-")) return openPowerGraph(rec, cards[k.slice(6)]);
+    const [, cid, mid] = k.split("-"); const c = cards[cid], m = METHODS.find(([i]) => i === mid);
+    popup(`${c.title} · ${m[1]}`, mid === "caps" && c.saved
+      ? `<p>The power cap is the only method this run records, so the whole-run saving is shown: <b>${n(esc(c.saved), c.tag)}</b>. It is not split across methods.</p>${workedExample(rec?.phases?.baseline?.metrics?.j_per_req, rec?.phases?.wattnot?.metrics?.j_per_req, price, water)}`
+      : `<p><b>Not measured in this run.</b> This run's record does not attribute any saving to ${esc(m[1])}, so nothing is split out. The long run records each method on its own.</p>`);
+  }));
+}
+export function openPowerGraph(rec, c) {
+  c ||= cardsData(rec, 0.1387, 0.36)[0];
+  const html = `<div class="pg">${lineChart(series(rec, c.f), { unit: c.unit, yLabel: c.unit, xLabel: "Repeat", w: 980, h: 440, y0: 0, xticks: [1, 2, 3].map((x) => ({ x, label: `repeat ${x}` })), aria: `${c.title} with and without WattNot` })}
+    <p class="r7note">Now: RUN2 per-repeat averages (3 repeats each side, ${esc(rec?.model || "")}), ${c.tag === "MEASURED" ? "measured" : "derived from measured joules, an estimate"}. The same chart takes a watts-over-time series: the long H100 run logs one sample every 100 ms, and each point becomes one sample.</p></div>`;
+  return popup(`${c.title}: with vs without WattNot`, html, { pan: true, sub: "Drag to pan, scroll to zoom. Hover a point for its value." });
+}
+
+// ---------- Meta tools really used (checked against the repo) ----------
+export const META_TOOLS = [
+  { id: "spark", name: "Muse Spark", role: "Plans the next cap to try and decides each step" },
+  { id: "spark_open", name: "Muse Spark Open on Baseten", role: "The hosted open model: cap-planner call and prompt-cache A/B" },
+  { id: "sam", name: "SAM 3.1", role: "Outlines each rack in the room photo" },
+  { id: "llama", name: "Llama 3.1 8B", role: "The workload measured on the H100 in RUN2" },
+  { id: "glimmer", name: "Muse Glimmer 30B", role: "Open weights swept on the H100 in RUN1" },
+  { id: "code", name: "Muse Code task set", role: "Coding prompts used as a test workload" },
+];
+export const metaTags = (ids) => META_TOOLS.filter((t) => !ids || ids.includes(t.id)).map((t) => `<button class="mtag" data-info="meta-${t.id}"><b>Meta · ${esc(t.name)}</b><span>${esc(t.role)}</span></button>`).join("");
+export const metaTile = () => `<section class="glass ov-meta"><h3>Built with Meta</h3><div class="mtags">${metaTags()}</div></section>`;
+export const metaInRun = (rec) => {
+  const llama = /llama/i.test(rec?.model || "");
+  return `<div class="mrun"><span class="lvl">Meta models in this run</span><div class="mtags sm">${metaTags(llama ? ["llama", "spark", "sam"] : ["spark_open", "spark"])}</div></div>`;
+};
+registerInfo({
+  "meta-spark": { title: "Muse Spark", html: `<p>Meta's Muse Spark API is WattNot's planner. It reads the last measurements and proposes the next power cap to try, or says stop.</p><p>Every call is logged with its cost in the ledger. It only proposes; the gates and a person decide.</p>` },
+  "meta-spark_open": { title: "Muse Spark Open on Baseten", html: `<p>Meta's open model, served by Baseten. WattNot calls it for the cap planner step and for the prompt-cache test, and it is one of the three places a model can run.</p><p>Baseten does not share power meters, so its energy is always an estimate.</p>` },
+  "meta-sam": { title: "SAM 3.1", html: `<p>Meta's Segment Anything 3.1 turns a photo of a server room into one outline per rack, from the prompt "server rack".</p><p>WattNot uses the outlines to put savings in a place: which rack is hot, which one it can cap.</p>` },
+  "meta-llama": { title: "Llama 3.1 8B Instruct", html: `<p>Meta's open-weights model, served with vLLM on a rented H100. RUN2 measured it without and with a 350 W cap: energy per answer fell 27.1% and quality stayed at 93.7%.</p>` },
+  "meta-glimmer": { title: "Muse Glimmer 30B", html: `<p>Meta's open-weights 30B model. RUN1 swept caps from 700 W down on it; 400 W used 21% less energy per answer with p99 +3.7%.</p>` },
+  "meta-code": { title: "Muse Code task set", html: `<p>A fixed set of coding prompts written with Muse Spark. It is one of the workloads WattNot can replay to check that a cap does not hurt coding answers.</p>` },
+});
+
+// ---------- overview ----------
+export function overviewHtml(S) {
+  const r = S.run2 || {}, led = S.story?.ledger || {}, runs = S.runs?.runs || [];
+  const rec = S.radRecs?.[runs[0]?.id];
+  const saved = r.saved_pct != null ? `${fmt(-r.saved_pct, 1)}%` : null;
+  const kpi = (label, v, tag, sub, key) => `<div class="ov-kpi glass"><span class="lvl">${label}${key ? infoBtn(key, label) : ""}</span><b>${v == null ? `<span class="r7miss">${PENDING}</span>` : n(esc(v), tag)}</b><small>${esc(sub)}</small></div>`;
+  const used = r.j_per_req_cap, cut = r.j_per_req_stock != null && used != null ? r.j_per_req_stock - used : null;
+  return `<div class="ov">
+  <aside class="ov-side glass" aria-label="Sections"><div class="brand">Watt<i>Not</i></div>
+    ${[["pHome", "Overview"], ["pCfg", "Configure"], ["pRun", "Run"], ["pReport", "Compare"], ["pLearn", "How it works"]].map(([p, t]) => `<button class="ov-nav${p === "pHome" ? " on" : ""}" data-go="${p}">${t}</button>`).join("")}
+    <div class="ov-side-ft">${legend()}</div></aside>
+  <div class="ov-main">
+    <div class="ov-hd"><div><h1>Less power per AI answer, with proof</h1><p class="lead">WattNot tries a safer GPU setting, checks the answers, and keeps it only if nothing got worse. ${infoBtn("what", "what WattNot does")}</p></div><button class="btn pri" data-go="pCfg">Configure a run →</button></div>
+    <div class="ov-kpis">
+      ${kpi("Energy saved", saved, "MEASURED", r.model ? `${r.model}, ${r.cap_w} W cap vs ${r.stock_w} W` : "", "calc-power")}
+      ${kpi("Slowest 1% (p99)", r.p99_change_pct != null ? `${r.p99_change_pct > 0 ? "+" : ""}${fmt(r.p99_change_pct, 1)}%` : null, "MEASURED", "limit +10%", "p99")}
+      ${kpi("Answer quality", r.quality_cap_pct != null ? `${fmt(r.quality_cap_pct, 1)}%` : null, "MEASURED", r.quality_stock_pct != null ? `same as without (${fmt(r.quality_stock_pct, 1)}%)` : "", "quality")}
+      ${kpi("Meta API spend", led.total_usd != null ? `$${fmt(led.total_usd)}` : null, "MEASURED", led.calls != null ? `${fmt(led.calls, 0)} calls recorded` : "", null)}
+    </div>
+    ${metaTile()}
+    <div class="ov-grid">
+      <section class="glass ov-trend"><h3>Energy per answer, by repeat ${infoBtn("calc-power", "energy")}</h3>${rec ? lineChart(series(rec, (j) => j), { unit: "J", yLabel: "J per answer", w: 620, h: 220, y0: 0, xticks: [1, 2, 3].map((x) => ({ x, label: `#${x}` })) }) : `<p class="r7miss">${PENDING}</p>`}<button class="btn" data-pg="1">Open bigger</button></section>
+      <section class="glass ov-donut"><h3>Where the energy went</h3>${cut != null ? donut([{ name: "Still used", v: used, color: "#5AA9F0" }, { name: "Saved by WattNot", v: cut, color: "#4CC38A" }], { center: saved || "", centerSub: "saved", aria: "energy used vs saved" }) : `<p class="r7miss">${PENDING}</p>`}</section>
+      <section class="glass ov-gauge"><h3>Speed budget used</h3>${r.p99_change_pct != null ? gauge(r.p99_change_pct, 15, { text: `+${fmt(r.p99_change_pct, 1)}%`, sub: "p99 change · limit 10%", limit: 10, cls: r.p99_change_pct > 10 ? "warn" : "", aria: "p99 change against the 10% limit" }) : `<p class="r7miss">${PENDING}</p>`}<p class="r7note">Red tick: the 10% limit.</p></section>
+      <section class="glass ov-table"><h3>Recorded runs</h3><table><thead><tr><th>Run</th><th>Model</th><th>Date</th></tr></thead><tbody>${runs.map((x) => `<tr><td>${esc(x.name)}</td><td>${esc(x.model)}</td><td>${esc(x.date)}</td></tr>`).join("") || `<tr><td colspan="3" class="r7miss">${PENDING}</td></tr>`}</tbody></table></section>
+    </div></div></div>`;
+}
+
+// ---------- info panel texts ----------
+registerInfo({
+  what: { title: "What WattNot does", html: `<p>AI models run on GPUs that can draw 700 W each, often more than the work needs.</p><p>WattNot lowers the limit a little, measures energy, speed and answer quality on real prompts, and keeps the change only if all three stay inside your limits. A person approves risky changes and every change can be undone.</p>` },
+  p99: { title: "p99 latency", html: `<p>Sort all answer times. p99 is the one 99% of answers beat.</p><h3>Example</h3><p>100 answers; 99 finish in under 3.9 s, one takes 5 s. p99 = 3.9 s. A +7.7% change from 3.6 s is 3.88 s.</p>` },
+  quality: { title: "Answer quality", html: `<p>The same fixed test prompts run with and without the change. Quality is the share of answers that still match. Below 95% the change is rejected.</p>` },
+  compare: { title: "How the comparison works", html: `<p>Every run is done twice on the same prompts: first without WattNot (the baseline), then with WattNot. Each card shows the difference.</p><p>Power is measured on the GPU. Cost and water are arithmetic on that measurement, so they are estimates. Open the ⓘ on any card for the worked example.</p>` },
+  "calc-power": { title: "Energy per answer", html: `<p>Joules the GPU used, divided by answers served. Read from NVIDIA's NVML counter 10 times a second.</p><h3>Example</h3><p>350 W for 33 s serving 1,000 answers = 11,550 J ÷ 1,000 = 11.6 J per answer.</p>` },
+  "calc-cost": { title: "From joules to dollars", html: `<p>1 kWh = 3,600,000 J. Cost = kWh × electricity price ($0.1387 per kWh, EIA US average).</p><h3>Worked example</h3>${workedExample(15.96, 11.63)}` },
+  "calc-water": { title: "From joules to litres of water", html: `<p>Data centres use water to cool the servers. Water = kWh × 0.36 L per kWh (LBNL 2024, on-site cooling only).</p><h3>Worked example</h3>${workedExample(15.96, 11.63)}` },
+  tiered: { title: "Tiered and k-means experts", html: `<p>A mixture-of-experts model has many small "experts" and uses only a few per word. Some experts are used all the time, most rarely.</p><p><b>Tiered</b> keeps the hot experts on the GPU at higher precision, warm ones at lower precision, and cold ones in RAM or on the CPU. <b>k-means</b> groups experts that are used together so each group can live in one place.</p><h3>Example</h3><p>40 experts: 8 hot ones stay on the GPU in 8-bit, 16 warm ones in 4-bit, 16 cold ones in CPU RAM. Less GPU memory, fewer watts, if quality holds.</p><p><b>What we measured:</b> in RUN1, tiered placement tied plain uniform 4-bit quantization (no gain, no loss).</p>` },
+  router: { title: "WattNot picks per workload", html: `<p>All three places run on every compare: your GPU, Baseten and Modal. WattNot then picks one per kind of work.</p><ul><li><b>Interactive chat:</b> lowest p99 that passes the quality gate.</li><li><b>Batch:</b> lowest cost per 1k answers.</li><li><b>Private data:</b> your GPU only; prompts never leave.</li></ul><p>It always says why: "WattNot chose X because…", with the gate results. Hosted energy is an estimate because hosts do not share power meters.</p>` },
+  thermal: { title: "Thermal floor plan", html: `<p>SAM 3.1 outlines each rack in a room photo. Each rack is coloured by temperature like an infrared camera: dark blue cool, yellow and white hot.</p><p>Rack outlines come from the scan. Temperatures are simulated from replayed GPU power: inlet 22 °C + 0.05 °C per watt.</p>` },
+  experts: { title: "Expert routing", html: `<p>Each column is one step of the prompt; each row is one expert. Brighter cells mean more words were sent to that expert.</p><p>Adaptive top-k drops experts that carry little weight for a word: the bottom strip shows how many experts each word used, 8 without and about 6.7 with.</p>` },
+});
+export { wireR7 };
