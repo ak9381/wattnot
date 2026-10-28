@@ -1,0 +1,43 @@
+{
+  "spec": "wattnot.fallback-ledger/1",
+  "label": "MEASURED",
+  "entries": [
+    {
+      "id": "meta",
+      "name": "Meta Model API (Muse Spark)",
+      "checked_at": "2026-10-28T14:15:55Z",
+      "status": "ok",
+      "ok": true,
+      "http": 200,
+      "latency_s": 0.547,
+      "why": "",
+      "fallback": null
+    },
+    {
+      "id": "baseten",
+      "name": "Baseten (Muse Spark Open)",
+      "checked_at": "2026-10-28T14:15:56Z",
+      "status": "ok",
+      "ok": true,
+      "http": 200,
+      "latency_s": 1.189,
+      "why": "",
+      "fallback": null
+    },
+    {
+      "id": "modal",
+      "name": "Modal (Muse Spark Open)",
+      "checked_at": "2026-10-28T14:15:57Z",
+      "status": "unconfigured",
+      "ok": false,
+      "http": null,
+      "latency_s": null,
+      "why": "no endpoint URL set",
+      "fallback": "FALLBACK: Baseten, else our own GPU only"
+    }
+  ],
+  "fallbacks": [
+    "FALLBACK: Baseten, else our own GPU only"
+  ],
+  "all_ok": false
+}

@@ -16,10 +16,12 @@
     <button data-p="pCfg">Configure</button>
     <button data-p="pRun">Run</button>
     <button data-p="pReport">Compare</button>
+    <button data-p="pProof">Proof</button>
     <button data-p="pLearn">How it works</button>
   </nav>
   <span class="sp"></span>
   <span class="chip" title="Where the numbers come from"><span class="dot"></span>Replay mode: no GPU is running</span>
+  <button class="btn" id="illusBtn" aria-pressed="false" title="Show SIMULATED and MOCK illustrations">Illustrations: off</button>
   <a class="btn" href="/">Classic view</a>
 </header>
 <main>
@@ -28,12 +30,14 @@
   <section class="page" id="pRun"></section>
   <section class="page" id="pReport"></section>
   <section class="page" id="pLearn"></section>
+  <section class="page" id="pProof"></section>
 </main>
 <div class="scrim" id="scrim" hidden></div>
 <aside class="side glass" id="side" role="dialog" aria-modal="true" aria-label="Explanation" aria-hidden="true">
   <button class="btn" id="sideX" style="float:right" aria-label="Close explanation">Close</button>
   <div id="sideBody"></div>
 </aside>
+<script src="fallback.js"></script>
 <script type="module" src="v2.js"></script>
 </body>
 </html>

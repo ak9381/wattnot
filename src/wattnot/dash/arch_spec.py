@@ -86,7 +86,7 @@ NODES = [
          "trial history, bounds", "a brief"),
        S("prompt", "Build the prompt", "Wraps the brief and the allowed knobs into one request body.", "planner/spark.py::SparkClient.request_body",
          "brief, knobs", "request JSON"),
-       S("guard", "Check the spend cap", "Reserves the cost against the $20 ledger before the call.", "meta/ledger.py::SpendLedger.reserve",
+       S("guard", "Check the spend cap", "Reserves the cost against the $50 ledger before the call.", "meta/ledger.py::SpendLedger.reserve",
          "estimated tokens", "a reservation, or a stop", "meta"),
        S("call", "Call the Meta API", "Sends the request to muse-spark-1.3 and waits.", "meta/client.py::GuardedClient",
          "request JSON", "reply, usage", "meta"),

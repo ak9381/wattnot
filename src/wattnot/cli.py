@@ -68,6 +68,10 @@ def build_parser() -> argparse.ArgumentParser:
     vf.add_argument("--bundle", help="bundle path (only with one receipt)")
     vf.add_argument("--trust", help="trusted-keys JSON (default verifier/trusted-keys.json)")
     vf.add_argument("--json", action="store_true", help="one JSON report per line")
+    vf.add_argument("--rekor-online", action="store_true",
+                    help="look each receipt up on the public Rekor log (rekor.sigstore.dev)")
+    vf.add_argument("--chain", action="store_true",
+                    help="also check the hash chain: each prev_sha256 links to the receipt before it")
     rs = rsub.add_parser("sign", help="sign a receipt (use --no-rekor for an offline test key)")
     rs.add_argument("receipt", help="receipts/<id>.json")
     rs.add_argument("--no-rekor", action="store_true",
@@ -95,6 +99,8 @@ def build_parser() -> argparse.ArgumentParser:
     _route.add_parser(sub)
     from wattnot.certificate import cli as _cert
     _cert.add_parser(sub)
+    hc = sub.add_parser("health", help="probe Meta API, Baseten and Modal before a run (free GET /models)")
+    hc.add_argument("--json", action="store_true")
     dsh = sub.add_parser("dash", help="live dashboard: GPU power, and a view of the experts")
     from wattnot.dash import __main__ as _dash
     _dash.add_args(dsh)
@@ -185,11 +191,38 @@ def _run_verify(a: argparse.Namespace) -> int:
     if a.bundle and len(a.receipts) != 1:
         raise ValueError("--bundle works with one receipt")
     trusted = load_trusted(a.trust)
+    # a folder means every receipt in it, oldest name first; globs pick up bundles
+    a.receipts = [str(q) for p in a.receipts for q in (sorted(Path(p).glob("*.json")) if Path(p).is_dir() else [p])]
+    a.receipts = [p for p in a.receipts if not p.endswith(".sigstore.json")]
     bad = 0
     for path in a.receipts:
         r = verify_receipt(path, a.bundle, trusted=trusted)
-        bad += r.grade == "UNVERIFIABLE"
+        bad += r.grade == "UNVERIFIABLE" or any(s.name == "labels" and not s.ok for s in r.steps)
         print(json.dumps(r.to_dict()) if a.json else format_report(r))
+        if a.rekor_online:
+
+            from wattnot.receipt.sign import bundle_path
+            from wattnot.verify import rekor_online_step
+            doc = json.loads(Path(path).read_text(encoding="utf-8"))
+            bp = Path(a.bundle) if a.bundle else bundle_path(path)
+            st = rekor_online_step(doc, json.loads(bp.read_text()) if bp.exists() else None)
+            bad += not st.ok
+            print(json.dumps({"rekor_online": st.ok, **st.detail}) if a.json else
+                  f"  {'ok  ' if st.ok else 'FAIL'} rekor-online {st.detail.get('log_index')} "
+                  f"{st.detail.get('error', 'entry carries this sha256')}")
+    if a.chain:
+
+        from wattnot.verify import verify_chain
+        docs = [json.loads(Path(p).read_text(encoding="utf-8")) for p in a.receipts]
+        c = verify_chain(docs)
+        bad += not c.ok
+        if a.json:
+            print(json.dumps({"chain": c.ok, **c.detail}))
+        else:
+            print(f"chain {'ok  ' if c.ok else 'FAIL'} {c.detail['n']} receipts")
+            for link in c.detail["links"]:
+                print(f"  {'ok  ' if link['ok'] else 'FAIL'} #{link['index']} prev_sha256 "
+                      f"{str(link['prev_sha256'])[:12]} want {str(link['want'])[:12]}")
     return 1 if bad else 0
 
 
@@ -250,6 +283,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         from wattnot.dash import __main__ as _dash
 
         return _dash.run(args)
+    if args.cmd == "health":
+        from wattnot.health import main as _health
+        return _health(["--json"] if args.json else [])
     if args.cmd == "route":
         try:
             from wattnot.route import cli as _route

@@ -1,0 +1,20 @@
+{
+ "api": [
+  {
+   "model": "muse-spark-1.3",
+   "job": "planner: picks the next power cap; explains gate failures; agent-waste and coding-set runs",
+   "calls": 3459,
+   "usd": 23.08,
+   "label": "MEASURED",
+   "source": "Meta API spend ledger (billed token counts x list price)"
+  },
+  {
+   "model": "sam-3.1",
+   "job": "segments rack photos into units (kept off the main path)",
+   "calls": 47,
+   "usd": 0.12,
+   "label": "MEASURED",
+   "source": "Meta API spend ledger (billed token counts x list price)"
+  }
+ ]
+}

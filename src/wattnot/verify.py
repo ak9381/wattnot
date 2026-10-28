@@ -5,7 +5,11 @@ Steps, in order (each one is reported, even after a failure):
   sha256     JCS(receipt minus integrity) hashes to integrity.sha256
   signature  the bundle next to the receipt signs that hash (signer reported)
   rekor      a transparency-log entry (log_index); offline bundles have none
+  labels     every "label" is a known one, and the headline `result` carries no SIMULATED/MOCK
   grade      VALID / ESTIMATE / SIMULATED / NOISE / UNVERIFIABLE, re-derived, never trusted
+
+`verify_chain` checks a list of receipts in order: each one's `integrity.prev_sha256` must
+equal the previous receipt's `integrity.sha256` (the first may be null or point outside).
 """
 
 from __future__ import annotations
@@ -126,6 +130,8 @@ def verify_document(receipt, bundle: dict | None, *, trusted: set[str] | None = 
         if jd.get("present"):  # only receipts that carry the block get this step
             steps.append(Step("joules", derived_ok,
                               {"error": jd["error"]} if not derived_ok else {"matches": True}))
+    if isinstance(receipt, dict):
+        steps.append(labels_step(receipt))
     sha_ok, sig_ok = steps[1].ok, steps[2].ok
     g = grade(receipt, sha_ok=steps[0].ok and sha_ok, sig_ok=sig_ok,
               rekor_ok=log_index is not None, derived_ok=derived_ok) \
@@ -133,6 +139,60 @@ def verify_document(receipt, bundle: dict | None, *, trusted: set[str] | None = 
     claimed = integ.get("grade") if integ else None
     steps.append(Step("grade", g != "UNVERIFIABLE", {"grade": g, "claimed": claimed}))
     return Report(path, steps, g, claimed, derived)
+
+
+KNOWN_LABELS = {"MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "REPLAY", "ADVICE", "SAMPLE"}
+WEAK = {"SIMULATED", "MOCK"}
+
+
+def _labels(obj, path="$"):
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k == "label" and isinstance(v, str):
+                yield path, v
+            else:
+                yield from _labels(v, f"{path}.{k}")
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            yield from _labels(v, f"{path}[{i}]")
+
+
+def labels_step(receipt: dict) -> Step:
+    found = list(_labels(receipt))
+    unknown = [f"{p}={v}" for p, v in found if v not in KNOWN_LABELS]
+    # a weak headline is fine when the receipt says so itself (its grade is SIMULATED or MOCK)
+    declared = (receipt.get("grade") in WEAK or (receipt.get("integrity") or {}).get("grade") in WEAK) if isinstance(receipt, dict) else False
+    weak_head = [] if declared else [f"{p}={v}" for p, v in _labels(receipt.get("result"), "$.result") if v in WEAK]
+    counts: dict[str, int] = {}
+    for _, v in found:
+        counts[v] = counts.get(v, 0) + 1
+    ok = not unknown and not weak_head
+    d: dict = {"counts": counts}
+    if unknown:
+        d["unknown"] = unknown[:5]
+    if weak_head:
+        d["error"] = f"headline result uses {', '.join(weak_head[:3])}"
+    elif unknown:
+        d["error"] = f"unknown label(s): {', '.join(unknown[:3])}"
+    return Step("labels", ok, d)
+
+
+def verify_chain(receipts: list) -> Step:
+    """receipts: parsed receipt dicts, oldest first."""
+
+    links = []
+    ok = True
+    for i, r in enumerate(receipts):
+        integ = (r.get("integrity") or {}) if isinstance(r, dict) else {}
+        if i == 0:
+            continue
+        prev = (receipts[i - 1].get("integrity") or {}).get("sha256") \
+            if isinstance(receipts[i - 1], dict) else None
+        good = integ.get("prev_sha256") == prev and prev is not None
+        ok &= good
+        links.append({"index": i, "ok": good, "prev_sha256": integ.get("prev_sha256"),
+                      "want": prev})
+    return Step("chain", ok, {"links": links, "n": len(receipts)})
 
 
 def format_report(r: Report) -> str:
@@ -147,6 +207,9 @@ def format_report(r: Report) -> str:
         elif s.name == "rekor":
             info = f"log_index {d['log_index']}" if s.ok else d.get("note", "")
             mark = "ok  " if s.ok else "none"
+        elif s.name == "labels":
+            info = d.get("error") or ", ".join(f"{k} {v}" for k, v in sorted(d["counts"].items())) \
+                or "no labelled numbers"
         elif s.name == "joules":
             info = "matches the receipt's numbers" if s.ok else d.get("error", "")
         elif s.name == "grade":
@@ -162,3 +225,34 @@ def format_report(r: Report) -> str:
                      + (f"{good:.1f} J per good answer" if good is not None
                         else "no good answers (pass rate 0)"))
     return "\n".join(lines)
+
+
+REKOR_URL = "https://rekor.sigstore.dev/api/v1/log/entries?logIndex={}"
+
+
+def rekor_online_step(receipt: dict, bundle: dict | None, *, fetch=None) -> Step:
+    """Look the receipt's log index up on the public Rekor log and check the entry carries the
+    receipt's sha256. Offline-signed receipts have no index, so this step fails for them."""
+
+    import base64
+    import urllib.request
+
+    rk = (bundle or {}).get("rekor") or {}
+    idx = rk.get("log_index")
+    want = ((receipt.get("integrity") or {}).get("sha256") or "").lower()
+    if idx is None:
+        return Step("rekor-online", False, {"error": "no Rekor log index: signed offline, not in the public log"})
+    try:
+        if fetch is None:
+            with urllib.request.urlopen(REKOR_URL.format(int(idx)), timeout=15) as r:  # noqa: S310
+                data = json.loads(r.read())
+        else:
+            data = fetch(int(idx))
+        entry = next(iter(data.values()))
+        body = json.loads(base64.b64decode(entry["body"]))
+        blob = json.dumps(body).lower()
+    except Exception as e:
+        return Step("rekor-online", False, {"log_index": idx, "error": f"lookup failed: {type(e).__name__}"})
+    ok = bool(want) and want in blob
+    return Step("rekor-online", ok, {"log_index": idx, "integrated_time": entry.get("integratedTime"),
+                                     **({} if ok else {"error": "the log entry does not carry this receipt's sha256"})})

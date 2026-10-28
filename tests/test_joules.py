@@ -75,14 +75,14 @@ def test_old_receipt_without_block_is_fine_and_gets_a_derived_view():
     p = ROOT / "verifier" / "samples" / "real-measured.json"
     rep = verify_receipt(p, trusted=load_trusted())
     assert rep.grade == "ESTIMATE"
-    assert [s.name for s in rep.steps] == ["schema", "sha256", "signature", "rekor", "grade"]
+    assert [s.name for s in rep.steps] == ["schema", "sha256", "signature", "rekor", "labels", "grade"]
     assert rep.joules and rep.joules["candidate"]["j_per_answer"] > 0
 
 
 def test_good_block_adds_a_passing_step():
     rep = verify_receipt(ROOT / "verifier" / "vectors" / "real-joules.json", trusted=load_trusted())
     assert rep.grade == "ESTIMATE"
-    assert [s.name for s in rep.steps][-2:] == ["joules", "grade"] and rep.steps[-2].ok
+    assert [s.name for s in rep.steps][-3:] == ["joules", "labels", "grade"] and rep.steps[-3].ok
 
 
 def test_edited_block_is_unverifiable_even_with_valid_hash_and_signature():

@@ -39,3 +39,4 @@ results/
 # rehearsal signing keys are generated at run time, never committed
 *.pem
 !verifier/samples/test-key.pem
+site/

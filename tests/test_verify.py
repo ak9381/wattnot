@@ -24,7 +24,7 @@ def test_golden_vector_grade(name):
     r = verify_receipt(S / f"{name}.json", trusted=load_trusted())
     assert r.grade == EXPECTED[name]["grade"]
     steps = r.to_dict()["steps"]
-    assert [s["name"] for s in steps] == ["schema", "sha256", "signature", "rekor", "grade"]
+    assert [s["name"] for s in steps] == ["schema", "sha256", "signature", "rekor", "labels", "grade"]
     assert steps[3]["ok"] is False and steps[3].get("log_index") is None  # offline only
 
 

@@ -41,7 +41,7 @@ def test_verify_stored_receipts(tmp_path):
     good = json.loads((S / "real-measured.json").read_text())["receipt_id"]
     rep = c.get(f"/api/receipts/{good}/verify").json()
     assert rep["grade"] == "ESTIMATE"
-    assert [s["name"] for s in rep["steps"]] == ["schema", "sha256", "signature", "rekor",
+    assert [s["name"] for s in rep["steps"]] == ["schema", "sha256", "signature", "rekor", "labels",
                                                  "grade"]
     assert c.get("/api/receipts/rcpt_20261028_100000_f00001/verify").json()["grade"] == \
         "UNVERIFIABLE"

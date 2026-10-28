@@ -1,0 +1,22 @@
+{
+  "model": "muse-spark-1.3",
+  "calls": 1,
+  "fallback": null,
+  "tokens": {
+    "input": 206,
+    "output": 321
+  },
+  "items": [
+    {
+      "id": "325-p99",
+      "setting": "cap 325 W",
+      "check": "p99",
+      "prompt_class": "math",
+      "reason": "p99 change 10.95% passed 10.0% limit and math has 50 prompts, most in mix",
+      "source": "muse-spark",
+      "label": "ADVICE"
+    }
+  ],
+  "run": "RUN2",
+  "source_events": "data/h100-run2/events/sweep.events.jsonl"
+}

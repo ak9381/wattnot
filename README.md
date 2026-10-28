@@ -6,6 +6,53 @@ Token trimmers cut your bill, but not your watts. WattNot measures the joules ea
 
 H100 run: `bash scripts/h100_run.sh --dry-run` first, then see [docs/runbooks/H100.md](docs/runbooks/H100.md). Optional, off by default: an adaptive top-k trial on a small MoE model (a known technique, [docs/ADAPTIVE-TOPK.md](docs/ADAPTIVE-TOPK.md)).
 
+## For judges: check it in five minutes
+
+- **Replay, no install:** https://ak9381.github.io/wattnot/ (a replay of measured logs; nothing runs live). Open the **Proof** tab.
+- **Headline (RUN2, MEASURED):** -27.1% joules per correct answer at a 350 W cap on an H100 (17.03 to 12.42 J), pass rate unchanged at 93.7% on 666 checked answers. RUN2 quality was judged by fixed answer checks from the Granite era; results with the Llama 3.1 8B judge are reported separately when measured.
+- **What Spark decided:** every Muse Spark planner call in RUN2 (400 W, 350 W, 325 W, stop), with its reasoning, latency, tokens and the gate verdict. 325 W failed the p99 gate (+10.95% against a 10% limit); the (i) button explains why.
+- **Verify a receipt yourself:**
+
+  ```bash
+  pip install -e .
+  wattnot verify --chain verifier/samples/chain/      # hash, signature, labels, hash chain
+  wattnot verify --rekor-online receipt.json          # also look the entry up in the public Rekor log
+  python verifier/wattnot_verify.py --chain verifier/samples/chain/   # standalone, stdlib only
+  ```
+
+  The sample receipts are signed offline, so the Rekor step reports "not logged" until the owner publishes them.
+- **Leaderboard (net joules per correct answer):** on the Proof tab of the replay, rebuilt by `scripts/reproduce_leaderboard.sh`. Method and how to submit: [docs/joules-per-correct-answer.md](docs/joules-per-correct-answer.md).
+
+| Setup | J / correct (mean ± sd) | vs default | p99 | Gate |
+|---|---|---|---|---|
+| Default vLLM (no cap) | 17.03 ± 0.14 (MEASURED) | +0.0% | +0.0% | baseline |
+| WattNot power cap 500 W | 16.38 ± 0.01 (MEASURED) | -3.8% | +0.7% | passed |
+| WattNot power cap 450 W | 14.69 ± 0.81 (MEASURED) | -13.7% | +1.8% | passed |
+| WattNot power cap 400 W | 13.81 ± 0.01 (MEASURED) | -18.9% | +4.7% | passed |
+| WattNot power cap 350 W | 12.42 ± 0.00 (MEASURED) | -27.1% | +7.7% | passed |
+| WattNot power cap 325 W | 11.84 ± 0.01 (MEASURED) | -30.5% | +10.9% | failed: p99 up 10.9% (limit 10%) |
+| WattNot small model first (Llama 3.1 8B, escalate to Muse Spark Open) | pending (MEASURED when run) |  |  |  |
+| WattNot cap + token trimmer, same workload | pending (MEASURED when run) |  |  |  |
+| Muse Spark Open, fewer experts | pending (MEASURED when run) |  |  |  |
+| Baseten hosted Muse Spark Open | pending (ESTIMATE when run) |  |  |  |
+| Modal hosted Muse Spark Open | pending (ESTIMATE when run) |  |  |  |
+
+- **Signed receipts on the replay:** https://ak9381.github.io/wattnot/receipts/ . They are signed offline with the repo's public test key, so grades stop at ESTIMATE. The RUN2 receipt carries the Spark trace ID and joules per model.
+- **If the live demo's server times out,** the dashboard switches to the published replay and says so.
+
+### Meta models used
+
+| Model | Job | Measured cost |
+|---|---|---|
+| muse-spark-1.3 | planner: picks the next power cap; explains gate failures; agent-waste and coding-set runs | $23.08 over 3458 calls (MEASURED, API ledger total on 2026-10-28) |
+| sam-3.1 | segments rack photos into units (kept off the main path) | $0.12 over 47 calls (MEASURED, API ledger) |
+| Llama 3.1 8B Instruct | the served model in RUN2; small model in small-first; quality judge | own H100, cost is GPU hours (not an API bill) |
+| Muse Spark Open (Baseten) | big model when the small one fails a check; hosted planner | $0.004, 1 call (MEASURED) |
+
+- **Endpoint health:** `wattnot health` probes each hosted endpoint and writes a FALLBACK ledger (`data/judge/health-*.json`).
+- **Labels:** every number is MEASURED, ESTIMATE, SIMULATED, MOCK, REPLAY or ADVICE. SIMULATED and MOCK content is hidden by default; the "Illustrations" switch shows it.
+- **Not measured yet (long GPU run):** small-model-first escalation rate and net savings, the Llama 3.1 8B judge, Muse Spark Open with fewer experts, and the token trimmer and caps on one workload (the stacked figure is an ESTIMATE until then).
+
 ## Quickstart
 
 ```bash
@@ -44,9 +91,9 @@ What is and isn't checked yet is listed in [docs/runbooks/BASETEN.md](docs/runbo
 - **Modal works the same way.** `--planner modal-open` runs the same planner on Modal's Shared Endpoint for Muse Spark Open, at the same list price. Every compare (`python -m wattnot.spark_open.h2h`) lists three placements on the same prompts: our GPU, Baseten and Modal. The router picks one per workload on quality and p99 and writes the reasons into the receipt. Setup: [docs/runbooks/MODAL.md](docs/runbooks/MODAL.md).
 - The served models we tune are Meta open weights too: Muse Glimmer 30B and Llama 3.1 8B Instruct on vLLM.
 
-## Meta API usage (capped at $20)
+## Meta API usage (capped at $50)
 
-Muse Spark makes WattNot's agent decisions: the next knob to try, the order of reasoning-effort levels, the judge verdicts and plain-words receipt notes. Every call goes through a spend guard that keeps a ledger (`~/.wattnot/meta_spend.json`), refuses a call that would pass **$20**, and warns at $15. `wattnot meta spend` shows the total, a per-purpose breakdown and what is left; `wattnot meta check` confirms the model answers. Details, the price used and the recorded session: [docs/runbooks/META-USAGE.md](docs/runbooks/META-USAGE.md).
+Muse Spark makes WattNot's agent decisions: the next knob to try, the order of reasoning-effort levels, the judge verdicts and plain-words receipt notes. Every call goes through a spend guard that keeps a ledger (`~/.wattnot/meta_spend.json`), refuses a call that would pass **$50**, and warns at $40. `wattnot meta spend` shows the total, a per-purpose breakdown and what is left; `wattnot meta check` confirms the model answers. Details, the price used and the recorded session: [docs/runbooks/META-USAGE.md](docs/runbooks/META-USAGE.md).
 
 ## Flex mode (grid events, SIMULATED until the H100 run)
 

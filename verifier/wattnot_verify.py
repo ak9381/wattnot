@@ -350,6 +350,8 @@ def verify_document(receipt, bundle=None, trusted=None, path="<receipt>"):
             steps.append({"name": "joules", "ok": derived_ok,
                           **({"matches": True} if derived_ok else
                              {"error": "joules block does not match the receipt's own numbers"})})
+    if isinstance(receipt, dict):
+        steps.append(labels_step(receipt))
     sha_ok, sig_ok = steps[1]["ok"], steps[2]["ok"]
     if not (schema_ok and sha_ok and sig_ok and derived_ok):
         g = "UNVERIFIABLE"
@@ -362,6 +364,51 @@ def verify_document(receipt, bundle=None, trusted=None, path="<receipt>"):
     steps.append({"name": "grade", "ok": g != "UNVERIFIABLE", "grade": g, "claimed": claimed})
     return {"path": path, "grade": g, "claimed_grade": claimed, "steps": steps,
             "joules": derived}
+
+
+KNOWN_LABELS = {"MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "REPLAY", "ADVICE", "SAMPLE"}
+
+
+def _labels(obj, path="$"):
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k == "label" and isinstance(v, str):
+                yield path, v
+            else:
+                yield from _labels(v, path + "." + k)
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            yield from _labels(v, "{}[{}]".format(path, i))
+
+
+def labels_step(receipt):
+    """Every label is known; the headline result has no SIMULATED or MOCK number."""
+    found = list(_labels(receipt))
+    unknown = ["{}={}".format(p, v) for p, v in found if v not in KNOWN_LABELS]
+    declared = receipt.get("grade") in ("SIMULATED", "MOCK") or (receipt.get("integrity") or {}).get("grade") in ("SIMULATED", "MOCK")
+    weak = [] if declared else ["{}={}".format(p, v) for p, v in _labels(receipt.get("result"), "$.result")
+                                if v in ("SIMULATED", "MOCK")]
+    counts = {}
+    for _, v in found:
+        counts[v] = counts.get(v, 0) + 1
+    d = {"counts": counts}
+    if weak:
+        d["error"] = "headline result uses " + ", ".join(weak[:3])
+    elif unknown:
+        d["error"] = "unknown label(s): " + ", ".join(unknown[:3])
+    return {"name": "labels", "ok": not unknown and not weak, **d}
+
+
+def verify_chain(receipts):
+    """Oldest first: each integrity.prev_sha256 must equal the previous receipt's sha256."""
+    ok, links = True, []
+    for i in range(1, len(receipts)):
+        prev = (receipts[i - 1].get("integrity") or {}).get("sha256")
+        got = (receipts[i].get("integrity") or {}).get("prev_sha256")
+        good = prev is not None and got == prev
+        ok = ok and good
+        links.append({"index": i, "ok": good, "prev_sha256": got, "want": prev})
+    return {"name": "chain", "ok": ok, "links": links, "n": len(receipts)}
 
 
 def format_report(r):
@@ -378,6 +425,9 @@ def format_report(r):
             mark = "ok  " if s["ok"] else "none"
         elif n == "joules":
             info = "matches the receipt's numbers" if s["ok"] else s.get("error", "")
+        elif n == "labels":
+            info = s.get("error") or ", ".join("{} {}".format(k, v)
+                                               for k, v in sorted(s["counts"].items()))
         elif n == "grade":
             info = s["grade"] + ("  (receipt claims {})".format(s["claimed"])
                                  if s.get("claimed") and s["claimed"] != s["grade"] else "")
@@ -420,13 +470,15 @@ def verify_path(receipt_path, bundle_path=None, trusted=None):
 def main(argv=None):
     args = list(sys.argv[1:] if argv is None else argv)
     bundle = trust = None
-    as_json = False
+    as_json = chain = False
     files = []
     try:
         while args:
             a = args.pop(0)
             if a == "--json":
                 as_json = True
+            elif a == "--chain":
+                chain = True
             elif a == "--bundle":
                 bundle = args.pop(0)
             elif a == "--trust":
@@ -441,15 +493,27 @@ def main(argv=None):
     except IndexError:
         files = []
     if not files or (bundle and len(files) != 1):
-        print("usage: wattnot_verify.py RECEIPT.json [...] [--bundle B] [--trust KEYS] [--json]",
+        print("usage: wattnot_verify.py RECEIPT.json [...] [--bundle B] [--trust KEYS] [--json] [--chain]",
               file=sys.stderr)
         return 2
+    files = [str(q) for f in files for q in (sorted(Path(f).glob("*.json")) if Path(f).is_dir() else [f])]
+    files = [f for f in files if not f.endswith(".sigstore.json")]
     trusted = load_trusted(trust)
     bad = 0
     for f in files:
         r = verify_path(f, bundle, trusted)
-        bad += r["grade"] == "UNVERIFIABLE"
+        bad += r["grade"] == "UNVERIFIABLE" or any(s["name"] == "labels" and not s["ok"]
+                                                  for s in r["steps"])
         print(json.dumps(r) if as_json else format_report(r))
+    if chain:
+        docs = []
+        for f in files:
+            with open(f, encoding="utf-8") as fh:
+                docs.append(json.load(fh))
+        c = verify_chain(docs)
+        bad += not c["ok"]
+        print(json.dumps(c) if as_json else "chain {} {} receipts".format(
+            "ok  " if c["ok"] else "FAIL", c["n"]))
     return 1 if bad else 0
 
 
