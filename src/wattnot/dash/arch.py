@@ -419,7 +419,7 @@ def meta_block(S: dict, lg: dict, bt: dict, h: dict) -> list[dict]:
         "Muse Spark": [
             st("calls", "Meta API calls, all purposes", spark and spark["calls"], "", "MEASURED", "Meta spend ledger"),
             st("tok", "tokens in / out", f'{spark["in"]:,} / {spark["out"]:,}' if spark else None, "", "MEASURED", "Meta spend ledger"),
-            st("usd", "spent of the $20 cap", spark and spark["usd"], "$", "MEASURED", "Meta spend ledger",
+            st("usd", "spent of the $50 cap", spark and spark["usd"], "$", "MEASURED", "Meta spend ledger",
                f'plus ${lg.get("_earlier_usd", 0)} noted from earlier work'),
         ],
         "Muse Spark Open": [

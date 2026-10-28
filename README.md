@@ -91,9 +91,9 @@ What is and isn't checked yet is listed in [docs/runbooks/BASETEN.md](docs/runbo
 - **Modal works the same way.** `--planner modal-open` runs the same planner on Modal's Shared Endpoint for Muse Spark Open, at the same list price. Every compare (`python -m wattnot.spark_open.h2h`) lists three placements on the same prompts: our GPU, Baseten and Modal. The router picks one per workload on quality and p99 and writes the reasons into the receipt. Setup: [docs/runbooks/MODAL.md](docs/runbooks/MODAL.md).
 - The served models we tune are Meta open weights too: Muse Glimmer 30B and Llama 3.1 8B Instruct on vLLM.
 
-## Meta API usage (capped at $20)
+## Meta API usage (capped at $50)
 
-Muse Spark makes WattNot's agent decisions: the next knob to try, the order of reasoning-effort levels, the judge verdicts and plain-words receipt notes. Every call goes through a spend guard that keeps a ledger (`~/.wattnot/meta_spend.json`), refuses a call that would pass **$20**, and warns at $15. `wattnot meta spend` shows the total, a per-purpose breakdown and what is left; `wattnot meta check` confirms the model answers. Details, the price used and the recorded session: [docs/runbooks/META-USAGE.md](docs/runbooks/META-USAGE.md).
+Muse Spark makes WattNot's agent decisions: the next knob to try, the order of reasoning-effort levels, the judge verdicts and plain-words receipt notes. Every call goes through a spend guard that keeps a ledger (`~/.wattnot/meta_spend.json`), refuses a call that would pass **$50**, and warns at $40. `wattnot meta spend` shows the total, a per-purpose breakdown and what is left; `wattnot meta check` confirms the model answers. Details, the price used and the recorded session: [docs/runbooks/META-USAGE.md](docs/runbooks/META-USAGE.md).
 
 ## Flex mode (grid events, SIMULATED until the H100 run)
 

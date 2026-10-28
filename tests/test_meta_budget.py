@@ -104,7 +104,7 @@ def test_refuses_when_total_plus_estimate_passes_the_cap(tmp_path):
 
 
 def test_soft_warning_between_15_and_20(tmp_path):
-    led = SpendLedger(tmp_path / "l.json")
+    led = SpendLedger(tmp_path / "l.json", cap_usd=20.0, soft_usd=15.0)
     led.seed([{"key": "a", "model": "muse-spark-1.3", "purpose": "x",
                "input_tokens": 0, "output_tokens": int(14.9 / 4.25 * 1e6)}])
     assert led.total() == pytest.approx(14.9, abs=0.01)
@@ -353,10 +353,10 @@ def test_meta_spend_cli_shows_total_breakdown_and_remaining(tmp_path, capsys, mo
         led.settle(eid, ok_response(prompt=1000, completion=2000)["usage"])
     assert main(["meta", "spend", "--ledger", str(p)]) == 0
     out = capsys.readouterr().out
-    assert "of $20.00 hard cap" in out and "remaining" in out
+    assert "of $50.00 hard cap" in out and "remaining" in out
     assert "judge" in out and "effort-order" in out
     spent = led.total()
-    assert f"${spent:.4f}" in out and f"${20 - spent:.4f}" in out
+    assert f"${spent:.4f}" in out and f"${50 - spent:.4f}" in out
     assert main(["meta", "spend", "--ledger", str(p), "--json"]) == 0
     j = json.loads(capsys.readouterr().out)
     assert j["calls"] == 3 and j["per_purpose"]["judge"]["calls"] == 2

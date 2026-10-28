@@ -34,7 +34,7 @@ def seed_earlier(ledger: SpendLedger, root: Path = ROOT) -> int:
 
 
 def add_parser(sub) -> None:
-    m = sub.add_parser("meta", help="Meta API usage: spend, check, session (hard cap $20)")
+    m = sub.add_parser("meta", help="Meta API usage: spend, check, session (hard cap $50)")
     s = m.add_subparsers(dest="meta_cmd")
     sp = s.add_parser("spend", help="total, per-purpose breakdown and remaining budget")
     sp.add_argument("--json", action="store_true")

@@ -136,7 +136,7 @@ class SparkClient:
     """Chat Completions call with a strict JSON schema and a small token cap.
 
     Every call goes through the spend guard (`wattnot.meta`): it is logged in the ledger
-    under `purpose` and refused once the $20 cap would be passed. A refusal is an
+    under `purpose` and refused once the $50 cap would be passed. A refusal is an
     exception, so callers take their normal fallback path.
     """
 
