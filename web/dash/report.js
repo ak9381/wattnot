@@ -162,8 +162,8 @@ function steps(X) {
           <dt>Power cap</dt><dd>${num(X.b.cap_w, 0)} W → ${num(X.w.cap_w, 0)} W</dd>
           <dt>Energy / request</dt><dd>${num(X.bm.j_per_req)} → ${num(X.wm.j_per_req)} J ${chip("MEASURED")}</dd>
           <dt>Energy saved</dt><dd>${num(X.savedPct, 1)}% · ${num(X.jSavedTot)} J over the run ${chip("MEASURED")}</dd>
-          <dt>Cost saved</dt><dd>$${num(X.costSaved, 4)} ${chip("ESTIMATE")}</dd>
-          <dt>Water saved</dt><dd>${num(X.waterSaved, 4)} L ${chip("ESTIMATE")}</dd>
+          <dt>Cost saved</dt><dd>$${num(X.costSaved, 4)}</dd>
+          <dt>Water saved</dt><dd>${num(X.waterSaved, 4)} L</dd>
         </dl>
         <p>Energy is measured joules (${num(X.reqs, 0)} requests). Cost uses $${X.usd}/kWh and water uses ${X.wue} L/kWh — both ${chip("ESTIMATE")} derived from the measured joules.</p>`
         : `<p>This run has no tuned phase to compare against the baseline.</p>`,

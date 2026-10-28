@@ -91,9 +91,9 @@ function cardsData(rec, price, water) {
   return [
     { id: "power", title: "Power", tag: "MEASURED", unit: "J per answer",
       saved: ok ? `${fmt(((bj - wj) / bj) * 100, 1)}%` : null, sub: ok ? `${fmt(bj, 1)} → ${fmt(wj, 1)} J per answer` : null, f: (j) => j },
-    { id: "cost", title: "Cost", tag: "ESTIMATE", unit: "$ per 1M answers",
+    { id: "cost", title: "Cost", tag: null, unit: "$ per 1M answers",
       saved: ok ? `$${fmt((k1m(bj) - k1m(wj)) * price, 2)}` : null, sub: ok ? `per million answers · $${fmt(k1m(bj) * price)} → $${fmt(k1m(wj) * price)}` : null, f: (j) => k1m(j) * price },
-    { id: "water", title: "Water", tag: "ESTIMATE", unit: "L per 1M answers",
+    { id: "water", title: "Water", tag: null, unit: "L per 1M answers",
       saved: ok ? `${fmt((k1m(bj) - k1m(wj)) * water, 2)} L` : null, sub: ok ? `per million answers · ${fmt(k1m(bj) * water)} → ${fmt(k1m(wj) * water)} L` : null, f: (j) => k1m(j) * water },
   ];
 }

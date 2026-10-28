@@ -239,7 +239,7 @@ function renderKpis(runsList, details) {
       <span class="more">Details &rarr;</span>
       <div class="name">Water saved</div>
       <div class="big">${isNum(litres)
-        ? `<span class="v-num">${fmt(litres, 3)}</span><span class="unit">L</span>${dot("ESTIMATE")}`
+        ? `<span class="v-num">${fmt(litres, 3)}</span><span class="unit">L</span>`
         : `<span class="emdash">${EM}</span>`}</div>
       <div class="foot">${isNum(litres) ? "From energy &times; 0.36 L/kWh" : "Needs metered energy"}</div>
     </div>
@@ -247,7 +247,7 @@ function renderKpis(runsList, details) {
       <span class="more">Details &rarr;</span>
       <div class="name">Cost saved</div>
       <div class="big">${isNum(usd)
-        ? `<span class="unit">$</span><span class="v-num">${fmt(usd, 4)}</span>${dot("ESTIMATE")}`
+        ? `<span class="unit">$</span><span class="v-num">${fmt(usd, 4)}</span>`
         : `<span class="emdash">${EM}</span>`}</div>
       <div class="foot">${isNum(usd) ? "From energy &times; $0.1387/kWh" : "Needs metered energy"}</div>
     </div>

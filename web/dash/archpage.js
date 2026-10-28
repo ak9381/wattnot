@@ -178,7 +178,10 @@ export class ArchPage {
     const m = meterFor(this.d, this.replay), st = this.phase === 1 ? 0 : 2;
     const note = this.phase === 1 ? "baseline (stock settings)" : (m.lever.saved_pct != null ? `−${m.lever.saved_pct}% vs baseline` : "with WattNot");
     box.innerHTML = `<div class="mm-head">Live meters${dot("REPLAY")} <span>${esc(m.title)}</span><span class="muted">· ${esc(note)}</span><span class="muted">· ${esc(PHASE_LABEL[this.phase])}</span>${legendHtml()}</div>
-      <div class="mm-grid">${m.tiles.map((t) => `<div class="mm${t.k === "water" ? " water" : ""}"><span class="mk">${esc(t.label)}</span><span class="mv num${numLab(t.tag)}">${esc(st >= 2 ? t.after : t.before)}</span>${dot(t.tag)}<span class="ms">${esc(t.sub)}</span></div>`).join("")}</div>
+      <div class="mm-grid">${m.tiles.map((t) => {
+        const showDot = t.tag && !((t.k === "cost" || t.k === "water") && t.tag === "ESTIMATE");
+        return `<div class="mm${t.k === "water" ? " water" : ""}"><span class="mk">${esc(t.label)}</span><span class="mv num${numLab(t.tag)}">${esc(st >= 2 ? t.after : t.before)}</span>${showDot ? dot(t.tag) : ""}<span class="ms">${esc(t.sub)}</span></div>`;
+      }).join("")}</div>
       <span class="mm-foot">${esc(m.foot)}</span>`;
   }
   setFilter(f) {

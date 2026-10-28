@@ -473,12 +473,12 @@ function mapTopics() {
              leaf("pw-w", "bolt", "With WattNot", e ? `350 W cap · <b>${esc(e.wattnot)}</b>/req · <b>${esc(e.delta)}</b> ${badge(e.tag)}` : "350 W cap · not measured")],
       detail: `<b>What went right.</b> RUN2 on Llama 3.1 8B at a 350 W cap: <b>−27.1%</b> joules per request ${badge("MEASURED")} (data/h100-run2/vm/steps/cap350.json). Earlier sweep on Muse Glimmer 30B at 400 W: <b>−21.0%</b> with p99 +3.7% ${badge("MEASURED")} (H100 run sweep.csv, NVML). Qwen3 adaptive top-k saved 7.0% and passed all three gates at 95.7% agreement ${badge("MEASURED")}.` },
     { id: "cost", color: "#C4B4D6", name: "Cost", sub: "Electricity per 1M requests",
-      kids: [leaf("c-s", "coin", "Without WattNot", c ? `Stock: <b>${esc(c.stock)}</b> ${badge(c.tag)}` : "Stock cost: not measured"),
-             leaf("c-w", "coin", "With WattNot", c ? `Capped: <b>${esc(c.wattnot)}</b> (<b>${esc(c.delta)}</b>) ${badge(c.tag)}` : "Capped cost: not measured")],
+      kids: [leaf("c-s", "coin", "Without WattNot", c ? `Stock: <b>${esc(c.stock)}</b>` : "Stock cost: not measured"),
+             leaf("c-w", "coin", "With WattNot", c ? `Capped: <b>${esc(c.wattnot)}</b> (<b>${esc(c.delta)}</b>)` : "Capped cost: not measured")],
       detail: `Measured joules times <b>$0.1387</b>/kWh, the US commercial electricity price (EIA). The meter reading is ${badge("MEASURED")}; the bill math is ${badge("ESTIMATE")}.` },
     { id: "water", color: "#8E7A9E", name: "Water", sub: "Cooling water per 1M requests",
-      kids: [leaf("w-s", "drop", "Without WattNot", w ? `Stock: <b>${esc(w.stock)}</b> ${badge(w.tag)}` : "Stock water: not measured"),
-             leaf("w-w", "drop", "With WattNot", w ? `Capped: <b>${esc(w.wattnot)}</b> (<b>${esc(w.delta)}</b>) ${badge(w.tag)}` : "Capped water: not measured")],
+      kids: [leaf("w-s", "drop", "Without WattNot", w ? `Stock: <b>${esc(w.stock)}</b>` : "Stock water: not measured"),
+             leaf("w-w", "drop", "With WattNot", w ? `Capped: <b>${esc(w.wattnot)}</b> (<b>${esc(w.delta)}</b>)` : "Capped water: not measured")],
       detail: `Measured joules times <b>0.36 L</b>/kWh, a US fleet-average site water factor (LBNL). On-site cooling water only; making the electricity is not counted. ${badge("ESTIMATE")}.` },
     { id: "latency", color: "#B49BDB", name: "Latency", sub: "Slowest 1% of requests (p99)",
       kids: [leaf("l-s", "clock", "Without WattNot", p ? `Stock p99 <b>${esc(p.stock)}</b> ${badge(p.tag)}` : "Stock p99: not measured"),
@@ -968,10 +968,12 @@ const TREE_DESC = {
   budget: "Spend must stay inside the run's budget.",
   sam: "SAM 3.1 outlines each rack; WattNot marks the rack it can cool. Heat is simulated from the measured power drop.",
 };
-const treeVal = (v) => {
+const treeVal = (v, branch) => {
   if (!v) return `<span class="rad-miss">–</span><span class="rad-pending">pending</span>`;
   if (v.gate) return v.pass ? `<span class="rad-pass">✓ pass</span> ${badge("MEASURED")}` : `<span class="rad-fail">✕ fail</span> ${badge("MEASURED")}`;
-  return `${cnum(esc(v.text), v.tag)}${badge(v.tag)}`;
+  const isCostOrWater = branch === "cost" || branch === "water";
+  const showBadge = v.tag && (!isCostOrWater || v.tag !== "ESTIMATE");
+  return `${cnum(esc(v.text), isCostOrWater && v.tag === "ESTIMATE" ? null : v.tag)}${showBadge ? ` ${badge(v.tag)}` : ""}`;
 };
 function branchDetailHtml(rec, id) {
   const sv = savedPct(rec, id);
@@ -1054,7 +1056,13 @@ function mountCompare() {
   }
   $$("[data-where]").forEach((w) => (w.onclick = () => openWhere(rec)));
 
-  const branchSaved = (id) => { const sv = savedPct(rec, id); return sv ? `${cnum(esc(sv.text), sv.tag)} ${badge(sv.tag)}` : `<span class="rad-miss">–</span><span class="v-chip">pending</span>`; };
+  const branchSaved = (id) => {
+    const sv = savedPct(rec, id);
+    if (!sv) return `<span class="rad-miss">–</span><span class="v-chip">pending</span>`;
+    const isCostOrWater = id === "cost" || id === "water";
+    const tag = isCostOrWater ? null : sv.tag;
+    return `${cnum(esc(sv.text), tag)}${tag ? ` ${badge(tag)}` : ""}`;
+  };
 
   // Root WattNot node toggle collapse/expand
   const centreNode = $("#centreNode", stage);
@@ -1119,7 +1127,7 @@ function mountCompare() {
           el.setAttribute("data-explain-value", nodeVal);
           el.setAttribute("data-explain-label", nodeTag);
           el.setAttribute("data-explain-source", `tree.${node.id}`);
-          el.innerHTML = `<button class="rad-head2" aria-expanded="${onPath}"${has ? "" : " disabled"} aria-label="${esc(node.name)}${has ? ": open its routes" : ""}"><b>${esc(node.name)}</b><span class="rad-val">${treeVal(v)}</span>${node.own_only ? `<small class="rad-sub">own GPU only</small>` : ""}${has ? `<span class="rad-chev" aria-hidden="true">›</span>` : ""}</button><button class="ibtn rad-i" aria-label="${esc(node.name)} details">i</button>`;
+          el.innerHTML = `<button class="rad-head2" aria-expanded="${onPath}"${has ? "" : " disabled"} aria-label="${esc(node.name)}${has ? ": open its routes" : ""}"><b>${esc(node.name)}</b><span class="rad-val">${treeVal(v, S.cmpActive)}</span>${node.own_only ? `<small class="rad-sub">own GPU only</small>` : ""}${has ? `<span class="rad-chev" aria-hidden="true">›</span>` : ""}</button><button class="ibtn rad-i" aria-label="${esc(node.name)} details">i</button>`;
           stage.appendChild(el);
           if (has) {
             $(".rad-head2", el).onclick = () => {
@@ -1151,7 +1159,7 @@ function mountCompare() {
         cardEl.setAttribute("data-explain-value", leafVal);
         cardEl.setAttribute("data-explain-label", leafTag);
         cardEl.setAttribute("data-explain-source", `tree.${leaf.id}`);
-        cardEl.innerHTML = `<div class="rad-leaf-hd"><span class="rad-leaf-title">${esc(leaf.name)}</span><span style="color:var(--cy);font-size:12px">→</span></div><div class="rad-leaf-val">${treeVal(v)}</div><div class="rad-leaf-desc">${esc(desc)}</div>`;
+        cardEl.innerHTML = `<div class="rad-leaf-hd"><span class="rad-leaf-title">${esc(leaf.name)}</span><span style="color:var(--cy);font-size:12px">→</span></div><div class="rad-leaf-val">${treeVal(v, S.cmpActive)}</div><div class="rad-leaf-desc">${esc(desc)}</div>`;
         cardEl.onclick = () => {
           openSidePanel(leaf.name, nodeDetailHtml(rec, S.cmpActive, leaf));
         };
@@ -1175,7 +1183,7 @@ function mountCompare() {
     c.setAttribute("data-explain-value", svVal);
     c.setAttribute("data-explain-label", svTag);
     c.setAttribute("data-explain-source", svSrc);
-    c.innerHTML = `<button class="rad-head" aria-expanded="${!S.cmpCollapsed && id === S.cmpActive}" aria-label="${name}: open its routes"><b><span>${name}</span>${badge(id === "power" ? "MEASURED" : "ESTIMATE")}</b><span class="rad-val">${branchSaved(id)}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power</small>`}</button><button class="ibtn rad-i" aria-label="${name} details">i</button>`;
+    c.innerHTML = `<button class="rad-head" aria-expanded="${!S.cmpCollapsed && id === S.cmpActive}" aria-label="${name}: open its routes"><b><span>${name}</span>${id === "power" ? badge("MEASURED") : ""}</b><span class="rad-val">${branchSaved(id)}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power</small>`}</button><button class="ibtn rad-i" aria-label="${name} details">i</button>`;
     $(".rad-head", c).onclick = () => { S.cmpCollapsed = false; S.cmpActive = id; S.cmpPath = []; renderTree(); };
     $(".rad-i", c).onclick = (e) => { e.stopPropagation(); openSidePanel(name, branchDetailHtml(rec, id)); };
   });

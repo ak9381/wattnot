@@ -152,3 +152,17 @@ test("header and footer are fixed with Apple glassmorphism and glow blobs", () =
   assert.match(v2Css, /height:\s*calc\(100vh - 340px\)/);
   assert.doesNotMatch(v2Css, /footer\.wn-footer\.gl\s*\{\s*display:\s*none/);
 });
+
+test("Cost and Water cards and nodes have no ESTIMATE label chips", () => {
+  const runsJs = fs.readFileSync(path.join(dashDir, "runs.js"), "utf8");
+  assert.doesNotMatch(runsJs, /Water saved<\/div>\s*<div class="big">[\s\S]*?\$\{dot\("ESTIMATE"\)\}/);
+  assert.doesNotMatch(runsJs, /Cost saved<\/div>\s*<div class="big">[\s\S]*?\$\{dot\("ESTIMATE"\)\}/);
+
+  const reportJs = fs.readFileSync(path.join(dashDir, "report.js"), "utf8");
+  assert.doesNotMatch(reportJs, /<dt>Cost saved<\/dt><dd>[^<]*\$\{chip\("ESTIMATE"\)\}/);
+  assert.doesNotMatch(reportJs, /<dt>Water saved<\/dt><dd>[^<]*\$\{chip\("ESTIMATE"\)\}/);
+
+  const v2Js = fs.readFileSync(path.join(dashDir, "v2.js"), "utf8");
+  assert.doesNotMatch(v2Js, /<span>\$\{name\}<\/span>\$\{badge\(id === "power" \? "MEASURED" : "ESTIMATE"\)\}/);
+  assert.match(v2Js, /<span>\$\{name\}<\/span>\$\{id === "power" \? badge\("MEASURED"\) : ""\}/);
+});
