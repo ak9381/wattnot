@@ -62,9 +62,11 @@ def detect_hotspot_mask(
     """Segment the hotspot rack/GPU region using SAM 3.1 (or deterministic mock)."""
     is_mock = mock or (not live) or (os.environ.get("WATTNOT_META_MOCK") == "1")
 
+    live_poly: list[list[int]] | None = None
     if not is_mock:
         # Live path: use real SamClient with ledger spend
         from wattnot.sam.client import SamClient
+        from wattnot.sam.sam_parse import parse_boxes
 
         client = SamClient(ledger=ledger)
         image_bytes = b""
@@ -77,10 +79,17 @@ def detect_hotspot_mask(
             else:
                 image_bytes = b"\xff\xd8\xff\xe0mockjpegdata"
 
-        client.segment(image_bytes, prompt, purpose="sam:hotspot-cap")
+        raw = client.segment(image_bytes, prompt, purpose="sam:hotspot-cap")
+        boxes = parse_boxes(raw or "")
+        if boxes:
+            b = boxes[0]
+            live_poly = [[int(b["x1"]), int(b["y1"])], [int(b["x2"]), int(b["y1"])],
+                         [int(b["x2"]), int(b["y2"])], [int(b["x1"]), int(b["y2"])]]
 
-    # Slot polygon and bbox
-    poly = RACK_SLOT_POLYGONS.get(target_gpu, RACK_SLOT_POLYGONS[1])
+    # Polygon: live SAM box when available, otherwise the canonical slot outline.
+    # Only a polygon that actually came back from SAM may be labelled MEASURED;
+    # the canonical slot fallback is SIMULATED in live mode and MOCK otherwise.
+    poly = live_poly or RACK_SLOT_POLYGONS.get(target_gpu, RACK_SLOT_POLYGONS[1])
     bbox = _bbox_for_polygon(poly)
     # Simple compact RLE string representation
     rle = f"{bbox[0]},{bbox[1]},{bbox[2] - bbox[0]},{bbox[3] - bbox[1]}"
@@ -89,7 +98,7 @@ def detect_hotspot_mask(
         "bbox": bbox,
         "polygon": poly,
         "rle": rle,
-        "label": "MOCK" if is_mock else "MEASURED",
+        "label": "MOCK" if is_mock else ("MEASURED" if live_poly else "SIMULATED"),
     }
     mask_obj["sha256"] = compute_mask_sha256(mask_obj)
     return mask_obj
@@ -126,8 +135,9 @@ def plan_hotspot_cap(
         current_caps[target_id] = DEFAULT_STOCK_CAP_W
 
     old_cap = current_caps[target_id]
-    # Bounded reduction: never below min_cap_w
-    new_cap = max(min_cap_w, old_cap - step_w)
+    # Bounded reduction: never below min_cap_w, and never above the existing cap
+    # (a GPU already under min_cap_w keeps its current cap — a derate must not raise power).
+    new_cap = min(old_cap, max(min_cap_w, old_cap - step_w))
     actual_reduction = old_cap - new_cap
 
     # Mask identification from SAM 3.1
@@ -143,7 +153,10 @@ def plan_hotspot_cap(
     updated_caps = dict(current_caps)
     updated_caps[target_id] = new_cap
 
-    label = "MOCK" if is_mock else "MEASURED"
+    # Plan provenance follows the mask: MOCK in mock mode, otherwise whatever the
+    # live segmentation honestly produced (MEASURED, or SIMULATED on fallback).
+    label = "MOCK" if is_mock else str(mask.get("label", "SIMULATED"))
+    # A cap decision is a planner recommendation in both modes, never a measurement.
     advice_label = "ADVICE"
 
     if actual_reduction > 0:
@@ -154,8 +167,8 @@ def plan_hotspot_cap(
         )
     else:
         reason = (
-            f"Hotspot detected on GPU {target_id}; already at minimum cap of {min_cap_w}W; "
-            f"cap held at {min_cap_w}W; other GPUs unchanged."
+            f"Hotspot detected on GPU {target_id}; cap already at or below minimum of {min_cap_w}W; "
+            f"cap held at {old_cap}W; other GPUs unchanged."
         )
 
     # Ensure reason string fits within receipt lint limits (< 200 chars)
@@ -169,7 +182,7 @@ def plan_hotspot_cap(
         "delta_w": -actual_reduction,
         "min_cap_w": min_cap_w,
         "step_w": step_w,
-        "label": advice_label if is_mock else "MEASURED",
+        "label": advice_label,
     }
 
     return {

@@ -77,6 +77,22 @@ def test_hotspot_cap_enforces_lower_bound() -> None:
     assert plan_at_min["decision"]["new_cap_w"] == 250
     assert plan_at_min["decision"]["delta_w"] == 0
 
+    # Already below min_cap_w -> a derate must never RAISE the cap
+    plan_below = plan_hotspot_cap(gpu_caps={1: 240}, target_gpu=1, step_w=50, min_cap_w=250, mock=True)
+    assert plan_below["decision"]["new_cap_w"] == 240
+    assert plan_below["decision"]["delta_w"] == 0
+    assert plan_below["gpu_caps_after"][1] == 240
+    assert "held at 240W" in plan_below["reason"]
+
+
+def test_hotspot_receipt_fills_missing_mask_sha256() -> None:
+    # build_receipt must compute the mask hash itself when the plan omits it
+    plan = plan_hotspot_cap(target_gpu=1, mock=True)
+    plan = json.loads(json.dumps(plan))
+    expected_sha = plan["mask"].pop("sha256")
+    receipt = build_receipt(FIXTURE_RUN, hotspot_cap=plan)
+    assert receipt["measurement"]["hotspot_cap"]["mask"]["sha256"] == expected_sha
+
 
 def test_hotspot_cap_in_receipt_is_signed_and_verified() -> None:
     plan = plan_hotspot_cap(target_gpu=1, step_w=50, min_cap_w=250, mock=True)
