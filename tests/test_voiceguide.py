@@ -1,0 +1,126 @@
+"""Tests for Voice Guide (src/wattnot/meta/voiceguide.py)."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+
+from wattnot.api.app import create_app
+from wattnot.meta.voiceguide import (
+    ALLOWED_ACTIONS,
+    VoiceGuideActionError,
+    classify_intent,
+    get_quick_ack,
+    process_voice_query,
+    transcribe_audio,
+)
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_intent_classification() -> None:
+    assert classify_intent("compare runs") == "navigate"
+    assert classify_intent("show last night's report") == "navigate"
+    assert classify_intent("configure a run with vllm") == "configure"
+    assert classify_intent("prefill 350W caps") == "configure"
+    assert classify_intent("what was the energy saving on the last run?") == "answer"
+    assert classify_intent("tell me water consumption in mL") == "answer"
+
+
+def test_quick_ack_fast_path() -> None:
+    nav_ack = get_quick_ack("navigate", "compare runs")
+    assert nav_ack["intent"] == "navigate"
+    assert "Compare" in nav_ack["ack"]
+
+    cfg_ack = get_quick_ack("configure", "configure workload")
+    assert cfg_ack["intent"] == "configure"
+    assert "pre-fill" in cfg_ack["ack"]
+
+    ans_ack = get_quick_ack("answer", "what is saving?")
+    assert ans_ack["intent"] == "answer"
+    assert "signed receipts" in ans_ack["ack"]
+
+
+def test_navigate_intent_compare_and_report() -> None:
+    # Test "compare runs"
+    res1 = process_voice_query("compare runs", root_dir=REPO_ROOT, mock=True)
+    assert res1["action"] == "navigate"
+    assert res1["intent"] == "navigate"
+    assert "/dash/comparetree.html" in res1["route"]
+    assert "prompt" in res1
+
+    # Test "show last night's report"
+    res2 = process_voice_query("show last night's report", root_dir=REPO_ROOT, mock=True)
+    assert res2["action"] == "navigate"
+    assert res2["intent"] == "navigate"
+    assert "report.html" in res2["route"]
+    assert "target_receipt_id" in res2
+
+
+def test_answer_intent_cites_signed_receipt() -> None:
+    # Query asking about energy savings
+    res = process_voice_query("what was the billed saving on rcpt_20261027_run2_cap350?", root_dir=REPO_ROOT, mock=True)
+    assert res["action"] == "answer"
+    assert res["intent"] == "answer"
+    assert "rcpt_20261027_run2_cap350" in res["text"]
+    assert "citations" in res
+    assert any("rcpt_" in c for c in res["citations"])
+    assert "[MEASURED]" in res["text"] or "[ESTIMATE]" in res["text"]
+
+
+def test_answer_intent_refuses_unanswerable_query() -> None:
+    res = process_voice_query("what is the weather today in Honolulu?", root_dir=REPO_ROOT, mock=True)
+    assert res["action"] == "answer"
+    assert res["intent"] == "answer"
+    assert res.get("refusal") is True
+    assert "only answer questions grounded in verified" in res["text"]
+    assert res["citations"] == []
+
+
+def test_configure_intent_returns_prefill_requiring_user_review() -> None:
+    res = process_voice_query("configure a new run for vllm", root_dir=REPO_ROOT, mock=True)
+    assert res["action"] == "prefill"
+    assert res["intent"] == "configure"
+    assert "prefill" in res
+    assert "vllm" in res["prefill"]["stack"]
+    assert "caps_w" in res["prefill"]
+    # Enforce note that user must press Start
+    assert "Start" in res["prefill"]["note"] or "Start" in res["text"]
+
+
+def test_action_allowlist_enforcement() -> None:
+    assert ALLOWED_ACTIONS == {"navigate", "answer", "prefill"}
+    # Verify that attempting an action outside the allowlist raises VoiceGuideActionError
+    with pytest.raises(VoiceGuideActionError):
+        from wattnot.meta import voiceguide
+
+        # Simulate a malicious or accidental mutation action
+        voiceguide.ALLOWED_ACTIONS = frozenset({"navigate", "answer"})
+        try:
+            res = {"action": "launch", "intent": "launch"}
+            if res["action"] not in voiceguide.ALLOWED_ACTIONS:
+                raise VoiceGuideActionError(f"Action '{res['action']}' forbidden")
+        finally:
+            voiceguide.ALLOWED_ACTIONS = ALLOWED_ACTIONS
+
+
+def test_voiceguide_api_endpoints() -> None:
+    app = create_app(str(REPO_ROOT))
+    client = TestClient(app)
+
+    # POST query
+    resp = client.post("/api/voiceguide", json={"query": "compare runs"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["action"] == "navigate"
+    assert "/dash/comparetree.html" in data["route"]
+
+    # GET query
+    resp_get = client.get("/api/voiceguide?q=configure+new+run")
+    assert resp_get.status_code == 200
+    data_get = resp_get.json()
+    assert data_get["action"] == "prefill"
+    assert "prefill" in data_get

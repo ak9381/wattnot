@@ -1,0 +1,172 @@
+/* Voice Guide Glass Component - Meta Tools v5 */
+.vg-slot-container {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 9999;
+  font-family: "Source Sans 3", "Source Sans Pro", system-ui, sans-serif;
+  color: #DCD6E4;
+}
+
+.vg-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(31, 26, 47, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(142, 122, 158, 0.35);
+  border-radius: 24px;
+  padding: 6px 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.vg-mic-btn {
+  background: #2E2B44;
+  border: 1px solid #6C5E7C;
+  color: #DCD6E4;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  padding: 0;
+}
+
+.vg-mic-btn:hover {
+  background: #3B3A54;
+  border-color: #8E7A9E;
+}
+
+.vg-mic-btn.listening {
+  background: #E06C75;
+  border-color: #FFA5B0;
+  color: #171724;
+  animation: vg-pulse 1.2s infinite;
+}
+
+@keyframes vg-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(224, 108, 117, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(224, 108, 117, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(224, 108, 117, 0); }
+}
+
+.vg-input {
+  background: rgba(23, 23, 36, 0.6);
+  border: 1px solid rgba(110, 94, 124, 0.3);
+  border-radius: 16px;
+  padding: 4px 10px;
+  color: #DCD6E4;
+  font-family: inherit;
+  font-size: 0.85rem;
+  width: 170px;
+  outline: none;
+  transition: width 0.25s ease, border-color 0.2s ease;
+}
+
+.vg-input:focus {
+  width: 240px;
+  border-color: #8E7A9E;
+  background: rgba(23, 23, 36, 0.9);
+}
+
+.vg-submit-btn {
+  background: transparent;
+  border: none;
+  color: #B2A6C3;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 2px 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.vg-submit-btn:hover {
+  color: #DCD6E4;
+  background: rgba(142, 122, 158, 0.2);
+}
+
+.vg-status-bubble {
+  font-family: "Fira Code", monospace;
+  font-size: 0.75rem;
+  color: #B2A6C3;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(79, 74, 99, 0.4);
+  display: none;
+}
+
+.vg-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  background: rgba(27, 23, 39, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(142, 122, 158, 0.35);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  display: none;
+}
+
+.vg-panel.active {
+  display: block;
+}
+
+.vg-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(110, 94, 124, 0.2);
+  padding-bottom: 4px;
+}
+
+.vg-panel-intent {
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #8E7A9E;
+}
+
+.vg-panel-tag {
+  font-family: "Fira Code", monospace;
+  font-size: 0.65rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(142, 122, 158, 0.2);
+  color: #B2A6C3;
+}
+
+.vg-panel-body {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #DCD6E4;
+}
+
+.vg-panel-route {
+  margin-top: 8px;
+  font-family: "Fira Code", monospace;
+  font-size: 0.75rem;
+  background: #171724;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border-left: 2px solid #8E7A9E;
+  word-break: break-all;
+}
+
+.vg-panel-close {
+  background: transparent;
+  border: none;
+  color: #8E7A9E;
+  cursor: pointer;
+  font-size: 14px;
+}
