@@ -10,6 +10,7 @@ decides what is billable. The hash is JCS + SHA-256 over everything except
 
 from __future__ import annotations
 
+import hashlib
 import json
 import statistics
 from collections.abc import Mapping, Sequence
@@ -128,7 +129,9 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
     if isinstance(run.get("judge"), Mapping):
         j_verdict = j_verdict or run["judge"].get("verdict")
         if j_score is None:
-            j_score = run["judge"].get("score") or run["judge"].get("agreement")
+            j_score = run["judge"].get("score")
+            if j_score is None:
+                j_score = run["judge"].get("agreement")
         j_model = j_model or run["judge"].get("model")
 
     if j_verdict is None or j_score is None:
@@ -138,8 +141,11 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
                 if j_verdict is None:
                     j_verdict = "pass" if ed.get("passed") else "fail"
                 if j_score is None:
-                    j_score = ed.get("agreement") or ed.get("score") or (
-                        round(1.0 - float(ed.get("worse_rate", 0.0)), 4) if "worse_rate" in ed else None)
+                    j_score = ed.get("agreement")
+                    if j_score is None:
+                        j_score = ed.get("score")
+                    if j_score is None and "worse_rate" in ed:
+                        j_score = round(1.0 - float(ed.get("worse_rate", 0.0)), 4)
                 if j_model is None:
                     j_model = ed.get("model")
                 break
