@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WattNot: Live graph</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="dash.css">
+<link rel="stylesheet" href="story.css">
+<link rel="stylesheet" href="product.css">
+<link rel="stylesheet" href="r7.css">
+<link rel="stylesheet" href="violet.css">
+<link rel="stylesheet" href="chrome.css">
+<script src="chrome.js" defer></script>
+</head>
+<body class="story">
+<header class="top">
+  <h1 class="page-title" style="margin:0;font-size:16px;font-weight:600;letter-spacing:0.01em;display:inline-flex;align-items:center;color:var(--v-cream,#DCD6E4)">Live graph</h1>
+  <button class="chip" id="metaChip" aria-haspopup="dialog" aria-expanded="false"><i></i><span>Meta API: not checked</span></button>
+  <button class="btn" id="dPower">Power</button>
+  <button class="btn" id="dExperts">Experts</button>
+  <button class="btn" id="dArch">Live graph</button>
+  <a class="btn" id="signout" href="/logout" hidden>Sign out</a>
+  <span class="sp"></span>
+  <span id="wn-mic-slot" class="wn-mic-slot" aria-live="polite"></span>
+  <span class="chip" id="modeChip" title="Where the numbers come from"><i></i><span>loading</span></span>
+</header>
+<div id="pop" class="pop" role="dialog" aria-label="Meta API connection" hidden></div>
+<main id="stage" tabindex="-1"></main>
+<footer class="rail" id="rail"></footer>
+<aside class="panel" id="spanel" aria-label="step details"><button class="btn x" id="spx" aria-label="close details">Close</button><div id="spbody"></div></aside>
+
+<div id="drawer" role="dialog" aria-label="Deep dive" aria-modal="true">
+  <header class="bar">
+    <button class="btn" id="dClose" aria-label="back to the run">← Run</button>
+    <nav class="tabs" id="tabs">
+      <button data-tab="power" class="on">Power</button>
+      <button data-tab="experts">Experts</button>
+      <button data-tab="arch">Live graph</button>
+    </nav>
+    <div class="ctl" id="expertCtl" hidden>
+      <span class="seg" id="modeSeg" title="how experts are grouped">
+        <button data-mode="tier" class="on">tiers</button><button data-mode="kmeans">k-means</button>
+      </span>
+      <button id="armBtn" class="toggle" aria-pressed="false" title="Adaptive top-k: drop the tail experts of each token">
+        <span class="lamp"></span>adaptive top-k <b id="armState">off</b>
+      </button>
+      <span class="seg" id="viewSeg"><button data-view="both" class="on">both</button><button data-view="flow">flow</button><button data-view="orchestra">orchestra</button></span>
+      <button id="playBtn" class="ghost">pause</button>
+      <button id="restartBtn" class="ghost">restart</button>
+      <span class="seg" id="speedSeg"><button data-speed="1">1×</button><button data-speed="3" class="on">3×</button><button data-speed="8">8×</button></span>
+    </div>
+    <div class="src" id="srcChip"></div>
+  </header>
+  <main id="power" class="page on"></main>
+  <main id="experts" class="page">
+    <section class="logcol" id="logcol"><h3>event log</h3><ol id="log"></ol></section>
+    <section class="flowwrap" id="flowwrap"></section>
+    <section class="orch" id="orch"></section>
+    <section class="timeline" id="timeline"></section>
+    <section class="caption" id="caption"></section>
+  </main>
+  <main id="arch" class="page"></main>
+</div>
+<div id="tip" class="tip" hidden></div>
+<div id="tt" class="tt" hidden></div>
+<script src="vendor/gsap.min.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -30,7 +30,7 @@ window.__WN_STATIC = true;
     let p = typeof u === "string" ? u : u.url;
     if (p.startsWith("/api/")) {
       if ((init.method || "GET").toUpperCase() === "POST" && p === "/api/dash/v2/run") {
-        const body = JSON.parse(init.body || "{}"); delete body.compare;
+        const body = JSON.parse(init.body || "{}"); delete body.compare; delete body.framework;
         index ??= await real(`${BASE}api/dash/v2/run/index.json`).then((r) => r.json()).catch(() => ({}));
         const f = index[key(body)];
         if (f) return real(`${BASE}api/dash/v2/run/${f}`);
@@ -96,7 +96,7 @@ def main(out: Path) -> None:
     v2 = out / "dash/v2.html"
     s = v2.read_text().replace('<link rel="stylesheet" href="v2.css">',
                                '<script src="static-api.js"></script>\n<link rel="stylesheet" href="v2.css">', 1)
-    s = s.replace('<a class="btn" href="/">Classic view</a>', '<a class="btn" href="https://github.com/ak9381/wattnot">Source</a>', 1)
+    s = s.replace('<a class="btn" href="graph.html">Arch graph</a>', '<a class="btn" href="graph.html">Arch graph</a>\n<a class="btn" href="https://github.com/ak9381/wattnot">Source</a>', 1)
     v2.write_text(s)
     # The all-runs dashboard and the per-run report need the same static-api
     # shim; each carries a <!-- static-api --> marker where it is injected.
@@ -104,15 +104,22 @@ def main(out: Path) -> None:
         p = out / "dash" / name
         if p.exists():
             p.write_text(p.read_text().replace("<!-- static-api -->", '<script src="static-api.js"></script>', 1))
-    # The classic arch view (dash/index.html) also replays recorded API answers,
+    # The classic arch view (dash/graph.html) also replays recorded API answers,
     # so its "Report" node and architecture graph work on the static site.
-    ci = out / "dash/index.html"
+    ci = out / "dash/graph.html"
     if ci.exists():
         ci.write_text(ci.read_text().replace('<link rel="stylesheet" href="dash.css">',
                                               '<script src="static-api.js"></script>\n<link rel="stylesheet" href="dash.css">', 1))
-    (out / "index.html").write_text('<!doctype html><meta charset="utf-8"><title>WattNot replay</title>'
-                                    '<meta http-equiv="refresh" content="0; url=dash/v2.html">'
-                                    '<a href="dash/v2.html">WattNot: replay of measured logs</a>\n')
+    (out / "index.html").write_text('<!doctype html><meta charset="utf-8">\n'
+                                    '<title>WattNot: cut GPU power per AI inference without losing quality</title>\n'
+                                    '<meta name="description" content="Cut GPU power per AI inference without losing quality. Every watt checked, plus every dollar and litre.">\n'
+                                    '<meta property="og:title" content="WattNot: cut GPU power per AI inference without losing quality">\n'
+                                    '<meta property="og:description" content="Cut GPU power per AI inference without losing quality. Every watt checked, plus every dollar and litre.">\n'
+                                    '<meta property="og:image" content="https://ak9381.github.io/wattnot/dash/img/hero-1.png">\n'
+                                    '<meta property="og:type" content="website">\n'
+                                    '<meta property="og:url" content="https://ak9381.github.io/wattnot/">\n'
+                                    '<meta http-equiv="refresh" content="0; url=dash/">\n'
+                                    '<a href="dash/">WattNot</a>\n')
     (out / ".nojekyll").write_text("")
     rc = out / "receipts"
     shutil.copytree(ROOT / "verifier/samples/chain", rc)

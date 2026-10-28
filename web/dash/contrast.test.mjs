@@ -1,7 +1,7 @@
-// WCAG contrast check for the Violet Dusk palette (violet.css).
+// WCAG contrast check for the Dusk palette (violet.css).
 // Every text and status colour must clear AA (4.5:1) against the background
-// shades it is actually drawn on. If this fails, lighten the colour in
-// violet.css — do not lower the threshold.
+// shades and card surfaces (#2E2B44 and #171724) it is actually drawn on.
+// If this fails, lighten the colour in violet.css — do not lower the threshold.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -20,24 +20,31 @@ const lin = (c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
 const lum = (h) => { const [r, g, b] = srgb(h).map(lin); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
 const ratio = (fg, bg) => { const a = lum(fg) + 0.05, b = lum(bg) + 0.05; return a > b ? a / b : b / a; };
 
-// backgrounds text is placed on
-const BG = { bg: vars["--v-bg"], bg2: vars["--v-bg2"], bg3: vars["--v-bg3"], violet: vars["--v-violet"] };
+// backgrounds and card surfaces text is placed on
+const BG = {
+  bg: vars["--v-bg"],
+  bg2: vars["--v-bg2"],
+  bg3: vars["--v-bg3"],
+  violet: vars["--v-violet"],
+  s2e: vars["--v-surf-2e"] || "#2E2B44",
+  s17: vars["--v-surf-17"] || "#171724",
+};
 
-// colour -> which backgrounds it must pass on
+// colour -> which backgrounds and card surfaces it must pass on
 const CASES = [
-  ["--v-cream", ["bg", "bg2", "bg3", "violet"]],
-  ["--v-peach", ["bg", "bg2", "bg3", "violet"]],
-  ["--v-sub", ["bg", "bg2", "bg3"]],
-  ["--v-mut", ["bg", "bg2", "bg3"]],
-  // status + label number colours sit on the dark card backgrounds
-  ["--v-pass", ["bg", "bg2"]],
-  ["--v-reject", ["bg", "bg2"]],
-  ["--v-l-measured", ["bg", "bg2"]],
-  ["--v-l-estimate", ["bg", "bg2"]],
-  ["--v-l-simulated", ["bg", "bg2"]],
-  ["--v-l-mock", ["bg", "bg2"]],
-  ["--v-l-replay", ["bg", "bg2"]],
-  ["--v-l-advice", ["bg", "bg2"]],
+  ["--v-cream", ["bg", "bg2", "bg3", "violet", "s2e", "s17"]],
+  ["--v-peach", ["bg", "bg2", "bg3", "violet", "s2e", "s17"]],
+  ["--v-sub", ["bg", "bg2", "bg3", "s2e", "s17"]],
+  ["--v-mut", ["bg", "bg2", "bg3", "s2e", "s17"]],
+  // status + label number colours sit on the dark card surfaces
+  ["--v-pass", ["bg", "bg2", "s2e", "s17"]],
+  ["--v-reject", ["bg", "bg2", "s2e", "s17"]],
+  ["--v-l-measured", ["bg", "bg2", "s2e", "s17"]],
+  ["--v-l-estimate", ["bg", "bg2", "s2e", "s17"]],
+  ["--v-l-simulated", ["bg", "bg2", "s2e", "s17"]],
+  ["--v-l-mock", ["bg", "bg2", "s2e", "s17"]],
+  ["--v-l-replay", ["bg", "bg2", "s2e", "s17"]],
+  ["--v-l-advice", ["bg", "bg2", "s2e", "s17"]],
 ];
 
 for (const [name, bgs] of CASES) {
@@ -46,7 +53,7 @@ for (const [name, bgs] of CASES) {
     assert.ok(fg, `${name} missing from violet.css`);
     for (const key of bgs) {
       const r = ratio(fg, BG[key]);
-      assert.ok(r >= 4.5, `${name} (${fg}) on --v-${key} (${BG[key]}) = ${r.toFixed(2)}:1, need >= 4.5`);
+      assert.ok(r >= 4.5, `${name} (${fg}) on ${key} (${BG[key]}) = ${r.toFixed(2)}:1, need >= 4.5`);
     }
   });
 }

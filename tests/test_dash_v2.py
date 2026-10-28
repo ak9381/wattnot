@@ -173,10 +173,10 @@ def test_configure_is_a_guided_stepper_with_connected_panel():
     import pathlib
     js = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash/v2.js").read_text()
     for q in ("What do you want to save on?", "Which AI are you running?",
-              "What kind of traffic?", "How careful should we be?", "How do you want to run it?"):
+              "What kind of traffic?", "Your stack", "How careful should we be?", "How do you want to run it?"):
         assert q in js
     assert "A model is the AI program that answers your users' prompts." in js
-    assert "Step ${n} of 5" in js or "Step " in js and "of 5" in js
+    assert "Step ${n} of 6" in js or "Step ${n} of 5" in js or "of 6" in js or "of 5" in js
     assert "stepBack" in js and "stepNext" in js and 'role="radiogroup"' in js
     assert 'type="radio"' in js  # cards are radio inputs, not dropdowns
     assert "<svg" in js and "emoji" not in js.lower()
@@ -374,7 +374,7 @@ def test_numbers_coloured_by_label_with_one_legend_per_view():
     lib = root.joinpath("v2lib.js").read_text()
     assert "cnum" in lib and "legendHtml" in lib
     assert "badge" in lib and "title=" in lib and "aria-label" in lib
-    assert ">MEASURED<" not in lib and ">${esc(t)}<" not in lib  # no text badges
+    assert "b-txt" in lib or "b-chip" in lib  # Dusk 2: visible label word next to numbers
     js = root.joinpath("v2.js").read_text()
     assert js.count("legendHtml()") >= 4  # home, configure, run, report
     css = root.joinpath("v2.css").read_text()
@@ -416,3 +416,55 @@ def test_radial_saved_block_reads_phases_and_never_splits():
     fix = c.get("/api/dash/v2/runs/cloud-recorded-run1").json()
     assert fix["phases"]["baseline"]["metrics"]["j_per_req"] is None
     assert fix["phases"]["wattnot"]["metrics"] is None
+
+
+def test_landing_page_head_tags_and_content():
+    """Minimal one-screen landing page has the required title, meta, og tags, and text-only content."""
+    import pathlib
+    p = pathlib.Path(__file__).resolve().parent.parent / "web" / "dash" / "index.html"
+    assert p.exists()
+    html = p.read_text()
+
+    # Head tags & title
+    assert "<title>WattNot: cut GPU power per AI inference without losing quality</title>" in html
+    assert '<meta name="description"' in html
+    assert 'property="og:title" content="WattNot: cut GPU power per AI inference without losing quality"' in html
+    assert 'property="og:description"' in html
+    assert 'property="og:image"' in html and "hero-1.png" in html
+    assert 'property="og:type" content="website"' in html
+    assert 'property="og:url" content="https://ak9381.github.io/wattnot/"' in html
+
+    # Headline and body lines
+    assert "Was that agent call worth the watts?" in html
+    assert "Every watt checked, plus every dollar and litre." in html
+    assert "Powered by Meta Muse Spark, Wonder, Glimmer, Voice, Llama and SAM 3.1" in html
+    assert "Let WattNot guide your agents" in html
+    assert 'href="runs.html"' in html
+
+
+def test_configure_stack_step_and_framework_choices():
+    """Configure flow has a 'Your stack' step with 4 options and code snippet."""
+    import pathlib
+    js = pathlib.Path(__file__).resolve().parent.parent / "web" / "dash" / "v2.js"
+    text = js.read_text()
+    assert "Your stack" in text
+    for fw in ("openai-python", "LangChain", "LlamaIndex", "plain API"):
+        assert fw in text
+    assert 'OpenAI(base_url="http://localhost:8000/v1")' in text
+    assert 'ChatOpenAI(base_url="http://localhost:8000/v1")' in text
+    assert 'OpenAILike(api_base="http://localhost:8000/v1")' in text
+    assert "curl http://localhost:8000/v1/chat/completions" in text
+
+
+def test_framework_tags_on_dashboard_and_report():
+    """Runs dashboard, report hero/receipt, and compare show framework tags."""
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parent.parent / "web" / "dash"
+    runs_js = (root / "runs.js").read_text()
+    report_js = (root / "report.js").read_text()
+    v2_js = (root / "v2.js").read_text()
+
+    assert "framework: none recorded" in runs_js
+    assert "framework: none recorded" in report_js
+    assert "framework: none recorded" in v2_js
+

@@ -339,7 +339,7 @@ export function branchInfo(rec, id, price = 0.1387, water = 0.36) {
     <h3>Worked example</h3>${workedExample(bj, wj, price, water)}<h3>Gate results</h3>${gatesHtml(rec)}${metaInRun(rec)}</div>`;
   return popup(c.title, html, { sub: `${esc(rec?.run_name || "")} · red is without WattNot, green is with`, onMount: (root) => wireCompare(root, rec, price, water) });
 }
-export const cmpHeadHtml = (rec) => `<div class="cmp-head"><div><h1>What WattNot saved</h1><p class="lead">${esc(rec?.run_name || "Pick a run")} ${infoBtn("compare", "how this is compared")}</p></div></div>${metaInRun(rec)}${legend()}`;
+export const cmpHeadHtml = (rec) => `<div class="cmp-head"><h1>What WattNot saved</h1><span class="lead">${esc(rec?.run_name || "Pick a run")} ${infoBtn("compare", "how this is compared")}</span></div><div class="cmp-meta-bar">${metaInRun(rec)}</div><div class="cmp-legend-bar">${legend()}</div>`;
 export function openWhere(rec) { return popup("Where should this model run?", whereHtml(rec), { sub: "All three are compared in this run." }); }
 export function openPowerGraph(rec, c) {
   c ||= cardsData(rec, 0.1387, 0.36)[0];
@@ -394,7 +394,7 @@ export function overviewHtml(S) {
     ${metaTile()}
     <div class="ov-grid">
       <section class="glass ov-trend"><h3>Energy per answer, by repeat ${infoBtn("calc-power", "energy")}</h3>${rec ? lineChart(series(rec, (j) => j), { unit: "J", yLabel: "J per answer", w: 620, h: 220, y0: 0, xticks: [1, 2, 3].map((x) => ({ x, label: `#${x}` })) }) : `<p class="r7miss">${PENDING}</p>`}<button class="btn" data-pg="1">Open bigger</button></section>
-      <section class="glass ov-donut"><h3>Where the energy went</h3>${cut != null ? donut([{ name: "Still used", v: used, color: "#935073" }, { name: "Saved by WattNot", v: cut, color: "#7FA88A" }], { center: saved || "", centerSub: "saved", aria: "energy used vs saved" }) : `<p class="r7miss">${PENDING}</p>`}</section>
+      <section class="glass ov-donut"><h3>Where the energy went</h3>${cut != null ? donut([{ name: "Still used", v: used, color: "#8E7A9E" }, { name: "Saved by WattNot", v: cut, color: "#7FA88A" }], { center: saved || "", centerSub: "saved", aria: "energy used vs saved" }) : `<p class="r7miss">${PENDING}</p>`}</section>
       <section class="glass ov-gauge"><h3>Speed budget used</h3>${r.p99_change_pct != null ? gauge(r.p99_change_pct, 15, { text: `+${fmt(r.p99_change_pct, 1)}%`, sub: "p99 change · limit 10%", limit: 10, cls: r.p99_change_pct > 10 ? "warn" : "", aria: "p99 change against the 10% limit" }) : `<p class="r7miss">${PENDING}</p>`}<p class="r7note">Red tick: the 10% limit.</p></section>
       <section class="glass ov-table"><h3>Recorded runs</h3><table><thead><tr><th>Run</th><th>Model</th><th>Date</th></tr></thead><tbody>${runs.map((x) => `<tr><td>${esc(x.name)}</td><td>${esc(x.model)}</td><td>${esc(x.date)}</td></tr>`).join("") || `<tr><td colspan="3" class="r7miss">${PENDING}</td></tr>`}</tbody></table></section>
     </div></div></div>`;

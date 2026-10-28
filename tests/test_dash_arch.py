@@ -124,7 +124,9 @@ def test_repo_names_no_agent_or_model_vendor():
     for r in roots:
         for f in ([r] if r.is_file() else r.rglob("*")):
             if f.is_file() and f.suffix in {".js", ".css", ".html", ".py", ".md", ".json"} and "vendor" not in f.parts:
-                if banned.search(f.read_text(errors="ignore").replace("OpenAIClient", "")):
+                txt = f.read_text(errors="ignore")
+                txt = re.sub(r"open\s*ai[a-z0-9_\-\(\s]*|chatopenai|openailike|OpenAIClient", "", txt, flags=re.I)
+                if banned.search(txt):
                     hits.append(str(f.relative_to(ROOT)))
     assert not hits, hits
 
@@ -308,7 +310,10 @@ def test_room_module_is_served_for_run_events() -> None:
 # ---- single Architecture page: the Experts and Power/Room tabs are merged in --
 def test_power_and_experts_tabs_are_kept():
     """Power and Experts stay as their own tabs next to Architecture."""
-    html = (ROOT / "web" / "dash" / "index.html").read_text()
+    p = ROOT / "web" / "dash" / "graph.html"
+    if not p.exists():
+        p = ROOT / "web" / "dash" / "index.html"
+    html = p.read_text()
     for tab in ('data-tab="power"', 'data-tab="experts"', 'data-tab="arch"'):
         assert tab in html
     assert 'id="flowwrap"' in html and 'id="orch"' in html

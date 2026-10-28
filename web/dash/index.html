@@ -3,65 +3,148 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>WattNot</title>
+<title>WattNot: cut GPU power per AI inference without losing quality</title>
+<meta name="description" content="Cut GPU power per AI inference without losing quality. Every watt checked, plus every dollar and litre.">
+<meta property="og:title" content="WattNot: cut GPU power per AI inference without losing quality">
+<meta property="og:description" content="Cut GPU power per AI inference without losing quality. Every watt checked, plus every dollar and litre.">
+<meta property="og:image" content="https://ak9381.github.io/wattnot/dash/img/hero-1.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://ak9381.github.io/wattnot/">
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="dash.css">
-<link rel="stylesheet" href="story.css">
-<link rel="stylesheet" href="product.css">
-<link rel="stylesheet" href="r7.css">
-</head>
-<body class="story">
-<header class="top">
-  <div class="brand"><b>WattNot</b></div>
-  <span class="chip" id="modeChip" title="Where the numbers come from"><i></i><span>loading</span></span>
-  <button class="chip" id="metaChip" aria-haspopup="dialog" aria-expanded="false"><i></i><span>Meta API: not checked</span></button>
-  <span class="sp"></span>
-  <button class="btn" id="dPower">Power</button>
-  <button class="btn" id="dExperts">Experts</button>
-  <button class="btn" id="dArch">Architecture</button>
-  <a class="btn" href="/v2.html">New view</a>
-  <a class="btn" id="signout" href="/logout" hidden>Sign out</a>
-</header>
-<div id="pop" class="pop" role="dialog" aria-label="Meta API connection" hidden></div>
-<main id="stage" tabindex="-1"></main>
-<footer class="rail" id="rail"></footer>
-<aside class="panel" id="spanel" aria-label="step details"><button class="btn x" id="spx" aria-label="close details">Close</button><div id="spbody"></div></aside>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="chrome.css">
+<script src="chrome.js" defer></script>
+<style>
+:root {
+  --bg: #05070F;
+  --tx: #F2F5FA;
+  --mu: #7C8599;
+  --ln: rgba(255, 255, 255, 0.08);
+}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html, body {
+  background: var(--bg);
+  color: var(--tx);
+  font: 300 17px/1.6 "Inter Tight", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+.w {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 48px;
+  text-align: left;
+}
+.hero {
+  position: relative;
+  height: 100vh;
+  min-height: 720px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background-color: var(--bg);
+  background-image: url("img/hero-1.png");
+  background-image: image-set(
+    url("img/hero.webp") type("image/webp"),
+    url("img/hero-1.png") type("image/png")
+  );
+  background-position: right center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+.hero:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, var(--bg) 18%, rgba(5, 7, 15, 0.55) 48%, rgba(5, 7, 15, 0) 75%),
+    linear-gradient(0deg, var(--bg), transparent 25%);
+  pointer-events: none;
+}
+.hero .w {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+h1 {
+  font-family: "Inter Tight", system-ui, -apple-system, sans-serif;
+  font-weight: 300;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+  font-size: 88px;
+  max-width: 640px;
+  color: var(--tx);
+}
+.sub {
+  color: var(--mu);
+  font-size: 20px;
+  margin: 26px 0 40px;
+  font-weight: 300;
+  max-width: 580px;
+}
+.cta {
+  margin: 0 0 20px;
+}
+.btn {
+  display: inline-block;
+  padding: 13px 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 15px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.btn.pr {
+  background: var(--tx);
+  color: var(--bg);
+  border-color: var(--tx);
+}
+.btn.pr:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+.powered {
+  color: var(--mu);
+  font-size: 13.5px;
+  font-weight: 300;
+  letter-spacing: 0.01em;
+  margin-top: 24px;
+}
 
-<div id="drawer" role="dialog" aria-label="Deep dive" aria-modal="true">
-  <header class="bar">
-    <button class="btn" id="dClose" aria-label="back to the run">← Run</button>
-    <nav class="tabs" id="tabs">
-      <button data-tab="power" class="on">Power</button>
-      <button data-tab="experts">Experts</button>
-      <button data-tab="arch">Architecture</button>
-    </nav>
-    <div class="ctl" id="expertCtl" hidden>
-      <span class="seg" id="modeSeg" title="how experts are grouped">
-        <button data-mode="tier" class="on">tiers</button><button data-mode="kmeans">k-means</button>
-      </span>
-      <button id="armBtn" class="toggle" aria-pressed="false" title="Adaptive top-k: drop the tail experts of each token">
-        <span class="lamp"></span>adaptive top-k <b id="armState">off</b>
-      </button>
-      <span class="seg" id="viewSeg"><button data-view="both" class="on">both</button><button data-view="flow">flow</button><button data-view="orchestra">orchestra</button></span>
-      <button id="playBtn" class="ghost">pause</button>
-      <button id="restartBtn" class="ghost">restart</button>
-      <span class="seg" id="speedSeg"><button data-speed="1">1×</button><button data-speed="3" class="on">3×</button><button data-speed="8">8×</button></span>
+@media (max-width: 900px) {
+  h1 { font-size: 56px; }
+  .w { padding: 0 24px; }
+  .hero { min-height: 600px; }
+}
+@media (max-width: 600px) {
+  h1 { font-size: 42px; }
+  .sub { font-size: 17px; margin: 18px 0 28px; }
+}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="w">
+    <h1>Was that agent call worth the watts?</h1>
+    <p class="sub">Every watt checked, plus every dollar and litre.</p>
+    <div class="cta">
+      <a class="btn pr" href="runs.html">Let WattNot guide your agents</a>
     </div>
-    <div class="src" id="srcChip"></div>
-  </header>
-  <main id="power" class="page on"></main>
-  <main id="experts" class="page">
-    <section class="logcol" id="logcol"><h3>event log</h3><ol id="log"></ol></section>
-    <section class="flowwrap" id="flowwrap"></section>
-    <section class="orch" id="orch"></section>
-    <section class="timeline" id="timeline"></section>
-    <section class="caption" id="caption"></section>
-  </main>
-  <main id="arch" class="page"></main>
-</div>
-<div id="tip" class="tip" hidden></div>
-<div id="tt" class="tt" hidden></div>
-<script src="vendor/gsap.min.js"></script>
-<script type="module" src="app.js"></script>
+    <p class="powered">Powered by Meta Muse Spark, Wonder, Glimmer, Voice, Llama and SAM 3.1</p>
+  </div>
+</header>
 </body>
 </html>
