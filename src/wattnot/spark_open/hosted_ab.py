@@ -31,7 +31,7 @@ from wattnot.agentwaste.guard import WasteGuard
 from wattnot.cloud import energy as cloud_energy
 from wattnot.cloud.transport import Reply, Request
 from wattnot.runner.workload import WorkloadItem, load_workload
-from wattnot.spark_open.h2h import BasetenLeg, BudgetStop, ModalLeg, SpendCap
+from wattnot.spark_open.h2h import MODEL, BasetenLeg, BudgetStop, ModalLeg, SpendCap
 
 HOSTS = ("baseten", "modal")
 # Hosted power/water ESTIMATE. J/token is MEASURED on our H100 (RUN2 baseline,
@@ -119,6 +119,7 @@ def _agent_body(task: str, steps: int) -> dict:
 
 
 def _waste(transport, cap, tasks: Sequence[str]) -> dict:
+    model = getattr(transport, "model", None) or MODEL
     out = {}
     for arm in ("without", "with"):
         calls = pt = ct = 0
@@ -129,8 +130,12 @@ def _waste(transport, cap, tasks: Sequence[str]) -> dict:
                 body = _agent_body(t, step)
                 if g is not None and g.before(body).action == "stop":
                     break
-                cap.check(0.001)
-                r: Reply = transport(Request(f"waste|{arm}|{abs(hash(t)) % 10**6}|{step}", body))
+                body["model"] = model
+                cap.check((len(json.dumps(body)) / 2 * 1.25 + 64 * 4.25) / 1e6)  # worst case: 2 chars/token
+                r: Reply = transport(Request(f"waste|{arm}|{TASKS.index(t) if t in TASKS else 0}|{step}", body))
+                if r.status != 200:
+                    calls += 1
+                    continue
                 u = r.body.get("usage") or {}
                 calls += 1
                 pt += int(u.get("prompt_tokens", 0))
@@ -226,16 +231,33 @@ def main(argv=None) -> int:
     ap.add_argument("--items", type=int, default=15)
     ap.add_argument("--cap-usd", type=float, default=TOTAL_CAP_USD)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--live", action="store_true", help="paid run on the hosts in --hosts (needs Akash's okay)")
+    ap.add_argument("--hosts", default="baseten,modal")
+    ap.add_argument("--skip-reason", default="")
     a = ap.parse_args(argv)
-    if not a.mock:
-        print("live mode is not wired in this script; it needs Akash's okay and the endpoint env", file=sys.stderr)
-        return 2
-    down = set(filter(None, a.down.split(",")))
-    trs = {h: MockHost(h, down=h in down) for h in HOSTS}
+    if a.mock == a.live:
+        ap.error("pick exactly one of --mock or --live")
+    a.hosts = set(filter(None, a.hosts.split(",")))
+    trs, notes = {}, {}
+    if a.mock:
+        down = set(filter(None, a.down.split(",")))
+        trs = {h: MockHost(h, down=h in down) for h in HOSTS}
+    else:  # live: paid, per-token, behind the hard stop
+        from wattnot.cloud.transport import LiveTransport, ModalLiveTransport
+        from wattnot.spark_open.h2h import BASE_URL
+        if "baseten" in a.hosts:
+            trs["baseten"] = LiveTransport(base_url=BASE_URL)  # BASETEN_API_KEY from env, never printed
+        if "modal" in a.hosts:
+            trs["modal"] = ModalLiveTransport()
+        for h in HOSTS:
+            if h not in a.hosts:
+                notes[h] = a.skip_reason or "not selected"
     items = list(load_workload(Path(a.workload)))[: a.items]
     out = Path(a.out)
     r = run_ab(trs, items, tasks=TASKS, cap_usd=a.cap_usd, state_dir=out.parent / "spend")
-    r["mode"] = "MOCK"
+    for h, why in notes.items():
+        r["hosts"][h] = {"status": "not_run", "why": why}
+    r["mode"] = "MOCK" if a.mock else "LIVE"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(r, indent=2) + "\n")
     for h, v in r["hosts"].items():
