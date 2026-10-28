@@ -77,7 +77,55 @@ def test_answer_intent_cites_signed_receipt() -> None:
     assert "rcpt_20261027_run2_cap350" in res["text"]
     assert "citations" in res
     assert any("rcpt_" in c for c in res["citations"])
-    assert "[MEASURED]" in res["text"] or "[ESTIMATE]" in res["text"]
+    # run2's measurement block is labelled MEASURED and its water figure ESTIMATE;
+    # the answer must carry the receipt's own labels, not hardcoded ones.
+    assert "[MEASURED]" in res["text"]
+    assert "mL/req [ESTIMATE]" in res["text"]
+
+
+def test_answer_labels_follow_receipt_not_hardcoded(tmp_path) -> None:
+    # A SIMULATED receipt must never be spoken as MEASURED.
+    from wattnot.receipt.build import build_receipt
+
+    run = {
+        "run_id": "run_20261029_sim",
+        "subject": {"model": "llama-8b", "host": "sim-box", "mode": "mock",
+                    "workload": {"n_requests": 10}},
+        "baseline": {"params": {"cap_w": 400}, "reps": 2, "p99_ms": 120.0,
+                     "wh_per_req": {"mean": 2.5, "samples": [2.5, 2.4]},
+                     "quality": {"fixed_pass_rate": 0.95}},
+        "candidate": {"params": {"cap_w": 350}, "reps": 2, "p99_ms": 130.0,
+                      "wh_per_req": {"mean": 2.0, "samples": [2.0, 1.9]},
+                      "quality": {"fixed_pass_rate": 0.95}},
+        "measurement": {"meter": "nvml", "hz": 10, "csv": "trace.csv", "label": "SIMULATED"},
+    }
+    receipt = build_receipt(run, created_at="2026-10-29T00:00:00+00:00")
+    rdir = tmp_path / "receipts"
+    rdir.mkdir()
+    (rdir / f"{receipt['receipt_id']}.json").write_text(json.dumps(receipt))
+
+    res = process_voice_query(
+        f"what was the saving on {receipt['receipt_id']}?", root_dir=tmp_path, mock=True
+    )
+    assert res["action"] == "answer"
+    assert "[SIMULATED]" in res["text"]
+    assert "Wh [MEASURED]" not in res["text"]
+    assert "% [MEASURED]" not in res["text"]
+
+
+def test_grounding_rejects_forged_receipts(tmp_path) -> None:
+    # Hash-valid but signature-forged receipts must not ground answers.
+    import shutil
+
+    rdir = tmp_path / "receipts"
+    rdir.mkdir()
+    for n in ("forged-rehashed", "forged-otherkey"):
+        shutil.copy(REPO_ROOT / "verifier" / "samples" / f"{n}.json", rdir / f"{n}.json")
+        shutil.copy(REPO_ROOT / "verifier" / "samples" / f"{n}.sigstore.json",
+                    rdir / f"{n}.sigstore.json")
+    res = process_voice_query("what was the energy saving?", root_dir=tmp_path, mock=True)
+    assert res.get("refusal") is True
+    assert res["citations"] == []
 
 
 def test_answer_intent_refuses_unanswerable_query() -> None:
