@@ -12,11 +12,43 @@ data/judge-30.jsonl or the public replay set). Tests use a recorded response.
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 
 from wattnot.gates.result import GateResult
-from wattnot.planner.spark import MODEL, SparkClient
+from wattnot.planner.spark import MODEL as SPARK_MODEL
+from wattnot.planner.spark import SparkClient
+
+# The quality judge is a Meta model on our own GPU: Llama 3.1 8B behind vLLM's OpenAI API
+# (JUDGE_BASE_URL, e.g. http://127.0.0.1:8000/v1). Without that URL the judge falls back to
+# Muse Spark on the Meta API. RUN2 used fixed answer checks only, so its numbers stay apart
+# from Meta-judge numbers: every result names its judge.
+LLAMA_JUDGE = "meta-llama/Llama-3.1-8B-Instruct"
+MODEL = os.environ.get("JUDGE_MODEL", LLAMA_JUDGE)
+
+
+class LocalJudge:
+    """OpenAI-compatible transport for a self-hosted judge (no key, no spend)."""
+
+    def __init__(self, base: str, model: str = LLAMA_JUDGE, timeout_s: float = 120) -> None:
+        self.base, self.model, self.timeout_s = base.rstrip("/"), model, timeout_s
+
+    def __call__(self, body: dict) -> dict:
+        import urllib.request
+        req = urllib.request.Request(f"{self.base}/chat/completions",
+                                     data=json.dumps({**{k: v for k, v in body.items() if k != "reasoning_effort"},
+                                                      "model": self.model}).encode(),
+                                     headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=self.timeout_s) as r:  # noqa: S310
+            return json.loads(r.read())
+
+
+def default_transport(model: str = MODEL):
+    base = os.environ.get("JUDGE_BASE_URL")
+    if base and not model.startswith("muse-"):
+        return LocalJudge(base, model), model
+    return SparkClient(model=SPARK_MODEL, purpose="judge"), SPARK_MODEL
 
 VERDICTS = ("same", "better", "worse")
 JUDGE_SET = Path(__file__).resolve().parents[3] / "data" / "judge-30.jsonl"
@@ -73,7 +105,9 @@ def judge(base_out: Mapping[str, str], cand_out: Mapping[str, str], items: Seque
     rows = [{"id": i["id"], "question": i["question"], "baseline": base_out[i["id"]],
              "candidate": cand_out[i["id"]]} for i in items]
     ids = [r["id"] for r in rows]
-    send = transport or SparkClient(model=model, purpose="judge")
+    if transport is None:
+        transport, model = default_transport(model)
+    send = transport
     try:
         raw = send(request_body(rows, model))
         verdicts = parse_verdicts(raw, ids)
@@ -86,7 +120,7 @@ def judge(base_out: Mapping[str, str], cand_out: Mapping[str, str], items: Seque
     passed = rate <= max_worse
     return GateResult("judge", passed,
                       f"{worse}/{len(ids)} judged worse ({rate:.1%}, limit {max_worse:.0%})",
-                      {"model": raw.get("model", model), "n": len(ids), "worse": worse,
+                      {"model": raw.get("model", model), "judge_era": "meta-judge", "n": len(ids), "worse": worse,
                        "same": sum(v == "same" for v in verdicts.values()),
                        "better": sum(v == "better" for v in verdicts.values()),
                        "worse_rate": round(rate, 4), "max_worse": max_worse,
