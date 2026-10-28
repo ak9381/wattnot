@@ -34,6 +34,30 @@ from wattnot.runner.workload import WorkloadItem, load_workload
 from wattnot.spark_open.h2h import BasetenLeg, BudgetStop, ModalLeg, SpendCap
 
 HOSTS = ("baseten", "modal")
+# Hosted power/water ESTIMATE. J/token is MEASURED on our H100 (RUN2 baseline,
+# data/h100-run2/vm/baseline.json, granite-3.1-3b-a800m, 0.8B active params), scaled by
+# active parameters to Muse Spark Open (42B active). Assumption: energy per token scales
+# linearly with active parameters on the same class of GPU.
+H100_J_PER_TOKEN = 0.14966580932784637
+H100_ACTIVE_PARAMS = 0.8e9
+SPARK_OPEN_ACTIVE_PARAMS = 42e9
+J_PER_TOKEN = H100_J_PER_TOKEN * SPARK_OPEN_ACTIVE_PARAMS / H100_ACTIVE_PARAMS  # about 7.86 J
+WATER_L_PER_KWH = 0.36
+
+
+def saved_estimate(tokens_without: int, tokens_with: int, usd_without: float, usd_with: float) -> dict:
+    """tokens saved -> J -> kWh -> L; $ saved is MEASURED (tokens x list price)."""
+    tok = tokens_without - tokens_with
+    j = tok * J_PER_TOKEN
+    kwh = j / 3.6e6
+    return {"tokens_saved": {"value": tok, "label": "MEASURED"},
+            "j_per_token": {"value": round(J_PER_TOKEN, 4), "label": "ESTIMATE",
+                            "method": f"H100 {H100_J_PER_TOKEN:.4f} J/token (RUN2, MEASURED) x 42B/0.8B active params"},
+            "energy_j": {"value": round(j, 3), "label": "ESTIMATE"},
+            "energy_kwh": {"value": kwh, "label": "ESTIMATE"},
+            "water_l": {"value": kwh * WATER_L_PER_KWH, "label": "ESTIMATE", "method": "kWh x 0.36 L/kWh"},
+            "usd_saved": {"value": round(usd_without - usd_with, 6), "label": "MEASURED"},
+            "power_saved_pct": {"value": round(100 * tok / tokens_without, 2) if tokens_without else None, "label": "ESTIMATE"}}
 API_LEVERS = ("routing", "gate", "waste")
 OWN_GPU_ONLY = {"caps": "Power caps need root on the GPU; hosted platforms give none.",
                 "quant": "Quantization needs our own deployment of the model; not possible on a shared endpoint.",
@@ -160,7 +184,14 @@ def run_ab(transports: dict, items: Sequence[WorkloadItem], *, tasks: Sequence[s
         }
         for k, why in OWN_GPU_ONLY.items():
             levers[k] = {"status": "own_gpu_only", "why": why}
-        res["hosts"][host] = {"status": "ran", "without": wo, "with": wi if adopt else wo,
+        tw = lambda a: a["tokens"]["prompt"] - a["tokens"]["cached"] + a["tokens"]["completion"]
+        fin = wi if adopt else wo
+        wt = lambda a: a["tokens"]["prompt"] + a["tokens"]["completion"]
+        n1k = 1000 / max(1, len(items))
+        est = saved_estimate(int((tw(wo)) * n1k) + wt(w["without"]), int(tw(fin) * n1k) + wt(w["with"]),
+                             wo["usd_per_1k"]["value"] + w["without"]["usd"]["value"], fin["usd_per_1k"]["value"] + w["with"]["usd"]["value"])
+        est["basis"] = "per 1k answers (routing) plus the agent tasks (waste)"
+        res["hosts"][host] = {"status": "ran", "estimate": est, "without": wo, "with": wi if adopt else wo,
                               "gate_passed": gate_ok, "levers": levers, "agent_waste": w,
                               "spent_usd": round(cap.session_usd, 6)}
     res["spent_usd"] = round(sum(h.get("spent_usd", 0) for h in res["hosts"].values()), 6)
