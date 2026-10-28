@@ -122,18 +122,47 @@ test("shared chrome header has updated nav links and Live graph", () => {
 
   const graphHtml = fs.readFileSync(path.join(dashDir, "graph.html"), "utf8");
   assert.match(graphHtml, /<title>WattNot: Live graph<\/title>/);
-  assert.match(graphHtml, /<h1[^>]*>Live graph<\/h1>/);
-  assert.match(graphHtml, /<button class="btn" id="dArch">Live graph<\/button>/);
+  assert.doesNotMatch(graphHtml, /<header class="top">/);
 });
 
-test("shared chrome footer has credits, track, github, data legend, note, and year", () => {
+test("shared chrome footer has credits, track, github, and year", () => {
   const chromeJs = fs.readFileSync(path.join(dashDir, "chrome.js"), "utf8");
   assert.match(chromeJs, /Project by Akash K Raju/);
   assert.match(chromeJs, /Meta hackathon 2026 · Indie track/);
   assert.match(chromeJs, /https:\/\/github\.com\/ak9381\/wattnot/);
-  assert.match(chromeJs, /MEASURED/);
-  assert.match(chromeJs, /ESTIMATE/);
-  assert.match(chromeJs, /MOCK/);
-  assert.match(chromeJs, /No compliance claims/);
+  assert.doesNotMatch(chromeJs, /No compliance claims/);
   assert.match(chromeJs, /2026/);
+});
+
+test("header and footer are fixed with Apple glassmorphism and glow blobs", () => {
+  const chromeCss = fs.readFileSync(path.join(dashDir, "chrome.css"), "utf8");
+  assert.match(chromeCss, /nav\.wn-nav\.gl\s*\{[^}]*position:\s*fixed;/);
+  assert.match(chromeCss, /footer\.wn-footer\.gl\s*\{[^}]*position:\s*fixed;/);
+  assert.match(chromeCss, /bottom:\s*14px;/);
+  assert.match(chromeCss, /blur\(24px\)\s*saturate\(170%\)/);
+  assert.match(chromeCss, /rgba\(255,\s*255,\s*255,\s*0?\.14\)/);
+  assert.match(chromeCss, /inset 0 1px 0 rgba\(255,\s*255,\s*255,\s*0?\.12\)/);
+  assert.match(chromeCss, /padding-top:\s*74px;/);
+  assert.match(chromeCss, /padding-bottom:\s*110px;/);
+  assert.match(chromeCss, /#6C5E7C/);
+  assert.match(chromeCss, /#8E7A9E/);
+  assert.match(chromeCss, /#4F4A63/);
+
+  const v2Css = fs.readFileSync(path.join(dashDir, "v2.css"), "utf8");
+  assert.match(v2Css, /height:\s*calc\(100vh - 340px\)/);
+  assert.doesNotMatch(v2Css, /footer\.wn-footer\.gl\s*\{\s*display:\s*none/);
+});
+
+test("Cost and Water cards and nodes have no ESTIMATE label chips", () => {
+  const runsJs = fs.readFileSync(path.join(dashDir, "runs.js"), "utf8");
+  assert.doesNotMatch(runsJs, /Water saved<\/div>\s*<div class="big">[\s\S]*?\$\{dot\("ESTIMATE"\)\}/);
+  assert.doesNotMatch(runsJs, /Cost saved<\/div>\s*<div class="big">[\s\S]*?\$\{dot\("ESTIMATE"\)\}/);
+
+  const reportJs = fs.readFileSync(path.join(dashDir, "report.js"), "utf8");
+  assert.doesNotMatch(reportJs, /<dt>Cost saved<\/dt><dd>[^<]*\$\{chip\("ESTIMATE"\)\}/);
+  assert.doesNotMatch(reportJs, /<dt>Water saved<\/dt><dd>[^<]*\$\{chip\("ESTIMATE"\)\}/);
+
+  const v2Js = fs.readFileSync(path.join(dashDir, "v2.js"), "utf8");
+  assert.doesNotMatch(v2Js, /<span>\$\{name\}<\/span>\$\{badge\(id === "power" \? "MEASURED" : "ESTIMATE"\)\}/);
+  assert.match(v2Js, /<span>\$\{name\}<\/span>\$\{id === "power" \? badge\("MEASURED"\) : ""\}/);
 });

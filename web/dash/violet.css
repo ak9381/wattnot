@@ -31,19 +31,22 @@
   --v-reject: #D48389;      /* muted rose (passes AA on #2E2B44 and #171724) */
 
   /* glass surfaces (visionOS / Apple Liquid Glass) */
-  --v-glass: rgba(31, 26, 47, 0.65);
+  --v-glass:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%),
+    linear-gradient(0deg, rgba(178, 166, 195, 0.10), rgba(178, 166, 195, 0.10)),
+    rgba(27, 23, 40, 0.65);
   --v-glass2: rgba(142, 122, 158, 0.18);
-  --v-line: rgba(220, 214, 228, 0.12);   /* subtle 1px border */
+  --v-line: rgba(255, 255, 255, 0.14);   /* 1px highlight border */
   --v-line2: rgba(178, 166, 195, 0.28);
   --v-glow: rgba(178, 166, 195, 0.55);   /* peach glow for connector lines */
   --v-r: 20px;
 
   /* data labels (MEASURED/ESTIMATE/...): light tints so numbers stay readable */
-  --v-l-measured: #DCD6E4;
-  --v-l-estimate: #C4B4D6;
-  --v-l-simulated: #B49BDB;
-  --v-l-mock: #C6B2C2;
-  --v-l-replay: #8FBBA0;
+  --v-l-measured: #8FD3B0;
+  --v-l-estimate: #E6C27A;
+  --v-l-simulated: #8EC5F0;
+  --v-l-mock: #E9A6B4;
+  --v-l-replay: #B2A6C3;
   --v-l-advice: #D094A0;
 
   /* fonts (loaded via a Google Fonts <link> in each page) */
@@ -55,11 +58,11 @@
 /* ---- shared building blocks used by runs.html / report.html ---- */
 .v-glass {
   background: var(--v-glass);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(170%);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
   border: 1px solid var(--v-line);
   border-radius: var(--v-r);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(220, 214, 228, 0.12);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .v-glass {
@@ -69,18 +72,31 @@
 
 .v-num { font-family: var(--v-num); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
 
-/* one small dot + accessible name per data label */
-.v-lab { display: inline-block; width: 8px; height: 8px; border-radius: 50%; vertical-align: middle; margin-left: 0; border: 1px solid rgba(178,166,195, 0.45); }
-.v-lab.MEASURED { background: var(--v-l-measured); }
-.v-lab.ESTIMATE { background: var(--v-l-estimate); }
-.v-lab.SIMULATED { background: var(--v-l-simulated); }
-.v-lab.MOCK, .v-lab.SAMPLE { background: var(--v-l-mock); }
-.v-lab.REPLAY { background: var(--v-l-replay); }
-.v-lab.ADVICE { background: var(--v-l-advice); }
+/* one small dot/glyph + accessible name per data label */
+.v-lab { display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-weight: 700; font-size: 11px; line-height: 1; vertical-align: middle; margin-left: 0; }
+.v-lab.MEASURED { color: var(--v-l-measured); }
+.v-lab.ESTIMATE { color: var(--v-l-estimate); }
+.v-lab.SIMULATED { color: var(--v-l-simulated); }
+.v-lab.MOCK, .v-lab.SAMPLE { color: var(--v-l-mock); }
+.v-lab.REPLAY { color: var(--v-l-replay); }
+.v-lab.ADVICE { color: var(--v-l-advice); }
+
+.v-lab.MEASURED:empty::before { content: "●"; }
+.v-lab.ESTIMATE:empty::before { content: "~"; }
+.v-lab.SIMULATED:empty::before { content: "┄"; }
+.v-lab.MOCK:empty::before, .v-lab.SAMPLE:empty::before { content: "○"; }
+.v-lab.REPLAY:empty::before { content: "↻"; }
+.v-lab.ADVICE:empty::before { content: "✦"; }
 
 /* a label chip that carries the visible word */
-.v-chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--v-line); background: rgba(46, 43, 68, 0.35); border-radius: 999px; padding: 2px 8px; font-size: 11px; letter-spacing: .04em; color: var(--v-sub); font-family: var(--v-body); font-weight: 500; }
-.v-chip i { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.v-chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--v-line); background: rgba(23, 23, 36, 0.45); border-radius: 999px; padding: 2px 8px; font-size: 11px; letter-spacing: .04em; color: var(--v-sub); font-family: var(--v-body); font-weight: 600; white-space: nowrap; }
+.v-chip i { font-style: normal; font-size: 11px; line-height: 1; flex: none; }
+
+.v-chip.MEASURED, .v-chip.v-chip-measured { color: var(--v-l-measured); border-color: rgba(143, 211, 176, 0.35); }
+.v-chip.ESTIMATE, .v-chip.v-chip-estimate { color: var(--v-l-estimate); border-color: rgba(230, 194, 122, 0.35); }
+.v-chip.SIMULATED, .v-chip.v-chip-simulated { color: var(--v-l-simulated); border-color: rgba(142, 197, 240, 0.50); border-style: dashed; }
+.v-chip.MOCK, .v-chip.SAMPLE, .v-chip.v-chip-mock, .v-chip.v-chip-sample { color: var(--v-l-mock); border-color: rgba(233, 166, 180, 0.35); }
+.v-chip.REPLAY, .v-chip.v-chip-replay { color: var(--v-l-replay); border-color: rgba(178, 166, 195, 0.35); }
 
 /* status pill: icon + word + muted colour, together */
 .v-status { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }

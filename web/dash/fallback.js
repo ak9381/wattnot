@@ -6,10 +6,7 @@
   const real = window.fetch.bind(window);
   let told = false;
   const tell = () => {
-    if (told) return; told = true;
-    const b = document.createElement("div"); b.className = "replay-banner"; b.setAttribute("role", "status");
-    b.textContent = "The live server did not answer in time, so this view now shows the published replay of measured logs.";
-    document.body.prepend(b);
+    // Banner removed per design spec
   };
   window.fetch = async (u, init = {}) => {
     const p = typeof u === "string" ? u : u.url;

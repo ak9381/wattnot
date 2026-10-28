@@ -122,6 +122,7 @@ export function markIllus(root = document) {
   });
 }
 export function wireIllus(btn) {
+  if (!btn) return;
   const set = (on) => { document.body.classList.toggle("illus", on); btn.setAttribute("aria-pressed", String(on)); btn.textContent = on ? "Illustrations: on" : "Illustrations: off"; };
   set(localStorage.getItem("wn-illus") === "1");
   btn.onclick = () => { const on = !document.body.classList.contains("illus"); localStorage.setItem("wn-illus", on ? "1" : "0"); set(on); };
