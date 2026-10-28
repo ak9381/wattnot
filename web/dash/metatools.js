@@ -41,7 +41,7 @@ export function extractMetaToolsData(receipt) {
 
   // Llama Judge
   const judgeVerdict = m.judge_verdict || candQuality.judge_verdict || (candQuality.judge_score >= 0.9 ? "pass" : "fail");
-  const judgeScore = m.judge_score != null ? m.judge_score : candQuality.judge_score ?? 0.942;
+  const judgeScore = m.judge_score != null ? m.judge_score : candQuality.judge_score ?? null;
   const judgeModel = m.judge_model || "meta-llama/Llama-3.1-8B-Instruct";
   const judgeLabel = m.label || "MOCK";
 
@@ -50,7 +50,7 @@ export function extractMetaToolsData(receipt) {
 
   // Wonder Supervisor
   const wonderTrials = wonder.trials != null ? wonder.trials : 5;
-  const wonderStop = wonder.stop_reason || m.wonder_stop_reason || "$/quality Pareto front flattened: improvement 0.42% < threshold 1.00% over last 3 trials";
+  const wonderStop = wonder.stop_reason || m.wonder_stop_reason || "No Wonder supervisor on this run";
   const wonderTraceIds = m.wonder_trace_ids || ["wonder-8f12a34b5c6d7e01"];
   // Wonder trials/spend are not independently metered; the label comes from the data (default MOCK).
   const wonderLabel = wonder.label || "MOCK";
@@ -179,7 +179,7 @@ export function renderMetaToolsHTML(receipt) {
                 ${isPass ? "✓ PASS" : "✗ FAIL"}
               </span>
               <div class="metatools-val-row">
-                <span class="metatools-number">${(d.judgeScore * 100).toFixed(1)}%</span>
+                <span class="metatools-number">${d.judgeScore == null ? "not recorded" : (d.judgeScore * 100).toFixed(1) + "%"}</span>
                 <span class="metatools-badge">${escapeHtml(d.judgeLabel)}</span>
               </div>
             </div>
@@ -324,15 +324,15 @@ export function compareRows(receipts) {
       metric: "Wonder Stop Reason",
       values: receipts.map((r) => {
         const d = extractMetaToolsData(r);
-        return { text: d.wonderStop, tag: "REPLAY" };
+        return { text: d.wonderStop, tag: d.wonderLabel };
       })
     },
     {
       metric: "Per-Model Spend",
       values: receipts.map((r) => {
         const d = extractMetaToolsData(r);
-        const wSpend = d.perModelSpend?.wonder?.usd ?? 0.048;
-        const sSpend = d.perModelSpend?.spark?.usd ?? 0.0125;
+        const wSpend = d.perModelSpend?.wonder?.usd ?? 0;
+        const sSpend = d.perModelSpend?.spark?.usd ?? 0;
         const tot = Number(wSpend) + Number(sSpend);
         const tag = d.perModelSpend?.wonder?.label ?? "MOCK";
         return { text: `$${tot.toFixed(4)} total (Wonder: $${Number(wSpend).toFixed(4)}, Spark: $${Number(sSpend).toFixed(4)})`, tag };
@@ -341,7 +341,7 @@ export function compareRows(receipts) {
     {
       metric: "Framework Tag",
       values: receipts.map((r) => {
-        const fw = r?.framework || r?.receipt?.framework || r?.measurement?.framework || r?.candidate?.framework || "vllm";
+        const fw = r?.framework || r?.receipt?.framework || r?.measurement?.framework || r?.candidate?.framework || "none recorded";
         const tag = r?.label === "MEASURED" ? "MEASURED" : "MOCK";
         return { text: String(fw), tag };
       })
@@ -350,7 +350,7 @@ export function compareRows(receipts) {
       metric: "Llama 8B Agreement Score",
       values: receipts.map((r) => {
         const d = extractMetaToolsData(r);
-        return { text: `${(d.judgeScore * 100).toFixed(1)}%`, tag: d.judgeLabel };
+        return { text: d.judgeScore == null ? "not recorded" : `${(d.judgeScore * 100).toFixed(1)}%`, tag: d.judgeLabel };
       })
     },
     {
