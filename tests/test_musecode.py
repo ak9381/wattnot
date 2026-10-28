@@ -138,8 +138,14 @@ def test_snippets_generation():
 
 
 def test_snippets_validation_gracefully_skips_when_not_installed(tmp_path):
-    # Without external libraries, generate_and_validate_snippets marks results as MOCK
-    results = generate_and_validate_snippets(out_dir=tmp_path)
+    def uninstalled(url, q):
+        raise ModuleNotFoundError("Library not installed (simulated)")
+
+    # When libraries are not installed, generate_and_validate_snippets marks results as MOCK (not run)
+    results = generate_and_validate_snippets(
+        out_dir=tmp_path,
+        custom_validators={fw: uninstalled for fw in FRAMEWORKS},
+    )
     assert len(results) == len(FRAMEWORKS)
     for r in results:
         assert r.status == "skipped"

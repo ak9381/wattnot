@@ -1,0 +1,145 @@
+/* EU Directive Link Component - Meta Tools v5 */
+.eulink-card {
+  background: rgba(31, 26, 47, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(142, 122, 158, 0.35);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 2rem;
+  color: #DCD6E4;
+  font-family: "Source Sans 3", "Source Sans Pro", system-ui, sans-serif;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.eulink-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(110, 94, 124, 0.25);
+  padding-bottom: 0.75rem;
+}
+
+.eulink-title {
+  font-family: "Montserrat", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #DCD6E4;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.eulink-badge {
+  font-family: "Fira Code", monospace;
+  font-size: 0.72rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(142, 122, 158, 0.2);
+  border: 1px solid #8E7A9E;
+  color: #B2A6C3;
+}
+
+.eulink-roadmap-tag {
+  font-family: "Fira Code", monospace;
+  font-size: 0.68rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(46, 43, 68, 0.8);
+  border: 1px solid #4F4A63;
+  color: #8E7A9E;
+}
+
+.eulink-body {
+  font-size: 0.9rem;
+  color: #B2A6C3;
+  line-height: 1.45;
+  margin-bottom: 1rem;
+}
+
+.eulink-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.eulink-metric-box {
+  background: rgba(23, 23, 36, 0.7);
+  border: 1px solid rgba(110, 94, 124, 0.25);
+  border-radius: 6px;
+  padding: 0.6rem 0.85rem;
+}
+
+.eulink-metric-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: #8E7A9E;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.2rem;
+}
+
+.eulink-metric-val {
+  font-family: "Fira Code", monospace;
+  font-size: 1.05rem;
+  color: #DCD6E4;
+  font-weight: 600;
+}
+
+.eulink-metric-tag {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  margin-left: 0.3rem;
+  background: rgba(142, 122, 158, 0.25);
+  color: #B2A6C3;
+}
+
+.eulink-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.eulink-btn {
+  background: #3B3A54;
+  border: 1px solid #6C5E7C;
+  color: #DCD6E4;
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.eulink-btn:hover {
+  background: #4F4A63;
+  border-color: #8E7A9E;
+  color: #ffffff;
+}
+
+.eulink-btn-secondary {
+  background: transparent;
+  border: 1px solid rgba(142, 122, 158, 0.3);
+  color: #B2A6C3;
+}
+
+.eulink-btn-secondary:hover {
+  background: rgba(142, 122, 158, 0.15);
+  color: #DCD6E4;
+}
+
+.eulink-disclaimer {
+  font-size: 0.75rem;
+  color: #6C5E7C;
+  margin-top: 0.75rem;
+  font-style: italic;
+}

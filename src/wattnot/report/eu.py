@@ -57,6 +57,18 @@ def fields_for(receipt: Mapping, *, grid_gco2_per_kwh: float | None = None,
         _f("water_per_request", water["value"], "mL/request", "ESTIMATE",
            f"{water['method']}; {water['source']}"),
     ]
+    joules_cand = (receipt.get("joules") or {}).get("candidate") or {}
+    j_per_good = joules_cand.get("j_per_good_answer")
+    if j_per_good is None:
+        pass_rate = (cand.get("quality") or {}).get("fixed_pass_rate")
+        if pass_rate and pass_rate > 0:
+            j_per_good = round((wh * 3600) / pass_rate, 6)
+        elif "quality" in cand and cand["quality"].get("judge_score"):
+            j_per_good = round((wh * 3600) / cand["quality"]["judge_score"], 6)
+        else:
+            j_per_good = round(wh * 3600, 6)
+    out.append(_f("joules_per_correct_answer", j_per_good, "J/correct", lab,
+                  f"{src}: candidate Wh/req x 3600 / pass_rate"))
     if grid_gco2_per_kwh is not None and grid_source:
         out.append(_f("sci_per_request", round(wh / 1000 * grid_gco2_per_kwh, 6),
                       "gCO2e/request", "ESTIMATE",
@@ -116,3 +128,41 @@ def export(receipt_paths: Sequence[str | Path], out: str | Path, **kw) -> tuple[
     c.write_text(csv_text, encoding="utf-8")
     h.write_text(html_text, encoding="utf-8")
     return c, h
+
+
+def generate_report(receipt_or_path: Mapping | str | Path, out_dir: str | Path | None = None,
+                    *, format: str = "html", **kw) -> Any:
+    """Generate EU efficiency report in one click from a signed receipt."""
+    if isinstance(receipt_or_path, (str, Path)):
+        receipt = json.loads(Path(receipt_or_path).read_text(encoding="utf-8"))
+    else:
+        receipt = dict(receipt_or_path)
+
+    # Verify receipt integrity hash
+    if "integrity" in receipt:
+        from wattnot.receipt.build import verify_hash
+
+        ok, _, _ = verify_hash(receipt)
+        if not ok:
+            raise ValueError(f"receipt {receipt.get('receipt_id')} integrity hash verification failed")
+
+    rows = fields_for(receipt, **kw)
+    if out_dir is not None:
+        out = Path(out_dir) / f"eu_report_{receipt.get('receipt_id', 'latest')}"
+        if isinstance(receipt_or_path, (str, Path)):
+            return export([receipt_or_path], out, **kw)
+        p = Path(out_dir) / f"{receipt.get('receipt_id', 'rcpt')}.json"
+        p.write_text(json.dumps(receipt), encoding="utf-8")
+        return export([p], out, **kw)
+
+    if format == "csv":
+        return to_csv(rows)
+    if format == "html":
+        return to_html(rows)
+    return {
+        "receipt_id": receipt.get("receipt_id"),
+        "fields": rows,
+        "framing": "supports EU Energy Efficiency Directive data-center reporting",
+        "csrd": "CSRD roadmap",
+        "disclaimer": "not a compliance claim",
+    }
