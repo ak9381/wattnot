@@ -9,7 +9,7 @@ const fmt = (v, d = 2) => (v == null || Number.isNaN(+v) ? "–" : (+v).toLocale
 const CLS = { MEASURED: "n-measured", ESTIMATE: "n-estimate", SIMULATED: "n-simulated", MOCK: "n-mock", REPLAY: "n-replay" };
 const n = (text, tag) => `<span class="${CLS[tag] || ""}" title="${tag || ""}">${text}</span>`;
 const PENDING = "Measured in the long run";
-export const legend = () => `<div class="r7legend" role="note" aria-label="Number colours"><span><i style="background:var(--r7-blue)"></i>measured</span><span><i style="background:var(--r7-gold)"></i>estimate</span><span><i style="background:var(--r7-mauve)"></i>simulated</span><span><i style="background:#8FE3B0"></i>replay</span><span><i style="background:var(--r7-green)"></i>with WattNot</span><span><i style="background:var(--r7-red)"></i>without WattNot</span></div>`;
+export const legend = () => `<div class="r7legend" role="note" aria-label="Number colours"><span><i style="background:var(--r7-blue)"></i>measured</span><span><i style="background:var(--r7-gold)"></i>estimate</span><span><i style="background:var(--r7-mauve)"></i>simulated</span><span><i style="background:#8FBBA0"></i>replay</span><span><i style="background:var(--r7-green)"></i>with WattNot</span><span><i style="background:var(--r7-red)"></i>without WattNot</span></div>`;
 
 // ---------- the three places a model can run (always all three) ----------
 export const OPTIONS = [
@@ -286,7 +286,7 @@ export function overviewHtml(S) {
     ${metaTile()}
     <div class="ov-grid">
       <section class="glass ov-trend"><h3>Energy per answer, by repeat ${infoBtn("calc-power", "energy")}</h3>${rec ? lineChart(series(rec, (j) => j), { unit: "J", yLabel: "J per answer", w: 620, h: 220, y0: 0, xticks: [1, 2, 3].map((x) => ({ x, label: `#${x}` })) }) : `<p class="r7miss">${PENDING}</p>`}<button class="btn" data-pg="1">Open bigger</button></section>
-      <section class="glass ov-donut"><h3>Where the energy went</h3>${cut != null ? donut([{ name: "Still used", v: used, color: "#5AA9F0" }, { name: "Saved by WattNot", v: cut, color: "#4CC38A" }], { center: saved || "", centerSub: "saved", aria: "energy used vs saved" }) : `<p class="r7miss">${PENDING}</p>`}</section>
+      <section class="glass ov-donut"><h3>Where the energy went</h3>${cut != null ? donut([{ name: "Still used", v: used, color: "#935073" }, { name: "Saved by WattNot", v: cut, color: "#7FA88A" }], { center: saved || "", centerSub: "saved", aria: "energy used vs saved" }) : `<p class="r7miss">${PENDING}</p>`}</section>
       <section class="glass ov-gauge"><h3>Speed budget used</h3>${r.p99_change_pct != null ? gauge(r.p99_change_pct, 15, { text: `+${fmt(r.p99_change_pct, 1)}%`, sub: "p99 change · limit 10%", limit: 10, cls: r.p99_change_pct > 10 ? "warn" : "", aria: "p99 change against the 10% limit" }) : `<p class="r7miss">${PENDING}</p>`}<p class="r7note">Red tick: the 10% limit.</p></section>
       <section class="glass ov-table"><h3>Recorded runs</h3><table><thead><tr><th>Run</th><th>Model</th><th>Date</th></tr></thead><tbody>${runs.map((x) => `<tr><td>${esc(x.name)}</td><td>${esc(x.model)}</td><td>${esc(x.date)}</td></tr>`).join("") || `<tr><td colspan="3" class="r7miss">${PENDING}</td></tr>`}</tbody></table></section>
     </div></div></div>`;

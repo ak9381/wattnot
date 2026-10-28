@@ -265,7 +265,7 @@ function syncAdv() {
   $("#advSum")?.setAttribute("aria-expanded", String(d.open));
   const list = $("#advDefList"); if (!list) return;
   list.innerHTML = S.opts.options.filter((o) => !ESSENTIAL_IDS.includes(o.id))
-    .map((o) => `<span class="chip">${esc(o.label)}: <b style="color:#fff">${esc(advChoiceLabel(o))}</b></span>`).join("");
+    .map((o) => `<span class="chip">${esc(o.label)}: <b style="color:#F8F4E9">${esc(advChoiceLabel(o))}</b></span>`).join("");
 }
 function sumCfg() {
   const c = S.choice, m = S.opts.options.find((o) => o.id === "model").choices.find((x) => x.v === c.model);
@@ -313,7 +313,7 @@ function stageBody(p, evs) {
   const subs = p.subs.map((s) => { const f = fin[s.id]; const st = f ? (f.data.status === "failed" ? "fail" : "done") : mine.some((e) => e.data.sub === s.id) ? "run" : "todo";
     return `<div class="sub"><span class="st ${st}" style="margin-top:6px"></span><div style="flex:1"><b>${esc(s.title)}</b>${s.partner ? ` <span class="ptag">${esc(s.partner)}</span>` : ""}<p>${esc(f?.data.summary || s.desc)}</p>
       <div class="io">in: ${esc(s.inputs)} → out: ${esc(s.outputs)} · <code>${esc(s.code || "")}</code></div>
-      ${(f?.data.numbers || []).map((x) => `<span class="chip" style="margin:4px 4px 0 0">${esc(x.label)} <b style="color:#fff">${num(x.v)} ${esc(x.unit)}</b>${badge(x.tag)}</span>`).join("")}</div></div>`; }).join("");
+      ${(f?.data.numbers || []).map((x) => `<span class="chip" style="margin:4px 4px 0 0">${esc(x.label)} <b style="color:#F8F4E9">${num(x.v)} ${esc(x.unit)}</b>${badge(x.tag)}</span>`).join("")}</div></div>`; }).join("");
   return `<p>${esc(p.desc)}</p>${say ? `<div class="say">${esc(say.text)} <small style="color:var(--mu)">(${esc(say.source)})</small></div>` : ""}
     <div class="lvl">Steps inside</div>${subs}${mine.length ? raw(`${p.id}: ${mine.length} events`, mine) : ""}`;
 }
@@ -435,35 +435,35 @@ function mapTopics() {
   const row = (r) => (r ? { stock: r.stock, wattnot: r.wattnot, delta: r.delta, tag: r.tag } : null);
   const e = row(by.energy), c = row(by.cost), w = row(by.water), p = row(by.p99), q = row(by.quality);
   return [
-    { id: "power", color: "#2ee6f0", name: "Power", sub: "Energy per request",
+    { id: "power", color: "#F6DBC0", name: "Power", sub: "Energy per request",
       kids: [leaf("pw-s", "bolt", "Without WattNot", e ? `700 W stock · <b>${esc(e.stock)}</b>/req ${badge(e.tag)}` : "700 W stock · not measured"),
              leaf("pw-w", "bolt", "With WattNot", e ? `350 W cap · <b>${esc(e.wattnot)}</b>/req · <b>${esc(e.delta)}</b> ${badge(e.tag)}` : "350 W cap · not measured")],
       detail: `<b>What went right.</b> RUN2 on Llama 3.1 8B at a 350 W cap: <b>−27.1%</b> joules per request ${badge("MEASURED")} (data/h100-run2/vm/steps/cap350.json). Earlier sweep on Muse Glimmer 30B at 400 W: <b>−21.0%</b> with p99 +3.7% ${badge("MEASURED")} (H100 run sweep.csv, NVML). Qwen3 adaptive top-k saved 7.0% and passed all three gates at 95.7% agreement ${badge("MEASURED")}.` },
-    { id: "cost", color: "#ffc857", name: "Cost", sub: "Electricity per 1M requests",
+    { id: "cost", color: "#CF9FB9", name: "Cost", sub: "Electricity per 1M requests",
       kids: [leaf("c-s", "coin", "Without WattNot", c ? `Stock: <b>${esc(c.stock)}</b> ${badge(c.tag)}` : "Stock cost: not measured"),
              leaf("c-w", "coin", "With WattNot", c ? `Capped: <b>${esc(c.wattnot)}</b> (<b>${esc(c.delta)}</b>) ${badge(c.tag)}` : "Capped cost: not measured")],
       detail: `Measured joules times <b>$0.1387</b>/kWh, the US commercial electricity price (EIA). The meter reading is ${badge("MEASURED")}; the bill math is ${badge("ESTIMATE")}.` },
-    { id: "water", color: "#4aa8ff", name: "Water", sub: "Cooling water per 1M requests",
+    { id: "water", color: "#935073", name: "Water", sub: "Cooling water per 1M requests",
       kids: [leaf("w-s", "drop", "Without WattNot", w ? `Stock: <b>${esc(w.stock)}</b> ${badge(w.tag)}` : "Stock water: not measured"),
              leaf("w-w", "drop", "With WattNot", w ? `Capped: <b>${esc(w.wattnot)}</b> (<b>${esc(w.delta)}</b>) ${badge(w.tag)}` : "Capped water: not measured")],
       detail: `Measured joules times <b>0.36 L</b>/kWh, a US fleet-average site water factor (LBNL). On-site cooling water only; making the electricity is not counted. ${badge("ESTIMATE")}.` },
-    { id: "latency", color: "#a78bfa", name: "Latency", sub: "Slowest 1% of requests (p99)",
+    { id: "latency", color: "#B49BDB", name: "Latency", sub: "Slowest 1% of requests (p99)",
       kids: [leaf("l-s", "clock", "Without WattNot", p ? `Stock p99 <b>${esc(p.stock)}</b> ${badge(p.tag)}` : "Stock p99: not measured"),
              leaf("l-w", "clock", "With WattNot", p ? `Capped p99 <b>${esc(p.wattnot)}</b> (<b>${esc(p.delta)}</b>) ${badge(p.tag)}` : "Capped p99: not measured")],
       detail: `p99 is the time 99 of 100 requests beat. The 350 W cap added <b>+7.7%</b> ${badge("MEASURED")}, inside the <b>10%</b> gate, so it passed. A slower cap would not.` },
-    { id: "quality", color: "#2ff5b4", name: "Quality", sub: "Answer quality, stock vs capped",
+    { id: "quality", color: "#8FBBA0", name: "Quality", sub: "Answer quality, stock vs capped",
       kids: [leaf("q-s", "check", "Without WattNot", q ? `Stock: <b>${esc(q.stock)}</b> pass ${badge(q.tag)}` : "Stock quality: not measured"),
              leaf("q-w", "check", "With WattNot", q ? `Capped: <b>${esc(q.wattnot)}</b> · <b>${esc(q.delta)}</b> ${badge(q.tag)}` : "Capped quality: not measured")],
       detail: `<b>666</b> answers checked: <b>93.7%</b> pass at stock and <b>93.7%</b> capped ${badge("MEASURED")}. The same pass rate means quality held.` },
-    { id: "safety", color: "#ff8a5c", name: "Safety/Approve", sub: "A person stays in charge",
+    { id: "safety", color: "#935073", name: "Safety/Approve", sub: "A person stays in charge",
       kids: [leaf("s-s", "shield", "Without WattNot", `No review: a change would just apply`),
              leaf("s-w", "shield", "With WattNot", `A person approves high-risk changes ${badge("MOCK")}`)],
       detail: `<b>Why choose WattNot.</b> It is a second layer, not a claim to beat everything. Every change is measured, gated, approved by a person, logged, undoable, and signed. If a cap fails a gate, it is rejected, as below.` },
-    { id: "rejected", color: "#ff6b6b", name: "Rejected options", sub: "What we refused, and why",
+    { id: "rejected", color: "#C97A80", name: "Rejected options", sub: "What we refused, and why",
       kids: [leaf("r-s", "x", "Without WattNot", `No gate: 325 W would just run slower at p99 <b>+10.9%</b>`),
              leaf("r-w", "x", "With WattNot", `Gate rejects 325 W: p99 <b>+10.9%</b> is over the <b>10%</b> limit ${badge("MEASURED")}`)],
       detail: `<b>325 W rejected:</b> p99 rose <b>+10.9%</b>, over the 10% limit ${badge("MEASURED")} (data/h100-run2/vm/steps/cap325.json). <b>Granite adaptive top-k rejected:</b> 94.53% agreement, under the 95% gate ${badge("MEASURED")} (story bundle adaptive stats). Rejections are the system working.` },
-    { id: "proof", color: "#e6edf5", name: "Proof", sub: "Fingerprint, verifier, raw files",
+    { id: "proof", color: "#F8F4E9", name: "Proof", sub: "Fingerprint, verifier, raw files",
       kids: [leaf("f-s", "doc", "Without WattNot", `A chart you cannot re-check`),
              leaf("f-w", "doc", "With WattNot", `Fingerprint plus verifier plus raw files ${badge("SAMPLE")}`)],
       detail: `The fingerprint covers the headline numbers only, with sorted keys and no timestamps. The verifier re-checks sample receipts ${badge("SAMPLE")}. Raw data: data/h100-run2/vm/steps/cap350.json, data/h100-run2/vm/steps/cap325.json, data/h100-run2/vm/adaptive_topk/, verifier/samples/.` },
