@@ -153,3 +153,24 @@ nav.tabs button.on{background:rgba(90,169,240,.14);border-color:rgba(90,169,240,
 @media (max-width:640px){.pc-view .pc-controls #pc-follow,.pc-view .pc-controls #pc-mini{display:none}}
 .cmp-empty{padding:28px;margin:12px 0;border-radius:14px}.cmp-empty h2{margin:0 0 8px}.cmp-bundled{margin:8px 0;padding:8px 12px;border:1px dashed #E8B84A;border-radius:8px;color:#E8B84A;font-size:13px}
 #pReport[data-cmp-empty] .map-wrap,#pReport[data-cmp-empty] .who-banner,#pReport[data-cmp-empty] .who,#pReport[data-cmp-empty] .ctrl [data-expand],#pReport[data-cmp-empty] #expandAll,#pReport[data-cmp-empty] #collapseAll{display:none}
+
+/* Proof tab and illustration toggle */
+body:not(.illus) [data-illus] { display: none !important; }
+.pf { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; padding: 16px 0; }
+.pf-card { padding: 16px 18px; border-radius: 14px; }
+.pf-card h3 { margin: 0 0 8px; }
+.pf-wide { grid-column: 1 / -1; }
+.pf-big { font-size: 1.05rem; } .pf-big b { font-size: 1.6rem; margin-right: 6px; }
+.pf-meta { opacity: .75; font-size: .85rem; }
+.pf-trace { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.pf-step { display: flex; gap: 10px; padding: 10px; border-radius: 10px; border-left: 4px solid #888; background: rgba(127,127,127,.08); }
+.pf-step.ok { border-left-color: #2e9d5b; } .pf-step.bad { border-left-color: #d0453b; }
+.pf-n { font-weight: 700; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: rgba(127,127,127,.2); flex: none; }
+.pf-why { font-style: italic; margin: 4px 0; }
+.pf-i { border-radius: 50%; width: 20px; height: 20px; border: 1px solid currentColor; background: none; color: inherit; cursor: pointer; font-weight: 700; }
+.pf-t { width: 100%; border-collapse: collapse; font-size: .88rem; } .pf-t td, .pf-t th { padding: 4px 6px; text-align: left; border-bottom: 1px solid rgba(127,127,127,.2); }
+.pf-t .ok { color: #2e9d5b; } .pf-t .bad { color: #d0453b; }
+.pf-stack { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .pf-stack div:not(.pf-x) { display: flex; flex-direction: column; } .pf-stack b { font-size: 1.4rem; } .pf-x { font-size: 1.4rem; opacity: .6; }
+.pf-code { background: rgba(127,127,127,.12); padding: 8px; border-radius: 8px; overflow-x: auto; }
+.pf-fb { color: #b7791f; }
+.replay-banner { background: #1f3b5a; color: #fff; text-align: center; padding: 6px 10px; font-size: .9rem; }
