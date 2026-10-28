@@ -985,6 +985,7 @@ function nodeDetailHtml(rec, branch, node) {
   const v = treeValue(rec, branch, node), desc = TREE_DESC[node.id] || "";
   let head;
   if (node.kind === "gate") head = v ? (v.pass ? `<p class="rad-pass">✓ Passed</p>` : `<p class="rad-fail">✕ Failed</p>`) : `<p class="rad-miss">Not evaluated in this run <span class="rad-pending">pending</span></p>`;
+  else if (node.id === "waste") head = v ? `<p>Saved <b>${cnum(esc(v.text), v.tag)}</b>${badge(v.tag)}</p>` : `<p class="rad-miss">Not measured in this run</p>`;
   else head = v ? `<p>Saved <b>${cnum(esc(v.text), v.tag)}</b>${badge(v.tag)}</p>` : `<p class="rad-miss">Not measured in this run <span class="rad-pending">pending</span></p>`;
   let extra = node.id === "context" ? contextDetailHtml(rec) : "";
   if (node.own_only) extra += `<p class="rad-sub">Own GPU only: hosted endpoints give no GPU access.</p>`;
