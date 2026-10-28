@@ -97,7 +97,7 @@ function cardsData(rec, price, water) {
       saved: ok ? `${fmt((k1m(bj) - k1m(wj)) * water, 2)} L` : null, sub: ok ? `per million answers · ${fmt(k1m(bj) * water)} → ${fmt(k1m(wj) * water)} L` : null, f: (j) => k1m(j) * water },
   ];
 }
-const METHODS = [["caps", "Power caps"], ["topk", "Adaptive top-k"], ["tiered", "Tiered / k-means experts"], ["gate", "Quality gates"], ["waste", "Agent-waste saver"], ["router", "Where-to-run router"]];
+const METHODS = [["caps", "Power caps"], ["topk", "Adaptive top-k"], ["tiered", "Tiered / k-means experts"], ["gate", "Quality gates"], ["waste", "Agent-waste saver"], ["router", "Where-to-run router"], ["cache", "Prompt cache"]];
 export function compareHtml(rec, price = 0.1387, water = 0.36) {
   const cards = cardsData(rec, price, water);
   return `<div class="cmp-head"><div><h1>What WattNot saved</h1><p class="lead">${esc(rec?.run_name || "Pick a run")} ${infoBtn("compare", "how this is compared")}</p></div></div>${metaInRun(rec)}${legend()}
@@ -125,12 +125,45 @@ export function wireCompare(root, rec, price = 0.1387, water = 0.36) {
     const k = b.dataset.pop;
     if (k === "where") return popup("Where should this model run?", whereHtml(rec), { sub: "All three are compared in this run." });
     if (k.startsWith("chart-")) return openPowerGraph(rec, cards[k.slice(6)]);
-    const [, cid, mid] = k.split("-"); const c = cards[cid], m = METHODS.find(([i]) => i === mid);
-    popup(`${c.title} · ${m[1]}`, mid === "caps" && c.saved
-      ? `<p>The power cap is the only method this run records, so the whole-run saving is shown: <b>${n(esc(c.saved), c.tag)}</b>. It is not split across methods.</p>${workedExample(rec?.phases?.baseline?.metrics?.j_per_req, rec?.phases?.wattnot?.metrics?.j_per_req, price, water)}`
-      : `<p><b>Not measured in this run.</b> This run's record does not attribute any saving to ${esc(m[1])}, so nothing is split out. The long run records each method on its own.</p>`);
+    const [, cid, mid] = k.split("-"); methodPopup(rec, cid, mid, price, water);
   }));
 }
+const HOW = {
+  caps: "Lower the GPU's watt limit and keep the lowest cap that passes the quality and speed gates.",
+  topk: "Send each word to fewer experts when one or two carry almost all the weight.",
+  tiered: "Keep busy experts on the GPU at higher precision, quiet ones at lower precision or in CPU RAM.",
+  gate: "Refuse any setting that drops answer quality or slows p99 past the limit; its 'saving' is the risk it blocked.",
+  waste: "Stop agent loops that call the model again without new information.",
+  router: "Send each kind of work to the place (your GPU, Baseten or Modal) that is cheapest and passes the gates.",
+  cache: "Reuse a repeated prompt prefix instead of computing it again.",
+};
+// Every method opens its own detail with a worked example. Only power caps has
+// a measured number in this run; the others show the calculation with an
+// illustrative 10% saving, clearly marked as an example, not a result.
+export function methodPopup(rec, cid, mid, price = 0.1387, water = 0.36) {
+  const c = cardsData(rec, price, water).find((x) => x.id === cid), m = METHODS.find(([i]) => i === mid);
+  if (!c || !m) return null;
+  const bj = rec?.phases?.baseline?.metrics?.j_per_req, wj = rec?.phases?.wattnot?.metrics?.j_per_req;
+  const measured = mid === "caps" && c.saved;
+  const body = measured
+    ? `<p>This run records power caps as the method, so the whole-run saving is shown: <b>${n(esc(c.saved), c.tag)}</b>. It is not split across methods.</p><h3>Worked example (this run's numbers)</h3>${workedExample(bj, wj, price, water)}`
+    : `<p><b>Not measured in this run.</b> The record does not attribute any ${esc(c.title.toLowerCase())} saving to ${esc(m[1])}. The long run records each method on its own.</p><h3>Worked example (illustrative 10%, not a result)</h3>${bj != null ? workedExample(bj, bj * 0.9, price, water) : "<p class=\"r7miss\">No baseline in this record.</p>"}`;
+  return popup(`${c.title} · ${m[1]}`, `<div class="mp"><p class="lead">${esc(HOW[mid] || "")}</p>${body}</div>`, { sub: esc(rec?.run_name || "") });
+}
+// Radial compare: one branch's card content (graph, per-method, per-place) in a popup.
+export function branchPopup(rec, id, price = 0.1387, water = 0.36) {
+  const c = cardsData(rec, price, water).find((x) => x.id === id); if (!c) return null;
+  const html = `<div class="cmp bp" data-cmp="${c.id}">
+    <div class="cmp-saved"><span class="lvl">Saved</span><span class="cmp-v">${c.saved ? n(esc(c.saved), c.tag) : `<span class="r7miss">${PENDING}</span>`}</span>${infoBtn(`calc-${c.id}`, `${c.title} calculation`)}</div>
+    <p class="cmp-sub">${esc(c.sub || "")}</p>
+    <button class="cmp-chart" data-pop="chart-${c.id}" aria-label="Open the ${c.title} graph bigger">${lineChart(series(rec, c.f), { unit: c.unit, yLabel: c.unit, xLabel: "Repeat (per-repeat RUN2 data; the long run adds a time series)", w: 760, h: 280, y0: 0, xticks: [1, 2, 3].map((x) => ({ x, label: `#${x}` })), aria: `${c.title} with and without WattNot` })}</button>
+    <div class="bp-cols"><div><div class="lvl">By method</div>
+    <ul class="cmp-m">${METHODS.map(([mid, name]) => `<li><button class="linkish" data-pop="m-${c.id}-${mid}">${esc(name)}</button><span>${mid === "caps" && c.saved ? n(`${esc(c.saved)} (whole run)`, c.tag) : `<span class="r7miss">not measured in this run</span>`}</span></li>`).join("")}</ul></div>
+    <div>${optionBars(c.id, rec)}</div></div>${metaInRun(rec)}</div>`;
+  return popup(c.title, html, { sub: `${esc(rec?.run_name || "")} · red is without WattNot, green is with`, onMount: (root) => wireCompare(root, rec, price, water) });
+}
+export const cmpHeadHtml = (rec) => `<div class="cmp-head"><div><h1>What WattNot saved</h1><p class="lead">${esc(rec?.run_name || "Pick a run")} ${infoBtn("compare", "how this is compared")}</p></div></div>${metaInRun(rec)}${legend()}`;
+export function openWhere(rec) { return popup("Where should this model run?", whereHtml(rec), { sub: "All three are compared in this run." }); }
 export function openPowerGraph(rec, c) {
   c ||= cardsData(rec, 0.1387, 0.36)[0];
   const html = `<div class="pg">${lineChart(series(rec, c.f), { unit: c.unit, yLabel: c.unit, xLabel: "Repeat", w: 980, h: 440, y0: 0, xticks: [1, 2, 3].map((x) => ({ x, label: `repeat ${x}` })), aria: `${c.title} with and without WattNot` })}

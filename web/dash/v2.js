@@ -1,6 +1,6 @@
 import { esc, badge, num, cnum, legendHtml, stageState, ledgerRows, run2Rows, verifySummary, phaseLabel } from "./v2lib.js";
 import { init as initPanCanvas } from "./pancanvas.js";
-import { overviewHtml, compareHtml, wireCompare, openPowerGraph, wireR7, metaInRun } from "./v2r7.js";
+import { overviewHtml, openPowerGraph, wireR7, metaInRun, branchPopup, cmpHeadHtml, openWhere, methodPopup } from "./v2r7.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -895,16 +895,31 @@ async function renderReport() {
 // Round 7: the Power / Cost / Water cards lead the page; the older mind map
 // and the signed details fold away underneath.
 function mountCompare() {
+  // Radial stays the main compare layout (round 5); round 7 adds the header,
+  // the Meta line, and branch popups with the card content.
   const page = $("#pReport");
   const rec = S.selRun || S.radRecs?.[S.selRunId || S.runs?.runs?.[0]?.id];
   const price = S.run?.results?.price?.usd_per_kwh ?? 0.1387, water = S.run?.results?.water?.factor_l_per_kwh ?? 0.36;
-  const old = document.createElement("details"); old.className = "cmp-old glass";
-  old.innerHTML = `<summary>Mind map view and signed details</summary>`;
-  old.insertAdjacentHTML("beforeend", `<div class="receipt-meta">${metaInRun(rec)}</div>`);
-  while (page.firstChild) old.appendChild(page.firstChild);
-  const top = document.createElement("div"); top.id = "cmpR7"; top.innerHTML = compareHtml(rec, price, water);
-  page.append(top, old);
-  wireCompare(top, rec, price, water);
+  $("#cmpR7")?.remove();
+  const top = document.createElement("div"); top.id = "cmpR7"; top.innerHTML = cmpHeadHtml(rec);
+  page.prepend(top);
+  $$("#radialStage .rad-card").forEach((c) => {
+    const head = $(".rad-head", c), id = c.dataset.branch;
+    if (head && !head.dataset.r7) { head.dataset.r7 = "1"; head.insertAdjacentHTML("beforeend", `<span class="rad-open">Open details ↗</span>`); }
+    const pop = () => branchPopup(rec, id, price, water);
+    const h0 = head.onclick; head.onclick = () => { h0?.(); pop(); };
+    $$(".rad-line", c).forEach((b) => { const o = b.onclick; b.onclick = () => { o?.(); pop(); }; });
+  });
+  const MID = { caps: "caps", topk: "topk", gate: "gate", waste: "waste", router: "router", cache: "cache" };
+  $$("#radialStage .rad-child").forEach((k) => {
+    k.tabIndex = 0; k.setAttribute("role", "button"); k.classList.add("clickable");
+    const go = () => methodPopup(rec, k.dataset.branch, MID[k.dataset.m] || k.dataset.m, price, water);
+    k.onclick = go; k.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
+  });
+  const ctr = $("#radCentre");
+  if (ctr && !$("[data-where]", ctr)) ctr.insertAdjacentHTML("beforeend", `<button class="btn rad-where" data-where>Where should this model run?</button>`);
+  const w = $("[data-where]", ctr); if (w) w.onclick = () => openWhere(rec);
+  const sig = $("#pReport .receipt-meta"); if (!sig) $("#pReport").insertAdjacentHTML("beforeend", `<div class="receipt-meta glass">${metaInRun(rec)}</div>`);
 }
 async function sha256(s) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
 async function startQuiet() { const r = await fetch("/api/dash/v2/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(S.choice) }); S.run = await r.json(); S.n = S.run.events.length; renderRun(); }
