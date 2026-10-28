@@ -12,9 +12,11 @@ import pytest
 from wattnot.musecode.apply_pr import (
     REQUIRED_REMOTE,
     apply_pr,
+    build_muse_command,
     deterministic_edit_launch_sh,
     deterministic_edit_values_yaml,
     normalize_git_remote,
+    parse_muse_jsonl,
 )
 from wattnot.musecode.snippets import (
     FRAMEWORKS,
@@ -156,6 +158,110 @@ def test_snippets_validation_gracefully_skips_when_not_installed(tmp_path):
     assert json_file.exists()
     doc = json.loads(json_file.read_text())
     assert len(doc["results"]) == 3
+
+
+def test_build_muse_command_argv(tmp_path):
+    repo = tmp_path / "repo"
+    prompt = tmp_path / "out" / "muse_prompt.txt"
+    assert build_muse_command(repo, prompt, "my-model") == [
+        "muse",
+        "exec",
+        "--json",
+        "--workspace",
+        str(repo),
+        "--worktree",
+        "create",
+        "--model",
+        "my-model",
+        "--prompt-file",
+        str(prompt),
+    ]
+
+
+def test_parse_muse_jsonl_extracts_ids_and_usage():
+    lines = [
+        json.dumps({"type": "init", "session_id": "sess-123", "trace_id": "trace-456"}),
+        "",
+        "not-json{{{",
+        json.dumps({"type": "result", "usage": {"input_tokens": 120, "output_tokens": 45, "total_tokens": 165}}),
+    ]
+    parsed = parse_muse_jsonl(lines)
+    assert parsed["session_id"] == "sess-123"
+    assert parsed["trace_id"] == "trace-456"
+    assert parsed["input_tokens"] == 120
+    assert parsed["output_tokens"] == 45
+    assert parsed["total_tokens"] == 165
+    assert parsed["usage"]["input_tokens"] == 120
+    assert parsed["usage"]["total_tokens"] == 165
+
+
+def test_live_path_records_trace_ids_with_mocked_subprocess(tmp_path):
+    from unittest import mock as _mock
+
+    repo_copy = tmp_path / "repo"
+    shutil.copytree(FIXTURE_DEMO, repo_copy)
+    out_dir = tmp_path / "out"
+
+    muse_stdout = "\n".join(
+        [
+            json.dumps({"type": "init", "session_id": "sess-live-1", "trace_id": "trace-live-2"}),
+            json.dumps({"type": "result", "usage": {"input_tokens": 10, "output_tokens": 20, "total_tokens": 30}}),
+        ]
+    )
+    seen: dict[str, list[str]] = {}
+
+    def fake_run(cmd, capture_output=False, text=False, check=False, **kwargs):
+        assert isinstance(cmd, list)
+        if cmd[0] == "muse":
+            seen["muse"] = list(cmd)
+            return subprocess.CompletedProcess(cmd, 0, muse_stdout, "")
+        if cmd[0] == "git" and "diff" in cmd:
+            return subprocess.CompletedProcess(cmd, 0, "diff --git a/launch.sh b/launch.sh\n", "")
+        raise AssertionError(f"unexpected command: {cmd}")
+
+    with _mock.patch("wattnot.musecode.apply_pr.subprocess.run", side_effect=fake_run):
+        res = apply_pr(
+            {"power_cap_w": 350},
+            repo_copy,
+            receipt_sha256="1" * 64,
+            out_dir=out_dir,
+            mock=False,
+            open_pr=False,
+            model="my-model",
+        )
+
+    prompt_file = out_dir.resolve() / "muse_prompt.txt"
+    assert seen["muse"] == build_muse_command(repo_copy.resolve(), prompt_file, "my-model")
+    assert res.session_id == "sess-live-1"
+    assert res.trace_id == "trace-live-2"
+    assert "sess-live-1" in res.pr_body
+    assert "trace-live-2" in res.pr_body
+    doc = json.loads((out_dir / "result.json").read_text(encoding="utf-8"))
+    assert doc["session_id"] == "sess-live-1"
+    assert doc["trace_id"] == "trace-live-2"
+    assert doc["usage"]["total_tokens"] == 30
+
+
+def test_open_pr_refuses_wrong_remote_with_mocked_subprocess(tmp_path):
+    from unittest import mock as _mock
+
+    repo_copy = tmp_path / "repo"
+    shutil.copytree(FIXTURE_DEMO, repo_copy)
+    out_dir = tmp_path / "out"
+
+    def fake_run(cmd, capture_output=False, text=False, check=False, **kwargs):
+        return subprocess.CompletedProcess(cmd, 0, "https://github.com/evil/fork.git\n", "")
+
+    with _mock.patch("wattnot.musecode.apply_pr.subprocess.run", side_effect=fake_run):
+        with pytest.raises(ValueError, match="Refused to open PR"):
+            apply_pr(
+                {"power_cap_w": 350},
+                repo_copy,
+                receipt_sha256="2" * 64,
+                out_dir=out_dir,
+                mock=True,
+                open_pr=True,
+            )
 
 
 def test_snippets_validation_success_path_with_mock_validator(tmp_path):

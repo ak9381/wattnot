@@ -133,6 +133,10 @@ class ApplyPRResult:
     open_pr: bool
     branch_name: str | None = None
     pr_url: str | None = None
+    session_id: str | None = None
+    trace_id: str | None = None
+    usage: dict[str, Any] | None = None
+    result_json_path: Path | None = None
 
 
 def apply_pr(
@@ -169,6 +173,7 @@ def apply_pr(
 
     diff_chunks: list[str] = []
     files_modified: list[str] = []
+    trace: dict[str, Any] = {}
 
     # In mock/dry-run mode (DEFAULT), do NOT call muse at all
     if mock:
@@ -210,23 +215,12 @@ def apply_pr(
         )
         prompt_file.write_text(prompt_text, encoding="utf-8")
 
-        cmd = [
-            "muse",
-            "exec",
-            "--json",
-            "--workspace",
-            str(repo),
-            "--worktree",
-            "create",
-            "--model",
-            model,
-            "--prompt-file",
-            str(prompt_file),
-        ]
+        cmd = build_muse_command(repo, prompt_file, model)
         if provider:
             cmd.extend(["--provider", provider])
 
         res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        trace = parse_muse_jsonl((res.stdout or "").splitlines())
         # If muse executed or created changes, obtain git diff
         git_diff = subprocess.run(
             ["git", "-C", str(repo), "diff", "HEAD"],
@@ -271,6 +265,14 @@ def apply_pr(
     water_label = labels.get("water", "ESTIMATE")
 
     receipt_uri = f"wattnot://{receipt_sha256}"
+    trace_info: dict[str, Any] = dict(trace) if not mock else {
+        "session_id": None,
+        "trace_id": None,
+        "input_tokens": None,
+        "output_tokens": None,
+        "total_tokens": None,
+        "usage": {"input_tokens": None, "output_tokens": None, "total_tokens": None},
+    }
     pr_body_lines = [
         "# Apply WattNot Efficiency Optimizations",
         "",
@@ -297,9 +299,43 @@ def apply_pr(
         f"- **Files Modified**: {', '.join(files_modified) if files_modified else 'none'}",
         "",
     ]
+    if not mock:
+        pr_body_lines += [
+            "## Muse Trace",
+            "",
+            f"- **Session ID**: `{trace_info.get('session_id')}`",
+            f"- **Trace ID**: `{trace_info.get('trace_id')}`",
+            f"- **Input Tokens**: `{trace_info.get('input_tokens')}`",
+            f"- **Output Tokens**: `{trace_info.get('output_tokens')}`",
+            f"- **Total Tokens**: `{trace_info.get('total_tokens')}`",
+            "",
+        ]
     pr_body_text = "\n".join(pr_body_lines)
     pr_body_file = out / "pr_body.md"
     pr_body_file.write_text(pr_body_text, encoding="utf-8")
+
+    result_json_path = out / "result.json"
+    result_json_path.write_text(
+        json.dumps(
+            {
+                "patch_sha256": patch_sha256,
+                "receipt_sha256": receipt_sha256,
+                "receipt_uri": receipt_uri,
+                "session_id": trace_info.get("session_id"),
+                "trace_id": trace_info.get("trace_id"),
+                "usage": trace_info.get("usage"),
+                "input_tokens": trace_info.get("input_tokens"),
+                "output_tokens": trace_info.get("output_tokens"),
+                "total_tokens": trace_info.get("total_tokens"),
+                "model": model,
+                "mock": mock,
+                "open_pr": open_pr,
+                "files_modified": files_modified,
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
 
     branch_name = f"wattnot-opt-{patch_sha256[:8]}"
     pr_url = None
@@ -343,15 +379,183 @@ def apply_pr(
         open_pr=open_pr,
         branch_name=branch_name if open_pr else None,
         pr_url=pr_url,
+        session_id=trace_info.get("session_id"),
+        trace_id=trace_info.get("trace_id"),
+        usage=trace_info.get("usage"),
+        result_json_path=result_json_path,
     )
+
+
+def build_muse_command(repo: str | Path, prompt_file: str | Path, model: str) -> list[str]:
+    """Build the argv for the live ``muse exec`` invocation."""
+    return [
+        "muse",
+        "exec",
+        "--json",
+        "--workspace",
+        str(repo),
+        "--worktree",
+        "create",
+        "--model",
+        str(model),
+        "--prompt-file",
+        str(prompt_file),
+    ]
+
+
+def _find_first_str(obj: Any, keys: set[str]) -> str | None:
+    """Recursively find the first non-empty string value for any of *keys*."""
+    if isinstance(obj, Mapping):
+        for k, v in obj.items():
+            if k in keys and isinstance(v, str) and v.strip():
+                return v.strip()
+            found = _find_first_str(v, keys)
+            if found is not None:
+                return found
+    elif isinstance(obj, (list, tuple)):
+        for item in obj:
+            found = _find_first_str(item, keys)
+            if found is not None:
+                return found
+    return None
+
+
+def _find_first_dict(obj: Any, keys: set[str]) -> dict[str, Any] | None:
+    """Recursively find the first mapping stored under any of *keys*."""
+    if isinstance(obj, Mapping):
+        for k, v in obj.items():
+            if k in keys and isinstance(v, Mapping):
+                return dict(v)
+            if isinstance(v, (Mapping, list, tuple)):
+                found = _find_first_dict(v, keys)
+                if found is not None:
+                    return found
+    elif isinstance(obj, (list, tuple)):
+        for item in obj:
+            found = _find_first_dict(item, keys)
+            if found is not None:
+                return found
+    return None
+
+
+def _coerce_int(value: Any) -> int | None:
+    try:
+        if isinstance(value, bool):
+            return None
+        n = int(value)
+        if n < 0:
+            return None
+        return n
+    except (TypeError, ValueError):
+        return None
+
+
+def parse_muse_jsonl(lines: Any) -> dict[str, Any]:
+    """Extract session/trace ids and token usage from ``muse exec --json`` JSONL.
+
+    Accepts an iterable of lines (each a JSON string). Blank lines and
+    non-JSON lines are ignored. Returns a dict with ``session_id``,
+    ``trace_id``, ``input_tokens``, ``output_tokens``, ``total_tokens``,
+    and a nested ``usage`` mapping.
+    """
+    if isinstance(lines, str):
+        iterable = lines.splitlines()
+    elif isinstance(lines, bytes):
+        iterable = lines.decode("utf-8", errors="replace").splitlines()
+    else:
+        iterable = lines
+
+    session_id: str | None = None
+    trace_id: str | None = None
+    input_tokens = 0
+    output_tokens = 0
+    total_tokens = 0
+    saw_input = False
+    saw_output = False
+    saw_total = False
+
+    for raw in iterable:
+        if isinstance(raw, bytes):
+            try:
+                raw = raw.decode("utf-8", errors="replace")
+            except Exception:
+                continue
+        if not isinstance(raw, str):
+            continue
+        text = raw.strip()
+        if not text:
+            continue
+        try:
+            event = json.loads(text)
+        except (json.JSONDecodeError, ValueError):
+            continue
+        if not isinstance(event, Mapping):
+            continue
+
+        sid = _find_first_str(event, {"session_id", "sessionId"})
+        if sid is not None and session_id is None:
+            session_id = sid
+        tid = _find_first_str(event, {"trace_id", "traceId"})
+        if tid is not None and trace_id is None:
+            trace_id = tid
+
+        usage = _find_first_dict(event, {"usage", "token_usage", "tokenUsage", "tokens"})
+        candidates: list[Mapping[str, Any]] = []
+        if usage is not None:
+            candidates.append(usage)
+        candidates.append(event)
+        for cand in candidates:
+            for key in ("input_tokens", "inputTokens", "prompt_tokens", "promptTokens"):
+                if key in cand:
+                    n = _coerce_int(cand[key])
+                    if n is not None:
+                        input_tokens += n
+                        saw_input = True
+                        break
+            for key in ("output_tokens", "outputTokens", "completion_tokens", "completionTokens"):
+                if key in cand:
+                    n = _coerce_int(cand[key])
+                    if n is not None:
+                        output_tokens += n
+                        saw_output = True
+                        break
+            for key in ("total_tokens", "totalTokens"):
+                if key in cand:
+                    n = _coerce_int(cand[key])
+                    if n is not None:
+                        total_tokens += n
+                        saw_total = True
+                        break
+            # Only count the usage mapping once per event (prefer nested usage).
+            if usage is not None:
+                break
+
+    total: int | None = total_tokens if saw_total else None
+    if total is None and (saw_input or saw_output):
+        total = input_tokens + output_tokens
+
+    return {
+        "session_id": session_id,
+        "trace_id": trace_id,
+        "input_tokens": input_tokens if saw_input else None,
+        "output_tokens": output_tokens if saw_output else None,
+        "total_tokens": total,
+        "usage": {
+            "input_tokens": input_tokens if saw_input else None,
+            "output_tokens": output_tokens if saw_output else None,
+            "total_tokens": total,
+        },
+    }
 
 
 __all__ = [
     "REQUIRED_REMOTE",
     "ApplyPRResult",
     "apply_pr",
+    "build_muse_command",
     "deterministic_edit_launch_sh",
     "deterministic_edit_values_yaml",
     "get_git_remote",
     "normalize_git_remote",
+    "parse_muse_jsonl",
 ]
