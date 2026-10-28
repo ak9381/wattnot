@@ -1,6 +1,6 @@
 import { esc, badge, num, cnum, legendHtml, stageState, ledgerRows, run2Rows, verifySummary, phaseLabel } from "./v2lib.js";
 import { init as initPanCanvas } from "./pancanvas.js";
-import { overviewHtml, openPowerGraph, wireR7, metaInRun, branchPopup, cmpHeadHtml, openWhere, methodPopup } from "./v2r7.js";
+import { overviewHtml, openPowerGraph, wireR7, metaInRun, branchPopup, cmpHeadHtml, openWhere, methodPopup, branchInfo, savedPct, childSaved, CHILDREN } from "./v2r7.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -509,9 +509,11 @@ function drawWires() {
   if ((wrap.clientWidth || 0) < 900) return;
   const sr = stage.getBoundingClientRect();
   if (!sr.width || !sr.height) return;
-  const ctr = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - sr.left, b.top + b.height / 2 - sr.top]; };
-  const top = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - sr.left, b.top - sr.top]; };
-  const bot = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - sr.left, b.bottom - sr.top]; };
+  // stage coordinates (unscaled), so wires stay on the cards at any pan/zoom
+  const pos = (el) => { const c = el.closest(".rad-card, .rad-child, .radial-centre") || el; return [parseFloat(c.style.left) || 0, parseFloat(c.style.top) || 0, c.offsetHeight || 0]; };
+  const ctr = (el) => { const [x, y] = pos(el); return [x, y]; };
+  const top = (el) => { const [x, y, h] = pos(el); return [x, y - h / 2]; };
+  const bot = (el) => { const [x, y, h] = pos(el); return [x, y + h / 2]; };
   // Curved radial connector: leaves the hub toward the topic and arrives
   // along the same direction, bowed with a cubic Bezier.
   const radial = (a, b) => {
@@ -530,7 +532,7 @@ function drawWires() {
     d.push(radial(hc, ctr(head)));
     if (t.dataset.open === "1") $$(".leaf", t).forEach((l) => d.push(drop(bot(head), top(l))));
   });
-  svg.setAttribute("viewBox", `0 0 ${sr.width} ${sr.height}`);
+  svg.setAttribute("viewBox", `0 0 ${stage.offsetWidth} ${stage.offsetHeight}`);
   svg.innerHTML = d.map((x) => `<path d="${x}"/>`).join("");
 }
 function wireMap() {
@@ -710,8 +712,8 @@ function layoutRadial() {
   const R1 = 240;
   const byBranch = cards.map((c) => visKids.filter((k) => k.dataset.branch === c.dataset.branch));
   let R2 = 0;
-  byBranch.forEach((ks) => { if (ks.length) R2 = Math.max(R2, (ks.length * 210) / (0.8 * sector)); });
-  if (R2) R2 = Math.max(R2, R1 + 330);
+  byBranch.forEach((ks) => { if (ks.length) R2 = Math.max(R2, (ks.length * 175) / (0.8 * sector)); });
+  if (R2) R2 = Math.max(R2, R1 + 300);
   const maxR = (R2 || R1) + 130;
   const w = Math.ceil(maxR * 2 + 40), h = Math.ceil(maxR * 2 + 40);
   const cx = w / 2, cy = h / 2;
@@ -740,9 +742,11 @@ function drawRadialWires() {
   if ((wrap.clientWidth || 0) < 900) return;
   const sr = stage.getBoundingClientRect();
   if (!sr.width || !sr.height) return;
-  const ctr = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - sr.left, b.top + b.height / 2 - sr.top]; };
-  const top = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - sr.left, b.top - sr.top]; };
-  const bot = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - sr.left, b.bottom - sr.top]; };
+  // stage coordinates (unscaled), so wires stay on the cards at any pan/zoom
+  const pos = (el) => { const c = el.closest(".rad-card, .rad-child, .radial-centre") || el; return [parseFloat(c.style.left) || 0, parseFloat(c.style.top) || 0, c.offsetHeight || 0]; };
+  const ctr = (el) => { const [x, y] = pos(el); return [x, y]; };
+  const top = (el) => { const [x, y, h] = pos(el); return [x, y - h / 2]; };
+  const bot = (el) => { const [x, y, h] = pos(el); return [x, y + h / 2]; };
   const radial = (a, b) => {
     const dx = b[0] - a[0], dy = b[1] - a[1];
     const len = Math.hypot(dx, dy) || 1;
@@ -759,7 +763,7 @@ function drawRadialWires() {
     d.push(radial(hc, ctr(head)));
     if (c.dataset.open === "1") $$(".rad-child", stage).filter((l) => l.dataset.branch === c.dataset.branch && !l.hidden).forEach((l) => d.push(drop(bot(c), top(l))));
   });
-  svg.setAttribute("viewBox", `0 0 ${sr.width} ${sr.height}`);
+  svg.setAttribute("viewBox", `0 0 ${stage.offsetWidth} ${stage.offsetHeight}`);
   svg.innerHTML = d.map((x) => `<path d="${x}"/>`).join("");
 }
 let radWired = false;
@@ -903,19 +907,27 @@ function mountCompare() {
   $("#cmpR7")?.remove();
   const top = document.createElement("div"); top.id = "cmpR7"; top.innerHTML = cmpHeadHtml(rec);
   page.prepend(top);
-  $$("#radialStage .rad-card").forEach((c) => {
-    const head = $(".rad-head", c), id = c.dataset.branch;
-    if (head && !head.dataset.r7) { head.dataset.r7 = "1"; head.insertAdjacentHTML("beforeend", `<span class="rad-open">Open details ↗</span>`); }
-    const pop = () => branchPopup(rec, id, price, water);
-    const h0 = head.onclick; head.onclick = () => { h0?.(); pop(); };
-    $$(".rad-line", c).forEach((b) => { const o = b.onclick; b.onclick = () => { o?.(); pop(); }; });
+  // Minimal cards: name + "X% saved"; the card toggles its ring of children,
+  // only the (i) opens the detail popup.
+  const stage = $("#radialStage"); if (!stage) return;
+  const wires = $("#radialWires"); if (wires && wires.parentElement !== stage) stage.prepend(wires); // wires pan/zoom with the cards
+  const val = (sv) => sv ? `${cnum(esc(sv.text), sv.tag)} saved` : `<span class="rad-miss" title="not measured in this run">—</span>`;
+  $$(".rad-child", stage).forEach((k) => k.remove());
+  const radFit = () => { S.radPan?.update(); S.radPan?.fit(); if (S.radPan && S.radPan.state.scale < 0.6) S.radPan.setZoom(0.6); };
+  $$(".rad-card", stage).forEach((c) => {
+    const id = c.dataset.branch, name = id[0].toUpperCase() + id.slice(1);
+    c.classList.add("min"); c.dataset.open = "0";
+    c.innerHTML = `<button class="rad-head" aria-expanded="false" aria-label="${name}: show the routes"><b>${name}</b><span class="rad-val">${val(savedPct(rec, id))}</span></button><button class="ibtn rad-i" data-binfo="${id}" aria-label="${name} details">i</button>`;
+    for (const [mid, mname] of CHILDREN) stage.insertAdjacentHTML("beforeend", `<div class="rad-child min" data-branch="${id}" data-m="${mid}" hidden><b>${esc(mname)}</b><span class="rad-val">${val(childSaved(rec, id, mid))}</span><button class="ibtn rad-i" data-minfo="${mid}" aria-label="${esc(mname)} details">i</button></div>`);
+    $(".rad-head", c).onclick = () => {
+      const on = c.dataset.open !== "1"; c.dataset.open = on ? "1" : "0"; $(".rad-head", c).setAttribute("aria-expanded", String(on));
+      $$(".rad-child", stage).filter((k) => k.dataset.branch === id).forEach((k) => { k.hidden = !on; });
+      layoutRadial(); S.radPan?.update(); if (on) { S.radPan?.focus(c, { zoom: 0.55 }); } else S.radPan?.fit();
+    };
+    $(".rad-i", c).onclick = (e) => { e.stopPropagation(); branchInfo(rec, id, price, water); };
   });
-  const MID = { caps: "caps", topk: "topk", gate: "gate", waste: "waste", router: "router", cache: "cache" };
-  $$("#radialStage .rad-child").forEach((k) => {
-    k.tabIndex = 0; k.setAttribute("role", "button"); k.classList.add("clickable");
-    const go = () => methodPopup(rec, k.dataset.branch, MID[k.dataset.m] || k.dataset.m, price, water);
-    k.onclick = go; k.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
-  });
+  $$(".rad-child [data-minfo]", stage).forEach((b) => (b.onclick = (e) => { e.stopPropagation(); methodPopup(rec, b.closest(".rad-child").dataset.branch, b.dataset.minfo, price, water); }));
+  layoutRadial(); S.radPan?.update?.();
   const ctr = $("#radCentre");
   if (ctr && !$("[data-where]", ctr)) ctr.insertAdjacentHTML("beforeend", `<button class="btn rad-where" data-where>Where should this model run?</button>`);
   const w = $("[data-where]", ctr); if (w) w.onclick = () => openWhere(rec);

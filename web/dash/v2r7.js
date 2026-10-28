@@ -97,7 +97,7 @@ function cardsData(rec, price, water) {
       saved: ok ? `${fmt((k1m(bj) - k1m(wj)) * water, 2)} L` : null, sub: ok ? `per million answers · ${fmt(k1m(bj) * water)} → ${fmt(k1m(wj) * water)} L` : null, f: (j) => k1m(j) * water },
   ];
 }
-const METHODS = [["caps", "Power caps"], ["topk", "Adaptive top-k"], ["tiered", "Tiered / k-means experts"], ["gate", "Quality gates"], ["waste", "Agent-waste saver"], ["router", "Where-to-run router"], ["cache", "Prompt cache"]];
+const METHODS = [["caps", "Power caps"], ["topk", "Adaptive top-k"], ["tiered", "Tiered / k-means experts"], ["gate", "Quality gates"], ["waste", "Agent-waste saver"], ["router", "Where-to-run router"], ["cache", "Prompt cache"], ["quant", "Quantization (tiered / k-means experts)"], ["baseten", "Baseten (hosted)"], ["modal", "Modal (hosted)"]];
 export function compareHtml(rec, price = 0.1387, water = 0.36) {
   const cards = cardsData(rec, price, water);
   return `<div class="cmp-head"><div><h1>What WattNot saved</h1><p class="lead">${esc(rec?.run_name || "Pick a run")} ${infoBtn("compare", "how this is compared")}</p></div></div>${metaInRun(rec)}${legend()}
@@ -136,7 +136,25 @@ const HOW = {
   waste: "Stop agent loops that call the model again without new information.",
   router: "Send each kind of work to the place (your GPU, Baseten or Modal) that is cheapest and passes the gates.",
   cache: "Reuse a repeated prompt prefix instead of computing it again.",
+  quant: "Store the model's experts in fewer bits: tiered keeps busy experts at higher precision; k-means groups experts used together. RUN1 found tiered placement tied plain uniform 4-bit (no gain, no loss).",
+  baseten: "Run the same open model on Baseten and pay per answer. Baseten does not share power meters, so its energy is an estimate.",
+  modal: "Run the same open model on Modal and pay per GPU-second. Energy is an estimate.",
 };
+// Minimal radial cards: only power caps has a measured share in this run.
+export const CHILDREN = [["caps", "Power caps"], ["topk", "Adaptive top-k"], ["quant", "Quantization"], ["baseten", "Baseten (hosted)"], ["modal", "Modal (hosted)"], ["gate", "Quality gate"], ["waste", "Agent-waste saver"]];
+export function savedPct(rec, branch) {
+  const b = rec?.phases?.baseline?.metrics?.j_per_req, w = rec?.phases?.wattnot?.metrics?.j_per_req;
+  if (b == null || w == null) return null;
+  return { text: `${fmt(((b - w) / b) * 100, 1)}%`, tag: branch === "power" ? "MEASURED" : "ESTIMATE" };
+}
+export const childSaved = (rec, branch, mid) => (mid === "caps" ? savedPct(rec, branch) : null);
+export function gatesHtml(rec) {
+  const m = rec?.phases?.wattnot?.metrics, b = rec?.phases?.baseline?.metrics;
+  if (!m) return `<p class="r7miss">No gate results in this record.</p>`;
+  const row = (name, ok, v) => `<li><b>${name}:</b> ${ok == null ? `<span class="r7miss">not measured in this run</span>` : `${ok ? "passed" : "failed"} · ${v}`}</li>`;
+  const q = m.quality_pct, qb = b?.quality_pct, p = m.p99_change_pct;
+  return `<ul class="wr-gates">${row("Quality gate", q == null ? null : qb == null || q >= qb - 1, `${n(`${fmt(q, 1)}%`, "MEASURED")} vs ${fmt(qb, 1)}% without`)}${row("Speed gate (p99 within +10%)", p == null ? null : p <= 10, `${n(`${p > 0 ? "+" : ""}${fmt(p, 1)}%`, "MEASURED")}`)}</ul>`;
+}
 // Every method opens its own detail with a worked example. Only power caps has
 // a measured number in this run; the others show the calculation with an
 // illustrative 10% saving, clearly marked as an example, not a result.
@@ -146,7 +164,7 @@ export function methodPopup(rec, cid, mid, price = 0.1387, water = 0.36) {
   const bj = rec?.phases?.baseline?.metrics?.j_per_req, wj = rec?.phases?.wattnot?.metrics?.j_per_req;
   const measured = mid === "caps" && c.saved;
   const body = measured
-    ? `<p>This run records power caps as the method, so the whole-run saving is shown: <b>${n(esc(c.saved), c.tag)}</b>. It is not split across methods.</p><h3>Worked example (this run's numbers)</h3>${workedExample(bj, wj, price, water)}`
+    ? `<p>This run records power caps as the method, so the whole-run saving is shown: <b>${n(esc(c.saved), c.tag)}</b>. It is not split across methods.</p><h3>Worked example (this run's numbers)</h3>${workedExample(bj, wj, price, water)}<h3>Gate results</h3>${gatesHtml(rec)}`
     : `<p><b>Not measured in this run.</b> The record does not attribute any ${esc(c.title.toLowerCase())} saving to ${esc(m[1])}. The long run records each method on its own.</p><h3>Worked example (illustrative 10%, not a result)</h3>${bj != null ? workedExample(bj, bj * 0.9, price, water) : "<p class=\"r7miss\">No baseline in this record.</p>"}`;
   return popup(`${c.title} · ${m[1]}`, `<div class="mp"><p class="lead">${esc(HOW[mid] || "")}</p>${body}</div>`, { sub: esc(rec?.run_name || "") });
 }
@@ -160,6 +178,16 @@ export function branchPopup(rec, id, price = 0.1387, water = 0.36) {
     <div class="bp-cols"><div><div class="lvl">By method</div>
     <ul class="cmp-m">${METHODS.map(([mid, name]) => `<li><button class="linkish" data-pop="m-${c.id}-${mid}">${esc(name)}</button><span>${mid === "caps" && c.saved ? n(`${esc(c.saved)} (whole run)`, c.tag) : `<span class="r7miss">not measured in this run</span>`}</span></li>`).join("")}</ul></div>
     <div>${optionBars(c.id, rec)}</div></div>${metaInRun(rec)}</div>`;
+  return popup(c.title, html, { sub: `${esc(rec?.run_name || "")} · red is without WattNot, green is with`, onMount: (root) => wireCompare(root, rec, price, water) });
+}
+const BEXP = { power: "Energy per answer, in joules, with and without WattNot on the same prompts.", cost: "Electricity cost of a million answers, from the measured joules at the run's price per kWh.", water: "Cooling water for a million answers, from the measured joules at 0.36 L per kWh." };
+export function branchInfo(rec, id, price = 0.1387, water = 0.36) {
+  const c = cardsData(rec, price, water).find((x) => x.id === id); if (!c) return null;
+  const bj = rec?.phases?.baseline?.metrics?.j_per_req, wj = rec?.phases?.wattnot?.metrics?.j_per_req;
+  const html = `<div class="bp"><p class="lead">${esc(BEXP[id])}</p>
+    <div class="cmp-saved"><span class="lvl">Saved</span><span class="cmp-v">${c.saved ? n(esc(c.saved), c.tag) : `<span class="r7miss">—</span>`}</span></div><p class="cmp-sub">${esc(c.sub || "")}</p>
+    <button class="cmp-chart" data-pop="chart-${c.id}" aria-label="Open the graph bigger">${lineChart(series(rec, c.f), { unit: c.unit, yLabel: c.unit, xLabel: "Repeat (per-repeat RUN2 data; the long run adds a time series)", w: 760, h: 260, y0: 0, xticks: [1, 2, 3].map((x) => ({ x, label: `#${x}` })), aria: `${c.title} with and without WattNot` })}</button>
+    <h3>Worked example</h3>${workedExample(bj, wj, price, water)}<h3>Gate results</h3>${gatesHtml(rec)}${metaInRun(rec)}</div>`;
   return popup(c.title, html, { sub: `${esc(rec?.run_name || "")} · red is without WattNot, green is with`, onMount: (root) => wireCompare(root, rec, price, water) });
 }
 export const cmpHeadHtml = (rec) => `<div class="cmp-head"><div><h1>What WattNot saved</h1><p class="lead">${esc(rec?.run_name || "Pick a run")} ${infoBtn("compare", "how this is compared")}</p></div></div>${metaInRun(rec)}${legend()}`;
