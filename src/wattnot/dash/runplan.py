@@ -329,6 +329,29 @@ def _cfg_hash(cfg: dict) -> str:
     return hashlib.sha256(json.dumps(cfg, sort_keys=True).encode()).hexdigest()
 
 
+#: Nodes that open Phase 2 ("With WattNot"). Everything before the first of
+#: them is Phase 1 ("Without WattNot": setup, room scan, stock measurement,
+#: limits). Effort and cache steps reuse the ``sweep`` node, so hosted runs
+#: split the same way.
+PHASE2_NODES = frozenset({"sweep", "topk", "waste", "approve", "keep", "receipt"})
+
+
+def _split_phases(frames: list[dict]) -> int:
+    """Tag each replay frame with its phase; return the Phase 2 start index.
+
+    A replay always plays Phase 1 then Phase 2, in one event stream.
+    """
+    brk = len(frames)
+    for i, f in enumerate(frames):
+        node = ((f.get("event") or {}).get("data") or {}).get("node")
+        if node in PHASE2_NODES:
+            brk = i
+            break
+    for i, f in enumerate(frames):
+        f["phase"] = "baseline" if i < brk else "wattnot"
+    return brk
+
+
 def _num(label, v, unit="", tag="MEASURED"):
     return {"label": label, "v": v, "unit": unit, "tag": tag if v is not None else None}
 
@@ -488,8 +511,12 @@ def plan(bundle: dict, c: dict, *, now: datetime | None = None) -> dict:
           dt=400)
     results.update(model=m["name"], place=place, workload=wl["title"], limits=lim, source="REPLAY",
                    water=cfg["water"], price=cfg["price"], run_id=S.run_id)
+    brk = _split_phases(S.frames)
+    phases = {"baseline": {"title": "Without WattNot", "n_events": brk},
+              "wattnot": {"title": "With WattNot", "n_events": len(S.frames) - brk}}
     return {"run_id": S.run_id, "source": "REPLAY", "label": "REPLAY", "config": {"model": m["id"], "levers": plan_levers, **lim},
             "events": S.frames, "results": results, "pipeline": pipe.nodes(variant, bool(scan), bundle.get("partners")),
+            "phase_break": brk, "phases": phases,
             "room": {"scan": scan, "after": aft, "target": tgt["id"] if tgt else None, "pick": room_pick} if scan else None}
 
 

@@ -58,7 +58,7 @@ from wattnot.approvals.risk import load_config as load_guard_config
 from wattnot.approvals.service import HTTP as _VIA_HTTP
 from wattnot.approvals.service import Approvals, StateError
 from wattnot.approvals.store import NotFound, resolve_root
-from wattnot.dash import experts, gpu, runplan
+from wattnot.dash import configure, experts, gpu, run2, runplan
 
 ROOT = Path(__file__).resolve().parents[3]
 WEB = ROOT / "web" / "dash"
@@ -443,6 +443,70 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         slim = [{k: v for k, v in s.items() if k != "samples"} | {"n": len(s["samples"])}
                 for s in gpu_bundle["scenes"]]
         return {**{k: v for k, v in gpu_bundle.items() if k != "scenes"}, "scenes": slim}
+
+    # ---- v2 Configure / signed report ------------------------------------------
+    def _story() -> dict:
+        if not story_path.is_file():
+            raise HTTPException(404, "story bundle not built: run scripts/build_dash_arch.py")
+        mt = story_path.stat().st_mtime
+        if plan_cache.get("mt") != mt:
+            plan_cache.update(mt=mt, b=json.loads(story_path.read_text()))
+        return plan_cache["b"]
+
+    @app.get("/api/dash/v2/options")
+    def v2_options() -> dict:
+        return configure.options(_story().get("config") or {})
+
+    @app.post("/api/dash/v2/run")
+    async def v2_run(request: Request):
+        """Configure -> replay. Always REPLAY; a live choice is refused with 400."""
+        try:
+            body = await request.json()
+        except ValueError:
+            raise HTTPException(400, "the request body must be JSON") from None
+        if not isinstance(body, dict):
+            raise HTTPException(400, "the request body must be a JSON object")
+        try:
+            out = runplan.plan(_story(), configure.to_plan_body(body))
+        except (ValueError, KeyError, TypeError) as e:
+            raise HTTPException(400, str(e) if isinstance(e, ValueError) else "the run settings are not valid") from None
+        out["choice"] = {k: v for k, v in body.items()
+                         if k != "compare" and isinstance(v, (str, int, float, bool))}
+        return out
+
+    @app.get("/api/dash/v2/run2")
+    def v2_run2() -> dict:
+        """Headline RUN2 numbers for the before/after block. Read from the
+        raw step file when the checkout has it, else a fixed constant."""
+        return run2.load(ROOT)
+
+    @app.get("/api/dash/v2/runs")
+    def v2_runs() -> dict:
+        """Runs by run name: id, name, model, date."""
+        return {"runs": run2.list_runs(ROOT)}
+
+    @app.get("/api/dash/v2/runs/{run_id}")
+    def v2_run_one(run_id: str) -> dict:
+        """One run record holding both phases (baseline, then WattNot)."""
+        rec = run2.get_run(ROOT, run_id)
+        if rec is None:
+            raise HTTPException(404, "no such run")
+        return rec
+
+    @app.get("/api/dash/v2/verify")
+    def v2_verify() -> dict:
+        """Run the real verifier on the bundled sample receipts: one genuine, one edited after signing."""
+        from wattnot.verify import verify_receipt
+        out = []
+        for name in ("real-measured", "forged-edited"):
+            f = ROOT / "verifier" / "samples" / f"{name}.json"
+            if f.is_file():
+                r = verify_receipt(f).to_dict()
+                r["path"] = f"verifier/samples/{name}.json"
+                r["sample"] = name
+                out.append(r)
+        return {"label": "SAMPLE", "note": "Sample receipts signed offline with the repo's test key. "
+                "No Rekor entry, so the best grade is ESTIMATE.", "receipts": out}
 
     @app.get("/api/dash/agent-waste")
     def agent_waste():
