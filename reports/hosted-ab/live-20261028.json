@@ -1,188 +1,190 @@
 {
-  "spec": "wattnot.hosted-ab/1",
-  "cap_usd": 5.0,
-  "own_gpu_only": {
-    "caps": "Power caps need root on the GPU; hosted platforms give none.",
-    "quant": "Quantization needs our own deployment of the model; not possible on a shared endpoint.",
-    "topk": "Adaptive top-k / tiered experts change the model's router; needs our own deployment."
-  },
-  "hosts": {
-    "baseten": {
-      "status": "ran",
-      "estimate": {
-        "tokens_saved": {
-          "value": 245595,
-          "label": "MEASURED"
-        },
-        "j_per_token": {
-          "value": 7.8575,
-          "label": "ESTIMATE",
-          "method": "H100 0.1497 J/token (RUN2, MEASURED) x 42B/0.8B active params"
-        },
-        "energy_j": {
-          "value": 1929751.658,
-          "label": "ESTIMATE"
-        },
-        "energy_kwh": {
-          "value": 0.5360421272773063,
-          "label": "ESTIMATE"
-        },
-        "water_l": {
-          "value": 0.19297516581983026,
-          "label": "ESTIMATE",
-          "method": "kWh x 0.36 L/kWh"
-        },
-        "usd_saved": {
-          "value": 0.807439,
-          "label": "MEASURED"
-        },
-        "power_saved_pct": {
-          "value": 45.83,
-          "label": "ESTIMATE"
-        },
-        "basis": "per 1k answers (routing) plus the agent tasks (waste)"
-      },
-      "without": {
-        "pass_pct": {
-          "value": 100.0,
-          "label": "MEASURED"
-        },
-        "usd_per_1k": {
-          "value": 1.863593,
-          "label": "MEASURED"
-        },
-        "wh_per_1k": {
-          "value": 121.3828,
-          "low": 22.0696,
-          "high": 220.696,
-          "label": "ESTIMATE",
-          "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
-        },
-        "calls": 15,
-        "tokens": {
-          "prompt": 2789,
-          "cached": 896,
-          "completion": 5989
-        }
-      },
-      "with": {
-        "pass_pct": {
-          "value": 100.0,
-          "label": "MEASURED"
-        },
-        "usd_per_1k": {
-          "value": 1.068267,
-          "label": "MEASURED"
-        },
-        "wh_per_1k": {
-          "value": 66.4664,
-          "low": 12.0848,
-          "high": 120.848,
-          "label": "ESTIMATE",
-          "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
-        },
-        "calls": 15,
-        "tokens": {
-          "prompt": 2789,
-          "cached": 1920,
-          "completion": 3447
-        }
-      },
-      "gate_passed": true,
-      "levers": {
-        "routing": {
-          "saved_pct": {
-            "value": 42.68,
-            "label": "MEASURED"
-          },
-          "raw_pct": 42.68,
-          "adopted": true,
-          "note": null,
-          "energy_saved_pct": {
-            "value": 45.24,
-            "label": "ESTIMATE"
-          },
-          "stepped_up": 0
-        },
-        "gate": {
-          "passed": true,
-          "with_pass_pct": {
-            "value": 100.0,
-            "label": "MEASURED"
-          },
-          "without_pass_pct": {
-            "value": 100.0,
-            "label": "MEASURED"
-          },
-          "slack_pts": 1.0,
-          "saved_pct": {
-            "value": null,
-            "label": "MEASURED"
-          },
-          "note": "the gate saves nothing itself; it refuses a lever that costs quality"
-        },
-        "waste": {
-          "saved_pct": {
-            "value": 71.23,
-            "label": "MEASURED"
-          },
-          "calls_without": 24,
-          "calls_with": 9
-        },
-        "caps": {
-          "status": "own_gpu_only",
-          "why": "Power caps need root on the GPU; hosted platforms give none."
-        },
-        "quant": {
-          "status": "own_gpu_only",
-          "why": "Quantization needs our own deployment of the model; not possible on a shared endpoint."
-        },
-        "topk": {
-          "status": "own_gpu_only",
-          "why": "Adaptive top-k / tiered experts change the model's router; needs our own deployment."
-        }
-      },
-      "agent_waste": {
-        "without": {
-          "calls": 24,
-          "tokens": {
-            "prompt": 9056,
-            "completion": 1338
-          },
-          "usd": {
-            "value": 0.017006,
-            "label": "MEASURED"
-          },
-          "wh": {
-            "value": 2.401014,
-            "label": "ESTIMATE",
-            "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
-          }
-        },
-        "with": {
-          "calls": 9,
-          "tokens": {
-            "prompt": 1956,
-            "completion": 576
-          },
-          "usd": {
-            "value": 0.004893,
-            "label": "MEASURED"
-          },
-          "wh": {
-            "value": 0.584892,
-            "label": "ESTIMATE",
-            "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
-          }
-        }
-      },
-      "spent_usd": 0.065877
+ "spec": "wattnot.hosted-ab/1",
+ "cap_usd": 5.0,
+ "own_gpu_only": {
+  "caps": "Power caps need root on the GPU; hosted platforms give none.",
+  "quant": "Quantization needs our own deployment of the model; not possible on a shared endpoint.",
+  "topk": "Adaptive top-k / tiered experts change the model's router; needs our own deployment."
+ },
+ "hosts": {
+  "baseten": {
+   "status": "ran",
+   "estimate": {
+    "tokens_saved": {
+     "value": 245595,
+     "label": "ESTIMATE",
+     "method": "scaled up to 1k answers from n=15 calls per arm"
     },
-    "modal": {
-      "status": "not_run",
-      "why": "Modal endpoint not configured: MODAL_ENDPOINT_URL and the Modal proxy token are unset (credits are confirmed: $100 added 28 Oct)"
+    "j_per_token": {
+     "value": 7.8575,
+     "label": "ESTIMATE",
+     "method": "H100 0.1497 J/token (RUN2, MEASURED) x 42B/0.8B active params"
+    },
+    "energy_j": {
+     "value": 1929751.658,
+     "label": "ESTIMATE"
+    },
+    "energy_kwh": {
+     "value": 0.5360421272773063,
+     "label": "ESTIMATE"
+    },
+    "water_l": {
+     "value": 0.19297516581983026,
+     "label": "ESTIMATE",
+     "method": "kWh x 0.36 L/kWh"
+    },
+    "usd_saved": {
+     "value": 0.807439,
+     "label": "MEASURED"
+    },
+    "power_saved_pct": {
+     "value": 45.83,
+     "label": "ESTIMATE"
+    },
+    "basis": "per 1k answers (routing) plus the agent tasks (waste)",
+    "n_per_arm": 15
+   },
+   "without": {
+    "pass_pct": {
+     "value": 100.0,
+     "label": "MEASURED"
+    },
+    "usd_per_1k": {
+     "value": 1.863593,
+     "label": "MEASURED"
+    },
+    "wh_per_1k": {
+     "value": 121.3828,
+     "low": 22.0696,
+     "high": 220.696,
+     "label": "ESTIMATE",
+     "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+    },
+    "calls": 15,
+    "tokens": {
+     "prompt": 2789,
+     "cached": 896,
+     "completion": 5989
     }
+   },
+   "with": {
+    "pass_pct": {
+     "value": 100.0,
+     "label": "MEASURED"
+    },
+    "usd_per_1k": {
+     "value": 1.068267,
+     "label": "MEASURED"
+    },
+    "wh_per_1k": {
+     "value": 66.4664,
+     "low": 12.0848,
+     "high": 120.848,
+     "label": "ESTIMATE",
+     "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+    },
+    "calls": 15,
+    "tokens": {
+     "prompt": 2789,
+     "cached": 1920,
+     "completion": 3447
+    }
+   },
+   "gate_passed": true,
+   "levers": {
+    "routing": {
+     "saved_pct": {
+      "value": 42.68,
+      "label": "MEASURED"
+     },
+     "raw_pct": 42.68,
+     "adopted": true,
+     "note": null,
+     "energy_saved_pct": {
+      "value": 45.24,
+      "label": "ESTIMATE"
+     },
+     "stepped_up": 0
+    },
+    "gate": {
+     "passed": true,
+     "with_pass_pct": {
+      "value": 100.0,
+      "label": "MEASURED"
+     },
+     "without_pass_pct": {
+      "value": 100.0,
+      "label": "MEASURED"
+     },
+     "slack_pts": 1.0,
+     "saved_pct": {
+      "value": null,
+      "label": "MEASURED"
+     },
+     "note": "the gate saves nothing itself; it refuses a lever that costs quality"
+    },
+    "waste": {
+     "saved_pct": {
+      "value": 71.23,
+      "label": "MEASURED"
+     },
+     "calls_without": 24,
+     "calls_with": 9
+    },
+    "caps": {
+     "status": "own_gpu_only",
+     "why": "Power caps need root on the GPU; hosted platforms give none."
+    },
+    "quant": {
+     "status": "own_gpu_only",
+     "why": "Quantization needs our own deployment of the model; not possible on a shared endpoint."
+    },
+    "topk": {
+     "status": "own_gpu_only",
+     "why": "Adaptive top-k / tiered experts change the model's router; needs our own deployment."
+    }
+   },
+   "agent_waste": {
+    "without": {
+     "calls": 24,
+     "tokens": {
+      "prompt": 9056,
+      "completion": 1338
+     },
+     "usd": {
+      "value": 0.017006,
+      "label": "MEASURED"
+     },
+     "wh": {
+      "value": 2.401014,
+      "label": "ESTIMATE",
+      "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+     }
+    },
+    "with": {
+     "calls": 9,
+     "tokens": {
+      "prompt": 1956,
+      "completion": 576
+     },
+     "usd": {
+      "value": 0.004893,
+      "label": "MEASURED"
+     },
+     "wh": {
+      "value": 0.584892,
+      "label": "ESTIMATE",
+      "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+     }
+    }
+   },
+   "spent_usd": 0.065877
   },
-  "spent_usd": 0.065877,
-  "mode": "LIVE"
+  "modal": {
+   "status": "not_run",
+   "why": "Modal endpoint not configured: MODAL_ENDPOINT_URL and the Modal proxy token are unset (credits are confirmed: $100 added 28 Oct)"
+  }
+ },
+ "spent_usd": 0.065877,
+ "mode": "LIVE"
 }

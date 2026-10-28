@@ -50,7 +50,8 @@ def saved_estimate(tokens_without: int, tokens_with: int, usd_without: float, us
     tok = tokens_without - tokens_with
     j = tok * J_PER_TOKEN
     kwh = j / 3.6e6
-    return {"tokens_saved": {"value": tok, "label": "MEASURED"},
+    return {"tokens_saved": {"value": tok, "label": "ESTIMATE",
+                             "method": "scaled up to 1k answers from the measured calls"},
             "j_per_token": {"value": round(J_PER_TOKEN, 4), "label": "ESTIMATE",
                             "method": f"H100 {H100_J_PER_TOKEN:.4f} J/token (RUN2, MEASURED) x 42B/0.8B active params"},
             "energy_j": {"value": round(j, 3), "label": "ESTIMATE"},
@@ -195,6 +196,8 @@ def run_ab(transports: dict, items: Sequence[WorkloadItem], *, tasks: Sequence[s
         n1k = 1000 / max(1, len(items))
         est = saved_estimate(int((tw(wo)) * n1k) + wt(w["without"]), int(tw(fin) * n1k) + wt(w["with"]),
                              wo["usd_per_1k"]["value"] + w["without"]["usd"]["value"], fin["usd_per_1k"]["value"] + w["with"]["usd"]["value"])
+        est["n_per_arm"] = len(items)
+        est["tokens_saved"]["method"] = f"scaled up to 1k answers from n={len(items)} calls per arm"
         est["basis"] = "per 1k answers (routing) plus the agent tasks (waste)"
         res["hosts"][host] = {"status": "ran", "estimate": est, "without": wo, "with": wi if adopt else wo,
                               "gate_passed": gate_ok, "levers": levers, "agent_waste": w,
