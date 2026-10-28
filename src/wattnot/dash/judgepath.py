@@ -9,6 +9,7 @@ import json
 import statistics
 from pathlib import Path
 
+from wattnot.dash import leaderboard as _lb
 from wattnot.planner import trace as _trace
 from wattnot.route.stack import stack_row
 from wattnot.verify import verify_chain, verify_document
@@ -52,15 +53,16 @@ def verify_block(root: Path) -> dict:
     d = root / "verifier/samples/chain"
     files = sorted(p for p in d.glob("*.json") if not p.name.endswith(".sigstore.json"))
     recs = [json.loads(p.read_text()) for p in files]
+    run2 = sorted(p for p in (root / "receipts/run2").glob("*.json") if not p.name.endswith(".sigstore.json"))
     out = []
-    for p, r in zip(files, recs):
+    for p, r in [*zip(files, recs), *((q, json.loads(q.read_text())) for q in run2)]:
         b = p.with_name(p.stem + ".sigstore.json")
         rep = verify_document(r, _load(b), path=p.name)
         out.append({"file": p.name, "ok": all(s.ok for s in rep.steps), "grade": rep.grade,
                     "steps": [{"name": s.name, "ok": s.ok} for s in rep.steps]})
     ch = verify_chain(recs)
     return {"label": "MEASURED", "receipts": out, "chain_ok": ch.ok,
-            "command": "wattnot verify --chain verifier/samples/chain/"}
+            "command": "wattnot verify --chain verifier/samples/chain/ && wattnot verify receipts/run2/"}
 
 
 def build(root: Path) -> dict:
@@ -84,6 +86,9 @@ def build(root: Path) -> dict:
                        "preview": {"label": "MOCK", "escalation_rate_pct": 35.0,
                                    "small_model_pass_pct": 65.0, "net_saved_pct": 41.0}},
         "verify": verify_block(root),
+        "receipt": {"spark_trace_id": _lb.trace_id(root), "per_model_joules": _lb.per_model_joules(root),
+                    "label": "MEASURED"},
+        "leaderboard": _lb.build(root),
     }
 
 

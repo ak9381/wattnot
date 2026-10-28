@@ -169,9 +169,11 @@ body:not(.illus) [data-illus] { display: none !important; }
 .pf-why { font-style: italic; margin: 4px 0; }
 .pf-i { border-radius: 50%; width: 20px; height: 20px; border: 1px solid currentColor; background: none; color: inherit; cursor: pointer; font-weight: 700; }
 .pf-t { width: 100%; border-collapse: collapse; font-size: .88rem; } .pf-t td, .pf-t th { padding: 4px 6px; text-align: left; border-bottom: 1px solid rgba(127,127,127,.2); }
-.pf-t .ok { color: #2e9d5b; } .pf-t .bad { color: #d0453b; }
+.pf-t .ok, .pf-t span.ok { color: #2e9d5b; } .pf-t .bad, .pf-t span.bad { color: #d0453b; }
 .pf-stack { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .pf-stack div:not(.pf-x) { display: flex; flex-direction: column; } .pf-stack b { font-size: 1.4rem; } .pf-x { font-size: 1.4rem; opacity: .6; }
 .pf-code { background: rgba(127,127,127,.12); padding: 8px; border-radius: 8px; overflow-x: auto; }
 .pf-fb { color: #b7791f; }
 .replay-banner { background: #1f3b5a; color: #fff; text-align: center; padding: 6px 10px; font-size: .9rem; }
 @media (max-width:640px){header.top{flex-wrap:wrap;padding:8px 12px;gap:8px}header.top .sp,header.top .chip{display:none}#tabs.tabs{order:5;width:100%;margin-left:0}.pf-card{padding:12px}.pf-t{display:block;overflow-x:auto}}
+.pf-lb td:first-child { min-width: 220px; } .pf-pend { opacity: .6; } .pf-best td { background: rgba(46,157,91,.12); }
+.pf-tag { font-size: .75rem; border: 1px solid rgba(127,127,127,.4); border-radius: 6px; padding: 0 4px; }

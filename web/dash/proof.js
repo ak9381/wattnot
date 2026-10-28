@@ -47,9 +47,34 @@ function escHtml(x, illus) {
 }
 
 function verifyHtml(v) {
-  return `<p>Anyone can check a receipt without trusting us:</p><pre class="pf-code">pip install -e . &amp;&amp; ${esc(v.command)}</pre>
-    <table class="pf-t"><tr><th>Receipt</th>${(v.receipts[0]?.steps || []).map((s) => `<th>${esc(s.name)}</th>`).join("")}</tr>${v.receipts.map((r) => `<tr><td>${esc(r.file)}</td>${r.steps.map((s) => `<td class="${s.ok ? "ok" : "bad"}">${s.ok ? "✓" : s.name === "rekor" ? "not logged" : "✗"}</td>`).join("")}</tr>`).join("")}</table>
-    <p class="pf-meta">Hash chain: ${v.chain_ok ? "intact ✓" : "broken ✗"} ${badge(v.label)}. These samples are signed offline; publishing to the public Rekor log is a one-time owner step, so the rekor column says "not logged" rather than pretending.</p>`;
+  return `<p>Anyone can check a receipt without trusting us. The signed receipts are published with this page: <a href="https://ak9381.github.io/wattnot/receipts/">ak9381.github.io/wattnot/receipts/</a>.</p><pre class="pf-code">pip install -e . &amp;&amp; ${esc(v.command)}</pre>
+    <table class="pf-t"><tr><th>Receipt</th><th>Checks</th><th>Grade</th></tr>${v.receipts.map((r) => `<tr><td>${esc(r.file)}</td><td>${r.steps.map((s) => `<span class="${s.ok ? "ok" : "bad"}">${esc(s.name)} ${s.ok ? "✓" : s.name === "rekor" ? "not logged" : "✗"}</span>`).join(" · ")}</td><td>${esc(r.grade)}</td></tr>`).join("")}</table>
+    <p class="pf-meta">Hash chain: ${v.chain_ok ? "intact ✓" : "broken ✗"} ${badge(v.label)}. Receipts are signed offline with the public test key, so grades stop at ESTIMATE; publishing to the public Rekor log is a one-time owner step, so the rekor column says "not logged" rather than pretending.</p>`;
+}
+
+function lbHtml(L) {
+  if (!L) return "";
+  const pct = (v) => (v == null ? "–" : `${v > 0 ? "+" : ""}${fmt(v, 1)}%`);
+  const rows = L.rows.map((r) => `<tr class="${r.status === "pending" ? "pf-pend" : ""}${r.best ? " pf-best" : ""}">
+    <td>${esc(r.setup)}${r.best ? " ★" : ""}<div class="pf-meta">${esc(r.hardware)}${r.note ? ` · ${esc(r.note)}` : ""}</div></td>
+    <td>${r.j_per_correct ? `<b>${fmt(r.j_per_correct.mean, 2)}</b>${r.j_per_correct.sd != null ? ` ± ${fmt(r.j_per_correct.sd, 2)}` : ""}` : "pending"} ${badge(r.status === "pending" ? "" : r.label)}${r.status === "pending" ? ` <span class="pf-tag">${esc(r.label)} when run</span>` : ""}</td>
+    <td>${pct(r.vs_default_pct)}</td><td>${r.pass_pct == null ? "–" : `${fmt(r.pass_pct, 1)}%`}</td><td>${pct(r.p99_change_pct)}</td>
+    <td>${r.escalation_rate_pct == null ? "–" : `${fmt(r.escalation_rate_pct)}%`}</td><td>${r.small_model_pass_pct == null ? "–" : `${fmt(r.small_model_pass_pct)}%`}</td>
+    <td>${esc(r.gate || "–")}</td></tr>`).join("");
+  return `<p>${esc(L.metric)}. Lower is better. Mean ± sd over ${L.rows[0]?.repeats ?? 3} repeats, ${L.rows[0]?.n_checked ?? ""} checked answers each. RUN2 rows used fixed answer checks; Meta-judge rows are pending and kept apart.</p>
+    <table class="pf-t pf-lb"><tr><th>Setup</th><th>J / correct</th><th>vs default</th><th>Pass</th><th>p99</th><th>Escalation</th><th>Small model pass</th><th>Gate</th></tr>${rows}</table>
+    <p class="pf-meta">Reproduce: <code>${esc(L.reproduce)}</code> · method: <a href="https://github.com/ak9381/wattnot/blob/main/${esc(L.doc)}">${esc(L.doc)}</a> · submit: a JSON file like <a href="https://github.com/ak9381/wattnot/blob/main/data/leaderboard/submission.example.json">submission.example.json</a> plus a signed receipt, as a pull request.</p>`;
+}
+
+function metaHtml(m) {
+  return `<table class="pf-t"><tr><th>Model</th><th>Job</th><th>Calls</th><th>Cost</th></tr>${(m || []).map((r) => `<tr><td>${esc(r.model)}</td><td>${esc(r.job)}</td><td>${r.calls ?? "–"}</td><td>${r.usd == null ? esc(r.source) : `$${fmt(r.usd, r.usd < 0.1 ? 3 : 2)} ${badge(r.label)}`}</td></tr>`).join("")}</table>`;
+}
+
+function receiptHtml(r) {
+  if (!r) return "";
+  return `<p>Spark trace ID <code>${esc(r.spark_trace_id)}</code>: the sha256 of the planner's event log, so a receipt points at the exact decisions above.</p>
+    <table class="pf-t"><tr><th>Model</th><th>J per answer</th><th>J total</th></tr>${r.per_model_joules.map((x) => `<tr><td>${esc(x.model)}</td><td>${x.j_per_answer == null ? "not metered" : fmt(x.j_per_answer, 2)} ${badge(x.label === "PENDING" ? "" : x.label)}</td><td>${x.j_total == null ? "–" : fmt(x.j_total, 0)}</td></tr>`).join("")}</table>
+    <p class="pf-meta">${esc(r.per_model_joules[0]?.how || "")}. Hosted planner calls report tokens, not joules, so their energy is not in the net figure yet.</p>`;
 }
 
 export async function renderProof(el) {
@@ -60,11 +85,14 @@ export async function renderProof(el) {
   const r = d.run2;
   el.innerHTML = `<div class="pf">
     ${sec("The result, per correct answer", r ? `<p class="pf-big"><b>${fmt(r.j_per_correct.change_pct)}%</b> joules per correct answer at a ${r.cap_w} W cap (${fmt(r.j_per_correct.stock, 2)} → ${fmt(r.j_per_correct.cap, 2)} J), pass rate unchanged at ${fmt(r.pass_pct.cap)}% on ${r.checked} checked answers ${badge(r.label)}</p><p class="pf-meta">${esc(r.era)} · quality judged by ${esc(r.judge)}. Meta-judge results (${esc(d.meta_judge.judge)}) are reported separately: ${esc(d.meta_judge.note)}.</p>` : "", "pf-wide")}
+    ${sec("Leaderboard: joules per correct answer", lbHtml(d.leaderboard), "pf-wide")}
     ${sec("What Spark decided, step by step", traceHtml(d.trace), "pf-wide")}
     ${sec("Small model first", escHtml(d.escalation))}
     ${sec("Stack: fewer tokens and cheaper tokens", stackHtml(d.stack))}
     ${sec("Endpoint health and fallbacks", healthHtml(d.health))}
     ${sec("Verify it yourself", verifyHtml(d.verify))}
+    ${sec("This run's receipt", receiptHtml(d.receipt))}
+    ${sec("Meta models used", metaHtml(d.leaderboard?.meta_models))}
   </div>`;
   el.querySelectorAll("[data-explain]").forEach((b) => (b.onclick = () => {
     document.querySelector("#sideBody").innerHTML = `<h2>Why the gate failed</h2>${explainHtml(d.explain)}`;

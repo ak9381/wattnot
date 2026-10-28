@@ -21,6 +21,34 @@ H100 run: `bash scripts/h100_run.sh --dry-run` first, then see [docs/runbooks/H1
   ```
 
   The sample receipts are signed offline, so the Rekor step reports "not logged" until the owner publishes them.
+- **Leaderboard (net joules per correct answer):** on the Proof tab of the replay, rebuilt by `scripts/reproduce_leaderboard.sh`. Method and how to submit: [docs/joules-per-correct-answer.md](docs/joules-per-correct-answer.md).
+
+| Setup | J / correct (mean ± sd) | vs default | p99 | Gate |
+|---|---|---|---|---|
+| Default vLLM (no cap) | 17.03 ± 0.14 (MEASURED) | +0.0% | +0.0% | baseline |
+| WattNot power cap 500 W | 16.38 ± 0.01 (MEASURED) | -3.8% | +0.7% | passed |
+| WattNot power cap 450 W | 14.69 ± 0.81 (MEASURED) | -13.7% | +1.8% | passed |
+| WattNot power cap 400 W | 13.81 ± 0.01 (MEASURED) | -18.9% | +4.7% | passed |
+| WattNot power cap 350 W | 12.42 ± 0.00 (MEASURED) | -27.1% | +7.7% | passed |
+| WattNot power cap 325 W | 11.84 ± 0.01 (MEASURED) | -30.5% | +10.9% | failed: p99 up 10.9% (limit 10%) |
+| WattNot small model first (Llama 3.1 8B, escalate to Muse Spark Open) | pending (MEASURED when run) |  |  |  |
+| WattNot cap + token trimmer, same workload | pending (MEASURED when run) |  |  |  |
+| Muse Spark Open, fewer experts | pending (MEASURED when run) |  |  |  |
+| Baseten hosted Muse Spark Open | pending (ESTIMATE when run) |  |  |  |
+| Modal hosted Muse Spark Open | pending (ESTIMATE when run) |  |  |  |
+
+- **Signed receipts on the replay:** https://ak9381.github.io/wattnot/receipts/ . They are signed offline with the repo's public test key, so grades stop at ESTIMATE. The RUN2 receipt carries the Spark trace ID and joules per model.
+- **If the live demo's server times out,** the dashboard switches to the published replay and says so.
+
+### Meta models used
+
+| Model | Job | Measured cost |
+|---|---|---|
+| muse-spark-1.3 | planner: picks the next power cap; explains gate failures; agent-waste and coding-set runs | $23.08 over 3458 calls (MEASURED, API ledger total on 2026-10-28) |
+| sam-3.1 | segments rack photos into units (kept off the main path) | $0.12 over 47 calls (MEASURED, API ledger) |
+| Llama 3.1 8B Instruct | the served model in RUN2; small model in small-first; quality judge | own H100, cost is GPU hours (not an API bill) |
+| Muse Spark Open (Baseten) | big model when the small one fails a check; hosted planner | $0.004, 1 call (MEASURED) |
+
 - **Endpoint health:** `wattnot health` probes each hosted endpoint and writes a FALLBACK ledger (`data/judge/health-*.json`).
 - **Labels:** every number is MEASURED, ESTIMATE, SIMULATED, MOCK, REPLAY or ADVICE. SIMULATED and MOCK content is hidden by default; the "Illustrations" switch shows it.
 - **Not measured yet (long GPU run):** small-model-first escalation rate and net savings, the Llama 3.1 8B judge, Muse Spark Open with fewer experts, and the token trimmer and caps on one workload (the stacked figure is an ESTIMATE until then).

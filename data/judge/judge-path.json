@@ -372,9 +372,349 @@
       "ok": true
      }
     ]
+   },
+   {
+    "file": "rcpt_20261027_run2_cap350.json",
+    "ok": false,
+    "grade": "ESTIMATE",
+    "steps": [
+     {
+      "name": "schema",
+      "ok": true
+     },
+     {
+      "name": "sha256",
+      "ok": true
+     },
+     {
+      "name": "signature",
+      "ok": true
+     },
+     {
+      "name": "rekor",
+      "ok": false
+     },
+     {
+      "name": "joules",
+      "ok": true
+     },
+     {
+      "name": "labels",
+      "ok": true
+     },
+     {
+      "name": "grade",
+      "ok": true
+     }
+    ]
    }
   ],
   "chain_ok": true,
-  "command": "wattnot verify --chain verifier/samples/chain/"
+  "command": "wattnot verify --chain verifier/samples/chain/ && wattnot verify receipts/run2/"
+ },
+ "receipt": {
+  "spark_trace_id": "spark-c4407a976370f81d",
+  "per_model_joules": [
+   {
+    "model": "Llama 3.1 8B Instruct (served)",
+    "j_per_answer": 11.63,
+    "j_total": 7748.8,
+    "label": "MEASURED",
+    "how": "NVML energy counter, 10 samples a second; j_total = J per request x 666 checked answers, 350 W cap"
+   },
+   {
+    "model": "muse-spark-1.3 (planner, 4 calls)",
+    "j_per_answer": null,
+    "j_total": null,
+    "status": "not metered",
+    "how": "hosted; the provider reports tokens, not joules"
+   }
+  ],
+  "label": "MEASURED"
+ },
+ "leaderboard": {
+  "spec": "wattnot.leaderboard/0.1",
+  "metric": "net joules per correct answer (J/correct)",
+  "doc": "docs/joules-per-correct-answer.md",
+  "rows": [
+   {
+    "setup": "Default vLLM (no cap)",
+    "model": "Llama 3.1 8B Instruct",
+    "hardware": "1x H100 (E2E Networks)",
+    "j_per_correct": {
+     "mean": 17.03,
+     "sd": 0.14
+    },
+    "n_checked": 666,
+    "repeats": 3,
+    "pass_pct": 93.69,
+    "p99_change_pct": 0.0,
+    "escalation_rate_pct": null,
+    "small_model_pass_pct": null,
+    "gate": "baseline",
+    "era": "RUN2",
+    "label": "MEASURED",
+    "status": "measured",
+    "note": "public baseline: stock vLLM, stock 700 W limit",
+    "vs_default_pct": 0.0,
+    "best": false
+   },
+   {
+    "setup": "WattNot power cap 500 W",
+    "model": "Llama 3.1 8B Instruct",
+    "hardware": "1x H100 (E2E Networks)",
+    "j_per_correct": {
+     "mean": 16.38,
+     "sd": 0.007
+    },
+    "n_checked": 666,
+    "repeats": 3,
+    "pass_pct": 93.69,
+    "p99_change_pct": 0.69,
+    "escalation_rate_pct": null,
+    "small_model_pass_pct": null,
+    "gate": "passed",
+    "era": "RUN2",
+    "label": "MEASURED",
+    "status": "measured",
+    "note": "",
+    "vs_default_pct": -3.82,
+    "best": false
+   },
+   {
+    "setup": "WattNot power cap 450 W",
+    "model": "Llama 3.1 8B Instruct",
+    "hardware": "1x H100 (E2E Networks)",
+    "j_per_correct": {
+     "mean": 14.69,
+     "sd": 0.814
+    },
+    "n_checked": 666,
+    "repeats": 3,
+    "pass_pct": 93.99,
+    "p99_change_pct": 1.81,
+    "escalation_rate_pct": null,
+    "small_model_pass_pct": null,
+    "gate": "passed",
+    "era": "RUN2",
+    "label": "MEASURED",
+    "status": "measured",
+    "note": "",
+    "vs_default_pct": -13.74,
+    "best": false
+   },
+   {
+    "setup": "WattNot power cap 400 W",
+    "model": "Llama 3.1 8B Instruct",
+    "hardware": "1x H100 (E2E Networks)",
+    "j_per_correct": {
+     "mean": 13.81,
+     "sd": 0.01
+    },
+    "n_checked": 666,
+    "repeats": 3,
+    "pass_pct": 93.69,
+    "p99_change_pct": 4.68,
+    "escalation_rate_pct": null,
+    "small_model_pass_pct": null,
+    "gate": "passed",
+    "era": "RUN2",
+    "label": "MEASURED",
+    "status": "measured",
+    "note": "",
+    "vs_default_pct": -18.91,
+    "best": false
+   },
+   {
+    "setup": "WattNot power cap 350 W",
+    "model": "Llama 3.1 8B Instruct",
+    "hardware": "1x H100 (E2E Networks)",
+    "j_per_correct": {
+     "mean": 12.42,
+     "sd": 0.004
+    },
+    "n_checked": 666,
+    "repeats": 3,
+    "pass_pct": 93.69,
+    "p99_change_pct": 7.69,
+    "escalation_rate_pct": null,
+    "small_model_pass_pct": null,
+    "gate": "passed",
+    "era": "RUN2",
+    "label": "MEASURED",
+    "status": "measured",
+    "note": "",
+    "vs_default_pct": -27.07,
+    "best": true
+   },
+   {
+    "setup": "WattNot power cap 325 W",
+    "model": "Llama 3.1 8B Instruct",
+    "hardware": "1x H100 (E2E Networks)",
+    "j_per_correct": {
+     "mean": 11.84,
+     "sd": 0.012
+    },
+    "n_checked": 666,
+    "repeats": 3,
+    "pass_pct": 93.69,
+    "p99_change_pct": 10.95,
+    "escalation_rate_pct": null,
+    "small_model_pass_pct": null,
+    "gate": "failed: p99 up 10.9% (limit 10%)",
+    "era": "RUN2",
+    "label": "MEASURED",
+    "status": "measured",
+    "note": "",
+    "vs_default_pct": -30.48,
+    "best": false
+   },
+   {
+    "setup": "WattNot small model first (Llama 3.1 8B, escalate to Muse Spark Open)",
+    "model": "Llama 3.1 8B + Muse Spark Open",
+    "hardware": "1x H100",
+    "j_per_correct": null,
+    "n_checked": null,
+    "repeats": null,
+    "pass_pct": null,
+    "p99_change_pct": null,
+    "escalation_rate_pct": null,
+    "small_model_pass_pct": null,
+    "gate": null,
+    "era": "meta-judge",
+    "label": "MEASURED",
+    "status": "pending",
+    "note": "long GPU run: escalation rate, small-model pass rate, net of judge and agent energy",
+    "best": false
+   },
+   {
+    "setup": "WattNot cap + token trimmer, same workload",
+    "model": "Llama 3.1 8B Instruct",
+    "hardware": "1x H100",
+    "j_per_correct": null,
+    "n_checked": null,
+    "repeats": null,
+    "pass_pct": null,
+    "p99_change_pct": null,
+    "escalation_rate_pct": null,
+    "small_model_pass_pct": null,
+    "gate": null,
+    "era": "meta-judge",
+    "label": "MEASURED",
+    "status": "pending",
+    "note": "long GPU run; today only the stacked ESTIMATE from two separate workloads exists",
+    "best": false
+   },
+   {
+    "setup": "Muse Spark Open, fewer experts",
+    "model": "Muse Spark Open",
+    "hardware": "1x H100",
+    "j_per_correct": null,
+    "n_checked": null,
+    "repeats": null,
+    "pass_pct": null,
+    "p99_change_pct": null,
+    "escalation_rate_pct": null,
+    "small_model_pass_pct": null,
+    "gate": null,
+    "era": "meta-judge",
+    "label": "MEASURED",
+    "status": "pending",
+    "note": "long GPU run",
+    "best": false
+   },
+   {
+    "setup": "Baseten hosted Muse Spark Open",
+    "model": "Muse Spark Open",
+    "hardware": "hosted (Baseten)",
+    "j_per_correct": null,
+    "n_checked": null,
+    "repeats": null,
+    "pass_pct": null,
+    "p99_change_pct": null,
+    "escalation_rate_pct": null,
+    "small_model_pass_pct": null,
+    "gate": null,
+    "era": "meta-judge",
+    "label": "ESTIMATE",
+    "status": "pending",
+    "note": "provider does not expose power; joules come from tokens x a published J-per-token figure",
+    "best": false
+   },
+   {
+    "setup": "Modal hosted Muse Spark Open",
+    "model": "Muse Spark Open",
+    "hardware": "hosted (Modal)",
+    "j_per_correct": null,
+    "n_checked": null,
+    "repeats": null,
+    "pass_pct": null,
+    "p99_change_pct": null,
+    "escalation_rate_pct": null,
+    "small_model_pass_pct": null,
+    "gate": null,
+    "era": "meta-judge",
+    "label": "ESTIMATE",
+    "status": "pending",
+    "note": "endpoint not configured (see the fallback ledger); same token-based estimate",
+    "best": false
+   }
+  ],
+  "meta_models": [
+   {
+    "model": "muse-spark-1.3",
+    "job": "planner: picks the next power cap; explains gate failures; agent-waste and coding-set runs",
+    "calls": 3458,
+    "usd": 23.08,
+    "label": "MEASURED",
+    "source": "Meta API spend ledger (billed token counts x list price)"
+   },
+   {
+    "model": "sam-3.1",
+    "job": "segments rack photos into units (kept off the main path)",
+    "calls": 47,
+    "usd": 0.12,
+    "label": "MEASURED",
+    "source": "Meta API spend ledger (billed token counts x list price)"
+   },
+   {
+    "model": "Llama 3.1 8B Instruct",
+    "job": "the served model in RUN2; small model in small-first; quality judge",
+    "calls": null,
+    "usd": null,
+    "label": "MEASURED",
+    "source": "own H100, cost is GPU hours (not an API bill)"
+   },
+   {
+    "model": "Muse Spark Open (Baseten)",
+    "job": "big model when the small one fails a check; hosted planner",
+    "calls": 1,
+    "usd": 0.004,
+    "label": "MEASURED",
+    "source": "docs/runs/spark-open-planner-smoke.ledger.json"
+   }
+  ],
+  "submission_example": {
+   "spec": "wattnot.jpc-submission/0.1",
+   "setup": "my-setup-name",
+   "model": "org/model-name",
+   "hardware": "1x H100 80GB SXM",
+   "workload": "wattnot proof-v1 (math 50, code 29, qa 32)",
+   "n_checked": 666,
+   "repeats": 3,
+   "sample_hz": 10,
+   "j_per_correct": {
+    "mean": 12.42,
+    "sd": 0.1
+   },
+   "overhead_j_per_correct": 0.0,
+   "pass_pct": 93.7,
+   "p99_change_pct": 7.7,
+   "escalation_rate_pct": null,
+   "small_model_pass_pct": null,
+   "label": "MEASURED",
+   "receipt": "path or URL of a signed receipt that `wattnot verify` accepts"
+  },
+  "reproduce": "scripts/reproduce_leaderboard.sh"
  }
 }

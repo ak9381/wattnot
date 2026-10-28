@@ -1,0 +1,21 @@
+{
+ "spec": "wattnot.jpc-submission/0.1",
+ "setup": "my-setup-name",
+ "model": "org/model-name",
+ "hardware": "1x H100 80GB SXM",
+ "workload": "wattnot proof-v1 (math 50, code 29, qa 32)",
+ "n_checked": 666,
+ "repeats": 3,
+ "sample_hz": 10,
+ "j_per_correct": {
+  "mean": 12.42,
+  "sd": 0.1
+ },
+ "overhead_j_per_correct": 0.0,
+ "pass_pct": 93.7,
+ "p99_change_pct": 7.7,
+ "escalation_rate_pct": null,
+ "small_model_pass_pct": null,
+ "label": "MEASURED",
+ "receipt": "path or URL of a signed receipt that `wattnot verify` accepts"
+}
