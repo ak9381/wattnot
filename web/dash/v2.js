@@ -158,13 +158,14 @@ function renderCfg() {
   S.step ??= 1;
   const byId = Object.fromEntries(O.options.map((o) => [o.id, o]));
   const adv = O.options.filter((o) => !ESSENTIAL_IDS.includes(o.id)).map((o) => fld(o)).join("");
-  $("#pCfg").innerHTML = `<div class="intro"><div><h1>Configure a new run</h1><p>One question per screen, five screens. Everything else keeps a safe default. Use Tab and the arrow keys to move between cards, Enter to continue. Live GPU runs are locked on this screen; it only replays recorded runs, so it costs nothing.</p></div></div>
+  $("#pCfg").innerHTML = `<div class="intro"><div><h1>Configure a new run</h1><p>One question per page, five pages. Your answers collect on the right; press Edit on any of them to go back to that page. Everything else keeps a safe default. Use Tab and the arrow keys to move between cards, Enter to continue. Live GPU runs are locked on this screen; it only replays recorded runs, so it costs nothing.</p></div></div>
     <div class="cfg-step bento"><div class="glass tile span4 lift step-main">
       <div class="step-prog"><span id="stepCount" role="status"></span><ol id="stepDots" aria-label="Progress"></ol></div>
       <div id="stepBody" aria-live="polite"></div>
       <div class="step-nav"><button class="btn" id="stepBack">Back</button><button class="btn pri" id="stepNext">Next</button></div>
     </div>
-    <div class="step-side span2"><div class="glass tile low conn"><h3>Already connected</h3><p>Wired by default, read from the partners list.</p><ul id="connList"></ul></div>
+    <div class="step-side span2"><div class="glass tile low picked" id="pickSum" aria-live="polite"><h3>Your choices</h3><ol class="picked-list" id="pickList"></ol></div>
+      <div class="glass tile low conn"><h3>Already connected</h3><p>Wired by default, read from the partners list.</p><ul id="connList"></ul></div>
       <div class="grp glass tile low"><h3>What will happen</h3><div id="cfgSum"></div>${legendHtml()}
       <p class="lock">Live mode needs the owner's okay and the command line. It is never started from here.</p></div></div></div>
     <details class="adv glass" id="advDis"><summary id="advSum" aria-expanded="false"><span class="adv-t">Advanced settings</span>
@@ -179,10 +180,10 @@ function renderCfg() {
   $$("#pCfg select").forEach((s) => (s.onchange = () => { S.choice[s.dataset.k] = JSON.parse(s.value); sumCfg(); syncAdv(); }));
   $("#advDis").addEventListener("toggle", syncAdv);
   $("#stepBack").onclick = () => { if (S.step > 1) { S.step--; renderStep(); } };
-  $("#stepNext").onclick = () => { if (S.step < 5) { S.step++; renderStep(); } };
+  $("#stepNext").onclick = () => { if (S.step < 5) { markDone(S.step); S.step++; renderStep(); } };
   document.onkeydown = (e) => {
     if (!$("#pCfg").classList.contains("on")) return;
-    if (e.key === "ArrowRight" && S.step < 5 && e.target.tagName !== "SELECT" && e.target.tagName !== "INPUT") { S.step++; renderStep(); }
+    if (e.key === "ArrowRight" && S.step < 5 && e.target.tagName !== "SELECT" && e.target.tagName !== "INPUT") { markDone(S.step); S.step++; renderStep(); }
     if (e.key === "ArrowLeft" && S.step > 1 && e.target.tagName !== "SELECT" && e.target.tagName !== "INPUT") { S.step--; renderStep(); }
   };
   renderStep(); renderConn(); sumCfg(); syncAdv();
@@ -190,6 +191,27 @@ function renderCfg() {
 function workloadLabel(id) {
   const o = S.opts.options.find((x) => x.id === "workload");
   return o?.choices.find((c) => c.v === id)?.label || id;
+}
+// Right-hand summary: one entry per page, plain words, Edit jumps back.
+function markDone(n) { (S.answered ??= {})[n] = true; renderPicked(); }
+function cardLabel(cards, v) { return cards.find((c) => c.v === v)?.t; }
+function pickedAnswer(n) {
+  const c = S.choice;
+  if (n === 1) return cardLabel(SAVE_CARDS, c.save_target);
+  if (n === 2) return S.opts.options.find((o) => o.id === "model")?.choices.find((x) => x.v === c.model)?.label;
+  if (n === 3) return cardLabel(TRAFFIC_CARDS, c.traffic);
+  if (n === 4) { const t = cardLabel(CARE_CARDS, c.care); return t ? `${t} (slowest 1% may rise ${c.p99_slack_pct}%, answers must agree ${c.min_quality_pct}%)` : null; }
+  return S.answered?.[5] ? `Replay: ${c.name || "My first replay"}` : null;
+}
+function renderPicked() {
+  const el = $("#pickList"); if (!el) return;
+  el.innerHTML = STEP_Q.map((q, i) => {
+    const n = i + 1, a = S.answered?.[n] ? pickedAnswer(n) : null, now = n === S.step;
+    return `<li class="${a ? "done" : "pending"}${now ? " now" : ""}"><span class="pq">${n}. ${esc(q)}</span>
+      <span class="pa">${a ? esc(a) : now ? "Answering now" : "Pending"}</span>
+      ${a && !now ? `<button class="btn sm edit" data-edit="${n}" aria-label="Edit: ${esc(q)}">Edit</button>` : ""}</li>`;
+  }).join("");
+  $$("#pickList [data-edit]").forEach((b) => (b.onclick = () => { S.step = +b.dataset.edit; renderStep(); $("#stepBody")?.querySelector("input")?.focus(); }));
 }
 function renderStep() {
   const n = S.step, body = $("#stepBody");
@@ -213,11 +235,12 @@ function renderStep() {
     <div class="fld namerow"><label for="f-name">Run name<small>free text</small></label><input type="text" id="f-name" value="${esc(S.choice.name || "My first replay")}"></div>
     <button class="btn pri big" id="startRun">Start replay</button>
     <p class="lock">Replay only, no GPU. Live mode needs the owner's okay and the command line.</p>`;
-  $$('input[name="save"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.goal = SAVE_MAP[v]; S.choice.save_target = v; sumCfg(); }));
-  $$('input[name="model"]', body).forEach((r) => (r.onchange = () => { S.choice.model = JSON.parse(r.value); sumCfg(); }));
-  $$('input[name="traffic"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.workload = TRAFFIC_MAP[v]; S.choice.traffic = v; sumCfg(); }));
-  $$('input[name="care"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); Object.assign(S.choice, CARE_MAP[v]); S.choice.care = v; sumCfg(); syncAdv(); }));
-  const fn = $("#f-name"); if (fn) fn.oninput = (e) => (S.choice.name = e.target.value);
+  $$('input[name="save"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.goal = SAVE_MAP[v]; S.choice.save_target = v; sumCfg(); markDone(1); }));
+  $$('input[name="model"]', body).forEach((r) => (r.onchange = () => { S.choice.model = JSON.parse(r.value); sumCfg(); markDone(2); }));
+  $$('input[name="traffic"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.workload = TRAFFIC_MAP[v]; S.choice.traffic = v; sumCfg(); markDone(3); }));
+  $$('input[name="care"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); Object.assign(S.choice, CARE_MAP[v]); S.choice.care = v; sumCfg(); syncAdv(); markDone(4); }));
+  const fn = $("#f-name"); if (fn) fn.oninput = (e) => { S.choice.name = e.target.value; markDone(5); };
+  renderPicked();
   const st = $("#startRun"); if (st) st.onclick = startRun;
 }
 function advChoiceLabel(o) {
@@ -237,6 +260,7 @@ function sumCfg() {
   $("#cfgSum").innerHTML = `<dl class="kv" style="grid-template-columns:110px 1fr"><dt>Model</dt><dd>${esc(m?.label)}</dd>${g ? `<dt>Goal</dt><dd>${esc(g)}</dd>` : ""}<dt>Speed limit</dt><dd>p99 may rise ${esc(c.p99_slack_pct)}%</dd><dt>Quality bar</dt><dd>${esc(c.min_quality_pct)}% agreement</dd><dt>Approval</dt><dd>${esc(S.opts.options.find((o) => o.id === "approval").choices.find((x) => x.v === c.approval)?.label)}</dd><dt>Cost</dt><dd>$0 ${badge("REPLAY")}</dd></dl>`;
 }
 async function startRun() {
+  markDone(5);
   const btn = $("#startRun"); btn.disabled = true; btn.textContent = "Loading the recorded run…";
   try {
     const r = await fetch("/api/dash/v2/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(S.choice) });

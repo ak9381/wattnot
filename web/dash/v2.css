@@ -293,3 +293,16 @@ aside.side p{color:#eef3f8}
 .radial-wires{display:none}
 .pc-controls{display:none}
 }
+
+/* Configure: one page per step, sticky summary of choices */
+.cfg-step.bento{align-items:start}
+.cfg-step.bento>.step-main{min-height:60vh}
+.cfg-step.bento>.step-side{position:sticky;top:14px}
+.picked-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.picked-list li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+.picked-list .pq{grid-column:1;font-size:12px;color:var(--mu)}
+.picked-list .pa{grid-column:1;font-size:14px;color:#fff}
+.picked-list li.pending .pa{color:var(--mu);font-style:italic}
+.picked-list li.now{border-color:rgba(255,255,255,.28)}
+.picked-list .edit{grid-column:2;grid-row:1/span 2;align-self:center;padding:4px 12px;font-size:12.5px}
+@media (max-width:900px){.cfg-step.bento>.step-side{position:static}}
