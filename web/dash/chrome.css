@@ -1,5 +1,20 @@
 /* WattNot Shared Header & Footer Chrome (Dusk & Landing) */
 
+/* Height the sticky header occupies (nav height + top offset + margins).
+   Used so anchored/scrolled-to content is never hidden beneath the header. */
+:root { --wn-header-h: 84px; }
+
+/* Honour the header when jumping to in-page anchors or scrollIntoView targets. */
+html { scroll-padding-top: var(--wn-header-h); }
+
+/* Any heading or meta card scrolled to the top clears the sticky header. */
+h1, h2, h3,
+#metatools-mount, #hotspot-mount, #eulink-mount,
+.metatools-card, .hotspot-card, .eulink-card,
+.hero-card, .bd-card {
+  scroll-margin-top: var(--wn-header-h);
+}
+
 /* ---- Shared Floating Header ---- */
 nav.wn-nav.gl {
   position: fixed;
@@ -153,6 +168,13 @@ nav.wn-nav.gl {
   min-height: 32px;
   flex: 0 0 32px;
   vertical-align: middle;
+}
+
+.wn-slot-wrap:has(.vg-slot-container),
+.wn-slot-wrap .wn-mic-slot:has(.vg-slot-container) {
+  width: auto;
+  min-width: auto;
+  flex: none;
 }
 
 /* ---- Shared Minimal Glass Footer ---- */

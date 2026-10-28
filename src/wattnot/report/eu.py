@@ -20,6 +20,9 @@ BANNED = ("neutral", "offset", "carbon-free", "carbon free", "net zero", "net-ze
 TEMPLATE = Path(__file__).parent / "templates" / "eu.html"
 FACILITY = "needs facility data (operator meters); a GPU-level tool cannot see it"
 COLUMNS = ("receipt_id", "field", "value", "unit", "label", "source")
+FRAMING = "supports EU Energy Efficiency Directive data-center reporting"
+CSRD = "CSRD roadmap"
+DISCLAIMER = "Not a compliance claim; facility-level metrics require operator metering."
 
 
 def _f(name, value, unit, label, source) -> dict:
@@ -57,6 +60,26 @@ def fields_for(receipt: Mapping, *, grid_gco2_per_kwh: float | None = None,
         _f("water_per_request", water["value"], "mL/request", "ESTIMATE",
            f"{water['method']}; {water['source']}"),
     ]
+    joules_cand = (receipt.get("joules") or {}).get("candidate") or {}
+    j_per_good = joules_cand.get("j_per_good_answer")
+    j_label = lab
+    j_src = f"{src}: candidate Wh/req x 3600 / pass_rate"
+    if j_per_good is None:
+        quality = cand.get("quality") or {}
+        pass_rate = quality.get("fixed_pass_rate")
+        judge_score = quality.get("judge_score")
+        if pass_rate and pass_rate > 0:
+            j_per_good = round((wh * 3600) / pass_rate, 6)
+            j_src = f"{src}: candidate Wh/req x 3600 / fixed pass rate {pass_rate}"
+        elif judge_score and judge_score > 0:
+            j_per_good = round((wh * 3600) / judge_score, 6)
+            j_src = f"{src}: candidate Wh/req x 3600 / judge agreement score {judge_score}"
+        else:
+            # No pass rate at all: the per-correct figure is an assumption, not measured.
+            j_per_good = round(wh * 3600, 6)
+            j_label = "ESTIMATE"
+            j_src = f"{src}: candidate Wh/req x 3600; pass rate unavailable, assumed 1.0"
+    out.append(_f("joules_per_correct_answer", j_per_good, "J/correct", j_label, j_src))
     if grid_gco2_per_kwh is not None and grid_source:
         out.append(_f("sci_per_request", round(wh / 1000 * grid_gco2_per_kwh, 6),
                       "gCO2e/request", "ESTIMATE",
@@ -83,6 +106,8 @@ def to_csv(rows: Sequence[Mapping]) -> str:
     w.writeheader()
     for r in rows:
         w.writerow({k: ("" if r[k] is None else r[k]) for k in COLUMNS})
+    w.writerow({"receipt_id": "", "field": "disclaimer", "value": DISCLAIMER,
+                "unit": "", "label": "", "source": f"{FRAMING}; {CSRD}"})
     return buf.getvalue()
 
 
@@ -116,3 +141,43 @@ def export(receipt_paths: Sequence[str | Path], out: str | Path, **kw) -> tuple[
     c.write_text(csv_text, encoding="utf-8")
     h.write_text(html_text, encoding="utf-8")
     return c, h
+
+
+def generate_report(receipt_or_path: Mapping | str | Path, out_dir: str | Path | None = None,
+                    *, format: str = "html", **kw) -> Any:
+    """Generate EU efficiency report in one click from a signed receipt."""
+    if isinstance(receipt_or_path, (str, Path)):
+        receipt = json.loads(Path(receipt_or_path).read_text(encoding="utf-8"))
+    else:
+        receipt = dict(receipt_or_path)
+
+    # Verify receipt integrity hash
+    if "integrity" in receipt:
+        from wattnot.receipt.build import verify_hash
+
+        ok, _, _ = verify_hash(receipt)
+        if not ok:
+            raise ValueError(f"receipt {receipt.get('receipt_id')} integrity hash verification failed")
+
+    rows = fields_for(receipt, **kw)
+    if out_dir is not None:
+        out = Path(out_dir) / f"eu_report_{receipt.get('receipt_id', 'latest')}"
+        if isinstance(receipt_or_path, (str, Path)):
+            return export([receipt_or_path], out, **kw)
+        p = Path(out_dir) / f"{receipt.get('receipt_id', 'rcpt')}.json"
+        p.write_text(json.dumps(receipt), encoding="utf-8")
+        return export([p], out, **kw)
+
+    if format == "csv":
+        return to_csv(rows)
+    if format == "html":
+        return to_html(rows)
+    if format != "json":
+        raise ValueError(f"unknown report format {format!r}: want html, csv, or json")
+    return {
+        "receipt_id": receipt.get("receipt_id"),
+        "fields": rows,
+        "framing": FRAMING,
+        "csrd": CSRD,
+        "disclaimer": DISCLAIMER,
+    }

@@ -82,7 +82,35 @@ export interface Receipt {
   result: Record<string, unknown>;
   measurement: {
     label: "MEASURED" | "ESTIMATE" | "SIMULATED";
+    spark_trace_id?: string | null;
+    judge_verdict?: "pass" | "fail" | null;
+    judge_score?: number | null;
+    judge_model?: string | null;
+    wonder_trace_ids?: string[] | null;
+    per_model_spend?: Record<string, unknown> | null;
+    musecode_patch_sha256?: string | null;
+    musecode_pr_sha256?: string | null;
+    musecode_pr_url?: string | null;
+    hotspot_cap?: {
+      mask?: {
+        bbox?: unknown[];
+        polygon?: unknown[];
+        rle?: string | null;
+        sha256?: string;
+        label?: string;
+      };
+      decision?: {
+        gpu_id?: number | string | null;
+        old_cap_w?: number | null;
+        new_cap_w?: number | null;
+        delta_w?: number | null;
+        min_cap_w?: number | null;
+        label?: string;
+      };
+      reason?: string;
+    } | null;
   };
+  hotspot_cap?: Record<string, unknown> | null;
   attribution?: Record<string, unknown>;
   planner_trace: unknown[];
   estimates?: {

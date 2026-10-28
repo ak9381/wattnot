@@ -1,0 +1,17 @@
+# Helm values for WattNot demo deployment
+replicaCount: 1
+
+image:
+  repository: vllm/vllm-openai
+  tag: latest
+
+vllm:
+  model: meta-llama/Llama-3.1-8B-Instruct
+  port: 8000
+  maxNumSeqs: 256
+  gpuMemoryUtilization: 0.90
+  powerCapW: 400
+
+resources:
+  limits:
+    nvidia.com/gpu: 1
