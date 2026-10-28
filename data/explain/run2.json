@@ -1,0 +1,18 @@
+{
+  "model": "muse-spark-1.3",
+  "calls": 1,
+  "fallback": "FALLBACK: Spark call failed (BudgetExceeded), rules used",
+  "items": [
+    {
+      "id": "325-p99",
+      "setting": "cap 325 W",
+      "check": "p99",
+      "prompt_class": "code",
+      "reason": "p99 rose 10.95% against a 10.0% limit. A lower cap lowers the clock, and the longest answers (code) set the tail, so they slow most.",
+      "source": "rules",
+      "label": "ADVICE"
+    }
+  ],
+  "run": "RUN2",
+  "source_events": "data/h100-run2/events/sweep.events.jsonl"
+}
