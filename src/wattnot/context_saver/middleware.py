@@ -253,7 +253,7 @@ def quality_gate(before_pass_pct: float, after_pass_pct: float,
 
 
 def saver_receipt_block(off: dict, on: dict, *, lever: str = "context_saver",
-                        max_drop_pts: float = 1.0) -> dict:
+                        max_drop_pts: float = 1.0, parts: dict | None = None) -> dict:
     """Before/after receipt block: tokens, joules, pass rate and cache hit rate, with labels.
 
     ``off`` and ``on`` each carry tokens, joules, pass_pct, cache_hit_rate and their labels. The
@@ -276,4 +276,57 @@ def saver_receipt_block(off: dict, on: dict, *, lever: str = "context_saver",
         "tokens_saved_pct": round(100 * (tok_off - tok_on) / tok_off, 2) if tok_off else None,
         "gate": gate,
         "kept": gate["kept"],
+        "parts": parts or {},
     }
+
+
+def _part(tokens_before, tokens_after, j_per_token, pass_before, pass_after, label, **extra):
+    """One sub-part of the receipt's context_saver block, in the shape the dashboard reads."""
+    jb = round(tokens_before * j_per_token, 3) if tokens_before is not None else None
+    ja = round(tokens_after * j_per_token, 3) if tokens_after is not None else None
+    gate = quality_gate(pass_before or 0.0, pass_after or 0.0)
+    out = {"tokens_before": tokens_before, "tokens_after": tokens_after,
+           "joules_before": jb, "joules_after": ja,
+           "gate_pass_pct": pass_after, "gate_kept": gate["kept"], "label": label}
+    out.update(extra)
+    return out
+
+
+def receipt_parts(saver_acct: dict, *, prefix_ab: dict | None = None,
+                  j_per_token: float = 0.1497, pass_before: float = 0.0,
+                  pass_after: float = 0.0, label: str = "ESTIMATE") -> dict:
+    """Build ``context_saver.parts.{prefix,memcomp,dupcut}``.
+
+    memcomp and dupcut come from the saver's per-stage token accounting. Joules are tokens x
+    ``j_per_token`` (ESTIMATE unless the caller passes metered numbers). prefix comes from the
+    prefix-cache A/B: tokens are prompt tokens that had to be prefilled (uncached share), and
+    hit_rate is the on-arm cache hit rate. Missing data gives a PENDING part, never a made-up one.
+    """
+    stages = {s.get("name"): s for s in saver_acct.get("stages", [])}
+    parts = {}
+    for key, name in (("memcomp", "memory_compression"), ("dupcut", "tool_dedup")):
+        st = stages.get(name)
+        if st is None:
+            parts[key] = {"tokens_before": None, "tokens_after": None, "joules_before": None,
+                          "joules_after": None, "gate_pass_pct": None, "label": "PENDING"}
+        else:
+            parts[key] = _part(st.get("tokens_before"), st.get("tokens_after"), j_per_token,
+                               pass_before, pass_after, label)
+    if prefix_ab is None:
+        parts["prefix"] = {"tokens_before": None, "tokens_after": None, "joules_before": None,
+                           "joules_after": None, "gate_pass_pct": None, "hit_rate": None,
+                           "label": "PENDING"}
+    else:
+        arms = prefix_ab["arms"]
+        hr = prefix_ab["headline"]["cache_hit_rate"]
+        tok = saver_acct.get("tokens_after") or 0
+        uncached = round(tok * (1 - (hr.get("on") or 0.0)))
+        parts["prefix"] = {
+            "tokens_before": tok, "tokens_after": uncached,
+            "joules_before": arms["off"]["j_per_correct"], "joules_after": arms["on"]["j_per_correct"],
+            "gate_pass_pct": arms["on"]["pass_pct"]["mean"], "gate_kept": prefix_ab["kept"],
+            "hit_rate": hr.get("on"), "hit_rate_before": hr.get("off"),
+            "label": prefix_ab["headline"].get("label", "ESTIMATE"),
+            "note": "joules are J per correct answer per arm; tokens_after = prefilled (uncached) prompt tokens",
+        }
+    return parts

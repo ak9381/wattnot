@@ -132,10 +132,14 @@ def _escalation(n: int) -> dict:
                   j_per_correct=chain["j_per_correct"], leaderboard_row=row), block
 
 
+_PREFIX_AB: dict = {}
+
+
 def _prefix_cache() -> dict:
     from wattnot.context_saver import prefix_cache as PC
 
     ab = PC.mock_ab(reps=3)
+    _PREFIX_AB["ab"] = ab
     h = ab["headline"]
     return _block("prefix_cache", "ok" if ab["kept"] else "failed", "MOCK",
                   j_per_correct_change_pct=h["j_per_correct_change_pct"],
@@ -145,7 +149,7 @@ def _prefix_cache() -> dict:
 
 
 def _context_saver() -> dict:
-    from wattnot.context_saver import ContextSaver, saver_receipt_block
+    from wattnot.context_saver import ContextSaver, saver_receipt_block, receipt_parts
 
     # A small agent chat with a repeated tool read and several old turns to compress.
     big = "FILE repo/README.md:\n" + ("WattNot cuts joules per correct answer. " * 40)
@@ -167,7 +171,9 @@ def _context_saver() -> dict:
     on = {"tokens": acct["tokens_after"], "tokens_label": "ESTIMATE",
           "joules": round(acct["tokens_after"] * jpt, 1), "joules_label": "MOCK",
           "pass_pct": 96.0, "pass_pct_label": "MOCK", "cache_hit_rate": None}
-    rblock = saver_receipt_block(off, on, lever="memory_compression+tool_dedup")
+    parts = receipt_parts(acct, prefix_ab=_PREFIX_AB.get("ab"), j_per_token=jpt,
+                          pass_before=96.0, pass_after=96.0, label="MOCK")
+    rblock = saver_receipt_block(off, on, lever="memory_compression+tool_dedup", parts=parts)
     return _block("context_saver", "ok" if rblock["kept"] else "failed", "MOCK",
                   tokens_before=acct["tokens_before"], tokens_after=acct["tokens_after"],
                   saved_pct=acct["saved_pct"], stages=[s["name"] for s in acct["stages"]],

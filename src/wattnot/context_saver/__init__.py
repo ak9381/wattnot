@@ -17,6 +17,7 @@ than one point the cut is rolled back. See docs/CONTEXT-SAVER.md.
 from __future__ import annotations
 
 from wattnot.context_saver.middleware import (
+    receipt_parts,
     ChunkStore,
     ContextSaver,
     MemoryCompressionMiddleware,
@@ -29,6 +30,7 @@ from wattnot.context_saver.middleware import (
 )
 
 __all__ = [
+    "receipt_parts",
     "ChunkStore",
     "ContextSaver",
     "MemoryCompressionMiddleware",
