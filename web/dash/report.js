@@ -67,18 +67,14 @@ async function load() {
   try { STATE.bundle = await getJSON("/api/dash/story"); } catch { STATE.bundle = null; }
   const rc = RECEIPTS[RUN_ID];
   if (rc) { try { STATE.receipt = await getJSON(rc.json); } catch { STATE.receipt = null; } }
-  try {
-    const sample = await getJSON("sample-meta5-receipt.json");
-    STATE.metaReceipt = { ...sample, ...(STATE.receipt || {}) };
-    if (!STATE.receipt?.wonder && sample.wonder) STATE.metaReceipt.wonder = sample.wonder;
-    if (!STATE.receipt?.musecode && sample.musecode) STATE.metaReceipt.musecode = sample.musecode;
-    if (!STATE.receipt?.hotspot && sample.hotspot) STATE.metaReceipt.hotspot = sample.hotspot;
-    if (!STATE.receipt?.sam && sample.sam) STATE.metaReceipt.sam = sample.sam;
-    if (!STATE.receipt?.measurement?.judge_verdict && sample.measurement?.judge_verdict) {
-      STATE.metaReceipt.measurement = { ...(STATE.metaReceipt.measurement || {}), ...sample.measurement };
-    }
-  } catch {
-    STATE.metaReceipt = STATE.receipt || {};
+  // Never splice sample data into a real signed receipt. If this run's receipt has no
+  // meta-tools sections yet, show the sample separately and say so.
+  const r = STATE.receipt || {};
+  const hasMeta = !!(r.wonder || r.musecode || r.hotspot || r.measurement?.judge_verdict);
+  if (hasMeta) { STATE.metaReceipt = r; STATE.metaIsSample = false; }
+  else {
+    try { STATE.metaReceipt = await getJSON("sample-meta5-receipt.json"); STATE.metaIsSample = true; }
+    catch { STATE.metaReceipt = r; STATE.metaIsSample = false; }
   }
   render();
 }
@@ -365,9 +361,13 @@ function render() {
   });
 
   const targetRcpt = STATE.metaReceipt || STATE.receipt;
-  if ($("#metatools-mount")) mountMetaTools($("#metatools-mount"), targetRcpt);
-  if ($("#hotspot-mount")) mountHotspotCard($("#hotspot-mount"), targetRcpt);
-  if ($("#eulink-mount")) mountEuLink($("#eulink-mount"), targetRcpt);
+  if ($("#metatools-mount")) {
+    mountMetaTools($("#metatools-mount"), targetRcpt);
+    if (STATE.metaIsSample) $("#metatools-mount").insertAdjacentHTML("afterbegin",
+      `<p class="metatools-sample-note" style="margin:0 0 8px;color:var(--v-mut,#B2A6C3)">Sample data (MOCK): this run's signed receipt has no Wonder, Muse Code, judge or hotspot sections yet. Nothing below comes from this run.</p>`);
+  }
+  if ($("#hotspot-mount")) mountHotspotCard($("#hotspot-mount"), STATE.receipt || {});
+  if ($("#eulink-mount")) mountEuLink($("#eulink-mount"), STATE.receipt || {});
 
   // Draw glowing connector lines from hero to breakdown cards
   setTimeout(drawConnectors, 20);
