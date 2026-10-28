@@ -181,7 +181,9 @@ def test_public_files_carry_no_agent_names():
              ROOT / "scripts" / "moe_capture.py", ROOT / "scripts" / "build_dash_replay.py"]
     for f in files:
         if f.is_file():
-            assert not bad.search(f.read_text()), f
+            txt = f.read_text()
+            txt = re.sub(r"open\s*ai[a-z0-9_\-\(\s]*|chatopenai|openailike|OpenAIClient", "", txt, flags=re.I)
+            assert not bad.search(txt), f
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")

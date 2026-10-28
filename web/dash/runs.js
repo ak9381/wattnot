@@ -35,15 +35,9 @@ function fmt(v, digits = 2) {
 
 const isNum = (v) => typeof v === "number" && Number.isFinite(v);
 
-// A coloured label dot with an accessible name.
-function dot(label) {
-  const L = String(label || "").toUpperCase();
-  return `<span class="v-lab ${esc(L)}" title="${esc(L)}" aria-label="${esc(L)}"></span>`;
-}
-
-// A label chip that carries the word itself.
+// A label chip that carries the visible word and colored dot.
 function chip(label) {
-  const L = String(label || "").toUpperCase();
+  const L = String(label || "pending").toUpperCase();
   const tint = {
     MEASURED: "--v-l-measured", ESTIMATE: "--v-l-estimate", SIMULATED: "--v-l-simulated",
     MOCK: "--v-l-mock", REPLAY: "--v-l-replay", ADVICE: "--v-l-advice",
@@ -51,10 +45,16 @@ function chip(label) {
   return `<span class="v-chip"><i style="background:var(${tint})"></i>${esc(L)}</span>`;
 }
 
-// A value + its dot, or a plain em dash when the value is missing.
+// Every number shows its label word visibly next to it
+function dot(label) {
+  if (!label) return `<span class="v-chip"><i></i>pending</span>`;
+  return chip(label);
+}
+
+// A value + its visible label word, or a plain em dash when the value is missing.
 function valDot(text, label, missing) {
-  if (missing) return `<span class="emdash">${EM}</span>`;
-  return `<span class="v-num">${esc(text)}</span>${dot(label)}`;
+  if (missing) return `<span class="emdash">${EM}</span> <span class="v-chip"><i></i>pending</span>`;
+  return `<span class="v-num">${esc(text)}</span> ${dot(label)}`;
 }
 
 async function getJSON(path) {
@@ -474,10 +474,19 @@ function renderTable(runsList, details) {
 
     const reportHref = `report.html?run=${encodeURIComponent(r.id)}`;
 
+    // Framework detection: from receipt, run detail, or fallback to 'framework: none recorded'
+    const fw = d?.receipt?.framework || d?.receipt?.frameworks?.[0] || d?.framework || r.framework;
+    const isReal = label === "MEASURED" && fw;
+    const fwName = fw ? (fw === "plain" ? "plain API" : fw) : "framework: none recorded";
+    const fwTag = isReal ? "MEASURED" : "MOCK";
+
     // side-panel body for the run (opened by clicking name/model cells)
     sidePanels[`run_${r.id}`] = `
       <h3>${esc(name)}</h3>
-      <p>${esc(model)} &middot; ${esc(date)} &nbsp; ${chip(label)}</p>
+      <p>${esc(model)} &middot; ${esc(date)} &nbsp; ${chip(label)} &nbsp; <span class="v-chip ${fwTag}"><i class="v-lab ${fwTag}"></i>${esc(fwName)}</span></p>
+      <ul class="rowlist">
+        <li><span class="k">Framework</span><span class="vv">${esc(fwName)} ${chip(fwTag)}</span></li>
+      </ul>
       ${w ? `<ul class="rowlist">
         <li><span class="k">Energy saved</span><span class="vv">${isNum(w.saved_pct) ? `${fmt(Math.abs(w.saved_pct), 1)}% less${dot(w.label || "MEASURED")}` : `<span class="emdash">${EM}</span>`}</span></li>
         <li><span class="k">p99 change</span><span class="vv">${isNum(w.p99_change_pct) ? `${w.p99_change_pct >= 0 ? "+" : ""}${fmt(w.p99_change_pct, 1)}%${dot(w.label || "MEASURED")}` : `<span class="emdash">${EM}</span>`}</span></li>
@@ -488,7 +497,7 @@ function renderTable(runsList, details) {
 
     return `
       <tr data-side="run_${esc(r.id)}" role="button" tabindex="0" style="cursor:pointer">
-        <td><div class="runname">${esc(name)}</div><div class="runsub">${esc(r.id)}</div></td>
+        <td><div class="runname">${esc(name)}</div><div class="runsub">${esc(r.id)} &middot; <span class="v-chip ${fwTag}"><i class="v-lab ${fwTag}"></i>${esc(fwName)}</span></div></td>
         <td>${esc(model)}</td>
         <td class="num">${esc(date) || `<span class="emdash">${EM}</span>`}</td>
         <td class="num">${savedCell}</td>

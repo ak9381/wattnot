@@ -1,37 +1,46 @@
-/* Violet Dusk — the one shared palette for every dashboard page.
-   Only these hues appear in the UI: deep violet, mauve, peach, cream, plus a
-   muted sage (pass) and a muted rose (reject). No neon, no orange, no blue.
+/* Dusk palette — the one shared palette for every dashboard page.
+   10-step palette, light to dark:
+   #DCD6E4 #B2A6C3 #8E7A9E #6C5E7C #4F4A63 #3B3A54 #2E2B44 #2B2637 #1F1A2F #171724
+   Page background: #080B10.
    contrast.test.mjs checks every text/status colour here against the dark
-   backgrounds it sits on and fails below WCAG AA (4.5:1). */
+   surfaces it sits on and fails below WCAG AA (4.5:1). */
 :root {
-  /* backgrounds: darker shades of the deep violet */
-  --v-bg: #2A1530;          /* page, darkest */
-  --v-bg2: #311839;         /* cards, panels */
-  --v-bg3: #351C3A;         /* raised / hover */
-  --v-violet: #502D55;      /* deep violet: borders, fills */
+  /* page background */
+  --v-bg: #080B10;          /* page, darkest */
 
-  /* accents */
-  --v-mauve: #935073;       /* charts, fills, accent (not used as body text) */
-  --v-peach: #F6DBC0;       /* highlights, glow lines, headings accent */
-  --v-cream: #F8F4E9;       /* primary text */
-  --v-sub: #D8C2D4;         /* secondary text */
-  --v-mut: #B49BB0;         /* muted captions */
+  /* dark shades: cards and surfaces */
+  --v-bg2: #1F1A2F;         /* cards, panels */
+  --v-bg3: #2B2637;         /* raised / hover */
+  --v-surf-2e: #2E2B44;     /* mid card surface */
+  --v-surf-17: #171724;     /* deep card surface */
+  --v-violet: #3B3A54;      /* deep violet: borders, fills */
+
+  /* mid shades: accents and charts */
+  --v-accent-4f: #4F4A63;   /* subtle radial glow, borders */
+  --v-accent-6c: #6C5E7C;   /* accents, secondary charts */
+  --v-mauve: #8E7A9E;       /* charts, fills, accent */
+
+  /* light shades: text and highlights */
+  --v-peach: #B2A6C3;       /* highlights, glow lines, headings accent */
+  --v-cream: #DCD6E4;       /* primary text */
+  --v-sub: #C9C1D6;         /* secondary text */
+  --v-mut: #A79BB9;         /* muted captions */
 
   /* status: always paired with an icon (✓/✕) and a word, never colour alone */
   --v-pass: #7FA88A;        /* muted sage */
-  --v-reject: #C97A80;      /* muted rose-red */
+  --v-reject: #D48389;      /* muted rose (passes AA on #2E2B44 and #171724) */
 
-  /* glass surfaces */
-  --v-glass: rgba(80, 45, 85, 0.34);
-  --v-glass2: rgba(147, 80, 115, 0.18);
-  --v-line: rgba(246, 219, 192, 0.22);   /* subtle peach border */
-  --v-line2: rgba(246, 219, 192, 0.42);
-  --v-glow: rgba(246, 219, 192, 0.55);    /* peach glow for connector lines */
-  --v-r: 18px;
+  /* glass surfaces (visionOS / Apple Liquid Glass) */
+  --v-glass: rgba(31, 26, 47, 0.65);
+  --v-glass2: rgba(142, 122, 158, 0.18);
+  --v-line: rgba(220, 214, 228, 0.12);   /* subtle 1px border */
+  --v-line2: rgba(178, 166, 195, 0.28);
+  --v-glow: rgba(178, 166, 195, 0.55);   /* peach glow for connector lines */
+  --v-r: 20px;
 
   /* data labels (MEASURED/ESTIMATE/...): light tints so numbers stay readable */
-  --v-l-measured: #F6DBC0;
-  --v-l-estimate: #CF9FB9;
+  --v-l-measured: #DCD6E4;
+  --v-l-estimate: #C4B4D6;
   --v-l-simulated: #B49BDB;
   --v-l-mock: #C6B2C2;
   --v-l-replay: #8FBBA0;
@@ -46,16 +55,22 @@
 /* ---- shared building blocks used by runs.html / report.html ---- */
 .v-glass {
   background: var(--v-glass);
-  backdrop-filter: blur(18px) saturate(130%);
-  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
   border: 1px solid var(--v-line);
   border-radius: var(--v-r);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(246, 219, 192, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(220, 214, 228, 0.12);
 }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .v-glass {
+    background: #1F1A2F;
+  }
+}
+
 .v-num { font-family: var(--v-num); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
 
 /* one small dot + accessible name per data label */
-.v-lab { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: middle; margin-left: 6px; border: 1px solid rgba(246, 219, 192, 0.45); }
+.v-lab { display: inline-block; width: 8px; height: 8px; border-radius: 50%; vertical-align: middle; margin-left: 0; border: 1px solid rgba(178,166,195, 0.45); }
 .v-lab.MEASURED { background: var(--v-l-measured); }
 .v-lab.ESTIMATE { background: var(--v-l-estimate); }
 .v-lab.SIMULATED { background: var(--v-l-simulated); }
@@ -63,9 +78,9 @@
 .v-lab.REPLAY { background: var(--v-l-replay); }
 .v-lab.ADVICE { background: var(--v-l-advice); }
 
-/* a label chip that carries the word (used where a dot is not enough) */
-.v-chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--v-line); border-radius: 999px; padding: 2px 9px; font-size: 11px; letter-spacing: .04em; color: var(--v-sub); font-family: var(--v-body); }
-.v-chip i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+/* a label chip that carries the visible word */
+.v-chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--v-line); background: rgba(46, 43, 68, 0.35); border-radius: 999px; padding: 2px 8px; font-size: 11px; letter-spacing: .04em; color: var(--v-sub); font-family: var(--v-body); font-weight: 500; }
+.v-chip i { width: 7px; height: 7px; border-radius: 50%; flex: none; }
 
 /* status pill: icon + word + muted colour, together */
 .v-status { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }

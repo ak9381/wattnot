@@ -32,10 +32,10 @@ test("verifySummary reads hash and signature steps", () => {
 
 test("badge and num", () => { assert.match(badge("MEASURED"), /b-measured/); assert.equal(num(null), "n/a"); assert.equal(num(21.04, 1), "21"); });
 
-test("badge is a dot with the label in title, not visible text", () => {
+test("badge shows dot and visible label text", () => {
   const b = badge("MEASURED");
-  assert.match(b, /title="MEASURED"/); assert.match(b, /aria-label="MEASURED"/);
-  assert.doesNotMatch(b, />MEASURED</);
+  assert.match(b, /b-measured/);
+  assert.match(b, /MEASURED/);
   assert.equal(badge(null), "");
 });
 
