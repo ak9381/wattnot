@@ -1,5 +1,6 @@
 import { esc, badge, num, cnum, legendHtml, stageState, ledgerRows, run2Rows, verifySummary, phaseLabel } from "./v2lib.js";
 import { init as initPanCanvas } from "./pancanvas.js";
+import { overviewHtml, openPowerGraph, wireR7, metaInRun, branchPopup, cmpHeadHtml, openWhere, methodPopup, branchInfo, savedPct, childSaved, CHILDREN } from "./v2r7.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -51,14 +52,22 @@ $("#sideX").onclick = closeInfo; $("#scrim").onclick = closeInfo;
 const LEARN_INFO = {};
 
 // ---------- overview ----------
+// Round 7 overview: sidebar, KPI cards, trend, donut, gauge and table, all from run data.
 function renderHome() {
+  wireR7();
+  $("#pHome").innerHTML = overviewHtml(S);
+  $$("#pHome [data-go]").forEach((a) => (a.onclick = (e) => { e.preventDefault(); show(a.dataset.go); }));
+  $$("#pHome [data-pg]").forEach((b) => (b.onclick = () => openPowerGraph(S.radRecs?.[S.runs?.runs?.[0]?.id])));
+}
+// The round 6 overview, kept for reference; no longer mounted.
+function renderHomeClassic() {
   const led = S.story?.ledger || {};
   $("#pHome").innerHTML = `
   <div class="intro"><div><h1>WattNot makes AI servers use less power, and shows its work.</h1>
   <p>It measures a GPU, tries a safer setting, checks the answers did not get worse, asks a person, applies it, and signs a receipt. Every one of those steps is on this page. Nothing is hidden.</p></div>
   <button class="btn pri noprint" id="goCfg">Configure a run →</button></div>
   <div class="kpis">
-    <div class="kpi glass"><div class="v">${cnum("21%", "MEASURED")}</div><div class="c">less energy per request, Muse Glimmer 30B at a 400 W cap ${badge("MEASURED")}</div></div>
+    <div class="kpi glass"><div class="v">${cnum(S.run2?.saved_pct != null ? `${num(-S.run2.saved_pct, 1)}%` : "–", "MEASURED")}</div><div class="c">less energy per request, ${esc(S.run2?.model || "")} at a ${esc(S.run2?.cap_w ?? "")} W cap ${badge("MEASURED")}</div></div>
     <div class="kpi glass"><div class="v">${cnum("+3.7%", "MEASURED")}</div><div class="c">slowest 1% got slower, inside the 10% limit ${badge("MEASURED")}</div></div>
     <div class="kpi glass"><div class="v">${cnum("67%", "MEASURED")}</div><div class="c">fewer agent tokens when a harness's stop rule misses ${badge("MEASURED")}</div></div>
     <div class="kpi glass"><div class="v">${cnum(`$${num(led.total_usd)}`, "MEASURED")}</div><div class="c">Meta API spend recorded in this bundle, ${num(led.calls, 0)} calls ${badge("MEASURED")}</div></div>
@@ -232,6 +241,7 @@ function renderStep() {
     ${CARE_CARDS.map((c) => pickCard("care", c, S.choice.care === c.v)).join("")}</div>`;
   else body.innerHTML = `<h2>${esc(STEP_Q[4])}</h2>
     <p class="lock">This run measures both: baseline first, then WattNot.</p>
+    <div class="where3"><h3>Where it runs</h3><p class="lock">All three are compared in this run.</p><ul>${["Your GPU · adaptive top-k + tiered / k-means experts + quantization", "Baseten hosted", "Modal hosted"].map((t) => `<li><span class="chk" aria-hidden="true">✓</span>${esc(t)}</li>`).join("")}</ul></div>
     <div class="fld namerow"><label for="f-name">Run name<small>free text</small></label><input type="text" id="f-name" value="${esc(S.choice.name || "My first replay")}"></div>
     <button class="btn pri big" id="startRun">Start replay</button>
     <p class="lock">Replay only, no GPU. Live mode needs the owner's okay and the command line.</p>`;
@@ -499,9 +509,11 @@ function drawWires() {
   if ((wrap.clientWidth || 0) < 900) return;
   const sr = stage.getBoundingClientRect();
   if (!sr.width || !sr.height) return;
-  const ctr = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - sr.left, b.top + b.height / 2 - sr.top]; };
-  const top = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - sr.left, b.top - sr.top]; };
-  const bot = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - sr.left, b.bottom - sr.top]; };
+  // stage coordinates (unscaled), so wires stay on the cards at any pan/zoom
+  const pos = (el) => { const c = el.closest(".rad-card, .rad-child, .radial-centre") || el; return [parseFloat(c.style.left) || 0, parseFloat(c.style.top) || 0, c.offsetHeight || 0]; };
+  const ctr = (el) => { const [x, y] = pos(el); return [x, y]; };
+  const top = (el) => { const [x, y, h] = pos(el); return [x, y - h / 2]; };
+  const bot = (el) => { const [x, y, h] = pos(el); return [x, y + h / 2]; };
   // Curved radial connector: leaves the hub toward the topic and arrives
   // along the same direction, bowed with a cubic Bezier.
   const radial = (a, b) => {
@@ -520,7 +532,7 @@ function drawWires() {
     d.push(radial(hc, ctr(head)));
     if (t.dataset.open === "1") $$(".leaf", t).forEach((l) => d.push(drop(bot(head), top(l))));
   });
-  svg.setAttribute("viewBox", `0 0 ${sr.width} ${sr.height}`);
+  svg.setAttribute("viewBox", `0 0 ${stage.offsetWidth} ${stage.offsetHeight}`);
   svg.innerHTML = d.map((x) => `<path d="${x}"/>`).join("");
 }
 function wireMap() {
@@ -700,8 +712,8 @@ function layoutRadial() {
   const R1 = 240;
   const byBranch = cards.map((c) => visKids.filter((k) => k.dataset.branch === c.dataset.branch));
   let R2 = 0;
-  byBranch.forEach((ks) => { if (ks.length) R2 = Math.max(R2, (ks.length * 210) / (0.8 * sector)); });
-  if (R2) R2 = Math.max(R2, R1 + 330);
+  byBranch.forEach((ks) => { if (ks.length) R2 = Math.max(R2, (ks.length * 175) / (0.8 * sector)); });
+  if (R2) R2 = Math.max(R2, R1 + 300);
   const maxR = (R2 || R1) + 130;
   const w = Math.ceil(maxR * 2 + 40), h = Math.ceil(maxR * 2 + 40);
   const cx = w / 2, cy = h / 2;
@@ -730,9 +742,11 @@ function drawRadialWires() {
   if ((wrap.clientWidth || 0) < 900) return;
   const sr = stage.getBoundingClientRect();
   if (!sr.width || !sr.height) return;
-  const ctr = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - sr.left, b.top + b.height / 2 - sr.top]; };
-  const top = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - sr.left, b.top - sr.top]; };
-  const bot = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - sr.left, b.bottom - sr.top]; };
+  // stage coordinates (unscaled), so wires stay on the cards at any pan/zoom
+  const pos = (el) => { const c = el.closest(".rad-card, .rad-child, .radial-centre") || el; return [parseFloat(c.style.left) || 0, parseFloat(c.style.top) || 0, c.offsetHeight || 0]; };
+  const ctr = (el) => { const [x, y] = pos(el); return [x, y]; };
+  const top = (el) => { const [x, y, h] = pos(el); return [x, y - h / 2]; };
+  const bot = (el) => { const [x, y, h] = pos(el); return [x, y + h / 2]; };
   const radial = (a, b) => {
     const dx = b[0] - a[0], dy = b[1] - a[1];
     const len = Math.hypot(dx, dy) || 1;
@@ -749,7 +763,7 @@ function drawRadialWires() {
     d.push(radial(hc, ctr(head)));
     if (c.dataset.open === "1") $$(".rad-child", stage).filter((l) => l.dataset.branch === c.dataset.branch && !l.hidden).forEach((l) => d.push(drop(bot(c), top(l))));
   });
-  svg.setAttribute("viewBox", `0 0 ${sr.width} ${sr.height}`);
+  svg.setAttribute("viewBox", `0 0 ${stage.offsetWidth} ${stage.offsetHeight}`);
   svg.innerHTML = d.map((x) => `<path d="${x}"/>`).join("");
 }
 let radWired = false;
@@ -880,6 +894,59 @@ async function renderReport() {
   $("#runSel").onchange = (e) => selectRun(e.target.value);
   wireMap();
   wireRadial();
+  mountCompare();
+}
+// Round 7: the Power / Cost / Water cards lead the page; the older mind map
+// and the signed details fold away underneath.
+function mountCompare() {
+  // Radial stays the main compare layout (round 5); round 7 adds the header,
+  // the Meta line, and branch popups with the card content.
+  const page = $("#pReport");
+  const rec = S.selRun || S.radRecs?.[S.selRunId || S.runs?.runs?.[0]?.id];
+  const price = S.run?.results?.price?.usd_per_kwh ?? 0.1387, water = S.run?.results?.water?.factor_l_per_kwh ?? 0.36;
+  $("#cmpR7")?.remove();
+  const top = document.createElement("div"); top.id = "cmpR7"; top.innerHTML = cmpHeadHtml(rec);
+  page.prepend(top);
+  // Minimal cards: name + "X% saved"; the card toggles its ring of children,
+  // only the (i) opens the detail popup.
+  const stage = $("#radialStage"); if (!stage) return;
+  const wires = $("#radialWires"); if (wires && wires.parentElement !== stage) stage.prepend(wires); // wires pan/zoom with the cards
+  const val = (sv, miss = "not measured in this run") => sv ? `${cnum(esc(sv.text), sv.tag)} saved` : `<span class="rad-miss" title="${miss}">—</span>`;
+  $$(".rad-child", stage).forEach((k) => k.remove());
+  const radFit = () => { S.radPan?.update(); S.radPan?.fit(); if (S.radPan && S.radPan.state.scale < 0.6) S.radPan.setZoom(0.6); };
+  // Keep the opened ring clear of the canvas controls (bottom right): pan up/left if a card sits under them.
+  const clearOfControls = (st, bid) => {
+    const P = S.radPan; if (!P) return;
+    for (let t = 0; t < 3; t++) {
+      const ctl = $(".pc-controls", st.parentElement)?.getBoundingClientRect(); if (!ctl) return;
+      let dy = 0, dx = 0;
+      $$(".rad-child, .rad-card", st).filter((k) => !k.hidden && (k.classList.contains("rad-card") || k.dataset.branch === bid)).forEach((k) => {
+        const r = k.getBoundingClientRect();
+        if (r.right > ctl.left && r.left < ctl.right && r.bottom > ctl.top && r.top < ctl.bottom) { dy = Math.max(dy, r.bottom - ctl.top + 12); dx = Math.max(dx, r.right - ctl.left + 12); }
+      });
+      if (!dy) return;
+      if (dx < dy) P.state.x -= dx; else P.state.y -= dy;
+      P.update();
+    }
+  };
+  $$(".rad-card", stage).forEach((c) => {
+    const id = c.dataset.branch, name = id[0].toUpperCase() + id.slice(1);
+    c.classList.add("min"); c.dataset.open = "0";
+    c.innerHTML = `<button class="rad-head" aria-expanded="false" aria-label="${name}: show the routes"><b>${name}</b><span class="rad-val">${val(savedPct(rec, id))}</span></button><button class="ibtn rad-i" data-binfo="${id}" aria-label="${name} details">i</button>`;
+    for (const [mid, mname] of CHILDREN) stage.insertAdjacentHTML("beforeend", `<div class="rad-child min" data-branch="${id}" data-m="${mid}" hidden><b>${esc(mname)}</b><span class="rad-val">${val(childSaved(rec, id, mid), mid === "baseten" || mid === "modal" ? "measured in the long run" : "not measured in this run")}</span>${mid === "baseten" || mid === "modal" ? `<small class="rad-sub">${childSaved(rec, id, mid) ? "" : "measured in the long run"}</small>` : ""}<button class="ibtn rad-i" data-minfo="${mid}" aria-label="${esc(mname)} details">i</button></div>`);
+    $(".rad-head", c).onclick = () => {
+      const on = c.dataset.open !== "1"; c.dataset.open = on ? "1" : "0"; $(".rad-head", c).setAttribute("aria-expanded", String(on));
+      $$(".rad-child", stage).filter((k) => k.dataset.branch === id).forEach((k) => { k.hidden = !on; });
+      layoutRadial(); S.radPan?.update(); if (on) { S.radPan?.focus(c, { zoom: 0.55 }); setTimeout(() => clearOfControls(stage, id), 450); } else S.radPan?.fit();
+    };
+    $(".rad-i", c).onclick = (e) => { e.stopPropagation(); branchInfo(rec, id, price, water); };
+  });
+  $$(".rad-child [data-minfo]", stage).forEach((b) => (b.onclick = (e) => { e.stopPropagation(); methodPopup(rec, b.closest(".rad-child").dataset.branch, b.dataset.minfo, price, water); }));
+  layoutRadial(); S.radPan?.update?.();
+  const ctr = $("#radCentre");
+  if (ctr && !$("[data-where]", ctr)) ctr.insertAdjacentHTML("beforeend", `<button class="btn rad-where" data-where>Where should this model run?</button>`);
+  const w = $("[data-where]", ctr); if (w) w.onclick = () => openWhere(rec);
+  const sig = $("#pReport .receipt-meta"); if (!sig) $("#pReport").insertAdjacentHTML("beforeend", `<div class="receipt-meta glass">${metaInRun(rec)}</div>`);
 }
 async function sha256(s) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
 async function startQuiet() { const r = await fetch("/api/dash/v2/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(S.choice) }); S.run = await r.json(); S.n = S.run.events.length; renderRun(); }
@@ -904,6 +971,9 @@ function renderLearn() {
 (async () => {
   const [opts, story, partners, run2, runs] = await Promise.all([fetch("/api/dash/v2/options").then((r) => r.json()), fetch("/api/dash/story").then((r) => r.json()).catch(() => null), fetch("/api/dash/partners").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/run2").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/runs").then((r) => r.json()).catch(() => null)]);
   S.opts = opts; S.story = story; S.partners = partners; S.run2 = run2; S.runs = runs; S.pipeline = story?.config?.pipeline || [];
+  S.radRecs ??= {};
+  const firstRun = runs?.runs?.[0]?.id;
+  if (firstRun) S.radRecs[firstRun] = await fetch(`/api/dash/v2/runs/${encodeURIComponent(firstRun)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   renderCfg(); renderHome(); renderRun(); renderLearn();
   const h = location.hash.slice(1); if (h && $(`#${h}`)) show(h);
   if (new URLSearchParams(location.search).get("autorun")) { await startRun(); }

@@ -124,7 +124,7 @@ export function init(container, inner, opts = {}) {
   // ---- drag empty space to pan; clicks on cards and buttons still work
   const pointers = new Map();
   let panStart = null, moved = false, pinchD0 = 0, pinchS0 = 1;
-  const interactive = (t) => t && t.closest && t.closest("button, a, select, input, textarea, [contenteditable], summary");
+  const interactive = (t) => t && t.closest && t.closest("button, a, select, input, textarea, [contenteditable], summary, [role=button], [data-info]");
   const onDown = (e) => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
     if (interactive(e.target)) return; // let toggles / expand buttons get the click

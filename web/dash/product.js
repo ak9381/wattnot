@@ -2,13 +2,18 @@
 // Config comes from the bundle (recorded runs). A run is a stream of wattnot.event/1 events: replayed from
 // POST /api/dash/run/plan (always labelled REPLAY) or followed live from --events (labelled by what the stream says).
 import { ArchView, fmt, statHtml } from "./arch.js";
-import { esc, pill } from "./theme.js";
+import { esc, dot, numLab, legendHtml } from "./theme.js";
 import { livePhrase } from "./archpage.js";
 import { mountRoomScan } from "./roomnode.js";
 import { heatSvg, heatLegend, scanTag, wireHeat, pulse, recolor } from "./heat.js";
 import { GuardPanel } from "./guard.js";
 import { fillPlannerTags, loadPartners } from "./partners.js";
 import { secondLayerHtml, wireReplay } from "./wastereplay.js";
+import { clock } from "./replayclock.js";
+import { broadcast } from "./clockbus.js";
+import { updatePreviews } from "./liveviews.js";
+import { init as initPan } from "./pancanvas.js";
+import { createState, replayAll, groupTotals } from "./core.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const RUN2_STAGE = { room_scan: "room", baseline: "baseline", quality_gate: "gate", cap_sweep: "sweep", adaptive_topk: "topk", agent_waste: "waste", approve: "approve", keep_rollback: "keep", receipt: "receipt" };
@@ -17,8 +22,8 @@ const reduce = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const PCOL = { meta: "var(--m)", baseten: "var(--bt)", e2e: "var(--e2)", hf: "var(--hf)", nvidia: "var(--nv)", sigstore: "var(--sg)", modal: "#fff" };
 const PNAME = { meta: "Meta", baseten: "Baseten", e2e: "E2E Networks", hf: "Hugging Face", nvidia: "NVIDIA", sigstore: "Sigstore", modal: "Modal" };
 const num = (v, d = 2) => (v == null || Number.isNaN(v) ? "–" : Number(v).toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: 0 }));
-const tagOf = (t) => (LABELS.includes(t) ? pill(t) : "");
-export const badge = (l) => `<span class="srcb ${esc(l)}" title="${esc({ REPLAY: "A recorded real run, re-evaluated against your limits. Nothing is running on a GPU now.", LIVE: "Events are arriving from a run that is happening now.", EXAMPLE: "An example event stream, not a real run.", MOCK: "A run against a mock backend.", WAITING: "Waiting for the first event." }[l] || l)}"><i></i>${esc(l)}</span>`;
+const tagOf = (t) => (LABELS.includes(t) ? dot(t) : "");
+export const badge = (l) => `<span class="srcb ${esc(l)}" title="${esc(l)} · ${esc({ REPLAY: "a recorded real run, re-evaluated against your limits. Nothing is running on a GPU now.", LIVE: "events are arriving from a run that is happening now.", EXAMPLE: "an example event stream, not a real run.", MOCK: "a run against a mock backend.", WAITING: "waiting for the first event." }[l] || l)}" aria-label="${esc(l)}"><i></i></span>`;
 
 export class Product {
   constructor(host, rail, D, opts = {}) {
@@ -29,6 +34,14 @@ export class Product {
     this.sel = { place: m0.place, workload: m0.workload, model: m0.id, levers: new Set(m0.levers), room: "example", ...lim };
     this.roomImg = null;
     this.screen = "config"; this.plan = null; this.done = false; this.speed = 2; this.log = {}; this.scale = 10_000_000;
+    // one live state for the run: names the currently executing step, all on the
+    // same clock/phase. Solo pop-outs (?view=arch&solo=1 and friends) still sync
+    // to it through the broadcast tick; the old tab URLs keep working.
+    this.phase = 2;
+    this.liveState = { phase: 2, step: null, text: "waiting for the run…", archActive: -1, expertActive: -1, powerSamples: [] };
+    clock.subscribe((ev) => {
+      if (ev.phase === 1 || ev.phase === 2) { this.phase = ev.phase; this.liveState.phase = ev.phase; updatePreviews(this.liveState); }
+    });
     this.renderRail(); if (this.embed) (this.health.events ? this.startLive() : this.start()); else this.config();
   }
   $(s) { return this.host.querySelector(s); }
@@ -55,7 +68,7 @@ export class Product {
     const wls = c.workloads.filter((w) => w.place === s.place && c.models.some((x) => x.workload === w.id));
     const models = c.models.filter((x) => x.workload === s.workload);
     const radio = (name, id, title, desc, on, extra = "") => `<label class="opt ${on ? "on" : ""}"><input type="radio" name="${name}" value="${esc(id)}" ${on ? "checked" : ""}><span class="ot">${esc(title)}${extra}</span><span class="od">${esc(desc)}</span></label>`;
-    this.host.innerHTML = `<div class="pf cfg"><form class="pf-main" id="cfgForm" autocomplete="off" onsubmit="return false">
+    this.host.innerHTML = `<div class="pf cfg bento"><form class="pf-main tile span-8" id="cfgForm" autocomplete="off" onsubmit="return false">
       <h1>Configure a run</h1>
       <p class="lede">Pick what to tune and how far it may go. WattNot then re-evaluates a recorded real run against your limits and shows every step, with the numbers.</p>
       <fieldset><legend><i>1</i>Where does it run?</legend><div class="opts">${places.map((p) => radio("place", p.id, p.title, p.note, p.id === s.place, `<em class="pb" style="--c:${PCOL[p.partner]}">${esc(PNAME[p.partner])}</em>`)).join("")}</div></fieldset>
@@ -76,7 +89,7 @@ export class Product {
         ${this.health.events ? `<button class="btn" id="goLive" type="button">${this.health.replay_only ? "Replay the saved run" : "Watch the live run"}</button>` : ""}
         <span class="hnt" id="startnote">Re-evaluates a recorded real run against your limits. Nothing runs on a GPU now.</span></div>
       <p class="err" id="cfgErr" role="alert" hidden></p>
-    </form><aside class="pf-why" id="why" aria-label="why this run is complex"></aside></div>`;
+    </form><aside class="pf-why tile span-4 lap" id="why" aria-label="why this run is complex"></aside></div>`;
     this.whyPanel();
     const f = $("#cfgForm", this.host);
     f.onchange = (e) => {
@@ -98,8 +111,8 @@ export class Product {
     const x = this.cfg.complexity[this.sel.model], s = this.sel, m = this.model();
     const base = x.p99_base_s, lim = base == null ? null : base * (1 + s.p99_slack_pct / 100);
     const what = m.workload === "moe" ? "slowest batch" : m.workload === "classes" ? "slowest request" : "slowest 1% of requests (p99)";
-    this.$("#why").innerHTML = `<h2>Why this run is complex</h2><p class="muted">Computed from the recorded workload for ${esc(m.name)}.</p>
-      <dl class="cx">${x.items.map((i) => `<div class="${i.v == null ? "na" : ""}" title="${esc(i.src || "")}${i.note ? ": " + esc(i.note) : ""}"><dt>${esc(i.label)}</dt><dd><b class="num">${i.v == null ? "–" : esc(fmt(i.v))}</b> ${i.unit ? `<span class="u">${esc(i.unit)}</span>` : ""} ${tagOf(i.tag)}${i.v == null && i.note ? `<span class="u"> ${esc(i.note)}</span>` : ""}</dd></div>`).join("")}</dl>
+    this.$("#why").innerHTML = `<h2>Why this run is complex</h2><p class="muted">Computed from the recorded workload for ${esc(m.name)}.</p>${legendHtml()}
+      <dl class="cx">${x.items.map((i) => `<div class="${i.v == null ? "na" : ""}" title="${esc(i.src || "")}${i.note ? ": " + esc(i.note) : ""}"><dt>${esc(i.label)}</dt><dd><b class="num${numLab(i.tag)}">${i.v == null ? "–" : esc(fmt(i.v))}</b> ${i.unit ? `<span class="u">${esc(i.unit)}</span>` : ""} ${tagOf(i.tag)}${i.v == null && i.note ? `<span class="u"> ${esc(i.note)}</span>` : ""}</dd></div>`).join("")}</dl>
       <div class="target"><span class="muted">Your latency target</span><b class="num">${lim == null ? "–" : `${lim.toFixed(2)} s`}</b><span class="muted">${esc(what)} at stock ${base == null ? "–" : base.toFixed(2) + " s"}, plus ${s.p99_slack_pct}%</span></div>
       <ul class="whylist">${x.why.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>`;
   }
@@ -116,7 +129,7 @@ export class Product {
     } catch (e) { err.textContent = `Could not plan this run: ${e.message}. The server may need a restart, or the story bundle needs rebuilding.`; err.hidden = false; btn.disabled = false; btn.textContent = "Start replay"; return; }
     this.live = false; this.done = false; this.screen = "run"; this.renderRail(); this.runView(false);
   }
-  destroyRun() { this.player?.stop(); this.player = null; this.es?.close(); this.es = null; this.guard?.stop(); this.guard = null; this.view?.destroy?.(); this.view = null; }
+  destroyRun() { this.player?.stop(); this.player = null; this.es?.close(); this.es = null; this.guard?.stop(); this.guard = null; this.roomPan?.destroy(); this.roomPan = null; this.runPan?.destroy(); this.runPan = null; this.view?.destroy?.(); this.view = null; }
   runView(again) {
     this.destroyRun(); this.log = {}; this.nodeLog = {}; const live = this.live, P = this.plan;
     const events = live ? [] : P.events.map((f) => f.event);
@@ -131,15 +144,22 @@ export class Product {
         <span class="sp"></span>
         ${live ? "" : `<span class="seg" id="spd" role="group" aria-label="replay speed"><button data-s="1">1×</button><button data-s="2" class="on">2×</button><button data-s="4">4×</button></span>`}
         ${this.embed && this.health.events ? `<button class="btn" id="rswitch">${live ? "Show the bundled recorded run" : "Follow the events file"}</button>` : ""}<button class="btn" id="rpause">Pause</button>${live ? "" : `<button class="btn" id="rskip">Skip to the end</button><button class="btn" id="rrestart">Restart</button>`}</div>
-      <p class="rnote" id="rnote">${live ? "Waiting for the first event from the run…" : `This is a <b>replay</b> of a recorded real run (${esc(P.results.place === "h100" ? "H100 on E2E Networks" : "Baseten")}), re-evaluated against your limits. Run id ${esc(P.run_id)}. The animation is compressed; each step shows its real measured time.`}</p>
-      <div class="rgrid"><section class="rgraph" aria-label="live architecture graph"><div id="rg"></div></section>
-        <div class="rside">${room ? `<section class="rroom" aria-label="room heat map"><h3>Room · ${esc(room.pick === "upload" ? "your picture" : "example data center")} ${scanTag(room.scan)}<span class="muted" id="roomPhase">before</span></h3><div id="roomMap"></div>${heatLegend()}<p class="cap" id="roomCap">Hover or tab to a rack for its numbers.</p></section>` : ""}<aside class="rnar" aria-label="narration"><h3>What is happening</h3><ol id="nar" aria-live="polite"></ol>
+      <p class="rnote" id="rnote">${live ? "Waiting for the first event from the run…" : `This is a <b>replay</b> of a recorded real run (${esc(P.results.place === "h100" ? "H100 on E2E Networks" : "Baseten")}), re-evaluated against your limits. Run id ${esc(P.run_id)}. The animation is compressed; each step shows its real measured time.`} ${legendHtml()}</p>
+      <div class="rgrid bento"><section class="rgraph tile span-8" aria-label="live architecture graph"><div id="rg"></div></section>
+        <div class="rside span-4">${room ? this.roomTileHtml(room) : ""}<aside class="rnar tile lap" aria-label="narration"><h3>What is happening</h3><ol id="nar" aria-live="polite"></ol>
           <div class="meter" id="meter" hidden></div>
           <section class="rguard" id="guardPanel" aria-label="operator check"></section>
           <details class="evs"><summary>Events <span id="evn">0</span> · wattnot.event/1</summary><ol id="evl"></ol></details></aside></div>
       </div><div class="rfoot"><span id="rstat" class="muted"></span><button class="btn pri" id="toRes" hidden>See the results</button></div></div>`;
-    this.room = room; if (room) this.drawRoom(room.scan, false);
-    this.view = new ArchView(this.$("#rg"), this.pd, { ids, chain: true, mode: "row", stats: 0, onSelect: (n, s, v) => this.D.open(n, s, v, this.runBlock(n, s)) });
+    this.room = room; this.roomPay = null; this.roomCache = {}; this.runMaxW = 0;
+    if (room) { this.drawRoom(room.scan, false); this.panRoom(); this.wireRoomDetail(); }
+    updatePreviews(this.liveState);
+    this.view = new ArchView(this.$("#rg"), this.pd, { ids, chain: true, mode: "row", stats: 0, follow: false, onSelect: (n, s, v) => this.D.open(n, s, v, this.runBlock(n, s)) });
+    // The run graph is the real Architecture canvas: pan/zoom with auto-follow
+    // on the currently executing step (manual pan switches follow off).
+    this.runGoto = () => { const id = this.view.cur; const el = id && this.view.el(id); if (el && this.runPan) this.runPan.focus(el, { zoom: Math.max(this.runPan.state.scale, 1) }); };
+    this.runPan = initPan(this.$(".rgraph"), this.view.root, { goto: () => this.runGoto() });
+    requestAnimationFrame(() => this.runPan.fit());
     this.nar = this.$("#nar"); this.evl = this.$("#evl"); this.evCount = 0;
     this.guard = new GuardPanel(this.$("#guardPanel"), {});
     this.guard.start();
@@ -155,7 +175,7 @@ export class Product {
     if (again && this.done && this.screen === "run" && this.replayDone) { /* viewing a finished run again: show it complete */ this.player.skip(); } else { this.done = false; this.replayDone = false; this.renderRail(); this.player.run(); }
   }
   finished() {
-    this.done = true; this.replayDone = true; this.renderRail(); this.view?.finish?.(this.view.cur); this.view && (this.view.cur = null);
+    this.done = true; this.replayDone = true; this.renderRail(); this.updateRunExperts(true); this.view?.finish?.(this.view.cur); this.view && (this.view.cur = null);
     this.$("#toRes").hidden = false; this.$("#rstat").textContent = "The run is finished."; this.$("#rpause").disabled = true; this.$("#toRes").focus({ preventScroll: true });
   }
   // one event -> graph, narration, log
@@ -166,6 +186,7 @@ export class Product {
     // room_scan, baseline, quality_gate, cap_sweep, adaptive_topk, approve, keep_rollback, receipt. Those are this graph's nodes.
     const stage = RUN2_STAGE[(ev.step_id || "").split(".")[0]];
     if (stage && v?.ids.has(stage) && !v.ids.has(d.node)) { node = stage; sub = ev.step_id.includes(".") ? ev.step_id.split(".").slice(1).join(".") : d.sub; }
+    this.liveTick(node, sub, d);
     if (ev.type === "proposal.created") this.guard?.kick();
     // a step/progress event may name the planner that proposed it; the sweep node's tag resolves from that
     const pp = d.planner && d.planner.partner;
@@ -176,7 +197,7 @@ export class Product {
       if (this.live) { this.liveBadge(ev); if (d.room?.scan && !this.room) this.liveRoom(d.room); }
       this.say({ id: "run", text: d.narration?.text || livePhrase(ev), source: d.narration?.source, head: true });
     }
-    if (ev.type === "telemetry.sample") { const m = this.$("#meter"); m.hidden = false; m.innerHTML = `Power now <b class="num">${num(d.power_w, 0)} W</b>${d.cap_w ? ` at a ${d.cap_w} W cap` : ""} ${tagOf(/mock|fake/i.test(`${d.source || ""} ${d.label || ""}`) ? "MOCK" : d.label || "MEASURED")}${/mock|fake/i.test(`${d.source || ""} ${d.label || ""}`) ? " <span class=\"muted\">fake meter</span>" : ""}${d.rack ? ` <span class="muted">rack ${esc(d.rack)}</span>` : ""} <span class="muted">${this.live ? "" : "recorded"}</span>`; }
+    if (ev.type === "telemetry.sample") { const m = this.$("#meter"); m.hidden = false; const mtag = /mock|fake/i.test(`${d.source || ""} ${d.label || ""}`) ? "MOCK" : d.label || "MEASURED"; m.innerHTML = `Power now <b class="num${numLab(mtag)}">${num(d.power_w, 0)} W</b>${d.cap_w ? ` at a ${d.cap_w} W cap` : ""} ${tagOf(mtag)}${/mock|fake/i.test(`${d.source || ""} ${d.label || ""}`) ? " <span class=\"muted\">fake meter</span>" : ""}${d.rack ? ` <span class="muted">rack ${esc(d.rack)}</span>` : ""} <span class="muted">${this.live ? "" : "recorded"}</span>`; }
     if (d.kind === "room_scan") this.roomPayload(d);
     const key = `${node}.${sub}`;
     const entry = node ? ((this.log[key] ||= []), this.log[key]) : null;
@@ -203,32 +224,112 @@ export class Product {
       if (ev.type === "run.finished") { this.say({ id: "fin", text: d.narration?.text || "The run finished.", head: true }); if (this.live) this.finished(); }
       else this.say({ id: `e${this.evCount}`, text: livePhrase(ev) });
     }
+    this.runOverlays(node, sub, d);
+  }
+  // Live overlays on the Architecture blocks: auto-follow on the active step,
+  // the battery follows the meter, the top-k block nests the live expert flow.
+  runOverlays(node, sub, d) {
+    if (node && this.view && this.runPan?.getFollow()) {
+      const el = this.view.el(node);
+      if (el && this.view.cur === node) this.runPan.focus(el);
+    }
+    const ptag = /mock|fake/i.test(`${d?.source || ""} ${d?.label || ""}`) ? "MOCK" : d?.label || "MEASURED";
+    if (d?.power_w != null) {
+      this.runMaxW = Math.max(this.runMaxW || 0, d.power_w);
+      if (node && this.view) this.view.paintPower(node, this.runMaxW ? d.power_w / this.runMaxW : 0, ptag);
+    }
+    if (node === "topk") this.updateRunExperts();
+  }
+  // The top-k block's nested expert card: run progress -> routed ticks so far.
+  async updateRunExperts(full = false) {
+    if (!this.view || !this.view.ids.has("topk")) return;
+    let data;
+    try {
+      this._moe ||= Promise.all([fetch("/api/dash/moe/meta").then((r) => r.json()), fetch("/api/dash/moe/ticks").then((r) => r.json())]).then(([meta, ticks]) => ({ meta, ticks }));
+      data = await this._moe;
+    } catch { return; }
+    const total = this.player?.f?.length || 1;
+    const target = full ? data.ticks.length : Math.min(data.ticks.length, Math.floor(((this.player?.i || 0) / total) * data.ticks.length));
+    const st = createState(data.meta, "tier");
+    replayAll(st, data.ticks.slice(0, target));
+    const gt = groupTotals(st, "off"), tot = gt.reduce((a, g) => a + g.routed, 0) || 1;
+    if (this.view.paintExperts("topk", gt.map((g) => (g.routed / tot) * 100))) this.view.layoutEdges();
+  }
+  // The run page's room-scan tile: the heat map plus a drill-down into the racks.
+  roomTileHtml(room) {
+    return `<section class="rroom tile" id="roomTile" aria-label="room scan"><h3>Room scan <em class="pb">SAM 3.1</em> ${scanTag(room.scan)}<span class="muted" id="roomPhase">before</span></h3><div id="roomMap"></div>${heatLegend()}<p class="cap" id="roomCap">Hover or tab to a rack for its numbers.</p><p><button class="btn" id="roomDetail" aria-expanded="false">Open rack detail</button></p><div id="roomNodeBody" hidden></div></section>`;
+  }
+  // "Open rack detail" drills the tile down into the racks heat map (roomnode.js).
+  wireRoomDetail() {
+    const b = this.$("#roomDetail"); if (!b || b.dataset.wired) return; b.dataset.wired = "1";
+    b.onclick = async () => {
+      const body = this.$("#roomNodeBody"); if (!body) return;
+      const open = body.hidden; body.hidden = !open;
+      b.setAttribute("aria-expanded", String(open)); b.textContent = open ? "Close rack detail" : "Open rack detail";
+      if (open && !body.dataset.done) {
+        body.dataset.done = "1"; body.innerHTML = `<p class="muted">Loading the racks…</p>`;
+        try {
+          const scan = this.roomPay?.after || this.roomPay?.before || this.room?.scan;
+          await mountRoomScan(body, { before: this.roomPay?.before || scan, after: this.roomPay?.after || this.room?.after }, this.roomCache);
+        } catch (e) { body.innerHTML = `<p class="muted">The room picture could not be drawn (${esc(e.message)}).</p>`; }
+      }
+    };
   }
   // a live stream may carry its room scan in run.started.data.room ({scan, after, target, pick}, wattnot.room/1)
   liveRoom(room) {
     this.room = room; const side = this.$(".rside"); if (!side || this.$("#roomMap")) return;
-    const sec = document.createElement("section"); sec.className = "rroom"; sec.setAttribute("aria-label", "room heat map");
-    sec.innerHTML = `<h3>Room · ${esc(room.pick === "upload" ? "your picture" : "example data center")} ${scanTag(room.scan)}<span class="muted" id="roomPhase">before</span></h3><div id="roomMap"></div>${heatLegend()}<p class="cap" id="roomCap">Hover or tab to a rack for its numbers.</p>`;
-    side.prepend(sec); this.drawRoom(room.scan, false);
+    side.insertAdjacentHTML("afterbegin", this.roomTileHtml(room));
+    this.drawRoom(room.scan, false); this.panRoom(); this.wireRoomDetail();
   }
-  // a RUN2 room_scan payload (photo, SAM masks, thermal): draw it with the room module's node in the room panel
+  // a RUN2 room_scan payload (photo, SAM masks, thermal): draw it with the room module's node in the room tile
   async roomPayload(p) {
     const side = this.$(".rside"); if (!side) return;
     this.roomPay = { ...(this.roomPay || {}), [p.phase || "before"]: p };
-    let sec = this.$("#roomNode");
-    if (!sec) {
-      this.$(".rroom")?.remove(); sec = document.createElement("section"); sec.className = "rroom"; sec.id = "roomNode"; sec.setAttribute("aria-label", "room scan");
-      sec.innerHTML = `<h3>Room · SAM 3.1 <span id="roomNodeTag"></span></h3><div id="roomNodeBody"></div>`; side.prepend(sec);
+    let body = this.$("#roomNodeBody"), tag = this.$("#roomNodeTag");
+    if (!body) {
+      let sec = this.$("#roomNode");
+      if (!sec) {
+        this.$(".rroom")?.remove(); sec = document.createElement("section"); sec.className = "rroom tile"; sec.id = "roomNode"; sec.setAttribute("aria-label", "room scan");
+        sec.innerHTML = `<h3>Room scan <em class="pb">SAM 3.1</em> <span id="roomNodeTag"></span></h3><div id="roomNodeBody"></div>`; side.prepend(sec);
+      }
+      body = this.$("#roomNodeBody"); tag = this.$("#roomNodeTag");
     }
+    body.hidden = false; body.dataset.done = "1";
+    const ph = this.$("#roomPhase"); if (ph && p.phase) ph.textContent = p.phase;
     try {
-      const { labels } = await mountRoomScan(this.$("#roomNodeBody"), this.roomPay, (this.roomCache ||= {}));
-      this.$("#roomNodeTag").innerHTML = `${tagOf(labels.rack_outline || "MEASURED")} <span class="muted">racks</span> ${tagOf(labels.thermal_frame || "SIMULATED")} <span class="muted">heat</span>`;
-    } catch (e) { this.$("#roomNodeBody").innerHTML = `<p class="muted">The room picture could not be drawn (${esc(e.message)}).</p>`; }
+      const { labels } = await mountRoomScan(body, this.roomPay, (this.roomCache ||= {}));
+      if (tag) tag.innerHTML = `<span class="muted">racks</span> ${tagOf(labels.rack_outline || "MEASURED")} <span class="muted">heat</span> ${tagOf(labels.thermal_frame || "SIMULATED")}`;
+    } catch (e) { body.innerHTML = `<p class="muted">The room picture could not be drawn (${esc(e.message)}).</p>`; }
+  }
+  // The room heat map is a pan/zoom canvas too: wheel/pinch zoom, drag pan,
+  // fit and 'Go to current step' from the shared module, follow off on manual pan.
+  panRoom() {
+    const el = this.$("#roomMap"); if (!el || el.dataset.panned) return;
+    el.dataset.panned = "1";
+    const inner = document.createElement("div");
+    inner.className = "roompan-inner";
+    while (el.firstChild) inner.appendChild(el.firstChild);
+    el.appendChild(inner);
+    this.roomPan = initPan(el, inner, { goto: () => this.roomPan.fit() });
+    requestAnimationFrame(() => this.roomPan.fit());
+  }
+  // one event -> the live state and the solo pop-outs (?view=…&solo=1):
+  // the main page broadcasts the clock tick + phase + active step here
+  liveTick(node, sub, d) {
+    const ids = this.pd?.nodes?.map((n) => n.id) || [];
+    this.liveState.step = node ? `${node}${sub ? "." + sub : ""}` : (d?.label || "event");
+    this.liveState.text = d?.label || d?.summary || this.liveState.step;
+    this.liveState.archActive = node ? ids.indexOf(node) : -1;
+    this.liveState.expertActive = (this.liveState.expertActive + 1) % 4;
+    if (d?.power_w != null) { this.liveState.powerSamples.push(d.power_w); if (this.liveState.powerSamples.length > 60) this.liveState.powerSamples.shift(); }
+    updatePreviews(this.liveState);
+    broadcast({ type: "tick", view: "all", phase: this.phase, step: this.liveState.step, text: this.liveState.text, progress: null, archActive: this.liveState.archActive, expertActive: this.liveState.expertActive, powerSamples: this.liveState.powerSamples.slice(-60) });
   }
   drawRoom(scan, after) {
     const el = this.$("#roomMap"); if (!el || !scan) return;
-    if (!el.firstChild) { el.innerHTML = heatSvg(scan, { target: this.room?.target, img: this.room.pick === "upload" ? this.roomImg : null }); wireHeat(el, scan, this.$("#roomCap")); }
-    else recolor(el, scan);                  // same racks, new heat: the fill fades (CSS transition)
+    const box = el.querySelector(".roompan-inner") || el;
+    if (!box.querySelector("svg")) { box.innerHTML = heatSvg(scan, { target: this.room?.target, img: this.room.pick === "upload" ? this.roomImg : null }); wireHeat(box, scan, this.$("#roomCap")); }
+    else recolor(box, scan);                  // same racks, new heat: the fill fades (CSS transition)
     this.$("#roomPhase").textContent = after ? "after (simulated)" : "before";
   }
   pulseRack(id) { const el = this.$("#roomMap"); if (el) pulse(el, id); const c = this.$("#roomCap"); if (c && this.room) { const r = this.room.scan.racks.find((x) => x.id === id); if (r) c.textContent = `Acting on ${r.id}.`; } }
@@ -251,7 +352,7 @@ export class Product {
   sayDone(id, d) {
     const li = this.nar.querySelector(`li[data-id="${CSS.escape(id)}"]`); if (!li) return;
     li.classList.add(d.status === "ok" ? "ok" : "bad"); li.classList.remove("cur");
-    li.querySelector(".nn").innerHTML = `${d.duration_s != null ? `<span class="took num">${fmt(d.duration_s)} s</span>` : ""}${(d.numbers || []).map((n) => `<span class="nc"><span class="k">${esc(n.label)}</span> <b class="num">${n.v == null ? "–" : esc(fmt(n.v))}${n.unit ? " " + esc(n.unit) : ""}</b> ${tagOf(n.tag)}</span>`).join("")}`;
+    li.querySelector(".nn").innerHTML = `${d.duration_s != null ? `<span class="took num${numLab("MEASURED")}">${fmt(d.duration_s)} s</span>` : ""}${(d.numbers || []).map((n) => `<span class="nc"><span class="k">${esc(n.label)}</span> <b class="num${numLab(n.tag)}">${n.v == null ? "–" : esc(fmt(n.v))}${n.unit ? " " + esc(n.unit) : ""}</b> ${tagOf(n.tag)}</span>`).join("")}`;
     li.classList.add("cur"); setTimeout(() => li.classList.remove("cur"), 400);
   }
   // what this run did in a step, for the side panel
@@ -276,11 +377,11 @@ export class Product {
     this.destroyRun(); const live = !this.plan;
     if (live) { this.host.innerHTML = `<div class="pf res"><h1>Results</h1><div class="err">A live run's results come from its signed receipt. Open the receipt once the run has written it; this page does not compute before/after numbers from a partial stream.</div><p class="muted">Gate results seen: ${esc(JSON.stringify((this.liveEvents || []).filter((e) => e.type === "gate.result").map((e) => ({ check: e.data.check, passed: e.data.passed }))))}</p><button class="btn" id="again">Back to settings</button></div>`; this.$("#again").onclick = () => this.go("config"); return; }
     const R = this.plan.results, S = this.scale;
-    this.host.innerHTML = `<div class="pf res"><div class="rbar"><h1>Results</h1>${badge("REPLAY")}<span class="rt">${esc(R.model)} · ${esc(R.workload)}</span><span class="sp"></span>
+    this.host.innerHTML = `<div class="pf res"><div class="rbar"><h1>Results</h1>${badge("REPLAY")}<span class="rt">${esc(R.model)} · ${esc(R.workload)}</span>${legendHtml()}<span class="sp"></span>
         <label class="scl">At <input id="scale" type="number" min="1" step="100000" value="${S}" aria-label="requests per day"> requests a day</label></div>
       <p class="rnote">Recorded run <code>${esc(R.run_id)}</code>, re-evaluated against your limits: p99 may rise ${R.limits.p99_slack_pct}%, agreement at least ${R.limits.min_quality_pct}%${R.limits.strict_quality ? ", quality must be verified" : ""}. Levers are shown separately and never added together.</p>
       ${R.room ? this.roomResults(R) : ""}
-      <div id="cards">${R.levers.map((L) => this.card(L)).join("")}</div>
+      <div id="cards" class="bento">${R.levers.map((L) => this.card(L)).join("")}</div>
       <div id="wasteCard"></div>
       <div id="partners"></div>
       <div class="resfoot"><button class="btn" id="back">Change settings</button><button class="btn" id="seeRun">See the run again</button><button class="btn" id="rerun">Run again</button><button class="btn" id="openArch">Open the Architecture map</button></div></div>`;
@@ -295,12 +396,12 @@ export class Product {
     const Rm = R.room, t = Rm.target, b = Rm.before.racks.find((x) => x.id === t), a = Rm.after.racks.find((x) => x.id === t), c = Rm.cooling;
     const img = this.plan.room?.pick === "upload" ? this.roomImg : null;
     const tt = c ? `<b>ESTIMATE</b> ${esc(c.formula)}<br><br><b>Source:</b> ${esc(c.source)}<br><br><b>Caveat:</b> ${esc(c.caveat)}` : "";
-    const kl = b && a && b.power_w != null && a.power_w != null ? `<div class="rkline"><b>${esc(t)}</b> GPU power <b class="num">${num(b.power_w, 0)} W</b> → <b class="num">${num(a.power_w, 0)} W</b> ${tagOf(b.power_label)} · heat <b class="num">${num(b.temp_c, 1)} °C</b> → <b class="num">${num(a.temp_c, 1)} °C</b> ${tagOf("SIMULATED")}</div>` : t ? `<div class="rkline"><b>${esc(t)}</b> acted on. No power figure, so the heat map is unchanged.</div>` : `<div class="rkline">No rack in this scan could be acted on.</div>`;
-    return `<section class="roomres" aria-label="room before and after"><h2>The room, before and after ${scanTag(Rm.before)}</h2>
+    const kl = b && a && b.power_w != null && a.power_w != null ? `<div class="rkline"><b>${esc(t)}</b> GPU power <b class="num${numLab(b.power_label)}">${num(b.power_w, 0)} W</b> → <b class="num${numLab(b.power_label)}">${num(a.power_w, 0)} W</b> ${tagOf(b.power_label)} · heat <b class="num${numLab("SIMULATED")}">${num(b.temp_c, 1)} °C</b> → <b class="num${numLab("SIMULATED")}">${num(a.temp_c, 1)} °C</b> ${tagOf("SIMULATED")}</div>` : t ? `<div class="rkline"><b>${esc(t)}</b> acted on. No power figure, so the heat map is unchanged.</div>` : `<div class="rkline">No rack in this scan could be acted on.</div>`;
+    return `<section class="roomres tile span-12" aria-label="room before and after"><h2>The room, before and after ${scanTag(Rm.before)}</h2>
       <p class="hnt">${esc(Rm.before.note || "")} ${img ? "Your picture is under the racks; the racks drawn on it are the example layout." : ""} Heat after is a simple model: the rack's rise above a ${22} °C supply falls in proportion to its power. GPU power and energy are measured; temperatures are not.</p>
       <div class="ba"><figure><figcaption>Before</figcaption><div id="resB">${heatSvg(Rm.before, { target: t, img })}</div></figure><figure><figcaption>After ${tagOf("SIMULATED")}</figcaption><div id="resA">${heatSvg(Rm.after, { target: t, img })}</div></figure></div>${heatLegend()}
       <p class="cap hnt" id="resCap">Hover or tab to a rack for its numbers.</p>${kl}
-      ${c ? `<div class="rkline"><span class="tipx" tabindex="0" data-tt="${esc(tt)}">Cooling and overhead energy per 1M requests</span> <b class="num">${num(c.extra_before_kwh_per_m, 2)} kWh</b> → <b class="num">${num(c.extra_after_kwh_per_m, 2)} kWh</b> ${tagOf("ESTIMATE")} <span class="muted">PUE ${c.value}, ${esc(c.source.split(":")[0])}</span></div>` : ""}
+      ${c ? `<div class="rkline"><span class="tipx" tabindex="0" data-tt="${esc(tt)}">Cooling and overhead energy per 1M requests</span> <b class="num${numLab("ESTIMATE")}">${num(c.extra_before_kwh_per_m, 2)} kWh</b> → <b class="num${numLab("ESTIMATE")}">${num(c.extra_after_kwh_per_m, 2)} kWh</b> ${tagOf("ESTIMATE")} <span class="muted">PUE ${c.value}, ${esc(c.source.split(":")[0])}</span></div>` : ""}
       <div class="rkline muted">${Rm.picked_by === "rule-based placeholder" ? "Which rack to start with was chosen by a plain rule here (hottest rack with card access). Muse Spark's pick replaces it when the run's event stream carries one." : ""}</div></section>`;
   }
   card(L) {
@@ -308,7 +409,7 @@ export class Product {
     const wtt = `<b>ESTIMATE</b> ${esc(W.formula)}<br><br><b>Source:</b> ${esc(W.source)}<br><br><b>Caveat:</b> ${esc(W.caveat)}`;
     const ptt = `<b>ESTIMATE</b> ${esc(P.formula)}<br><br><b>Source:</b> ${esc(P.source)}<br><br>Electricity only. The rent for the machine is not included.`;
     const bar = (b, a) => `<span class="bars"><i class="b0" style="width:100%"></i><i class="b1" style="width:${b > 0 ? Math.max(2, (a / b) * 100) : 100}%"></i></span>`;
-    const row = (k, b, a, unit, tag, o = {}) => `<tr><th scope="row">${o.tt ? `<span class="tipx" tabindex="0" data-tt="${esc(o.tt)}">${esc(k)}</span>` : esc(k)}</th><td class="num">${b}</td><td class="num"><b>${a}</b></td><td class="num chg">${o.chg || ""}</td><td>${bar(o.nb ?? 0, o.na ?? 0)}</td><td>${tagOf(tag)}</td></tr>`;
+    const row = (k, b, a, unit, tag, o = {}) => `<tr><th scope="row">${o.tt ? `<span class="tipx" tabindex="0" data-tt="${esc(o.tt)}">${esc(k)}</span>` : esc(k)}</th><td class="num${numLab(tag)}">${b}</td><td class="num${numLab(tag)}"><b>${a}</b></td><td class="num chg">${o.chg || ""}</td><td>${bar(o.nb ?? 0, o.na ?? 0)}</td><td>${tagOf(tag)}</td></tr>`;
     const pct = (b, a) => (b ? `${(a / b - 1) * 100 > 0 ? "+" : ""}${num((a / b - 1) * 100, 1)}%` : "");
     const q = L.quality || {}, head = L.applied ? `${num(L.saved_pct, 1)}% ${L.id === "cache" ? "less input cost" : "less"}` : "Not kept";
     let rows = "", annual = "";
@@ -320,7 +421,7 @@ export class Product {
         + row("Slowest request (p99)", `${num(L.p99_before_s, 2)} s`, `${num(L.p99_after_s, 2)} s`, "", "MEASURED", { nb: L.p99_before_s, na: L.p99_after_s, chg: pct(L.p99_before_s, L.p99_after_s) });
       annual = L.applied ? `At ${num(this.scale, 0)} requests a day: about <b>$${num((L.usd_before - L.usd_after) * this.scale * 365, 0)}</b> a year in billed tokens ${tagOf("MEASURED")} (the per-request saving, scaled). Energy ${eb ? `${num(eb.low * this.scale * 365 / 1e3, 0)} to ${num(eb.high * this.scale * 365 / 1e3, 0)} kWh` : "–"} and water ${wl ? `${num(wl.low * this.scale * 365, 0)} to ${num(wl.high * this.scale * 365, 0)} L` : "–"} ${tagOf("ESTIMATE")}.` : "";
     } else if (L.id === "cache") {
-      rows = `<tr><th scope="row">Input cost</th><td class="num">changing text first</td><td class="num"><b>${num(L.saved_pct, 1)}% less</b></td><td></td><td><span class="bars"><i class="b0" style="width:100%"></i><i class="b1" style="width:${100 - L.saved_pct}%"></i></span></td><td>${tagOf("MEASURED")}</td></tr>`;
+      rows = `<tr><th scope="row">Input cost</th><td class="num${numLab("MEASURED")}">changing text first</td><td class="num${numLab("MEASURED")}"><b>${num(L.saved_pct, 1)}% less</b></td><td></td><td><span class="bars"><i class="b0" style="width:100%"></i><i class="b1" style="width:${100 - L.saved_pct}%"></i></span></td><td>${tagOf("MEASURED")}</td></tr>`;
     } else {
       const m = L.wh_before * 1000;
       rows = row("Cost per 1M requests (electricity)", `$${num(L.usd_before * 1e6, 2)}`, `$${num(L.usd_after * 1e6, 2)}`, "", "ESTIMATE", { tt: ptt, nb: L.usd_before, na: L.usd_after })
@@ -332,7 +433,7 @@ export class Product {
     const qcls = { pending: "warn", passed: "ok", failed: "bad", "n/a": "" }[q.state] || "";
     const tried = L.tried_p99_change_pct != null || (L.tried && L.id === "topk");
     const credits = (L.credits || []).map(([p, t]) => `<li class="cr ${p === "meta" ? "meta" : ""}"><b style="--c:${PCOL[p]}">${esc(PNAME[p])}</b><span>${esc(t)}</span></li>`).join("");
-    return `<section class="rc ${L.applied ? "kept" : "nokept"}" aria-label="${esc(L.title)}"><header><h2>${esc(L.title)}</h2><span class="hd2 num">${esc(head)}</span><span class="lb">${esc(L.before_label)} → ${esc(L.after_label)}</span></header>
+    return `<section class="rc tile span-6 ${L.applied ? "kept" : "nokept"}" aria-label="${esc(L.title)}"><header><h2>${esc(L.title)}</h2><span class="hd2 num">${esc(head)}</span><span class="lb">${esc(L.before_label)} → ${esc(L.after_label)}</span></header>
       <table class="cmpt"><thead><tr><th></th><th>Before</th><th>After</th><th>Change</th><th></th><th></th></tr></thead><tbody>${rows}</tbody></table>
       <div class="qrow ${qcls}"><b>Quality kept</b><span>${esc(q.text || "–")}</span>${q.state && q.state !== "n/a" ? `<em class="qs ${qcls}">${esc(q.state)}</em>` : ""}</div>
       ${q.why ? `<p class="hnt">${esc(q.why)}</p>` : ""}
@@ -361,7 +462,7 @@ export class Product {
       const r = w.rows[k];
       const d = k.startsWith("cost") ? 4 : 2;
       const chg = r.change_pct == null ? "–" : `${r.change_pct > 0 ? "+" : ""}${num(r.change_pct, 1)}%`;
-      return `<tr><th scope="row">${esc(k)}</th><td class="num">${num(r.off, d)}</td><td class="num"><b>${num(r.on, d)}</b></td><td class="num chg">${esc(chg)}</td><td>${tagOf(r.tag)}</td></tr>`;
+      return `<tr><th scope="row">${esc(k)}</th><td class="num${numLab(r.tag)}">${num(r.off, d)}</td><td class="num${numLab(r.tag)}"><b>${num(r.on, d)}</b></td><td class="num chg">${esc(chg)}</td><td>${tagOf(r.tag)}</td></tr>`;
     }).join("");
     const s = w.success || {}, pct = (v) => (v == null ? "–" : `${num(v, 1)}%`);
     const g = w.groups || {};
@@ -371,7 +472,7 @@ export class Product {
     }).join("");
     const ref = w.reference || {};
     const notes = (w.notes || []).map((n) => `<p class="hnt">${esc(n)}</p>`).join("");
-    return `<section class="rc" aria-label="Agent waste"><header><h2>Agent waste</h2><em class="pb" style="--c:${PCOL[who.id] || "var(--dim)"}">${esc(who.name || "")}</em><span class="pill MEASURED">MEASURED on Muse Spark</span></header>
+    return `<section class="rc" aria-label="Agent waste"><header><h2>Agent waste</h2><em class="pb" style="--c:${PCOL[who.id] || "var(--dim)"}">${esc(who.name || "")}</em>${dot("MEASURED")} on Muse Spark</header>
       <p class="note2">${esc(w.headline || "")}</p>
       <table class="cmpt"><thead><tr><th></th><th>Without the saver</th><th>With the saver</th><th>Change</th><th></th></tr></thead><tbody>${rows}</tbody></table>
       <div class="qrow"><b>Tasks passed</b><span>${pct(s.off_pct)} without, ${pct(s.on_pct)} with the saver</span></div>

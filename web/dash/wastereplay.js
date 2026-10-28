@@ -1,11 +1,11 @@
 // The "behind real harness stop rules" part of the Agent waste card.
 // Pure formatting (no DOM at import time, so node can test it) plus one small wire-up
 // for the replay buttons. Every number comes from data/agent-waste/v2/results.json.
-import { esc, pill } from "./theme.js";
+import { esc, dot, numLab } from "./theme.js";
 
 const LABELS = ["MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "ADVICE"];
 export const num = (v, d = 2) => (v == null || Number.isNaN(v) ? "–" : Number(v).toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: 0 }));
-const tagOf = (t) => (LABELS.includes(t) ? pill(t) : "");
+const tagOf = (t) => (LABELS.includes(t) ? dot(t) : "");
 const pct = (v) => (v == null ? "–" : `${num(v, 1)}%`);
 const chgText = (c) => (c == null ? "–" : `${c > 0 ? "+" : ""}${num(c, 1)}%`);
 export const ARMS = ["harness", "harness+saver"];
@@ -29,7 +29,7 @@ export function endedText(arm) {
 export function tableHtml(block, title) {
   const rows = ORDER.filter((k) => block.rows && block.rows[k]).map((k) => {
     const r = block.rows[k], d = k.startsWith("cost") ? 4 : 2;
-    return `<tr><th scope="row">${esc(k)}</th><td class="num">${num(r.off, d)}</td><td class="num"><b>${num(r.on, d)}</b></td><td class="num chg ${r.change_pct > 0 ? "up" : ""}">${esc(chgText(r.change_pct))}</td><td>${tagOf(r.tag)}</td></tr>`;
+    return `<tr><th scope="row">${esc(k)}</th><td class="num${numLab(r.tag)}">${num(r.off, d)}</td><td class="num${numLab(r.tag)}"><b>${num(r.on, d)}</b></td><td class="num chg ${r.change_pct > 0 ? "up" : ""}">${esc(chgText(r.change_pct))}</td><td>${tagOf(r.tag)}</td></tr>`;
   }).join("");
   const s = block.success || {}, m = block.miss_runs || {};
   return `<h3 class="wsub">${esc(title)} <span class="muted">${num(block.runs, 0)} runs per arm-pair</span></h3>
@@ -97,7 +97,7 @@ export const saverActed = (sc) => ((sc.arms["harness+saver"] || {}).trace || [])
 export function replayHtml(sc, k) {
   const honest = saverActed(sc) ? "" : `<p class="hnt wwarn">The saver did not step in on this recorded run. The two runs simply took different paths, because the model is not deterministic. Do not read the gap as the saver's doing.</p>`;
   return `${honest}<p class="hnt">${esc(sc.prompt || "")}</p>
-    <p class="hnt"><b>What was injected:</b> ${esc(sc.injected || "")}. <b>Harness:</b> ${esc(sc.harness)} loop. Replay of a recorded real Muse Spark run (rep ${num(sc.rep, 0)}) ${pill("MEASURED")} <span class="srcb REPLAY"><i></i>REPLAY</span></p>
+    <p class="hnt"><b>What was injected:</b> ${esc(sc.injected || "")}. <b>Harness:</b> ${esc(sc.harness)} loop. Replay of a recorded real Muse Spark run (rep ${num(sc.rep, 0)}) ${tagOf("MEASURED")} <span class="srcb REPLAY" title="REPLAY · a recorded real run, re-evaluated. Nothing is running on a GPU now." aria-label="REPLAY"><i></i></span></p>
     <div class="wpair">${ARMS.map((a) => armHtml(sc, a, k)).join("")}</div>`;
 }
 

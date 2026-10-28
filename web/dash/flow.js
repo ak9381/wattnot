@@ -1,7 +1,7 @@
 // The workflow view: input -> router -> expert groups -> output, drawn as a node flow with
 // marching-ants edges. Edge thickness and speed follow the routed-token rate.
 import * as C from "./core.js";
-import { GROUP_COLORS, esc, pill, pct, topicColor } from "./theme.js";
+import { GROUP_COLORS, esc, dot, numLab, pct, topicColor } from "./theme.js";
 
 const NS = "http://www.w3.org/2000/svg";
 const bar = (label, id, color) => `<div class="row"><span>${label}</span><div class="bar2"><i id="${id}" style="--c:${color}"></i></div><span class="val" id="${id}v">–</span></div>`;
@@ -31,7 +31,7 @@ export class Flow {
         <div class="st"><span class="dot"></span><span id="r-st">idle</span></div></div></div>
       <div class="frow" id="grow">${st.names.map((n, g) => this.groupHtml(g, n, colors[g])).join("")}</div>
       <div class="frow"><div class="node out" id="n-out"><h4>output · merged</h4>
-        <div class="kv"><span class="big" id="o-j">0.0 J</span>${pill("MEASURED")}
+        <div class="kv"><span class="big num${numLab("MEASURED")}" id="o-j">0.0 J</span>${dot("MEASURED")}
           <span id="o-jt" class="muted"></span></div>
         <div class="sub" id="o-sub"></div>
         <div class="desc" id="o-desc"></div></div></div></div>`;
@@ -136,7 +136,7 @@ export class Flow {
     this.setBar("r-act", act / E.top_k, act.toFixed(2));
     this.setBar("r-top", top1, top1.toFixed(2));
     this.setBar("r-ent", ent, ent.toFixed(2));
-    this.$("r-desc").innerHTML = `${E.top_k} slots offered · ${act.toFixed(2)} used ${pill("MEASURED")}${arm === "on" ? ` · tail cut at ${pct(E.mass)} mass` : ""}`;
+    this.$("r-desc").innerHTML = `${E.top_k} slots offered · ${act.toFixed(2)} used ${dot("MEASURED")}${arm === "on" ? ` · tail cut at ${pct(E.mass)} mass` : ""}`;
     this.$("n-router").classList.toggle("run", running && !!t);
     this.$("r-st").textContent = running && t ? "routing" : "idle";
     // groups
@@ -167,7 +167,7 @@ export class Flow {
     const gen = Math.max(1, a.gen);
     this.$("o-jt").textContent = a.gen ? `${(j / gen).toFixed(2)} J per generated token` : "";
     const en = st.meta.energy;
-    this.$("o-sub").innerHTML = en ? `window total ${pill("MEASURED")} · per group ${pill("ESTIMATE")} · parts add up to the total` : "no energy source for this capture";
+    this.$("o-sub").innerHTML = en ? `window total ${dot("MEASURED")} · per group ${dot("ESTIMATE")} · parts add up to the total` : "no energy source for this capture";
     this.$("o-desc").textContent = en ? `rate: ${en[arm].toFixed(2)} J/token measured on ${en.gpu_short || "an H100"}, applied to the ${a.gen} tokens written here` : "";
     // highlight
     const f = this.ctx.focus();

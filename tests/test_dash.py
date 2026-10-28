@@ -139,10 +139,39 @@ def test_ui_shows_a_label_next_to_every_energy_claim():
     js = "".join((WEB / n).read_text() for n in ("app.js", "flow.js", "orchestra.js", "gpu.js"))
     for word in ("MEASURED", "ESTIMATE"):
         assert word in js
-    # per-group energy bars sit next to an ESTIMATE pill, the window total next to MEASURED
+    # no per-number text badges: the number carries the label colour, a dot names it
+    assert 'pill("MEASURED")' not in js and 'pill("ESTIMATE")' not in js
+    # per-group energy bars sit next to an ESTIMATE dot, the window total next to MEASURED
     flow = (WEB / "flow.js").read_text()
-    assert re.search(r'o-j.*?pill\("MEASURED"\)', flow, re.S)
-    assert re.search(r'per group \$\{pill\("ESTIMATE"\)\}', flow)
+    assert re.search(r'o-j.*?dot\("MEASURED"\)', flow, re.S)
+    assert re.search(r'per group \$\{dot\("ESTIMATE"\)\}', flow)
+
+
+def test_visible_cards_have_no_label_text_badges():
+    """MEASURED/ESTIMATE/SIMULATED/MOCK/REPLAY never render as pill() text badges
+    in the visible card modules: numbers carry the label colour, a dot names it."""
+    for n in ("archpage.js", "product.js", "gpu.js", "heat.js", "wastereplay.js",
+              "partners.js", "app.js", "flow.js"):
+        text = (WEB / n).read_text()
+        assert not re.search(r'pill\("(?:MEASURED|ESTIMATE|SIMULATED|MOCK|REPLAY|ADVICE|LIVE)"\)', text), n
+    # the helper stays exported and callable (operator panel, tests, data)
+    assert "export const pill" in (WEB / "theme.js").read_text()
+
+
+def test_shared_replay_clock_wiring():
+    """One small clock module; Architecture publishes, Power and Experts follow it.
+    The live modes keep their own streams and ignore the clock."""
+    clock = (WEB / "replayclock.js").read_text()
+    assert "setPhase" in clock and "setProgress" in clock
+    assert "subscribe" in clock
+    page = (WEB / "archpage.js").read_text()
+    assert "replayclock" in page  # the Architecture replay publishes play/pause/progress/phase
+    gpu = (WEB / "gpu.js").read_text()
+    assert "replayclock" in gpu  # the Power scene replay subscribes (seek/pause to match)
+    assert "live" in gpu  # and its live run mode stays on its own events
+    app = (WEB / "app.js").read_text()
+    assert "replayclock" in app  # the Experts tick replay subscribes too
+    assert "moe/events" in app  # the live follow mode is untouched
 
 
 def test_public_files_carry_no_agent_names():

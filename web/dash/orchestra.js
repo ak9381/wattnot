@@ -1,7 +1,7 @@
 // The orchestra: every expert is a seat. Sections are groups (tiers or k-means clusters), rows are
 // layers. Seat colour = its group, brightness = how busy it is, flash = routed to just now.
 import * as C from "./core.js";
-import { GROUP_COLORS, esc, pill, pct } from "./theme.js";
+import { GROUP_COLORS, esc, dot, pct } from "./theme.js";
 
 export class Orchestra {
   constructor(host, ctx) {
@@ -114,7 +114,7 @@ export class Orchestra {
     const { st, arm } = this.ctx;
     const el = this.host.querySelector("#o-note"); if (!el) return;
     el.innerHTML = arm === "on"
-      ? `adaptive top-k is on: seats crossed out are used far less (${pill("MEASURED")} routing).`
-      : `normal top-k: each token uses ${st.meta.meta.top_k} seats per layer ${pill("MEASURED")}`;
+      ? `adaptive top-k is on: seats crossed out are used far less (${dot("MEASURED")} routing).`
+      : `normal top-k: each token uses ${st.meta.meta.top_k} seats per layer ${dot("MEASURED")}`;
   }
 }
