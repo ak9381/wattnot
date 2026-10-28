@@ -20,8 +20,12 @@ export PYTHONPATH=src
 # Belt and braces: strip any hosted credentials from this process so a block cannot call out.
 unset HF_TOKEN BASETEN_API_KEY META_API_KEY MODAL_TOKEN_ID MODAL_TOKEN_SECRET E2E_API_KEY 2>/dev/null || true
 
+PY="${PYTHON:-}"
+if [ -z "$PY" ]; then for c in python python3; do command -v "$c" >/dev/null 2>&1 && PY="$c" && break; done; fi
+[ -n "$PY" ] || { echo "no python interpreter found (set PYTHON=/path/to/python)" >&2; exit 1; }
+
 echo "WattNot RUN3 rehearsal (CPU, mock NVML/GPU/hosted; no network, no GPU, no secrets)"
-python -m wattnot.rehearse --out "$OUT"
+"$PY" -m wattnot.rehearse --out "$OUT"
 code=$?
 echo "summary: $OUT/rehearse-summary.json"
 exit "$code"

@@ -443,7 +443,13 @@ def _spawn_load(progress: Path, *, rps: float, fake: bool, log: Path, url: str |
     argv = [sys.executable, "-c", "from wattnot.cli import main; raise SystemExit(main())",
             "flex", "load", "--progress", str(progress), "--rps", f"{rps:g}"]
     argv += ["--fake"] if fake else ["--url", url or "", "--model", model or ""]
-    return subprocess.Popen(argv, stdout=log.open("ab"), stderr=subprocess.STDOUT)
+    # Make the child import wattnot regardless of its working directory: prepend the absolute
+    # directory that holds the wattnot package (src/). A relative PYTHONPATH=src breaks after a
+    # chdir and leaves the dry-run load generator unable to start.
+    pkg_root = str(Path(__file__).resolve().parents[1])
+    env = dict(os.environ)
+    env["PYTHONPATH"] = os.pathsep.join([pkg_root, env["PYTHONPATH"]]) if env.get("PYTHONPATH") else pkg_root
+    return subprocess.Popen(argv, stdout=log.open("ab"), stderr=subprocess.STDOUT, env=env)
 
 
 def _wait_progress(progress: Path, timeout_s: float) -> None:

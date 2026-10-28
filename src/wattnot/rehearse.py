@@ -102,7 +102,7 @@ def _phase_ab(out: Path) -> dict:
                   thresholds_source=thr.get("source"), clamped=thr.get("clamped"),
                   low_mhz=s.get("low_mhz"), high_mhz=s.get("high_mhz"),
                   prefill_ratio=s.get("prefill_ratio"), arms=sorted(s.get("arms", {})),
-                  trace=str((pout / "phase_thresholds.trace.jsonl")))
+                  trace=str(pout / "phase_thresholds.trace.jsonl"))
 
 
 def _cross_check() -> dict:
