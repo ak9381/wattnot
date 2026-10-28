@@ -1,5 +1,5 @@
 /* The product flow: configure, run, results. Flat surfaces; colour only on data, partners and state. */
-#stage{inset:56px 0 56px 0;overflow:auto;scrollbar-width:thin}
+#stage{inset:78px 0 78px 0;overflow:auto;scrollbar-width:thin}
 .rail{height:56px}
 .stepper{display:flex;align-items:center;gap:10px}
 .stepper button{font:13px var(--mono);background:none;border:0;border-bottom:2px solid transparent;color:var(--dim);padding:6px 4px}

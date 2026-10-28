@@ -143,7 +143,7 @@ test("header and footer are fixed with Apple glassmorphism and glow blobs", () =
   assert.match(chromeCss, /rgba\(255,\s*255,\s*255,\s*0?\.14\)/);
   assert.match(chromeCss, /inset 0 1px 0 rgba\(255,\s*255,\s*255,\s*0?\.12\)/);
   assert.match(chromeCss, /padding-top:\s*74px;/);
-  assert.match(chromeCss, /padding-bottom:\s*74px;/);
+  assert.match(chromeCss, /padding-bottom:\s*110px;/);
   assert.match(chromeCss, /#6C5E7C/);
   assert.match(chromeCss, /#8E7A9E/);
   assert.match(chromeCss, /#4F4A63/);

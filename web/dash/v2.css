@@ -339,8 +339,9 @@ html:has(#pReport.on), body:has(#pReport.on) { overflow: hidden; height: 100vh; 
 .pc-dot{position:absolute;background:rgba(178,166,195,.5);border-radius:2px}
 .pc-mini-rect{position:absolute;border:1px solid var(--cy);border-radius:4px;pointer-events:none}
 
-#radialWrap{transition:width .3s cubic-bezier(.16,1,.3,1);width:100%;height:calc(100vh - 230px);min-height:460px;position:relative;overflow:hidden}
-.drawer-open #radialWrap{width:calc(100% - 460px)}
+#cmpR7, .radial-bar, #radialWrap{transition:width .3s cubic-bezier(.16,1,.3,1),max-width .3s cubic-bezier(.16,1,.3,1)}
+#radialWrap{width:100%;height:calc(100vh - 280px);min-height:380px;position:relative;overflow:hidden}
+.drawer-open #cmpR7, .drawer-open .radial-bar, .drawer-open #radialWrap{width:calc(100% - 460px);max-width:calc(100% - 460px)}
 
 /* Configure: one page per step, sticky summary of choices */
 .cfg-step.bento{align-items:start}
@@ -368,14 +369,18 @@ h1,h2,h3,h4,.brand,nav.tabs button,.kpi .c,.lvl{font-family:"Montserrat",system-
 .card.pf-card>.hd .t h3{margin:0}
 
 /* Compare Mind Map: tree node cards, leaf detail cards, pass/fail, pending label */
-.rad-node{position:absolute;transform:translate(-50%,-50%);width:220px;z-index:3;border:1px solid rgba(220,214,228,.12);border-radius:14px;background:rgba(31,26,47,.72);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding:0;box-shadow:0 4px 16px rgba(0,0,0,.35),inset 0 1px 0 rgba(220,214,228,.12);transition:transform .15s,border-color .2s,box-shadow .2s}
+.rad-node{position:absolute;transform:translate(-50%,-50%);width:230px;z-index:3;border:1px solid rgba(220,214,228,.12);border-radius:14px;background:rgba(31,26,47,.72);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding:0;box-shadow:0 4px 16px rgba(0,0,0,.35),inset 0 1px 0 rgba(220,214,228,.12);transition:transform .15s,border-color .2s,box-shadow .2s}
 .rad-node:hover{border-color:var(--ln2);box-shadow:0 6px 20px rgba(0,0,0,.45)}
 .rad-node.on{border-color:var(--cy);box-shadow:0 0 18px rgba(178,166,195,.28),inset 0 1px 0 rgba(220,214,228,.2)}
-.rad-head2{display:block;width:100%;background:none;border:0;cursor:pointer;color:var(--tx);text-align:left;padding:8px 12px}
+.rad-node .rad-i{position:absolute;top:8px;right:8px;width:18px;height:18px;font-size:11px;z-index:2;margin:0}
+.rad-card .rad-i{position:absolute;top:10px;right:10px;width:20px;height:20px;font-size:11px;z-index:2;margin:0}
+.rad-head2{display:block;width:100%;background:none;border:0;cursor:pointer;color:var(--tx);text-align:left;padding:8px 12px;position:relative}
 .rad-head2[disabled]{cursor:default}
-.rad-head2 b{display:block;font-size:12px;color:#DCD6E4;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:16px}
-.rad-head2 .rad-chev{position:absolute;right:22px;top:8px;color:var(--mu);font-size:14px}
-.rad-node .rad-val{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;flex-wrap:wrap}
+.rad-node-row{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.rad-head2 b{display:block;font-size:12px;color:#DCD6E4;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:26px}
+.rad-head2 .rad-chev{position:absolute;right:28px;top:8px;color:var(--mu);font-size:14px}
+.rad-node .rad-val{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:12px;flex-wrap:wrap}
+.rad-node-desc{font-size:11px;color:var(--v-sub,#B2A6C3);margin-top:4px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .rad-pass{color:var(--tl);font-weight:650}.rad-fail{color:var(--rd);font-weight:650}
 .rad-pending{display:inline-block;margin-left:6px;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--mu);border:1px solid var(--ln);border-radius:999px;padding:1px 7px}
 

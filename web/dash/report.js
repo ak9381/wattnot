@@ -298,7 +298,7 @@ function render() {
   const signedPill = isSigned
     ? `<span class="v-status pass"><span class="ic" aria-hidden="true">✓</span>Signed</span>`
     : `<span class="v-status" style="color:var(--v-mut)">— Not signed</span>`;
-  const signedSub = isSigned ? "Offline test key · Grade ESTIMATE" : "No published receipt for this run";
+  const signedSub = isSigned ? "Offline test key" : "No published receipt for this run";
 
   const dlBtn = isSigned
     ? `<a class="hero-dl-btn" href="${esc(rc.json)}" download>⬇ Download receipt JSON</a><span class="hero-dl-note">Cryptographic proof bundle</span>`
@@ -315,9 +315,9 @@ function render() {
       <div class="hero-val">${qualityVal} ${qualityChip}</div>
       <div class="hero-sub">${qualitySub}</div>
     </div>
-    <div class="hero-item" data-explain="report.receipt" data-explain-value="${isSigned ? 'Signed' : 'Not signed'}" data-explain-label="${isSigned ? 'ESTIMATE' : 'REPLAY'}" data-explain-source="receipt.signature">
+    <div class="hero-item" data-explain="report.receipt" data-explain-value="${isSigned ? 'Signed' : 'Not signed'}" data-explain-label="${isSigned ? 'MEASURED' : 'REPLAY'}" data-explain-source="receipt.signature">
       <div class="label">Receipt Status</div>
-      <div class="hero-val">${signedPill} ${chip(isSigned ? "ESTIMATE" : "REPLAY")}</div>
+      <div class="hero-val">${signedPill}${isSigned ? "" : ` ${chip("REPLAY")}`}</div>
       <div class="hero-sub">${signedSub}</div>
     </div>
     <div class="hero-dl-item">

@@ -85,26 +85,26 @@ export class ArchPage {
     wireR7();
     this.host = host; this.d = data; this.h = hooks; this.speed = 2; this.replay = "h100"; this.filter = null;
     this.phase = 1; this._p0 = 0; this._p1 = 1;
-    host.innerHTML = `<div class="archmode" role="group" aria-label="architecture view"><button data-m="pipe" class="on" aria-pressed="true">Run pipeline</button><button data-m="all" aria-pressed="false">All modules</button>
-      <span class="muted" id="amodeNote">The real steps of one run, lit up as its events arrive. Click a step for its sub-steps and numbers.</span></div>
-      <div id="apipe" class="apipe"></div><div id="aall" hidden><div class="archbar"><label class="muted" for="rsel">Replay</label><select id="rsel" class="btn" aria-label="recorded run to replay"></select>
-      <button class="btn pri" id="aplay">Play</button><button class="btn" id="apause">Pause</button><button class="btn" id="areset">Reset</button><button class="btn" id="aexpand">Expand all</button><button class="btn" id="acollapse">Collapse all</button><button class="btn" id="aexpert" aria-pressed="false" title="Show the mixture-of-experts routing details from the Experts view">Expert</button>
-      <span class="seg" id="aspd"><button data-s="1">1×</button><button data-s="2" class="on">2×</button><button data-s="4">4×</button></span><span class="sp"></span><span class="cap" id="aphase" aria-live="polite">Phase 1 of 2 · Without WattNot (baseline)</span><span class="cap" id="aprog"></span></div>
-      <div class="mmeter" id="mmeter" aria-live="polite"></div>
-      <div class="avlegend" id="afil" role="group" aria-label="filter by partner"></div>
-      <div class="mstrip" id="mstrip" hidden></div>
-      <div class="archcap" id="acap" aria-live="polite">Click a step to see its code, inputs, outputs, timing and partner. Pick a replay and press Play to watch a recorded run.</div>
-      <section id="aexpertBox" hidden aria-label="expert details"></section>
-      <section class="aroom" id="aroom" hidden aria-label="room scan"><h3>Room scan · SAM 3.1 <span id="aroomTag"></span></h3><div id="aroomBody"></div></section><div id="amap"></div></div><aside class="panel in-drawer" id="apanel" aria-label="step details"><button class="btn x" id="apx" aria-label="close details">Close</button><div id="apbody"></div></aside>`;
+    host.innerHTML = `
+      <div id="aall">
+        <div class="mmeter" id="mmeter" aria-live="polite"></div>
+        <div class="avlegend" id="afil" role="group" aria-label="filter by partner"></div>
+        <div class="mstrip" id="mstrip" hidden></div>
+        <div class="archcap" id="acap" aria-live="polite">Click a step to see its code, inputs, outputs, timing and partner.</div>
+        <section id="aexpertBox" hidden aria-label="expert details"></section>
+        <section class="aroom" id="aroom" hidden aria-label="room scan"><h3>Room scan · SAM 3.1 <span id="aroomTag"></span></h3><div id="aroomBody"></div></section>
+        <div id="amap"></div>
+      </div>
+      <aside class="panel in-drawer" id="apanel" aria-label="step details"><button class="btn x" id="apx" aria-label="close details">Close</button><div id="apbody"></div></aside>`;
     const rs = Object.values(data.replays);
-    $("#rsel", host).innerHTML = rs.map((r) => `<option value="${r.id}">${esc(r.title)}</option>`).join("") + `<option value="live">Live run (events file)</option>`;
+    if ($("#rsel", host)) $("#rsel", host).innerHTML = rs.map((r) => `<option value="${r.id}">${esc(r.title)}</option>`).join("") + `<option value="live">Live run (events file)</option>`;
     $("#afil", host).innerHTML = FILTERS.map(([id, t, c]) => `<button class="fchip ${id === "meta" ? "meta" : ""}" data-f="${id}" ${c ? `style="--c:${c}"` : ""} aria-pressed="${id === "all"}">${c ? "<i></i>" : ""}${esc(t)}${id === "meta" ? ` <span class="muted">${data.nodes.filter((n) => n.partners.includes("meta")).length} steps</span>` : ""}</button>`).join("");
     $("#mstrip", host).innerHTML = data.meta.map((m) => `<div class="mcard"><b>${esc(m.name)}</b><p>${esc(m.does)}</p>${m.stats.slice(0, 3).map((s) => statHtml(s)).join("")}</div>`).join("");
-    this.view = new ArchView($("#amap", host), data, { mode: "map", follow: false, onSelect: (n, s) => this.panel(n, s), onCue: (c) => { $("#acap", host).innerHTML = `<b>${esc(this.d.nodes.find((n) => n.id === c.node).title)}</b> · ${esc(c.text)}${c.tag ? dot(c.tag) : ""}`; if (this.pan && this.pan.getFollow()) { const el = this.view.el(c.node); if (el) this.pan.focus(el); } broadcast({ type: "tick", view: "arch", phase: this.phase, step: `${c.node}.${c.sub}`, text: c.text, archActive: this.d.nodes.findIndex((n) => n.id === c.node) % 8 }); }, onProgress: (i, n) => { $("#aprog", host).textContent = i >= n ? "done" : `${i + 1} of ${n}`; this.renderMeter(i); clock.setProgress(this._p0 + (this._p1 - this._p0) * (i / Math.max(1, n))); } });
+    this.view = new ArchView($("#amap", host), data, { mode: "map", follow: false, onSelect: (n, s) => this.panel(n, s), onCue: (c) => { $("#acap", host).innerHTML = `<b>${esc(this.d.nodes.find((n) => n.id === c.node).title)}</b> · ${esc(c.text)}${c.tag ? dot(c.tag) : ""}`; if (this.pan && this.pan.getFollow()) { const el = this.view.el(c.node); if (el) this.pan.focus(el); } broadcast({ type: "tick", view: "arch", phase: this.phase, step: `${c.node}.${c.sub}`, text: c.text, archActive: this.d.nodes.findIndex((n) => n.id === c.node) % 8 }); }, onProgress: (i, n) => { $("#aprog", host) && ($("#aprog", host).textContent = i >= n ? "done" : `${i + 1} of ${n}`); this.renderMeter(i); clock.setProgress(this._p0 + (this._p1 - this._p0) * (i / Math.max(1, n))); } });
     this.pan = initPan($("#amap", host), this.view.root, { goto: () => { const id = this.view.cur; if (id) { const el = this.view.el(id); if (el) this.pan.focus(el, { zoom: Math.max(this.pan.state.scale, 1) }); } } });
     { const _le = this.view.layoutEdges.bind(this.view); this.view.layoutEdges = () => { _le(); this.pan?.refreshMinimap(); }; }
     this._fitted = false;
-    this.wire(); this.mode = "pipe"; this.liveW = null; this.renderMeter(0);
+    this.wire(); this.mode = "all"; this.liveW = null; this.renderMeter(0);
     // The live expert card nested in the Adaptive top-k block follows the same
     // replay clock (progress 0..1 across both phases) as the map animation.
     this._expertProgress = 0;
@@ -139,21 +139,21 @@ export class ArchPage {
   wire() {
     const H = this.host;
     H.querySelectorAll(".archmode button").forEach((b) => (b.onclick = () => this.setMode(b.dataset.m)));
-    $("#aplay", H).onclick = () => this.start();
-    $("#apause", H).onclick = (e) => { const b = e.currentTarget; if (this.view.paused) { this.view.resume(); b.textContent = "Pause"; } else { this.view.pause(); b.textContent = "Resume"; } if (this.replay !== "live") clock.setPlaying(!this.view.paused); };
-    $("#areset", H).onclick = () => { this.stopLive(); this.view.reset(); this.liveW = null; this._p0 = 0; this._p1 = 1; this.setPhase(1); clock.reset(); $("#aprog", H).textContent = ""; $("#apause", H).textContent = "Pause"; $("#acap", H).textContent = "Reset. Pick a replay and press Play."; };
-    $("#aexpand", H).onclick = () => this.view.expandAll();
-    $("#acollapse", H).onclick = () => this.view.collapseAll();
-    $("#rsel", H).onchange = (e) => { this.replay = e.target.value; this.view.reset(); this.liveW = null; this.phase = 1; $("#aphase", H).textContent = PHASE_LABEL[1]; this.view.setPhase(1); this.renderMeter(0); if (this.replay === "live") this.startLive(); };
+    const aplay = $("#aplay", H); if (aplay) aplay.onclick = () => this.start();
+    const apause = $("#apause", H); if (apause) apause.onclick = (e) => { const b = e.currentTarget; if (this.view.paused) { this.view.resume(); b.textContent = "Pause"; } else { this.view.pause(); b.textContent = "Resume"; } if (this.replay !== "live") clock.setPlaying(!this.view.paused); };
+    const areset = $("#areset", H); if (areset) areset.onclick = () => { this.stopLive(); this.view.reset(); this.liveW = null; this._p0 = 0; this._p1 = 1; this.setPhase(1); clock.reset(); $("#aprog", H) && ($("#aprog", H).textContent = ""); $("#apause", H) && ($("#apause", H).textContent = "Pause"); $("#acap", H) && ($("#acap", H).textContent = "Reset. Pick a replay and press Play."); };
+    const aexpand = $("#aexpand", H); if (aexpand) aexpand.onclick = () => this.view.expandAll();
+    const acollapse = $("#acollapse", H); if (acollapse) acollapse.onclick = () => this.view.collapseAll();
+    const rsel = $("#rsel", H); if (rsel) rsel.onchange = (e) => { this.replay = e.target.value; this.view.reset(); this.liveW = null; this.phase = 1; $("#aphase", H) && ($("#aphase", H).textContent = PHASE_LABEL[1]); this.view.setPhase(1); this.renderMeter(0); if (this.replay === "live") this.startLive(); };
     H.querySelectorAll("#aspd button").forEach((b) => (b.onclick = () => { this.speed = +b.dataset.s; H.querySelectorAll("#aspd button").forEach((x) => x.classList.toggle("on", x === b)); }));
     H.querySelectorAll("#afil button").forEach((b) => (b.onclick = () => this.setFilter(b.dataset.f)));
-    $("#apx", H).onclick = () => this.closePanel();
-    $("#aexpert", H).onclick = (e) => this.setExpert(e.currentTarget.getAttribute("aria-pressed") !== "true");
-    $("#aexpertBox", H).addEventListener("click", (e) => {
+    const apx = $("#apx", H); if (apx) apx.onclick = () => this.closePanel();
+    const aexpert = $("#aexpert", H); if (aexpert) aexpert.onclick = (e) => this.setExpert(e.currentTarget.getAttribute("aria-pressed") !== "true");
+    $("#aexpertBox", H)?.addEventListener("click", (e) => {
       const b = e.target.closest("#aexpertMode button"); if (!b) return;
       this.expertMode = b.dataset.mode; this.renderExperts();
     });
-    $("#apanel", H).addEventListener("click", (e) => {
+    $("#apanel", H)?.addEventListener("click", (e) => {
       const go = e.target.closest("[data-go]"); if (go) { this.followGo(go.dataset.go); return; }
       const sb = e.target.closest("a[data-sub]"); if (sb) { e.preventDefault(); if (this.mode === "pipe") { const sub = this.cur.subs.find((x) => x.id === sb.dataset.sub); this.panel(this.cur, sub, this.pv, this.pipe?.runBlock(this.cur, sub) || ""); } else this.view.select(this.cur.id, sb.dataset.sub); }
     });
@@ -375,10 +375,14 @@ export class ArchPage {
   }
   stopLive() { this.es?.close(); this.es = null; }
   fitOnce() {
-    if (this._fitted || this.mode !== "all") return;
+    if (this._fitted) return;
     const r = this.host.querySelector("#amap")?.getBoundingClientRect();
     if (!r || !r.width) return;
-    this.pan.fit(); this._fitted = true;
+    this.pan.fit();
+    if (this.pan.state.scale < 0.82) {
+      this.pan.setZoom(0.85, r.width / 2, r.height / 2);
+    }
+    this._fitted = true;
   }
   show() { if (this.mode === "pipe") this.ensurePipe(); else requestAnimationFrame(() => { this.view.layoutEdges(); this.fitOnce(); }); }
   destroy() { this.stopLive(); this.pipe?.destroyRun(); this.pan?.destroy(); this._unsubClock?.(); this.view.destroy(); }

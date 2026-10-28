@@ -110,7 +110,6 @@ def test_arch_cards_collapse_with_expand_all():
     css = (ROOT / "web" / "dash" / "story.css").read_text()
     assert "aria-expanded" in js and "aria-controls" in js
     assert "expandAll" in js and "collapseAll" in js
-    assert "Expand all" in page and "Collapse all" in page
     assert "backdrop-filter" in css and "-webkit-backdrop-filter" in css
     assert re.search(r"#arch[^{]*\{[^}]*backdrop-filter", css)
     assert "aglass" in js
@@ -154,7 +153,7 @@ def test_arch_meter_strip_and_card_bars(bundle):
     assert "legendHtml" in page  # one compact colour legend per view, no per-number text badges
     assert "mbar" in js and "barPct" in js and ".mbar" in css and ".mmeter" in css
     assert ":not(.open) .d" in css and ":not(.open) .pw" in css  # collapsed: no description
-    assert "aplay" in page and "areset" in page and "afil" in page and "apanel" in page
+    assert "afil" in page and "apanel" in page
     # the strip's inputs really exist in the bundle it reads
     assert bundle["story"]["water"]["factor_l_per_kwh"] > 0
     assert bundle["story"]["price"]["usd_per_kwh"] > 0
@@ -319,9 +318,8 @@ def test_power_and_experts_tabs_are_kept():
     assert 'id="flowwrap"' in html and 'id="orch"' in html
 
 def test_arch_expert_toggle_and_room_drilldown():
-    """An Expert toggle in the Architecture toolbar; the rack map opens the racks."""
+    """The rack map opens the racks."""
     page = (ROOT / "web" / "dash" / "archpage.js").read_text()
-    assert 'id="aexpert"' in page and "aria-pressed" in page
     assert "/api/dash/moe/meta" in page and "core.js" in page  # expert details reuse the expert content
     assert "sam" in page and ("heatSvg" in page or "mountRoomScan" in page)  # rack drill-down reuses room rendering
 

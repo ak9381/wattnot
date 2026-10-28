@@ -55,6 +55,17 @@ nav.wn-nav.gl {
   color: var(--v-peach, #B2A6C3);
 }
 
+.wn-nav-subline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.wn-nav-subline .wn-tabs {
+  margin-top: 5px;
+}
+
 .wn-tabs {
   display: inline-flex;
   align-items: center;
@@ -378,7 +389,7 @@ body.is-landing footer.wn-footer.gl .wn-footer-gh:hover {
 /* ---- App pages padding & glow blobs behind glass cards (#6C5E7C / #8E7A9E / #4F4A63) ---- */
 body:not(.is-landing) {
   padding-top: 74px;
-  padding-bottom: 74px;
+  padding-bottom: 110px;
   box-sizing: border-box;
   background-color: #080B10;
   background-image:
@@ -386,6 +397,10 @@ body:not(.is-landing) {
     radial-gradient(circle 600px at 82% 40%, rgba(142, 122, 158, 0.28), transparent 70%),
     radial-gradient(circle 500px at 32% 80%, rgba(79, 74, 99, 0.30), transparent 70%);
   background-attachment: fixed;
+}
+
+body:has(.wn-nav-v2) {
+  padding-top: 124px;
 }
 
 .wn-glow-blobs {

@@ -1116,6 +1116,7 @@ function mountCompare() {
           const v = treeValue(rec, S.cmpActive, node);
           const has = !!(node.kids && node.kids.length);
           const onPath = S.cmpPath[d] === node.id;
+          const desc = TREE_DESC[node.id] || "";
           const stableId = node.id === "waste" ? "agent-waste" : node.id;
           const nodeVal = v?.val || (v?.status === "pass" ? "pass" : (v?.status === "fail" ? "fail" : "–"));
           const nodeTag = v?.tag || (node.kind === "gate" ? "MEASURED" : "ESTIMATE");
@@ -1127,13 +1128,22 @@ function mountCompare() {
           el.setAttribute("data-explain-value", nodeVal);
           el.setAttribute("data-explain-label", nodeTag);
           el.setAttribute("data-explain-source", `tree.${node.id}`);
-          el.innerHTML = `<button class="rad-head2" aria-expanded="${onPath}"${has ? "" : " disabled"} aria-label="${esc(node.name)}${has ? ": open its routes" : ""}"><b>${esc(node.name)}</b><span class="rad-val">${treeVal(v, S.cmpActive)}</span>${node.own_only ? `<small class="rad-sub">own GPU only</small>` : ""}${has ? `<span class="rad-chev" aria-hidden="true">›</span>` : ""}</button><button class="ibtn rad-i" aria-label="${esc(node.name)} details">i</button>`;
+          el.innerHTML = `<button class="rad-head2" aria-expanded="${onPath}" aria-label="${esc(node.name)}${has ? ": open its routes" : ""}">`
+            + `<div class="rad-node-row"><b>${esc(node.name)}</b>${has ? `<span class="rad-chev" aria-hidden="true">›</span>` : ""}</div>`
+            + `<div class="rad-val">${treeVal(v, S.cmpActive)}</div>`
+            + `${desc ? `<div class="rad-node-desc">${esc(desc)}</div>` : ""}`
+            + `${node.own_only ? `<small class="rad-sub">own GPU only</small>` : ""}</button>`
+            + `<button class="ibtn rad-i" aria-label="${esc(node.name)} details">i</button>`;
           stage.appendChild(el);
           if (has) {
             $(".rad-head2", el).onclick = () => {
               if (onPath) S.cmpPath = S.cmpPath.slice(0, d);
               else S.cmpPath = S.cmpPath.slice(0, d).concat(node.id);
               renderTree();
+            };
+          } else {
+            $(".rad-head2", el).onclick = () => {
+              openSidePanel(node.name, nodeDetailHtml(rec, S.cmpActive, node));
             };
           }
           $(".rad-i", el).onclick = (e) => {
@@ -1142,29 +1152,6 @@ function mountCompare() {
           };
         }
       }
-
-      // 2. Render leaf detail cards aligned in a column on the right
-      const currentKids = treeChildren(S.cmpPath);
-      const leafNodes = (currentKids && currentKids.length) ? currentKids : (S.cmpPath.length ? treeChildren(S.cmpPath.slice(0, -1)) : treeChildren([]));
-      (leafNodes || []).forEach((leaf) => {
-        const v = treeValue(rec, S.cmpActive, leaf);
-        const desc = TREE_DESC[leaf.id] || "";
-        const stableId = leaf.id === "waste" ? "agent-waste" : leaf.id;
-        const leafVal = v?.val || (v?.status === "pass" ? "pass" : (v?.status === "fail" ? "fail" : "–"));
-        const leafTag = v?.tag || (leaf.kind === "gate" ? "MEASURED" : "ESTIMATE");
-        const cardEl = document.createElement("div");
-        cardEl.className = "rad-leaf";
-        cardEl.dataset.leaf = leaf.id;
-        cardEl.setAttribute("data-explain", `compare.${S.cmpActive}.${stableId}`);
-        cardEl.setAttribute("data-explain-value", leafVal);
-        cardEl.setAttribute("data-explain-label", leafTag);
-        cardEl.setAttribute("data-explain-source", `tree.${leaf.id}`);
-        cardEl.innerHTML = `<div class="rad-leaf-hd"><span class="rad-leaf-title">${esc(leaf.name)}</span><span style="color:var(--cy);font-size:12px">→</span></div><div class="rad-leaf-val">${treeVal(v, S.cmpActive)}</div><div class="rad-leaf-desc">${esc(desc)}</div>`;
-        cardEl.onclick = () => {
-          openSidePanel(leaf.name, nodeDetailHtml(rec, S.cmpActive, leaf));
-        };
-        stage.appendChild(cardEl);
-      });
     }
 
     renderCrumb();
@@ -1255,8 +1242,8 @@ function layoutTree() {
   const stage = $("#radialStage"), svg = $("#radialWires"), centre = $("#radCentre");
   if (!stage || !svg || !centre) return;
 
-  const ROW_HEIGHT = 80;
-  const TOP_PAD = 40;
+  const ROW_HEIGHT = 86;
+  const TOP_PAD = 36;
   const path = S.cmpPath || [];
 
   // Compute tidy-tree slots for child nodes
@@ -1285,7 +1272,7 @@ function layoutTree() {
   }
 
   const totalSlots = Math.max(currentSlot, 4);
-  const H = Math.max(600, TOP_PAD * 2 + totalSlots * ROW_HEIGHT);
+  const H = Math.max(620, TOP_PAD * 2 + totalSlots * ROW_HEIGHT);
   const cy = Math.round(H / 2);
 
   // 1. Central WattNot node
@@ -1293,15 +1280,15 @@ function layoutTree() {
   centre.style.left = `${cx}px`;
   centre.style.top = `${cy}px`;
 
-  // 2. Power, Cost, Water in an arc around WattNot
+  // 2. Power, Cost, Water in dedicated non-overlapping rows around WattNot
   const cards = $$(".rad-card", stage);
   const metricPos = {
-    power: [cx + 175, cy - 140],
-    cost:  [cx + 235, cy],
-    water: [cx + 175, cy + 140],
+    power: [cx + 175, cy - 150],
+    cost:  [cx + 175, cy],
+    water: [cx + 175, cy + 150],
   };
   cards.forEach((c) => {
-    const p = metricPos[c.dataset.node] || [cx + 235, cy];
+    const p = metricPos[c.dataset.node] || [cx + 175, cy];
     c.style.left = `${p[0]}px`;
     c.style.top = `${p[1]}px`;
   });
@@ -1315,26 +1302,13 @@ function layoutTree() {
     const d = +el.dataset.depth;
     const nid = el.dataset.node;
     const slot = nodeSlots.get(`${d}:${nid}`);
-    const colX = 470 + d * 215;
+    const colX = 460 + d * 250;
     const slotY = slot ? Math.round(TOP_PAD + slot.center * ROW_HEIGHT + ROW_HEIGHT / 2) : cy;
     el.style.left = `${colX}px`;
     el.style.top = `${slotY}px`;
   });
 
-  // 4. Leaf detail cards aligned in column on the right
-  const leaves = $$(".rad-leaf", stage);
-  const leafCount = leaves.length;
-  const leafColX = 470 + (maxDepth + 1) * 215;
-  const leafUsableH = totalSlots * ROW_HEIGHT;
-  const leafStepY = leafCount > 1 ? (leafUsableH - 70) / (leafCount - 1) : 0;
-
-  leaves.forEach((el, idx) => {
-    const y = leafCount === 1 ? cy - 35 : Math.round(TOP_PAD + 35 + idx * leafStepY);
-    el.style.left = `${leafColX}px`;
-    el.style.top = `${y}px`;
-  });
-
-  const W = (leafCount > 0 ? leafColX + 280 : (nodes.length > 0 ? 470 + maxDepth * 215 + 240 : 540));
+  const W = Math.max(560, 460 + maxDepth * 250 + 150);
   stage.style.width = `${W}px`;
   stage.style.height = `${H}px`;
   stage.style.transformOrigin = "top left";
@@ -1349,7 +1323,6 @@ function drawTreeWires(cx, cy, W, H) {
 
   const getCenter = (el) => [parseFloat(el.style.left) || 0, parseFloat(el.style.top) || 0];
   const dottedPaths = [];
-  const elbowPaths = [];
   const dots = [];
 
   const addDottedCurve = (x1, y1, x2, y2, highlight = false) => {
@@ -1361,30 +1334,23 @@ function drawTreeWires(cx, cy, W, H) {
     dots.push([x2, y2]);
   };
 
-  const addElbowPath = (x1, y1, x2, y2) => {
-    const midX = (x1 + x2) / 2;
-    const d = `M ${x1.toFixed(1)} ${y1.toFixed(1)} H ${midX.toFixed(1)} V ${y2.toFixed(1)} H ${x2.toFixed(1)}`;
-    elbowPaths.push(d);
-    dots.push([x2, y2]);
-  };
-
-  // 1. Connect central node to metric cards (Power, Cost, Water) in arc
+  // 1. Connect central node to metric cards (Power, Cost, Water)
   $$(".rad-card", stage).forEach((c) => {
     const [mx, my] = getCenter(c);
     const isAct = !S.cmpCollapsed && c.dataset.node === S.cmpActive;
-    addDottedCurve(cx + 44, cy, mx - 95, my, isAct);
+    addDottedCurve(cx + 48, cy, mx - 102, my, isAct);
   });
 
   // 2. Connect active metric card to child nodes
   if (!S.cmpCollapsed && S.cmpActive) {
     const activeCard = $(`.rad-card[data-node="${S.cmpActive}"]`, stage);
-    const [mx, my] = activeCard ? getCenter(activeCard) : [cx + 44, cy];
+    const [mx, my] = activeCard ? getCenter(activeCard) : [cx + 48, cy];
     const nodes = $$(".rad-node", stage);
     const depth0 = nodes.filter((k) => +k.dataset.depth === 0);
 
     depth0.forEach((el) => {
       const [kx, ky] = getCenter(el);
-      addDottedCurve(mx + 95, my, kx - 100, ky, true);
+      addDottedCurve(mx + 102, my, kx - 115, ky, true);
     });
 
     // 3. Connect parent node to deeper child nodes
@@ -1396,33 +1362,17 @@ function drawTreeWires(cx, cy, W, H) {
       const [px, py] = parentEl ? getCenter(parentEl) : [mx, my];
       ring.forEach((el) => {
         const [kx, ky] = getCenter(el);
-        addDottedCurve(px + 100, py, kx - 100, ky, true);
+        addDottedCurve(px + 115, py, kx - 115, ky, true);
       });
     }
-
-    // 4. Dashed elbow connectors to leaf detail cards
-    const leaves = $$(".rad-leaf", stage);
-    leaves.forEach((leafEl) => {
-      const leafId = leafEl.dataset.leaf;
-      const leafX = parseFloat(leafEl.style.left) || 0;
-      const leafY = (parseFloat(leafEl.style.top) || 0) + (leafEl.offsetHeight || 50) / 2;
-      const matchingNode = nodes.find((k) => k.dataset.node === leafId) ||
-        nodes.find((k) => +k.dataset.depth === depth) ||
-        depth0[0];
-      if (matchingNode) {
-        const [nx, ny] = getCenter(matchingNode);
-        addElbowPath(nx + 100, ny, leafX - 2, leafY);
-      }
-    });
   }
 
   const dottedSvg = dottedPaths.map(({ d, highlight }) =>
     `<path d="${d}" stroke="${highlight ? '#DCD6E4' : 'rgba(178,166,195,0.30)'}" stroke-width="${highlight ? '2' : '1.4'}" stroke-dasharray="4,4" fill="none" />`
   ).join("");
-  const elbowSvg = elbowPaths.map((d) => `<path d="${d}" stroke="#8E7A9E" stroke-width="1.5" stroke-dasharray="5,4" fill="none" />`).join("");
   const dotsSvg = dots.map(([x, y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#B2A6C3" /><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.5" fill="#DCD6E4" />`).join("");
 
-  svg.innerHTML = dottedSvg + elbowSvg + dotsSvg;
+  svg.innerHTML = dottedSvg + dotsSvg;
 }
 async function sha256(s) { if (!globalThis.crypto?.subtle) return null; const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
 async function startQuiet() { const r = await fetch("/api/dash/v2/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(S.choice) }); S.run = await r.json(); S.n = S.run.events.length; renderRun(); }

@@ -35,13 +35,12 @@
     `;
 
     const nav = document.createElement("nav");
-    nav.className = "wn-nav gl";
+    nav.className = "wn-nav gl" + (isV2Page ? " wn-nav-v2" : "");
     nav.setAttribute("aria-label", "Main navigation");
     nav.innerHTML = `
       <div class="wn-nav-inner">
         <a class="wn-brand" href="${prefix}index.html">Watt<i>Not</i></a>
-        ${isV2Page ? v2TabsHtml : ""}
-        <div class="wn-links"${isV2Page ? ' style="margin-left:auto"' : ""}>
+        <div class="wn-links" style="margin-left:auto">
           <a class="wn-link" data-nav="dashboard" href="${prefix}runs.html">Dashboard</a>
           <a class="wn-link" data-nav="runs" href="${prefix}runs.html#runs">Runs</a>
           <a class="wn-link" data-nav="compare" href="${prefix}v2.html#pReport">Compare</a>
@@ -50,6 +49,7 @@
         </div>
         <div class="wn-slot-wrap" id="wn-slot-wrap"></div>
       </div>
+      ${isV2Page ? `<div class="wn-nav-subline">${v2TabsHtml}</div>` : ""}
     `;
 
     document.body.prepend(nav);
