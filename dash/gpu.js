@@ -159,21 +159,21 @@ export class Power {
     const lo = Math.max(0, Math.floor((Math.min(...all) - 30) / 50) * 50), hi = Math.ceil((Math.max(...all) + 20) / 50) * 50;
     const X = (t) => pad.l + ((t - t0) / Math.max(1, t1 - t0)) * (W - pad.l - pad.r);
     const Y = (v) => pad.t + (1 - (v - lo) / (hi - lo)) * (H - pad.t - pad.b);
-    x.strokeStyle = "#1A242D"; x.fillStyle = "#6D7B87"; x.font = "10px JetBrains Mono, monospace"; x.lineWidth = 1;
+    x.strokeStyle = "#351C3A"; x.fillStyle = "#B49BB0"; x.font = "10px JetBrains Mono, monospace"; x.lineWidth = 1;
     for (let v = lo; v <= hi; v += 100) { x.beginPath(); x.moveTo(pad.l, Y(v)); x.lineTo(W - pad.r, Y(v)); x.stroke(); x.fillText(`${v} W`, 2, Y(v) + 3); }
     // arm bands for adaptive scene
     let prev = null, start = 0;
-    const band = (i) => { if (prev == null) return; x.fillStyle = prev === "on" ? "rgba(242,153,74,.07)" : "rgba(90,169,240,.05)"; x.fillRect(X(S[start].t_s), pad.t, X(S[i].t_s) - X(S[start].t_s), H - pad.t - pad.b); };
+    const band = (i) => { if (prev == null) return; x.fillStyle = prev === "on" ? "rgba(147,80,115,.07)" : "rgba(147,80,115,.05)"; x.fillRect(X(S[start].t_s), pad.t, X(S[i].t_s) - X(S[start].t_s), H - pad.t - pad.b); };
     S.forEach((s, i) => { if (s.arm !== prev) { band(i); prev = s.arm; start = i; } }); band(S.length - 1);
     // cap
-    x.strokeStyle = "#F2994A"; x.setLineDash([5, 4]); x.beginPath(); let on = false;
+    x.strokeStyle = "#935073"; x.setLineDash([5, 4]); x.beginPath(); let on = false;
     S.forEach((s) => { if (s.cap_w == null) return; const px = X(s.t_s), py = Y(s.cap_w); on ? x.lineTo(px, py) : x.moveTo(px, py); on = true; }); x.stroke(); x.setLineDash([]);
     // power
-    x.strokeStyle = "#22C7D9"; x.lineWidth = 1.6; x.beginPath(); on = false;
+    x.strokeStyle = "#F6DBC0"; x.lineWidth = 1.6; x.beginPath(); on = false;
     S.forEach((s) => { if (s.power_w == null) return; const px = X(s.t_s), py = Y(s.power_w); on ? x.lineTo(px, py) : x.moveTo(px, py); on = true; }); x.stroke();
-    x.fillStyle = "#22C7D9"; x.fillText("power (MEASURED)", pad.l + 6, pad.t + 12);
-    x.fillStyle = "#F2994A"; x.fillText("cap", pad.l + 130, pad.t + 12);
-    if (S.some((s) => s.arm)) { x.fillStyle = "#5AA9F0"; x.fillText("normal", pad.l + 170, pad.t + 12); x.fillStyle = "#F2994A"; x.fillText("adaptive", pad.l + 225, pad.t + 12); }
+    x.fillStyle = "#F6DBC0"; x.fillText("power (MEASURED)", pad.l + 6, pad.t + 12);
+    x.fillStyle = "#935073"; x.fillText("cap", pad.l + 130, pad.t + 12);
+    if (S.some((s) => s.arm)) { x.fillStyle = "#935073"; x.fillText("normal", pad.l + 170, pad.t + 12); x.fillStyle = "#935073"; x.fillText("adaptive", pad.l + 225, pad.t + 12); }
   }
 
   renderApprovals() {

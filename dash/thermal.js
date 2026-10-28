@@ -41,7 +41,7 @@ function plan(scan, side) {
     const cx = pos(i), f = (t(r) - lo) / (hi - lo), c = ironbow(f), x = cx - rackW / 2;
     glow.push(`<ellipse cx="${cx}" cy="${B.y + rackD / 2 + (f > 0.6 ? 18 : 0)}" rx="${rackW * (0.6 + 0.8 * f)}" ry="${rackD * (0.5 + 0.5 * f)}" fill="${c}" opacity="${(0.25 + f * 0.55).toFixed(2)}" filter="url(#thb)"/>`);
     real.push(`<g class="th-r" tabindex="0"><title>${esc(r.id)} · ${t(r).toFixed(1)} °C (simulated) · ${pw(r)} W per GPU (replay)${r.decision ? ` · ${esc(r.decision)}` : ""}</title>
-      <rect x="${x}" y="${B.y}" width="${rackW}" height="${rackD}" rx="2" fill="${c}" stroke="#fff" stroke-width="1.2"/>
+      <rect x="${x}" y="${B.y}" width="${rackW}" height="${rackD}" rx="2" fill="${c}" stroke="#F8F4E9" stroke-width="1.2"/>
       <text x="${cx}" y="${B.y + rackD / 2 + 4}" text-anchor="middle" class="th-t">${t(r).toFixed(0)}°</text>
       <text x="${cx}" y="${B.y - 5}" text-anchor="middle" class="th-id" font-size="12">${esc(r.id)}${r.id === scan.real_rack ? "★" : ""}</text></g>`);
   });
@@ -52,13 +52,13 @@ function plan(scan, side) {
   return `<svg class="th-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Thermal data-hall floor plan, ${side}">
     <defs><filter id="thb" x="-150%" y="-150%" width="400%" height="400%"><feGaussianBlur stdDeviation="16"/></filter><linearGradient id="thg">${grad}</linearGradient>
       <pattern id="tile" width="${0.6 * M}" height="${0.6 * M}" patternUnits="userSpaceOnUse"><path d="M ${0.6 * M} 0 L 0 0 0 ${0.6 * M}" fill="none" stroke="rgba(255,255,255,.05)"/></pattern></defs>
-    <rect width="${W}" height="${H}" fill="#07050f"/><rect x="10" y="${top - 30}" width="${W - 20}" height="${y - top + 60}" fill="url(#tile)" stroke="rgba(255,255,255,.25)" stroke-width="2" rx="6"/>
+    <rect width="${W}" height="${H}" fill="#2A1530"/><rect x="10" y="${top - 30}" width="${W - 20}" height="${y - top + 60}" fill="url(#tile)" stroke="rgba(255,255,255,.25)" stroke-width="2" rx="6"/>
     ${aisles.map((a) => `<rect x="${x0 - 10}" y="${a.y}" width="${rowL + 20}" height="${aisle}" class="${a.kind === "hot" ? "th-hot" : "th-cold"}"/><text x="${x0 + rowL + 20}" y="${a.y + aisle / 2 + 4}" class="th-aisle">${a.label}${a.kind === "cold" ? " · perforated tiles" : " · exhaust"}</text>`).join("")}
     ${rows.map((r, k) => `<text x="${x0 - 14}" y="${r.y + rackD / 2 + 4}" text-anchor="end" class="th-row">${r.label.split(" · ")[0]}</text>${k === 1 ? "" : ill(r.y)}`).join("")}
     ${glow.join("")}${real.join("")}
     ${cracs}
     <text x="${x0}" y="${top - 40}" class="th-aisle">Row B: SAM 3.1 rack outlines, placed in scan order (measured) · other rows, CRAC units and room: illustrative, no data</text>
-    <g transform="translate(${x0},${H - 60})"><rect width="${sb}" height="6" fill="#fff"/><rect width="${sb / 5}" height="6" fill="#07050f" x="${sb / 5}"/><rect width="${sb / 5}" height="6" fill="#07050f" x="${(3 * sb) / 5}"/><text y="22" class="th-aisle">0</text><text x="${sb}" y="22" text-anchor="end" class="th-aisle">5 m</text></g>
+    <g transform="translate(${x0},${H - 60})"><rect width="${sb}" height="6" fill="#F8F4E9"/><rect width="${sb / 5}" height="6" fill="#2A1530" x="${sb / 5}"/><rect width="${sb / 5}" height="6" fill="#2A1530" x="${(3 * sb) / 5}"/><text y="22" class="th-aisle">0</text><text x="${sb}" y="22" text-anchor="end" class="th-aisle">5 m</text></g>
     <g transform="translate(${x0 + sb + 60},${H - 60})"><rect width="260" height="10" fill="url(#thg)"/><text y="26" class="th-aisle">${lo} °C</text><text x="260" y="26" text-anchor="end" class="th-aisle">${hi} °C (simulated)</text></g>
   </svg>`;
 }
