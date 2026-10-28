@@ -151,3 +151,5 @@ nav.tabs button.on{background:rgba(90,169,240,.14);border-color:rgba(90,169,240,
 @media (max-width:640px){#tabs.tabs{max-width:100%;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}#tabs.tabs button{flex:0 0 auto}}html,body{overflow-x:hidden}
 @media (max-width:640px){.pc-view .pc-controls{pointer-events:none;background:transparent;border:0;padding:0;right:6px;bottom:6px;gap:4px}.pc-view .pc-controls button{pointer-events:auto;background:#0A0F14;padding:4px 7px}.pc-view .pc-controls #pc-goto,.pc-view .pc-controls #pc-zoom-label{display:none}}
 @media (max-width:640px){.pc-view .pc-controls #pc-follow,.pc-view .pc-controls #pc-mini{display:none}}
+.cmp-empty{padding:28px;margin:12px 0;border-radius:14px}.cmp-empty h2{margin:0 0 8px}.cmp-bundled{margin:8px 0;padding:8px 12px;border:1px dashed #E8B84A;border-radius:8px;color:#E8B84A;font-size:13px}
+#pReport[data-cmp-empty] .map-wrap,#pReport[data-cmp-empty] .who-banner,#pReport[data-cmp-empty] .who,#pReport[data-cmp-empty] .ctrl [data-expand],#pReport[data-cmp-empty] #expandAll,#pReport[data-cmp-empty] #collapseAll{display:none}
