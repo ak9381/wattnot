@@ -141,7 +141,10 @@ const HOW = {
   modal: "Run the same open model on Modal and pay per GPU-second. Energy is an estimate.",
 };
 // Minimal radial cards: only power caps has a measured share in this run.
-export const CHILDREN = [["caps", "Power caps"], ["topk", "Adaptive top-k"], ["quant", "Quantization"], ["baseten", "Baseten (hosted)"], ["modal", "Modal (hosted)"], ["gate", "Quality gate"], ["waste", "Agent-waste saver"]];
+export const CHILDREN = [["caps", "Power caps"], ["topk", "Adaptive top-k"], ["quant", "Quantization"], ["baseten", "Baseten (hosted)"], ["modal", "Modal (hosted)"], ["gate", "Quality gate"], ["waste", "Agent-waste saver"], ["sam", "Cooling hotspots (SAM 3.1)"]];
+// Children that only make sense under one branch.
+export const CHILD_ONLY = { sam: "power" };
+export const DERIVED_HINT = "Derived from power: same % because dollars and litres scale linearly with kWh (ESTIMATE).";
 export function savedPct(rec, branch) {
   const b = rec?.phases?.baseline?.metrics?.j_per_req, w = rec?.phases?.wattnot?.metrics?.j_per_req;
   if (b == null || w == null) return null;
@@ -151,6 +154,8 @@ export function savedPct(rec, branch) {
 export const hostAB = (rec, host) => { const h = rec?.hosted_ab?.hosts?.[host]; return h && h.status === "ran" ? h : null; };
 export function childSaved(rec, branch, mid) {
   if (mid === "caps") return savedPct(rec, branch);
+  // SAM room scan: only a MEASURED hotspot saving counts; the floor-plan heat is simulated.
+  if (mid === "sam") { const v = rec?.room?.hotspot_saved_pct; return v?.label === "MEASURED" && v.value != null ? { text: `${fmt(v.value, 1)}%`, tag: "MEASURED" } : null; }
   if (mid === "baseten" || mid === "modal") {
     const h = hostAB(rec, mid); if (!h) return null;
     if (branch !== "cost") { const p = h.estimate?.power_saved_pct?.value; return p == null ? null : { text: `${fmt(p, 1)}%`, tag: "ESTIMATE" }; }
@@ -216,7 +221,7 @@ export function branchPopup(rec, id, price = 0.1387, water = 0.36) {
     <div>${optionBars(c.id, rec)}</div></div>${metaInRun(rec)}</div>`;
   return popup(c.title, html, { sub: `${esc(rec?.run_name || "")} · red is without WattNot, green is with`, onMount: (root) => wireCompare(root, rec, price, water) });
 }
-const BEXP = { power: "Energy per answer, in joules, with and without WattNot on the same prompts.", cost: "Electricity cost of a million answers, from the measured joules at the run's price per kWh.", water: "Cooling water for a million answers, from the measured joules at 0.36 L per kWh." };
+const BEXP = { power: "Energy per answer, in joules, with and without WattNot on the same prompts.", cost: "Electricity cost of a million answers, from the measured joules at the run's price per kWh. Derived from power: the % is the same as Power because dollars scale linearly with kWh, so it is an ESTIMATE, not a separate result.", water: "Cooling water for a million answers, from the measured joules at 0.36 L per kWh. Derived from power: the % is the same as Power because litres scale linearly with kWh, so it is an ESTIMATE, not a separate result." };
 export function branchInfo(rec, id, price = 0.1387, water = 0.36) {
   const c = cardsData(rec, price, water).find((x) => x.id === id); if (!c) return null;
   const bj = rec?.phases?.baseline?.metrics?.j_per_req, wj = rec?.phases?.wattnot?.metrics?.j_per_req;

@@ -62,13 +62,15 @@ function plan(scan, side) {
     <g transform="translate(${x0 + sb + 60},${H - 60})"><rect width="260" height="10" fill="url(#thg)"/><text y="26" class="th-aisle">${lo} °C</text><text x="260" y="26" text-anchor="end" class="th-aisle">${hi} °C (simulated)</text></g>
   </svg>`;
 }
-export async function openThermal() {
+export async function openThermal(opts = {}) {
   const scan = await fetch("/room/data/arsat/scan.json").then((r) => r.json());
   const s = (k) => scan[k] || {};
   const head = (side) => `<div class="th-head"><span class="bdg mp">Meta · SAM 3.1</span><span class="thl n-measured">rack outlines MEASURED</span><span class="thl n-simulated">heat SIMULATED</span><span class="thl n-replay">power REPLAY</span>
     <span class="th-sum">${side === "after" ? `After WattNot: hottest ${s("after").max_c ?? "?"} °C, ${s("after").hot_racks ?? "?"} hot rack` : `Before: hottest ${s("before").max_c ?? "?"} °C, ${s("before").hot_racks ?? "?"} hot racks`}</span></div>`;
+  const ms = opts.measuredSaving;
+  const honest = `<div class="th-honest"><p><b>Measured:</b> ${scan.racks.length} rack outlines found by SAM 3.1 in the room photo${scan.real_rack ? `, and the GPU power of rack ${esc(scan.real_rack)}` : ""}. <b>Hotspot saving:</b> ${ms ? `<span class="n-measured">${esc(ms.text)} MEASURED</span>` : `<span class="r7miss">— not measured in this run</span>`}.</p><p><b>Illustration:</b> the before/after heat (hot racks ${s("before").hot_racks ?? "?"} → ${s("after").hot_racks ?? "?"}, hottest ${s("before").max_c ?? "?"} → ${s("after").max_c ?? "?"} °C) is <span class="n-simulated">SIMULATED</span> from replayed power, not a camera reading.</p></div>`;
   let side = "before", pc;
-  popup("Thermal floor plan", `<div class="th-wrap"><div class="th-tg"><button class="btn on" data-side="before">Before</button><button class="btn" data-side="after">After WattNot</button></div><div data-th>${head(side)}${plan(scan, side)}</div><p class="muted th-note">Top-down view of a hot-aisle / cold-aisle hall. Row B holds the racks SAM 3.1 found, left to right as in the photo (★ has a real GPU). Grey racks, CRAC units and the room shell are illustrative. Heat = inlet + 0.05 °C per watt: a simulation, not a camera.</p></div>`, {
+  popup(opts.measuredSaving !== undefined || opts.fromCard ? "Cooling hotspots (SAM 3.1)" : "Thermal floor plan", `<div class="th-wrap">${honest}<div class="th-tg"><button class="btn on" data-side="before">Before</button><button class="btn" data-side="after">After WattNot</button></div><div data-th>${head(side)}${plan(scan, side)}</div><p class="muted th-note">Top-down view of a hot-aisle / cold-aisle hall. Row B holds the racks SAM 3.1 found, left to right as in the photo (★ has a real GPU). Grey racks, CRAC units and the room shell are illustrative. Heat = inlet + 0.05 °C per watt: a simulation, not a camera.</p></div>`, {
     pan: true, sub: "Drag to pan, scroll to zoom. Hover a rack for its numbers.",
     onMount: (root, pan) => {
       pc = pan;

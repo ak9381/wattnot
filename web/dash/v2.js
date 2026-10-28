@@ -1,6 +1,7 @@
 import { esc, badge, num, cnum, legendHtml, stageState, ledgerRows, run2Rows, verifySummary, phaseLabel } from "./v2lib.js";
+import { openThermal } from "./thermal.js";
 import { init as initPanCanvas } from "./pancanvas.js";
-import { overviewHtml, openPowerGraph, wireR7, metaInRun, branchPopup, cmpHeadHtml, openWhere, methodPopup, branchInfo, savedPct, childSaved, CHILDREN, BUNDLED_ID, compareState, bundledRecord, emptyStateHtml, bundledBanner } from "./v2r7.js";
+import { overviewHtml, openPowerGraph, wireR7, metaInRun, branchPopup, cmpHeadHtml, openWhere, methodPopup, branchInfo, savedPct, childSaved, CHILDREN, CHILD_ONLY, DERIVED_HINT, BUNDLED_ID, compareState, bundledRecord, emptyStateHtml, bundledBanner } from "./v2r7.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -939,8 +940,8 @@ function mountCompare() {
   $$(".rad-card", stage).forEach((c) => {
     const id = c.dataset.branch, name = id[0].toUpperCase() + id.slice(1);
     c.classList.add("min"); c.dataset.open = "0";
-    c.innerHTML = `<button class="rad-head" aria-expanded="false" aria-label="${name}: show the routes"><b>${name}</b><span class="rad-val">${val(savedPct(rec, id))}</span></button><button class="ibtn rad-i" data-binfo="${id}" aria-label="${name} details">i</button>`;
-    for (const [mid, mname] of CHILDREN) stage.insertAdjacentHTML("beforeend", `<div class="rad-child min" data-branch="${id}" data-m="${mid}" hidden><b>${esc(mname)}</b><span class="rad-val">${val(childSaved(rec, id, mid), mid === "baseten" || mid === "modal" ? "measured in the long run" : "not measured in this run")}</span>${mid === "baseten" || mid === "modal" ? `<small class="rad-sub">${childSaved(rec, id, mid) ? "" : "measured in the long run"}</small>` : ""}<button class="ibtn rad-i" data-minfo="${mid}" aria-label="${esc(mname)} details">i</button></div>`);
+    c.innerHTML = `<button class="rad-head" aria-expanded="false" aria-label="${name}: show the routes"><b>${name}</b><span class="rad-val">${val(savedPct(rec, id))}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power</small>`}</button><button class="ibtn rad-i" data-binfo="${id}" aria-label="${name} details">i</button>`;
+    for (const [mid, mname] of CHILDREN.filter(([m]) => !CHILD_ONLY[m] || CHILD_ONLY[m] === id)) stage.insertAdjacentHTML("beforeend", `<div class="rad-child min" data-branch="${id}" data-m="${mid}" hidden><b>${esc(mname)}</b><span class="rad-val">${val(childSaved(rec, id, mid), mid === "baseten" || mid === "modal" ? "measured in the long run" : "not measured in this run")}</span>${mid === "baseten" || mid === "modal" ? `<small class="rad-sub">${childSaved(rec, id, mid) ? "" : "measured in the long run"}</small>` : ""}<button class="ibtn rad-i" data-minfo="${mid}" aria-label="${esc(mname)} details">i</button></div>`);
     $(".rad-head", c).onclick = () => {
       const on = c.dataset.open !== "1"; c.dataset.open = on ? "1" : "0"; $(".rad-head", c).setAttribute("aria-expanded", String(on));
       $$(".rad-child", stage).filter((k) => k.dataset.branch === id).forEach((k) => { k.hidden = !on; });
@@ -948,7 +949,7 @@ function mountCompare() {
     };
     $(".rad-i", c).onclick = (e) => { e.stopPropagation(); branchInfo(rec, id, price, water); };
   });
-  $$(".rad-child [data-minfo]", stage).forEach((b) => (b.onclick = (e) => { e.stopPropagation(); methodPopup(rec, b.closest(".rad-child").dataset.branch, b.dataset.minfo, price, water); }));
+  $$(".rad-child [data-minfo]", stage).forEach((b) => (b.onclick = (e) => { e.stopPropagation(); if (b.dataset.minfo === "sam") return openThermal({ measuredSaving: childSaved(rec, "power", "sam") }); methodPopup(rec, b.closest(".rad-child").dataset.branch, b.dataset.minfo, price, water); }));
   layoutRadial(); S.radPan?.update?.();
   const ctr = $("#radCentre");
   if (ctr && !$("[data-where]", ctr)) ctr.insertAdjacentHTML("beforeend", `<button class="btn rad-where" data-where>Where should this model run?</button>`);
