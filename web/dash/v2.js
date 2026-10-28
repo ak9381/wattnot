@@ -914,6 +914,16 @@ function mountCompare() {
   const val = (sv, miss = "not measured in this run") => sv ? `${cnum(esc(sv.text), sv.tag)} saved` : `<span class="rad-miss" title="${miss}">—</span>`;
   $$(".rad-child", stage).forEach((k) => k.remove());
   const radFit = () => { S.radPan?.update(); S.radPan?.fit(); if (S.radPan && S.radPan.state.scale < 0.6) S.radPan.setZoom(0.6); };
+  // Keep the opened ring clear of the canvas controls (bottom right): pan up/left if a card sits under them.
+  const clearOfControls = (st, bid) => {
+    const ctl = $(".pc-controls", st.parentElement)?.getBoundingClientRect(), P = S.radPan; if (!ctl || !P) return;
+    let dy = 0;
+    $$(".rad-child", st).filter((k) => k.dataset.branch === bid && !k.hidden).forEach((k) => {
+      const r = k.getBoundingClientRect();
+      if (r.right > ctl.left && r.left < ctl.right && r.bottom > ctl.top && r.top < ctl.bottom) dy = Math.max(dy, r.bottom - ctl.top + 12);
+    });
+    if (dy) { P.state.y -= dy; P.update(); }
+  };
   $$(".rad-card", stage).forEach((c) => {
     const id = c.dataset.branch, name = id[0].toUpperCase() + id.slice(1);
     c.classList.add("min"); c.dataset.open = "0";
@@ -922,7 +932,7 @@ function mountCompare() {
     $(".rad-head", c).onclick = () => {
       const on = c.dataset.open !== "1"; c.dataset.open = on ? "1" : "0"; $(".rad-head", c).setAttribute("aria-expanded", String(on));
       $$(".rad-child", stage).filter((k) => k.dataset.branch === id).forEach((k) => { k.hidden = !on; });
-      layoutRadial(); S.radPan?.update(); if (on) { S.radPan?.focus(c, { zoom: 0.55 }); } else S.radPan?.fit();
+      layoutRadial(); S.radPan?.update(); if (on) { S.radPan?.focus(c, { zoom: 0.55 }); setTimeout(() => clearOfControls(stage, id), 450); } else S.radPan?.fit();
     };
     $(".rad-i", c).onclick = (e) => { e.stopPropagation(); branchInfo(rec, id, price, water); };
   });
