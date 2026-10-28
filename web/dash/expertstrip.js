@@ -23,9 +23,9 @@ export function expertStrip(data, upto) {
   const bar = (arm, y, cls) => Array.from({ length: S }, (_, c) => { const a = cnt[arm][c] ? act[arm][c] / cnt[arm][c] : 0; const h = (a / K) * 14; return a ? `<rect class="${cls}" x="${c * cw}" y="${y + 14 - h}" width="${cw - 1}" height="${h}"><title>step ${c + 1} · ${arm === "on" ? "adaptive" : "fixed"} top-k: ${a.toFixed(2)} experts per token</title></rect>` : ""; }).join("");
   const sum = (arm) => { let a = 0, n = 0; for (let c = 0; c < S; c++) { a += act[arm][c]; n += cnt[arm][c]; } return n ? a / n : null; };
   const off = sum("off"), on = sum("on");
-  return `<div class="xstrip" data-info="experts" title="Open the explanation">
+  return `<button type="button" class="xstrip" data-info="experts" aria-label="Expert routing heat strip, open the explanation">
     <svg viewBox="0 0 ${W} ${H + 40}" role="img" aria-label="Expert routing heat strip: ${E} experts by ${S} prompt steps">${cells}
       ${bar("off", H + 4, "xoff")}${bar("on", H + 22, "xon")}</svg>
-    <div class="xleg"><span><i class="xoff"></i>fixed top-${K}${off != null ? `: ${off.toFixed(1)}` : ""}</span><span><i class="xon"></i>adaptive${on != null ? `: ${on.toFixed(1)}` : ""} experts / token</span></div>
-    <p class="xcap">${esc(meta.meta.model)} · ${E} experts × ${S} steps · routed tokens, measured</p></div>`;
+    <span class="xleg"><span><i class="xoff"></i>fixed top-${K}${off != null ? `: ${off.toFixed(1)}` : ""}</span><span><i class="xon"></i>adaptive${on != null ? `: ${on.toFixed(1)}` : ""} experts / token</span></span>
+    <span class="xcap">${esc(meta.meta.model)} · ${E} experts × ${S} steps · routed tokens, measured</span></button>`;
 }
