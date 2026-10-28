@@ -56,10 +56,15 @@ def planner_trace_from_events(events: Sequence[Mapping]) -> list[dict]:
         c = d.get("choice", {})
         params = ({"power_cap_w": c.get("power_cap_w")} if c.get("kind") == "cap"
                   else {c.get("knob"): c.get("value")} if c.get("kind") == "knob" else {})
-        trace.append({"trial_no": n, "source": "spark" if d.get("model") != "fallback"
-                      else "fallback", "model": d.get("model"), "kind": c.get("kind"),
-                      "params": params, "reason": d.get("reason", ""),
-                      "tokens": d.get("tokens", {"input": 0, "output": 0})})
+        fell_back = (d.get("model") in ("fallback", "bisect-fallback")
+                     or bool((d.get("call") or {}).get("fallback")))
+        row = {"trial_no": n, "source": "fallback" if fell_back else "spark",
+               "model": d.get("model"), "kind": c.get("kind"),
+               "params": params, "reason": d.get("reason", ""),
+               "tokens": d.get("tokens", {"input": 0, "output": 0})}
+        if d.get("call"):  # provider, model id, prompt hash, latency of the planner call
+            row["call"] = dict(d["call"])
+        trace.append(row)
     return trace
 
 

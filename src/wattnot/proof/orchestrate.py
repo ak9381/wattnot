@@ -545,6 +545,7 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                                 "clamped": False,
                                 "stop": prop["kind"] == "stop",
                                 "label": label,
+                                "call": prop.get("call"),
                             },
                             step_id=pid,
                             parent="cap_sweep",
