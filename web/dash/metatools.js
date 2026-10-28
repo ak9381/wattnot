@@ -52,6 +52,8 @@ export function extractMetaToolsData(receipt) {
   const wonderTrials = wonder.trials != null ? wonder.trials : 5;
   const wonderStop = wonder.stop_reason || m.wonder_stop_reason || "$/quality Pareto front flattened: improvement 0.42% < threshold 1.00% over last 3 trials";
   const wonderTraceIds = m.wonder_trace_ids || ["wonder-8f12a34b5c6d7e01"];
+  // Wonder trials/spend are not independently metered; the label comes from the data (default MOCK).
+  const wonderLabel = wonder.label || "MOCK";
 
   // Per Model Spend
   const perModelSpend = m.per_model_spend || {
@@ -62,12 +64,16 @@ export function extractMetaToolsData(receipt) {
     sam: { usd: 0.0000, label: "MOCK" }
   };
 
-  // Muse Code
-  const patchSha256 = m.musecode_patch_sha256 || "4c424a180373e34b3f3b92eb13a362aa6b0ffc17d7b21235b21111a4cf13a52f";
+  // Muse Code — never fabricate a patch, hash, or PR body. Everything comes from
+  // the receipt; when a field is absent we show nothing rather than invent values.
+  const patchSha256 = m.musecode_patch_sha256 || "";
   const prSha256 = m.musecode_pr_sha256 || patchSha256;
-  const prUrl = m.musecode_pr_url || "https://github.com/ak9381/wattnot-demo-deploy/pull/1";
-  const patchDiff = musecode.patch_diff || "--- a/launch.sh\n+++ b/launch.sh\n@@ -6,4 +6,4 @@\n-sudo nvidia-smi -pl 400\n+sudo nvidia-smi -pl 350\n--- a/values.yaml\n+++ b/values.yaml\n@@ -11,2 +11,2 @@\n-  powerCapW: 400\n+  powerCapW: 350\n";
-  const prBody = musecode.pr_body || `# Apply WattNot Efficiency Optimizations\n\nAutomated configuration update from verified WattNot energy run.\n\n**Receipt Reference**: [wattnot://${receipt?.integrity?.sha256 || "1836f6491abe3cc1e950be4bee7adce3aa0c8f64ff3902dea4d060f971518f61"}](wattnot://${receipt?.integrity?.sha256 || "1836f6491abe3cc1e950be4bee7adce3aa0c8f64ff3902dea4d060f971518f61"})\n\n## Configuration Changes\n- **Power Cap**: 350 W (label: MEASURED)\n- **Max Number of Sequences**: 256 (label: ADVICE)\n- **GPU Memory Utilization**: 0.90 (label: ADVICE)\n\n## Performance & Sustainability Impact\n- **Energy Saving**: 10.00% (label: MEASURED)\n- **P99 Latency Delta**: 50.00 ms (label: MEASURED)\n- **Water Usage**: 0.0778 mL/req (label: ESTIMATE)\n`;
+  const prUrl = m.musecode_pr_url || "";
+  const patchDiff = musecode.patch_diff || "";
+  const hasMuseCode = Boolean(musecode.pr_body || musecode.patch_diff || patchSha256);
+  const prBody = musecode.pr_body || "No Muse Code patch for this run yet";
+  // Patch/snippet label comes from the data (default MOCK), never MEASURED by default.
+  const musecodeLabel = musecode.label || "MOCK";
 
   const defaultOai = "open" + "ai-python";
   const defaultReason = "Library not installed: " + "langchain_open" + "ai is not installed";
@@ -101,12 +107,15 @@ export function extractMetaToolsData(receipt) {
     wonderTrials,
     wonderStop,
     wonderTraceIds,
+    wonderLabel,
     perModelSpend,
     patchSha256,
     prSha256,
     prUrl,
     patchDiff,
     prBody,
+    hasMuseCode,
+    musecodeLabel,
     snippets,
     receiptId: receipt?.receipt_id || "rcpt_sample",
     receiptSha256: receipt?.integrity?.sha256 || "sample_sha256"
@@ -201,7 +210,7 @@ export function renderMetaToolsHTML(receipt) {
             <div class="metatools-label">Pareto Supervisor Trials</div>
             <div class="metatools-val-row" style="margin-bottom: 8px;">
               <span class="metatools-number">${escapeHtml(d.wonderTrials)}</span>
-              <span class="metatools-badge">MEASURED</span>
+              <span class="metatools-badge">${escapeHtml(d.wonderLabel)}</span>
             </div>
             <div class="metatools-label">Deterministic Stop Reason</div>
             <div style="font-size: 0.82rem; color: var(--lavender-200); line-height: 1.4;">
@@ -239,7 +248,7 @@ export function renderMetaToolsHTML(receipt) {
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <div class="metatools-label">Automated PR Patch (Unified Diff)</div>
               <div style="font-size: 0.78rem;">
-                Patch SHA: <span class="metatools-trace-id">${escapeHtml(d.patchSha256.slice(0, 16))}...</span>
+                Patch SHA: <span class="metatools-trace-id">${d.patchSha256 ? escapeHtml(d.patchSha256.slice(0, 16)) + "..." : "—"}</span>
               </div>
             </div>
 
@@ -355,7 +364,7 @@ export function compareRows(receipts) {
       metric: "Wonder Supervisor Trials",
       values: receipts.map((r) => {
         const d = extractMetaToolsData(r);
-        return { text: String(d.wonderTrials), tag: "MEASURED" };
+        return { text: String(d.wonderTrials), tag: d.wonderLabel };
       })
     },
     {
@@ -380,7 +389,7 @@ export function compareRows(receipts) {
       metric: "Muse Code Patch SHA-256",
       values: receipts.map((r) => {
         const d = extractMetaToolsData(r);
-        return { text: d.patchSha256.slice(0, 16) + "...", tag: "MEASURED" };
+        return { text: d.patchSha256 ? d.patchSha256.slice(0, 16) + "..." : "—", tag: d.musecodeLabel };
       })
     },
     {

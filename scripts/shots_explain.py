@@ -65,7 +65,7 @@ def setup_mock_routes(page, root_dir: Path, app_client: TestClient) -> None:
                     "intent": "explain",
                     "action": "explain",
                     "label": "MOCK",
-                    "text": "WattNot reduced electrical energy consumption by 27.1% [MEASURED] while maintaining response accuracy.",
+                    "text": "WattNot locates the metric on the page and reads its value and label straight from the signed receipt. [MOCK voiceguide route]",
                 }),
             )
             return
