@@ -15,21 +15,8 @@
 <script src="chrome.js" defer></script>
 </head>
 <body>
-<header class="top">
-  <nav class="tabs" id="tabs">
-    <button data-p="pHome" class="on">Overview</button>
-    <button data-p="pCfg">Configure</button>
-    <button data-p="pRun">Run</button>
-    <button data-p="pReport">Compare</button>
-    <button data-p="pProof">Proof</button>
-    <button data-p="pLearn">How it works</button>
-  </nav>
-  <span class="sp"></span>
-  <span id="wn-mic-slot" class="wn-mic-slot" aria-live="polite"></span>
-  <span class="chip" title="Where the numbers come from"><span class="dot"></span>Replay mode: no GPU is running</span>
-  <button class="btn" id="illusBtn" aria-pressed="false" title="Show SIMULATED and MOCK illustrations">Illustrations: off</button>
-  <a class="btn" href="report.html?run=run2-llama-350w">Run report</a>
-</header>
+<span id="wn-mic-slot" class="wn-mic-slot" aria-live="polite"></span>
+<button class="btn" id="illusBtn" aria-pressed="false" title="Show SIMULATED and MOCK illustrations" style="display:none">Illustrations: off</button>
 <main>
   <section class="page on" id="pHome"></section>
   <section class="page" id="pCfg"></section>

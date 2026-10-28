@@ -35,14 +35,13 @@ function fmt(v, digits = 2) {
 
 const isNum = (v) => typeof v === "number" && Number.isFinite(v);
 
-// A label chip that carries the visible word and colored dot.
+// A label chip that carries the visible word and distinct glyph.
 function chip(label) {
   const L = String(label || "pending").toUpperCase();
-  const tint = {
-    MEASURED: "--v-l-measured", ESTIMATE: "--v-l-estimate", SIMULATED: "--v-l-simulated",
-    MOCK: "--v-l-mock", REPLAY: "--v-l-replay", ADVICE: "--v-l-advice",
-  }[L] || "--v-mut";
-  return `<span class="v-chip"><i style="background:var(${tint})"></i>${esc(L)}</span>`;
+  const glyphs = { MEASURED: "●", ESTIMATE: "~", SIMULATED: "┄", MOCK: "○", SAMPLE: "○", REPLAY: "↻", ADVICE: "✦" };
+  const glyph = glyphs[L] || "•";
+  const cls = L.toLowerCase();
+  return `<span class="v-chip ${L} v-chip-${cls}"><i class="v-lab ${L}" aria-hidden="true">${glyph}</i>${esc(L)}</span>`;
 }
 
 // Every number shows its label word visibly next to it
@@ -240,7 +239,7 @@ function renderKpis(runsList, details) {
       <span class="more">Details &rarr;</span>
       <div class="name">Water saved</div>
       <div class="big">${isNum(litres)
-        ? `<span class="v-num">${fmt(litres, 3)}</span><span class="unit">L</span>${dot("ESTIMATE")}`
+        ? `<span class="v-num">${fmt(litres, 3)}</span><span class="unit">L</span>`
         : `<span class="emdash">${EM}</span>`}</div>
       <div class="foot">${isNum(litres) ? "From energy &times; 0.36 L/kWh" : "Needs metered energy"}</div>
     </div>
@@ -248,7 +247,7 @@ function renderKpis(runsList, details) {
       <span class="more">Details &rarr;</span>
       <div class="name">Cost saved</div>
       <div class="big">${isNum(usd)
-        ? `<span class="unit">$</span><span class="v-num">${fmt(usd, 4)}</span>${dot("ESTIMATE")}`
+        ? `<span class="unit">$</span><span class="v-num">${fmt(usd, 4)}</span>`
         : `<span class="emdash">${EM}</span>`}</div>
       <div class="foot">${isNum(usd) ? "From energy &times; $0.1387/kWh" : "Needs metered energy"}</div>
     </div>

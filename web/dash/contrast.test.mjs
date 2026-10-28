@@ -39,11 +39,11 @@ const CASES = [
   // status + label number colours sit on the dark card surfaces
   ["--v-pass", ["bg", "bg2", "s2e", "s17"]],
   ["--v-reject", ["bg", "bg2", "s2e", "s17"]],
-  ["--v-l-measured", ["bg", "bg2", "s2e", "s17"]],
-  ["--v-l-estimate", ["bg", "bg2", "s2e", "s17"]],
-  ["--v-l-simulated", ["bg", "bg2", "s2e", "s17"]],
-  ["--v-l-mock", ["bg", "bg2", "s2e", "s17"]],
-  ["--v-l-replay", ["bg", "bg2", "s2e", "s17"]],
+  ["--v-l-measured", ["bg", "bg2", "bg3", "violet", "s2e", "s17"]],
+  ["--v-l-estimate", ["bg", "bg2", "bg3", "violet", "s2e", "s17"]],
+  ["--v-l-simulated", ["bg", "bg2", "bg3", "violet", "s2e", "s17"]],
+  ["--v-l-mock", ["bg", "bg2", "bg3", "violet", "s2e", "s17"]],
+  ["--v-l-replay", ["bg", "bg2", "bg3", "violet", "s2e", "s17"]],
   ["--v-l-advice", ["bg", "bg2", "s2e", "s17"]],
 ];
 

@@ -8,11 +8,13 @@ const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const LABELS = ["MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "REPLAY", "ADVICE", "SAMPLE"];
 
-// Every data label renders visibly with its colored dot and label word
+// Every data label renders visibly with its distinct glyph and label word
 const chip = (l) => {
   const norm = String(l || "MOCK").toUpperCase();
   const cls = LABELS.includes(norm) ? norm : "MOCK";
-  return `<span class="v-chip ${esc(cls)}"><i class="v-lab ${esc(cls)}" aria-hidden="true"></i>${esc(norm)}</span>`;
+  const glyphs = { MEASURED: "●", ESTIMATE: "~", SIMULATED: "┄", MOCK: "○", SAMPLE: "○", REPLAY: "↻", ADVICE: "✦" };
+  const glyph = glyphs[cls] || "•";
+  return `<span class="v-chip ${esc(cls)} v-chip-${cls.toLowerCase()}"><i class="v-lab ${esc(cls)}" aria-hidden="true">${glyph}</i>${esc(norm)}</span>`;
 };
 const lab = (l) => (l ? chip(l) : "");
 
@@ -160,8 +162,8 @@ function steps(X) {
           <dt>Power cap</dt><dd>${num(X.b.cap_w, 0)} W → ${num(X.w.cap_w, 0)} W</dd>
           <dt>Energy / request</dt><dd>${num(X.bm.j_per_req)} → ${num(X.wm.j_per_req)} J ${chip("MEASURED")}</dd>
           <dt>Energy saved</dt><dd>${num(X.savedPct, 1)}% · ${num(X.jSavedTot)} J over the run ${chip("MEASURED")}</dd>
-          <dt>Cost saved</dt><dd>$${num(X.costSaved, 4)} ${chip("ESTIMATE")}</dd>
-          <dt>Water saved</dt><dd>${num(X.waterSaved, 4)} L ${chip("ESTIMATE")}</dd>
+          <dt>Cost saved</dt><dd>$${num(X.costSaved, 4)}</dd>
+          <dt>Water saved</dt><dd>${num(X.waterSaved, 4)} L</dd>
         </dl>
         <p>Energy is measured joules (${num(X.reqs, 0)} requests). Cost uses $${X.usd}/kWh and water uses ${X.wue} L/kWh — both ${chip("ESTIMATE")} derived from the measured joules.</p>`
         : `<p>This run has no tuned phase to compare against the baseline.</p>`,
@@ -296,7 +298,7 @@ function render() {
   const signedPill = isSigned
     ? `<span class="v-status pass"><span class="ic" aria-hidden="true">✓</span>Signed</span>`
     : `<span class="v-status" style="color:var(--v-mut)">— Not signed</span>`;
-  const signedSub = isSigned ? "Offline test key · Grade ESTIMATE" : "No published receipt for this run";
+  const signedSub = isSigned ? "Offline test key" : "No published receipt for this run";
 
   const dlBtn = isSigned
     ? `<a class="hero-dl-btn" href="${esc(rc.json)}" download>⬇ Download receipt JSON</a><span class="hero-dl-note">Cryptographic proof bundle</span>`
@@ -313,9 +315,9 @@ function render() {
       <div class="hero-val">${qualityVal} ${qualityChip}</div>
       <div class="hero-sub">${qualitySub}</div>
     </div>
-    <div class="hero-item" data-explain="report.receipt" data-explain-value="${isSigned ? 'Signed' : 'Not signed'}" data-explain-label="${isSigned ? 'ESTIMATE' : 'REPLAY'}" data-explain-source="receipt.signature">
+    <div class="hero-item" data-explain="report.receipt" data-explain-value="${isSigned ? 'Signed' : 'Not signed'}" data-explain-label="${isSigned ? 'MEASURED' : 'REPLAY'}" data-explain-source="receipt.signature">
       <div class="label">Receipt Status</div>
-      <div class="hero-val">${signedPill} ${chip(isSigned ? "ESTIMATE" : "REPLAY")}</div>
+      <div class="hero-val">${signedPill}${isSigned ? "" : ` ${chip("REPLAY")}`}</div>
       <div class="hero-sub">${signedSub}</div>
     </div>
     <div class="hero-dl-item">

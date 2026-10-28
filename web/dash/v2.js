@@ -51,12 +51,20 @@ function openInfo(id) {
     ${o.flag ? `<h4>In the code</h4><p><code>${esc(o.flag)}</code> · ${o.applies === "replay" ? "changes this replay now" : "saved for a live run; the replay uses the recorded value"}</p>` : ""}`;
   $("#side").classList.add("on"); $("#side").setAttribute("aria-hidden", "false"); $("#scrim").hidden = false; $("#sideX").focus();
 }
-function closeInfo() { $("#side").classList.remove("on"); $("#side").setAttribute("aria-hidden", "true"); $("#scrim").hidden = true; }
+function closeInfo() {
+  $("#side").classList.remove("on"); $("#side").setAttribute("aria-hidden", "true");
+  document.body.classList.remove("drawer-open");
+  $("#scrim").hidden = true;
+  setTimeout(() => S.radPan?.fit(), 310);
+}
 // Open arbitrary detail HTML in the shared side panel (used by the Compare tree
 // info buttons: detail opens here, never in a pop-up).
 function openSidePanel(title, html) {
   $("#sideBody").innerHTML = `<h2>${esc(title)}</h2>${html}`;
-  $("#side").classList.add("on"); $("#side").setAttribute("aria-hidden", "false"); $("#scrim").hidden = false; $("#sideX").focus();
+  $("#side").classList.add("on"); $("#side").setAttribute("aria-hidden", "false");
+  document.body.classList.add("drawer-open");
+  $("#scrim").hidden = false; $("#sideX").focus();
+  setTimeout(() => S.radPan?.fit(), 310);
 }
 $("#sideX").onclick = closeInfo; $("#scrim").onclick = closeInfo;
 const LEARN_INFO = {};
@@ -347,7 +355,7 @@ function renderRun() {
   const R = S.run;
   S.view ??= "both";
   $("#pRun").innerHTML = `<div class="bento"><div class="tile glass span4 lift run2block" id="run2block" aria-live="polite"></div>
-  <div class="tile glass span2 low"><div class="lvl">Run</div><h1>${esc(S.choice.name || "Run")}</h1><p>${esc(R.results.model)} · ${esc(R.results.workload)} · run id <code>${esc(R.run_id)}</code> ${badge("REPLAY")}. A recorded run, re-checked against your limits. Nothing is running on a GPU now.</p><p class="lock" id="phaseInd" role="status"></p>
+  <div class="tile glass span2 low"><div class="lvl">Run</div><h1>${esc(S.choice.name || "Run")}</h1><p>${esc(R.results.model)} · ${esc(R.results.workload)} · run id <code>${esc(R.run_id)}</code> ${badge("REPLAY")}</p><p class="lock" id="phaseInd" role="status"></p>
     <div class="noprint" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="pp">Pause</button><button class="btn" id="rs">Restart</button><select id="spd" style="width:auto"><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option><option value="20">20×</option></select></div>${legendHtml()}</div>
     <div class="tile glass span6" style="padding:10px 16px"><div style="display:flex;justify-content:space-between;font-size:13px"><span id="progT"></span><span id="progN" style="color:var(--mu)"></span></div><div class="prog"><i id="progB"></i></div>
     <div class="rail" id="rail">${R.pipeline.map((p, i) => `${i ? '<span class="edge"></span>' : ""}<button class="node" data-stage="${p.id}"><b>${esc(p.title)}</b><span id="ns-${p.id}">waiting</span></button>`).join("")}</div></div></div>
@@ -465,12 +473,12 @@ function mapTopics() {
              leaf("pw-w", "bolt", "With WattNot", e ? `350 W cap · <b>${esc(e.wattnot)}</b>/req · <b>${esc(e.delta)}</b> ${badge(e.tag)}` : "350 W cap · not measured")],
       detail: `<b>What went right.</b> RUN2 on Llama 3.1 8B at a 350 W cap: <b>−27.1%</b> joules per request ${badge("MEASURED")} (data/h100-run2/vm/steps/cap350.json). Earlier sweep on Muse Glimmer 30B at 400 W: <b>−21.0%</b> with p99 +3.7% ${badge("MEASURED")} (H100 run sweep.csv, NVML). Qwen3 adaptive top-k saved 7.0% and passed all three gates at 95.7% agreement ${badge("MEASURED")}.` },
     { id: "cost", color: "#C4B4D6", name: "Cost", sub: "Electricity per 1M requests",
-      kids: [leaf("c-s", "coin", "Without WattNot", c ? `Stock: <b>${esc(c.stock)}</b> ${badge(c.tag)}` : "Stock cost: not measured"),
-             leaf("c-w", "coin", "With WattNot", c ? `Capped: <b>${esc(c.wattnot)}</b> (<b>${esc(c.delta)}</b>) ${badge(c.tag)}` : "Capped cost: not measured")],
+      kids: [leaf("c-s", "coin", "Without WattNot", c ? `Stock: <b>${esc(c.stock)}</b>` : "Stock cost: not measured"),
+             leaf("c-w", "coin", "With WattNot", c ? `Capped: <b>${esc(c.wattnot)}</b> (<b>${esc(c.delta)}</b>)` : "Capped cost: not measured")],
       detail: `Measured joules times <b>$0.1387</b>/kWh, the US commercial electricity price (EIA). The meter reading is ${badge("MEASURED")}; the bill math is ${badge("ESTIMATE")}.` },
     { id: "water", color: "#8E7A9E", name: "Water", sub: "Cooling water per 1M requests",
-      kids: [leaf("w-s", "drop", "Without WattNot", w ? `Stock: <b>${esc(w.stock)}</b> ${badge(w.tag)}` : "Stock water: not measured"),
-             leaf("w-w", "drop", "With WattNot", w ? `Capped: <b>${esc(w.wattnot)}</b> (<b>${esc(w.delta)}</b>) ${badge(w.tag)}` : "Capped water: not measured")],
+      kids: [leaf("w-s", "drop", "Without WattNot", w ? `Stock: <b>${esc(w.stock)}</b>` : "Stock water: not measured"),
+             leaf("w-w", "drop", "With WattNot", w ? `Capped: <b>${esc(w.wattnot)}</b> (<b>${esc(w.delta)}</b>)` : "Capped water: not measured")],
       detail: `Measured joules times <b>0.36 L</b>/kWh, a US fleet-average site water factor (LBNL). On-site cooling water only; making the electricity is not counted. ${badge("ESTIMATE")}.` },
     { id: "latency", color: "#B49BDB", name: "Latency", sub: "Slowest 1% of requests (p99)",
       kids: [leaf("l-s", "clock", "Without WattNot", p ? `Stock p99 <b>${esc(p.stock)}</b> ${badge(p.tag)}` : "Stock p99: not measured"),
@@ -960,10 +968,12 @@ const TREE_DESC = {
   budget: "Spend must stay inside the run's budget.",
   sam: "SAM 3.1 outlines each rack; WattNot marks the rack it can cool. Heat is simulated from the measured power drop.",
 };
-const treeVal = (v) => {
+const treeVal = (v, branch) => {
   if (!v) return `<span class="rad-miss">–</span><span class="rad-pending">pending</span>`;
   if (v.gate) return v.pass ? `<span class="rad-pass">✓ pass</span> ${badge("MEASURED")}` : `<span class="rad-fail">✕ fail</span> ${badge("MEASURED")}`;
-  return `${cnum(esc(v.text), v.tag)}${badge(v.tag)}`;
+  const isCostOrWater = branch === "cost" || branch === "water";
+  const showBadge = v.tag && (!isCostOrWater || v.tag !== "ESTIMATE");
+  return `${cnum(esc(v.text), isCostOrWater && v.tag === "ESTIMATE" ? null : v.tag)}${showBadge ? ` ${badge(v.tag)}` : ""}`;
 };
 function branchDetailHtml(rec, id) {
   const sv = savedPct(rec, id);
@@ -1015,14 +1025,28 @@ function mountCompare() {
   const page = $("#pReport");
   const rec = S.cmpRec;
   $("#cmpR7")?.remove();
-  const top = document.createElement("div"); top.id = "cmpR7"; top.innerHTML = cmpHeadHtml(rec);
+  const runs = (S.runs && S.runs.runs) || [];
+  const selId = S.selRunId || rec?.run_id || "";
+  const top = document.createElement("div"); top.id = "cmpR7"; top.innerHTML = cmpHeadHtml(rec, runs, selId);
   page.prepend(top);
-  const stage = $("#radialStage"); if (!stage) return;
-  if (S.radPan) { try { S.radPan.destroy(); } catch {} S.radPan = null; }
-  stage.style.transform = "none";
+  const runSel = $("#cmpRunSel", top);
+  if (runSel) {
+    runSel.value = selId;
+    runSel.onchange = (e) => selectRun(e.target.value);
+  }
+
+  const wrap = $("#radialWrap");
+  const stage = $("#radialStage"); if (!stage || !wrap) return;
+
+  // Initialize or re-fit Pan and Zoom canvas
+  if (!S.radPan) {
+    S.radPan = initPanCanvas(wrap, stage, { controls: true, pad: 32 });
+  }
+
   const wires = $("#radialWires"); if (wires && wires.parentElement !== stage) stage.prepend(wires);
   $$(".rad-child, .rad-node, .rad-leaf", stage).forEach((k) => k.remove());
   S.cmpTreeMode = true; S.cmpActive = S.cmpActive || "power"; S.cmpPath = S.cmpPath || [];
+  S.cmpCollapsed = S.cmpCollapsed || false;
   const bar = $(".radial-bar");
   if (bar && !$("#cmpCrumb", bar)) bar.insertAdjacentHTML("afterbegin", `<nav class="cmp-crumb" id="cmpCrumb" aria-label="Compare path"></nav>`);
   if (bar && !$("[data-where]", bar)) {
@@ -1032,7 +1056,34 @@ function mountCompare() {
   }
   $$("[data-where]").forEach((w) => (w.onclick = () => openWhere(rec)));
 
-  const branchSaved = (id) => { const sv = savedPct(rec, id); return sv ? `${cnum(esc(sv.text), sv.tag)} ${badge(sv.tag)}` : `<span class="rad-miss">–</span><span class="v-chip">pending</span>`; };
+  const branchSaved = (id) => {
+    const sv = savedPct(rec, id);
+    if (!sv) return `<span class="rad-miss">–</span><span class="v-chip">pending</span>`;
+    const isCostOrWater = id === "cost" || id === "water";
+    const tag = isCostOrWater ? null : sv.tag;
+    return `${cnum(esc(sv.text), tag)}${tag ? ` ${badge(tag)}` : ""}`;
+  };
+
+  // Root WattNot node toggle collapse/expand
+  const centreNode = $("#centreNode", stage);
+  if (centreNode) {
+    centreNode.setAttribute("aria-expanded", String(!S.cmpCollapsed));
+    centreNode.onclick = (e) => {
+      e.stopPropagation();
+      if (S.cmpCollapsed) {
+        S.cmpCollapsed = false;
+        S.cmpActive = "power";
+        S.cmpPath = ["where", "own"];
+      } else {
+        S.cmpCollapsed = true;
+        S.cmpActive = null;
+        S.cmpPath = [];
+      }
+      centreNode.setAttribute("aria-expanded", String(!S.cmpCollapsed));
+      renderTree();
+      setTimeout(() => S.radPan?.fit(), 50);
+    };
+  }
 
   function renderCrumb() {
     const el = $("#cmpCrumb"); if (!el) return;
@@ -1052,19 +1103,20 @@ function mountCompare() {
 
   function renderTree() {
     $$(".rad-card", stage).forEach((c) => {
-      const on = c.dataset.node === S.cmpActive;
+      const on = !S.cmpCollapsed && c.dataset.node === S.cmpActive;
       c.dataset.open = on ? "1" : "0";
       $(".rad-head", c)?.setAttribute("aria-expanded", String(on));
     });
     $$(".rad-node, .rad-leaf", stage).forEach((n) => n.remove());
 
-    if (S.cmpActive) {
+    if (!S.cmpCollapsed && S.cmpActive) {
       // 1. Render child nodes for each level in path
       for (let d = 0; d <= S.cmpPath.length; d++) {
         for (const node of treeChildren(S.cmpPath.slice(0, d))) {
           const v = treeValue(rec, S.cmpActive, node);
           const has = !!(node.kids && node.kids.length);
           const onPath = S.cmpPath[d] === node.id;
+          const desc = TREE_DESC[node.id] || "";
           const stableId = node.id === "waste" ? "agent-waste" : node.id;
           const nodeVal = v?.val || (v?.status === "pass" ? "pass" : (v?.status === "fail" ? "fail" : "–"));
           const nodeTag = v?.tag || (node.kind === "gate" ? "MEASURED" : "ESTIMATE");
@@ -1076,13 +1128,22 @@ function mountCompare() {
           el.setAttribute("data-explain-value", nodeVal);
           el.setAttribute("data-explain-label", nodeTag);
           el.setAttribute("data-explain-source", `tree.${node.id}`);
-          el.innerHTML = `<button class="rad-head2" aria-expanded="${onPath}"${has ? "" : " disabled"} aria-label="${esc(node.name)}${has ? ": open its routes" : ""}"><b>${esc(node.name)}</b><span class="rad-val">${treeVal(v)}</span>${node.own_only ? `<small class="rad-sub">own GPU only</small>` : ""}${has ? `<span class="rad-chev" aria-hidden="true">›</span>` : ""}</button><button class="ibtn rad-i" aria-label="${esc(node.name)} details">i</button>`;
+          el.innerHTML = `<button class="rad-head2" aria-expanded="${onPath}" aria-label="${esc(node.name)}${has ? ": open its routes" : ""}">`
+            + `<div class="rad-node-row"><b>${esc(node.name)}</b>${has ? `<span class="rad-chev" aria-hidden="true">›</span>` : ""}</div>`
+            + `<div class="rad-val">${treeVal(v, S.cmpActive)}</div>`
+            + `${desc ? `<div class="rad-node-desc">${esc(desc)}</div>` : ""}`
+            + `${node.own_only ? `<small class="rad-sub">own GPU only</small>` : ""}</button>`
+            + `<button class="ibtn rad-i" aria-label="${esc(node.name)} details">i</button>`;
           stage.appendChild(el);
           if (has) {
             $(".rad-head2", el).onclick = () => {
               if (onPath) S.cmpPath = S.cmpPath.slice(0, d);
               else S.cmpPath = S.cmpPath.slice(0, d).concat(node.id);
               renderTree();
+            };
+          } else {
+            $(".rad-head2", el).onclick = () => {
+              openSidePanel(node.name, nodeDetailHtml(rec, S.cmpActive, node));
             };
           }
           $(".rad-i", el).onclick = (e) => {
@@ -1091,38 +1152,16 @@ function mountCompare() {
           };
         }
       }
-
-      // 2. Render leaf detail cards aligned in a column on the right
-      const currentKids = treeChildren(S.cmpPath);
-      const leafNodes = (currentKids && currentKids.length) ? currentKids : (S.cmpPath.length ? treeChildren(S.cmpPath.slice(0, -1)) : treeChildren([]));
-      (leafNodes || []).forEach((leaf) => {
-        const v = treeValue(rec, S.cmpActive, leaf);
-        const desc = TREE_DESC[leaf.id] || "";
-        const stableId = leaf.id === "waste" ? "agent-waste" : leaf.id;
-        const leafVal = v?.val || (v?.status === "pass" ? "pass" : (v?.status === "fail" ? "fail" : "–"));
-        const leafTag = v?.tag || (leaf.kind === "gate" ? "MEASURED" : "ESTIMATE");
-        const cardEl = document.createElement("div");
-        cardEl.className = "rad-leaf";
-        cardEl.dataset.leaf = leaf.id;
-        cardEl.setAttribute("data-explain", `compare.${S.cmpActive}.${stableId}`);
-        cardEl.setAttribute("data-explain-value", leafVal);
-        cardEl.setAttribute("data-explain-label", leafTag);
-        cardEl.setAttribute("data-explain-source", `tree.${leaf.id}`);
-        cardEl.innerHTML = `<div class="rad-leaf-hd"><span class="rad-leaf-title">${esc(leaf.name)}</span><span style="color:var(--cy);font-size:12px">→</span></div><div class="rad-leaf-val">${treeVal(v)}</div><div class="rad-leaf-desc">${esc(desc)}</div>`;
-        cardEl.onclick = () => {
-          openSidePanel(leaf.name, nodeDetailHtml(rec, S.cmpActive, leaf));
-        };
-        stage.appendChild(cardEl);
-      });
     }
 
     renderCrumb();
     layoutTree();
+    setTimeout(() => S.radPan?.fit(), 30);
   }
 
   $$(".rad-card", stage).forEach((c) => {
     const id = c.dataset.branch, name = id[0].toUpperCase() + id.slice(1);
-    c.classList.add("min"); c.dataset.open = id === S.cmpActive ? "1" : "0"; c.dataset.node = id;
+    c.classList.add("min"); c.dataset.open = (!S.cmpCollapsed && id === S.cmpActive) ? "1" : "0"; c.dataset.node = id;
     const sv = savedPct(rec, id);
     const svVal = sv ? sv.text : "–";
     const svTag = id === "power" ? "MEASURED" : "ESTIMATE";
@@ -1131,106 +1170,158 @@ function mountCompare() {
     c.setAttribute("data-explain-value", svVal);
     c.setAttribute("data-explain-label", svTag);
     c.setAttribute("data-explain-source", svSrc);
-    c.innerHTML = `<button class="rad-head" aria-expanded="${id === S.cmpActive}" aria-label="${name}: open its routes"><b><span>${name}</span>${badge(id === "power" ? "MEASURED" : "ESTIMATE")}</b><span class="rad-val">${branchSaved(id)}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power</small>`}</button><button class="ibtn rad-i" aria-label="${name} details">i</button>`;
-    $(".rad-head", c).onclick = () => { S.cmpActive = id; S.cmpPath = []; renderTree(); };
-    $(".rad-i", c).onclick = (e) => { e.stopPropagation(); openSidePanel(name, branchDetailHtml(rec, id)); };
+    c.innerHTML = `<button class="rad-head" aria-expanded="${!S.cmpCollapsed && id === S.cmpActive}" aria-label="${name}: open its routes"><b><span>${name}</span>${id === "power" ? badge("MEASURED") : ""}</b><span class="rad-val">${branchSaved(id)}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power</small>`}</button><button class="ibtn rad-i" aria-label="${name} details">i</button>`;
+    $(".rad-head", c).onclick = () => {
+      S.cmpCollapsed = false; S.cmpActive = id; S.cmpPath = [];
+      renderTree();
+      openSidePanel(name, branchDetailHtml(rec, id));
+      // Let the drawer-open width transition finish, then re-fit the canvas.
+      setTimeout(() => S.radPan?.fit(), 320);
+    };
+    $(".rad-i", c).onclick = (e) => { e.stopPropagation(); openSidePanel(name, branchDetailHtml(rec, id)); setTimeout(() => S.radPan?.fit(), 320); };
   });
 
   // Expand all opens the Power branch's levers; Collapse all returns to top
   $$("#pReport [data-radial]").forEach((b) => (b.onclick = () => {
     if (b.dataset.radial === "open") {
+      S.cmpCollapsed = false;
       S.cmpActive = "power";
       S.cmpPath = ["where", "own"];
     } else {
+      S.cmpCollapsed = false;
       S.cmpActive = "power";
       S.cmpPath = [];
     }
     renderTree();
+    setTimeout(() => S.radPan?.fit(), 50);
   }));
 
+  wireCompareTooltips(stage);
   renderTree();
   const sig = $("#pReport .receipt-meta"); if (!sig) $("#pReport").insertAdjacentHTML("beforeend", `<div class="receipt-meta glass">${metaInRun(rec)}</div>`);
 }
 
-// Mind Map layout:
-// Center node (WattNot / run) on the left-centre.
-// Power, Cost, Water fanned in an orderly arc to the right.
-// Child nodes in an orderly secondary arc / column.
-// Leaf detail cards sit aligned in a column on the right with dashed elbow connectors.
-// Fits the viewport (container size + SVG viewBox), no panning.
+// Floating tooltip handler that never overlaps nodes
+function wireCompareTooltips(stage) {
+  let tip = $("#cmpTooltip");
+  if (!tip) {
+    tip = document.createElement("div");
+    tip.id = "cmpTooltip";
+    tip.className = "cmp-tooltip glass";
+    tip.style.cssText = "position:fixed;z-index:9999;display:none;pointer-events:none;padding:8px 12px;border-radius:10px;font-size:12px;color:#DCD6E4;background:rgba(23,23,36,0.94);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.14);box-shadow:0 8px 24px rgba(0,0,0,0.5);max-width:280px;line-height:1.4;";
+    document.body.appendChild(tip);
+  }
+
+  stage.onmouseover = (e) => {
+    const el = e.target.closest(".rad-node, .rad-card, .rad-leaf, .radial-centre");
+    if (!el) return;
+    const lab = el.getAttribute("data-explain-label");
+    const val = el.getAttribute("data-explain-value");
+    // The node's <b> can hold its name plus an inline label chip; drop the chip
+    // so the tooltip reads "Power", not "PowerMEASURED".
+    const titleEl = el.querySelector("b, .rad-leaf-title, .centre-node");
+    let title = "";
+    if (titleEl) { const clone = titleEl.cloneNode(true); clone.querySelectorAll(".v-chip, .b-chip").forEach((x) => x.remove()); title = clone.textContent.trim(); }
+    const desc = el.querySelector(".rad-leaf-desc, small, .centre-sub")?.textContent || el.title || "";
+    if (!title && !desc) return;
+    tip.innerHTML = `<div style="font-weight:600;color:#DCD6E4;margin-bottom:2px">${esc(title)}${lab ? ` <span class="v-chip ${esc(lab)}"><i class="v-lab ${esc(lab)}"></i>${esc(lab)}</span>` : ""}</div>${desc ? `<div style="color:var(--v-sub,#B2A6C3);font-size:11.5px">${esc(desc)}</div>` : ""}${val && val !== "–" ? `<div style="margin-top:4px;font-family:var(--v-num,monospace);color:#8FD3B0">${esc(val)}</div>` : ""}`;
+    tip.style.display = "block";
+    const r = el.getBoundingClientRect();
+    const tw = tip.offsetWidth || 200, th = tip.offsetHeight || 50;
+    let top = r.top - th - 8;
+    if (top < 80) top = r.bottom + 8;
+    let left = r.left + (r.width - tw) / 2;
+    left = Math.max(16, Math.min(window.innerWidth - tw - 16, left));
+    tip.style.top = `${top}px`;
+    tip.style.left = `${left}px`;
+  };
+
+  stage.onmouseout = (e) => {
+    if (e.target.closest(".rad-node, .rad-card, .rad-leaf, .radial-centre")) {
+      if (tip) tip.style.display = "none";
+    }
+  };
+}
+
+// Layered tidy-tree layout:
+// Center node on the left-centre.
+// Power, Cost, Water fanned in an arc around WattNot with clean non-overlapping spacing.
+// Child nodes in tidy columns by depth with vertical slots from subtree leaf counts.
+// Leaf cards aligned in the rightmost column.
 function layoutTree() {
-  const wrap = $("#radialWrap"), stage = $("#radialStage"), svg = $("#radialWires"), centre = $("#radCentre");
-  if (!wrap || !stage || !svg || !centre) return;
-  const panelW = wrap.clientWidth || 1200;
-  const panelH = wrap.clientHeight || 560;
+  const stage = $("#radialStage"), svg = $("#radialWires"), centre = $("#radCentre");
+  if (!stage || !svg || !centre) return;
 
-  // Base design dimensions to fit mind map nicely without clipping
-  const minDesignW = 1160;
-  const minDesignH = 520;
-  const scale = (panelW < minDesignW || panelH < minDesignH)
-    ? Math.min(panelW / minDesignW, panelH / minDesignH)
-    : 1;
+  const ROW_HEIGHT = 86;
+  const TOP_PAD = 36;
+  const path = S.cmpPath || [];
 
-  const W = Math.round(panelW / scale);
-  const H = Math.round(panelH / scale);
+  // Compute tidy-tree slots for child nodes
+  const nodeSlots = new Map();
+  let currentSlot = 0;
 
+  function allocateSlots(kids, depth) {
+    for (const k of kids) {
+      const key = `${depth}:${k.id}`;
+      const isExpanded = path[depth] === k.id;
+      const subKids = isExpanded ? treeChildren(path.slice(0, depth + 1)) : [];
+      if (subKids && subKids.length > 0) {
+        const start = currentSlot;
+        allocateSlots(subKids, depth + 1);
+        const end = currentSlot - 1;
+        nodeSlots.set(key, { depth, id: k.id, center: (start + end) / 2 });
+      } else {
+        nodeSlots.set(key, { depth, id: k.id, center: currentSlot });
+        currentSlot++;
+      }
+    }
+  }
+
+  if (!S.cmpCollapsed && S.cmpActive) {
+    allocateSlots(treeChildren([]), 0);
+  }
+
+  const totalSlots = Math.max(currentSlot, 4);
+  const H = Math.max(620, TOP_PAD * 2 + totalSlots * ROW_HEIGHT);
+  const cy = Math.round(H / 2);
+
+  // 1. Central WattNot node
+  const cx = 50;
+  centre.style.left = `${cx}px`;
+  centre.style.top = `${cy}px`;
+
+  // 2. Power, Cost, Water in dedicated non-overlapping rows around WattNot
+  const cards = $$(".rad-card", stage);
+  const metricPos = {
+    power: [cx + 175, cy - 150],
+    cost:  [cx + 175, cy],
+    water: [cx + 175, cy + 150],
+  };
+  cards.forEach((c) => {
+    const p = metricPos[c.dataset.node] || [cx + 175, cy];
+    c.style.left = `${p[0]}px`;
+    c.style.top = `${p[1]}px`;
+  });
+
+  // 3. Child nodes in columns per depth
+  const nodes = $$(".rad-node", stage);
+  const depth = path.length;
+  const maxDepth = depth;
+
+  nodes.forEach((el) => {
+    const d = +el.dataset.depth;
+    const nid = el.dataset.node;
+    const slot = nodeSlots.get(`${d}:${nid}`);
+    const colX = 460 + d * 250;
+    const slotY = slot ? Math.round(TOP_PAD + slot.center * ROW_HEIGHT + ROW_HEIGHT / 2) : cy;
+    el.style.left = `${colX}px`;
+    el.style.top = `${slotY}px`;
+  });
+
+  const W = Math.max(560, 460 + maxDepth * 250 + 150);
   stage.style.width = `${W}px`;
   stage.style.height = `${H}px`;
   stage.style.transformOrigin = "top left";
-  stage.style.transform = scale < 1 ? `scale(${scale.toFixed(4)})` : "none";
-
-  // 1. Central node on left-centre
-  const cx = 85, cy = Math.round(H / 2);
-  centre.style.left = `${cx}px`; centre.style.top = `${cy}px`;
-
-  // 2. Power, Cost, and Water fan out in an ARC around WattNot (cx, cy)
-  // Clean arc with no overlap: Cost straight right (0°), Power angled up (-45°), Water angled down (+45°).
-  const cards = $$(".rad-card", stage);
-  const metricPos = {
-    power: [Math.round(cx + 160), Math.round(cy - 150)],
-    cost:  [Math.round(cx + 255), cy],
-    water: [Math.round(cx + 160), Math.round(cy + 150)],
-  };
-  cards.forEach((c) => {
-    const p = metricPos[c.dataset.node] || [cx + 255, cy];
-    c.style.left = `${p[0]}px`; c.style.top = `${p[1]}px`;
-  });
-
-  // 3. Child nodes (Level 0 and deeper)
-  // Compute vertical bounds (topMargin, botMargin) from H so no node is cut off
-  const topMargin = Math.max(30, Math.round(H * 0.05));
-  const botMargin = Math.max(55, Math.round(H * 0.10));
-  const usableH = H - topMargin - botMargin;
-
-  const nodes = $$(".rad-node", stage);
-  const depth = (S.cmpPath || []).length;
-  const childX = Math.round(cx + 455);
-  const drillX = Math.round(cx + 645);
-
-  for (let d = 0; d <= depth; d++) {
-    const ring = nodes.filter((k) => +k.dataset.depth === d);
-    const count = ring.length;
-    const x = d === 0 ? childX : drillX;
-    const stepY = count > 1 ? usableH / (count - 1) : 0;
-    ring.forEach((el, idx) => {
-      el.style.left = `${x}px`;
-      el.style.top = `${count === 1 ? cy : Math.round(topMargin + idx * stepY)}px`;
-    });
-  }
-
-  // 4. Leaf detail cards aligned in column on the right
-  const leaves = $$(".rad-leaf", stage);
-  const leafCount = leaves.length;
-  const leafW = 260;
-  const leafX = W - leafW - 16;
-  const leafTopStart = topMargin + 5;
-  const leafTopEnd = H - 110;
-  const leafStepY = leafCount > 1 ? (leafTopEnd - leafTopStart) / (leafCount - 1) : 0;
-  leaves.forEach((el, idx) => {
-    const y = leafCount === 1 ? cy - 40 : Math.round(leafTopStart + idx * leafStepY);
-    el.style.left = `${leafX}px`;
-    el.style.top = `${y}px`;
-  });
 
   drawTreeWires(cx, cy, W, H);
 }
@@ -1242,33 +1333,26 @@ function drawTreeWires(cx, cy, W, H) {
 
   const getCenter = (el) => [parseFloat(el.style.left) || 0, parseFloat(el.style.top) || 0];
   const dottedPaths = [];
-  const elbowPaths = [];
   const dots = [];
 
-  const addDottedCurve = (x1, y1, x2, y2) => {
+  const addDottedCurve = (x1, y1, x2, y2, highlight = false) => {
     const dx = x2 - x1;
     const cp1x = x1 + dx * 0.45, cp2x = x1 + dx * 0.55;
     const d = `M ${x1.toFixed(1)} ${y1.toFixed(1)} C ${cp1x.toFixed(1)} ${y1.toFixed(1)}, ${cp2x.toFixed(1)} ${y2.toFixed(1)}, ${x2.toFixed(1)} ${y2.toFixed(1)}`;
-    dottedPaths.push(d);
+    dottedPaths.push({ d, highlight });
     dots.push([x1, y1]);
     dots.push([x2, y2]);
   };
 
-  const addElbowPath = (x1, y1, x2, y2) => {
-    const midX = (x1 + x2) / 2;
-    const d = `M ${x1.toFixed(1)} ${y1.toFixed(1)} H ${midX.toFixed(1)} V ${y2.toFixed(1)} H ${x2.toFixed(1)}`;
-    elbowPaths.push(d);
-    dots.push([x2, y2]);
-  };
-
-  // 1. Connect central node to metric cards (Power, Cost, Water) in arc
+  // 1. Connect central node to metric cards (Power, Cost, Water)
   $$(".rad-card", stage).forEach((c) => {
     const [mx, my] = getCenter(c);
-    addDottedCurve(cx + 48, cy, mx - 102, my);
+    const isAct = !S.cmpCollapsed && c.dataset.node === S.cmpActive;
+    addDottedCurve(cx + 48, cy, mx - 102, my, isAct);
   });
 
   // 2. Connect active metric card to child nodes
-  if (S.cmpActive) {
+  if (!S.cmpCollapsed && S.cmpActive) {
     const activeCard = $(`.rad-card[data-node="${S.cmpActive}"]`, stage);
     const [mx, my] = activeCard ? getCenter(activeCard) : [cx + 48, cy];
     const nodes = $$(".rad-node", stage);
@@ -1276,7 +1360,7 @@ function drawTreeWires(cx, cy, W, H) {
 
     depth0.forEach((el) => {
       const [kx, ky] = getCenter(el);
-      addDottedCurve(mx + 102, my, kx - 110, ky);
+      addDottedCurve(mx + 102, my, kx - 115, ky, true);
     });
 
     // 3. Connect parent node to deeper child nodes
@@ -1288,31 +1372,17 @@ function drawTreeWires(cx, cy, W, H) {
       const [px, py] = parentEl ? getCenter(parentEl) : [mx, my];
       ring.forEach((el) => {
         const [kx, ky] = getCenter(el);
-        addDottedCurve(px + 110, py, kx - 110, ky);
+        addDottedCurve(px + 115, py, kx - 115, ky, true);
       });
     }
-
-    // 4. Dashed elbow connectors to leaf detail cards
-    const leaves = $$(".rad-leaf", stage);
-    leaves.forEach((leafEl) => {
-      const leafId = leafEl.dataset.leaf;
-      const leafX = parseFloat(leafEl.style.left) || 0;
-      const leafY = (parseFloat(leafEl.style.top) || 0) + (leafEl.offsetHeight || 50) / 2;
-      const matchingNode = nodes.find((k) => k.dataset.node === leafId) ||
-        nodes.find((k) => +k.dataset.depth === depth) ||
-        depth0[0];
-      if (matchingNode) {
-        const [nx, ny] = getCenter(matchingNode);
-        addElbowPath(nx + 110, ny, leafX - 2, leafY);
-      }
-    });
   }
 
-  const dottedSvg = dottedPaths.map((d) => `<path d="${d}" stroke="#B2A6C3" stroke-width="1.8" stroke-dasharray="4,4" fill="none" />`).join("");
-  const elbowSvg = elbowPaths.map((d) => `<path d="${d}" stroke="#8E7A9E" stroke-width="1.5" stroke-dasharray="5,4" fill="none" />`).join("");
+  const dottedSvg = dottedPaths.map(({ d, highlight }) =>
+    `<path d="${d}" stroke="${highlight ? '#DCD6E4' : 'rgba(178,166,195,0.30)'}" stroke-width="${highlight ? '2' : '1.4'}" stroke-dasharray="4,4" fill="none" />`
+  ).join("");
   const dotsSvg = dots.map(([x, y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#B2A6C3" /><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.5" fill="#DCD6E4" />`).join("");
 
-  svg.innerHTML = dottedSvg + elbowSvg + dotsSvg;
+  svg.innerHTML = dottedSvg + dotsSvg;
 }
 async function sha256(s) { if (!globalThis.crypto?.subtle) return null; const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
 async function startQuiet() { const r = await fetch("/api/dash/v2/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(S.choice) }); S.run = await r.json(); S.n = S.run.events.length; renderRun(); }
