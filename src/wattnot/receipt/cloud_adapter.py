@@ -74,6 +74,8 @@ def from_cloud(cloud: Mapping, *, prev_sha256: str | None = None) -> dict[str, A
     label = "SIMULATED" if simulated else "ESTIMATE"
     classes = cloud["classes"]
     n_req = cloud["totals"]["requests"]
+    if not n_req:
+        raise ValueError("cloud receipt reports zero requests; nothing to adapt")
     e = cloud["energy"]
     t_lo, t_hi = e["tuned_wh"]["low"] / n_req, e["tuned_wh"]["high"] / n_req
     b_lo, b_hi = e["baseline_wh"]["low"] / n_req, e["baseline_wh"]["high"] / n_req

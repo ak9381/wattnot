@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import itertools
 import json
 import threading
 import time
@@ -39,6 +40,12 @@ _OBS_CHARS = 220
 
 # What the planner reads when a helper was stopped, and when it asks for that subtask again.
 HELPER_STOPPED = "stopped: no progress, do not re-delegate this subtask."
+
+# Early-stop responses carried a fixed id ("wattnot-stop"), so every stop across every run and
+# every call collided on the same completion id. A client that keys completions by id (the usual
+# OpenAI pattern) would silently overwrite one stop with the next. Give each stop a unique id.
+# next() on an itertools.count is atomic under CPython, so no extra lock is needed.
+_STOP_ID_SEQ = itertools.count(1)
 
 
 def last_observation(messages: list) -> tuple[str, str] | None:
@@ -363,7 +370,7 @@ class WasteGuard:
             content += f" Latest result (from {tool}): {text}"
             wn["last_result"] = {"tool": tool, "text": text}
         return {
-            "id": "wattnot-stop",
+            "id": f"wattnot-stop-{next(_STOP_ID_SEQ)}",
             "object": "chat.completion",
             "created": int(time.time()),
             "model": model,

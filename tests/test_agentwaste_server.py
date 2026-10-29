@@ -74,12 +74,12 @@ def test_nudge_then_stop_and_run_isolation() -> None:
     second = client.post("/v1/chat/completions", json=repeat_body(),
                          headers=headers_a)
     assert second.status_code == 200
-    assert second.json()["id"] == "wattnot-stop"
+    assert second.json()["id"].startswith("wattnot-stop")
     assert len(fake.calls) == 1
     other = client.post("/v1/chat/completions", json=repeat_body(),
                         headers={"X-WattNot-Run": "run-b"})
     assert other.status_code == 200
-    assert other.json().get("id") != "wattnot-stop"
+    assert not other.json().get("id", "").startswith("wattnot-stop")
     assert len(fake.calls) == 2
 
 
@@ -89,7 +89,7 @@ def test_default_run_id_groups_same_opener() -> None:
                        json=repeat_body()).status_code == 200
     assert len(fake.calls) == 1
     second = client.post("/v1/chat/completions", json=repeat_body())
-    assert second.json()["id"] == "wattnot-stop"
+    assert second.json()["id"].startswith("wattnot-stop")
     assert len(fake.calls) == 1
     fresh = {"model": "m", "messages": [{"role": "user", "content": "other"}]}
     assert client.post("/v1/chat/completions", json=fresh).status_code == 200
