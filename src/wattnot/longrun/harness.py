@@ -6,7 +6,8 @@ Per tier and arm it records: GPU joules (NVML energy counter around that tier on
 pass rate, p99 item latency, tokens. The report turns that into, per tier:
 
 - Wh per task (MEASURED, GPU only)
-- mL of water per task (ESTIMATE: WUE 1.8 L/kWh, see wattnot.impact)
+- mL of water per task (ESTIMATE: WUE 0.36 L/kWh headline, on-site cooling;
+  up to 1.8 L/kWh including power-plant water, see wattnot.impact)
 - $ per 1k tasks for energy (ESTIMATE: tariff 0.12 $/kWh) and for GPU time (ESTIMATE: the rental
   rate, default $5.13/h for the E2E H100)
 - the gate: pass-rate drop <= 2 pts and p99 within +10% of stock, the same rules as the

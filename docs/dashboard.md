@@ -91,7 +91,7 @@ from what the stream says: LIVE, REPLAY, EXAMPLE or MOCK (`run.started.data.mode
 Labels: MEASURED (read from a meter or a log), ESTIMATE (computed, assumption shown), SIMULATED,
 MOCK or ADVICE; a missing value is a dash. In the room, only the H100 card's GPU power is MEASURED; every
 other rack and all temperatures are SIMULATED; cooling and water are ESTIMATEs (PUE 1.56 from the Uptime
-Institute 2024 survey, 1.8 L/kWh industry-average WUE). Levers are never added together: they come from separate runs.
+Institute 2024 survey; water 0.36 L/kWh on-site cooling headline, up to 1.8 L/kWh including power-plant water, WUE ESTIMATE). Levers are never added together: they come from separate runs.
 
 ### Operator check
 

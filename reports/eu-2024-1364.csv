@@ -6,7 +6,7 @@ rcpt_20261028_100000_a00001,energy_saving_billed,9.5736,%,MEASURED,"receipt rcpt
 rcpt_20261028_100000_a00001,idle_power,,W,NOT_AVAILABLE,idle not measured in this run
 rcpt_20261028_100000_a00001,water_per_request,0.015559,mL/request,ESTIMATE,"Wh/request x WUE (L/kWh); 0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"
 rcpt_20261028_100000_a00001,water_per_request_upper,0.077796,mL/request,ESTIMATE,"Wh/request x WUE (L/kWh); up to 1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"
-rcpt_20261028_100000_a00001,joules_per_correct_answer,163.781053,J/correct,MEASURED,"receipt rcpt_20261028_100000_a00001, meter nvml: candidate Wh/req x 3600 / fixed pass rate 0.95"
+rcpt_20261028_100000_a00001,joules_per_correct_answer,163.781053,J/correct,MEASURED,"receipt rcpt_20261028_100000_a00001, meter nvml: candidate Wh/req x 3600 / pass_rate"
 rcpt_20261028_100000_a00001,sci_per_request,,gCO2e/request,NOT_AVAILABLE,needs a grid carbon-intensity figure with a source (--grid-gco2)
 rcpt_20261028_100000_a00001,pue,,ratio,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
 rcpt_20261028_100000_a00001,renewable_energy_share,,%,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
@@ -21,7 +21,7 @@ rcpt_20261028_100000_a00002,energy_saving_billed,9.5736,%,ESTIMATE,"receipt rcpt
 rcpt_20261028_100000_a00002,idle_power,,W,NOT_AVAILABLE,idle not measured in this run
 rcpt_20261028_100000_a00002,water_per_request,0.015559,mL/request,ESTIMATE,"Wh/request x WUE (L/kWh); 0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"
 rcpt_20261028_100000_a00002,water_per_request_upper,0.077796,mL/request,ESTIMATE,"Wh/request x WUE (L/kWh); up to 1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"
-rcpt_20261028_100000_a00002,joules_per_correct_answer,163.781053,J/correct,ESTIMATE,"receipt rcpt_20261028_100000_a00002, meter nvml: candidate Wh/req x 3600 / fixed pass rate 0.95"
+rcpt_20261028_100000_a00002,joules_per_correct_answer,163.781053,J/correct,ESTIMATE,"receipt rcpt_20261028_100000_a00002, meter nvml: candidate Wh/req x 3600 / pass_rate"
 rcpt_20261028_100000_a00002,sci_per_request,,gCO2e/request,NOT_AVAILABLE,needs a grid carbon-intensity figure with a source (--grid-gco2)
 rcpt_20261028_100000_a00002,pue,,ratio,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
 rcpt_20261028_100000_a00002,renewable_energy_share,,%,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
@@ -36,7 +36,7 @@ rcpt_20261028_100000_a00003,energy_saving_billed,0,%,ESTIMATE,"receipt rcpt_2026
 rcpt_20261028_100000_a00003,idle_power,,W,NOT_AVAILABLE,idle not measured in this run
 rcpt_20261028_100000_a00003,water_per_request,0.01728,mL/request,ESTIMATE,"Wh/request x WUE (L/kWh); 0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"
 rcpt_20261028_100000_a00003,water_per_request_upper,0.0864,mL/request,ESTIMATE,"Wh/request x WUE (L/kWh); up to 1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"
-rcpt_20261028_100000_a00003,joules_per_correct_answer,181.894737,J/correct,MEASURED,"receipt rcpt_20261028_100000_a00003, meter nvml: candidate Wh/req x 3600 / fixed pass rate 0.95"
+rcpt_20261028_100000_a00003,joules_per_correct_answer,181.894737,J/correct,MEASURED,"receipt rcpt_20261028_100000_a00003, meter nvml: candidate Wh/req x 3600 / pass_rate"
 rcpt_20261028_100000_a00003,sci_per_request,,gCO2e/request,NOT_AVAILABLE,needs a grid carbon-intensity figure with a source (--grid-gco2)
 rcpt_20261028_100000_a00003,pue,,ratio,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
 rcpt_20261028_100000_a00003,renewable_energy_share,,%,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
