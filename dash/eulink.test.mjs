@@ -1,54 +1,39 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { extractEuLinkData, renderEuLinkHTML, renderEuCardHTML, reportHref } from "./eulink.js";
 
-import {
-  extractEuLinkData,
-  renderEuLinkHTML
-} from "./eulink.js";
+const run2 = JSON.parse(readFileSync(new URL("./eu/run2-receipt.json", import.meta.url)));
 
-test("extractEuLinkData calculates energy, water, and joules per correct answer", () => {
-  const sample = {
-    receipt_id: "rcpt_test_eu",
-    measurement: { label: "MEASURED" },
-    candidate: {
-      wh_per_req: { mean: 0.05, samples: [0.05, 0.05] },
-      quality: { fixed_pass_rate: 0.95 }
-    },
-    estimates: {
-      water_ml_per_req: { value: 0.0144, label: "ESTIMATE" }
-    },
-    result: { billed_saving_pct: 12.5 }
-  };
-
-  const data = extractEuLinkData(sample);
-  assert.equal(data.receiptId, "rcpt_test_eu");
-  assert.equal(data.label, "MEASURED");
-  assert.equal(data.waterMlPerReq, 0.0144);
-  assert.equal(data.billedSavingPct, 12.5);
-  assert.ok(data.joulesPerCorrect > 0);
-  assert.equal(data.csrdTag, "CSRD Roadmap");
-  assert.match(data.disclaimer, /Not a compliance claim/);
+test("RUN2 receipt gives the measured headline numbers", () => {
+  const d = extractEuLinkData(run2);
+  assert.equal(d.label, "MEASURED");
+  assert.equal(d.jBase.toFixed(2), "17.03");
+  assert.equal(d.jCand.toFixed(2), "12.42");
+  assert.equal(d.jChangePct.toFixed(1), "-27.1");
+  assert.equal((d.passRate * 100).toFixed(1), "93.7");
+  const h = renderEuCardHTML(d);
+  assert.match(h, /EU efficiency report/);
+  assert.match(h, /-27\.1%/);
+  assert.match(h, /eu\/eu_report_rcpt_20261027_run2_cap350\.html/);
+  assert.match(h, /href="eu\.html"/);
+  assert.match(h, /CSRD roadmap/);
 });
 
-test("renderEuLinkHTML renders EU directive card with labels and links", () => {
-  const sample = {
-    receipt_id: "rcpt_20261029_120000_m00005",
-    measurement: { label: "SIMULATED" },
-    candidate: {
-      wh_per_req: { mean: 0.04322, samples: [0.04322] }
-    },
-    result: { billed_saving_pct: 9.4 }
-  };
+test("missing fields show a dash and pending dot, never invented values or MOCK", () => {
+  const d = extractEuLinkData({});
+  assert.equal(d.label, null);
+  assert.equal(d.energyPerReqWh, null);
+  assert.equal(d.billedSavingPct, null);
+  for (const h of [renderEuLinkHTML(d), renderEuCardHTML(d)]) {
+    assert.match(h, /–/);
+    assert.match(h, /wn-dot-pending/);
+    assert.doesNotMatch(h, /0\.04322|9\.4|MOCK/);
+  }
+});
 
-  const data = extractEuLinkData(sample);
-  const html = renderEuLinkHTML(data);
-
-  assert.match(html, /EU Energy Efficiency Directive/);
-  assert.match(html, /EU 2024\/1364/);
-  assert.match(html, /CSRD Roadmap/);
-  assert.match(html, /Window IT Energy/);
-  assert.match(html, /Joules \/ Correct/);
-  assert.match(html, /Water Consumption/);
-  assert.match(html, /Not a compliance claim/);
-  assert.match(html, /\/api\/receipts\/rcpt_20261029_120000_m00005\/report\/eu\?format=html/);
+test("label comes from the receipt", () => {
+  const d = extractEuLinkData({ receipt_id: "r1", measurement: { label: "SIMULATED" }, result: { billed_saving_pct: 5 } });
+  assert.match(renderEuLinkHTML(d), /wn-dot-simulated/);
+  assert.equal(reportHref("r1", "csv"), "eu/eu_report_r1.csv");
 });

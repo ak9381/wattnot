@@ -6,7 +6,7 @@
 
 import { mountMetaTools } from "./metatools.js";
 import { mountHotspotCard } from "./hotspot.js";
-import { mountEuLink } from "./eulink.js";
+import { mountEuLink, mountEuCard } from "./eulink.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -386,6 +386,7 @@ function render() {
     }).catch(() => {});
   }
   if ($("#eulink-mount")) mountEuLink($("#eulink-mount"), STATE.receipt || {});
+  if ($("#eu-card-mount")) mountEuCard($("#eu-card-mount"));
 
   // Draw glowing connector lines from hero to breakdown cards
   setTimeout(drawConnectors, 20);
