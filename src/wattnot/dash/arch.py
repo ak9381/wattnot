@@ -65,6 +65,13 @@ def jl(path: Path) -> list[dict]:
         return []
 
 
+def _read_sweep(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    with path.open() as fh:
+        return list(csv.DictReader(fh))
+
+
 def r(x, d=4):
     return None if x is None else round(x, d)
 
@@ -167,7 +174,7 @@ def h100(e2e: Path | None) -> dict:
     out["main"] = main
     out["summary"] = rd(main / "summary.json") or {}
     out["probe"] = rd(main / "probe.json") or {}
-    out["sweep"] = list(csv.DictReader((main / "sweep.csv").open())) if (main / "sweep.csv").exists() else []
+    out["sweep"] = _read_sweep(main / "sweep.csv")
     out["rerun"] = rd(e2e / "h100-oct30-adaptive-rerun" / "summary.json") or {}
     out["qwen"] = rd(e2e / "qwen3-adaptive" / "summary.json") or {}
     out["qwen_rcpt"] = rd(e2e / "qwen3-adaptive" / "rcpt_moe_9a56b2eca886.json") or {}
@@ -179,7 +186,8 @@ def h100(e2e: Path | None) -> dict:
     files = 0
     for f in main.glob("traces/**/*.csv"):
         files += 1
-        rows += max(0, sum(1 for _ in f.open()) - 1)
+        with f.open() as fh:
+            rows += max(0, sum(1 for _ in fh) - 1)
     out["trace_files"], out["trace_rows"] = files, rows
     recs = []
     for f in list(main.glob("**/rcpt_*.json")) + list((e2e / "qwen3-adaptive").glob("rcpt_*.json")) + \

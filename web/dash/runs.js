@@ -513,7 +513,7 @@ function renderTable(runsList, details) {
   }).join("");
 
   body.querySelectorAll("tr[data-side]").forEach((tr) => tr.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.target.closest("a")) { e.preventDefault(); tr.click(); }
+    if ((e.key === "Enter" || e.key === " ") && !e.target.closest("a")) { e.preventDefault(); tr.click(); }
   }));
   bindSide(body);
 }

@@ -35,7 +35,7 @@ export function renderLive(el, L) {
   if (m) {
     parts.push(row("Muse Code: Apply as PR", chip("LIVE"),
       `<p>Muse Code edited <code>launch.sh</code> and <code>values.yaml</code> for the kept 350 W change and opened a real pull request on the demo fixture repo (<strong>nothing is deployed</strong>):
-       <a href="${esc(m.pr_url)}" target="_blank" rel="noopener">${esc(m.pr_url.replace("https://github.com/", ""))}</a>. The PR body carries the receipt hash.</p>
+       <a href="${esc(m.pr_url || "")}" target="_blank" rel="noopener">${esc((m.pr_url || "").replace("https://github.com/", ""))}</a>. The PR body carries the receipt hash.</p>
        <p class="lv-meta">Session <code>${esc(m.muse_code?.session_id)}</code> · run <code>${esc(m.muse_code?.run_id)}</code> · patch <code>${esc(m.patch_sha256?.slice(0, 12))}…</code> · ~$${Number(m.muse_code?.spend_usd_estimate).toFixed(4)} ${chip("ESTIMATE")}</p>`, L.musecode_pr, `PR #${(m.pr_url || "").split("/").pop()}`, "LIVE"));
   }
   const s = L.sam_hotspot?.data;

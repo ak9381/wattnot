@@ -42,7 +42,10 @@ def fields_for(receipt: Mapping, *, grid_gco2_per_kwh: float | None = None,
     n = receipt["subject"]["workload"]["n_requests"]
     cand, base = receipt["candidate"], receipt["baseline"]
     wh = cand["wh_per_req"]["mean"]
-    window_kwh = sum(cand["wh_per_req"]["samples"]) * n / 1000
+    # Cloud-adapted receipts carry an ESTIMATE range rather than per-rep samples; fall back to
+    # the mean x reps so the EU export works for both measured (GPU) and cloud receipts.
+    samples = cand["wh_per_req"].get("samples")
+    window_kwh = (sum(samples) if samples else wh * cand["reps"]) * n / 1000
     res = receipt["result"]
     src = f"receipt {rid}, meter {m['meter']}"
     water = receipt["estimates"]["water_ml_per_req"]
@@ -118,7 +121,7 @@ def to_html(rows: Sequence[Mapping], *, title: str = "EU 2024/1364 field export"
             cells="".join(f"<td>{html.escape('' if r[k] is None else str(r[k]))}</td>"
                           for k in COLUMNS)) for r in rows)
     head = "".join(f"<th>{c}</th>" for c in COLUMNS)
-    return TEMPLATE.read_text().replace("{{title}}", html.escape(title)) \
+    return TEMPLATE.read_text(encoding="utf-8").replace("{{title}}", html.escape(title)) \
         .replace("{{head}}", head).replace("{{rows}}", body)
 
 

@@ -37,8 +37,9 @@ def trim_body(body: Mapping) -> dict:
             if key in seen:
                 continue
             seen.add(key)
-            c = "\n".join(x for j, x in enumerate(c.split("\n"))
-                          if x.strip() or (j and c.split("\n")[j - 1].strip()))
+            cl = c.split("\n")
+            c = "\n".join(x for j, x in enumerate(cl)
+                          if x.strip() or (j and cl[j - 1].strip()))
             if m.get("role") == "tool" and len(c) > TOOL_MAX_CHARS:
                 c = c[:TOOL_MAX_CHARS] + f"\n[trimmed {len(c) - TOOL_MAX_CHARS} chars]"
             m = {**m, "content": c}

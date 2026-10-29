@@ -79,7 +79,8 @@ def cache_ab(transport: Transport, rates: Rates, *, doc: str | None = None, n: i
                      # input side only: output length varies call to call and is not a cache effect
                      "input_usd": round(sum(cost_usd(rates, c.prompt, c.cached, 0)
                                             for c in calls), 8),
-                     "latency_p50_s": sorted(c.latency_s for c in calls)[n // 2]})
+                     "latency_p50_s": (sorted(c.latency_s for c in calls)[n // 2]
+                                       if calls else 0.0)})
     base = arms[0]["usd"]
     base_in = arms[0]["input_usd"]
     for a in arms:

@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
 import os
 import re
 from collections.abc import AsyncIterator
@@ -206,9 +207,10 @@ def _resume_seq(request: Request) -> int | None:
 
 def _speed(request: Request) -> float:
     try:
-        return float(request.query_params.get("speed", "1"))
+        v = float(request.query_params.get("speed", "1"))
     except ValueError:
         return 1.0
+    return v if math.isfinite(v) else 1.0  # reject nan/inf so pacing math stays well-defined
 
 
 async def _event_stream(
@@ -368,13 +370,16 @@ def create_app(root: str | os.PathLike[str] = ".") -> FastAPI:
         for p in sorted(d.glob("cloud_*.json")) if d.is_dir() else []:
             if p.name.endswith(".sigstore.json"):  # skip signature bundles, not receipts
                 continue
-            r = json.loads(p.read_text(encoding="utf-8"))
-            t = r["totals"]
-            rows.append({"receipt_id": r["receipt_id"], "label": r["label"], "mode": r["mode"],
-                         "model": r["model"], "saving_pct": t["saving_pct"],
-                         "tuned_usd": t["tuned_usd"],
-                         "would_have_cost_xhigh_usd": t["would_have_cost_xhigh_usd"],
-                         "meter_audit": (r.get("meter_audit") or {}).get("status")})
+            try:  # one malformed file must not take down the whole listing (cf. list_receipts)
+                r = json.loads(p.read_text(encoding="utf-8"))
+                t = r["totals"]
+                rows.append({"receipt_id": r["receipt_id"], "label": r["label"], "mode": r["mode"],
+                             "model": r["model"], "saving_pct": t["saving_pct"],
+                             "tuned_usd": t["tuned_usd"],
+                             "would_have_cost_xhigh_usd": t["would_have_cost_xhigh_usd"],
+                             "meter_audit": (r.get("meter_audit") or {}).get("status")})
+            except (ValueError, KeyError, TypeError):
+                continue
         return rows
 
     @app.get("/api/cloud/receipts/{receipt_id}")
