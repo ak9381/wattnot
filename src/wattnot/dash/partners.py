@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 
 FORMAT = "wattnot.partners/1"
 IDS = ("meta", "baseten", "e2e", "nvidia", "huggingface", "sigstore",
-       "fireworks", "modal")
+       "modal")
 
 _COST_RE = re.compile(r"\$([\d,]+(?:\.\d+)?)")
 _SEP_RE = re.compile(r"^:?-+:?$")
@@ -205,7 +205,6 @@ def build(meta_text: str | None = None, baseten_text: str | None = None,
         {"id": "sigstore", **free("Sigstore", "receipt signing, offline key, "
                                          "no public log yet",
                                   "offline signature bundle")},
-        {"id": "fireworks", **idle("Fireworks")},
         {"id": "modal", **idle("Modal")},
     ]
     ts = now if isinstance(now, str) else (now or datetime.now(UTC)).isoformat(
