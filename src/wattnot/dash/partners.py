@@ -100,6 +100,11 @@ def parse_baseten_log(text: str) -> dict:
     return _parse(text)
 
 
+def parse_modal_log(text: str) -> dict:
+    """The Modal usage table (Time, Task, What ran, Calls, ..., Cost)."""
+    return _parse(text)
+
+
 def e2e_cost(runs: list[dict] | None) -> dict:
     """Rented-GPU runs -> {"total_inr", "label"}.
 
@@ -156,7 +161,8 @@ def _with_agent_waste(meta: dict, meta_text: str | None, usd) -> dict:
 
 def build(meta_text: str | None = None, baseten_text: str | None = None,
           e2e_runs: list[dict] | None = None, now=None,
-          agent_waste_usd: float | None = None) -> dict:
+          agent_waste_usd: float | None = None,
+          modal_text: str | None = None) -> dict:
     """The partners snapshot. A partner with no input keeps status "used"
     with null numbers and the note "ledger not provided": nothing is invented.
     """
@@ -188,6 +194,12 @@ def build(meta_text: str | None = None, baseten_text: str | None = None,
     else:
         e2e = _used("E2E Networks", "the rented H100", "e2e-runs.json", None,
                     _cost_block(None, None, None), note="ledger not provided")
+    modal_entry = None
+    if modal_text:
+        parsed = parse_modal_log(modal_text)
+        modal_entry = _used("Modal", "serverless compute (CPU access check so far)",
+                            "meta-usage/MODAL-LOG.md", parsed["calls"],
+                            _cost_block(parsed["usd"], "USD", parsed["label"]))
     free = lambda name, what, source: {  # noqa: E731
         "name": name, "what": what, "status": "free", "calls": None,
         "cost": _cost_block(None, None, None), "source": source}
@@ -205,11 +217,12 @@ def build(meta_text: str | None = None, baseten_text: str | None = None,
         {"id": "sigstore", **free("Sigstore", "receipt signing, offline key, "
                                          "no public log yet",
                                   "offline signature bundle")},
-        {"id": "modal", **idle("Modal")},
+        {"id": "modal", **(modal_entry or idle("Modal"))},
     ]
     ts = now if isinstance(now, str) else (now or datetime.now(UTC)).isoformat(
         timespec="seconds")
     return {"format": FORMAT, "generated_at": ts, "partners": partners}
 
 
-__all__ = ["build", "e2e_cost", "parse_baseten_log", "parse_meta_log"]
+__all__ = ["build", "e2e_cost", "parse_baseten_log", "parse_meta_log",
+           "parse_modal_log"]
