@@ -346,9 +346,11 @@ def cmd_control(rig: Rig, s: Stream, nar: Narrator, out: Path) -> dict:
 
 
 def cmd_step(
-    rig: Rig, s: Stream, nar: Narrator, cap: int, reps: int, out: Path, tag: str = ""
+    rig: Rig, s: Stream, nar: Narrator, cap: int, reps: int, out: Path, tag: str = "",
+    clock: str | None = None,
 ) -> dict:
-    sid = f"cap_sweep.cap{cap}"
+    ck = clock if clock and clock != "base" else None
+    sid = f"cap_sweep.cap{cap}" + (f".{ck}" if ck else "")
     with s.step(
         sid,
         "e2e_rig",
@@ -359,7 +361,12 @@ def cmd_step(
         top="cap_sweep",
     ) as st:
         nar.parent_id, nar.top = sid, "cap_sweep"
-        summ = run_step(rig, cap, reps, out, workload=rig.workload, log=nar.log, tag=tag)
+        summ = run_step(rig, cap, reps, out, workload=rig.workload, log=nar.log,
+                        tag=tag + (f"{ck}-" if ck else ""), clock=ck)
+        if summ.get("clock_fallback"):
+            s.emit("step.progress", {"node": "e2e_rig", "sub": "sweep", "pct": 50,
+                                     "message": f"clock lock refused, {summ['clock_fallback']}"},
+                   step_id=sid, parent="cap_sweep")
         e, p, q = summ["energy_change_pct"], summ["p99_change_pct"], summ["quality"]
         s.emit(
             "gate.result",

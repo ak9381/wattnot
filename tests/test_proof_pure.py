@@ -139,7 +139,8 @@ def test_history_row_rounds_for_the_planner():
     row = prun.history_row(_step(450, energy=-12.345, p99=3.333))
     assert row == {"cap_w": 450, "accepted": True, "why_not": [],
                    "energy_change_pct": -12.35, "p99_change_pct": 3.33,
-                   "quality_pass_pct": 100.0, "stock_pass_pct": 100.0}
+                   "quality_pass_pct": 100.0, "stock_pass_pct": 100.0,
+                   "clock_profile": "base"}
 
 
 def test_best_of_picks_the_biggest_saving():

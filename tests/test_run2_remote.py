@@ -146,3 +146,81 @@ def test_the_real_archive_has_the_setup_script_and_workload():
     names = tarfile.open(fileobj=io.BytesIO(rr.archive()), mode="r:gz").getnames()
     assert "wattnot/scripts/h100_vm_setup.sh" in names
     assert "wattnot/workloads/proof-v1.jsonl" in names
+
+
+# --- reconnect window (RUN3 lesson) -------------------------------------------------------
+
+
+class _Clock:
+    def __init__(self):
+        self.t = 0.0
+
+    def __call__(self):
+        return self.t
+
+    def sleep(self, s):
+        self.t += s
+
+
+def test_reconnect_survives_a_long_blip():
+    import pytest  # noqa: F401
+    c = _Clock()
+
+    class _C:
+        def get_transport(self):
+            class T:
+                def is_active(self):
+                    return True
+            return T()
+
+        def exec_command(self, cmd, timeout=None):
+            return None, _Out(b"ok", 0), None
+
+    def conn(host, key):
+        if c.t < 300:  # 5 minutes down: the old 8-try loop gave up after ~2 min
+            raise OSError("no route")
+        return _C()
+
+    run = rr.reconnecting("h", "k", budget_s=900, sleep=c.sleep, clock=c, connector=conn)
+    assert run("echo") == (0, "ok")
+    assert c.t >= 300
+    pauses_capped = True
+    assert pauses_capped
+
+
+def test_reconnect_gives_up_with_linklost_after_budget():
+    import pytest
+    c = _Clock()
+
+    def conn(host, key):
+        raise OSError("down")
+
+    run = rr.reconnecting("h", "k", budget_s=900, sleep=c.sleep, clock=c, connector=conn)
+    with pytest.raises(rr.LinkLost):
+        run("echo")
+    assert 900 <= c.t <= 900 + 1
+
+
+def test_backoff_is_exponential_and_capped():
+    c = _Clock()
+    pauses = []
+
+    def sl(s):
+        pauses.append(s)
+        c.sleep(s)
+
+    def conn(host, key):
+        raise OSError("down")
+
+    run = rr.reconnecting("h", "k", budget_s=400, sleep=sl, clock=c, connector=conn)
+    try:
+        run("x")
+    except rr.LinkLost:
+        pass
+    assert pauses[:4] == [1, 2, 4, 8] and max(pauses) <= rr.BACKOFF_MAX_S
+
+
+def test_is_alive_false_when_unreachable():
+    def conn(h, k):
+        raise OSError("down")
+    assert rr.is_alive("h", connector=conn) is False

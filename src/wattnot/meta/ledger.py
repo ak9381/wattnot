@@ -28,8 +28,36 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-CAP_USD = 100.0
+CAP_USD = 100.0  # Akash's approved hard cap for all Meta API spend
 SOFT_USD = 80.0
+CAP_ENV = "WATTNOT_META_CAP_USD"      # a run may set a LOWER hard cap, never a higher one
+SOFT_ENV = "WATTNOT_META_SOFT_USD"
+
+
+def _env_usd(name: str) -> float | None:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return None
+    v = float(raw)
+    if not math.isfinite(v) or v < 0:
+        raise ValueError(f"{name} must be a non-negative number")
+    return v
+
+
+def caps_from_env() -> tuple[float, float]:
+    """(hard, soft) for this process. Defaults are the approved $100 / $80. The env vars can
+    only tighten them: a value above the approved cap is refused, not silently clamped."""
+    cap = _env_usd(CAP_ENV)
+    soft = _env_usd(SOFT_ENV)
+    if cap is None:
+        cap = CAP_USD
+    if cap > CAP_USD:
+        raise ValueError(f"{CAP_ENV}={cap} is above the approved hard cap ${CAP_USD:.0f}")
+    if soft is None:
+        soft = min(SOFT_USD, round(cap * SOFT_USD / CAP_USD, 2))
+    if soft > cap:
+        raise ValueError(f"{SOFT_ENV}={soft} is above the hard cap {cap}")
+    return cap, soft
 LEDGER_ENV = "WATTNOT_META_LEDGER"
 PRICE_SOURCE = "https://dev.meta.ai/docs/pricing-rate-limits (Standard mode, read 2026-10-27)"
 DEFAULT_MAX_OUTPUT = 2000  # applied to a request that sets no output cap
@@ -111,8 +139,12 @@ def _now() -> str:
 
 
 class SpendLedger:
-    def __init__(self, path: str | Path | None = None, *, cap_usd: float = CAP_USD,
-                 soft_usd: float = SOFT_USD) -> None:
+    def __init__(self, path: str | Path | None = None, *, cap_usd: float | None = None,
+                 soft_usd: float | None = None) -> None:
+        env_cap, env_soft = caps_from_env()
+        cap_usd = env_cap if cap_usd is None else cap_usd
+        soft_usd = (env_soft if cap_usd == env_cap else min(SOFT_USD, cap_usd)) \
+            if soft_usd is None else soft_usd
         if soft_usd > cap_usd:
             raise ValueError("soft limit above the hard cap")
         self.path = Path(path or os.environ.get(LEDGER_ENV)

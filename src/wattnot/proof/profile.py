@@ -37,6 +37,10 @@ class Profile:
         return settle_s + self.warmup_s + self.warmup / RUN2_REQ_PER_S + (
             self.repeat * PROMPTS / RUN2_REQ_PER_S)
 
+    def metered_seconds(self) -> float:
+        """ESTIMATE: the metered (energy-counted) part of one block only."""
+        return self.repeat * PROMPTS / RUN2_REQ_PER_S
+
     def step_seconds(self, settle_s: float = 4.0) -> float:
         """ESTIMATE: one cap = reps x (stock block + cap block)."""
         return 2 * self.reps * self.block_seconds(settle_s)
@@ -50,6 +54,10 @@ PROFILES = {
                      control_blocks=0),  # what RUN2 ran
     "standard": Profile(reps=5, repeat=6, warmup=16, warmup_s=10, burn_in=1, counterbalance=True,
                         control_blocks=2),
+    # The long run (Nov 2026): about 60 s metered windows (18 x 111 prompts at RUN2's rate is
+    # ~62 s), 3 paired reps per cap so 3 independent repeats of the whole session give n=9 pairs.
+    "longrun": Profile(reps=3, repeat=18, warmup=32, warmup_s=15, burn_in=1, counterbalance=True,
+                       control_blocks=2),
     "long": Profile(reps=7, repeat=12, warmup=32, warmup_s=20, burn_in=1, counterbalance=True,
                     control_blocks=4),
 }
