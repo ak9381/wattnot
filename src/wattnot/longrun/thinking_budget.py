@@ -52,7 +52,7 @@ def n_cells() -> int:
 
 
 def planned_minutes() -> float:
-    """~45 min: the 11 cells plus one server warm-up (ESTIMATE; Claude said 35-45)."""
+    """~45 min: the 11 cells plus one server warm-up (ESTIMATE; a code review put it at 35-45)."""
     return round(sum(CELL_MIN[t] * len(GRID[t]) for t in TIERS) + 2.0, 1)
 
 
