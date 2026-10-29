@@ -292,7 +292,7 @@ body:has(#pReport.on) #pReport > .bento:has(#radialWrap) { flex: 1 1 auto; min-h
 body:has(#pReport.on) #cmpR7, body:has(#pReport.on) .radial-bar { flex: 0 0 auto; }
 body:has(#pReport.on) #radialWrap { flex: 1 1 auto; min-height: 0; height: auto; }
 
-.radial-wrap{position:relative;overflow:hidden;padding:10px;height:calc(100vh - 340px);min-height:380px;border-radius:20px;background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,0) 40%),linear-gradient(0deg,rgba(178,166,195,.10),rgba(178,166,195,.10)),rgba(27,23,40,.65);backdrop-filter:blur(24px) saturate(170%);-webkit-backdrop-filter:blur(24px) saturate(170%);border:1px solid rgba(255,255,255,.14);box-shadow:0 10px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.12)}
+.radial-wrap{position:relative;overflow:hidden;padding:10px;height:calc(100vh - 340px - var(--wn-foot,0px));min-height:380px;border-radius:20px;background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,0) 40%),linear-gradient(0deg,rgba(178,166,195,.10),rgba(178,166,195,.10)),rgba(27,23,40,.65);backdrop-filter:blur(24px) saturate(170%);-webkit-backdrop-filter:blur(24px) saturate(170%);border:1px solid rgba(255,255,255,.14);box-shadow:0 10px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.12)}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.radial-wrap{background:#1F1A2F}}
 .radial-stage{position:relative;width:100%;height:100%;z-index:1}
 .radial-wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
@@ -424,3 +424,6 @@ h1,h2,h3,h4,.brand,nav.tabs button,.kpi .c,.lvl{font-family:"Montserrat",system-
 .cmp-crumb .crumb-hint{font-size:12.5px;color:var(--mu)}
 .wn-mic-slot{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;min-width:32px;min-height:32px;flex:0 0 32px;vertical-align:middle}
 .kpi-headline .v{font-size:44px}.kpi-headline{outline:1px solid rgba(200,180,255,.35)}
+
+/* Short viewports: let Compare scroll so the fixed footer never covers the graph. */
+@media (max-height:860px){body:has(#pReport.on){overflow:auto;height:auto;max-height:none}}
