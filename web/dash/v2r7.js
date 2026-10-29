@@ -54,7 +54,7 @@ function pickHtml(rec) {
   const { decisions } = routing(rec);
   if (!decisions.length) return `<h3>WattNot chose: <span class="r7miss">pending the long run</span></h3>
       <p>After the long run WattNot picks the best place for each kind of work and says why, for example "WattNot chose Your GPU for batch because it was cheapest and passed all gates".</p>
-      <ul class="wr-gates">${["Quality gate (answers agree 95%+)", "Speed gate (p99 within the limit)", "Budget gate"].map((g) => `<li><span class="r7miss">${esc(g)}: ${PENDING}</span></li>`).join("")}</ul>`;
+      <ul class="wr-gates">${["Quality gate (power cap: pass rate within 1 pt of uncapped; top-k: 95%+ agreement)", "Speed gate (p99 within the limit)", "Budget gate"].map((g) => `<li><span class="r7miss">${esc(g)}: ${PENDING}</span></li>`).join("")}</ul>`;
   const name = (id) => OPTIONS.find((o) => PID[o.id] === id)?.name || id;
   return decisions.map((d) => `<h3>${esc(d.workload?.name || "")}: WattNot chose ${d.chosen ? esc(name(d.chosen)) : "nothing"}</h3>
       <p>because ${esc(d.reason)}${d.rule ? ` <small>(rule: ${esc(d.rule)})</small>` : ""}</p>
@@ -407,7 +407,7 @@ export function overviewHtml(S) {
 registerInfo({
   what: { title: "What WattNot does", html: `<p>AI models run on GPUs that can draw 700 W each, often more than the work needs.</p><p>WattNot lowers the limit a little, measures energy, speed and answer quality on real prompts, and keeps the change only if all three stay inside your limits. A person approves risky changes and every change can be undone.</p>` },
   p99: { title: "p99 latency", html: `<p>Sort all answer times. p99 is the one 99% of answers beat.</p><h3>Example</h3><p>100 answers; 99 finish in under 3.9 s, one takes 5 s. p99 = 3.9 s. A +7.7% change from 3.6 s is 3.88 s.</p>` },
-  quality: { title: "Answer quality", html: `<p>The same fixed test prompts run with and without the change. Quality is the share of answers that still match. Below 95% the change is rejected.</p>` },
+  quality: { title: "Answer quality", html: `<p>For a power cap, quality is the <b>fixed-check pass rate</b>: the share of the 666 checked answers (as recorded) that pass their fixed checks, run with and without the cap. The cap is rejected if it loses more than 1.0 point. RUN2: 93.7% uncapped, 93.7% at 350 W (MEASURED). The 95% figure is a different gate, used only for adaptive top-k and model routing: token or answer agreement with the unchanged setup.</p>` },
   compare: { title: "How the comparison works", html: `<p>Every run is done twice on the same prompts: first without WattNot (the baseline), then with WattNot. Each card shows the difference.</p><p>Power is measured on the GPU. Cost and water are arithmetic on that measurement, so they are estimates. Open the ⓘ on any card for the worked example.</p>` },
   "calc-power": { title: "Energy per answer", html: `<p>Joules the GPU used, divided by answers served. Read from NVIDIA's NVML counter 10 times a second.</p><h3>Example</h3><p>350 W for 33 s serving 1,000 answers = 11,550 J ÷ 1,000 = 11.6 J per answer.</p>` },
   "calc-cost": { title: "From joules to dollars", html: `<p>1 kWh = 3,600,000 J. Cost = kWh × electricity price ($0.1387 per kWh, EIA US average).</p><h3>Worked example</h3>${workedExample(15.96, 11.63)}` },
