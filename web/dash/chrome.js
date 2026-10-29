@@ -38,6 +38,7 @@
           <a class="wn-link" data-nav="compare" href="${prefix}v2.html#pReport">Compare</a>
           <a class="wn-link" data-nav="reports" href="${prefix}report.html?run=run2-llama-350w">Reports</a>
           <a class="wn-link" data-nav="graph" href="${prefix}graph.html">Live graph</a>
+          <a class="wn-link" data-nav="eu" href="${prefix}eu.html">EU Compliance</a>
         </div>
         <div class="wn-slot-wrap" id="wn-slot-wrap"></div>
       </div>
@@ -109,6 +110,8 @@
         targetNav = "runs";
       } else if (path.includes("graph.html")) {
         targetNav = "graph";
+      } else if (path.includes("eu.html")) {
+        targetNav = "eu";
       } else if (path.includes("report.html")) {
         targetNav = "reports";
       } else if (path.includes("v2.html") || isV2Page) {

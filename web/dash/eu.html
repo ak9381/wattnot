@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WattNot: EU Compliance</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Source+Sans+3:wght@400;600&display=swap">
+<link rel="stylesheet" href="violet.css">
+<link rel="stylesheet" href="chrome.css">
+<link rel="stylesheet" href="bento.css">
+<link rel="stylesheet" href="eulink.css">
+<script src="chrome.js" defer></script>
+<style>
+  body:has(main.eu) .wn-legend{display:none!important}
+  main.eu a.eucard-btn[href="eu.html"]{display:none}
+  main.eu{color:#ECEAF4;max-width:1080px;margin:0 auto;padding:28px 20px 60px;font-family:"Source Sans 3",system-ui,sans-serif}
+  .eu h1{font:700 2rem/1.15 Montserrat,system-ui,sans-serif;margin:0 0 6px}
+  .eu .sub{color:#D6D3E2;margin:0 0 22px}
+  .eu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:12px 0 26px}
+  .eu-box{padding:16px 18px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}
+  .eu-box h3{font:600 1rem/1.2 Montserrat,system-ui,sans-serif;margin:0 0 6px}
+  .eu-box p{margin:0;font-size:.92rem;color:#D6D3E2}
+  .eu h2{font:600 1.2rem/1.2 Montserrat,system-ui,sans-serif;margin:26px 0 8px}
+  .eu-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.85rem;opacity:.9;margin:6px 0 14px}
+  .eu-legend em::after{content:attr(data-t);font-style:normal}
+  .eu-legend span{display:inline-flex;align-items:center;gap:6px}.eu-legend .wn-dot{margin:0!important}
+  .eu-src{font-size:.82rem;color:#C9C6D6}.eu-src a{color:#A3BE8C}
+  .road{font-size:.75rem;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.25)}
+</style>
+</head>
+<body>
+<main class="eu">
+  <h1>EU Compliance</h1>
+  <p class="sub">Measured energy per correct answer, ready for EU reporting. One click turns a signed receipt into the report.</p>
+
+  <div class="eu-legend" aria-label="Legend: measured, estimate, simulated, mock, replay, pending">
+    <span><i class="wn-dot wn-dot-measured" title="MEASURED: read from a meter or a real run."></i><em data-t="MEASURED"></em></span>
+    <span><i class="wn-dot wn-dot-estimate" title="ESTIMATE: measured numbers plus a stated assumption."></i><em data-t="ESTIMATE"></em></span>
+    <span><i class="wn-dot wn-dot-simulated" title="SIMULATED: from a model or simulator, not measured."></i><em data-t="SIMULATED"></em></span>
+    <span><i class="wn-dot wn-dot-mock" title="MOCK: sample data that shows the layout only."></i><em data-t="MOCK"></em></span>
+    <span><i class="wn-dot wn-dot-replay" title="REPLAY: replayed from saved, signed records."></i><em data-t="REPLAY"></em></span>
+    <span><i class="wn-dot wn-dot-pending" title="Pending: not in this receipt yet."></i><em data-t="pending"></em></span>
+  </div>
+
+  <h2>One-click report · RUN2 (350 W cap, measured)</h2>
+  <div id="eu-card-mount" class="eucard-wrap"></div>
+  <div id="eulink-mount"></div>
+
+  <h2>Why it matters</h2>
+  <div class="eu-grid">
+    <div class="eu-box"><h3>Energy Efficiency Directive</h3><p>Data centres with ≥500 kW installed IT power must report energy use, water input, waste-heat reuse, renewables and related KPIs to the EU database every year (by 15 May, for the previous year). PUE and WUE are calculated from these.</p></div>
+    <div class="eu-box"><h3>AI Act · general-purpose models</h3><p>Providers of general-purpose AI models must keep technical documentation that includes the model's known or estimated energy consumption (Art. 53(1)(a), Annex XI).</p></div>
+    <div class="eu-box"><h3>The gap</h3><p>Facility meters give kWh for the building, not per answer. Nobody can say what one useful answer cost.</p></div>
+  </div>
+
+  <h2>How WattNot helps</h2>
+  <div class="eu-grid">
+    <div class="eu-box"><h3>J per correct answer</h3><p>GPU energy from the NVML counter, divided by answers that pass the fixed grader.</p></div>
+    <div class="eu-box"><h3>Water per answer</h3><p>Labelled as an estimate, with its method and source in the report.</p></div>
+    <div class="eu-box"><h3>One-click report</h3><p>Fields from Delegated Reg. (EU) 2024/1364 that software can fill, as HTML and CSV. Facility fields (PUE, renewables, heat reuse) show NOT_AVAILABLE.</p></div>
+    <div class="eu-box"><h3>Audit trail</h3><p>Every number links to a signed receipt with hashed meter logs, checkable offline with the verifier.</p></div>
+    <div class="eu-box"><h3>CSRD <span class="road">roadmap</span></h3><p>Not built yet.</p></div>
+  </div>
+
+  <p class="eu-src">Not a compliance claim; facility-level metrics require operator metering.<br>
+  Sources: <a href="https://eur-lex.europa.eu/eli/dir/2023/1791/oj/eng" target="_blank" rel="noopener">Directive (EU) 2023/1791, Art. 12 &amp; Annex VII</a> ·
+  <a href="https://eur-lex.europa.eu/eli/reg_del/2024/1364/oj/eng" target="_blank" rel="noopener">Delegated Regulation (EU) 2024/1364, Art. 1 &amp; 3</a> ·
+  <a href="https://ai-act-service-desk.ec.europa.eu/en/ai-act/annex-11" target="_blank" rel="noopener">Regulation (EU) 2024/1689 (AI Act), Annex XI</a></p>
+</main>
+<script type="module">
+  import { mountEuCard, mountEuLink, loadEuReceipt } from "./eulink.js";
+  const rc = await loadEuReceipt();
+  mountEuCard(document.getElementById("eu-card-mount"), rc);
+  mountEuLink(document.getElementById("eulink-mount"), rc || {});
+</script>
+</body>
+</html>

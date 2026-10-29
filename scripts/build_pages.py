@@ -14,6 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "scripts"))
 
 from starlette.testclient import TestClient  # noqa: E402
 
@@ -86,6 +87,9 @@ def main(out: Path) -> None:
             n += 1
     (api / "dash/v2/run/index.json").write_text(json.dumps(index))
     (out / "dash/static-api.js").write_text(SHIM)
+    # One-click EU report: regenerate from the RUN2 receipt so it never goes stale.
+    import build_eu_report  # noqa: E402
+    build_eu_report.main(out / "dash/eu")
     for css in (out / "dash").glob("*.css"):
         css.write_text(css.read_text().replace("url(/run/vendor/", "url(../run/vendor/"))
     v2 = out / "dash/v2.html"
