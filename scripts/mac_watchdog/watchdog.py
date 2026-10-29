@@ -199,14 +199,18 @@ def check_once(*, source, client, budget_cap_inr, max_hours=None,
     if deadline_ts is None and hb.get("launch_ts") is not None and max_hours is not None:
         deadline_ts = hb["launch_ts"] + max_hours * 3600.0
     spent = hb.get("spent_inr")
+    spent_label = "MEASURED" if spent is not None else None
     if spent is None and hb.get("launch_ts") is not None:
+        # No exact figure from the driver: derive an ESTIMATE from elapsed time x the measured
+        # all-in rate. This is an ESTIMATE, never a metered spend, and is labelled as such below.
         spent = max(0.0, (now - hb["launch_ts"]) / 3600.0) * inr_per_h
+        spent_label = "ESTIMATE (rate x time)"
 
     d = decide(now=now, deadline_ts=deadline_ts, budget_spent_inr=spent,
                budget_cap_inr=budget_cap_inr, heartbeat_ts=hb.get("ts"), max_stale_s=max_stale_s)
     res = {"layer": "layer5-mac", "source": str(source), "heartbeat": hb,
            "teardown": d["teardown"], "reasons": d["reasons"], "detail": d["detail"],
-           "dry_run": dry_run, "deleted": None}
+           "spent_inr_label": spent_label, "dry_run": dry_run, "deleted": None}
     if not d["teardown"]:
         log(json.dumps(res))
         return res
