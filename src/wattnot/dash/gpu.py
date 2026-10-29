@@ -142,7 +142,7 @@ def adaptive_scene(rerun: Path) -> list[dict]:
             samples.append(sample(t0 + t, w, None, None, None, toks_s, run["j_per_token"],
                                   {"arm": run["arm"], "rep": run["rep"],
                                    "active_experts": run["active_experts"]}))
-        t0 = samples[-1]["t_s"] + 1
+        t0 = samples[-1]["t_s"] + 1 if samples else t0
         runs.append({k: run[k] for k in ("arm", "rep", "wh", "seconds", "tokens", "j_per_token",
                                          "active_experts")})
     return [{"id": "adaptive", "title": f"Adaptive top-k on and off: {d['model'].split('/')[-1]}",

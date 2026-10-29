@@ -431,7 +431,7 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
             raise HTTPException(404, "no events file is being followed (start with --events FILE)")
 
         async def gen() -> AsyncIterator[str]:
-            pos = 0
+            pos, buf = 0, ""
             while not await request.is_disconnected():
                 try:
                     with events.open("rb") as f:
@@ -440,7 +440,10 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
                         pos = f.tell()
                 except OSError:
                     chunk = b""
-                for line in chunk.decode("utf-8", "replace").splitlines():
+                buf += chunk.decode("utf-8", "replace")
+                lines = buf.split("\n")
+                buf = lines.pop()  # a chunk can split mid-line; hold the remainder until it completes
+                for line in lines:
                     if line.startswith("{"):
                         yield _frame("event", json.loads(line))
                         await asyncio.sleep(0.25 / max(speed, 0.1))

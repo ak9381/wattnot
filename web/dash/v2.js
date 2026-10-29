@@ -1475,7 +1475,12 @@ function renderLearn() {
 
 // ---------- boot ----------
 (async () => {
-  const [opts, story, partners, run2, runs, frameworks] = await Promise.all([fetch("/api/dash/v2/options").then((r) => r.json()), fetch("/api/dash/story").then((r) => r.json()).catch(() => null), fetch("/api/dash/partners").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/run2").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/runs").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/frameworks").then((r) => (r.ok ? r.json() : null)).catch(() => null)]);
+  const [opts, story, partners, run2, runs, frameworks] = await Promise.all([fetch("/api/dash/v2/options").then((r) => (r.ok ? r.json() : null)).catch(() => null), fetch("/api/dash/story").then((r) => r.json()).catch(() => null), fetch("/api/dash/partners").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/run2").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/runs").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/frameworks").then((r) => (r.ok ? r.json() : null)).catch(() => null)]);
+  if (!opts || !opts.options) {
+    const host = $("#pHome") || document.body;
+    host.innerHTML = '<div class="intro"><div><h1>Dashboard unavailable</h1><p>Could not load configuration options. Please reload the page to retry.</p></div></div>';
+    return;
+  }
   S.opts = opts; S.story = story; S.partners = partners; S.run2 = run2; S.runs = runs; S.frameworks = frameworks; S.pipeline = story?.config?.pipeline || [];
   S.radRecs ??= {};
   const firstRun = runs?.runs?.[0]?.id;
