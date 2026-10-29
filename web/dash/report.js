@@ -8,6 +8,7 @@ import { sharedLegend } from "./legend.js";
 import { mountMetaTools } from "./metatools.js";
 import { mountHotspotCard } from "./hotspot.js";
 import { mountEuLink, mountEuCard } from "./eulink.js";
+import { mountCodemode } from "./codemode.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -387,6 +388,7 @@ function render() {
   }
   if ($("#eulink-mount")) mountEuLink($("#eulink-mount"), STATE.receipt || {});
   if ($("#eu-card-mount")) mountEuCard($("#eu-card-mount"));
+  if ($("#codemode-mount")) mountCodemode($("#codemode-mount"));
 
   // Draw glowing connector lines from hero to breakdown cards
   setTimeout(drawConnectors, 20);

@@ -71,6 +71,13 @@ def main(out: Path) -> None:
     # One-click EU report: regenerate from the RUN2 receipt so it never goes stale.
     import build_eu_report  # noqa: E402
     build_eu_report.main(out / "dash/eu")
+    # Code Mode detection card: its results artifact lives in data/ (not web/), so copy it
+    # next to the dashboard where codemode.js fetches it (dash/codemode/results.json).
+    cm = ROOT / "data/agent-waste/codemode/results.json"
+    if cm.exists():
+        cm_out = out / "dash/codemode"
+        cm_out.mkdir(parents=True, exist_ok=True)
+        shutil.copy(cm, cm_out / "results.json")
     for css in (out / "dash").glob("*.css"):
         css.write_text(css.read_text().replace("url(/run/vendor/", "url(../run/vendor/"))
     v2 = out / "dash/v2.html"

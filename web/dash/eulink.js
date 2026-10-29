@@ -1,6 +1,8 @@
 // EU efficiency report: a top bento card (one click opens the report) plus the detail card.
 // Honest labels: every number and its label come from the receipt. Missing => "–" + pending dot.
 
+import { WATER_L_PER_KWH, WATER_L_PER_KWH_UPPER } from "./r7.js";
+
 export const EU_DIR = "eu/";
 export const EU_RECEIPT = "eu/run2-receipt.json";
 export const reportHref = (rid, fmt = "html") => `${EU_DIR}eu_report_${rid}.${fmt}`;
@@ -16,8 +18,18 @@ export function extractEuLinkData(receipt) {
   const label = m.label || null;
   const n = num(r.subject?.workload?.n_requests);
   const whMean = num(cand.wh_per_req?.mean);
-  const samples = Array.isArray(cand.wh_per_req?.samples) ? cand.wh_per_req.samples.filter((x) => num(x) != null) : null;
-  const windowKwh = n != null && samples?.length ? (samples.reduce((a, b) => a + b, 0) * n) / 1000 : null;
+  // Window IT energy = mean Wh/req across reps x requests. Summing the per-rep samples and then
+  // multiplying by n triple-counts: the reps are repeats of the same n requests, not extra ones.
+  const windowKwh = n != null && whMean != null ? (whMean * n) / 1000 : null;
+  // Headline water is DERIVED here from the receipt's measured energy at the owner-standardised
+  // 0.36 L/kWh on-site factor; we never trust a stored headline, because older signed receipts
+  // stored water at the 1.8 upper factor. The receipt's stored value is surfaced as the upper
+  // bound (preferring an explicit `_upper` field on newer receipts, else the legacy field).
+  const waterHeadlineMl = whMean == null ? null : Number((whMean * WATER_L_PER_KWH).toFixed(6));
+  const storedUpper = num(est.water_ml_per_req_upper?.value) ?? num(est.water_ml_per_req?.value);
+  const waterUpperMl = storedUpper != null
+    ? storedUpper
+    : (whMean == null ? null : Number((whMean * WATER_L_PER_KWH_UPPER).toFixed(6)));
   return {
     receiptId: r.receipt_id || null,
     created: typeof r.created_at === "string" ? r.created_at.slice(0, 10) : null,
@@ -29,7 +41,9 @@ export function extractEuLinkData(receipt) {
     jChangePct: num(J.change_pct?.j_per_good_answer),
     passRate: num(J.candidate?.pass_rate ?? cand.quality?.fixed_pass_rate),
     jLabel: J.label || null,
-    waterMlPerReq: num(est.water_ml_per_req?.value),
+    waterHeadlineMl,
+    waterUpperMl,
+    waterUpperStored: storedUpper != null,
     billedSavingPct: num(res.billed_saving_pct),
     method: "NVML energy counter on the GPU; J per correct = Wh/req x 3600 / pass rate",
     disclaimer: "Not a compliance claim; facility-level metrics require operator metering.",
@@ -89,7 +103,7 @@ export function renderEuLinkHTML(d) {
       <div class="eulink-metrics">
         <div class="eulink-metric-box"><div class="eulink-metric-label">Window IT Energy</div><div class="eulink-metric-val">${val(d.windowKwh, 4, "kWh", L)}</div></div>
         <div class="eulink-metric-box"><div class="eulink-metric-label">Joules / Correct</div><div class="eulink-metric-val">${val(d.jCand, 2, "J/ans", d.jLabel || L)}</div></div>
-        <div class="eulink-metric-box"><div class="eulink-metric-label">Water Consumption</div><div class="eulink-metric-val">${val(d.waterMlPerReq, 4, "mL/req", d.waterMlPerReq == null ? null : "ESTIMATE")}</div><div class="eulink-metric-note">0.36 L/kWh on-site cooling (ESTIMATE); up to 1.8 L/kWh incl. power-plant water (ESTIMATE)</div></div>
+        <div class="eulink-metric-box"><div class="eulink-metric-label">Water Consumption</div><div class="eulink-metric-val">${val(d.waterHeadlineMl, 4, "mL/req", d.waterHeadlineMl == null ? null : "ESTIMATE")}</div><div class="eulink-metric-note">${WATER_L_PER_KWH} L/kWh on-site cooling, derived from the receipt's measured energy (ESTIMATE); up to ${d.waterUpperMl == null ? DASH : `${fix(d.waterUpperMl, 4)} mL/req`} at the ${WATER_L_PER_KWH_UPPER} L/kWh upper incl. power-plant water${d.waterUpperStored ? ", stored in the signed receipt at the 1.8 upper factor" : ""} (ESTIMATE)</div></div>
         <div class="eulink-metric-box"><div class="eulink-metric-label">Billed Saving</div><div class="eulink-metric-val">${d.billedSavingPct == null ? `${DASH}${dot(null)}` : `${fix(d.billedSavingPct, 1)}%${dot(L)}`}</div></div>
       </div>
       <div class="eulink-actions">${href ? `<a class="eulink-btn" href="${href}" target="_blank" rel="noopener"><span>View EU Report (HTML)</span></a>

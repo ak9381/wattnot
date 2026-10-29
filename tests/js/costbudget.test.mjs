@@ -13,7 +13,7 @@ const infeasible = {
 };
 
 test("verdictLine says where to serve, or that nothing fits", () => {
-  assert.equal(verdictLine(admit), "Yes — serve at 450 W.");
+  assert.equal(verdictLine(admit), "Yes — serve at 350 W.");  // RUN2 is the signed 350 W cap run
   assert.equal(verdictLine({ verdict: "admit", chosen: null }), "Yes — serve at uncapped.");
   assert.equal(verdictLine(infeasible), "No setting fits the budget yet.");
   assert.equal(verdictLine(null), "");
@@ -29,10 +29,10 @@ test("bindsWording names the binding budget in plain words", () => {
 test("budgetRows carries the honesty label and marks missing numbers pending", () => {
   const rows = budgetRows(admit);
   const by = Object.fromEntries(rows.map((r) => [r.id, r]));
-  assert.equal(by.joule.value, "14.69 J");
+  assert.equal(by.joule.value, "12.42 J");  // RUN2 cap350: 11.64 J/req over the 0.937 pass rate
   assert.equal(by.joule.tag, "MEASURED");
   assert.equal(by.joule.pending, false);
-  assert.equal(by.cost.value, "$1.7241");
+  assert.equal(by.cost.value, "$1.5625");
   assert.equal(by.cost.tag, "ESTIMATE");   // RUN2 throughput is synthetic, so cost is an estimate
   assert.equal(by.cost.pending, false);
   assert.match(by.cost.note, /budget \$1\.75/);
@@ -73,7 +73,7 @@ test("labelChip dims pending with a dashed dot and colours measured green", () =
 test("renderBudget is a string with the verdict, binds line and both rows", () => {
   const html = renderBudget(admit);
   assert.equal(typeof html, "string");
-  assert.match(html, /serve at 450 W/);
+  assert.match(html, /serve at 350 W/);
   assert.match(html, /dollar budget is the tighter/);
   assert.match(html, /Energy per correct answer/);
   assert.match(html, /Cost per 1,000 correct answers/);
@@ -91,6 +91,19 @@ test("costFootnote names the basis: ESTIMATE with a note, else MEASURED-derived"
   const derived = costFootnote({ ...admit, cost_note: null });
   assert.match(derived, /MEASURED-derived/);
   assert.doesNotMatch(derived, /throughput not yet measured/);
+});
+
+test("RUN2_SAMPLE serves at the signed 350 W cap, its one measured config", () => {
+  // RUN2 is the signed cap350 run, so the served cap, the greenest cap and the cost floor are all
+  // that single config: achieved energy/cost equal the floors, never a higher hypothetical cap.
+  assert.equal(RUN2_SAMPLE.chosen, 350);
+  assert.equal(RUN2_SAMPLE.greenest, 350);
+  assert.equal(RUN2_SAMPLE.achieved_j_per_correct, RUN2_SAMPLE.floor_j_per_correct);
+  assert.equal(RUN2_SAMPLE.achieved_usd_per_1k_correct, RUN2_SAMPLE.cost_floor_usd_per_1k_correct);
+  // headrooms are budget minus achieved, and the cost basis stays an ESTIMATE
+  assert.ok(Math.abs(RUN2_SAMPLE.headroom_j - (RUN2_SAMPLE.budget_j_per_correct - RUN2_SAMPLE.achieved_j_per_correct)) < 1e-9);
+  assert.ok(Math.abs(RUN2_SAMPLE.headroom_usd - (RUN2_SAMPLE.budget_usd_per_1k_correct - RUN2_SAMPLE.achieved_usd_per_1k_correct)) < 1e-9);
+  assert.equal(RUN2_SAMPLE.cost_basis, "ESTIMATE");
 });
 
 test("renderBudget escapes nothing dangerous but stays well-formed for infeasible", () => {

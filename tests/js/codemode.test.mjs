@@ -6,7 +6,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { cardHtml, candidateHtml, totalsHtml, cell, headline, num, ROWS } from "../../web/dash/codemode.js";
+import { cardHtml, candidateHtml, totalsHtml, cell, headline, num, ROWS,
+  mountCodemode, CODEMODE_RESULTS } from "../../web/dash/codemode.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const resultsPath = path.join(__dirname, "..", "..", "data", "agent-waste", "codemode", "results.json");
@@ -81,4 +82,31 @@ test("full card renders without a live/measured energy claim for the 'after'", (
 test("empty results render a safe placeholder, not a crash", () => {
   assert.match(cardHtml(null), /No Code Mode results/);
   assert.match(cardHtml({}), /No Code Mode results/);
+});
+
+test("headline with zero candidates says none were found, invents no saving", () => {
+  const h = headline({ candidates: 0, runs_examined: 42 });
+  assert.match(h, /No Code Mode candidates in 42 recorded runs\./);
+  assert.doesNotMatch(h, /collapse/); // no modelled-saving sentence when there is nothing to save
+  // a missing count is treated as zero, and the examined count still shows a dash-safe number
+  assert.match(headline({}), /No Code Mode candidates in 0 recorded runs\./);
+});
+
+test("totalsHtml(null) is empty, so a card without totals omits the strip", () => {
+  assert.equal(totalsHtml(null), "");
+  assert.equal(totalsHtml(undefined), "");
+});
+
+test("mountCodemode renders the card into an element from pre-loaded results (no fetch)", async () => {
+  const el = { innerHTML: "" };
+  await mountCodemode(el, results);
+  assert.match(el.innerHTML, /Code Mode detection/);
+  assert.ok(el.innerHTML.includes(results.rows[0].task));
+});
+
+test("mountCodemode tolerates a null element and shapes its fetch URL", async () => {
+  // a missing mount point is a no-op, never a throw
+  await mountCodemode(null, results);
+  // the fetched artifact sits beside the dashboard page (dash/codemode/results.json)
+  assert.equal(CODEMODE_RESULTS, "codemode/results.json");
 });
