@@ -146,8 +146,11 @@ def run(opts: Options, transport: Transport, mode: str, *, out_dir: str | Path,
                          prev_sha256=rc.last_in_chain(out_dir), window=window,
                          api_key_prefix_sha=pre, host=host_info(transport))
     path = rc.write(r, rows, out_dir)
-    if sign_key:
-        from wattnot.receipt.sign import sign
-        sign(path, no_rekor=True, key_path=sign_key)
-        r = json.loads(path.read_text())
-    return path, r
+    # Every run receipt (Baseten or Modal) is signed offline with the local key, with no
+    # network and nothing public. If no key is configured the receipt is clearly marked
+    # unsigned and the run carries on; signing only fills the integrity block, so it never
+    # changes the hash or lifts the grade (Baseten/Modal energy stays an ESTIMATE).
+    from wattnot.receipt.sign import sign_run_receipt
+
+    sign_run_receipt(path, key_path=sign_key)
+    return path, json.loads(path.read_text())

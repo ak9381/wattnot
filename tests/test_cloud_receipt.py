@@ -237,7 +237,8 @@ def test_cli_demo_end_to_end(tmp_path, capsys):
     assert "SIMULATED" in out and "match" in out
     files = {p.suffix for p in tmp_path.iterdir()}
     assert {".json", ".html", ".jsonl"} <= files
-    rid = next(p for p in tmp_path.glob("cloud_*.json") if ".audit" not in p.name)
+    rid = next(p for p in tmp_path.glob("cloud_*.json")
+               if ".audit" not in p.name and not p.name.endswith(".sigstore.json"))
     assert cli.main(["cloud", "show", str(rid)]) == 0
     assert "meter audit: match" in capsys.readouterr().out
     rid.write_text(rid.read_text().replace('"saving_pct": ', '"saving_pct": 9', 1))

@@ -197,7 +197,8 @@ def calls_digest(calls: Sequence[Mapping]) -> str:
 
 def last_in_chain(out_dir: str | Path) -> str | None:
     d = Path(out_dir)
-    files = sorted(p for p in d.glob("cloud_*.json") if not p.name.endswith(".calls.jsonl"))
+    files = sorted(p for p in d.glob("cloud_*.json")
+                   if not p.name.endswith((".calls.jsonl", ".sigstore.json")))
     return json.loads(files[-1].read_text())["integrity"]["sha256"] if files else None
 
 
