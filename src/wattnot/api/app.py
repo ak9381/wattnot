@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
 import os
 import re
 from collections.abc import AsyncIterator
@@ -206,9 +207,10 @@ def _resume_seq(request: Request) -> int | None:
 
 def _speed(request: Request) -> float:
     try:
-        return float(request.query_params.get("speed", "1"))
+        v = float(request.query_params.get("speed", "1"))
     except ValueError:
         return 1.0
+    return v if math.isfinite(v) else 1.0  # reject nan/inf so pacing math stays well-defined
 
 
 async def _event_stream(
