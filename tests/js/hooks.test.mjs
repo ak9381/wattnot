@@ -113,8 +113,8 @@ test("root redirect page has description and OG tags", () => {
 
 test("shared chrome header has updated nav links and Live graph", () => {
   const chromeJs = fs.readFileSync(path.join(dashDir, "chrome.js"), "utf8");
-  assert.match(chromeJs, /href="\${prefix}runs\.html">Dashboard<\/a>/);
-  assert.match(chromeJs, /href="\${prefix}runs\.html#runs">Runs<\/a>/);
+  assert.match(chromeJs, /href="\${prefix}v2\.html#pHome">Dashboard<\/a>/);
+  assert.match(chromeJs, /href="\${prefix}runs\.html">Runs<\/a>/);
   assert.match(chromeJs, /href="\${prefix}v2\.html#pReport">Compare<\/a>/);
   assert.match(chromeJs, /href="\${prefix}report\.html\?run=run2-llama-350w">Reports<\/a>/);
   assert.match(chromeJs, /href="\${prefix}graph\.html">Live graph<\/a>/);
