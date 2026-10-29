@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# HISTORICAL (RUN2, Oct 27-30): kept as the record of the earlier test. It used non-Meta
+# models (Granite / Qwen) and is not called by the long run. Every model WattNot runs now is a Meta model.
 """Run only the adaptive top-k step on a GPU host that already has the kit and weights.
 
     python scripts/run2_adaptive_only.py HOST [--out DIR] [--budget-s 900]

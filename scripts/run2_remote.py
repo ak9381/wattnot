@@ -294,7 +294,7 @@ def main(argv=None) -> int:
             p.add_argument("--timeout", type=float, default=900 if name == "wait" else 1800)
         if name == "setup":
             p.add_argument("--model", default="meta-llama/Llama-3.1-8B-Instruct")
-            p.add_argument("--moe", default="ibm-granite/granite-3.1-3b-a800m-instruct")
+            p.add_argument("--moe", default="meta-llama/Llama-4-Scout-17B-16E-Instruct")
             p.add_argument("--reconnect-budget-s", type=float, default=RECONNECT_BUDGET_S)
         if name == "pull":
             p.add_argument("--out", default="run2-pulled")

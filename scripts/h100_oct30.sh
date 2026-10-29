@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# HISTORICAL (RUN2, Oct 27-30): kept as the record of the earlier test. It used non-Meta
+# models (Granite / Qwen) and is not called by the long run. Every model WattNot runs now is a Meta model.
 # The Oct 30 H100 kit: one script, three jobs, in this order.
 #   1. probe  (<= 10 min)  can we write the power cap, does the energy counter move, is the cap put back
 #   2. flex   (~30 min)    three grid shed asks (15/25/35 percent) while the load generator keeps
@@ -73,7 +75,7 @@ if [ "$RIG" = real ]; then
   PIP="python -m pip"; command -v uv >/dev/null && PIP="uv pip"
   $PIP install -q -e . "huggingface_hub[cli]>=0.30"
   if [ -z "${HF_TOKEN:-}" ] && ! printf '%s ' "${EXTRA[@]}" | grep -q -- '--models'; then
-    echo "set HF_TOKEN (Llama 3.1 is gated) or pass --models muse-glimmer,qwen2.5-7b (all ungated)"; exit 10
+    echo "set HF_TOKEN (Llama 3.1 is gated) or pass --models muse-glimmer (ungated, Meta)"; exit 10
   fi
   command -v nvidia-smi >/dev/null || { echo "no nvidia-smi: not a GPU host"; exit 10; }
   command -v docker >/dev/null || echo "warning: docker missing; Muse Glimmer needs vllm/vllm-openai:muse-glimmer"

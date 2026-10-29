@@ -38,9 +38,6 @@ MUSE_GLIMMER = ServedModel(
 LLAMA_31_8B = ServedModel(
     "llama-3.1-8b", "meta-llama/Llama-3.1-8B-Instruct", 8.0, "Llama 3.1 Community", 18.0,
     False, (), None, "comparison model", 18.0)
-QWEN25_7B = ServedModel(  # ungated stand-in for Llama 3.1 when no HF token is on the box
-    "qwen2.5-7b", "Qwen/Qwen2.5-7B-Instruct", 7.6, "Apache-2.0", 17.0,
-    True, (), None, "ungated comparison model (use instead of Llama 3.1 without HF_TOKEN)", 17.0)
 MUSE_SPARK_OPEN = ServedModel(
     "muse-spark-open", "meta-models/Muse-Spark-Open-816B-A42B-NVFP4", 816.0,
     "Muse Model License", 1650.0, True,
@@ -49,7 +46,7 @@ MUSE_SPARK_OPEN = ServedModel(
     None, "NVFP4 (~537 GB weights) needs >= 700 GB VRAM: 8x H200 141GB or 8x B200, "
     "not 1x or 8x H100 80GB", 700.0, 8)
 
-MODELS = {m.key: m for m in (MUSE_GLIMMER, LLAMA_31_8B, QWEN25_7B, MUSE_SPARK_OPEN)}
+MODELS = {m.key: m for m in (MUSE_GLIMMER, LLAMA_31_8B, MUSE_SPARK_OPEN)}
 DEFAULT = MUSE_GLIMMER
 # What the runbook serves, in order. Models that don't fit the box's VRAM are skipped
 # and recorded, so one plan works on 1x H100 (Glimmer + Llama) and 8x H200 (Spark Open).

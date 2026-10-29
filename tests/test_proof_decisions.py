@@ -159,7 +159,7 @@ def test_prompt_states_gates_allowed_and_trials_only():
                                          "quality_pass_pct", "stock_pass_pct",
                                          "accepted", "why_not"}
     system = body["messages"][0]["content"]
-    assert "at most 2 points" in system and "at most 10%" in system
+    assert "at most 1 point" in system and "at most 10%" in system
     assert "below zero" in system and "explanation" in system
 
 

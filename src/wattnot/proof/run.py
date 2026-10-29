@@ -296,7 +296,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover
     ap.add_argument("--settle-s", type=float, default=4.0)
     ap.add_argument("--keep-cap", action="store_true", help="apply: leave the cap set on exit")
     ap.add_argument("--load-s", type=float, default=0, help="snap: seconds of load at stock cap")
-    ap.add_argument("--adaptive-model", default="ibm-granite/granite-3.1-3b-a800m-instruct")
+    ap.add_argument("--adaptive-model", default="meta-llama/Llama-4-Scout-17B-16E-Instruct")
     ap.add_argument("--adaptive-mass", type=float, default=None,
                     help="adaptive top-k: share of router weight to keep (default: the tuned one)")
     ap.add_argument("--adaptive-budget-s", type=float, default=1200)

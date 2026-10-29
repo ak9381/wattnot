@@ -45,11 +45,15 @@ from wattnot.receipt.joules import with_joules
 from wattnot.receipt.lint import lint
 from wattnot.schemas import validate_receipt
 
-# Default MoE: IBM Granite 3.1 3B-A800M Instruct (Apache 2.0, ungated). 3.3B parameters, 40
+# Earlier (RUN2, non-Meta) MoE: IBM Granite 3.1 3B-A800M Instruct (Apache 2.0, ungated). 3.3B parameters, 40
 # experts per layer, top-8, so about 7 GB in bf16: it fits one H100 80GB with room to spare, and
 # it is the model the CPU test used, so the numbers line up. OLMoE-1B-7B (64 experts, top-8) is
 # the usual alternative, but the hook is only wired for the Granite layout today.
-DEFAULT_MODEL = "ibm-granite/granite-3.1-3b-a800m-instruct"
+DEFAULT_MODEL = "meta-llama/Llama-4-Scout-17B-16E-Instruct"
+# Meta-only rule (Oct 29): the default is Meta's Llama 4 Scout. Scout routes each token to ONE
+# expert plus an always-on shared expert, so there is no k to lower: the hook refuses top-1
+# routers with a clear error. The Granite model above stays only as the CPU test fixture
+# (tests pass it explicitly) and as the dated RUN2 history.
 # 0.95, tuned on a CPU (scripts/tune_adaptive_mass.py, data/adaptive-tune). RUN2 used 0.9 and got
 # 94.5% token agreement on the H100, under the 95% gate. On the CPU 0.95 keeps agreement at
 # 96.7% or better on three prompt sets (lower 95% bound 95.5%), with about 7.7 of 8 experts active.

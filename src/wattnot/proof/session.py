@@ -21,7 +21,7 @@ from wattnot.proof.rig import Rig, pooled_items
 from wattnot.proof.stats import ci95, mean_sd, pct_change
 from wattnot.runner.workload import Workload
 
-MAX_DROP_PTS = 2.0
+MAX_DROP_PTS = 1.0  # Akash spec: quality may drop by at most 1 point (UI says <= 1 pt)
 P99_SLACK_PCT = 10.0
 
 

@@ -367,11 +367,17 @@ def node_stats(repo: Path, h: dict, lg: dict, bt: dict) -> dict[str, list[dict]]
     ]
     rr = h.get("rerun", {}).get("adaptive_topk", {})
     qs = h.get("qwen", {}).get("summary", {})
+    # Meta-only (Oct 29): the main card is pending (planned on Spark via Modal). The Qwen3 and Granite
+    # numbers are an earlier test on non-Meta models: kept only as dated history (details popup).
     S["adaptive"] = [
-        st("q", "Qwen3-30B-A3B energy per token", qs.get("saving_pct"), "% less", "MEASURED", "qwen3-adaptive/summary.json", "all three gates passed"),
+        missing("spark", "Pending: planned on Spark via Modal (Muse Spark Open, Meta)", "planned Modal sprint",
+                "planned on Spark via Modal"),
+    ]
+    S["adaptive_history"] = [
+        st("q", "Earlier test (Oct 27-30), non-Meta model: Qwen3-30B-A3B energy per token", qs.get("saving_pct"), "% less", "MEASURED", "qwen3-adaptive/summary.json", "all three gates passed"),
         st("qa", "agreement with normal top-k", r(h.get("qwen", {}).get("agreement", {}).get("pct"), 1), "%", "MEASURED", "same file", "gate: at least 95%"),
         st("qe", "experts firing per token", f'{qs.get("on", {}).get("active_experts", 0):.2f} of {qs.get("off", {}).get("active_experts", 0):.0f}' if qs else None, "", "MEASURED", "same file"),
-        st("g", "Granite 3B energy per token", rr.get("saving_pct_j_per_token"), "% less", "MEASURED", "adaptive-rerun/summary.json",
+        st("g", "Earlier test (Oct 27-30), non-Meta model: Granite 3B energy per token", rr.get("saving_pct_j_per_token"), "% less", "MEASURED", "adaptive-rerun/summary.json",
            f'agreement {rr.get("agreement_pct")}%: just under the 95% gate, so not proposed'),
     ]
     fx = sumy.get("flex", [])
@@ -477,21 +483,26 @@ def story(h: dict, bt: dict, S: dict) -> dict:
     })
     qr = h.get("qwen_rcpt", {})
     qs = h.get("qwen", {}).get("summary", {})
-    wh_off = qr["baseline"]["wh_per_req"]["mean"]
-    wh_on = qr["candidate"]["wh_per_req"]["mean"]
-    topk = energy_lever(wh_off, wh_on)
-    topk.update({
-        "id": "topk", "title": "Adaptive top-k", "model": "Qwen3-30B-A3B on one H100",
-        "before_label": "normal top-k (8 experts)", "after_label": "adaptive top-k (6.9 on average)",
-        "p99_before_s": qs["off"]["p99_ms"] / 1000, "p99_after_s": qs["on"]["p99_ms"] / 1000,
-        "p99_change_pct": r(qs["p99_increase_pct"], 1),
-        "j_per_token": [r(qs["off"]["j_per_token"]["mean"], 3), r(qs["on"]["j_per_token"]["mean"], 3)],
-        "experts": [qs["off"]["active_experts"], r(qs["on"]["active_experts"], 2)],
-        "quality": {"state": "passed", "text": f'passed all three gates: {qs["gates"]["quality"]["agreement_pct"]}% agreement (needs 95%)',
-                    "agreement_pct": qs["gates"]["quality"]["agreement_pct"]},
-        "note": "16 requests of 64 new tokens, batches of 8, one card, transformers expert loop in both arms; p99 here is a batch's generate time.",
-        "src": "qwen3-adaptive receipt rcpt_moe_9a56b2eca886 (NVML)",
-    })
+    # Meta-only (Oct 29): pending card, planned on Spark via Modal; the earlier Qwen3 result is dated history.
+    topk = {
+        "id": "topk", "title": "Adaptive top-k", "model": "Muse Spark Open (Meta), planned on Modal",
+        "pending": True, "status": "planned on Spark via Modal",
+        "before_label": "normal routing", "after_label": "planned on Spark via Modal",
+        "wh_before": None, "wh_after": None, "saved_pct": None,
+        "quality": {"state": "pending", "text": "planned on Spark via Modal",
+                    "why": "Glimmer (the H100 model) is dense, so top-k cannot run there. It is planned on Muse "
+                           "Spark Open (a Meta MoE), gated on 95% agreement and p99."},
+        "src": "planned Modal sprint (not run yet)",
+    }
+    if qr and qs:
+        topk["history"] = {
+            "label": "earlier test (Oct 27-30), non-Meta model", "model": "Qwen3-30B-A3B on one H100",
+            "wh_before": qr["baseline"]["wh_per_req"]["mean"], "wh_after": qr["candidate"]["wh_per_req"]["mean"],
+            "saving_pct": qs.get("saving_pct"),
+            "agreement_pct": qs["gates"]["quality"]["agreement_pct"],
+            "j_per_token": [r(qs["off"]["j_per_token"]["mean"], 3), r(qs["on"]["j_per_token"]["mean"], 3)],
+            "src": "qwen3-adaptive receipt rcpt_moe_9a56b2eca886 (NVML)",
+        }
     t = bt.get("run2", {}).get("totals", {})
     cls = bt.get("run2", {}).get("classes", [])
     p99_b = max(c["would_have_cost_xhigh"]["latency_p99_s"] for c in cls) if cls else None
@@ -548,8 +559,6 @@ def replays(h: dict, bt: dict, lg: dict) -> dict:
     mg = "Muse-Glimmer"
     a, b = sweep_row(h, mg, 700), sweep_row(h, mg, 400)
     sw = (lambda s: f'{float(s["wh_per_req"])*1000:.2f} mWh/request, p99 {float(s["p99_s"]):.2f} s') if a else (lambda s: "")
-    rr = h.get("rerun", {}).get("adaptive_topk", {})
-    qs = h.get("qwen", {}).get("summary", {})
     cues = [
         cue("e2e_rig", "setup", "Set up the H100 host", took=st_.get("setup", {}).get("seconds"), tag="MEASURED"),
         cue("proposals", "write", "Write a trial-grant proposal for caps 200 to 700 W and vLLM settings", tag="MEASURED"),
@@ -574,12 +583,7 @@ def replays(h: dict, bt: dict, lg: dict) -> dict:
         cue("gates", "decide", "No cap passed the gate; the best-cap re-run was skipped", tag="MEASURED", ok=False),
         cue("e2e_rig", "best", "Re-run of the best cap skipped (none passed)", took=0.0, tag="MEASURED", ok=False),
         cue("e2e_rig", "topk", "Adaptive top-k stage failed with a router shape error (transformers 5.19)", took=st_.get("adaptive_topk", {}).get("seconds"), tag="MEASURED", ok=False),
-        cue("adaptive", "load", "Re-run, patched: Granite 3B loaded with transformers", tag="MEASURED"),
-        cue("adaptive", "hook", "Routers hooked: keep experts until 90% of router weight is covered", tag="MEASURED"),
-        cue("adaptive", "arms", f'Granite 3B: {rr.get("saving_pct_j_per_token")}% less energy per token', took=rr.get("seconds"), tag="MEASURED"),
-        cue("adaptive", "agree", f'Granite agreement {rr.get("agreement_pct")}%: just under the 95% gate', tag="MEASURED", ok=False),
-        cue("adaptive", "arms", f'Qwen3-30B-A3B: {qs.get("saving_pct")}% less energy per token' if qs else "Qwen3", tag="MEASURED"),
-        cue("adaptive", "agree", f'Qwen3 agreement {h.get("qwen", {}).get("agreement", {}).get("pct", 0):.1f}%: all three gates passed', tag="MEASURED"),
+        cue("adaptive", "load", "Adaptive top-k: planned on Muse Spark Open (Meta) via Modal", ok=False),
         cue("receipts", "build", "Receipts written for the flex events and the adaptive runs", tag="MEASURED"),
         cue("receipts", "canon", "Written in a fixed byte form", tag="MEASURED"),
         cue("receipts", "hash", "SHA-256, chained", tag="MEASURED"),

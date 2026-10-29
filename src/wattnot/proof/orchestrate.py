@@ -1057,7 +1057,7 @@ def finish_receipt(
         "method": {
             "energy": "NVML total_energy_mj counter, before and after each block",
             "design": f"interleaved stock/cap blocks, {a.reps} rounds per cap",
-            "accept": "quality drop <= 2 pts, mean p99 change <= +10%, "
+            "accept": "quality drop <= 1 pt, mean p99 change <= +10%, "
             "95% CI of the J/request change entirely below 0",
         },
         "control": control and {k: v for k, v in control.items() if k != "blocks"},
@@ -1232,7 +1232,7 @@ def main(argv=None) -> int:
     ap.add_argument("--room", default="arsat")
     ap.add_argument("--scan-json", type=Path)
     ap.add_argument("--adaptive", action=argparse.BooleanOptionalAction, default=True)
-    ap.add_argument("--adaptive-model", default="ibm-granite/granite-3.1-3b-a800m-instruct")
+    ap.add_argument("--adaptive-model", default="meta-llama/Llama-4-Scout-17B-16E-Instruct")
     ap.add_argument("--adaptive-budget-s", type=float, default=1200)
     ap.add_argument(
         "--adaptive-mass",
