@@ -94,6 +94,16 @@ def test_not_a_cloud_receipt_is_refused():
         from_cloud({"spec": "wattnot.receipt/1"})
 
 
+def test_zero_requests_is_refused_not_a_zero_division(cloud):
+    # A receipt with no requests must raise a clean ValueError, not ZeroDivisionError when
+    # dividing the energy ranges by the request count.
+    c = json.loads(json.dumps(cloud[0]))
+    c["totals"]["requests"] = 0
+    _reseal(c)
+    with pytest.raises(ValueError, match="zero requests"):
+        from_cloud(c)
+
+
 def test_banned_wording_is_refused(cloud):
     c = json.loads(json.dumps(cloud[0]))
     c["unverified"] = ["this run is carbon neutral"]
