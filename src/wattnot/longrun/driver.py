@@ -29,7 +29,7 @@ from .recorder import Recorder
 
 INR_PER_H = 451.2          # E2E H100 + GST + disk (MEASURED price list)
 INR_PER_USD = 88.0         # ASSUMED
-BALANCE_FLOOR_INR = 450.0  # stop with about 1 h of credit left
+BALANCE_FLOOR_INR = 1500.0  # the balance watchdog floor in long-run-plan.md
 LINK_LOST_RCS = (4, 5)     # run2_remote: 4 = link lost mid-setup, 5 = unreachable
 
 
@@ -41,13 +41,21 @@ class Block:
     dry: list[str] | None          # argv for the dry run (None = nothing to simulate)
     capture: bool = False
     optional: bool = False         # needs Akash's yes (e.g. the second model)
+    min_hours: float | None = None # a trimmed version fits in this much time ...
+    trim: list[str] | None = None  # ... with this argv (e.g. fewer items per tier)
 
 
 def _py(*args: str) -> list[str]:
     return [sys.executable, "-m", *args]
 
 
-def plan(out: Path) -> list[Block]:
+def plan(out: Path, model: str = "llama") -> list[Block]:  # see plan_glimmer for the primary
+    """The block list. model="llama" is plan A (Llama 8B main, Glimmer optional);
+    model="glimmer" is plan B (Glimmer 30B main; Llama RUN2 stays as prior evidence)."""
+    if model == "glimmer":
+        return plan_glimmer(out)
+    if model == "glimmer-test":
+        return plan_glimmer_test(out)
     live = out / "live.jsonl"
     reh = lambda tag, *extra: _py("wattnot.proof.orchestrate", "--mode", "rehearsal",  # noqa: E731
                                   "--out", str(out / "runs" / tag), "--profile", "quick",
@@ -69,6 +77,60 @@ def plan(out: Path) -> list[Block]:
         Block("b7-topk", "Adaptive top-k (Granite)", 1.0, reh("b7")),
         Block("b8-spark-open", "Spark Open 816B on one GPU", 3.5, None),
         Block("b9-buffer", "Buffer for redoing failed blocks", 1.5, None),
+    ]
+
+
+def plan_glimmer(out: Path) -> list[Block]:
+    """Plan B, the primary: Muse Glimmer 30B (Meta) main, one VM session, no relaunch."""
+    live = out / "live.jsonl"
+    reh = lambda tag, *extra: _py("wattnot.proof.orchestrate", "--mode", "rehearsal",  # noqa: E731
+                                  "--out", str(out / "runs" / tag), "--profile", "quick",
+                                  "--auto-approve", "--fresh", "--live-file", str(live), *extra)
+    guard = str(Path(__file__).resolve().parents[3] / "examples/longrun/guardrails-wonder.json")
+    tiers = lambda tag, cfg, *x: _py("wattnot.longrun.harness", "--cap", "350",  # noqa: E731
+                                     "--out", str(out / "runs" / tag), "--fake",
+                                     "--model-config", cfg, *x)
+    full = str(out / "runs" / "g3" / "tiers_summary.json")
+    return [
+        Block("g0-setup", "Launch, setup, Glimmer weights (55.5 GiB), probe", 1.0, None),
+        # same VM session, no relaunch (E2E's 24 h balance rule allows one launch)
+        Block("g0b-shakedown", "Glimmer shakedown: memory headroom, FP8 start, timings, thinking "
+              "budget, harness fixes (not a measured result)", 2.0,
+              tiers("g0b", "muse-glimmer-30b", "--per-tier", "4")),
+        # safety first: one baseline/best-cap pair saved with its receipt before any repeat
+        Block("g1a-pair", "1 + 1: baseline and best cap, one pair, checkpoint + receipt", 0.75,
+              reh("g1a", "--no-adaptive")),
+        Block("g1b-repeats", "Two more baseline/best-cap repeats (3x total) + 325 W rejection",
+              1.75, reh("g1b", "--no-adaptive")),
+        Block("g2-wonder-sweep", "Wonder-supervised sweep 300-375 W + clock locks", 2.75,
+              reh("g2", "--planner", "wonder", "--max-proposals", "10", "--no-adaptive",
+                  "--guardrail-config", guard), min_hours=1.5,
+              trim=reh("g2", "--planner", "wonder", "--max-proposals", "5", "--no-adaptive",
+                       "--guardrail-config", guard)),
+        Block("g3-tiers", "Tiered prompt set on Glimmer, stock vs best cap", 3.0,
+              tiers("g3", "muse-glimmer-30b"), min_hours=1.5,
+              trim=tiers("g3", "muse-glimmer-30b", "--per-tier", "8")),
+        Block("g4-camera", "Camera-ready run in one take (Glimmer)", 1.25, reh("g4"),
+              capture=True),
+        Block("g5-fp8", "FP8 vs BF16, gated keep/reject on the same tiers", 1.5,
+              tiers("g5", "muse-glimmer-30b-fp8", "--compare-to", full), min_hours=0.75,
+              trim=tiers("g5", "muse-glimmer-30b-fp8", "--per-tier", "8", "--compare-to", full)),
+        Block("g7-flex", "Flex / load-shed test", 0.75, None),
+        Block("g8-buffer", "Buffer for redoing failed blocks", 1.0, None),
+    ]
+
+
+def plan_glimmer_test(out: Path) -> list[Block]:
+    """A standalone 1-2 h Glimmer test VM: memory, FP8, timings. Not a measured result."""
+    tiers = lambda tag, cfg: _py("wattnot.longrun.harness", "--cap", "350", "--out",  # noqa: E731
+                                 str(out / "runs" / tag), "--fake", "--model-config", cfg,
+                                 "--per-tier", "4")
+    return [
+        Block("t0-setup", "Launch, setup, Glimmer weights, probe, -lgc test", 0.75, None),
+        Block("t1-bf16", "BF16: KV headroom per tier, thinking budget, one cap timing", 0.5,
+              tiers("t1", "muse-glimmer-30b")),
+        Block("t2-fp8", "FP8 restart: memory, start time, the same mini tiers", 0.5,
+              tiers("t2", "muse-glimmer-30b-fp8")),
     ]
 
 
@@ -147,6 +209,19 @@ class Driver:
             self._note(kind="vm-deleted", reason=d.reason)
         return d
 
+    def _receipt(self, d: Path, block_id: str) -> None:
+        """A hash-chained receipt per block: what was saved, and the previous block's hash, so a
+        lost or edited block shows. The signed run receipts come from orchestrate itself."""
+        import hashlib
+        files = {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+                 for p in sorted(d.iterdir()) if p.is_file() and p.name != "receipt.json"}
+        prev = self.state.get("last_receipt")
+        body = {"format": "wattnot.block-receipt/1", "block": block_id, "label": self.label,
+                "files": files, "prev": prev}
+        h = hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()
+        (d / "receipt.json").write_text(json.dumps({**body, "sha256": h}, indent=1))
+        self.state["last_receipt"] = h
+
     def go(self) -> dict:
         for b in self.blocks:
             st = self.state["blocks"].get(b.id, {})
@@ -156,12 +231,18 @@ class Driver:
                 self.state["blocks"][b.id] = {"status": "skipped", "why": "needs Akash's yes"}
                 self._save()
                 continue
-            bal, left = self.balance(), self.max_hours - self.used()
-            if bal < BALANCE_FLOOR_INR or left <= 0:
+            bal = self.balance()
+            # time left = the smaller of the hard deadline and what the credit above the floor buys
+            left = min(self.max_hours - self.used(), (bal - BALANCE_FLOOR_INR) / INR_PER_H)
+            if bal < BALANCE_FLOOR_INR or self.used() >= self.max_hours:
                 self._teardown(why=f"before {b.id}", balance_low=bal < BALANCE_FLOOR_INR,
-                               hard_deadline_hit=left <= 0)
+                               hard_deadline_hit=self.used() >= self.max_hours)
                 self.state["stopped"] = "money rule"
                 break
+            if b.hours > left and b.min_hours is not None and b.min_hours <= left:
+                self._note(kind="trimmed", block=b.id, hours=b.min_hours, left=round(left, 2))
+                b = Block(b.id, b.title + " (trimmed)", b.min_hours, b.trim, b.capture,
+                          b.optional)
             if b.hours > left:
                 self.state["blocks"][b.id] = {"status": "dropped",
                                               "why": f"needs {b.hours} h, {left:.2f} h left"}
@@ -187,7 +268,11 @@ class Driver:
                         return self.state
                 copied = self.vm.pull()
                 result["copied"] = copied
-                self.rec.end(result)
+                tiers = self.out / "runs" / b.id.split("-")[0] / "tiers_summary.json"
+                if tiers.exists():   # the tier table goes into the block's recorded state
+                    result["tiers"] = json.loads(tiers.read_text())
+                d = self.rec.end(result)
+                self._receipt(d, b.id)
                 ok = rc == 0 and not linkdown
                 self.state["blocks"][b.id] = {"status": "done" if ok else "failed", **result}
                 self._save()
@@ -202,10 +287,10 @@ class Driver:
 
 
 def dry_run(out: Path, *, drop: dict | None = None, dead_after: str | None = None,
-            include_optional=(), runner=None, timeout_s: float = 900,
-            max_hours: float = 18.9) -> dict:
+            include_optional=(), runner=None, timeout_s: float = 900, model: str = "llama",
+            max_hours: float = 18.0) -> dict:  # the plan's watchdog hard cap
     out.mkdir(parents=True, exist_ok=True)
-    blocks = plan(out)
+    blocks = plan(out, model)
     sim = {"h": 0.0}
     env = dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[2]))
     env.pop("WATTNOT_META_KEY", None)
@@ -247,6 +332,9 @@ def main(argv=None) -> int:
     ap.add_argument("--dry-run", action="store_true", required=True,
                     help="only the CPU/mock dry run exists; live needs Akash's go")
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--model", choices=["glimmer", "llama", "glimmer-test"], default="glimmer",
+                    help="glimmer = primary plan; llama = fallback; glimmer-test = 1-2 h test VM")
+    ap.add_argument("--max-hours", type=float, default=None)
     ap.add_argument("--drop-link", default="b2-wonder-sweep:3",
                     help="simulate an SSH drop: block:probes ('' for none)")
     a = ap.parse_args(argv)
@@ -254,7 +342,10 @@ def main(argv=None) -> int:
     if a.drop_link:
         k, n = a.drop_link.split(":")
         drop[k] = int(n)
-    st = dry_run(a.out, drop=drop)
+    if a.model != "llama" and a.drop_link == "b2-wonder-sweep:3":
+        drop = {"g2-wonder-sweep": 3} if a.model == "glimmer" else {"t1-bf16": 2}
+    hours = a.max_hours or (2.0 if a.model == "glimmer-test" else 18.0)
+    st = dry_run(a.out, drop=drop, model=a.model, max_hours=hours)
     for k, v in st["blocks"].items():
         print(f"{k:18} {v['status']:8} rc={v.get('rc', '-')} {v.get('wall_s', '')}s "
               f"{v.get('why', v.get('teardown', ''))}")

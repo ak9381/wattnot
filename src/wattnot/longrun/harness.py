@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import statistics
 import time
 import urllib.request
@@ -32,6 +33,38 @@ from wattnot.proof.session import MAX_DROP_PTS, P99_SLACK_PCT
 
 from .grade import Graded, grade_one, last_number
 from .tasks import TIERS, Task, build
+
+# Per-model settings, picked with --model-config (a name below or a JSON file with the same keys).
+# Reasoning models (Glimmer, served with --reasoning-parser) spend tokens thinking before the
+# answer, so they need a bigger token budget; vLLM returns the thinking separately, and only
+# `content` is graded. Concurrency is scaled down for bigger models so p99 stays comparable.
+MODELS = {
+    "llama-3.1-8b": {"model": "meta-llama/Llama-3.1-8B-Instruct", "max_tokens_scale": 1.0,
+                     "concurrency_scale": 1.0, "reasoning": False},
+    # Muse Glimmer 30B is Meta's own open-weights model (dense, BF16, reasoning).
+    "muse-glimmer-30b": {"model": "meta-models/Muse-Glimmer-30B", "origin": "Meta", "max_tokens_scale": 8.0,
+                         "concurrency_scale": 0.5, "reasoning": True},
+    "muse-glimmer-30b-fp8": {"model": "meta-models/Muse-Glimmer-30B", "origin": "Meta", "max_tokens_scale": 8.0,
+                             "concurrency_scale": 0.5, "reasoning": True,
+                             "serve_args": ["--quantization", "fp8"]},
+}
+
+
+def model_config(name_or_path: str) -> dict:
+    if name_or_path in MODELS:
+        return {"name": name_or_path, **MODELS[name_or_path]}
+    d = json.loads(Path(name_or_path).read_text())
+    missing = {"model", "max_tokens_scale", "concurrency_scale"} - set(d)
+    if missing:
+        raise ValueError(f"model config needs {sorted(missing)}")
+    return {"name": Path(name_or_path).stem, "reasoning": False, **d}
+
+
+def apply_model(tasks: list[Task], cfg: dict) -> list[Task]:
+    """Scale each task's token budget for this model (a copy; the set itself never changes)."""
+    from dataclasses import replace
+    return [replace(t, max_tokens=int(t.max_tokens * cfg["max_tokens_scale"])) for t in tasks]
+
 
 GPU_USD_PER_H = 5.13  # E2E H100 SXM incl. GST + disk at 88 INR/USD (ESTIMATE)
 CONCURRENCY = {"easy": 16, "medium": 16, "hard": 8, "complex": 4}
@@ -53,8 +86,10 @@ class Chat:
             with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
                 d = json.loads(resp.read())
             ch = d["choices"][0]
+            text = re.sub(r"<think>.*?(</think>|$)", "", ch["message"].get("content") or "",
+                          flags=re.S).strip()   # grade the answer, never the reasoning
             return Reply(time.perf_counter() - t0, int(d.get("usage", {}).get(
-                "completion_tokens", 0)), ch["message"].get("content") or "",
+                "completion_tokens", 0)), text,
                 ch.get("finish_reason") or "stop")
         except Exception:  # noqa: BLE001
             return Reply(time.perf_counter() - t0, 0, "", "error")
@@ -183,6 +218,7 @@ _REF = {
 # ---- measurement ------------------------------------------------------------------------------
 
 def run_tier(chat, tasks: list[Task], conc: int) -> list[Graded]:
+    conc = max(1, conc)
     with ThreadPoolExecutor(max_workers=conc) as ex:
         return list(ex.map(lambda t: grade_one(t, chat), tasks))
 
@@ -194,13 +230,14 @@ def p99(xs: list[float]) -> float:
     return s[min(len(s) - 1, int(round(0.99 * (len(s) - 1))))]
 
 
-def measure_arm(nvml, h, chat, tasks: list[Task], arm: str, limit_w: int) -> dict:
+def measure_arm(nvml, h, chat, tasks: list[Task], arm: str, limit_w: int,
+                conc_scale: float = 1.0) -> dict:
     nvml.set_power_limit_mw(h, limit_w * 1000)
     out = {"arm": arm, "limit_w": limit_w, "tiers": {}}
     for tier in TIERS:
         ts = [t for t in tasks if t.tier == tier]
         e0, t0 = nvml.total_energy_mj(h), time.perf_counter()
-        g = run_tier(chat, ts, CONCURRENCY[tier])
+        g = run_tier(chat, ts, int(CONCURRENCY[tier] * conc_scale))
         e1, wall = nvml.total_energy_mj(h), time.perf_counter() - t0
         out["tiers"][tier] = {"n": len(g), "pass": sum(x.ok for x in g), "joules": (e1 - e0) / 1000,
                               "wall_s": wall, "p99_s": p99([x.latency_s for x in g]),
@@ -211,7 +248,7 @@ def measure_arm(nvml, h, chat, tasks: list[Task], arm: str, limit_w: int) -> dic
 
 
 def run_block(nvml, h, chat, tasks: list[Task], cap_w: int, *, reps: int = 1,
-              clock=None, log=print) -> dict:
+              clock=None, log=print, conc_scale: float = 1.0) -> dict:
     """ABBA order per rep (stock, cap, cap, stock) so drift hits both arms the same."""
     stock_w = nvml.power_default_limit_mw(h) // 1000
     arms = []
@@ -221,7 +258,7 @@ def run_block(nvml, h, chat, tasks: list[Task], cap_w: int, *, reps: int = 1,
                 if clock is not None:
                     clock.reset() if arm == "stock" else clock.apply_current()
                 arms.append(measure_arm(nvml, h, chat, tasks, arm, stock_w if arm == "stock"
-                                        else cap_w))
+                                        else cap_w, conc_scale))
                 log(f"tiers rep {r + 1} {arm} done")
     finally:
         nvml.set_power_limit_mw(h, stock_w * 1000)
@@ -266,6 +303,29 @@ def summarize(block: dict, *, gpu_usd_per_h: float = GPU_USD_PER_H, mock: bool =
             "tiers": rows}
 
 
+def compare_quant(full: dict, quant: dict) -> dict:
+    """Keep or reject a quantized model (e.g. FP8) against full precision (BF16).
+
+    Both summaries come from the same tiers at the same caps. Per tier, the quantized stock arm
+    must stay within the same gate as a cap (pass rate -2 pts, p99 +10%). One blocked tier
+    rejects the quantized model: it is never shipped on the strength of the easy tiers."""
+    rows = []
+    for f, q in zip(full["tiers"], quant["tiers"]):
+        for arm in ("stock", "cap"):
+            a, b = f[arm], q[arm]
+            drop = a["pass_pct"] - b["pass_pct"]
+            slow = 100 * (b["p99_s"] / a["p99_s"] - 1) if a["p99_s"] else 0.0
+            why = ([f"pass rate fell {drop:.1f} pts"] if drop > MAX_DROP_PTS else []) + \
+                  ([f"p99 +{slow:.0f}%"] if slow > P99_SLACK_PCT else [])
+            rows.append({"tier": f["tier"], "arm": arm, "pass_drop_pts": drop,
+                         "p99_change_pct": slow,
+                         "energy_change_pct": 100 * (b["wh_per_task"] / a["wh_per_task"] - 1)
+                         if a["wh_per_task"] else 0.0, "gate": "pass" if not why else "blocked",
+                         "why_not": why})
+    keep = all(r["gate"] == "pass" for r in rows)
+    return {"decision": "keep" if keep else "reject", "label": quant.get("label"), "rows": rows}
+
+
 def table(summary: dict) -> str:
     lab = summary["label"]
     lines = [f"tiers-v1 at {summary['cap_w']} W vs stock ({lab}; mL and $ are ESTIMATES)",
@@ -288,11 +348,19 @@ def main(argv=None) -> int:
     ap.add_argument("--reps", type=int, default=1)
     ap.add_argument("--fake", action="store_true")
     ap.add_argument("--url", default="http://127.0.0.1:8000/v1/chat/completions")
-    ap.add_argument("--model", default="")
+    ap.add_argument("--model-config", default="llama-3.1-8b",
+                    help=f"one of {sorted(MODELS)} or a JSON file")
     ap.add_argument("--clock", default=None)
+    ap.add_argument("--per-tier", type=int, default=0,
+                    help="trim: at most N items per tier (0 = all); used when time runs short")
+    ap.add_argument("--compare-to", type=Path, default=None,
+                    help="a full-precision tiers_summary.json: also write the keep/reject verdict")
     ap.add_argument("--gpu-usd-per-h", type=float, default=GPU_USD_PER_H)
     a = ap.parse_args(argv)
-    tasks = build()
+    cfg = model_config(a.model_config)
+    tasks = apply_model(build(), cfg)
+    if a.per_tier:
+        tasks = [t for tier in TIERS for t in [x for x in tasks if x.tier == tier][:a.per_tier]]
     if a.fake:
         from wattnot.proof.fake import FakeNvml
         nvml = FakeNvml()
@@ -304,7 +372,7 @@ def main(argv=None) -> int:
         nvml = open_nvml()
         h = nvml.device_handle(0)
         CapGuard(nvml, h).__enter__()  # restores the saved limit on exit and on SIGTERM
-        chat = Chat(a.url, a.model)
+        chat = Chat(a.url, cfg["model"])
     clock = None
     if a.clock and a.clock != "base":
         from wattnot.proof.clocks import ClockLock
@@ -312,13 +380,20 @@ def main(argv=None) -> int:
         prof = a.clock
         clock.apply_current = lambda: clock.apply(prof)  # type: ignore[attr-defined]
     a.out.mkdir(parents=True, exist_ok=True)
-    block = run_block(nvml, h, chat, tasks, a.cap, reps=a.reps, clock=clock)
+    block = run_block(nvml, h, chat, tasks, a.cap, reps=a.reps, clock=clock,
+                      conc_scale=cfg["concurrency_scale"])
+    block["model"] = cfg
     if clock is not None:
         block["clock"] = {"profile": a.clock, "applied": clock.available, "reason": clock.reason}
     (a.out / "tiers_raw.json").write_text(json.dumps(block, indent=1, default=str))
     summ = summarize(block, gpu_usd_per_h=a.gpu_usd_per_h, mock=a.fake)
+    summ["model"] = cfg["model"]
     (a.out / "tiers_summary.json").write_text(json.dumps(summ, indent=1))
     print(table(summ))
+    if a.compare_to is not None:
+        v = compare_quant(json.loads(a.compare_to.read_text()), summ)
+        (a.out / "quant_verdict.json").write_text(json.dumps(v, indent=1))
+        print(f"{cfg['name']} vs full precision: {v['decision'].upper()}")
     return 0
 
 

@@ -88,3 +88,32 @@ def test_ui_samples_have_no_answers():
     for t in s["tiers"]:
         for x in t["samples"]:
             assert set(x) == {"id", "prompt", "tools", "subagent"}
+
+
+def test_model_config_scales_budget_not_the_set():
+    cfg = harness.model_config("muse-glimmer-30b")
+    t = harness.apply_model(build(), cfg)
+    assert t[0].max_tokens == build()[0].max_tokens * 8 and t[0].prompt == build()[0].prompt
+    assert harness.model_config("muse-glimmer-30b-fp8")["serve_args"] == ["--quantization", "fp8"]
+
+
+def test_glimmer_tiers_run_on_fake(tmp_path):
+    assert harness.main(["--cap", "350", "--out", str(tmp_path), "--fake",
+                         "--model-config", "muse-glimmer-30b"]) == 0
+    s = json.loads((tmp_path / "tiers_summary.json").read_text())
+    assert s["model"] == "meta-models/Muse-Glimmer-30B"
+
+
+def test_fp8_keep_or_reject(tmp_path):
+    full, q = tmp_path / "bf16", tmp_path / "fp8"
+    assert harness.main(["--cap", "375", "--out", str(full), "--fake",
+                         "--model-config", "muse-glimmer-30b", "--per-tier", "4"]) == 0
+    assert harness.main(["--cap", "375", "--out", str(q), "--fake", "--model-config",
+                         "muse-glimmer-30b-fp8", "--per-tier", "4", "--compare-to",
+                         str(full / "tiers_summary.json")]) == 0
+    v = json.loads((q / "quant_verdict.json").read_text())
+    assert v["decision"] == "keep"
+    s = json.loads((full / "tiers_summary.json").read_text())
+    bad = json.loads(json.dumps(s))
+    bad["tiers"][3]["stock"]["pass_pct"] -= 10
+    assert harness.compare_quant(s, bad)["decision"] == "reject"

@@ -136,6 +136,13 @@ MOE_PID=$!
 echo "[setup] $(date +%T) main weights downloaded"
 df -h / | tail -n 1
 
+if [ "$MODEL" = "meta-models/Muse-Glimmer-30B" ]; then
+  # Glimmer needs its own vLLM image and the reasoning parser (as in RUN1)
+  LOG="$LOG" bash "$REPO/scripts/glimmer_serve.sh" "${GLIMMER_PREC:-bf16}" 8000 || exit 11
+  wait "$MOE_PID" || true
+  echo "[setup] $(date +%T) READY"
+  exit 0
+fi
 nohup "$VENV/bin/vllm" serve "$MODEL" --port 8000 --max-model-len 4096 \
   --gpu-memory-utilization 0.90 --max-num-seqs 64 --served-model-name "$MODEL" \
   > "$LOG/vllm.log" 2>&1 &

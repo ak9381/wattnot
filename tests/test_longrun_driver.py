@@ -59,3 +59,43 @@ def test_resume_skips_done_blocks(tmp_path):
            max_hours=18.9, balance_inr=lambda: 9000, hours_used=lambda: 0,
            sleep=lambda s: None, log=lambda m: None).go()
     assert seen == ["b9-buffer"]
+
+
+def test_balance_floor_forces_teardown(tmp_path):
+    from wattnot.longrun.driver import Driver, FakeVm, plan
+    vm = FakeVm()
+    st = Driver(tmp_path, plan(tmp_path), vm, label="MOCK", run=lambda b: 0, max_hours=18.9,
+                balance_inr=lambda: 1400, hours_used=lambda: 0, sleep=lambda s: None,
+                log=lambda m: None).go()
+    assert st["stopped"] == "money rule" and vm.deleted
+    d = next(e for e in st["events"] if e["kind"] == "teardown-decision")
+    assert "balance floor" in d["reason"]
+
+
+def test_glimmer_plan_runs_end_to_end(tmp_path):
+    st = dry_run(tmp_path, model="glimmer", drop={"g2-wonder-sweep": 3}, runner=ok)
+    s = {k: v["status"] for k, v in st["blocks"].items()}
+    assert s["g5-fp8"] == "done" and "g6-topk" not in s
+    assert st["stopped"] == "finished" and st["sim"]["hours"] <= 18.0
+
+
+def test_glimmer_trims_tiers_when_short(tmp_path):
+    st = dry_run(tmp_path, model="glimmer", runner=ok, max_hours=10.0)
+    kinds = [(e["kind"], e.get("block")) for e in st["events"]]
+    assert ("trimmed", "g3-tiers") in kinds or ("trimmed", "g2-wonder-sweep") in kinds
+    assert st["blocks"]["g1a-pair"]["status"] == "done"   # the 1+1 pair always comes first
+    assert st["sim"]["hours"] <= 10.0
+
+
+def test_block_receipts_are_chained(tmp_path):
+    import json
+    dry_run(tmp_path, model="glimmer", runner=ok)
+    a = json.loads((tmp_path / "recordings" / "g1a-pair" / "receipt.json").read_text())
+    b = json.loads((tmp_path / "recordings" / "g1b-repeats" / "receipt.json").read_text())
+    assert b["prev"] == a["sha256"] and "timeline.jsonl" in a["files"]
+
+
+def test_glimmer_test_session_fits_two_hours(tmp_path):
+    st = dry_run(tmp_path, model="glimmer-test", runner=ok, max_hours=2.0)
+    assert all(v["status"] == "done" for v in st["blocks"].values())
+    assert st["stopped"] == "finished" and st["sim"]["hours"] <= 2.0
