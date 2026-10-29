@@ -3,9 +3,25 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 import urllib.request
 from dataclasses import dataclass
+
+# A reasoning model (Muse Glimmer, served with --reasoning-parser) returns its thinking in a
+# separate `reasoning_content` field, leaving `content` as the final answer. But if the parser
+# fails to initialise (RUN1 warned "Auto-initialization of reasoning token IDs failed"), the
+# thinking leaks into `content` wrapped in <think>...</think>, and the fixed checks then grade the
+# chain of thought instead of the answer (RUN1's ~6% baseline). Strip any such block so the gate
+# always sees the answer. No-op when the parser works (no tags) or on a non-reasoning model; an
+# unterminated block (thinking cut off by max_tokens) is stripped to empty, which the token-limit
+# rule already fails. Mirrors wattnot.longrun.harness.Chat.
+_THINK = re.compile(r"<think>.*?(</think>|$)", re.S)
+
+
+def strip_reasoning(text: str) -> str:
+    """Remove a leaked <think>...</think> block; return the final answer, stripped."""
+    return _THINK.sub("", text).strip()
 
 
 @dataclass(frozen=True)
@@ -24,6 +40,9 @@ class ChatClient:
 
     def ask(self, prompt: str, max_tokens: int) -> Reply:
         body = json.dumps({"model": self.model, "temperature": 0, "max_tokens": max_tokens,
+                           # pin greedy even if a model's generation_config sets top_k/temp
+                           # (Glimmer ships temperature 1.0, top_k 64, top_p 0.95)
+                           "top_k": -1, "top_p": 1.0, "seed": 0,
                            "messages": [{"role": "user", "content": prompt}]}).encode()
         req = urllib.request.Request(self.url, data=body, method="POST",
                                      headers={"Content-Type": "application/json"})
@@ -36,6 +55,7 @@ class ChatClient:
                          "error")
         lat = time.perf_counter() - t0
         ch = (data.get("choices") or [{}])[0]
+        content = (ch.get("message") or {}).get("content") or ""
         return Reply(lat, int((data.get("usage") or {}).get("completion_tokens", 0)),
-                     (ch.get("message") or {}).get("content") or "",
+                     strip_reasoning(content),
                      ch.get("finish_reason") or "stop")
