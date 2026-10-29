@@ -29,5 +29,4 @@
 #pickList li.pending:not(.now){display:none}
 .avn.stub{opacity:.45;transition:opacity .15s}
 .avn.stub:hover,.avn.stub:focus-within{opacity:1}
-.rad-node:has(.rad-pending){display:none}
 .wn-pop-nodata{font-weight:600;margin:8px 0}
