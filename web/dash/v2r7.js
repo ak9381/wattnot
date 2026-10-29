@@ -389,9 +389,15 @@ export function overviewHtml(S) {
   <div class="ov-main">
     <div class="ov-hd"><div><h1>Less power per AI answer, with proof</h1><p class="lead">WattNot tries a safer GPU setting, checks the answers, and keeps it only if nothing got worse. ${infoBtn("what", "what WattNot does")}</p></div><button class="btn pri" data-go="pCfg">Configure a run →</button></div>
     <div class="ov-kpis">
-      ${kpi("Energy saved", saved, "MEASURED", r.model ? `${r.model}, ${r.cap_w} W cap vs ${r.stock_w} W` : "", "calc-power")}
+      ${(() => { // Headline: joules per correct answer (energy per answer / fixed-check pass rate), MEASURED.
+        const js = r.j_per_req_stock, jc = r.j_per_req_cap, qs = r.quality_stock_pct, qc = r.quality_cap_pct;
+        const ok = js != null && jc != null && qs && qc;
+        const pct = ok ? ((jc / (qc / 100)) / (js / (qs / 100)) - 1) * 100 : null;
+        return kpi("Joules per correct answer", pct != null ? `${fmt(pct, 1)}%` : saved, "MEASURED",
+          ok ? `${fmt(js / (qs / 100), 2)} → ${fmt(jc / (qc / 100), 2)} J · ${r.cap_w} W cap vs ${r.stock_w} W. Cost and water are ESTIMATES from these joules` : "", "calc-power");
+      })()}
       ${kpi("Slowest 1% (p99)", r.p99_change_pct != null ? `${r.p99_change_pct > 0 ? "+" : ""}${fmt(r.p99_change_pct, 1)}%` : null, "MEASURED", "limit +10%", "p99")}
-      ${kpi("Answer quality", r.quality_cap_pct != null ? `${fmt(r.quality_cap_pct, 1)}%` : null, "MEASURED", r.quality_stock_pct != null ? `same as without (${fmt(r.quality_stock_pct, 1)}%)` : "", "quality")}
+      ${kpi("Quality: fixed-check pass rate", r.quality_cap_pct != null ? `${fmt(r.quality_cap_pct, 1)}%` : null, "MEASURED", r.quality_stock_pct != null ? `uncapped ${fmt(r.quality_stock_pct, 1)}% · gate: drop ≤ 1.0 pt` : "", "quality")}
       ${kpi("Meta API spend", led.total_usd != null ? `$${fmt(led.total_usd)}` : null, "MEASURED", led.calls != null ? `${fmt(led.calls, 0)} calls recorded` : "", null)}
     </div>
     ${metaTile()}
