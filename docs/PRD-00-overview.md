@@ -37,8 +37,8 @@ Source: Official Rules (event-details.md) and kickoff notes (`kickoff/KICKOFF-NO
   - Best Agentic Use Case: $5k.
   - Best Creative Build: $5k.
 - **Avoid looking "basic":** organizers called chat wrappers and simple RAG apps basic. The demo must not look like a chat UI.
-- **Credits:** Modal form done (first 1,000 teams, $100). Baseten emails selected teams, so nothing to claim . Fireworks posts redeem steps in its channel.
-- **Workshops (9:30 PM IST):** Oct 27 and Oct 28 (Meta workshop parts 1 and 2) · Oct 30 Fireworks. **Office hours:** #office-hours, weekday mornings ET.
+- **Credits:** Modal form done (first 1,000 teams, $100). Baseten emails selected teams, so nothing to claim. Modal ($100 approved Oct 28) and Baseten are the hosted providers.
+- **Workshops (9:30 PM IST):** Oct 27 and Oct 28 (Meta workshop parts 1 and 2). **Office hours:** #office-hours, weekday mornings ET.
 
 ### Submission checklist
 - [ ] Fresh public repo, only Oct 26 – Nov 4 commits
