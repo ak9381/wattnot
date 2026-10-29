@@ -2,7 +2,7 @@ import { esc, badge, num, cnum, legendHtml, stageState, ledgerRows, run2Rows, ve
 import { openThermal } from "./thermal.js";
 import { renderProof, wireIllus } from "./proof.js";
 import { init as initPanCanvas } from "./pancanvas.js";
-import { overviewHtml, openPowerGraph, wireR7, metaInRun, branchPopup, cmpHeadHtml, openWhere, methodPopup, branchInfo, savedPct, childSaved, CHILDREN, CHILD_ONLY, DERIVED_HINT, BUNDLED_ID, compareState, bundledRecord, emptyStateHtml, bundledBanner, TREE, treeChildren, treeFind, treeValue, contextSaver, WATER_L_PER_KWH } from "./v2r7.js";
+import { overviewHtml, openPowerGraph, wireR7, metaInRun, branchPopup, cmpHeadHtml, openWhere, methodPopup, branchInfo, savedPct, childSaved, CHILDREN, CHILD_ONLY, DERIVED_HINT, BUNDLED_ID, compareState, bundledRecord, emptyStateHtml, bundledBanner, TREE, treeChildren, treeFind, treeValue, contextSaver, WATER_L_PER_KWH, WATER_L_PER_KWH_UPPER } from "./v2r7.js";
 import { compareRows } from "./metatools.js";
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -480,7 +480,7 @@ function mapTopics() {
     { id: "water", color: "#8E7A9E", name: "Water", sub: "Cooling water per 1M requests",
       kids: [leaf("w-s", "drop", "Without WattNot", w ? `Stock: <b>${esc(w.stock)}</b>` : "Stock water: not measured"),
              leaf("w-w", "drop", "With WattNot", w ? `Capped: <b>${esc(w.wattnot)}</b> (<b>${esc(w.delta)}</b>)` : "Capped water: not measured")],
-      detail: `Measured joules times <b>${WATER_L_PER_KWH} L</b>/kWh, an industry-average site water factor (WUE). On-site cooling water only; making the electricity is not counted. ${badge("ESTIMATE")}.` },
+      detail: `Measured joules times <b>${WATER_L_PER_KWH} L</b>/kWh, the on-site cooling water factor (WUE), ${badge("ESTIMATE")}; up to <b>${WATER_L_PER_KWH_UPPER} L</b>/kWh including power-plant water ${badge("ESTIMATE")}.` },
     { id: "latency", color: "#B49BDB", name: "Latency", sub: "Slowest 1% of requests (p99)",
       kids: [leaf("l-s", "clock", "Without WattNot", p ? `Stock p99 <b>${esc(p.stock)}</b> ${badge(p.tag)}` : "Stock p99: not measured"),
              leaf("l-w", "clock", "With WattNot", p ? `Capped p99 <b>${esc(p.wattnot)}</b> (<b>${esc(p.delta)}</b>) ${badge(p.tag)}` : "Capped p99: not measured")],
@@ -619,7 +619,7 @@ function radSavedLines(rec) {
     const kwh = (j) => (j * 1e6) / 3.6e6;
     const s = kwh(bj) * water.factor_l_per_kwh, c = kwh(wj) * water.factor_l_per_kwh, d = s - c;
     out.push({ id: "water", name: "Water", text: `${num(s)} → ${num(c)} L per 1M (${d >= 0 ? "saves" : "uses"} ${num(Math.abs(d))} L)`, tag: "ESTIMATE",
-      note: `Measured joules × ${water.factor_l_per_kwh} L/kWh (${water.name || "bundle water factor"}), on-site cooling water only. The meter reading is measured; the water math is an estimate.` });
+      note: `Measured joules × ${water.factor_l_per_kwh} L/kWh (${water.name || "bundle water factor"}, on-site cooling), up to ${WATER_L_PER_KWH_UPPER} L/kWh including power-plant water. The meter reading is measured; the water math is an estimate.` });
   } else out.push({ id: "water", name: "Water", text: null });
   return out;
 }
@@ -996,7 +996,8 @@ function nodeDetailHtml(rec, branch, node) {
   if (node.kind !== "gate") extra += derivedWorking(rec, branch, node);
   return `<p>${esc(desc)}</p>${head}${extra}<p class="fp-note">${esc(rec?.run_name || "")} ${badge(rec?.label || "REPLAY")}</p>`;
 }
-// Cost and Water come from the Power saving: J -> kWh -> $ and litres (1.8 L/kWh).
+// Cost and Water come from the Power saving: J -> kWh -> $ and litres.
+// Water headline 0.36 L/kWh (on-site cooling, ESTIMATE); up to 1.8 L/kWh including power-plant water (ESTIMATE).
 // Hosted items: cost MEASURED, power and water ESTIMATE.
 function derivedWorking(rec, branch, node) {
   if (node.host) return `<p class="rad-sub">Hosted: cost ${badge("MEASURED")} from tokens × list price; power and water ${badge("ESTIMATE")} because hosts share no power meters.</p>`;
@@ -1005,7 +1006,7 @@ function derivedWorking(rec, branch, node) {
   if (b == null || w == null) return `<p class="rad-sub">Derived from the Power saving once it is measured <span class="rad-pending">pending</span></p>`;
   const kwh = (j) => (j * 1e6) / 3.6e6, price = rec?.price_usd_per_kwh ?? 0.1387;
   const f = branch === "cost" ? (j) => `$${num(kwh(j) * price)}` : (j) => `${num(kwh(j) * WATER_L_PER_KWH)} L`;
-  return `<ol class="wex"><li>${num(b)} → ${num(w)} J per answer ${badge("MEASURED")}</li><li>× 1M answers ÷ 3,600,000 = ${num(kwh(b))} → ${num(kwh(w))} kWh</li><li>${branch === "cost" ? `× $${num(price)}/kWh` : `× ${WATER_L_PER_KWH} L/kWh`} = ${f(b)} → ${f(w)} per 1M answers ${badge("ESTIMATE")}</li></ol>`;
+  return `<ol class="wex"><li>${num(b)} → ${num(w)} J per answer ${badge("MEASURED")}</li><li>× 1M answers ÷ 3,600,000 = ${num(kwh(b))} → ${num(kwh(w))} kWh</li><li>${branch === "cost" ? `× $${num(price)}/kWh` : `× ${WATER_L_PER_KWH} L/kWh (on-site cooling, ESTIMATE); up to ${WATER_L_PER_KWH_UPPER} L/kWh including power-plant water`} = ${f(b)} → ${f(w)} per 1M answers ${badge("ESTIMATE")}</li></ol>`;
 }
 // Context saver sub-parts: tokens and joules before/after and gate pass rate,
 // read defensively from the record; each shows "–" with a pending label until

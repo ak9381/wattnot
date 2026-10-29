@@ -21,7 +21,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from wattnot.cloud import receipt as _cloud
-from wattnot.receipt.build import WATER_METHOD, WUE_L_PER_KWH
+from wattnot.receipt.build import WATER_METHOD, WUE_L_PER_KWH, WUE_UPPER_L_PER_KWH
 from wattnot.receipt.canon import canonical_sha256
 from wattnot.receipt.grade import SPEC, claimed_grade
 from wattnot.receipt.joules import with_joules
@@ -29,7 +29,10 @@ from wattnot.receipt.lint import lint
 from wattnot.schemas import validate_receipt
 
 CLOUD_SCHEMA = "wattnot.cloud-receipt/1"
-HOSTED_WATER_SOURCE = "assumed WUE 1.8 L/kWh applied to an ESTIMATE of site energy; not measured"
+HOSTED_WATER_SOURCE = ("0.36 L/kWh on-site cooling (LBNL 2024) applied to an ESTIMATE of site "
+                       "energy; ESTIMATE, not measured")
+HOSTED_WATER_SOURCE_UPPER = ("1.8 L/kWh including power-plant water applied to an ESTIMATE of site "
+                             "energy; upper ESTIMATE, not measured")
 
 
 def _pass_rates(classes: list[Mapping]) -> tuple[float, float]:
@@ -135,9 +138,15 @@ def from_cloud(cloud: Mapping, *, prev_sha256: str | None = None) -> dict[str, A
         "estimates": {
             "water_ml_per_req": {"value": round(t_mid * WUE_L_PER_KWH, 6), "label": "ESTIMATE",
                                  "method": WATER_METHOD, "source": HOSTED_WATER_SOURCE},
+            "water_ml_per_req_upper": {"value": round(t_mid * WUE_UPPER_L_PER_KWH, 6),
+                                       "label": "ESTIMATE", "method": WATER_METHOD,
+                                       "source": HOSTED_WATER_SOURCE_UPPER},
             "baseline_water_ml_per_req": {"value": round(b_mid * WUE_L_PER_KWH, 6),
                                           "label": "ESTIMATE", "method": WATER_METHOD,
-                                          "source": HOSTED_WATER_SOURCE}},
+                                          "source": HOSTED_WATER_SOURCE},
+            "baseline_water_ml_per_req_upper": {"value": round(b_mid * WUE_UPPER_L_PER_KWH, 6),
+                                                "label": "ESTIMATE", "method": WATER_METHOD,
+                                                "source": HOSTED_WATER_SOURCE_UPPER}},
     }
     with_joules(r)
     r["grade"] = claimed_grade(r, rekor=False)

@@ -27,10 +27,12 @@ from wattnot.receipt.per_model import attach as attach_per_model
 from wattnot.schemas import validate_receipt
 
 TARIFF_USD_PER_KWH = 0.12  # assumption, shown as such
-WUE_L_PER_KWH = 1.8  # assumption, so water is an ESTIMATE
+WUE_L_PER_KWH = 0.36  # headline ESTIMATE: on-site cooling only (LBNL 2024)
+WUE_UPPER_L_PER_KWH = 1.8  # upper ESTIMATE: includes power-plant (electricity) water
 FEE_SHARE = 0.20
-WATER_METHOD = "Wh/request x WUE (L/kWh), site energy only"
-WATER_SOURCE = "assumed WUE 1.8 L/kWh (industry average); not measured"
+WATER_METHOD = "Wh/request x WUE (L/kWh)"
+WATER_SOURCE = "0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"
+WATER_SOURCE_UPPER = "1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"
 
 
 def _stats(samples: Sequence[float], nd: int = 6) -> dict:
@@ -73,7 +75,8 @@ def planner_trace_from_events(events: Sequence[Mapping]) -> list[dict]:
 def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: str | None = None,
                   rekor: bool = False, created_at: str | None = None,
                   tariff_usd_per_kwh: float = TARIFF_USD_PER_KWH,
-                  wue_l_per_kwh: float = WUE_L_PER_KWH, n_boot: int = 10_000,
+                  wue_l_per_kwh: float = WUE_L_PER_KWH,
+                  wue_upper_l_per_kwh: float = WUE_UPPER_L_PER_KWH, n_boot: int = 10_000,
                   seed: int = 7, judge_verdict: str | None = None,
                   judge_score: float | None = None, judge_model: str | None = None,
                   wonder_trace_ids: Sequence[str] | str | None = None,
@@ -112,9 +115,15 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
             "water_ml_per_req": {"value": round(cand_arm["wh_per_req"]["mean"] * wue_l_per_kwh, 6),
                                  "label": "ESTIMATE", "method": WATER_METHOD,
                                  "source": WATER_SOURCE},
+            "water_ml_per_req_upper": {
+                "value": round(cand_arm["wh_per_req"]["mean"] * wue_upper_l_per_kwh, 6),
+                "label": "ESTIMATE", "method": WATER_METHOD, "source": WATER_SOURCE_UPPER},
             "baseline_water_ml_per_req": {
                 "value": round(base_arm["wh_per_req"]["mean"] * wue_l_per_kwh, 6),
-                "label": "ESTIMATE", "method": WATER_METHOD, "source": WATER_SOURCE}},
+                "label": "ESTIMATE", "method": WATER_METHOD, "source": WATER_SOURCE},
+            "baseline_water_ml_per_req_upper": {
+                "value": round(base_arm["wh_per_req"]["mean"] * wue_upper_l_per_kwh, 6),
+                "label": "ESTIMATE", "method": WATER_METHOD, "source": WATER_SOURCE_UPPER}},
     }
     if run.get("compare_to"):
         receipt["compare_to"] = run["compare_to"]

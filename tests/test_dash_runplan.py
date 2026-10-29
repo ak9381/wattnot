@@ -104,7 +104,7 @@ def test_levers_are_not_summed_and_unsupported_levers_are_dropped(bundle):
 
 def test_water_and_cost_use_the_cited_factors(bundle):
     water_factor = bundle["config"]["water"]["factor_l_per_kwh"]
-    assert water_factor == 1.8  # owner-standardised industry-average WUE
+    assert water_factor == 0.36  # owner-standardised headline WUE (on-site cooling, LBNL 2024)
     lv = runplan.plan(bundle, {"model": "glimmer"})["results"]["levers"][0]
     assert lv["litres_before"] == pytest.approx(lv["wh_before"] / 1000 * water_factor)
     assert lv["usd_before"] == pytest.approx(lv["wh_before"] / 1000 * 0.1387)

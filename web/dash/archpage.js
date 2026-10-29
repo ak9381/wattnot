@@ -27,14 +27,14 @@ export function meterStage(cues, shown) {
 // water (L per 1M requests, ESTIMATE from the bundle's stated WUE factor).
 export function meterFor(d, id) {
   const wue = d.story.water.factor_l_per_kwh, rate = d.story.price.usd_per_kwh;
-  const foot = `water = GPU kWh × WUE ${wue} L/kWh (industry average) · electricity $${rate}/kWh (EIA) · – = not metered, never guessed`;
+  const foot = `water = GPU kWh × WUE ${wue} L/kWh (on-site cooling, ESTIMATE); up to 1.8 L/kWh including power-plant water (ESTIMATE) · electricity $${rate}/kWh (EIA) · – = not metered, never guessed`;
   if (id === "hosted") {
     const L = d.story.levers.find((l) => l.id === "hosted"), e = L.energy_wh_per_75;
     const kwh = (wh75) => (wh75 / 75) * 1e6 / 1000;
     return { title: d.replays.hosted.title, lever: L, foot, tiles: [
       { k: "power", label: "Power · per request", before: `${((e.high / 75) * JH).toFixed(1)} J`, after: `${((e.low / 75) * JH).toFixed(1)} J`, tag: "ESTIMATE", sub: "hosted GPUs are not metered — modeled energy range" },
       { k: "cost", label: "Cost · per 1M requests", before: mmMoney(L.usd_before * 1e6), after: mmMoney(L.usd_after * 1e6), tag: "MEASURED", sub: "tuning ledger, per-request rate × 1M" },
-      { k: "water", label: "Water · per 1M requests", before: `${(kwh(e.high) * wue).toFixed(1)} L`, after: `${(kwh(e.low) * wue).toFixed(1)} L`, tag: "ESTIMATE", sub: `GPU kWh × WUE ${wue} L/kWh` },
+      { k: "water", label: "Water · per 1M requests", before: `${(kwh(e.high) * wue).toFixed(1)} L`, after: `${(kwh(e.low) * wue).toFixed(1)} L`, tag: "ESTIMATE", sub: `GPU kWh × WUE ${wue} L/kWh (on-site cooling); up to 1.8 L/kWh incl. power-plant water` },
     ] };
   }
   const L = d.story.levers.find((l) => l.id === "cap");
@@ -43,7 +43,7 @@ export function meterFor(d, id) {
   return { title: d.replays.h100.title, lever: L, foot, tiles: [
     { k: "power", label: "Power · per request", before: `${(L.wh_before * JH).toFixed(1)} J`, after: `${(L.wh_after * JH).toFixed(1)} J`, tag: "MEASURED", sub: pw ? `probe mean ${fmt(pw.v)} W · NVML` : "measured GPU energy (NVML)" },
     { k: "cost", label: "Cost · per 1M requests", before: mmMoney(kwh(L.wh_before) * rate), after: mmMoney(kwh(L.wh_after) * rate), tag: "ESTIMATE", sub: `measured GPU kWh × $${rate}/kWh` },
-    { k: "water", label: "Water · per 1M requests", before: `${(kwh(L.wh_before) * wue).toFixed(1)} L`, after: `${(kwh(L.wh_after) * wue).toFixed(1)} L`, tag: "ESTIMATE", sub: `GPU kWh × WUE ${wue} L/kWh` },
+    { k: "water", label: "Water · per 1M requests", before: `${(kwh(L.wh_before) * wue).toFixed(1)} L`, after: `${(kwh(L.wh_after) * wue).toFixed(1)} L`, tag: "ESTIMATE", sub: `GPU kWh × WUE ${wue} L/kWh (on-site cooling); up to 1.8 L/kWh incl. power-plant water` },
   ] };
 }
 import { Product } from "./product.js";

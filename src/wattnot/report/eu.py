@@ -45,7 +45,13 @@ def fields_for(receipt: Mapping, *, grid_gco2_per_kwh: float | None = None,
     window_kwh = sum(cand["wh_per_req"]["samples"]) * n / 1000
     res = receipt["result"]
     src = f"receipt {rid}, meter {m['meter']}"
-    water = receipt["estimates"]["water_ml_per_req"]
+    # Water is a generated view, recomputed from the receipt's measured energy with the
+    # current owner-standardised factors (headline on-site cooling, plus an upper bound
+    # that includes power-plant water). The signed receipt is not modified.
+    from wattnot.receipt.build import WUE_L_PER_KWH, WUE_UPPER_L_PER_KWH
+    water_headline = round(wh * WUE_L_PER_KWH, 6)
+    water_upper = round(wh * WUE_UPPER_L_PER_KWH, 6)
+    water_method = "Wh/request x WUE (L/kWh)"
     out = [
         _f("it_energy_measured_window", round(window_kwh, 6), "kWh", lab,
            f"{src}: sum over {cand['reps']} reps x {n} requests"),
@@ -57,8 +63,10 @@ def fields_for(receipt: Mapping, *, grid_gco2_per_kwh: float | None = None,
            f"{res['welch']['p_value']:.3g}" + ("" if res["billable"] else " (not significant)")),
         (_f("idle_power", m["idle_w"], "W", lab, src) if m.get("idle_w") is not None
          else _na("idle_power", "W", "idle not measured in this run")),
-        _f("water_per_request", water["value"], "mL/request", "ESTIMATE",
-           f"{water['method']}; {water['source']}"),
+        _f("water_per_request", water_headline, "mL/request", "ESTIMATE",
+           f"{water_method}; 0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"),
+        _f("water_per_request_upper", water_upper, "mL/request", "ESTIMATE",
+           f"{water_method}; up to 1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"),
     ]
     joules_cand = (receipt.get("joules") or {}).get("candidate") or {}
     j_per_good = joules_cand.get("j_per_good_answer")
