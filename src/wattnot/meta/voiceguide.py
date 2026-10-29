@@ -85,28 +85,24 @@ def transcribe_audio(
 
     is_mock = mock or (not live) or (os.environ.get("WATTNOT_META_MOCK") == "1")
     if not is_mock:
-        # Live path: guarded client invocation for Muse Voice Transcribe
-        import base64
+        # Live path: Muse Voice Transcribe file endpoint (POST /v1/asr/transcribe, multipart
+        # 'request' JSON + 'audio' file). Verified live 2026-10-29, see receipts/run2/voice_transcribe_live.json.
+        import urllib.request
+        import uuid
 
-        from wattnot.meta.client import GuardedClient
+        from wattnot.meta.client import DEFAULT_BASE, load_key
 
-        client = GuardedClient(ledger=ledger) if ledger is not None else GuardedClient()
-        body = {
-            "model": "muse-voice-transcribe",
-            "messages": [{
-                "role": "user",
-                "content": [
-                    {"type": "input_audio",
-                     "input_audio": {"data": base64.b64encode(audio_data or b"").decode("ascii"),
-                                     "format": "wav"}},
-                    {"type": "text", "text": "Transcribe this audio to plain text."},
-                ],
-            }],
-        }
-        data = client(body, purpose="voice:transcribe")
-        choices = data.get("choices") or [{}]
-        content = (choices[0].get("message") or {}).get("content", "")
-        return str(content).strip()
+        bnd = uuid.uuid4().hex
+        reqj = json.dumps({"model": "muse-voice-transcribe-1.0", "audioEncoding": "WAV"})
+        payload = (f'--{bnd}\r\nContent-Disposition: form-data; name="request"\r\n'
+                   f'Content-Type: application/json\r\n\r\n{reqj}\r\n').encode()
+        payload += (f'--{bnd}\r\nContent-Disposition: form-data; name="audio"; filename="a.wav"\r\n'
+                    f'Content-Type: audio/wav\r\n\r\n').encode() + (audio_data or b"") + f"\r\n--{bnd}--\r\n".encode()
+        req = urllib.request.Request(f"{DEFAULT_BASE}/asr/transcribe", data=payload, headers={
+            "Authorization": f"Bearer {load_key()}", "Content-Type": f"multipart/form-data; boundary={bnd}"})
+        with urllib.request.urlopen(req, timeout=60) as r:  # noqa: S310
+            data = json.loads(r.read() or b"{}")
+        return str(data.get("transcript") or "").strip()
 
     # Deterministic mock transcription from audio payload or default prompt
     if not audio_data:

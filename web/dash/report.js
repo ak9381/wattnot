@@ -96,7 +96,7 @@ function derive() {
   const { usd, wue } = priceWater();
   const savedPct = nz(wm.saved_pct) ? Math.abs(wm.saved_pct) : null;
   const p99Chg = nz(wm.p99_change_pct) ? wm.p99_change_pct : null;
-  const qualityHeld = nz(bm.quality_pct) && nz(wm.quality_pct) ? wm.quality_pct >= bm.quality_pct - 0.05 : null;
+  const qualityHeld = nz(bm.quality_pct) && nz(wm.quality_pct) ? wm.quality_pct >= bm.quality_pct - 1.0 /* fixed-check gate: at most 1.0 pt drop (gates/fixed.py) */ : null;
   const p99Ok = p99Chg != null ? p99Chg <= 10 : null;
   const gatePass = qualityHeld == null || p99Ok == null ? null : qualityHeld && p99Ok;
   return {
@@ -295,17 +295,25 @@ function render() {
   $("#heroRunBadge").innerHTML = `<span class="v-chip ${fwTag}" style="margin-right:6px"><i class="v-lab ${fwTag}"></i>${esc(fwName)}</span>${chip(d.label || "REPLAY")}`;
 
   // Hero Card items: Saving, Quality, Signed status, Receipt download
-  const savingVal = X.savedPct != null ? `${num(X.savedPct, 1)}%` : "—";
-  const savingChip = X.savedPct != null ? chip(X.w?.label || "MEASURED") : chip("pending");
-  const savingSub = X.w ? `less energy · ${num(X.b?.cap_w, 0)} W → ${num(X.w.cap_w, 0)} W cap` : "No tuned phase";
+  // Headline: joules per correct answer (MEASURED, from the signed receipt). Cost and water are secondary.
+  const J = STATE.receipt?.joules;
+  const jPct = J?.change_pct?.j_per_good_answer;
+  const savingVal = jPct != null ? `${num(jPct, 1)}%` : (X.savedPct != null ? `−${num(X.savedPct, 1)}%` : "—");
+  const savingChip = jPct != null ? chip(J.label || "MEASURED") : (X.savedPct != null ? chip(X.w?.label || "MEASURED") : chip("pending"));
+  const savingSub = jPct != null
+    ? `${num(J.baseline.j_per_good_answer, 2)} → ${num(J.candidate.j_per_good_answer, 2)} J per correct answer · ${num(X.b?.cap_w, 0)} W → ${num(X.w?.cap_w, 0)} W cap`
+      + (X.costSaved != null ? `<br><span style="opacity:.75">Secondary: cost and water ${chip("ESTIMATE")} from measured joules</span>` : "")
+    : (X.w ? `less energy · ${num(X.b?.cap_w, 0)} W → ${num(X.w.cap_w, 0)} W cap` : "No tuned phase");
 
-  const qualityVal = X.wm?.quality_pct != null
-    ? `${num(X.wm.quality_pct, 1)}%`
+  // One quality metric: fixed-check pass rate vs the uncapped baseline (gates/fixed.py).
+  const qualityVal = X.wm?.quality_pct != null && X.bm?.quality_pct != null
+    ? `${num(X.bm.quality_pct, 1)}% → ${num(X.wm.quality_pct, 1)}%`
     : (X.qualityHeld != null ? (X.qualityHeld ? "Held" : "Dropped") : "—");
   const qualityChip = X.wm?.quality_pct != null ? chip(X.wm.label || "MEASURED") : chip("pending");
-  const qualitySub = X.gatePass != null
-    ? (X.gatePass ? `✓ Gate passed · p99 ${X.p99Chg >= 0 ? "+" : ""}${num(X.p99Chg, 1)}%` : `✕ Gate failed · p99 ${num(X.p99Chg, 1)}%`)
-    : "Answers evaluated against baseline";
+  const qualitySub = `Fixed-check pass rate, uncapped → capped. Gate: may drop at most 1.0 point. `
+    + (X.gatePass != null
+      ? (X.gatePass ? `✓ Gates passed · p99 ${X.p99Chg >= 0 ? "+" : ""}${num(X.p99Chg, 1)}% (limit 10%)` : `✕ Gate failed · p99 ${num(X.p99Chg, 1)}%`)
+      : "");
 
   const isSigned = !!rc;
   const signedPill = isSigned
@@ -319,12 +327,12 @@ function render() {
 
   $("#heroGrid").innerHTML = `
     <div class="hero-item" data-explain="report.saving" data-explain-value="${esc(savingVal)}" data-explain-label="${esc(X.w?.label || (X.savedPct != null ? 'MEASURED' : 'pending'))}" data-explain-source="phases.wattnot.metrics.saved_pct">
-      <div class="label">Energy Saved</div>
+      <div class="label">Joules per correct answer</div>
       <div class="hero-val">${savingVal} ${savingChip}</div>
       <div class="hero-sub">${savingSub}</div>
     </div>
     <div class="hero-item" data-explain="report.quality" data-explain-value="${esc(qualityVal)}" data-explain-label="${esc(X.wm?.label || (X.qualityHeld != null ? 'MEASURED' : 'pending'))}" data-explain-source="phases.wattnot.metrics.quality_pct">
-      <div class="label">Quality &amp; Gate</div>
+      <div class="label">Quality: fixed-check pass rate</div>
       <div class="hero-val">${qualityVal} ${qualityChip}</div>
       <div class="hero-sub">${qualitySub}</div>
     </div>
@@ -364,9 +372,18 @@ function render() {
   if ($("#metatools-mount")) {
     mountMetaTools($("#metatools-mount"), targetRcpt);
     if (STATE.metaIsSample) $("#metatools-mount").insertAdjacentHTML("afterbegin",
-      `<p class="metatools-sample-note" style="margin:0 0 8px;color:var(--v-mut,#B2A6C3)">Sample data (MOCK): this run's signed receipt has no Wonder, Muse Code, judge or hotspot sections yet. Nothing below comes from this run.</p>`);
+      `<p class="metatools-sample-note" style="margin:0 0 8px;color:var(--v-mut,#B2A6C3)">Sample data (MOCK): this card shows the full layout with sample values. This run's real live calls (Wonder, Muse Code PR, SAM, Voice) are in the “Live Meta calls” card.</p>`);
   }
-  if ($("#hotspot-mount")) mountHotspotCard($("#hotspot-mount"), STATE.receipt || {});
+  if ($("#hotspot-mount")) {
+    mountHotspotCard($("#hotspot-mount"), STATE.receipt || {});
+    // A live SAM 3.1 call is saved as a signed addendum next to the RUN2 receipt; prefer it when present.
+    if (RECEIPTS[RUN_ID]) fetch(RECEIPTS[RUN_ID].json.replace(/\.json$/, ".sam_hotspot.json")).then((r) => (r.ok ? r.json() : null)).then((a) => {
+      const d = a?.data; if (!d) return;
+      mountHotspotCard($("#hotspot-mount"), { hotspot_cap: { live: true, mask: d.mask, decision: d.decision, heat_label: d.labels?.heat_attribution,
+        response_id: d.sam?.response_id,
+        reason: `Live SAM 3.1 box on the public rack photo (response ${d.sam?.response_id}). The photo is not thermal, so the hot slot is simulated; the cap change is advice only.` } });
+    }).catch(() => {});
+  }
   if ($("#eulink-mount")) mountEuLink($("#eulink-mount"), STATE.receipt || {});
 
   // Draw glowing connector lines from hero to breakdown cards

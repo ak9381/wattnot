@@ -57,7 +57,8 @@ export function buildVoiceGuideDOM() {
           <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
         </svg>
       </button>
-      <input type="text" class="vg-input" id="vg-text-input" placeholder="Ask Voice Guide (MOCK)..." />
+      <button class="vg-mic-btn vg-live-btn" id="vg-live-btn" title="Replay the real Muse Voice Transcribe result (synthetic TTS clip)" aria-label="Replay live transcript">&#9654;</button>
+      <input type="text" class="vg-input" id="vg-text-input" placeholder="Ask Voice Guide (type, or press ▶ for the live clip)..." />
       <button class="vg-submit-btn" id="vg-submit-btn" title="Submit query">&rarr;</button>
       <span class="vg-status-bubble" id="vg-status-bubble">Thinking…</span>
     </div>
@@ -195,6 +196,27 @@ export function mountVoiceGuide(customMountEl = null) {
 
   panelClose.addEventListener("click", () => {
     panel.classList.remove("active");
+  });
+
+  // Replay of one real Muse Voice Transcribe call (LIVE transcript of a synthetic TTS clip),
+  // saved as a signed addendum to the RUN2 receipt. The answer that follows keeps its own label.
+  const liveBtn = dom.querySelector("#vg-live-btn");
+  if (liveBtn) liveBtn.addEventListener("click", async () => {
+    showStatus("Listening…");
+    try {
+      const url = new URL("../receipts/run2/rcpt_20261027_run2_cap350.voice_transcribe.json", import.meta.url);
+      const doc = await (await fetch(url)).json();
+      const v = doc.data || {};
+      try { new Audio(new URL("media/tts-question.wav", import.meta.url)).play(); } catch { /* autoplay blocked */ }
+      displayResponse({ intent: "TRANSCRIPT", label: "LIVE",
+        text: `Muse Voice Transcribe heard: “${v.transcript}” (synthetic text-to-speech clip, ${v.audio?.duration_s}s; session ${v.session_id}).` });
+      inputEl.value = v.transcript || "";
+      hideStatus();
+      setTimeout(() => handleQuery(inputEl.value), 900);
+    } catch {
+      hideStatus();
+      displayResponse({ intent: "TRANSCRIPT", label: "MOCK", text: "The live transcript file could not be loaded. Type your question instead." });
+    }
   });
 
   submitBtn.addEventListener("click", () => {
