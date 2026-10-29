@@ -109,15 +109,6 @@ function trim(root) {
     if (e.textContent.trim() === "stub, not wired") e.closest(".node, .card, article, li, [class*=node]")?.classList.add("wn-stub");
   });
   root.querySelectorAll('[data-explain-value="—"]').forEach((c) => { if (!c.title) c.title = "No data in this run."; });
-  const cmp = root.querySelector("#pReport");
-  if (!cmp) return;
-  const n = cmp.querySelectorAll(".rad-node .rad-pending").length;
-  const stage = cmp.querySelector(".radial-wrap");
-  if (n && stage && !cmp.querySelector(".wn-pend-note")) {
-    const p = document.createElement("p"); p.className = "wn-pend-note";
-    p.textContent = `${n} pending ${n === 1 ? "metric" : "metrics"} hidden until measured.`;
-    stage.after(p);
-  }
 }
 
 export function applyBento(root = document) { bento(root); quiet(root); quietInline(root); trim(root); legend(); }
