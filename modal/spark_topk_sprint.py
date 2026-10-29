@@ -48,7 +48,9 @@ SERVE_DEADLINE_S = 15 * 60                               # not serving by minute
 ARM_CAP_S = 22 * 60                                      # load+warmup+measure budget per top-k arm
 HARD_USD, SOFT_USD = 98.0, 90.0                          # effective hard is 96 (lag margin $2)
 GO_ENV = "WATTNOT_MODAL_GO"                               # must be "1" to deploy/serve for real
+SMOKE_ENV = "WATTNOT_MODAL_SMOKE"                          # "1" to also run the smoke arm in live mode
 GPU_B200 = "B200:8"                                       # 8x B200, re-asserted at serve time
+GPU_SMOKE = "L4"                                          # cheap single GPU for the 1B smoke arm (never B200)
 SERVE_PORT = 8000                                         # vLLM OpenAI server port in the container
 
 SCHEDULE = [  # (minute_from, minute_to, step, measured?)
@@ -220,24 +222,28 @@ def _require_go(action: str) -> None:
     if os.environ.get(GO_ENV) != "1":
         raise SystemExit(
             f"spark_topk_sprint: refusing to {action} without {GO_ENV}=1. This starts a paid "
-            f"8xB200 deploy. Export {GO_ENV}=1 to launch for real; otherwise use --plan or "
+            f"GPU deploy. Export {GO_ENV}=1 to launch for real; otherwise use --plan or "
             f"--dry-run (both $0, no GPU).")
 
 
-def _deploy_b200(topk, model, fn_timeout, *, deploy=None, discover=None) -> str:
-    """GO-gated real serve of the 8xB200 vLLM endpoint for one top-k value, returning its URL.
+def _deploy_b200(topk, model, fn_timeout, *, gpu=GPU_B200, deploy=None, discover=None) -> str:
+    """GO-gated real serve of the vLLM endpoint for one top-k value on `gpu`, returning its URL.
 
-    Re-asserts the 8xB200 GPU spec and sets this arm's server-side `timeout` (the guard's
-    cloud_timeout_s) via ``with_options`` so the cap holds even if the laptop dies, carries the
-    top-k as a per-arm Secret (the container reads WATTNOT_SERVE_TOPK), deploys the app and
-    discovers the web endpoint URL. `deploy`/`discover` are injectable for tests; in production
-    they default to ``app.deploy`` and ``Function.get_web_url``. The GO gate is checked *first*,
-    before any Modal object is touched, so nothing on a GPU can start without the flag."""
-    _require_go(f"deploy the 8xB200 vLLM server for top-k {topk}")
+    Re-asserts the GPU spec (``GPU_B200`` for the real top-k arms, ``GPU_SMOKE`` for the 1B smoke
+    arm -- so the smoke model never lands on an 8xB200 node) and sets this arm's server-side
+    `timeout` (the guard's cloud_timeout_s) via ``with_options`` so the cap holds even if the
+    laptop dies, carries the top-k, model and tensor-parallel size as a per-arm Secret (the
+    container reads WATTNOT_SERVE_TOPK/MODEL/TP), deploys the app and discovers the web endpoint
+    URL. `deploy`/`discover` are injectable for tests; in production they default to ``app.deploy``
+    and ``Function.get_web_url``. The GO gate is checked *first*, before any Modal object is
+    touched, so nothing on a GPU can start without the flag."""
+    _require_go(f"deploy the {gpu} vLLM server for top-k {topk}")
     if app is None:
         raise SystemExit("spark_topk_sprint: the modal SDK is not installed; cannot serve.")
-    sec = modal.Secret.from_dict({"WATTNOT_SERVE_TOPK": str(topk), "WATTNOT_SERVE_MODEL": model})
-    fn = b200_serve.with_options(gpu=GPU_B200, timeout=int(fn_timeout), secrets=[sec])
+    tp = 8 if gpu == GPU_B200 else 1                     # single-GPU specs (e.g. the L4 smoke arm) run TP=1
+    sec = modal.Secret.from_dict({"WATTNOT_SERVE_TOPK": str(topk), "WATTNOT_SERVE_MODEL": model,
+                                  "WATTNOT_SERVE_TP": str(tp)})
+    fn = b200_serve.with_options(gpu=gpu, timeout=int(fn_timeout), secrets=[sec])
     (deploy or (lambda: app.deploy(name=APP_NAME)))()
     url = (discover or fn.get_web_url)()
     if not url:
@@ -245,11 +251,12 @@ def _deploy_b200(topk, model, fn_timeout, *, deploy=None, discover=None) -> str:
     return url
 
 
-def _serve_b200(topk, model, fn_timeout):  # pragma: no cover - needs Modal + money + GO flag
-    """Production serve path: GO-gated 8xB200 deploy, publish the discovered endpoint URL into
-    MODAL_ENDPOINT_URL (so a ModalLiveTransport points at it), and return the arm's handle."""
+def _serve_b200(topk, model, fn_timeout, *, gpu=GPU_B200):  # pragma: no cover - needs Modal + money + GO flag
+    """Production serve path: GO-gated deploy on `gpu` (8xB200 for real arms, L4 for the smoke
+    arm), publish the discovered endpoint URL into MODAL_ENDPOINT_URL (so a ModalLiveTransport
+    points at it), and return the arm's handle."""
     import os
-    url = _deploy_b200(topk, model, fn_timeout)
+    url = _deploy_b200(topk, model, fn_timeout, gpu=gpu)
     base = url if url.rstrip("/").endswith("/v1") else url.rstrip("/") + "/v1"
     os.environ["MODAL_ENDPOINT_URL"] = base
     return {"base_url": base, "topk": topk, "fn_timeout": int(fn_timeout)}
@@ -325,28 +332,41 @@ def _teardown(handle) -> list[str]:  # pragma: no cover - production stop path
 
 def sprint(*, out_dir, make_transport, serve=None, wait_serving=None, guard=None, mode: str = "live",
            sign_key=None, now=None, topks=TOPKS, repeat_k: int | None = REPEAT_K,
-           smoke_first: bool = True, meter=None, clock=None, make_timer=None,
-           teardown=None) -> list[dict]:
+           smoke_first: bool = True, smoke_gpu: str = GPU_SMOKE, meter=None, clock=None,
+           make_timer=None, teardown=None) -> list[dict]:
     """Drive the whole sprint: optional smoke, one restart per top-k value, then a top-k 8
-    repeat for the noise floor. Any soft/hard stop ends the sprint with results saved."""
+    repeat for the noise floor. Any soft/hard stop ends the sprint with results saved.
+
+    Each arm carries its own GPU spec: the real top-k arms get ``GPU_B200`` (8xB200); the 1B
+    smoke arm gets ``smoke_gpu`` (a cheap single GPU, L4 by default) so it is NEVER deployed on
+    an 8xB200 node. The spec is bound only into the production ``_serve_b200`` path -- an injected
+    fake ``serve`` (dry run, tests) is passed through untouched and keeps its (topk, model,
+    fn_timeout) signature."""
     from wattnot.spend.guard import HardStop, SoftStop
 
     guard = guard or guard_for(B200_8_USD_H)
+    base_serve = serve or _serve_b200
+
+    def arm_serve(gpu):                                      # bind the per-arm GPU spec, production only
+        if base_serve is _serve_b200:
+            return lambda topk, model, fn_timeout: _serve_b200(topk, model, fn_timeout, gpu=gpu)
+        return base_serve
+
     arms = []
     if smoke_first:
-        arms.append(("smoke", SMOKE_MODEL, 8))
-    arms += [("topk", MODEL, k) for k in topks]              # one server restart per top-k value
+        arms.append(("smoke", SMOKE_MODEL, 8, smoke_gpu))    # cheap GPU, never B200
+    arms += [("topk", MODEL, k, GPU_B200) for k in topks]    # one server restart per top-k value
     if repeat_k:
-        arms.append(("repeat", MODEL, repeat_k))             # noise floor
+        arms.append(("repeat", MODEL, repeat_k, GPU_B200))   # noise floor
     from pathlib import Path
 
     out: list[dict] = []
-    for idx, (kind, model, k) in enumerate(arms):
+    for idx, (kind, model, k, gpu) in enumerate(arms):
         arm_dir = Path(out_dir) / f"{idx}-{kind}-k{k}"     # one dir per arm: receipts never collide
         try:
             res = run_topk(k, out_dir=arm_dir, transport=make_transport(kind, model, k),
                            mode=mode, guard=guard, model=model, sign_key=sign_key, now=now,
-                           serve=serve, wait_serving=wait_serving, meter=meter, clock=clock,
+                           serve=arm_serve(gpu), wait_serving=wait_serving, meter=meter, clock=clock,
                            make_timer=make_timer, teardown=teardown)
             out.append({"kind": kind, **res})
         except SoftStop as e:
@@ -447,7 +467,8 @@ try:
         import os, subprocess
         topk = int(os.environ.get("WATTNOT_SERVE_TOPK", "8"))
         model = os.environ.get("WATTNOT_SERVE_MODEL", MODEL)
-        subprocess.Popen(serve_args(topk, model, tp=8) + ["--port", str(SERVE_PORT)])
+        tp = int(os.environ.get("WATTNOT_SERVE_TP", "8"))   # 8 on 8xB200; 1 on the single-GPU smoke arm
+        subprocess.Popen(serve_args(topk, model, tp=tp) + ["--port", str(SERVE_PORT)])
 
     @app.local_entrypoint()
     def probe():
@@ -467,12 +488,16 @@ try:
         # without WATTNOT_MODAL_GO=1 so no deploy happens by accident.
         import os
         _require_go("run the 8xB200 top-k sprint")
+        # The 1B smoke arm is skipped in live mode by default (it would otherwise take a paid GPU
+        # for a throwaway check); set WATTNOT_MODAL_SMOKE=1 to include it -- it then runs on the
+        # cheap L4 spec, never on 8xB200.
+        smoke_first = os.environ.get(SMOKE_ENV) == "1"
         # Discover the (stable) endpoint URL once so the transport can be built before arm 0.
         os.environ["MODAL_ENDPOINT_URL"] = _serve_b200(TOPKS[0], MODEL,
                                                        B200_SERVE_S)["base_url"]
         from wattnot.cloud.transport import ModalLiveTransport
         res = sprint(out_dir="data/cloud/modal-sprint",
-                     serve=_serve_b200, wait_serving=_wait_serving,
+                     serve=_serve_b200, wait_serving=_wait_serving, smoke_first=smoke_first,
                      make_transport=lambda kind, model, k: ModalLiveTransport())
         print(json.dumps([{k: v for k, v in r.items() if k != "receipt"} for r in res], indent=1))
 

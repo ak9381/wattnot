@@ -168,6 +168,41 @@ def test_serve_b200_publishes_v1_endpoint_and_handle(monkeypatch):
     assert os.environ["MODAL_ENDPOINT_URL"] == handle["base_url"]
 
 
+def test_smoke_arm_never_requests_b200(monkeypatch, tmp_path):
+    """The whole sprint through the fake-modal deploy path: the 1B smoke arm must re-assert a
+    small cheap GPU (L4), never the 8xB200 spec, while the real top-k arm still asks for B200:8."""
+    monkeypatch.setenv("WATTNOT_MODAL_GO", "1")
+    m, calls = _load_with_fake_modal()
+    from wattnot.spend.guard import GPU_SECONDS, Guard, Ledger, Price
+    g = Guard("modal", Price(GPU_SECONDS, usd_per_s=m.B200_8_USD_H / 3600),
+              Ledger(tmp_path / "l.jsonl"), hard_usd=98.0, soft_usd=90.0)
+
+    class _T:
+        def cancel(self):
+            pass
+
+    res = m.sprint(
+        out_dir=tmp_path / "o",
+        make_transport=lambda kind, model, k: m.FakeServer(
+            provider="modal", topk=k,
+            model=(m.SMOKE_MODEL if kind == "smoke" else f"Muse-Spark-Open#topk{k}")),
+        serve=m._serve_b200, wait_serving=lambda *a: True, mode="replay-synthetic",
+        now=1_790_000_000.0, topks=(8,), repeat_k=None, smoke_first=True,
+        guard=g, meter=m.fake_meter(), make_timer=lambda s, name: _T(), teardown=lambda: [])
+
+    assert [r["kind"] for r in res] == ["smoke", "topk"]
+    gpus = [kw["gpu"] for name, kw in calls if name == "with_options"]
+    assert len(gpus) == 2                               # one deploy per arm, in arm order
+    # the smoke arm (first) took the cheap single GPU and NEVER the 8xB200 spec
+    assert gpus[0] == m.GPU_SMOKE == "L4"
+    assert gpus[0] != m.GPU_B200
+    # the real top-k arm still re-asserts 8xB200
+    assert gpus[1] == m.GPU_B200 == "B200:8"
+    # and the smoke arm's per-arm Secret carried a single-GPU tensor-parallel size
+    smoke_sec = next(d for name, d in calls if name == "Secret.from_dict")
+    assert smoke_sec["WATTNOT_SERVE_MODEL"] == m.SMOKE_MODEL and smoke_sec["WATTNOT_SERVE_TP"] == "1"
+
+
 def test_run_topk_fn_timeout_is_the_guard_cloud_timeout(monkeypatch, tmp_path):
     """End to end through run_topk with the GO flag: the timeout handed to the serve path is the
     guard's cloud_timeout_s, and the deploy re-asserts B200:8 -- all on the fake modal."""
