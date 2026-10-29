@@ -64,7 +64,7 @@ function legend() {
   const used = new Set([...document.querySelectorAll("[data-wnq]")].map((e) => e.dataset.wnq));
   if (!used.size) return;
   const el = document.createElement("div"); el.className = "wn-legend"; el.setAttribute("aria-label", "Number labels");
-  el.innerHTML = [...Object.keys(LABELS)].filter((l) => used.has(l)).map((l) => `<span title="${LABELS[l]}"><i class="wn-dot wn-dot-${l.toLowerCase()}"></i>${l.toLowerCase()}</span>`).join("");
+  el.innerHTML = [...Object.keys(LABELS)].filter((l) => used.has(l)).map((l) => `<span title="${LABELS[l]}"><i class="wn-dot wn-dot-${l.toLowerCase()}"></i>${l}</span>`).join("") + `<span title="Pending: not measured yet; dimmed with a dot, never hidden."><i class="wn-dot" style="background:transparent!important;border:1.5px dashed #9AA0AE!important"></i>pending</span>`;
   if (own) { own.replaceWith(el); el.id = own.id || ""; return; }
   const main = document.querySelector("main") || document.body;
   main.prepend(el);

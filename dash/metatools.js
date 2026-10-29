@@ -1,5 +1,5 @@
 // Meta Tools v5 UI Component
-// Renders glass card for Muse Wonder, Muse Code, and Llama 8B Judge.
+// Renders glass card for Muse Wonder, Muse Code, and the quality judge (hosted Muse Spark; Llama 3.1 8B fallback).
 // Palette: lavender scale (#DCD6E4 to #171724) on black, Montserrat headings, Fira numbers.
 
 function escapeHtml(str) {
@@ -39,10 +39,10 @@ export function extractMetaToolsData(receipt) {
   const wonder = receipt?.wonder || {};
   const musecode = receipt?.musecode || {};
 
-  // Llama Judge
+  // Quality judge: hosted Muse Spark by default, Llama 3.1 8B only as the fallback
   const judgeVerdict = m.judge_verdict || candQuality.judge_verdict || (candQuality.judge_score >= 0.9 ? "pass" : "fail");
   const judgeScore = m.judge_score != null ? m.judge_score : candQuality.judge_score ?? null;
-  const judgeModel = m.judge_model || "meta-llama/Llama-3.1-8B-Instruct";
+  const judgeModel = m.judge_model || "not recorded";
   const judgeLabel = m.label || "MOCK";
 
   // Spark Trace ID
@@ -173,7 +173,7 @@ export function renderMetaToolsHTML(receipt) {
         </div>
         <div class="metatools-grid">
           <div class="metatools-tile">
-            <div class="metatools-label">Llama 8B Quality Judge</div>
+            <div class="metatools-label">Quality Judge (Muse Spark)</div>
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
               <span class="metatools-pill ${isPass ? "pass" : "fail"}">
                 ${isPass ? "✓ PASS" : "✗ FAIL"}
@@ -314,7 +314,7 @@ export function compareRows(receipts) {
 
   const rows = [
     {
-      metric: "Llama 8B Judge Verdict",
+      metric: "Quality Judge Verdict",
       values: receipts.map((r) => {
         const d = extractMetaToolsData(r);
         return { text: d.judgeVerdict.toUpperCase(), tag: d.judgeLabel };

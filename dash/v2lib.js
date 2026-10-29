@@ -6,7 +6,7 @@ export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&a
 export const badge = (t) => {
   if (!t) return "";
   const norm = String(t).toUpperCase();
-  const glyphs = { MEASURED: "●", ESTIMATE: "~", SIMULATED: "┄", MOCK: "○", SAMPLE: "○", REPLAY: "↻", ADVICE: "✦" };
+  const glyphs = { MEASURED: "●", ESTIMATE: "~", SIMULATED: "┄", MOCK: "○", SAMPLE: "○", REPLAY: "↻", ADVICE: "✦", PENDING: "◌" };
   const glyph = glyphs[norm] || "•";
   return `<span class="b-chip b-chip-${esc(String(t).toLowerCase())}"><span class="b b-${esc(String(t).toLowerCase())}" aria-hidden="true">${glyph}</span><span class="b-txt">${esc(norm)}</span></span>`;
 };

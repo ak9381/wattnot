@@ -12,7 +12,7 @@ test("top level under Power is the four branches, in order", () => {
 });
 
 test("nested levels match the spec", () => {
-  assert.deepEqual(ids(treeChildren(["where", "own"])), ["caps", "topk", "quant"]);
+  assert.deepEqual(ids(treeChildren(["where", "own"])), ["caps", "think", "prefixcache", "quant"]);
   assert.deepEqual(ids(treeChildren(["where", "own", "caps"])), ["capsweep", "clocks"]);
   assert.deepEqual(ids(treeChildren(["where", "baseten"])), ["bt_routing", "bt_gate", "bt_waste"]);
   assert.deepEqual(ids(treeChildren(["where", "modal"])), ["md_routing", "md_gate", "md_waste"]);
@@ -24,14 +24,14 @@ test("nested levels match the spec", () => {
 
 test("leaves and unknown paths have no children", () => {
   assert.deepEqual(treeChildren(["sam"]), []);
-  assert.deepEqual(treeChildren(["where", "own", "topk"]), []);
+  assert.deepEqual(treeChildren(["where", "own", "think"]), []);
   assert.deepEqual(treeChildren(["nope"]), []);
 });
 
 test("gate nodes are marked, own-GPU-only levers are flagged", () => {
   assert.equal(treeFind("gate").kind, "gate");
   assert.equal(treeFind("speed").kind, "gate");
-  for (const id of ["caps", "quant", "topk", "prefix"]) assert.equal(treeFind(id).own_only, true, id);
+  for (const id of ["caps", "quant", "think", "prefixcache", "prefix"]) assert.equal(treeFind(id).own_only, true, id);
   assert.equal(treeFind("context").kids.length, 3);
 });
 
