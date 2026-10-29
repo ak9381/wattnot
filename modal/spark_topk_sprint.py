@@ -25,6 +25,11 @@ Stages (each is a separate, opt-in command; nothing runs on import):
   modal run modal/spark_topk_sprint.py::smoke       # 1xL4 Llama 3.2 1B, same code path
   modal run modal/spark_topk_sprint.py::sprint      # 8xB200 top-k 8/6/4 (+8 repeat), checkpointed
 
+The real 8xB200 serve (``_serve_b200`` -> deploy + endpoint discovery) is the only paid GPU
+path here and is gated by an explicit flag: it refuses, *before any Modal API call*, unless
+``WATTNOT_MODAL_GO=1`` is set in the environment. Without it there is no deploy, no GPU and no
+spend -- use ``--plan`` or ``--dry-run``.
+
 The dry run exercises the whole local driver -- guard, timeouts, kill timer, serve/wait,
 receipt build + offline signature -- with an in-process fake server and a fake billing
 meter. It opens no socket, launches nothing on Modal and spends no money.
@@ -42,6 +47,9 @@ APP_NAME = "wattnot-spark-topk-draft"
 SERVE_DEADLINE_S = 15 * 60                               # not serving by minute 15 -> stop the arm
 ARM_CAP_S = 22 * 60                                      # load+warmup+measure budget per top-k arm
 HARD_USD, SOFT_USD = 98.0, 90.0                          # effective hard is 96 (lag margin $2)
+GO_ENV = "WATTNOT_MODAL_GO"                               # must be "1" to deploy/serve for real
+GPU_B200 = "B200:8"                                       # 8x B200, re-asserted at serve time
+SERVE_PORT = 8000                                         # vLLM OpenAI server port in the container
 
 SCHEDULE = [  # (minute_from, minute_to, step, measured?)
     (0, 12, "container start, mount Volume, vLLM load NVFP4 TP=8 (cache warm)", False),
@@ -204,11 +212,47 @@ def _topk_opts():
     return rn.Options()
 
 
-def _serve_b200(topk, model, fn_timeout):  # pragma: no cover - needs Modal + money
-    """DRAFT production serve: start the remote 8xB200 vLLM function with its own `timeout` set
-    to `fn_timeout` (the guard's cloud_timeout_s), return a handle with the endpoint URL."""
-    raise SystemExit("spark_topk_sprint: real B200 serve is not wired on this branch; "
-                     "use --dry-run, or inject `serve=` to deploy")
+def _require_go(action: str) -> None:
+    """The one gate in front of every paid/GPU Modal path. Raises -- before any Modal API call --
+    unless WATTNOT_MODAL_GO=1 is set. Keeps `modal run ... ::sprint` and `--dry-run` free by
+    default: you only spend when you have explicitly opted in."""
+    import os
+    if os.environ.get(GO_ENV) != "1":
+        raise SystemExit(
+            f"spark_topk_sprint: refusing to {action} without {GO_ENV}=1. This starts a paid "
+            f"8xB200 deploy. Export {GO_ENV}=1 to launch for real; otherwise use --plan or "
+            f"--dry-run (both $0, no GPU).")
+
+
+def _deploy_b200(topk, model, fn_timeout, *, deploy=None, discover=None) -> str:
+    """GO-gated real serve of the 8xB200 vLLM endpoint for one top-k value, returning its URL.
+
+    Re-asserts the 8xB200 GPU spec and sets this arm's server-side `timeout` (the guard's
+    cloud_timeout_s) via ``with_options`` so the cap holds even if the laptop dies, carries the
+    top-k as a per-arm Secret (the container reads WATTNOT_SERVE_TOPK), deploys the app and
+    discovers the web endpoint URL. `deploy`/`discover` are injectable for tests; in production
+    they default to ``app.deploy`` and ``Function.get_web_url``. The GO gate is checked *first*,
+    before any Modal object is touched, so nothing on a GPU can start without the flag."""
+    _require_go(f"deploy the 8xB200 vLLM server for top-k {topk}")
+    if app is None:
+        raise SystemExit("spark_topk_sprint: the modal SDK is not installed; cannot serve.")
+    sec = modal.Secret.from_dict({"WATTNOT_SERVE_TOPK": str(topk), "WATTNOT_SERVE_MODEL": model})
+    fn = b200_serve.with_options(gpu=GPU_B200, timeout=int(fn_timeout), secrets=[sec])
+    (deploy or (lambda: app.deploy(name=APP_NAME)))()
+    url = (discover or fn.get_web_url)()
+    if not url:
+        raise SystemExit(f"spark_topk_sprint: no endpoint URL after deploy for top-k {topk}")
+    return url
+
+
+def _serve_b200(topk, model, fn_timeout):  # pragma: no cover - needs Modal + money + GO flag
+    """Production serve path: GO-gated 8xB200 deploy, publish the discovered endpoint URL into
+    MODAL_ENDPOINT_URL (so a ModalLiveTransport points at it), and return the arm's handle."""
+    import os
+    url = _deploy_b200(topk, model, fn_timeout)
+    base = url if url.rstrip("/").endswith("/v1") else url.rstrip("/") + "/v1"
+    os.environ["MODAL_ENDPOINT_URL"] = base
+    return {"base_url": base, "topk": topk, "fn_timeout": int(fn_timeout)}
 
 
 def _wait_serving(handle, clock, started, deadline_s):  # pragma: no cover - needs a live endpoint
@@ -254,6 +298,9 @@ def run_topk(topk: int, *, out_dir, transport, mode: str, guard, model: str = MO
         handle = (serve or _serve_b200)(topk, model, fn_timeout)
         if not isinstance(handle, dict):
             handle = {"base_url": getattr(transport, "base_url", ""), "handle": handle}
+        url = handle.get("base_url") or ""
+        if url and getattr(transport, "base_url", None) is not None:
+            transport.base_url = url   # point the live transport at this arm's discovered endpoint
         serving = (wait_serving or _wait_serving)(handle, clock, started, serve_deadline_s)
         if not serving:
             finish(guard, "soft", f"top-k {topk}: not serving by minute "
@@ -387,6 +434,21 @@ try:
         return subprocess.run(serve_args(8, SMOKE_MODEL, tp=1) + ["--dry-run"],
                               capture_output=True, text=True).stdout
 
+    B200_SERVE_S = stage_timeout(ARM_CAP_S, B200_8_USD_H, _local)  # per-arm cap, guard-bounded
+
+    @app.function(image=image, gpu=GPU_B200, timeout=B200_SERVE_S, max_containers=1,
+                  volumes={"/weights": weights, "/ckpt": ckpt_vol},
+                  secrets=[modal.Secret.from_name("hf")])
+    @modal.concurrent(max_inputs=1000)
+    @modal.web_server(SERVE_PORT, startup_timeout=SERVE_DEADLINE_S)
+    def b200_serve():  # pragma: no cover - runs only on 8xB200 under WATTNOT_MODAL_GO=1
+        # Serve the NVFP4 weights from the Volume. top-k and model arrive as a per-arm Secret
+        # (WATTNOT_SERVE_TOPK / WATTNOT_SERVE_MODEL); _deploy_b200 re-deploys per top-k value.
+        import os, subprocess
+        topk = int(os.environ.get("WATTNOT_SERVE_TOPK", "8"))
+        model = os.environ.get("WATTNOT_SERVE_MODEL", MODEL)
+        subprocess.Popen(serve_args(topk, model, tp=8) + ["--port", str(SERVE_PORT)])
+
     @app.local_entrypoint()
     def probe():
         kill_timer(PROBE_S, APP_NAME)
@@ -399,10 +461,18 @@ try:
 
     @app.local_entrypoint()
     def sprint_cli():  # pragma: no cover - deploys 8xB200, needs explicit go + money
-        # The real sprint: local driver tunes against the remote endpoint and signs each
-        # receipt. serve/wait default to the DRAFT B200 paths; wiring them is a deploy step.
+        # The real sprint: the local driver tunes against the remote endpoint and signs each
+        # receipt. Each arm's _serve_b200 deploys the 8xB200 endpoint for its top-k and sets
+        # MODAL_ENDPOINT_URL; run_topk then points this transport at that URL. Refuses up front
+        # without WATTNOT_MODAL_GO=1 so no deploy happens by accident.
+        import os
+        _require_go("run the 8xB200 top-k sprint")
+        # Discover the (stable) endpoint URL once so the transport can be built before arm 0.
+        os.environ["MODAL_ENDPOINT_URL"] = _serve_b200(TOPKS[0], MODEL,
+                                                       B200_SERVE_S)["base_url"]
         from wattnot.cloud.transport import ModalLiveTransport
         res = sprint(out_dir="data/cloud/modal-sprint",
+                     serve=_serve_b200, wait_serving=_wait_serving,
                      make_transport=lambda kind, model, k: ModalLiveTransport())
         print(json.dumps([{k: v for k, v in r.items() if k != "receipt"} for r in res], indent=1))
 
