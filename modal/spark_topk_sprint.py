@@ -73,7 +73,7 @@ try:  # Modal definitions only if the SDK is installed; never deployed from this
         import subprocess
         return subprocess.run(["nvidia-smi", "--query-gpu=power.draw,power.limit,enforced.power.limit",
                                "--format=csv"], capture_output=True, text=True).stdout
-except ImportError:
+except (ImportError, AttributeError):  # SDK missing, or the repo modal/ dir shadows it
     app = None
 
 if __name__ == "__main__":
