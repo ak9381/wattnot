@@ -199,14 +199,18 @@ def check_once(*, source, client, budget_cap_inr, max_hours=None,
     if deadline_ts is None and hb.get("launch_ts") is not None and max_hours is not None:
         deadline_ts = hb["launch_ts"] + max_hours * 3600.0
     spent = hb.get("spent_inr")
+    spent_label = "MEASURED" if spent is not None else None
     if spent is None and hb.get("launch_ts") is not None:
+        # No exact figure from the driver: derive an ESTIMATE from elapsed time x the measured
+        # all-in rate. This is an ESTIMATE, never a metered spend, and is labelled as such below.
         spent = max(0.0, (now - hb["launch_ts"]) / 3600.0) * inr_per_h
+        spent_label = "ESTIMATE (rate x time)"
 
     d = decide(now=now, deadline_ts=deadline_ts, budget_spent_inr=spent,
                budget_cap_inr=budget_cap_inr, heartbeat_ts=hb.get("ts"), max_stale_s=max_stale_s)
     res = {"layer": "layer5-mac", "source": str(source), "heartbeat": hb,
            "teardown": d["teardown"], "reasons": d["reasons"], "detail": d["detail"],
-           "dry_run": dry_run, "deleted": None}
+           "spent_inr_label": spent_label, "dry_run": dry_run, "deleted": None}
     if not d["teardown"]:
         log(json.dumps(res))
         return res
@@ -227,9 +231,14 @@ def check_once(*, source, client, budget_cap_inr, max_hours=None,
 
 def run_loop(*, source, client, budget_cap_inr, max_hours=None,
              max_stale_s=DEFAULT_MAX_STALE_S, poll_every_s=120.0, dry_run=True,
-             now: Callable[[], float] = time.monotonic, sleep: Callable[[float], None] = time.sleep,
+             now: Callable[[], float] = time.time, sleep: Callable[[float], None] = time.sleep,
              opener=None, max_ticks=None, log=lambda m: None) -> dict:
-    """Poll until a cap trips and the VM is torn down (or `max_ticks` is hit)."""
+    """Poll until a cap trips and the VM is torn down (or `max_ticks` is hit).
+
+    `now` MUST be a wall-clock epoch clock (`time.time`): the rule compares it against the
+    heartbeat's epoch timestamps (ts / launch_ts / deadline_ts), so a monotonic clock (which
+    counts from an arbitrary origin) would make every age and deadline comparison meaningless.
+    `time.monotonic` is only ever right for sleep pacing, never for these comparisons."""
     tick, last = 0, {}
     while True:
         tick += 1

@@ -92,7 +92,8 @@ class Heartbeat:
     ts: float                       # when this heartbeat was written (epoch seconds)
     launch_ts: float | None = None
     deadline_ts: float | None = None
-    spent_inr: float | None = None  # if the driver knows the exact spend; else estimated here
+    spent_inr: float | None = None  # exact spend if the driver knows it; else an ESTIMATE
+                                    # (rate x time) is derived by the watchdog — never metered
     block: str | None = None
     note: str | None = None
 
@@ -242,14 +243,19 @@ def check_and_teardown(
         deadline_ts = hb.launch_ts + max_hours * 3600.0
 
     spent = hb.spent_inr
+    spent_label = "MEASURED" if spent is not None else None
     if spent is None and hb.launch_ts is not None:
+        # No exact figure from the driver: derive an ESTIMATE from elapsed time x the measured
+        # all-in rate. This is an ESTIMATE, never a metered spend, and is labelled as such below.
         spent = max(0.0, (now - hb.launch_ts) / 3600.0) * inr_per_h
+        spent_label = "ESTIMATE (rate x time)"
 
     d = decide(now=now, deadline_ts=deadline_ts, budget_spent_inr=spent,
                budget_cap_inr=budget_cap_inr, heartbeat_ts=hb.ts, max_stale_s=max_stale_s)
 
     res: dict = {"layer": layer, "now": now, "heartbeat": hb.as_dict(), "teardown": d.teardown,
-                 "reasons": d.reasons, "detail": d.detail, "dry_run": dry_run, "deleted": None}
+                 "reasons": d.reasons, "detail": d.detail, "spent_inr_label": spent_label,
+                 "dry_run": dry_run, "deleted": None}
 
     if not d.teardown:
         log(json.dumps(res))

@@ -102,7 +102,7 @@ def test_no_headroom_hard_stops_before_launching(tmp_path):
     assert served["n"] == 0  # the server was never started
 
 
-def test_cloud_timeout_is_set_from_the_guard_headroom(tmp_path):
+def test_cloud_timeout_is_capped_at_the_arm_budget(tmp_path):
     g = _guard(tmp_path)
     seen = {}
 
@@ -114,8 +114,9 @@ def test_cloud_timeout_is_set_from_the_guard_headroom(tmp_path):
                guard=g, now=NOW, serve=serve, wait_serving=lambda *a: True,
                make_timer=_fake_timer(), teardown=lambda: [], sign_key=None)
     from wattnot.spend.guard import cloud_timeout_s
-    # the function timeout passed to the server is exactly the guard's cloud_timeout_s
-    assert seen["timeout"] == cloud_timeout_s(g)
+    # the server-side timeout is min(guard headroom, per-arm cap) -- never the full budget, so
+    # one slow arm can't burn the whole $98. On a fresh guard the arm cap is what binds.
+    assert seen["timeout"] == min(cloud_timeout_s(g), M.ARM_CAP_S) == M.ARM_CAP_S
 
 
 def _fake_timer():
