@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from wattnot.gates.noise import bootstrap_saving_ci, noise_gate, welch
+from wattnot.gates.noise import _saving_pct, bootstrap_saving_ci, noise_gate, welch
 
 # Reference values from scipy.stats.ttest_ind(a, b, equal_var=False, alternative="greater")
 REF = [
@@ -52,6 +52,19 @@ def test_clear_ten_percent_drop_with_one_percent_sd_is_billable():
     assert d["billed_saving_pct"] == d["ci_low"]
     assert {"t", "df", "p_value", "ci_low", "ci_high"} <= set(d)
     assert all(math.isfinite(d[k]) for k in ("t", "df", "p_value"))
+
+
+def test_all_zero_arms_raise_a_clear_error_not_divide_by_zero():
+    # mean(base) == 0 would divide by zero in the saving-percent step.
+    with pytest.raises(ValueError, match="baseline mean is zero"):
+        noise_gate([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+
+
+def test_empty_arms_raise_value_error():
+    with pytest.raises(ValueError):
+        _saving_pct([], [1.0])
+    with pytest.raises(ValueError):
+        _saving_pct([1.0], [])
 
 
 def test_failed_noise_gate_emits_rollback(tmp_path):

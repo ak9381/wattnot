@@ -601,6 +601,9 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
                 lines.append(json.loads(raw))
             except json.JSONDecodeError:
                 break
+        # The meta line may not be written yet; Capture() would raise StopIteration.
+        if next((x for x in lines if x.get("type") == "meta"), None) is None:
+            raise HTTPException(404, "capture has no meta line yet")
         return experts.Capture(lines)
 
     @app.get("/api/dash/moe/meta")

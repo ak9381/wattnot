@@ -241,6 +241,9 @@ def judge(base_out: Mapping[str, str], cand_out: Mapping[str, str], items: Seque
 def agreement(items: Sequence[Mapping], verdicts: Mapping[str, str]) -> dict:
     """Judge vs human labels on the agreement set. better counts as not-worse."""
 
+    if not items:
+        raise ValueError("agreement needs at least one item")
+
     def bucket(v: str) -> str:
         return "worse" if v == "worse" else "ok"
 

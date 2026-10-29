@@ -127,6 +127,17 @@ def test_follow_mode_reads_a_file_that_is_still_being_written(tmp_path):
     assert len(c.get("/api/dash/moe/ticks").json()) == 20
 
 
+def test_follow_mode_without_a_meta_line_yet_is_a_clean_404(tmp_path):
+    # Only tick lines are complete so far (no meta); must not 500 with StopIteration.
+    lines = list(experts.iter_lines(DEFAULT_CAPTURE))
+    ticks = [x for x in lines if x["type"] == "tick"][:5]
+    f = tmp_path / "live.jsonl"
+    f.write_text("\n".join(json.dumps(x) for x in ticks) + "\n")
+    c = TestClient(create_app(follow=f), raise_server_exceptions=False)
+    assert c.get("/api/dash/moe/ticks").status_code == 404
+    assert c.get("/api/dash/moe/meta").status_code == 404
+
+
 def test_results_folder_can_be_read_directly(tmp_path):
     src = ROOT / "data" / "dash" / "h100-replay.json"
     assert src.is_file()

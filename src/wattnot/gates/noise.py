@@ -25,6 +25,8 @@ class Welch:
 
 def _mean_var(x: Sequence[float]) -> tuple[float, float]:
     n = len(x)
+    if n < 2:
+        raise ValueError("need at least 2 values for mean and variance")
     m = sum(x) / n
     return m, sum((v - m) ** 2 for v in x) / (n - 1)
 
@@ -90,7 +92,11 @@ def welch(base: Sequence[float], cand: Sequence[float]) -> Welch:
 
 
 def _saving_pct(base: Sequence[float], cand: Sequence[float]) -> float:
+    if not base or not cand:
+        raise ValueError("both arms need at least one rep")
     mb = sum(base) / len(base)
+    if mb == 0:
+        raise ValueError("baseline mean is zero; saving percent is undefined")
     return 100 * (mb - sum(cand) / len(cand)) / mb
 
 
