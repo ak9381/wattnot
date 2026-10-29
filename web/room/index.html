@@ -5,15 +5,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>WattNot - Room</title>
 <link rel="stylesheet" href="room.css">
+<link rel="stylesheet" href="../dash/chrome.css">
+<link rel="stylesheet" href="../dash/voiceguide.css">
+<style>/* one header: the shared sticky one; the room bar below is a toolbar */ body{padding-top:96px}</style>
+<script src="../dash/chrome.js" defer></script>
 </head>
 <body>
-<header class="bar">
-  <div class="brand"><b>WattNot</b> <span class="muted">/ Room</span></div>
+<div class="bar" role="toolbar" aria-label="Room view controls">
+  <div class="brand"><span class="muted">Room view</span></div>
   <div class="seg" id="mode" role="group" aria-label="image"><button data-v="visible">Visible</button><button data-v="thermal" class="on">Thermal</button></div>
   <div class="seg" id="phase" role="group" aria-label="phase"><button data-v="before" class="on">Before</button><button data-v="after">After caps</button></div>
   <button class="toggle" id="sam" aria-pressed="true"><i class="lamp"></i>SAM <b>on</b></button>
   <div class="src" id="src"></div>
-</header>
+</div>
 <main id="app">
   <section class="stage">
     <div class="frame" id="frame">

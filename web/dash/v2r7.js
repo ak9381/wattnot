@@ -385,11 +385,10 @@ export function overviewHtml(S) {
   const kpi = (label, v, tag, sub, key) => `<div class="ov-kpi glass"><span class="lvl">${label}${key ? infoBtn(key, label) : ""}</span><b>${v == null ? `<span class="r7miss">${PENDING}</span>` : n(esc(v), tag)}</b><small>${esc(sub)}</small></div>`;
   const used = r.j_per_req_cap, cut = r.j_per_req_stock != null && used != null ? r.j_per_req_stock - used : null;
   return `<div class="ov">
-  <aside class="ov-side glass" aria-label="Sections"><div class="brand">Watt<i>Not</i></div>
-    ${[["pHome", "Overview"], ["pCfg", "Configure"], ["pRun", "Run"], ["pReport", "Compare"], ["pLearn", "How it works"]].map(([p, t]) => `<button class="ov-nav${p === "pHome" ? " on" : ""}" data-go="${p}">${t}</button>`).join("")}
-    <div class="ov-side-ft">${legend()}</div></aside>
   <div class="ov-main">
-    <div class="ov-hd"><div><h1>Less power per AI answer, with proof</h1><p class="lead">WattNot tries a safer GPU setting, checks the answers, and keeps it only if nothing got worse. ${infoBtn("what", "what WattNot does")}</p></div><button class="btn pri" data-go="pCfg">Configure a run →</button></div>
+    <div class="ov-hd"><div><h1>Less power per AI answer, with proof</h1><p class="lead">WattNot tries a safer GPU setting, checks the answers, and keeps it only if nothing got worse. ${infoBtn("what", "what WattNot does")}</p>
+      <p class="ov-jump">On this page: ${[["pCfg", "Configure"], ["pRun", "Run"], ["pReport", "Compare"], ["pProof", "Proof"], ["pLearn", "How it works"]].map(([p, t]) => `<a href="#${p}">${t}</a>`).join(" · ")}</p>
+      <div class="ov-legend">${legend()}</div></div><button class="btn pri" data-go="pCfg">Configure a run →</button></div>
     <div class="ov-kpis">
       ${(() => { // Headline: joules per correct answer (energy per answer / fixed-check pass rate), MEASURED.
         const js = r.j_per_req_stock, jc = r.j_per_req_cap, qs = r.quality_stock_pct, qc = r.quality_cap_pct;
