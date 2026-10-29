@@ -25,6 +25,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from wattnot.cloud import BASE_URL, INFERENCE_KEY_ENVS, KEY_ENV, MODEL, inference_key
+from wattnot.cloud.modal_url import ModalUrlUnset, resolve_modal_url
 
 FIXTURE_FORMAT = "wattnot.cloud-fixture/1"
 RATE_HEADERS = ("x-ratelimit-limit-requests", "x-ratelimit-remaining-requests",
@@ -255,9 +256,10 @@ class ModalLiveTransport(LiveTransport):
         if not (tid and sec):
             raise MissingKey(f"{MODAL_ID_ENV} and {MODAL_SECRET_ENV} must both be set "
                              "(a Modal Proxy Token). They are never read from a file or a flag.")
-        url = read_env(MODAL_URL_ENV, env).rstrip("/")
-        if not url:
-            raise MissingKey(f"{MODAL_URL_ENV} is not set (the Modal Endpoint URL).")
+        try:
+            url = resolve_modal_url(env=env).rstrip("/")
+        except ModalUrlUnset as e:
+            raise MissingKey(str(e)) from None
         self._key = f"{tid}.{sec}"
         self.base_url = url if url.endswith("/v1") else url + "/v1"
         self.model = read_env(MODAL_MODEL_ENV, env) or MODAL_DEFAULT_MODEL
