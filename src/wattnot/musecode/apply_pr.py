@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 REQUIRED_REMOTE = "github.com/ak9381/wattnot-demo-deploy"
-DEFAULT_MODEL = "muse-code"
+DEFAULT_MODEL = "muse-spark-1.3-contributor"  # a real Meta API model id; public fixture only
 
 
 def normalize_git_remote(raw_url: str) -> str:
@@ -224,7 +224,8 @@ def apply_pr(
     else:
         # Live invocation of verified muse exec CLI
         prompt_file = out / "muse_prompt.txt"
-        prompt_lines = ["Update launch.sh and values.yaml with the following verified inference configuration:"]
+        prompt_lines = ["Update launch.sh and values.yaml with the following verified inference configuration. "
+                        "Edit only those two files. Do not commit, push or run any other command."]
         if cap_w is not None:
             prompt_lines.append(f"- Power cap: {cap_w} W")
         if max_num_seqs is not None:
@@ -316,6 +317,7 @@ def apply_pr(
         "Automated configuration update from verified WattNot energy run.",
         "",
         f"**Receipt Reference**: [`{receipt_uri}`]({receipt_uri})",
+        *([f"**Signed receipt (public)**: {change['receipt_url']}"] if change.get("receipt_url") else []),
         "",
         "## Configuration Changes",
         "",
@@ -393,6 +395,8 @@ def apply_pr(
                 "Refused to open PR: commit of the generated patch failed: "
                 + (commit_res.stderr or commit_res.stdout or "").strip()[:200]
             )
+        subprocess.run(["git", "-C", str(repo), "push", "-u", "origin", branch_name],
+                       capture_output=True, text=True, check=False)
         title = "WattNot: Optimize vLLM deployment" + (f" ({cap_w}W)" if cap_w is not None else "")
         try:
             gh_res = subprocess.run(
@@ -443,8 +447,10 @@ def build_muse_command(repo: str | Path, prompt_file: str | Path, model: str) ->
         "--json",
         "--workspace",
         str(repo),
-        "--worktree",
-        "create",
+        "--trust-workspace",
+        "--disable-approval",  # sandbox stays on; edits are limited to the fixture checkout
+        # No --worktree: edits must land in this checkout so `git diff HEAD` sees them.
+        # The target is a disposable fixture clone, never a user repo.
         "--model",
         str(model),
         "--prompt-file",
@@ -499,6 +505,35 @@ def _coerce_int(value: Any) -> int | None:
         return None
 
 
+def _parse_muse_v14(rows: list[str]) -> dict[str, Any] | None:
+    """Muse Code v1.4 JSONL: session id on stream.kind=session, usage on run.usage events."""
+    sid = tid = None
+    tin = tout = 0
+    seen = False
+    for raw in rows:
+        try:
+            ev = json.loads(raw)
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(ev, Mapping):
+            continue
+        st = ev.get("stream") or {}
+        if isinstance(st, Mapping) and st.get("kind") == "session" and sid is None:
+            sid = st.get("id")
+        if ev.get("payload_type") == "run.usage":
+            pl = ev.get("payload") or {}
+            seen = True
+            tid = (pl.get("run_stream") or {}).get("id") or pl.get("command_id") or tid
+            for m in pl.get("models") or []:
+                tin += int(m.get("input_tokens") or 0)
+                tout += int(m.get("output_tokens") or 0)
+    if not seen:
+        return None
+    return {"session_id": sid, "trace_id": tid, "input_tokens": tin, "output_tokens": tout,
+            "total_tokens": tin + tout,
+            "usage": {"input_tokens": tin, "output_tokens": tout, "total_tokens": tin + tout}}
+
+
 def parse_muse_jsonl(lines: Any) -> dict[str, Any]:
     """Extract session/trace ids and token usage from ``muse exec --json`` JSONL.
 
@@ -513,6 +548,10 @@ def parse_muse_jsonl(lines: Any) -> dict[str, Any]:
         iterable = lines.decode("utf-8", errors="replace").splitlines()
     else:
         iterable = lines
+    iterable = [r.decode("utf-8", "replace") if isinstance(r, bytes) else r for r in iterable]
+    v14 = _parse_muse_v14([r for r in iterable if isinstance(r, str)])
+    if v14 is not None:
+        return v14
 
     session_id: str | None = None
     trace_id: str | None = None
