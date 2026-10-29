@@ -98,3 +98,20 @@ export function cardHtml(results) {
     ${notes}
   </section>`;
 }
+
+// Where the results artifact is served from, relative to the dashboard page. The file lives in
+// data/agent-waste/codemode/ in the repo; build_pages.py copies it to dash/codemode/ for Pages.
+export const CODEMODE_RESULTS = "codemode/results.json";
+
+// Fetch the results artifact; returns null (not a throw) when it is absent, so the card can
+// render its safe placeholder on a server that has not recorded Code Mode results yet.
+export async function loadCodemodeResults(url = CODEMODE_RESULTS) {
+  try { const r = await fetch(url); return r.ok ? await r.json() : null; } catch { return null; }
+}
+
+// Mount the card into `el`. Pass pre-loaded results (e.g. in a test) or let it fetch them.
+export async function mountCodemode(el, results) {
+  if (!el) return;
+  const res = results ?? (await loadCodemodeResults());
+  el.innerHTML = cardHtml(res);
+}
