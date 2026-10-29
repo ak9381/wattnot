@@ -10,6 +10,8 @@
 <link rel="stylesheet" href="chrome.css">
 <link rel="stylesheet" href="bento.css">
 <link rel="stylesheet" href="eulink.css">
+<link rel="stylesheet" href="voiceguide.css">
+<script type="module" src="voiceguide.js"></script>
 <script src="chrome.js" defer></script>
 <style>
   body:has(main.eu) .wn-legend{display:none!important}
@@ -31,7 +33,7 @@
 </head>
 <body>
 <main class="eu">
-  <h1>EU Compliance</h1>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><h1>EU Compliance</h1><span id="wn-mic-slot"></span></div>
   <p class="sub">Measured energy per correct answer, ready for EU reporting. One click turns a signed receipt into the report.</p>
 
   <div class="eu-legend" aria-label="Legend: measured, estimate, simulated, mock, replay, pending">
@@ -57,7 +59,7 @@
   <h2>How WattNot helps</h2>
   <div class="eu-grid">
     <div class="eu-box"><h3>J per correct answer</h3><p>GPU energy from the NVML counter, divided by answers that pass the fixed grader.</p></div>
-    <div class="eu-box"><h3>Water per answer</h3><p>Labelled as an estimate, with its method and source in the report.</p></div>
+    <div class="eu-box"><h3>Water per answer</h3><p>Labelled as an estimate, with its method and source in the report.</p><p class="eu-src">How water is worked out: measured energy (kWh) × the site's water use per kWh (WUE, 1.8 L/kWh by default).</p></div>
     <div class="eu-box"><h3>One-click report</h3><p>Fields from Delegated Reg. (EU) 2024/1364 that software can fill, as HTML and CSV. Facility fields (PUE, renewables, heat reuse) show NOT_AVAILABLE.</p></div>
     <div class="eu-box"><h3>Audit trail</h3><p>Every number links to a signed receipt with hashed meter logs, checkable offline with the verifier.</p></div>
     <div class="eu-box"><h3>CSRD <span class="road">roadmap</span></h3><p>Not built yet.</p></div>
