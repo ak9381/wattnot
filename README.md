@@ -11,7 +11,7 @@ H100 run: `bash scripts/h100_run.sh --dry-run` first, then see [docs/runbooks/H1
 ## For judges: check it in five minutes
 
 - **Replay, no install:** https://ak9381.github.io/wattnot/ (a replay of measured logs; nothing runs live). Open the **Proof** tab.
-- **Headline (RUN2, MEASURED):** -27.1% joules per correct answer at a 350 W cap on an H100 (17.03 to 12.42 J), pass rate unchanged at 93.7% on 666 checked answers. RUN2 quality was judged by fixed answer checks from the Granite era; results with the Meta judge (hosted Muse Spark, Llama 3.1 8B fallback) are reported separately when measured.
+- **Headline (RUN2, MEASURED):** -27.1% joules per correct answer at a 350 W cap on an H100 (17.03 to 12.42 J), pass rate unchanged at 93.7% on 666 checked answers. RUN2 quality was judged by fixed answer checks (deterministic string and number matching, no model as a judge); results with the Meta judge (hosted Muse Spark, with a Llama 3.1 8B fallback) are reported separately when measured.
 - **What Spark decided:** every Muse Spark planner call in RUN2 (400 W, 350 W, 325 W, stop), with its reasoning, latency, tokens and the gate verdict. 325 W failed the p99 gate (+10.95% against a 10% limit); the (i) button explains why.
 - **Verify a receipt yourself:**
 
