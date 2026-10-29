@@ -58,6 +58,56 @@ def test_budget_chat_forces_close_and_flags_cut():
     assert calls[1]["messages"][-1]["content"].endswith(T.THINK_CLOSE + "\n")
 
 
+def test_budget_chat_answers_inside_phase_a():
+    # Phase A closes its own thought and answers: no forced close, no phase B.
+    calls = []
+
+    def post(body):
+        calls.append(body)
+        return {"choices": [{"finish_reason": "stop", "message": {"content": "The answer is 42."}}],
+                "usage": {"completion_tokens": 20}}
+    c = T.BudgetChat("u", "m", 100, post=post)
+    r = c([{"role": "user", "content": "q"}], 64)
+    assert isinstance(r, Reply) and r.finish == "stop" and "42" in r.text
+    assert len(calls) == 1              # phase B never ran
+    assert c.forced == {} and c.cut == {}
+
+
+def test_budget_tokens_clamps_both_ends():
+    t = T.build()[0]
+    assert T.budget_tokens(t, 0.0) == 16                               # floor
+    assert T.budget_tokens(t, 1e9) == T.CONTEXT - T.ANSWER_CAP - 1024  # ceiling fits context
+    mid = T.budget_tokens(t, 1.0)
+    assert 16 <= mid <= T.CONTEXT - T.ANSWER_CAP - 1024
+
+
+def test_forced_close_storm_marks_block_suspect():
+    # Almost every early item force-closed: the server probably never emitted </think>.
+    stormy = [T.Cell("easy", 0.25,
+                     [{"id": str(i), "ok": True, "cut": False, "forced": i < 9}
+                      for i in range(10)], 100.0)]
+    fc = T.forced_close_check(stormy)
+    assert fc["forced_close_rate"] > 0.8 and fc["suspect"] is True
+
+
+def test_forced_close_check_not_suspect_when_rate_is_low():
+    calm = [T.Cell("easy", 1.0,
+                   [{"id": str(i), "ok": True, "cut": False, "forced": i == 0}
+                    for i in range(10)], 100.0)]
+    assert T.forced_close_check(calm)["suspect"] is False
+
+
+def test_fake_run_logs_and_flags_when_forced_close_storms(tmp_path, monkeypatch):
+    # Wire the guard end-to-end: force every fake item and confirm run() logs + flags it.
+    monkeypatch.setattr(T, "fake_cell", lambda ts, x: [
+        {"id": t.id, "ok": True, "cut": False, "forced": True, "tokens": 50, "joules": 60.0}
+        for t in ts])
+    logs = []
+    doc = T.run(tmp_path, fake=True, per_tier=2, log=logs.append)
+    assert doc["forced_close_check"]["suspect"] is True
+    assert any("suspect" in m for m in logs)
+
+
 def test_fake_block_writes_policy(tmp_path):
     doc = T.run(tmp_path, fake=True)
     d = json.loads((tmp_path / "thinking_policy.json").read_text())

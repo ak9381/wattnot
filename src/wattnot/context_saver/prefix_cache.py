@@ -34,12 +34,16 @@ def hit_rate_from_metrics(before_text: str, after_text: str) -> float | None:
     def _sum(pat, text):
         vals = [float(x) for x in pat.findall(text)]
         return sum(vals) if vals else None
+    def _clamp(x: float) -> float:
+        return round(min(1.0, max(0.0, x)), 4)   # honour the documented [0, 1] contract
     q0, q1 = _sum(_QUERIES, before_text), _sum(_QUERIES, after_text)
     h0, h1 = _sum(_HITS, before_text), _sum(_HITS, after_text)
     if q0 is not None and q1 is not None and h0 is not None and h1 is not None and q1 - q0 > 0:
-        return round((h1 - h0) / (q1 - q0), 4)
+        # a counter reset/wrap can push the delta outside [0, 1]; clamp rather than report a
+        # negative or >100% hit rate.
+        return _clamp((h1 - h0) / (q1 - q0))
     g = _sum(_GAUGE, after_text)
-    return round(g, 4) if g is not None else None
+    return _clamp(g) if g is not None else None
 
 
 def _agg(rows: Sequence[dict], key: str) -> dict:

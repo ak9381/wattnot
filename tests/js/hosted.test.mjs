@@ -6,7 +6,7 @@ const L = (v, l) => ({ value: v, label: l });
 const rec = { hosted_ab: { hosts: {
   baseten: { status: "ran", without: { usd_per_1k: L(2, "MEASURED") }, with: { usd_per_1k: L(1.5, "MEASURED") },
     estimate: { tokens_saved: L(1000, "ESTIMATE"), j_per_token: L(7.86, "ESTIMATE"), energy_j: L(7860, "ESTIMATE"),
-      energy_kwh: L(0.00218, "ESTIMATE"), water_l: L(0.000786, "ESTIMATE"), usd_saved: L(0.5, "MEASURED"), power_saved_pct: L(12.5, "ESTIMATE") } },
+      energy_kwh: L(0.00218, "ESTIMATE"), water_l: L(0.003924, "ESTIMATE"), usd_saved: L(0.5, "MEASURED"), power_saved_pct: L(12.5, "ESTIMATE") } },
   modal: { status: "not_run", why: "down" } } } };
 
 test("hosted child cards: cost MEASURED, power/water ESTIMATE, missing gives null", () => {
@@ -19,6 +19,6 @@ test("hosted child cards: cost MEASURED, power/water ESTIMATE, missing gives nul
 
 test("worked chain shows tokens, J, kWh, L and $", () => {
   const h = R.hostedChain(rec.hosted_ab.hosts.baseten.estimate);
-  for (const s of ["Tokens saved", "J/token", "kWh", "L water", "Cost saved", "0.36"]) assert.ok(h.includes(s), s);
+  for (const s of ["Tokens saved", "J/token", "kWh", "L water", "Cost saved", "1.8"]) assert.ok(h.includes(s), s);
   assert.equal(R.hostedChain(null), "");
 });

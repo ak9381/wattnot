@@ -5,7 +5,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from wattnot.gates.judge import agreement, judge, load_judge_set, parse_verdicts, request_body
+from wattnot.gates.judge import (
+    FallbackJudge,
+    agreement,
+    judge,
+    load_judge_set,
+    parse_verdicts,
+    request_body,
+)
 
 REC = json.loads((Path(__file__).parent / "fixtures" / "judge_recorded.json").read_text())
 ITEMS = load_judge_set()
@@ -56,6 +63,29 @@ def test_fails_closed_on_bad_response():
     assert not g.passed and "unavailable" in g.reason
     g = judge(*_outs(), ITEMS, transport=lambda b: (_ for _ in ()).throw(OSError("down")))
     assert not g.passed
+
+
+def test_cutoff_from_primary_falls_back_to_llama():
+    # Spark returns a reasoning-only reply with no verdict content. FallbackJudge must treat
+    # that as a failed primary and use the Llama fallback, not hand back the empty reply.
+    same = [i for i in ITEMS if i["label"] == "same"]
+    cutoff = {"choices": [{"message": {"content": None}}]}
+    good = {"model": "meta-llama/Llama-3.1-8B-Instruct", "usage": {},
+            "choices": [{"message": {"content": json.dumps(
+                {"verdicts": [{"id": i["id"], "verdict": "same"} for i in same]})}}]}
+    fj = FallbackJudge(lambda b: cutoff, lambda b: good, "spark", "meta-llama/Llama-3.1-8B-Instruct")
+    g = judge(*_outs(), same, transport=fj)
+    assert g.passed
+    assert g.detail["judge_path"] == "llama-fallback"
+    assert g.detail["judge_model"] == "meta-llama/Llama-3.1-8B-Instruct"
+    assert "cut off" in g.detail["fallback_reason"]
+
+
+def test_cutoff_fails_closed_when_there_is_no_fallback():
+    # No fallback configured: a cut-off still fails closed (never a silent pass).
+    fj = FallbackJudge(lambda b: {"choices": [{"message": {"content": ""}}]}, None, "spark", "llama")
+    g = judge(*_outs(), ITEMS, transport=fj)
+    assert not g.passed and "unavailable" in g.reason
 
 
 def test_request_is_strict_json_schema():
