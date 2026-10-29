@@ -65,11 +65,27 @@ against the Modal endpoint, so the remote side only serves vLLM and the file nev
 built and signed offline via `wattnot.receipt.sign.sign_run_receipt` (no network, no Rekor) and
 written to its own dir before any stop or teardown; Modal energy stays an ESTIMATE.
 
-Validation is **CPU dry runs only** (`--dry-run`, or `dry_run()`/`baseten_dry_run()`): an
-in-process fake vLLM server answers from the workload's known-good answers and a fake
-`modal billing report` meter stands in for reconcile. The dry run opens no socket, launches
-nothing on Modal and spends nothing, yet exercises the whole driver and proves each arm's receipt
-is signed, verifies, and can never be graded above ESTIMATE. See `tests/test_modal_spark_topk.py`.
+The real serve (`_serve_b200` -> `_deploy_b200`): deploys the 8x B200 vLLM web server
+(`b200_serve`, `gpu="B200:8"`, weights from the `wattnot-spark-weights` Volume), re-asserts the
+GPU spec and this arm's `cloud_timeout_s()` as the function `timeout` via `with_options`, carries
+the top-k to the container as a per-arm Secret (`WATTNOT_SERVE_TOPK`; one re-deploy per top-k
+value), discovers the endpoint URL (`get_web_url`) and points a `ModalLiveTransport` at it. This
+is the **only paid GPU path** and it is gated: `_serve_b200`/`_deploy_b200`/`sprint_cli` refuse,
+**before any Modal API call**, unless `WATTNOT_MODAL_GO=1` is set. Without the flag there is no
+deploy, no GPU, no spend.
+
+Validation is **free/dry only** -- no GPU, no deploy, no network, no money:
+- `--plan` ($0) prints the plan and cost estimate; `--dry-run DIR` ($0) runs the whole driver
+  against an in-process fake vLLM server (answers from the workload's known-good answers) and a
+  fake `modal billing report` meter for reconcile. It opens no socket and launches nothing on
+  Modal, yet proves each arm's receipt is signed, verifies, and can never be graded above
+  ESTIMATE. See `tests/test_modal_spark_topk.py`.
+- The GO gate, the `B200:8` spec, and the per-arm `timeout = cloud_timeout_s()` are unit-tested
+  against a **fake `modal` module** (no SDK calls) in `tests/test_modal_spark_go.py`: nothing on
+  a GPU can start without `WATTNOT_MODAL_GO=1`, and the gate fires before any Modal object is
+  touched.
+- `python -m py_compile` and a credential-free import of the module are part of the dry checks;
+  `modal run`/`deploy`/`serve` are never run here (they would spend).
 
 ## Hosted Spark reasoning controls (docs, 29 Oct)
 - `reasoning_effort`: `low` (strength 8), `medium` (32), `high` (256), `xhigh` (512, default). `none`/`minimal`
