@@ -19,7 +19,7 @@ KEY_ENV = "BASETEN_API_KEY"
 INFERENCE_KEY_ENVS = ("BASETEN_METRICS_KEY", "BASETEN_API_KEY")
 # A Spark call whose max_tokens is all spent on reasoning comes back with content None: that is
 # a cut-off answer and is scored as a fail. Live proof: max_tokens 64 -> 61 reasoning, no answer.
-JUDGE_MAX_TOKENS = 512  # judge at low effort; 64 was not enough to leave room for a verdict
+JUDGE_MAX_TOKENS = 1500  # judge at low effort; pinned to the batch judge (wattnot.gates.judge). 512 still spent the whole budget reasoning on some replies
 
 
 def inference_key(env=None) -> tuple[str, str]:

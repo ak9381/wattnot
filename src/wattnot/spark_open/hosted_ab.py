@@ -42,7 +42,7 @@ H100_J_PER_TOKEN = 0.14966580932784637
 H100_ACTIVE_PARAMS = 0.8e9
 SPARK_OPEN_ACTIVE_PARAMS = 42e9
 J_PER_TOKEN = H100_J_PER_TOKEN * SPARK_OPEN_ACTIVE_PARAMS / H100_ACTIVE_PARAMS  # about 7.86 J
-WATER_L_PER_KWH = 0.36
+WATER_L_PER_KWH = 1.8  # ESTIMATE — industry-average site WUE (L/kWh), see wattnot.impact
 
 
 def saved_estimate(tokens_without: int, tokens_with: int, usd_without: float, usd_with: float) -> dict:
@@ -56,7 +56,7 @@ def saved_estimate(tokens_without: int, tokens_with: int, usd_without: float, us
                             "method": f"H100 {H100_J_PER_TOKEN:.4f} J/token (RUN2, MEASURED) x 42B/0.8B active params"},
             "energy_j": {"value": round(j, 3), "label": "ESTIMATE"},
             "energy_kwh": {"value": kwh, "label": "ESTIMATE"},
-            "water_l": {"value": kwh * WATER_L_PER_KWH, "label": "ESTIMATE", "method": "kWh x 0.36 L/kWh"},
+            "water_l": {"value": kwh * WATER_L_PER_KWH, "label": "ESTIMATE", "method": f"kWh x {WATER_L_PER_KWH} L/kWh"},
             "usd_saved": {"value": round(usd_without - usd_with, 6), "label": "MEASURED"},
             "power_saved_pct": {"value": round(100 * tok / tokens_without, 2) if tokens_without else None, "label": "ESTIMATE"}}
 API_LEVERS = ("routing", "gate", "waste")

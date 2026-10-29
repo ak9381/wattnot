@@ -15,7 +15,7 @@ const EM = "—"; // em dash for missing values
 
 // ---- constants from story.json (shown with their own labels) ----
 const USD_PER_KWH = 0.1387; // ESTIMATE — US commercial electricity price
-const WATER_L_PER_KWH = 0.36; // ESTIMATE — site water use factor
+const WATER_L_PER_KWH = 1.8; // ESTIMATE — industry-average site water factor (WUE L/kWh)
 const LEVER_NAMES = { cap: "Power cap", topk: "Adaptive top-k", hosted: "Hosted routing" };
 
 // ---------- tiny helpers ----------
@@ -202,7 +202,7 @@ function renderKpis(runsList, details) {
       <li><span class="k">kWh saved</span><span class="vv">${isNum(kWh) ? `${fmt(kWh, 4)}${dot("MEASURED")}` : `<span class="emdash">${EM}</span>`}</span></li>
       <li><span class="k">Water factor</span><span class="vv">${fmt(WATER_L_PER_KWH, 2)} L/kWh${dot("ESTIMATE")}</span></li>
     </ul>
-    <p class="note">The energy is measured; the water factor is a US fleet-average
+    <p class="note">The energy is measured; the water factor is an industry-average
       estimate, so the result is an ESTIMATE.</p>`;
 
   sidePanels.k_cost = `
@@ -241,7 +241,7 @@ function renderKpis(runsList, details) {
       <div class="big">${isNum(litres)
         ? `<span class="v-num">${fmt(litres, 3)}</span><span class="unit">L</span>`
         : `<span class="emdash">${EM}</span>`}</div>
-      <div class="foot">${isNum(litres) ? "From energy &times; 0.36 L/kWh" : "Needs metered energy"}</div>
+      <div class="foot">${isNum(litres) ? `From energy &times; ${WATER_L_PER_KWH} L/kWh` : "Needs metered energy"}</div>
     </div>
     <div class="kpi v-glass" data-side="k_cost" data-explain="runs.total.cost" data-explain-value="${esc(isNum(usd) ? '$' + fmt(usd, 4) : EM)}" data-explain-label="ESTIMATE" data-explain-source="usd_per_kwh" role="button" tabindex="0">
       <span class="more">Details &rarr;</span>

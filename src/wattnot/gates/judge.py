@@ -27,6 +27,11 @@ SPARK_HOSTED_JUDGE = "meta-models/muse-spark-open"
 LLAMA_JUDGE = "meta-llama/Llama-3.1-8B-Instruct"
 MODEL = os.environ.get("JUDGE_MODEL", SPARK_HOSTED_JUDGE)
 JUDGE_EFFORT = "low"
+# One pinned answer budget for every judge call (the batch gate, hosted-Spark pricing and
+# scripts/record_judge). 512 at low effort was seen to spend the whole budget on reasoning and
+# return no verdict (a cut-off); 1500 leaves room for the JSON verdicts. Kept equal to
+# wattnot.cloud.JUDGE_MAX_TOKENS — tests/test_baseten_key_model pins the two together.
+JUDGE_MAX_TOKENS = 1500
 SPEND_LEDGER = Path(os.environ.get("WATTNOT_SPEND_DIR", "data/spend")) / "baseten.ledger.jsonl"
 
 
@@ -72,7 +77,7 @@ class HostedSparkJudge:
         from wattnot.spend.guard import ProviderError
         body = {**body, "model": self.model, "reasoning_effort": JUDGE_EFFORT, "temperature": 0}
         n_in = len(json.dumps(body)) // 3 + 1
-        worst = self.guard.price.tokens(n_in, int(body.get("max_tokens") or 1500))
+        worst = self.guard.price.tokens(n_in, int(body.get("max_tokens") or JUDGE_MAX_TOKENS))
         box: dict = {}
 
         def call() -> dict:
@@ -94,6 +99,14 @@ class HostedSparkJudge:
         return box["raw"]
 
 
+def _has_verdict_content(raw) -> bool:
+    """True when the reply carries answer content, i.e. not a reasoning-only cut-off."""
+    try:
+        return bool(raw["choices"][0]["message"].get("content"))
+    except (KeyError, IndexError, TypeError, AttributeError):
+        return False
+
+
 class FallbackJudge:
     """Try the primary (hosted Spark); on auth/credit/rate/spend/network failure use the
     fallback (Llama). `last` names the judge that actually answered and why."""
@@ -107,6 +120,11 @@ class FallbackJudge:
         from wattnot.spend.guard import HardStop, SoftStop
         try:
             raw = self.primary(body)
+            if not _has_verdict_content(raw):
+                # Spark spent the whole budget reasoning and returned no verdict. That is a
+                # cut-off, not a usable same/better/worse answer: fall back to Llama rather
+                # than let the gate fail closed on an unchecked change.
+                raise RuntimeError("hosted judge reply cut off: no content")
             self.last = {"judge_model": self.primary_model, "judge_path": "hosted-spark"}
             return raw
         except (HardStop, SoftStop, OSError, RuntimeError) as e:
@@ -154,7 +172,8 @@ def load_judge_set(path: str | Path = JUDGE_SET) -> list[dict]:
     return [json.loads(x) for x in Path(path).read_text().splitlines() if x.strip()]
 
 
-def request_body(items: Sequence[Mapping], model: str = MODEL, max_tokens: int = 1500) -> dict:
+def request_body(items: Sequence[Mapping], model: str = MODEL,
+                 max_tokens: int = JUDGE_MAX_TOKENS) -> dict:
     payload = [{"id": i["id"], "question": i["question"], "baseline": i["baseline"],
                 "candidate": i["candidate"]} for i in items]
     return {"model": model, "reasoning_effort": "minimal", "max_tokens": max_tokens,

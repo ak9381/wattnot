@@ -1,6 +1,7 @@
 import pytest
 from wattnot.cloud import MODEL, inference_key, JUDGE_MAX_TOKENS
-from wattnot.gates.judge import parse_verdicts
+from wattnot.gates import judge as judge_mod
+from wattnot.gates.judge import parse_verdicts, request_body
 
 
 def test_model_id():
@@ -16,4 +17,11 @@ def test_key_order():
 def test_cutoff_is_not_a_pass():
     with pytest.raises(ValueError, match="cut off"):
         parse_verdicts({"choices": [{"message": {"content": None}}]}, ["x"])
-    assert JUDGE_MAX_TOKENS >= 512
+
+
+def test_judge_max_tokens_is_pinned_to_one_value():
+    # cloud, the batch judge and record_judge (via request_body) must all agree, and
+    # on the larger 1500 budget (512 was shown to truncate the verdict).
+    assert JUDGE_MAX_TOKENS == 1500
+    assert judge_mod.JUDGE_MAX_TOKENS == JUDGE_MAX_TOKENS
+    assert request_body([{"id": "a", "question": "q", "baseline": "b", "candidate": "c"}])["max_tokens"] == JUDGE_MAX_TOKENS

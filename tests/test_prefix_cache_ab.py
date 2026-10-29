@@ -13,6 +13,15 @@ def test_hit_rate_falls_back_to_gauge():
     assert PC.hit_rate_from_metrics("", "") is None
 
 
+def test_hit_rate_clamped_to_documented_range():
+    # A counter reset makes hits drop while queries rise -> a negative raw rate; clamp to 0.
+    before = "vllm:prefix_cache_queries_total 100\nvllm:prefix_cache_hits_total 150\n"
+    after = "vllm:prefix_cache_queries_total 200\nvllm:prefix_cache_hits_total 50\n"
+    assert PC.hit_rate_from_metrics(before, after) == 0.0
+    # A garbled gauge over 1.0 clamps to 1.0 rather than reporting >100%.
+    assert PC.hit_rate_from_metrics("", "vllm:gpu_prefix_cache_hit_rate 1.4\n") == 1.0
+
+
 def test_mock_ab_on_arm_wins_and_passes_gate():
     ab = PC.mock_ab(reps=3)
     assert ab["lever"] == "enable_prefix_caching" and ab["kept"] is True

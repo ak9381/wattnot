@@ -79,8 +79,10 @@ Key + model: inference works with `BASETEN_METRICS_KEY` (`BASETEN_API_KEY` retur
 `meta-models/muse-spark-open`; the old `-1026` slug is gone from live code (kept only in historical run files).
 
 Cut-off rule: with `max_tokens` 64 the model spent 61 tokens reasoning and returned `content: None`. A reply with
-no content is a **cut-off fail**, never a pass (`gates/judge.py` raises, the caller falls back). Judge budget
-`JUDGE_MAX_TOKENS = 512` at low effort; the batch judge already sends 1,500.
+no content is a **cut-off**: `FallbackJudge` treats it like a failed primary call and falls back to Llama, and if
+there is no fallback the gate fails closed — never a pass. Judge budget is pinned to one value,
+`JUDGE_MAX_TOKENS = 1500` at low effort, across the batch judge, hosted-Spark pricing and `record_judge`; 512
+still spent the whole budget on reasoning for some replies.
 
 ### Baseten: 3 calls through the guard (low effort, max_tokens 256) - MEASURED
 | | requests | input | cached input | output | $ |

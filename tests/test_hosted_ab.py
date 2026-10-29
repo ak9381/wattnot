@@ -27,13 +27,14 @@ def test_hard_stop(tmp_path):
 
 
 def test_saved_estimate_formula():
-    from wattnot.spark_open.hosted_ab import saved_estimate, J_PER_TOKEN
+    from wattnot.spark_open.hosted_ab import saved_estimate, J_PER_TOKEN, WATER_L_PER_KWH
+    assert WATER_L_PER_KWH == 1.8
     assert abs(J_PER_TOKEN - 0.14966580932784637 * 52.5) < 1e-9
     e = saved_estimate(1_000_000, 600_000, 2.0, 1.2)
     j = 400_000 * J_PER_TOKEN
     assert e["energy_j"]["value"] == round(j, 3)
     assert abs(e["energy_kwh"]["value"] - j / 3.6e6) < 1e-12
-    assert abs(e["water_l"]["value"] - j / 3.6e6 * 0.36) < 1e-12
+    assert abs(e["water_l"]["value"] - j / 3.6e6 * WATER_L_PER_KWH) < 1e-12
     assert e["usd_saved"]["value"] == 0.8 and e["usd_saved"]["label"] == "MEASURED"
     assert e["water_l"]["label"] == e["energy_j"]["label"] == "ESTIMATE"
     assert e["power_saved_pct"]["value"] == 40.0

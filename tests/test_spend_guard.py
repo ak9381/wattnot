@@ -58,6 +58,30 @@ def test_reconcile_only_raises(tmp_path):
         gd.check_new_item()
 
 
+def test_reconcile_can_cross_the_hard_cap(tmp_path):
+    gd = g(tmp_path)
+    gd.settle(gd.reserve(1.0), 10.0)
+    gd.reconcile(97.0, "bill")           # provider bill pushes committed past hard-lag (96)
+    assert gd.committed() == pytest.approx(97.0)
+    with pytest.raises(HardStop):
+        gd.check_new_item()
+
+
+def test_reserve_negative_raises_value_error(tmp_path):
+    with pytest.raises(ValueError, match="negative"):
+        g(tmp_path).reserve(-1.0)
+
+
+def test_cloud_timeout_s_is_zero_at_no_headroom(tmp_path):
+    pr = Price(GPU_SECONDS, usd_per_s=0.01)
+    gd = Guard("modal", pr, Ledger(tmp_path / "m.jsonl"))
+    gd.settle(gd.reserve(0.0), 95.0)     # headroom 1.0 -> 100 s < 120 s teardown
+    assert gd.headroom() == pytest.approx(1.0)
+    assert cloud_timeout_s(gd) == 0      # 0 means: do not launch
+    with pytest.raises(ValueError, match="GPU-seconds"):
+        cloud_timeout_s(g(tmp_path))     # token price has no per-second rate
+
+
 def test_402_is_hard_and_sticky(tmp_path):
     gd = g(tmp_path)
     def boom(): raise ProviderError(402)

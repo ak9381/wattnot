@@ -1,11 +1,13 @@
 """DRAFT (unmerged, never deployed): Modal Spark Open top-k sprint.
 
+Only two Modal functions exist so far; smoke and sprint are still TODO (the plan/schedule
+below describes the intended 8xB200 sprint, but no function implements it yet).
+
 Stages (each is a separate, opt-in command; nothing runs on import):
   python modal/spark_topk_sprint.py --plan          # print the plan + cost, no Modal call ($0)
   modal run modal/spark_topk_sprint.py::prefetch    # CPU container -> Volume, NVFP4 533 GB  (needs go)
   modal run modal/spark_topk_sprint.py::power_probe # 1xT4 ~60 s: can we read NVML power?    (needs go)
-  modal run modal/spark_topk_sprint.py::smoke       # 1xL4, Llama 3.2 1B, same code path     (needs go)
-  modal run modal/spark_topk_sprint.py::sprint      # 8xB200, top-k 8/6/4, checkpointed     (needs go)
+  # TODO: smoke (1xL4, Llama 3.2 1B, same code path) and sprint (8xB200, top-k 8/6/4, checkpointed)
 """
 from __future__ import annotations
 import json, sys
@@ -69,14 +71,21 @@ def stage_timeout(cap_s: int, usd_h: float, local: bool = True) -> int:
     return t
 
 
-def kill_timer(seconds: int, app_name: str):
-    """Local backstop next to the server-side timeout: stop the app and exit when time is up."""
+def kill_timer(seconds: int, app_name: str, *, grace_s: int = 60, stop=None, exit_=None):
+    """Local backstop next to the server-side timeout: stop the app and exit when time is up.
+
+    `stop`/`exit_` are injectable only so the firing path can be tested without actually
+    stopping a Modal app or killing the process; in production both default to the real
+    `modal app stop` call and `os._exit(3)`."""
     import os, subprocess, threading
 
-    def fire():
+    def _stop():
         subprocess.run(["modal", "app", "stop", app_name], timeout=60, check=False)
-        os._exit(3)
-    t = threading.Timer(seconds + 60, fire)
+
+    def fire():
+        (stop or _stop)()
+        (exit_ or os._exit)(3)
+    t = threading.Timer(seconds + grace_s, fire)
     t.daemon = True
     t.start()
     return t

@@ -63,7 +63,7 @@ test("phaseLabel splits baseline from wattnot at the break", () => {
 
 test("run2Rows labels measured energy honest estimates", () => {
   const r = { j_per_req_stock: 15.959, j_per_req_cap: 11.635, saved_pct: -27.1, p99_s_stock: 3.605, p99_s_cap: 3.882, p99_change_pct: 7.7, quality_stock_pct: 93.7, quality_cap_pct: 93.7, cap_w: 350, source: "data/h100-run2/vm/steps/cap350.json" };
-  const rows = run2Rows(r, { usd_per_kwh: 0.1387, name: "x" }, { factor_l_per_kwh: 0.36, name: "y" });
+  const rows = run2Rows(r, { usd_per_kwh: 0.1387, name: "x" }, { factor_l_per_kwh: 1.8, name: "y" });
   const by = Object.fromEntries(rows.map((x) => [x.id, x]));
   assert.equal(by.energy.tag, "MEASURED"); assert.equal(by.energy.delta, "-27.1%");
   assert.equal(by.p99.tag, "MEASURED"); assert.equal(by.p99.delta, "+7.7%");

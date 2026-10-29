@@ -212,6 +212,24 @@ def gate(cells: list[Cell], *, max_drop_pts: float = MAX_DROP_PTS,
     return policy
 
 
+# ---- forced-close sanity check -----------------------------------------------------------------
+# If almost every early item had its thought force-closed, the server is probably not emitting the
+# think-close marker at all (wrong chat template / parser), so the whole block's joules are suspect
+# rather than a real budget saving. Keep it simple: look at the first N items and flag if the rate
+# is above the threshold.
+FORCED_CLOSE_SUSPECT_N = 8
+FORCED_CLOSE_SUSPECT_RATE = 0.8
+
+
+def forced_close_check(cells: list[Cell], *, n: int = FORCED_CLOSE_SUSPECT_N,
+                       rate: float = FORCED_CLOSE_SUSPECT_RATE) -> dict:
+    """forced_close_rate over the first `n` items; `suspect` if it exceeds `rate`."""
+    first = [i for c in cells for i in c.items][:n]
+    fcr = (sum(bool(i.get("forced")) for i in first) / len(first)) if first else 0.0
+    return {"first_n": len(first), "forced_close_rate": round(fcr, 3),
+            "threshold": rate, "suspect": fcr > rate}
+
+
 # ---- routing a new prompt ----------------------------------------------------------------------
 
 def _heuristic(prompt: str) -> tuple[str, float]:
@@ -291,7 +309,13 @@ def run(out: Path, *, fake: bool, per_tier: int = 0, url: str = "", model: str =
             log(f"g6-think {tier} {x}x: {cells[-1].pass_pct:.1f}% pass, "
                 f"{cells[-1].j_per_correct or 0:.2f} J/correct")
     pol = gate(cells)
+    fc = forced_close_check(cells)
+    if fc["suspect"]:
+        log(f"WARNING: forced-close rate {fc['forced_close_rate']:.0%} on the first "
+            f"{fc['first_n']} items is over {fc['threshold']:.0%} — the server may not be "
+            f"emitting {THINK_CLOSE}; block marked suspect, not a trusted saving")
     doc = {"format": "wattnot.thinking-policy/1", "label": "MOCK" if fake else "MEASURED",
+           "forced_close_check": fc,
            "model": model or "muse-glimmer-30b (fake)", "mechanism": "stop-and-force-answer",
            "think_markers": [THINK_OPEN, THINK_CLOSE], "grid": GRID,
            "gate": {"max_drop_pts": MAX_DROP_PTS, "max_regressed": MAX_REGRESSED,
