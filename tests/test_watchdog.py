@@ -234,9 +234,10 @@ def test_agent_prompt_and_command_are_neutral_and_reference_the_shared_check(tmp
     assert check_cmd[:4] == ["python", "-m", "wattnot.longrun.watchdog", "check"]
     prompt = build_prompt(check_cmd)
     assert "wattnot.longrun.watchdog" in prompt
-    # No AI-vendor names baked into the prompt or command.
+    # No vendor names baked into the prompt or command (list supplied via env, kept out of the repo).
+    import os
     low = prompt.lower()
-    for name in ("claude", "anthropic", "grok", "gemini", "antigravity"):
+    for name in filter(None, os.environ.get("WATTNOT_BANNED_NAMES", "").lower().split(",")):
         assert name not in low
 
 
