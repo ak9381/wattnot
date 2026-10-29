@@ -4,6 +4,7 @@ import "./costbudget.test.mjs";
 import "./guard.test.mjs";
 import "./hosted.test.mjs";
 import "./water_factor.test.mjs";
+import "./fallback.test.mjs";
 import "./partners.test.mjs";
 import "./replayclock.test.mjs";
 import "./v2lib.test.mjs";
