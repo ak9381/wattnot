@@ -46,6 +46,13 @@ def test_recorded_agreement():
     assert a["n"] == 30 and a["agreement"] >= 0.9
 
 
+def test_agreement_on_empty_input_raises_a_clear_error():
+    import pytest
+
+    with pytest.raises(ValueError, match="at least one item"):
+        agreement([], {})
+
+
 def test_gate_fails_when_a_third_is_worse():
     g = judge(*_outs(), ITEMS, transport=lambda b: REC)
     assert g.gate == "judge" and not g.passed and g.detail["worse"] >= 9
