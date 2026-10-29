@@ -221,3 +221,34 @@ def test_build_pages_injects_static_api_into_landing_page():
         "<!-- static-api -->", '<script src="static-api.js"></script>', 1)
     assert '<script src="static-api.js"></script>' in injected
     assert "<!-- static-api -->" not in injected
+
+
+def test_build_pages_exports_frameworks_endpoint_and_receipt(tmp_path):
+    """build_pages exports /api/dash/v2/frameworks to the path the static shim
+    fetches, and copies the LangChain demo receipt so the setup wizard, validation
+    cards and receipt view all work on Pages with the real status."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "build_pages", ROOT / "scripts" / "build_pages.py")
+    bp = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bp)
+    out = tmp_path / "site"
+    bp.main(out)
+
+    # The shim maps GET /api/dash/v2/frameworks -> api/dash/v2/frameworks.json, so the
+    # exported file must sit at exactly that path and equal the served artifact.
+    served = out / "api" / "dash" / "v2" / "frameworks.json"
+    assert served.is_file()
+    data = json.loads(served.read_text())
+    assert data == json.loads((ROOT / "data" / "frameworks" / "validation.json").read_text())
+    assert data["spec"] == "wattnot.frameworks-validation/1"
+    assert len(data["frameworks"]) == 3
+
+    # The LangChain demo receipt is copied so the receipt view can open it on Pages,
+    # and it is linked from the published receipts index.
+    rc = out / "receipts" / "frameworks" / "langchain-demo.json"
+    assert rc.is_file()
+    assert json.loads(rc.read_text()) == json.loads(
+        (ROOT / "receipts" / "frameworks" / "langchain-demo.json").read_text())
+    assert 'href="frameworks/langchain-demo.json"' in (out / "receipts" / "index.html").read_text()
