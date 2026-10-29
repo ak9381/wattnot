@@ -291,6 +291,13 @@ class Driver:
                 if ok:
                     break
                 self._note(kind="retry" if attempt == 1 else "gave-up", block=b.id, rc=rc)
+                # the retry runs the trimmed version when there is one, so one lost link does
+                # not push the blocks after it off the plan (g2 full redo = 2.75 h, trimmed 1.5 h)
+                if attempt == 1 and b.min_hours is not None and b.trim is not None \
+                        and not b.title.endswith("(trimmed)"):
+                    self._note(kind="trimmed", block=b.id, hours=b.min_hours, left=None, why="retry")
+                    b = Block(b.id, b.title + " (trimmed)", b.min_hours, b.trim, b.capture,
+                              b.optional)
         if not self.state["stopped"] and not getattr(self.vm, "deleted", False):
             d = self._teardown(why="end of plan", finished=True)
             self.state["stopped"] = "finished" if d.delete else "finished, VM kept (copy failed)"
