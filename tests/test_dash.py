@@ -198,3 +198,26 @@ def test_capture_file_is_valid_gzip_jsonl():
     with gzip.open(DEFAULT_CAPTURE, "rt") as fh:
         first = json.loads(fh.readline())
     assert first["type"] == "meta" and first["model"] == "granite-3b-a800m"
+
+
+def test_landing_page_includes_voice_widget():
+    """The landing page (dash/index.html) carries the same voice widget as
+    runs.html/report.html: the static-api marker plus the voiceguide css+js."""
+    html = (WEB / "index.html").read_text()
+    assert "<!-- static-api -->" in html
+    assert '<link rel="stylesheet" href="voiceguide.css">' in html
+    assert '<script type="module" src="voiceguide.js"></script>' in html
+
+
+def test_build_pages_injects_static_api_into_landing_page():
+    """build_pages replaces the <!-- static-api --> marker with the shim in
+    dash/index.html, exactly as it does for runs.html and report.html."""
+    build_src = (ROOT / "scripts" / "build_pages.py").read_text()
+    # index.html is in the tuple of pages that get the marker replaced
+    m = re.search(r'for name in \(([^)]*)\):', build_src)
+    assert m and "index.html" in m.group(1)
+    # the same replacement build_pages performs turns the marker into the shim tag
+    injected = (WEB / "index.html").read_text().replace(
+        "<!-- static-api -->", '<script src="static-api.js"></script>', 1)
+    assert '<script src="static-api.js"></script>' in injected
+    assert "<!-- static-api -->" not in injected
