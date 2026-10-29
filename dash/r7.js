@@ -126,8 +126,10 @@ export function gauge(v, max, o = {}) {
 // ---------- the worked example used by every cost / water number ----------
 export const KWH_PER_J = 1 / 3.6e6;
 // Canonical water factor (WUE) shared across every dashboard module. ESTIMATE:
-// an industry-average litres-of-cooling-water per kWh of IT energy, not metered.
-export const WATER_L_PER_KWH = 1.8;
+// litres of cooling water per kWh of IT energy, not metered. The headline figure
+// is on-site cooling (0.36); the upper bound also includes power-plant water (1.8).
+export const WATER_L_PER_KWH = 0.36;        // headline ESTIMATE — on-site cooling (LBNL 2024)
+export const WATER_L_PER_KWH_UPPER = 1.8;   // upper ESTIMATE — includes power-plant (electricity) water
 export function workedExample(jStock, jWatt, usdPerKwh = 0.1387, lPerKwh = WATER_L_PER_KWH) {
   if (jStock == null || jWatt == null) return `<p class="r7miss">Measured in the long run</p>`;
   const k = (j) => j * 1e6 * KWH_PER_J;
@@ -135,6 +137,6 @@ export function workedExample(jStock, jWatt, usdPerKwh = 0.1387, lPerKwh = WATER
     <li><b>Energy per answer.</b> Without WattNot ${fmt(jStock, 2)} J, with WattNot ${fmt(jWatt, 2)} J (measured on the GPU).</li>
     <li><b>Scale to 1 million answers.</b> ${fmt(jStock, 2)} J × 1,000,000 ÷ 3,600,000 J per kWh = <b>${fmt(k(jStock), 2)} kWh</b>; with WattNot <b>${fmt(k(jWatt), 2)} kWh</b>.</li>
     <li><b>Cost.</b> kWh × $${usdPerKwh} per kWh (EIA average): $${fmt(k(jStock) * usdPerKwh, 2)} → $${fmt(k(jWatt) * usdPerKwh, 2)}, saving <b>$${fmt((k(jStock) - k(jWatt)) * usdPerKwh, 2)}</b>.</li>
-    <li><b>Water.</b> kWh × ${lPerKwh} L per kWh (industry-average WUE, on-site cooling): ${fmt(k(jStock) * lPerKwh, 2)} L → ${fmt(k(jWatt) * lPerKwh, 2)} L, saving <b>${fmt((k(jStock) - k(jWatt)) * lPerKwh, 2)} L</b>.</li></ol>
-    <p class="r7note">Step 1 is measured. Steps 2 to 4 are arithmetic on it, so cost and water are estimates.</p>`;
+    <li><b>Water.</b> kWh × ${lPerKwh} L per kWh (on-site cooling, ESTIMATE): ${fmt(k(jStock) * lPerKwh, 2)} L → ${fmt(k(jWatt) * lPerKwh, 2)} L, saving <b>${fmt((k(jStock) - k(jWatt)) * lPerKwh, 2)} L</b>. Up to ${WATER_L_PER_KWH_UPPER} L/kWh including power-plant water (ESTIMATE).</li></ol>
+    <p class="r7note">Step 1 is measured. Steps 2 to 4 are arithmetic on it, so cost and water are estimates. Water is 0.36 L/kWh (on-site cooling, ESTIMATE); up to 1.8 L/kWh including power-plant water (ESTIMATE).</p>`;
 }

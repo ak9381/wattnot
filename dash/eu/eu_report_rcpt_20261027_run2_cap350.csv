@@ -4,7 +4,8 @@ rcpt_20261027_run2_cap350,energy_per_request,0.003232,Wh/request,MEASURED,"recei
 rcpt_20261027_run2_cap350,energy_per_request_baseline,0.004433,Wh/request,MEASURED,"receipt rcpt_20261027_run2_cap350, meter nvml"
 rcpt_20261027_run2_cap350,energy_saving_billed,26.7303,%,MEASURED,"receipt rcpt_20261027_run2_cap350, meter nvml: lower bound of 95% bootstrap CI, Welch p=0.000151"
 rcpt_20261027_run2_cap350,idle_power,,W,NOT_AVAILABLE,idle not measured in this run
-rcpt_20261027_run2_cap350,water_per_request,0.005818,mL/request,ESTIMATE,"Wh/request x WUE (L/kWh), site energy only; assumed WUE 1.8 L/kWh (industry average); not measured"
+rcpt_20261027_run2_cap350,water_per_request,0.001164,mL/request,ESTIMATE,"Wh/request x WUE (L/kWh); 0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"
+rcpt_20261027_run2_cap350,water_per_request_upper,0.005818,mL/request,ESTIMATE,"Wh/request x WUE (L/kWh); up to 1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"
 rcpt_20261027_run2_cap350,joules_per_correct_answer,12.418298,J/correct,MEASURED,"receipt rcpt_20261027_run2_cap350, meter nvml: candidate Wh/req x 3600 / pass_rate"
 rcpt_20261027_run2_cap350,sci_per_request,,gCO2e/request,NOT_AVAILABLE,needs a grid carbon-intensity figure with a source (--grid-gco2)
 rcpt_20261027_run2_cap350,pue,,ratio,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
@@ -12,5 +13,5 @@ rcpt_20261027_run2_cap350,renewable_energy_share,,%,NOT_AVAILABLE,needs facility
 rcpt_20261027_run2_cap350,waste_heat_reused,,kWh,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
 rcpt_20261027_run2_cap350,total_water_input,,m3,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
 rcpt_20261027_run2_cap350,rated_it_power,,kW,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
-rcpt_20261027_run2_cap350,heat_water_readiness,0.429,share of fields,ESTIMATE,"share of this export's fields that are filled (MEASURED or ESTIMATE); a readiness indicator, not a regulatory metric"
+rcpt_20261027_run2_cap350,heat_water_readiness,0.467,share of fields,ESTIMATE,"share of this export's fields that are filled (MEASURED or ESTIMATE); a readiness indicator, not a regulatory metric"
 ,disclaimer,Not a compliance claim; facility-level metrics require operator metering.,,,supports EU Energy Efficiency Directive data-center reporting; CSRD roadmap

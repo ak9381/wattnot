@@ -98,7 +98,7 @@ export function run2Rows(r, price, water) {
       id: "water", dim: "Cooling water per 1M requests",
       stock: `${num(s)} L`, wattnot: `${num(w)} L`, delta: `-${num(s - w)} L`,
       tag: "ESTIMATE", win: "w",
-      note: `Measured joules x ${water.factor_l_per_kwh} L/kWh (${water.name || "bundle water factor"})`,
+      note: `Measured joules x ${water.factor_l_per_kwh} L/kWh (${water.name || "bundle water factor"}, on-site cooling, ESTIMATE); up to 1.8 L/kWh including power-plant water (ESTIMATE)`,
     });
   }
   if (r.p99_s_stock != null && r.p99_s_cap != null) {

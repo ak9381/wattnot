@@ -2,8 +2,9 @@
 const isSimulated = (d) => (d?.host?.provider || "") === "fake" || d?.label === "SIMULATED";
 // Labels: power, energy and tokens/Wh are MEASURED; cost and water are ESTIMATE (impact maths).
 
-// Same defaults as src/wattnot/impact.py and recommend.py.
-export const ASSUME = { reqPerGpuDay: 100_000, gpus: 8, days: 30, pue: 1.0, tariff: 0.12, wue: 1.8 };
+// Same defaults as src/wattnot/impact.py and recommend.py. Water (ESTIMATE): wue is the
+// 0.36 L/kWh headline (on-site cooling, LBNL 2024); wueUpper 1.8 L/kWh adds power-plant water.
+export const ASSUME = { reqPerGpuDay: 100_000, gpus: 8, days: 30, pue: 1.0, tariff: 0.12, wue: 0.36, wueUpper: 1.8 };
 export const P99_BUDGET = 0.10;
 
 const whOf = (d) => (d.wh_per_req && typeof d.wh_per_req === "object" ? d.wh_per_req.mean : d.wh_per_req);
