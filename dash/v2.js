@@ -86,8 +86,8 @@ function renderHomeClassic() {
   <p>It measures a GPU, tries a safer setting, checks the answers did not get worse, asks a person, applies it, and signs a receipt. Every one of those steps is on this page. Nothing is hidden.</p></div>
   <button class="btn pri noprint" id="goCfg">Configure a run →</button></div>
   <div class="kpis">
-    <div class="kpi glass"><div class="v">${cnum(S.run2?.saved_pct != null ? `${num(-S.run2.saved_pct, 1)}%` : "–", "MEASURED")}</div><div class="c">less energy per request, ${esc(S.run2?.model || "")} at a ${esc(S.run2?.cap_w ?? "")} W cap ${badge("MEASURED")}</div></div>
-    <div class="kpi glass"><div class="v">${cnum("+3.7%", "MEASURED")}</div><div class="c">slowest 1% got slower, inside the 10% limit ${badge("MEASURED")}</div></div>
+    <div class="kpi glass kpi-headline" data-explain="dash.kpi.jpc" data-explain-value="−27.1%" data-explain-label="MEASURED" data-explain-source="receipts/run2/rcpt_20261027_run2_cap350.json joules.change_pct.j_per_good_answer"><div class="v">${cnum("−27.1%", "MEASURED")}</div><div class="c"><b>joules per correct answer</b>, Llama 3.1 8B on one H100 at a 350 W cap (17.03 → 12.42 J). Fixed-check pass rate held at 93.7% ${badge("MEASURED")}. Cost and water follow from these joules ${badge("ESTIMATE")}</div></div>
+    <div class="kpi glass"><div class="v">${cnum("+7.7%", "MEASURED")}</div><div class="c">slowest 1% (p99) got slower at 350 W, inside the 10% limit; 325 W was rejected at +10.9% ${badge("MEASURED")}</div></div>
     <div class="kpi glass"><div class="v">${cnum("67%", "MEASURED")}</div><div class="c">fewer agent tokens when a harness's stop rule misses ${badge("MEASURED")}</div></div>
     <div class="kpi glass"><div class="v">${cnum(`$${num(led.total_usd)}`, "MEASURED")}</div><div class="c">Meta API spend recorded in this bundle, ${num(led.calls, 0)} calls ${badge("MEASURED")}</div></div>
   </div>
@@ -145,7 +145,7 @@ const TRAFFIC_CARDS = [
 ];
 const CARE_CARDS = [
   { v: "gentle", t: "Gentle", d: "Stays well inside the limits; keeps less.", ex: "Slowest 1% may rise 5%, answers must agree 97%.", icon: "shield" },
-  { v: "balanced", t: "Balanced", d: "The default limits.", ex: "Slowest 1% may rise 10%, answers must agree 95%.", icon: "shield" },
+  { v: "balanced", t: "Balanced", d: "The default limits.", ex: "Slowest 1% may rise 10%. Power cap: fixed-check pass rate may drop at most 1 point. Top-k and routing: 95% agreement.", icon: "shield" },
   { v: "bold", t: "Bold", d: "Pushes the limits to save the most.", ex: "Slowest 1% may rise 15%, answers must agree 94%.", icon: "shield" },
 ];
 const MODEL_BLURB = {

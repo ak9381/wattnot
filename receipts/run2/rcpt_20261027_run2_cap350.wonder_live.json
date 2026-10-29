@@ -1,0 +1,121 @@
+{
+  "spec": "wattnot.receipt.addendum/1",
+  "receipt_id": "rcpt_20261027_run2_cap350.wonder_live",
+  "parent": {
+    "receipt_id": "rcpt_20261027_run2_cap350",
+    "sha256": "1945ab485ace682f16ba71786e2ff57ee6d4a0a992bcf24685be56e41de31c29"
+  },
+  "label": "LIVE",
+  "section": "wonder_live",
+  "data": {
+    "section": "wonder_live",
+    "label": "LIVE",
+    "inputs_label": "MEASURED (REPLAY of RUN2 steps; no GPU used)",
+    "model": "muse-wonder-1.0",
+    "decision": {
+      "action": "trial",
+      "cap_w": 300,
+      "clock_profile": "base",
+      "reason": "300W extends the downward energy trend at constant quality seen to 325W (11.84 J/correct), offering Pareto improvement despite higher p99 latency, unlike interpolated 340W/375W.",
+      "local_trace_id": "wonder-b4d7caa8caa5dce2"
+    },
+    "summary": "At 350 W, energy was 12.4179 J/correct with quality 0.93694 and p99 delta 0.07685, passing both gates. This was the lowest energy among accepted trials at 400 W (13.8076 J/correct), 450 W (14.6943 J/correct), and 500 W (16.3809 J/correct). At 325 W, energy fell to 11.8444 J/correct at the same quality, but p99 delta 0.10949 exceeded the 10% limit. The uncapped 700 W baseline pass rate was 93.694%, matching quality 0.93694. A 300 W trial is not a gate-passing next step, because 325 W already failed the p99 gate.",
+    "calls": [
+      {
+        "purpose": "wonder-supervisor:trials-5",
+        "response_id": "chatcmpl-01a18516-1bdf-75de-a862-87c84429abec",
+        "model": "muse-wonder-1.0",
+        "usage": {
+          "completion_tokens": 784,
+          "prompt_tokens": 427,
+          "total_tokens": 1211,
+          "completion_tokens_details": {
+            "reasoning_tokens": 709
+          },
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "latency_s": 6.76
+      },
+      {
+        "purpose": "wonder-summary:run2",
+        "response_id": "chatcmpl-01a18516-3aec-711c-81a3-0f8d678906cd",
+        "model": "muse-wonder-1.0",
+        "usage": {
+          "completion_tokens": 1055,
+          "prompt_tokens": 530,
+          "total_tokens": 1585,
+          "completion_tokens_details": {
+            "reasoning_tokens": 879
+          },
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "latency_s": 7.93
+      }
+    ],
+    "spend_usd": 0.040608,
+    "ledger_total_usd": 23.26243,
+    "created_at": "2026-10-29T06:06:29+0530",
+    "trials": [
+      {
+        "cap_w": 400,
+        "clock_profile": "base",
+        "joules_per_correct": 13.8076,
+        "quality": 0.93694,
+        "p99_delta": 0.04678,
+        "usd_per_1k": 0.0,
+        "label": "MEASURED",
+        "accepted_by_gates": true
+      },
+      {
+        "cap_w": 350,
+        "clock_profile": "base",
+        "joules_per_correct": 12.4179,
+        "quality": 0.93694,
+        "p99_delta": 0.07685,
+        "usd_per_1k": 0.0,
+        "label": "MEASURED",
+        "accepted_by_gates": true
+      },
+      {
+        "cap_w": 325,
+        "clock_profile": "base",
+        "joules_per_correct": 11.8444,
+        "quality": 0.93694,
+        "p99_delta": 0.10949,
+        "usd_per_1k": 0.0,
+        "label": "MEASURED",
+        "accepted_by_gates": false
+      },
+      {
+        "cap_w": 450,
+        "clock_profile": "base",
+        "joules_per_correct": 14.6943,
+        "quality": 0.93994,
+        "p99_delta": 0.01807,
+        "usd_per_1k": 0.0,
+        "label": "MEASURED",
+        "accepted_by_gates": true
+      },
+      {
+        "cap_w": 500,
+        "clock_profile": "base",
+        "joules_per_correct": 16.3809,
+        "quality": 0.93694,
+        "p99_delta": 0.00686,
+        "usd_per_1k": 0.0,
+        "label": "MEASURED",
+        "accepted_by_gates": true
+      }
+    ]
+  },
+  "integrity": {
+    "canonicalization": "JCS RFC 8785",
+    "sha256": "7e12c4b5aaa4c442868a0f172c26349e3393393b67a1439c2dd947d3bcc15813",
+    "signer": "offline:56475aa75463474c",
+    "rekor": null
+  }
+}
