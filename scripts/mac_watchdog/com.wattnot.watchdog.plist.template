@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd template for the macOS off-box watchdog (layer 5).
+
+  THIS IS A TEMPLATE. Replace every @@PLACEHOLDER@@ and copy the result to
+  ~/Library/LaunchAgents/com.wattnot.watchdog.plist, then `launchctl load` it. See INSTALL.md.
+
+  As written it runs in --dry-run (the default). To arm a real delete, append --live to the
+  arguments AND store the API key in the keychain first (INSTALL.md). `caffeinate -i` keeps the
+  Mac awake so the poll loop survives sleep. KeepAlive restarts it if it ever exits.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.wattnot.watchdog</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/caffeinate</string>
+        <string>-i</string>
+        <string>/usr/bin/python3</string>
+        <string>@@WATCHDOG_DIR@@/watchdog.py</string>
+        <string>--heartbeat-source</string>
+        <string>@@HEARTBEAT_URL@@</string>
+        <string>--budget-cap-inr</string>
+        <string>@@BUDGET_CAP_INR@@</string>
+        <string>--max-hours</string>
+        <string>@@MAX_HOURS@@</string>
+        <string>--poll-every-s</string>
+        <string>120</string>
+        <!-- SAFE DEFAULT: dry-run. Replace the next line with <string>--live</string> ONLY when
+             you have stored the key in the keychain and want a real delete. -->
+        <string>--dry-run</string>
+    </array>
+
+    <!-- Credentials come from the keychain (preferred) or these env vars. Never commit a key. -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>E2E_VM_ID</key>
+        <string>@@E2E_VM_ID@@</string>
+        <key>E2E_PROJECT_ID</key>
+        <string>@@E2E_PROJECT_ID@@</string>
+        <key>E2E_LOCATION</key>
+        <string>Delhi</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>@@WATCHDOG_DIR@@/watchdog.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>@@WATCHDOG_DIR@@/watchdog.err.log</string>
+</dict>
+</plist>

@@ -1,0 +1,89 @@
+# Layer 4: an OFF-BOX scheduled watchdog for the long-run GPU VM.
+#
+# SAFE BY DEFAULT. As committed this workflow cannot delete anything:
+#   * the scheduled run does nothing unless the repo VARIABLE `WATCHDOG_ENABLED` == 'true'
+#     (unset by default), so a fresh clone never acts on a cron;
+#   * every run defaults to DRY-RUN. A real delete needs BOTH the dispatch input mode=live AND
+#     the repo variable `WATCHDOG_LIVE` == 'true' AND the credentials below present;
+#   * the credentials (E2E_API_KEY / E2E_AUTH_TOKEN) live only in GitHub secrets, never the repo.
+#
+# It polls the SAME heartbeat the driver publishes off-box (a gist raw URL, or a file on a
+# dedicated branch served by raw.githubusercontent) and runs the SAME shared rule as the on-box
+# layers: `python -m wattnot.longrun.watchdog.offbox`. This is genuinely off the control box —
+# GitHub's runner is the failure domain, not the box.
+#
+# To enable (a deliberate human step; see docs/watchdogs.md):
+#   1. set repo variable  WATCHDOG_HEARTBEAT_URL  to the published heartbeat URL
+#   2. set repo variable  WATCHDOG_BUDGET_CAP_INR and/or WATCHDOG_MAX_HOURS
+#   3. set repo variable  WATCHDOG_ENABLED = 'true'   (lets the schedule run, still dry-run)
+#   4. only to arm a real delete: set WATCHDOG_LIVE = 'true', add secrets E2E_API_KEY /
+#      E2E_AUTH_TOKEN and variables E2E_VM_ID / E2E_PROJECT_ID / E2E_LOCATION, and dispatch with
+#      mode=live. Confirm E2E_VM_ID is OUR VM — never delete a VM that is not ours.
+
+name: e2e-watchdog
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "dry-run (default) or live"
+        type: choice
+        options: [dry-run, live]
+        default: dry-run
+  schedule:
+    # Every 15 min. The job below is a no-op unless WATCHDOG_ENABLED == 'true', so this cron is
+    # inert on a default clone. (Commenting the cron out entirely is the belt-and-braces option.)
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  watchdog:
+    # Gate: a manual dispatch always runs (so a human can dry-run on demand); the SCHEDULE only
+    # runs when the repo opts in via the WATCHDOG_ENABLED variable.
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.WATCHDOG_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run the shared off-box watchdog
+        env:
+          # Credentials: only present if a human added them as secrets; never in the repo.
+          E2E_API_KEY: ${{ secrets.E2E_API_KEY }}
+          E2E_AUTH_TOKEN: ${{ secrets.E2E_AUTH_TOKEN }}
+          E2E_VM_ID: ${{ vars.E2E_VM_ID }}
+          E2E_PROJECT_ID: ${{ vars.E2E_PROJECT_ID }}
+          E2E_LOCATION: ${{ vars.E2E_LOCATION }}
+          # Where the run publishes its heartbeat, and the caps to enforce.
+          HEARTBEAT_URL: ${{ vars.WATCHDOG_HEARTBEAT_URL }}
+          BUDGET_CAP_INR: ${{ vars.WATCHDOG_BUDGET_CAP_INR }}
+          MAX_HOURS: ${{ vars.WATCHDOG_MAX_HOURS }}
+          # Live only when BOTH the dispatch input and the repo variable say so.
+          DISPATCH_MODE: ${{ github.event.inputs.mode }}
+          WATCHDOG_LIVE: ${{ vars.WATCHDOG_LIVE }}
+        run: |
+          set -euo pipefail
+          if [ -z "${HEARTBEAT_URL:-}" ]; then
+            echo "WATCHDOG_HEARTBEAT_URL is unset; nothing to poll. (Dry, no-op.)"
+            exit 0
+          fi
+          live=""
+          if [ "${DISPATCH_MODE:-}" = "live" ] && [ "${WATCHDOG_LIVE:-}" = "true" ]; then
+            live="--live"
+            echo "::warning::running in LIVE mode — a tripped cap WILL delete E2E VM ${E2E_VM_ID:-?}"
+          else
+            echo "dry-run (no API call will be made)"
+          fi
+          # No third-party deps needed: the watchdog core is stdlib-only, so run from src without
+          # a pip install (keeps the runner offline-friendly and fast).
+          PYTHONPATH=src python -m wattnot.longrun.watchdog.offbox \
+            --heartbeat-source "${HEARTBEAT_URL}" \
+            --budget-cap-inr "${BUDGET_CAP_INR:-}" \
+            --max-hours "${MAX_HOURS:-}" \
+            --layer "layer4-github" \
+            $live

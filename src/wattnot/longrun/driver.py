@@ -190,11 +190,18 @@ class Driver:
     def __init__(self, out: Path, blocks: list[Block], vm: VmControl, *, label: str,
                  run: Callable[[Block], int], max_hours: float, balance_inr: Callable[[], float],
                  hours_used: Callable[[], float], capture: bool = False, include_optional=(),
-                 sleep=time.sleep, clock=time.monotonic, log=print) -> None:
+                 sleep=time.sleep, clock=time.monotonic, log=print,
+                 heartbeat_path: Path | None = None, wallclock: Callable[[], float] = time.time,
+                 balance_floor_inr: float = BALANCE_FLOOR_INR) -> None:
         self.out, self.blocks, self.vm, self.label = out, blocks, vm, label
         self.run, self.max_hours, self.balance, self.used = run, max_hours, balance_inr, hours_used
         self.capture, self.include = capture, set(include_optional)
         self.sleep, self.clock, self.log = sleep, clock, log
+        # Heartbeat the three watchdog layers read (wattnot.longrun.watchdog). Opt-in: off when
+        # no path is given, so the watchdogs never see a stale beat from an unrelated run.
+        self.heartbeat_path, self.wallclock = heartbeat_path, wallclock
+        self.balance_floor = balance_floor_inr
+        self._launch_wall = wallclock()
         self.state_path = out / "driver_state.json"
         self.state = (json.loads(self.state_path.read_text()) if self.state_path.exists()
                       else {"blocks": {}, "events": [], "stopped": None})
@@ -210,6 +217,17 @@ class Driver:
         self.state["events"].append(kw)
         self.log(json.dumps(kw, default=str))
         self._save()
+
+    def _heartbeat(self, block: str | None = None, note: str | None = None) -> None:
+        """Refresh the beat the watchdog layers poll. No-op unless a path was given."""
+        if self.heartbeat_path is None:
+            return
+        from wattnot.longrun.watchdog.core import Heartbeat, write_heartbeat
+        now = self.wallclock()
+        write_heartbeat(self.heartbeat_path, Heartbeat(
+            ts=now, launch_ts=self._launch_wall,
+            deadline_ts=self._launch_wall + self.max_hours * 3600.0,
+            spent_inr=round(self.used() * INR_PER_H, 2), block=block, note=note))
 
     def _teardown(self, **kw):
         d = plan_teardown(ssh_alive=self.vm.alive, api_state=self.vm.api_state, pull=self.vm.pull,
@@ -235,7 +253,9 @@ class Driver:
         self.state["last_receipt"] = h
 
     def go(self) -> dict:
+        self._heartbeat(note="start")
         for b in self.blocks:
+            self._heartbeat(block=b.id)
             st = self.state["blocks"].get(b.id, {})
             if st.get("status") in ("done", "skipped", "dropped"):
                 continue
@@ -337,7 +357,8 @@ def dry_run(out: Path, *, drop: dict | None = None, dead_after: str | None = Non
 
     d = Driver(out, blocks, vm, label="MOCK", run=run, max_hours=max_hours,
                balance_inr=lambda: 9501.60 - sim["h"] * INR_PER_H, hours_used=lambda: sim["h"],
-               sleep=sleep, clock=lambda: t["now"], include_optional=include_optional)
+               sleep=sleep, clock=lambda: t["now"], include_optional=include_optional,
+               heartbeat_path=out / "heartbeat.json")
     state = d.go()
     state["sim"] = {"hours": sim["h"], "inr": round(sim["h"] * INR_PER_H, 0),
                     "usd": round(sim["h"] * INR_PER_H / INR_PER_USD, 2),
