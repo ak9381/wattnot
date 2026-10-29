@@ -1,0 +1,215 @@
+{
+  "spec": "wattnot.receipt/1",
+  "receipt_id": "rcpt_20261027_run2_cap350",
+  "created_at": "2026-10-27T15:00:00+00:00",
+  "run_id": "run_20261027_run2_cap350",
+  "subject": {
+    "model": "meta-llama/Llama-3.1-8B-Instruct",
+    "host": {
+      "provider": "e2e-networks",
+      "gpu": "H100 80GB",
+      "driver": "recorded"
+    },
+    "mode": "container",
+    "workload": {
+      "name": "proof-v1",
+      "version": "1",
+      "n_requests": 666,
+      "sha256": "bb7fc9d4a06bb0595c3c6a9c6519fade27b2d228f940ad9f52869710a6bab2c5"
+    }
+  },
+  "baseline": {
+    "params": {
+      "power_cap_w": 700
+    },
+    "reps": 3,
+    "wh_per_req": {
+      "mean": 0.004433,
+      "sd": 3.6e-05,
+      "samples": [
+        0.004412,
+        0.004413,
+        0.004475
+      ]
+    },
+    "usd_per_req": {
+      "mean": 5.32e-07,
+      "sd": 4.4e-09,
+      "samples": [
+        5.294e-07,
+        5.295e-07,
+        5.37e-07
+      ]
+    },
+    "p99_ms": 3605,
+    "quality": {
+      "fixed_pass_rate": 0.93694
+    }
+  },
+  "candidate": {
+    "params": {
+      "power_cap_w": 350
+    },
+    "reps": 3,
+    "wh_per_req": {
+      "mean": 0.003232,
+      "sd": 1e-06,
+      "samples": [
+        0.003233,
+        0.003232,
+        0.003231
+      ]
+    },
+    "usd_per_req": {
+      "mean": 3.878e-07,
+      "sd": 1e-10,
+      "samples": [
+        3.88e-07,
+        3.878e-07,
+        3.877e-07
+      ]
+    },
+    "p99_ms": 3882,
+    "quality": {
+      "fixed_pass_rate": 0.93694
+    }
+  },
+  "result": {
+    "saving_pct": {
+      "mean": 27.0951,
+      "ci_low": 26.7303,
+      "ci_high": 27.7741
+    },
+    "welch": {
+      "t": 57.196391,
+      "df": 2.003246,
+      "p_value": 0.00015109527919547483,
+      "alpha": 0.05
+    },
+    "bootstrap": {
+      "n": 10000,
+      "seed": 7,
+      "level": 0.95
+    },
+    "billable": true,
+    "billed_saving_pct": 26.7303,
+    "fee_share": 0.2,
+    "currency": "USD",
+    "tariff_usd_per_kwh": {
+      "value": 0.12,
+      "label": "ESTIMATE"
+    }
+  },
+  "measurement": {
+    "meter": "nvml",
+    "hz": 10,
+    "label": "MEASURED",
+    "idle_w": null,
+    "csv": [
+      {
+        "path": "data/h100-run2/vm/steps/cap350.json",
+        "sha256": "bb7fc9d4a06bb0595c3c6a9c6519fade27b2d228f940ad9f52869710a6bab2c5"
+      }
+    ],
+    "spark_trace_id": "spark-c4407a976370f81d",
+    "per_model_joules": [
+      {
+        "model": "Llama 3.1 8B Instruct (served)",
+        "j_per_answer": 11.63,
+        "j_total": 7748.8,
+        "label": "MEASURED",
+        "how": "NVML energy counter, 10 samples a second; j_total = J per request x 666 checked answers, 350 W cap"
+      },
+      {
+        "model": "muse-spark-1.3 (planner, 4 calls)",
+        "j_per_answer": null,
+        "j_total": null,
+        "status": "not metered",
+        "how": "hosted; the provider reports tokens, not joules"
+      }
+    ]
+  },
+  "attribution": {
+    "method": "token-share-capped (after Neuralwatt)",
+    "cap": 1.0
+  },
+  "planner_trace": [
+    {
+      "trial_no": 1,
+      "source": "spark",
+      "model": "muse-spark-1.3",
+      "params": {
+        "power_cap_w": 400
+      },
+      "reason": "prior hint -18% J/req at 400W with p99 +3.7%; verify first"
+    },
+    {
+      "trial_no": 2,
+      "source": "spark",
+      "model": "muse-spark-1.3",
+      "params": {
+        "power_cap_w": 350
+      },
+      "reason": "400W accepted at -18.47% J/req with p99 +4.68% <10%, probe lower for more saving"
+    },
+    {
+      "trial_no": 3,
+      "source": "spark",
+      "model": "muse-spark-1.3",
+      "params": {
+        "power_cap_w": 325
+      },
+      "reason": "350W accepted -27.09% J/req p99 +7.69% <10%, probe next lower 325W"
+    },
+    {
+      "trial_no": 4,
+      "source": "spark",
+      "model": "muse-spark-1.3",
+      "params": {
+        "power_cap_w": null
+      },
+      "reason": "325 p99 +10.9% fails limit, 350 -27.1% accepted is lowest feasible"
+    }
+  ],
+  "estimates": {
+    "water_ml_per_req": {
+      "value": 0.005818,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh), site energy only",
+      "source": "assumed WUE 1.8 L/kWh (industry average); not measured"
+    },
+    "baseline_water_ml_per_req": {
+      "value": 0.007979,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh), site energy only",
+      "source": "assumed WUE 1.8 L/kWh (industry average); not measured"
+    }
+  },
+  "joules": {
+    "unit": "J",
+    "label": "MEASURED",
+    "formula": "j_per_answer = wh_per_req x 3600; j_per_good_answer = j_per_answer / pass_rate",
+    "baseline": {
+      "j_per_answer": 15.9588,
+      "pass_rate": 0.93694,
+      "j_per_good_answer": 17.032894
+    },
+    "candidate": {
+      "j_per_answer": 11.6352,
+      "pass_rate": 0.93694,
+      "j_per_good_answer": 12.418298
+    },
+    "change_pct": {
+      "j_per_answer": -27.0923,
+      "j_per_good_answer": -27.0923
+    }
+  },
+  "grade": "ESTIMATE",
+  "integrity": {
+    "canonicalization": "JCS RFC 8785",
+    "sha256": "1945ab485ace682f16ba71786e2ff57ee6d4a0a992bcf24685be56e41de31c29",
+    "prev_sha256": null,
+    "signer": "offline:56475aa75463474c",
+    "rekor": null
+  }
+}

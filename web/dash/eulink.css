@@ -143,3 +143,22 @@
   margin-top: 0.75rem;
   font-style: italic;
 }
+
+/* EU efficiency report: top bento card */
+.eucard-wrap{margin:0 0 18px}
+.eucard{display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px;padding:16px 20px;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(163,190,140,.45);box-shadow:0 0 0 1px rgba(255,255,255,.04) inset}
+.eucard-main{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:4px;min-width:240px;flex:1}
+.eucard-main:focus-visible{outline:2px solid #A3BE8C;outline-offset:4px;border-radius:8px}
+.eucard-k{font:600 .78rem/1 Montserrat,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;opacity:.8}
+.eucard-big{font:700 2.4rem/1.05 Montserrat,system-ui,sans-serif;color:#A3BE8C}
+.eucard-l{font-size:.9rem;opacity:.85}
+.eucard-acts{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.eucard-btn{display:inline-block;padding:10px 16px;border-radius:12px;background:#A3BE8C;color:#10131a;font-weight:700;text-decoration:none}
+.eucard-btn2{background:transparent;color:inherit;border:1px solid rgba(255,255,255,.3);font-weight:600}
+.eucard-off{background:transparent;color:inherit;border:1px dashed rgba(255,255,255,.4)}
+.eucard-road{font-size:.75rem;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.25);opacity:.8}
+.eucard-pop{max-width:520px;border:0;border-radius:16px;padding:20px 22px;background:#171a24;color:#e8e8ef}
+.eucard-pop::backdrop{background:rgba(0,0,0,.55)}
+.eucard-x{float:right;background:none;border:0;color:inherit;font-size:1.4rem;cursor:pointer}
+.eucard-note{font-size:.8rem;opacity:.75}
+.wn-dot.wn-dot-pending,.wn-dot-pending{background:transparent!important;border:1.5px dashed #aaa!important;width:9px;height:9px;border-radius:50%;display:inline-block;margin-left:6px;vertical-align:middle}
