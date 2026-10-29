@@ -38,7 +38,7 @@ const RECEIPTS = {
     sig: "../receipts/run2/rcpt_20261027_run2_cap350.sigstore.json",
   },
 };
-const LEVER = { factor_l_per_kwh: 0.36, usd_per_kwh: 0.1387 };
+const LEVER = { factor_l_per_kwh: 1.8, usd_per_kwh: 0.1387 };
 
 // The context saver's recorded numbers, read defensively.
 function contextSaver() {

@@ -27,7 +27,7 @@ export function meterStage(cues, shown) {
 // water (L per 1M requests, ESTIMATE from the bundle's stated WUE factor).
 export function meterFor(d, id) {
   const wue = d.story.water.factor_l_per_kwh, rate = d.story.price.usd_per_kwh;
-  const foot = `water = GPU kWh × WUE ${wue} L/kWh (LBNL 2024) · electricity $${rate}/kWh (EIA) · – = not metered, never guessed`;
+  const foot = `water = GPU kWh × WUE ${wue} L/kWh (industry average) · electricity $${rate}/kWh (EIA) · – = not metered, never guessed`;
   if (id === "hosted") {
     const L = d.story.levers.find((l) => l.id === "hosted"), e = L.energy_wh_per_75;
     const kwh = (wh75) => (wh75 / 75) * 1e6 / 1000;
