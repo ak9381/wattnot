@@ -1,0 +1,62 @@
+[
+ {
+  "id": "p0",
+  "usage": {
+   "prompt_tokens": 158,
+   "completion_tokens": 23,
+   "total_tokens": 181,
+   "prompt_tokens_details": {
+    "audio_tokens": 0,
+    "cached_tokens": 128
+   },
+   "completion_tokens_details": {
+    "accepted_prediction_tokens": 11,
+    "audio_tokens": 0,
+    "reasoning_tokens": 12,
+    "rejected_prediction_tokens": 73
+   }
+  },
+  "content": "56",
+  "finish": "stop"
+ },
+ {
+  "id": "p1",
+  "usage": {
+   "prompt_tokens": 152,
+   "completion_tokens": 32,
+   "total_tokens": 184,
+   "prompt_tokens_details": {
+    "audio_tokens": 0,
+    "cached_tokens": 128
+   },
+   "completion_tokens_details": {
+    "accepted_prediction_tokens": 17,
+    "audio_tokens": 0,
+    "reasoning_tokens": 21,
+    "rejected_prediction_tokens": 88
+   }
+  },
+  "content": "Paris",
+  "finish": "stop"
+ },
+ {
+  "id": "p2",
+  "usage": {
+   "prompt_tokens": 154,
+   "completion_tokens": 106,
+   "total_tokens": 260,
+   "prompt_tokens_details": {
+    "audio_tokens": 0,
+    "cached_tokens": 128
+   },
+   "completion_tokens_details": {
+    "accepted_prediction_tokens": 75,
+    "audio_tokens": 0,
+    "reasoning_tokens": 94,
+    "rejected_prediction_tokens": 142
+   }
+  },
+  "content": "Yes.",
+  "finish": "stop"
+ }
+]

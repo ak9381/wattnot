@@ -1,7 +1,7 @@
 # $98 plans for the hosted (Baseten) and Modal credits, plus the spend guard
 
 Status: PLAN. Nothing paid has run. All $ are list-price ESTIMATES until reconciled with the bill.
-Prices read 29 Oct 2026: hosted Spark (`meta-models/muse-spark-open-1026`) $1.25 / $4.25 per 1M in/out;
+Prices read 29 Oct 2026: hosted Spark (`meta-models/muse-spark-open`) $1.25 / $4.25 per 1M in/out;
 Modal (`modal billing rates`): B200 $6.25/h, H100 $3.95/h, T4 $0.59/h, CPU $0.0473/core-h, mem $0.008/GiB-h.
 
 ## Guard (src/wattnot/spend)
@@ -72,3 +72,39 @@ data/judge/judge-path.json:21, src/wattnot/rehearse.py:225, src/wattnot/dash/lea
 README.md:51,56, docs/meta-tools-v5.md:6,109-110, docs/joules-per-correct-answer.md:36 (era note stays).
 Judge cost: per-answer (~600 in / ~250 out at low effort, ~$0.0018) x ~5,000 long-run answers ~ $9;
 batched 92-per-call ~ $2. Budgeted $9 above.
+
+## Live proof, 29 Oct 2026 (approved by Akash 9:16 AM IST)
+Key + model: inference works with `BASETEN_METRICS_KEY` (`BASETEN_API_KEY` returns 401). Code now reads
+`BASETEN_METRICS_KEY` first, `BASETEN_API_KEY` as fallback (`wattnot.cloud.inference_key`). Model id is
+`meta-models/muse-spark-open`; the old `-1026` slug is gone from live code (kept only in historical run files).
+
+Cut-off rule: with `max_tokens` 64 the model spent 61 tokens reasoning and returned `content: None`. A reply with
+no content is a **cut-off fail**, never a pass (`gates/judge.py` raises, the caller falls back). Judge budget
+`JUDGE_MAX_TOKENS = 512` at low effort; the batch judge already sends 1,500.
+
+### Baseten: 3 calls through the guard (low effort, max_tokens 256) - MEASURED
+| | requests | input | cached input | output | $ |
+|---|---|---|---|---|---|
+| Guard ledger | 3 | 464 | (not discounted) | 161 | 0.001264 |
+| Baseten usage API (`/v1/model_apis/usage`, 03:57Z bucket) | 3 | 464 | 384 | 161 | 0.000842 at list price incl. $0.15/M cached |
+
+Tokens match exactly. The ledger is ~50% high because it ignores the cached-input discount: safe direction.
+Answers: "56", "Paris", "Yes." (all finish=stop; 12/21/94 reasoning tokens). The usage API is reachable with the
+metrics key (HTTP 200); rows appeared within ~5 min (empty right after the calls). No dashboard login was used.
+
+### Modal: one 30 s CPU function (1 core, 1 GiB, ephemeral app) - MEASURED
+| | seconds | $ |
+|---|---|---|
+| Guard ledger (whole local wall time: boot + run + teardown) | 44.0 | 0.000676 |
+| `modal billing report --for today -r h --show-resources` (~5 min later) | - | 0.000492 (CPU 0.000421 + mem 0.000071) |
+
+Ledger is above the bill: safe direction. `modal billing summary` rounds to cents, so use `report --json` for reconcile.
+Teardown: app `ap-rXeXuNavaVH7UajTOTHPcX` state `stopped` at 09:32:32 IST, 0 tasks; guard found no orphans.
+
+First attempt failed (container could not import `wattnot`, crash-looped ~200 s). The guard billed its worst case
+($0.001843) on the exception and the app was stopped by Ctrl-C (`ap-3WVjua6Diiw7YBaEhL83Id`, stopped 09:31:31 IST);
+Modal's report shows no cost for it. Lessons: (1) never import local packages at module top in Modal files;
+(2) a reservation is not a timeout - every Modal block must also pass `cloud_timeout_s()` as the function `timeout`
+and run under a local wall-clock kill, which the sprint scripts must keep.
+
+Total real spend for the proof: about $0.0017 (Baseten ~$0.0012 incl. the first 64-token call, Modal ~$0.0005).

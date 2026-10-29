@@ -14,7 +14,7 @@ KEY = "abc123.SECRETSECRETSECRET"
 
 
 def test_model_slug_and_base_url_are_exact():
-    assert MODEL == "meta-models/muse-spark-open-1026"
+    assert MODEL == "meta-models/muse-spark-open"
     assert BASE_URL == "https://inference.baseten.co/v1"
 
 

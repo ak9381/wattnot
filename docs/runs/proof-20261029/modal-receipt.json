@@ -1,0 +1,13 @@
+{
+ "provider": "modal",
+ "stop_level": "done",
+ "why": "proof finished",
+ "items_done": 1,
+ "ledger_committed_usd": 0.000676,
+ "ledger_spent_usd": 0.000676,
+ "provider_reported_usd": 0.0,
+ "soft_usd": 0.009,
+ "hard_usd": 0.01,
+ "orphans_after_teardown": [],
+ "label": "ESTIMATE until reconciled"
+}

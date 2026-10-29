@@ -1,7 +1,7 @@
 # Cloud mode on Baseten
 
 WattNot's GPU mode needs a box you control. Cloud mode works on a hosted model where you
-only get an API: Baseten's Model API for Muse Spark Open (`meta-models/muse-spark-open-1026`).
+only get an API: Baseten's Model API for Muse Spark Open (`meta-models/muse-spark-open`).
 You can't change the batch size or the power cap there. You can change how hard the model
 thinks, how long it may think, and how your prompt is laid out. This runbook covers those.
 
@@ -53,7 +53,8 @@ committed in `reports/cloud-demo/`. Use it to see the flow, not to quote savings
 The key comes only from the environment. There is no flag and no file for it.
 
 ```bash
-export BASETEN_API_KEY=...            # in your shell; never commit it
+export BASETEN_METRICS_KEY=...               # in your shell; never commit it
+# BASETEN_API_KEY is read only if BASETEN_METRICS_KEY is unset (it returned 401 on 29 Oct 2026)
 
 # 1. Smoke test: two classes, one repeat, small cap. Records replies for replay.
 wattnot cloud tune --live --classes extract,arith --repeats 1 --budget-usd 1 \
@@ -137,6 +138,6 @@ not built.
 ## Troubleshooting
 
 - `BASETEN_API_KEY is not set`: export it in the same shell.
-- `refusing to send model ...`: the transport only sends `meta-models/muse-spark-open-1026`.
+- `refusing to send model ...`: the transport only sends `meta-models/muse-spark-open`.
 - Many `length` finishes at `low`: that level truncates on this class. The router drops it.
 - Stopped early at 80% of budget: the receipt records it (`stopped`); raise `--budget-usd`.

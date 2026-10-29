@@ -165,7 +165,12 @@ def request_body(items: Sequence[Mapping], model: str = MODEL, max_tokens: int =
 
 
 def parse_verdicts(raw: Mapping, ids: Sequence[str]) -> dict[str, str]:
-    data = json.loads(raw["choices"][0]["message"]["content"])
+    content = raw["choices"][0]["message"].get("content")
+    if not content:
+        # max_tokens was all spent on reasoning (seen live on Spark at max_tokens 64): no verdict.
+        # Treated as a cut-off: the caller falls back / counts it as a fail, never as a pass.
+        raise ValueError("judge reply cut off: no content (max_tokens spent on reasoning)")
+    data = json.loads(content)
     out = {v["id"]: v["verdict"] for v in data["verdicts"]
            if v.get("id") in ids and v.get("verdict") in VERDICTS}
     missing = set(ids) - set(out)
