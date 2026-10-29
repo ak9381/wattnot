@@ -32,6 +32,24 @@ test("missing fields show a dash and pending dot, never invented values or MOCK"
   }
 });
 
+test("headline water is derived at 0.36, the stored 1.8 value is shown only as the upper", () => {
+  const d = extractEuLinkData(run2);
+  const whMean = run2.candidate.wh_per_req.mean;
+  const stored = run2.estimates.water_ml_per_req.value; // signed receipt stored this at the 1.8 upper factor
+  // Headline must be the on-site 0.36 factor off measured energy, NOT the stored 1.8 figure.
+  assert.equal(d.waterHeadlineMl, Number((whMean * 0.36).toFixed(6)));
+  assert.notEqual(d.waterHeadlineMl, stored);
+  assert.ok(d.waterHeadlineMl < stored, "0.36 headline must be below the 1.8 stored upper");
+  // The stored value surfaces as the upper bound, flagged as coming from the signed receipt.
+  assert.equal(d.waterUpperMl, stored);
+  assert.equal(d.waterUpperStored, true);
+  const h = renderEuLinkHTML(d);
+  assert.match(h, /0\.36 L\/kWh on-site cooling, derived from the receipt's measured energy/);
+  assert.match(h, /stored in the signed receipt at the 1\.8 upper factor/);
+  // the headline value (0.36 x energy, 4-dp display) is the metric value, not the 1.8 stored figure
+  assert.match(h, /Water Consumption<\/div><div class="eulink-metric-val">0\.0012 /);
+});
+
 test("label comes from the receipt", () => {
   const d = extractEuLinkData({ receipt_id: "r1", measurement: { label: "SIMULATED" }, result: { billed_saving_pct: 5 } });
   assert.match(renderEuLinkHTML(d), /wn-dot-simulated/);

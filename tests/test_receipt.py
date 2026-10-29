@@ -100,6 +100,28 @@ def test_water_is_estimate_money_is_usd_and_trace_is_included():
     assert {"t", "df", "p_value", "alpha"} <= set(r["result"]["welch"])
 
 
+def test_receipt_water_headline_is_0_36_with_explicit_1_8_upper():
+    """Receipt builds pin the headline water to the 0.36 L/kWh on-site factor and carry the
+    1.8 L/kWh (incl. power-plant) figure only in an explicit `_upper` field - never as the
+    headline. This is the signed counterpart of the dashboard/EU-report derivation."""
+    _, run = _run()
+    r = build_receipt(run, created_at="2026-10-28T10:00:00+00:00")
+    est = r["estimates"]
+    mean = r["candidate"]["wh_per_req"]["mean"]
+    base_mean = r["baseline"]["wh_per_req"]["mean"]
+    assert est["water_ml_per_req"]["value"] == pytest.approx(round(mean * 0.36, 6))
+    assert est["water_ml_per_req_upper"]["value"] == pytest.approx(round(mean * 1.8, 6))
+    assert est["baseline_water_ml_per_req"]["value"] == pytest.approx(round(base_mean * 0.36, 6))
+    assert est["baseline_water_ml_per_req_upper"]["value"] == pytest.approx(round(base_mean * 1.8, 6))
+    # the headline is strictly the smaller, on-site figure, never the 1.8 upper
+    assert est["water_ml_per_req"]["value"] < est["water_ml_per_req_upper"]["value"]
+    for k in ("water_ml_per_req", "water_ml_per_req_upper",
+              "baseline_water_ml_per_req", "baseline_water_ml_per_req_upper"):
+        assert est[k]["label"] == "ESTIMATE"
+    assert "0.36" in est["water_ml_per_req"]["source"]
+    assert "1.8" in est["water_ml_per_req_upper"]["source"]
+
+
 def test_water_label_other_than_estimate_fails_schema():
     r = _load("valid")
     r["estimates"]["water_ml_per_req"]["label"] = "MEASURED"
