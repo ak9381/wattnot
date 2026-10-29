@@ -129,6 +129,22 @@ def test_zero_pairs_is_an_error_and_still_closes():
         at.summarize(res)
 
 
+def _arm_run(arm, wh):
+    return at.ArmRun(arm=arm, rep=0, wh=wh, seconds=1.0, tokens=100, requests=1,
+                     latencies_ms=[10.0, 11.0], label="SIMULATED", method="fake",
+                     csv_path="", csv_sha256="", active_experts=None)
+
+
+def test_zero_baseline_energy_is_a_clear_error_not_zero_division():
+    # A degenerate "off" arm with no measured energy would make the saving denominator 0.
+    # summarize must raise AdaptiveError, not a bare ZeroDivisionError.
+    res = at.TrialResult(cfg=AdaptiveConfig(), simulated=True, gpu="fake", driver="fake",
+                         runs=[_arm_run("off", 0.0), _arm_run("on", 0.5)],
+                         agreement={"pct": 99.0})
+    with pytest.raises(AdaptiveError, match="zero joules"):
+        at.summarize(res)
+
+
 def test_backend_failure_closes_the_backend():
     be = FakeMoeBackend(fail="generate")
     with pytest.raises(AdaptiveError):
