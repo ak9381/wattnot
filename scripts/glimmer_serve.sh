@@ -27,6 +27,8 @@ docker run -d --name glimmer --gpus device=0 --ipc=host -p "$PORT:$PORT" \
 docker logs -f glimmer > "$LOG/vllm-glimmer-$PREC.log" 2>&1 &
 for _ in $(seq 1 240); do
   curl -fs "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1 && break
+  # fail fast if the server died (bad flag, OOM): don't burn 20 min of GPU waiting
+  if [ "$(docker inspect -f '{{.State.Running}}' glimmer 2>/dev/null)" != "true" ]; then break; fi
   sleep 5
 done
 curl -fs "http://127.0.0.1:$PORT/v1/models" >/dev/null || { echo "[glimmer] $PREC did not come up"; tail -n 30 "$LOG/vllm-glimmer-$PREC.log"; exit 22; }
