@@ -89,6 +89,12 @@
       }
     }
 
+    // 2b. Bento layer (quiet labels, one legend, click popups) on every page except the landing page.
+    if (!isLanding) {
+      const css = document.createElement("link"); css.rel = "stylesheet"; css.href = prefix + "bento.css"; document.head.append(css);
+      import(new URL(prefix + "bento.js", window.location.href).href).catch(() => {});
+    }
+
     // 3. Active link updater
     function updateActive() {
       const path = window.location.pathname || "";

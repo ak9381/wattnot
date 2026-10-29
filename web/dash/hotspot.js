@@ -104,7 +104,7 @@ export function renderHotspotHTML(data) {
           </div>
 
           <div>
-            <div class="hotspot-stat-label">Mask Hash (Covered by Signature)</div>
+            <div class="hotspot-stat-label hotspot-hash-label">Mask Hash (Covered by Signature)</div>
             <div class="hotspot-hash">${data.maskSha256}</div>
           </div>
         </div>
