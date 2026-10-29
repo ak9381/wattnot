@@ -72,7 +72,7 @@ def build(root: Path) -> dict:
     return {
         "spec": SPEC,
         "run2": run2,
-        "meta_judge": {"label": "PENDING", "judge": "Llama 3.1 8B Instruct",
+        "meta_judge": {"label": "PENDING", "judge": "Muse Spark (hosted on Baseten, low thinking); Llama 3.1 8B fallback",
                        "note": "measured in the long GPU run; kept apart from RUN2"},
         "trace": _trace.from_file(ev) if ev.exists() else None,
         "explain": _load(root / "data/explain/run2.json"),

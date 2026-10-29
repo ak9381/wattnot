@@ -222,7 +222,7 @@ def _receipt(out: Path) -> dict:
              "params": {"power_cap_w": None}, "reason": "325 W fails p99; keep 350 W",
              "tokens": {"input": 150, "output": 40}}],
         # exercise the per-model joules roles: a local judge and a hosted gate-explanation model
-        "models": [{"role": "judge", "model": "Llama 3.1 8B Instruct (quality judge)",
+        "models": [{"role": "judge", "model": "Llama 3.1 8B Instruct (judge fallback)",
                     "where": "local", "joules": 950.0, "label": "SIMULATED"},
                    {"role": "gate", "model": "muse-spark-1.3 (gate explanation)", "tokens": 1200}],
     }

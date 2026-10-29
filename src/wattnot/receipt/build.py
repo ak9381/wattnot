@@ -157,7 +157,7 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
     if j_model is not None:
         m["judge_model"] = str(j_model)
     elif j_verdict is not None:
-        m["judge_model"] = "meta-llama/Llama-3.1-8B-Instruct"
+        m["judge_model"] = "unrecorded"   # never guess which judge made a verdict
 
     w_tids = wonder_trace_ids or run.get("wonder_trace_ids") or run.get("wonder_trace_id")
     if w_tids is not None:

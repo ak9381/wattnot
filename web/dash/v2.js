@@ -1216,7 +1216,7 @@ function mountCompare() {
     measurement: {
       judge_verdict: base.measurement?.judge_verdict || "pass",
       judge_score: base.measurement?.judge_score ?? 0.942,
-      judge_model: base.measurement?.judge_model || "meta-llama/Llama-3.1-8B-Instruct",
+      judge_model: base.measurement?.judge_model || "not recorded",
       judge_label: base.measurement?.judge_label || "MOCK",
       spark_trace_id: base.measurement?.spark_trace_id || "spark-7a1b2c3d4e5f6071",
       wonder_trace_ids: base.measurement?.wonder_trace_ids || ["wonder-9e8d7c6b5a412345"],

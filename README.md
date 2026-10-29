@@ -11,7 +11,7 @@ H100 run: `bash scripts/h100_run.sh --dry-run` first, then see [docs/runbooks/H1
 ## For judges: check it in five minutes
 
 - **Replay, no install:** https://ak9381.github.io/wattnot/ (a replay of measured logs; nothing runs live). Open the **Proof** tab.
-- **Headline (RUN2, MEASURED):** -27.1% joules per correct answer at a 350 W cap on an H100 (17.03 to 12.42 J), pass rate unchanged at 93.7% on 666 checked answers. RUN2 quality was judged by fixed answer checks from the Granite era; results with the Llama 3.1 8B judge are reported separately when measured.
+- **Headline (RUN2, MEASURED):** -27.1% joules per correct answer at a 350 W cap on an H100 (17.03 to 12.42 J), pass rate unchanged at 93.7% on 666 checked answers. RUN2 quality was judged by fixed answer checks from the Granite era; results with the Meta judge (hosted Muse Spark, Llama 3.1 8B fallback) are reported separately when measured.
 - **What Spark decided:** every Muse Spark planner call in RUN2 (400 W, 350 W, 325 W, stop), with its reasoning, latency, tokens and the gate verdict. 325 W failed the p99 gate (+10.95% against a 10% limit); the (i) button explains why.
 - **Verify a receipt yourself:**
 
@@ -50,12 +50,12 @@ H100 run: `bash scripts/h100_run.sh --dry-run` first, then see [docs/runbooks/H1
 |---|---|---|
 | muse-spark-1.3 | planner: picks the next power cap; explains gate failures; agent-waste and coding-set runs | $23.08 over 3459 calls (MEASURED, API ledger total on 2026-10-28) |
 | sam-3.1 | segments rack photos into units (kept off the main path) | $0.12 over 47 calls (MEASURED, API ledger) |
-| Llama 3.1 8B Instruct | the served model in RUN2; small model in small-first; quality judge | own H100, cost is GPU hours (not an API bill) |
+| Llama 3.1 8B Instruct | the served model in RUN2; small model in small-first; judge fallback | own H100, cost is GPU hours (not an API bill) |
 | Muse Spark Open (Baseten) | big model when the small one fails a check; hosted planner | $0.004, 1 call (MEASURED) |
 
 - **Endpoint health:** `wattnot health` probes each hosted endpoint and writes a FALLBACK ledger (`data/judge/health-*.json`).
 - **Labels:** every number is MEASURED, ESTIMATE, SIMULATED, MOCK, REPLAY or ADVICE. SIMULATED and MOCK content is hidden by default; the "Illustrations" switch shows it.
-- **Not measured yet (long GPU run):** small-model-first escalation rate and net savings, the Llama 3.1 8B judge, Muse Spark Open with fewer experts, and the token trimmer and caps on one workload (the stacked figure is an ESTIMATE until then).
+- **Not measured yet (long GPU run):** small-model-first escalation rate and net savings, the hosted Muse Spark judge (Llama 3.1 8B fallback), Muse Spark Open with fewer experts, and the token trimmer and caps on one workload (the stacked figure is an ESTIMATE until then).
 
 ## Quickstart
 

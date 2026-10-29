@@ -3,7 +3,7 @@
 Meta Tools v5 introduces three core capabilities to WattNot:
 1. **Muse Wonder Supervisor**: Pareto-optimal power cap and clock frequency search that halts when the cost/quality frontier flattens.
 2. **Muse Code Automation**: Unified diff patch generation, PR body authoring linked to signed receipts (`wattnot://<hash>`), and agent framework drop-in snippets.
-3. **Receipt Quality Coverage**: Llama 8B judge verdict, agreement score, Wonder trace IDs, per-model spend, and patch hashes signed into the receipt body.
+3. **Receipt Quality Coverage**: quality judge verdict (hosted Muse Spark; Llama 3.1 8B fallback), agreement score, Wonder trace IDs, per-model spend, and patch hashes signed into the receipt body.
 
 ---
 
@@ -106,8 +106,8 @@ Validation harness:
 All Meta Tools v5 verifications are placed directly inside the receipt's `measurement` object before canonicalization:
 
 - **`judge_verdict`**: `"pass"` or `"fail"`
-- **`judge_score`**: Llama 8B agreement fraction (e.g. `0.942` `[MEASURED]`)
-- **`judge_model`**: `"meta-llama/Llama-3.1-8B-Instruct"`
+- **`judge_score`**: judge agreement fraction (e.g. `0.942` `[MEASURED]`)
+- **`judge_model`**: the judge that made the verdict, e.g. `"meta-models/muse-spark-open-1026"` (default) or `"meta-llama/Llama-3.1-8B-Instruct"` (fallback); `judge_path` says which
 - **`spark_trace_id`**: Deterministic decision hash (e.g. `spark-9a8b7c6d5e4f3210`)
 - **`wonder_trace_ids`**: List of supervisor trace identifiers
 - **`per_model_spend`**: Spend tally for `spark`, `wonder`, `glimmer`, `llama`, and `sam`
