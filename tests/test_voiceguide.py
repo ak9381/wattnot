@@ -304,3 +304,80 @@ def test_voiceguide_api_endpoint_post_and_get() -> None:
     assert data_audio["action"] == "navigate"
     assert "/dash/comparetree.html" in data_audio["route"]
 
+
+
+# --- voice fixes 2026-10-29 -------------------------------------------------
+def test_voice_run_two_resolves_to_run2_receipt():
+    from pathlib import Path
+    from wattnot.meta.voiceguide import process_voice_query
+    root = Path(__file__).resolve().parents[1]
+    for q in ("what did run two save", "what did run to save", "what did run 2 save"):
+        out = process_voice_query(query_text=q, root_dir=root)
+        assert not out.get("refusal"), q
+        assert any("run2" in c for c in out["citations"]), q
+        assert out["label"] == "MOCK"
+
+
+def test_undecodable_audio_without_live_says_type_instead():
+    from wattnot.meta.voiceguide import process_voice_query
+    out = process_voice_query(audio_data=b"\x1aE\xdf\xa3\x00\x00\xff", root_dir=".")
+    assert out["transcript"] == ""
+    assert "Type your question" in out["text"]
+    assert out["label"] == "MOCK"
+
+
+def test_api_voice_audio_is_mock_unless_switched_on(monkeypatch):
+    import base64
+    from fastapi.testclient import TestClient
+    from wattnot.api.app import create_app
+    monkeypatch.delenv("WATTNOT_VOICE_LIVE", raising=False)
+    c = TestClient(create_app("."))
+    r = c.post("/api/voiceguide", json={"audio_b64": base64.b64encode(b"RIFF\x00\x00\xff\xfe").decode()})
+    assert r.status_code == 200 and r.json()["label"] == "MOCK"
+    assert "Type your question" in r.json()["text"]
+
+
+def test_why_325_rejected_answered_from_receipt():
+    # The headline live-replay transcript asks exactly this; it must be answered
+    # from the signed Wonder addendum trials, not refused.
+    for q in ("why was 325 watts rejected", "Why was 325 watts rejected?", "why was 325 w rejected"):
+        out = process_voice_query(query_text=q, root_dir=REPO_ROOT, mock=True)
+        assert out["action"] == "answer", q
+        assert not out.get("refusal"), q
+        # Same measured facts the client (receiptanswers.js) shows, read from the
+        # receipt: p99 rise vs the 10% limit, J per correct, pass rate, MEASURED.
+        assert "p99 latency rose 10.9% against the 10% limit" in out["text"], q
+        assert "11.8444 J" in out["text"], q
+        assert "93.7%" in out["text"], q
+        assert "[MEASURED]" in out["text"], q
+        assert "rcpt_20261027_run2_cap350" in out["citations"], q
+        assert "rcpt_20261027_run2_cap350.wonder_live" in out["citations"], q
+
+
+def test_accepted_cap_question_reports_kept():
+    out = process_voice_query(query_text="why did 350 watts fail", root_dir=REPO_ROOT, mock=True)
+    assert not out.get("refusal")
+    assert "350 W was kept" in out["text"]
+    assert "within the 10% limit" in out["text"]
+
+
+def test_unknown_cap_rejection_keeps_honest_refusal():
+    # A cap with no trial in the receipt must still refuse, not invent numbers.
+    out = process_voice_query(query_text="why was 999 watts rejected", root_dir=REPO_ROOT, mock=True)
+    assert out.get("refusal") is True
+    assert out["citations"] == []
+
+
+def test_api_voice_live_failure_degrades(monkeypatch):
+    import base64
+    from fastapi.testclient import TestClient
+    import wattnot.meta.voiceguide as vg
+    from wattnot.api.app import create_app
+    monkeypatch.setenv("WATTNOT_VOICE_LIVE", "1")
+    monkeypatch.delenv("WATTNOT_META_MOCK", raising=False)
+    def boom(*a, **k):
+        raise OSError("net down")
+    monkeypatch.setattr(vg, "transcribe_audio", boom)
+    c = TestClient(create_app("."))
+    r = c.post("/api/voiceguide", json={"audio_b64": base64.b64encode(b"RIFF\xff\xfe").decode()})
+    assert r.status_code == 502 and "Type your question" in r.json()["text"]

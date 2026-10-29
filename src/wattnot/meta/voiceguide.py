@@ -116,7 +116,9 @@ def transcribe_audio(
     except UnicodeDecodeError:
         pass
 
-    return "compare runs"
+    # Real audio with no live transcriber: say we heard nothing rather than
+    # invent a query (it used to answer "compare runs" for any recording).
+    return ""
 
 
 def _words_to_int(words: list[str]) -> int | None:
@@ -358,6 +360,56 @@ def _load_signed_receipts(root_dir: Path) -> list[dict[str, Any]]:
     return verified
 
 
+def _p99_limit_pct() -> str:
+    """The p99 gate's allowed slack, read from the gate code so the limit is not
+    restated as a literal here (default 10%)."""
+    import inspect
+
+    from wattnot.gates.latency import p99_gate
+
+    slack = inspect.signature(p99_gate).parameters["slack"].default
+    return f"{float(slack) * 100:.0f}%"
+
+
+def _wonder_trials(receipts: list[dict[str, Any]], receipt_id: str) -> list[dict[str, Any]]:
+    """Return the Wonder addendum's gate trials for a receipt, or [] when absent."""
+    want = f"{receipt_id}.wonder_live".lower()
+    for r in receipts:
+        if str(r.get("receipt_id", "")).lower() == want:
+            trials = (r.get("data") or {}).get("trials")
+            if isinstance(trials, list):
+                return trials
+    return []
+
+
+def _cap_gate_answer(matched: Mapping, receipts: list[dict[str, Any]], cap_w: int) -> str | None:
+    """Answer "why was <N> W rejected" from the signed Wonder addendum trials.
+
+    Uses the same measured facts the static page shows (p99 latency rise vs the
+    gate limit, joules per correct answer, fixed-check pass rate) with the
+    trial's own label. Returns None when that cap's trial is not in the receipt,
+    so the caller keeps the honest refusal.
+    """
+    rid = str(matched.get("receipt_id", ""))
+    trial = next((t for t in _wonder_trials(receipts, rid) if t.get("cap_w") == cap_w), None)
+    if trial is None:
+        return None
+    p99, jpc, quality = trial.get("p99_delta"), trial.get("joules_per_correct"), trial.get("quality")
+    if p99 is None or jpc is None or quality is None:
+        return None
+    label = str(trial.get("label", "MEASURED"))
+    limit = _p99_limit_pct()
+    if trial.get("accepted_by_gates"):
+        verdict = f"kept: p99 latency rose {p99 * 100:.1f}%, within the {limit} limit"
+    else:
+        verdict = f"rejected: p99 latency rose {p99 * 100:.1f}% against the {limit} limit"
+    return (
+        f"According to signed receipt {rid} (Wonder addendum trials): {cap_w} W was "
+        f"{verdict}. Joules per correct answer {jpc} J, fixed-check pass rate "
+        f"{quality * 100:.1f}% [{label}]."
+    )
+
+
 def process_voice_query(
     query_text: str | None = None,
     audio_data: bytes | None = None,
@@ -370,10 +422,21 @@ def process_voice_query(
     """Execute voice guide workflow: Audio/Text -> Spark intent -> Guarded Read-Only Action."""
     root = Path(root_dir) if root_dir else Path(__file__).resolve().parents[3]
     text = transcribe_audio(audio_data, fallback_text=query_text or "", live=live, mock=mock, ledger=ledger)
+    if audio_data and not (query_text or "").strip() and not text:
+        return {
+            "intent": "answer",
+            "action": "none",
+            "transcript": "",
+            "text": ("Voice transcription is off on this server, so the recording was not turned into text. "
+                     "Type your question instead." if (mock or not live) else
+                     "Muse Voice Transcribe returned no words for that recording. Try again or type your question."),
+            "label": "MOCK" if (mock or not live) else "LIVE",
+        }
 
     intent = classify_intent(text)
     quick = get_quick_ack(intent, text)
-    label = "MOCK" if (mock or not live) else "MEASURED"
+    # Top-level label describes the voice path; numbers carry their own receipt labels.
+    label = "MOCK" if (mock or not live) else "LIVE"
 
     result: dict[str, Any]
 
@@ -449,22 +512,55 @@ def process_voice_query(
         # Intent: answer. Grounded strictly in signed receipts and EU efficiency reports.
         receipts = _load_signed_receipts(root)
         t_low = text.lower()
+        # "run two" / "run to" (a common mishearing) / "run 2" -> "run2", so receipts match by run.
+        t_low = re.sub(r"\brun[\s_-]*(?:two|to|too|2)\b", "run2", t_low)
+        t_low = re.sub(r"\brun[\s_-]*(?:one|1)\b", "run1", t_low)
+        run_tok = re.search(r"\brun\d+\b", t_low)
 
-        # Check if the query asks about energy, savings, water, or specific receipts
-        answerable_keywords = ("saving", "savings", "energy", "wh", "kwh", "joule", "joules", "water", "cap", "receipt", "receipts", "grade")
-        is_answerable = any(re.search(r"\b" + re.escape(k) + r"\b", t_low) for k in answerable_keywords) or any(
-            bool(r.get("receipt_id")) and r["receipt_id"].lower() in t_low for r in receipts
-        )
-
-        if receipts and is_answerable:
-            # Pick best matching receipt, or the latest by timestamp
+        # Pick the best matching receipt (by id, then by run tag), else the latest.
+        matched: dict[str, Any] | None = None
+        if receipts:
             receipts.sort(key=_created_at_key, reverse=True)
             matched = receipts[0]
             for r in receipts:
                 if r.get("receipt_id", "").lower() in t_low:
                     matched = r
                     break
+            else:
+                if run_tok:
+                    tag = f"_{run_tok.group(0)}_"
+                    for r in receipts:
+                        if tag in r.get("receipt_id", "").lower() + "_":
+                            matched = r
+                            break
 
+        # "why was 325 watts rejected" (and similar "why was <N> W rejected") is
+        # answered from the Wonder addendum's gate trials instead of a refusal.
+        cap_w = _parse_cap_w(text)
+        asks_gate = any(k in t_low for k in ("reject", "fail", "why not", "blocked", "declin"))
+        gate_text = (
+            _cap_gate_answer(matched, receipts, cap_w)
+            if (matched is not None and cap_w is not None and asks_gate)
+            else None
+        )
+
+        # Check if the query asks about energy, savings, water, or specific receipts
+        answerable_keywords = ("saving", "savings", "energy", "wh", "kwh", "joule", "joules", "water", "cap", "receipt", "receipts", "grade",
+                               "save", "saved", "saves")
+        is_answerable = any(re.search(r"\b" + re.escape(k) + r"\b", t_low) for k in answerable_keywords) or any(
+            bool(r.get("receipt_id")) and r["receipt_id"].lower() in t_low for r in receipts
+        )
+
+        if gate_text is not None:
+            result = {
+                "intent": "answer",
+                "action": "answer",
+                "text": gate_text,
+                "citations": [matched["receipt_id"], f"{matched['receipt_id']}.wonder_live"],
+                "quick_ack": quick["ack"],
+                "label": label,
+            }
+        elif matched is not None and is_answerable:
             rid = matched["receipt_id"]
             res = matched.get("result", {})
             saving = res.get("billed_saving_pct", res.get("saving_pct", {}).get("mean", 0.0))
@@ -521,4 +617,6 @@ def process_voice_query(
             f"Voice guide is strictly read-only and restricted to {sorted(ALLOWED_ACTIONS)}."
         )
 
+    if audio_data and not (query_text or "").strip():
+        result.setdefault("transcript", text)
     return result

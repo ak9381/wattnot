@@ -20,30 +20,10 @@ from starlette.testclient import TestClient  # noqa: E402
 
 from wattnot.dash.server import create_app  # noqa: E402
 
-SHIM = r"""// Static replay: serve recorded API answers from ./api/*.json.
-window.__WN_STATIC = true;
-(() => {
-  const BASE = new URL(".", document.currentScript.src).pathname.replace(/dash\/$/, "");
-  const key = (o) => JSON.stringify(Object.keys(o).sort().reduce((a, k) => ((a[k] = o[k]), a), {}));
-  let index = null;
-  const real = window.fetch.bind(window);
-  window.fetch = async (u, init = {}) => {
-    let p = typeof u === "string" ? u : u.url;
-    if (p.startsWith("/api/")) {
-      if ((init.method || "GET").toUpperCase() === "POST" && p === "/api/dash/v2/run") {
-        const body = JSON.parse(init.body || "{}"); delete body.compare; delete body.framework;
-        index ??= await real(`${BASE}api/dash/v2/run/index.json`).then((r) => r.json()).catch(() => ({}));
-        const f = index[key(body)];
-        if (f) return real(`${BASE}api/dash/v2/run/${f}`);
-        return new Response(JSON.stringify({ detail: "This combination of settings was not recorded for the static replay. Change one setting at a time from the default, or run the dashboard locally." }), { status: 404, headers: { "content-type": "application/json" } });
-      }
-      return real(`${BASE}${p.slice(1).split("?")[0]}.json`);
-    }
-    if (p.startsWith("/room/")) return real(`${BASE}${p.slice(1)}`);
-    return real(u, init);
-  };
-})();
-"""
+# The fetch shim lives in web/dash/static-api.js so it is a single source of
+# truth and can be unit-tested; copytree already copies it into the site, and
+# it is re-written below for clarity.
+SHIM = (ROOT / "web" / "dash" / "static-api.js").read_text(encoding="utf-8")
 
 
 def main(out: Path) -> None:
