@@ -74,10 +74,15 @@ def main(out: Path) -> None:
     # Code Mode detection card: its results artifact lives in data/ (not web/), so copy it
     # next to the dashboard where codemode.js fetches it (dash/codemode/results.json).
     cm = ROOT / "data/agent-waste/codemode/results.json"
-    if cm.exists():
+    cm_sb = ROOT / "data/agent-waste/codemode/sandbox_results.json"
+    if cm.exists() or cm_sb.exists():
         cm_out = out / "dash/codemode"
         cm_out.mkdir(parents=True, exist_ok=True)
-        shutil.copy(cm, cm_out / "results.json")
+        if cm.exists():
+            shutil.copy(cm, cm_out / "results.json")
+        # The sandbox card (measured run) reads this next to the detection results.
+        if cm_sb.exists():
+            shutil.copy(cm_sb, cm_out / "sandbox_results.json")
     for css in (out / "dash").glob("*.css"):
         css.write_text(css.read_text().replace("url(/run/vendor/", "url(../run/vendor/"))
     v2 = out / "dash/v2.html"

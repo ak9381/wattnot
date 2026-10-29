@@ -221,8 +221,13 @@ body.replay-only #modeChip{border-color:var(--amber,#E8B64A);color:var(--amber,#
 .num.lab-MOCK,.mv.lab-MOCK,.big.lab-MOCK{color:var(--mu)}
 .num.lab-REPLAY,.mv.lab-REPLAY,.big.lab-REPLAY{color:#8FBBA0}
 .num.lab-LIVE,.mv.lab-LIVE{color:var(--green)}
+/* TOKENIZER: a counted (chars//4) figure, honest about not being a billed model number. */
+.num.lab-TOKENIZER,.n.lab-TOKENIZER{color:#7FA88A}
+.n.lab-MEASURED{color:var(--cy)}.n.lab-ESTIMATE{color:#C4B4D6}
+.n.n-na{color:var(--dim);opacity:.6}
 .pdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--dim);margin-left:6px;vertical-align:1px;flex:none}
 .pdot.MEASURED,.pdot.REPLAY{background:var(--cy)}
+.pdot.lab-TOKENIZER{background:#7FA88A}
 .pdot.ESTIMATE{background:#C4B4D6}
 .pdot.SIMULATED,.pdot.MOCK{background:var(--viol)}
 .pdot.LIVE{background:var(--green)}

@@ -11,3 +11,4 @@ import "./wastereplay.test.mjs";
 import "./one_header.test.mjs";
 import "./frameworks.test.mjs";
 import "./codemode.test.mjs";
+import "./codemode_sandbox.test.mjs";
