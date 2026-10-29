@@ -32,6 +32,19 @@ test("missing fields show a dash and pending dot, never invented values or MOCK"
   }
 });
 
+test("window IT energy is mean Wh/req x requests, not the sum of reps x requests", () => {
+  const d = extractEuLinkData(run2);
+  const whMean = run2.candidate.wh_per_req.mean;
+  const n = run2.subject.workload.n_requests;
+  const samples = run2.candidate.wh_per_req.samples;
+  // correct: mean energy per request times the request count
+  assert.equal(d.windowKwh, (whMean * n) / 1000);
+  // the old sum-of-reps formula triple-counts (3 reps) and is ~3x larger
+  const buggy = (samples.reduce((a, b) => a + b, 0) * n) / 1000;
+  assert.ok(buggy > d.windowKwh * 2.9 && buggy < d.windowKwh * 3.1,
+    `old formula (${buggy}) should be ~3x the corrected window (${d.windowKwh})`);
+});
+
 test("headline water is derived at 0.36, the stored 1.8 value is shown only as the upper", () => {
   const d = extractEuLinkData(run2);
   const whMean = run2.candidate.wh_per_req.mean;

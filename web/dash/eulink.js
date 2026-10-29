@@ -18,8 +18,9 @@ export function extractEuLinkData(receipt) {
   const label = m.label || null;
   const n = num(r.subject?.workload?.n_requests);
   const whMean = num(cand.wh_per_req?.mean);
-  const samples = Array.isArray(cand.wh_per_req?.samples) ? cand.wh_per_req.samples.filter((x) => num(x) != null) : null;
-  const windowKwh = n != null && samples?.length ? (samples.reduce((a, b) => a + b, 0) * n) / 1000 : null;
+  // Window IT energy = mean Wh/req across reps x requests. Summing the per-rep samples and then
+  // multiplying by n triple-counts: the reps are repeats of the same n requests, not extra ones.
+  const windowKwh = n != null && whMean != null ? (whMean * n) / 1000 : null;
   // Headline water is DERIVED here from the receipt's measured energy at the owner-standardised
   // 0.36 L/kWh on-site factor; we never trust a stored headline, because older signed receipts
   // stored water at the 1.8 upper factor. The receipt's stored value is surfaced as the upper
