@@ -192,7 +192,7 @@ def test_reasoning_effort_steps_down() -> None:
 def test_stop_response_shape() -> None:
     guard = WasteGuard()
     out = guard.stop_response("repeated calls", model="m")
-    assert out["id"] == "wattnot-stop"
+    assert out["id"].startswith("wattnot-stop")
     assert out["object"] == "chat.completion"
     assert out["choices"][0]["message"]["content"] == (
         "Stopped early: repeated calls. Nothing new came back, so the task was not finished.")
@@ -200,6 +200,17 @@ def test_stop_response_shape() -> None:
     assert out["usage"] == {"prompt_tokens": 0, "completion_tokens": 0,
                             "total_tokens": 0}
     assert out["wattnot"] == {"stopped": True, "reason": "repeated calls"}
+
+
+def test_stop_response_ids_are_unique() -> None:
+    # Each early-stop completion must carry a distinct id so a client keying by id does not
+    # silently collapse separate stops onto one "wattnot-stop" entry.
+    a = WasteGuard().stop_response("repeated calls", model="m")
+    b = WasteGuard().stop_response("plan cycle", model="m")
+    c = WasteGuard().stop_response("repeated calls", model="m")
+    ids = {a["id"], b["id"], c["id"]}
+    assert len(ids) == 3
+    assert all(i.startswith("wattnot-stop") for i in ids)
 
 
 def test_stats_counts() -> None:

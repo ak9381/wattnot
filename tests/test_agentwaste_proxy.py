@@ -48,7 +48,7 @@ def test_step_budget_stops_without_upstream() -> None:
     assert len(fake.calls) == 1
     out = proxy.proxy(simple_body())
     assert len(fake.calls) == 1
-    assert out["id"] == "wattnot-stop"
+    assert out["id"].startswith("wattnot-stop")
     assert out["wattnot"]["stopped"] is True
     assert proxy.stopped is True
     assert proxy.stop_reason == "step budget reached"
