@@ -397,6 +397,17 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
             raise HTTPException(404, "no partners snapshot yet: run scripts/build_partners.py")
         return Response(partners_path.read_bytes(), media_type="application/json")
 
+    frameworks_path = ROOT / "data" / "frameworks" / "validation.json"
+
+    @app.get("/api/dash/v2/frameworks")
+    def dash_frameworks():
+        """Framework drop-in validation: honest status per framework against the local mock.
+
+        Written by scripts/validate_frameworks.py. Never a live upstream."""
+        if not frameworks_path.is_file():
+            raise HTTPException(404, "no framework validation yet: run scripts/validate_frameworks.py")
+        return Response(frameworks_path.read_bytes(), media_type="application/json")
+
     @app.get("/api/dash/meta/health")
     def meta_health(fresh: int = 0):
         if replay_only:  # never touches the network: the hosted copy makes no Meta call

@@ -462,7 +462,8 @@ def test_framework_tags_on_dashboard_and_report():
     root = pathlib.Path(__file__).resolve().parent.parent / "web" / "dash"
     runs_js = (root / "runs.js").read_text()
     report_js = (root / "report.js").read_text()
-    v2_js = (root / "v2.js").read_text()
+    # v2 reads the framework tag through v2lib.frameworkChip, so the fallback lives there now.
+    v2_js = (root / "v2.js").read_text() + (root / "v2lib.js").read_text()
 
     assert "framework: none recorded" in runs_js
     assert "framework: none recorded" in report_js

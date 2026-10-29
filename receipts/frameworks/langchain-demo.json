@@ -1,0 +1,40 @@
+{
+  "spec": "wattnot.proxy-receipt/1",
+  "source": "LangChain chat model \u2192 WattNot proxy \u2192 localhost mock upstream",
+  "note": "Real drop-in run, mock upstream. Not a live model call.",
+  "label": "MOCK",
+  "frameworks": [
+    "langchain"
+  ],
+  "framework": "langchain",
+  "calls": 2,
+  "routing": {
+    "enabled": true,
+    "routed_calls": 2,
+    "escalation_rate": 0.5,
+    "small_model_pass_rate": 0.5,
+    "answered_by": {
+      "glimmer-30b": 1,
+      "llama-8b": 1
+    }
+  },
+  "gate": {
+    "pass_pct": 100.0
+  },
+  "context_saver": {
+    "enabled": true,
+    "tokens_before": 26,
+    "tokens_after": 26,
+    "tokens_saved": 0,
+    "label": "ESTIMATE"
+  },
+  "agent_waste": {
+    "upstream_calls": 2,
+    "prompt_tokens": 28,
+    "completion_tokens": 34,
+    "reasoning_tokens": 0,
+    "nudges": 0,
+    "runs": 2,
+    "runs_stopped_early": 0
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "spec": "wattnot.frameworks-validation/1",
+  "generated_at": "2026-10-29T07:51:45Z",
+  "label": "VALIDATED-LOCAL (mock upstream)",
+  "upstream": "localhost mock upstream (no GPU, no network, no paid API)",
+  "validated": 3,
+  "total": 3,
+  "frameworks": [
+    {
+      "framework": "openai-python",
+      "status": "validated",
+      "label": "VALIDATED-LOCAL (mock upstream)",
+      "package": "openai",
+      "version": "2.54.0",
+      "response": "Answer from Llama-3.1-8B-Instruct: the receipts live in wattnot.receipt.",
+      "small_model_kept_easy": true,
+      "hard_escalated": true,
+      "upstream_calls": 2,
+      "receipt_frameworks": [
+        "openai-python"
+      ],
+      "receipt_label": "MOCK"
+    },
+    {
+      "framework": "langchain",
+      "status": "validated",
+      "label": "VALIDATED-LOCAL (mock upstream)",
+      "package": "langchain-openai",
+      "version": "1.7.3",
+      "response": "Answer from Llama-3.1-8B-Instruct: the receipts live in wattnot.receipt.",
+      "small_model_kept_easy": true,
+      "hard_escalated": true,
+      "upstream_calls": 2,
+      "receipt_frameworks": [
+        "langchain"
+      ],
+      "receipt_label": "MOCK"
+    },
+    {
+      "framework": "llamaindex",
+      "status": "validated",
+      "label": "VALIDATED-LOCAL (mock upstream)",
+      "package": "llama-index-llms-openai-like",
+      "version": "0.5.3",
+      "response": "Answer from Llama-3.1-8B-Instruct: the receipts live in wattnot.receipt.",
+      "small_model_kept_easy": true,
+      "hard_escalated": true,
+      "upstream_calls": 2,
+      "receipt_frameworks": [
+        "llamaindex"
+      ],
+      "receipt_label": "MOCK"
+    }
+  ]
+}
