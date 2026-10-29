@@ -8,8 +8,15 @@
   const tell = () => {
     // Banner removed per design spec
   };
+  // Match static-api.js targetOf: a string is the URL; a Request has .url; a
+  // URL object has .href; fall back to String(u) so a non-string arg never throws.
+  const targetOf = (u) =>
+    typeof u === "string" ? u
+      : (u && typeof u.url === "string") ? u.url
+      : (u && typeof u.href === "string") ? u.href
+      : String(u);
   window.fetch = async (u, init = {}) => {
-    const p = typeof u === "string" ? u : u.url;
+    const p = targetOf(u);
     const get = (init.method || "GET").toUpperCase() === "GET";
     if (!get || !p.startsWith("/api/dash/")) return real(u, init);
     const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);
