@@ -61,7 +61,8 @@ def make_log(out: Path) -> Callable[[str, dict], None]:
 
 
 def history_row(s: dict) -> dict:
-    return {"cap_w": s["cap_w"], "accepted": s["accepted"], "why_not": s["why_not"],
+    return {"cap_w": s["cap_w"], "clock_profile": s.get("clock_profile", "base"),
+            "accepted": s["accepted"], "why_not": s["why_not"],
             "energy_change_pct": round(s["energy_change_pct"]["mean"], 2),
             "p99_change_pct": round(s["p99_change_pct"]["mean"], 2),
             "quality_pass_pct": round(s["quality"]["cap_pct"], 1),
@@ -244,7 +245,7 @@ def run_vm_command(a, rig: Rig) -> int:  # pragma: no cover - thin dispatch, tes
         r = vm.cmd_control(rig, s, nar, a.out)
         return 0 if r["bad_setting_rejected"] and r["stock_vs_stock_accepted"] else 3
     elif a.cmd == "step":
-        vm.cmd_step(rig, s, nar, a.cap, a.reps, a.out, tag=a.tag)
+        vm.cmd_step(rig, s, nar, a.cap, a.reps, a.out, tag=a.tag, clock=a.clock)
     elif a.cmd == "apply":
         vm.cmd_apply(rig, s, a.cap)
     elif a.cmd == "adaptive":
@@ -280,6 +281,8 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover
     ap.add_argument("--serve", action="store_true", help="start vLLM here (else expects it up)")
     ap.add_argument("--workload", type=Path)
     ap.add_argument("--cap", type=int, help="step: the cap to test")
+    ap.add_argument("--clock", default=None,
+                    help="step: SM clock profile for the cap arm (falls back to caps-only)")
     add_profile_args(ap)
     ap.add_argument("--concurrency", type=int, default=32)
     ap.add_argument("--grid", default=",".join(map(str, DEFAULT_GRID)))
@@ -324,7 +327,8 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover
             print(json.dumps({k: v for k, v in r.items() if k != "blocks"}))
             return 0 if r["bad_setting_rejected"] and r["stock_vs_stock_accepted"] else 3
         if a.cmd == "step":
-            s = run_step(rig, a.cap, a.reps, a.out, workload=rig.workload, log=log, tag=a.tag)
+            s = run_step(rig, a.cap, a.reps, a.out, workload=rig.workload, log=log, tag=a.tag,
+                         clock=a.clock)
             print("STEP_JSON " + json.dumps({k: v for k, v in s.items() if k != "blocks"}))
             return 0
         control = run_control(rig, a.out, workload=rig.workload, log=log)

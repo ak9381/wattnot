@@ -1,0 +1,89 @@
+{
+ "version": "tiers-v1",
+ "label": "workload sample",
+ "tiers": [
+  {
+   "tier": "easy",
+   "count": 30,
+   "what": "one-step arithmetic",
+   "samples": [
+    {
+     "id": "easy-00",
+     "prompt": "What is 80 + 31? Reply with only the final number.",
+     "tools": [],
+     "subagent": false
+    },
+    {
+     "id": "easy-01",
+     "prompt": "What is 40 times 9? Reply with only the final number.",
+     "tools": [],
+     "subagent": false
+    }
+   ]
+  },
+  {
+   "tier": "medium",
+   "count": 30,
+   "what": "multi-step word problems",
+   "samples": [
+    {
+     "id": "medium-00",
+     "prompt": "Asha buys 12 packs of notebooks with 9 in each pack, then gives away 30 notebooks. How many notebooks does Asha have left? Think step by step, then end with 'ANSWER: <number>'.",
+     "tools": [],
+     "subagent": false
+    },
+    {
+     "id": "medium-01",
+     "prompt": "A shop sells apples at $2 each. Ben buys 9 on Monday and twice as many on Tuesday, and pays with $90. How much change, in dollars? Think step by step, then end with 'ANSWER: <number>'.",
+     "tools": [],
+     "subagent": false
+    }
+   ]
+  },
+  {
+   "tier": "hard",
+   "count": 20,
+   "what": "write a Python function; graded by running hidden tests",
+   "samples": [
+    {
+     "id": "hard-00",
+     "prompt": "Write a Python function `is_palindrome(s: str) -> bool: True if s reads the same backwards, ignoring case and non-alphanumeric characters`. Reply with only the code in one ```python block, no explanation.",
+     "tools": [],
+     "subagent": false
+    },
+    {
+     "id": "hard-01",
+     "prompt": "Write a Python function `gcd(a: int, b: int) -> int: greatest common divisor of two non-negative ints`. Reply with only the code in one ```python block, no explanation.",
+     "tools": [],
+     "subagent": false
+    }
+   ]
+  },
+  {
+   "tier": "complex",
+   "count": 12,
+   "what": "multi-step agent task: tool calls, a flaky tool that needs a retry, sub-agents; graded on the answer and the tools used",
+   "samples": [
+    {
+     "id": "complex-00",
+     "prompt": "We must restock ram-64gb and nic-100g to 120 units each. What is the total restock cost in EUR, rounded to 2 decimals?",
+     "tools": [
+      "inventory",
+      "price",
+      "fx"
+     ],
+     "subagent": false
+    },
+    {
+     "id": "complex-01",
+     "prompt": "Use a subagent to find the restock cost in USD for ssd-4tb (to 100 units) and do gpu-fan (to 100 units) yourself. Report the combined USD total.",
+     "tools": [
+      "inventory",
+      "price"
+     ],
+     "subagent": true
+    }
+   ]
+  }
+ ]
+}

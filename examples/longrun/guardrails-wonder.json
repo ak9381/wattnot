@@ -1,0 +1,9 @@
+{
+  "format": "wattnot.guardrail/1",
+  "low_cap_drop_pct": 15,
+  "high_below_tdp_pct": 70,
+  "max_gpus_auto": 1,
+  "approval_timeout_s": 600,
+  "tiers": {"muse-spark": "standard", "bisect": "standard", "muse-wonder": "standard",
+            "muse-spark-open": "strict", "modal-open": "strict"}
+}

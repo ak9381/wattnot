@@ -125,8 +125,20 @@ def save_raw(out: Path, tag: str, block: dict) -> dict:
 
 
 def run_step(rig: Rig, cap_w: int, reps: int, out: Path, *, workload: Workload, log=None,
-             tag: str = "") -> dict:
-    """reps x (stock block, cap block). Saves every block's replies and a step summary."""
+             tag: str = "", clock: str | None = None) -> dict:
+    """reps x (stock block, cap block). Saves every block's replies and a step summary.
+
+    `clock` (a wattnot.proof.clocks profile) locks SM clocks for the cap arm only. If the card
+    refuses, the step runs caps-only and says so (`clock_applied` False, `clock_fallback`)."""
+    lock = None
+    if clock and clock != "base":
+        from wattnot.proof.clocks import ClockedRig, ClockLock
+        lock = getattr(rig, "clock_lock", None) or ClockLock(rig.nvml, rig.handle)
+        try:
+            rig.clock_lock = lock  # one lock per process: a refusal sticks
+        except AttributeError:
+            pass
+        rig = ClockedRig(rig, lock, clock)
     stock_w = rig.default_w
     stock, capped = [], []
     burn_in(rig, log)
@@ -149,6 +161,16 @@ def run_step(rig: Rig, cap_w: int, reps: int, out: Path, *, workload: Workload, 
     c_slim = [save_raw(out, f"{name}-cap-r{i}", b) for i, b in enumerate(capped)]
     summ = summarize(cap_w, stock, capped, workload, rig.repeat)
     summ["blocks"] = {"stock": s_slim, "cap": c_slim}
+    summ["clock_requested"] = clock or "base"
+    if lock is not None:
+        lock.reset()
+        applied = bool(rig.applied)
+        summ["clock_applied"] = applied
+        summ["clock_profile"] = clock if applied else "base"
+        if not applied:
+            summ["clock_fallback"] = f"caps-only: {lock.reason}"
+    else:
+        summ["clock_applied"], summ["clock_profile"] = True, "base"
     (out / "steps").mkdir(parents=True, exist_ok=True)
     (out / "steps" / f"{name}.json").write_text(json.dumps(summ, indent=1))
     rig.set_cap(stock_w)

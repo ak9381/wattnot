@@ -455,12 +455,20 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
             k = int(sws.get("k") or 0)
             stopped = bool(sws.get("stopped"))
 
-            def measure(cap: int, by: str, reason: str | None) -> None:
-                rc2 = vm("step", "--cap", str(cap), "--reps", str(a.reps), ident=f"-{cap}")
+            def measure(cap: int, by: str, reason: str | None,
+                        clock: str | None = None, trace_id: str | None = None) -> None:
+                ck_ = clock if clock and clock != "base" else None
+                extra = ("--clock", ck_) if ck_ else ()
+                rc2 = vm("step", "--cap", str(cap), "--reps", str(a.reps), *extra,
+                         ident=f"-{cap}" + (f"-{ck_}" if ck_ else ""))
                 summ = grabbed.get("STEP_JSON")
                 if rc2 != 0 or not summ:
                     raise RuntimeError(f"step {cap} W failed")
                 summ["chosen_by"], summ["planner_reason"] = by, reason
+                if trace_id:
+                    summ["wonder_trace_id"] = trace_id
+                if summ.get("clock_fallback") and hasattr(planner, "caps_only"):
+                    planner.caps_only(summ["clock_fallback"])
                 done.append(summ)
                 tried.add(cap)
                 ck.update("cap_sweep", done_steps=done, tried=sorted(tried), k=k, pending=None)
@@ -503,7 +511,8 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                         usage = getattr(planner, "last_usage", {}) or {}
                         mname = getattr(planner, "model", "muse-spark")
                         by = prop.get("by", getattr(planner, "name", "planner"))
-                        real = by in ("muse-spark", "muse-spark-open", "modal-open")
+                        real = by in ("muse-spark", "muse-spark-open", "modal-open",
+                                      "muse-wonder")
                         st.tag = label if real else "ADVICE"
                         st.extra["planner"] = dict(planner_info)
                         st.outputs = (
@@ -537,7 +546,8 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                                 },
                                 "reason": prop["reason"],
                                 "planner": dict(planner_info),
-                                "model": mname if real else "bisect-fallback",
+                                "model": mname if real else (by if by == "muse-wonder-mock"
+                                                          else "bisect-fallback"),
                                 "tokens": {
                                     "input": usage.get("input", 0),
                                     "output": usage.get("output", 0),
@@ -572,7 +582,8 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                 if prop["kind"] == "stop":
                     ck.update("cap_sweep", k=k, stopped=True, pending=None)
                     break
-                measure(int(prop["cap_w"]), by, prop["reason"])
+                measure(int(prop["cap_w"]), by, prop["reason"], prop.get("clock_profile"),
+                        prop.get("trace_id"))
             for cap in a.grid or ():
                 if cap in tried or (deadline and time.time() > deadline):
                     continue
@@ -1208,7 +1219,12 @@ def main(argv=None) -> int:
     ap.add_argument("--max-proposals", type=int, default=4)
     ap.add_argument("--grid", default="", help="comma list of caps to fill in after Muse's picks")
     ap.add_argument("--sweep-budget-s", type=float, default=0)
-    ap.add_argument("--planner", choices=["muse", "bisect", "fake", "baseten-open", "modal-open"],
+    ap.add_argument("--wonder-live", action="store_true",
+                    help="planner wonder: make real Wonder calls (default: mock decisions)")
+    ap.add_argument("--wonder-lo", type=int, default=300)
+    ap.add_argument("--wonder-hi", type=int, default=375)
+    ap.add_argument("--planner", choices=["muse", "bisect", "fake", "baseten-open", "modal-open",
+                                          "wonder"],
                     default="muse")
     ap.add_argument("--baseten-cap-usd", type=float, default=1.0,
                     help="spend cap for the Baseten open-weights planner (USD)")
@@ -1266,7 +1282,11 @@ def main(argv=None) -> int:
     if a.mode == "rehearsal":
         from wattnot.proof.fake import FakeMeta, rehearsal_planner_answers
 
-        if a.planner == "baseten-open":
+        if a.planner == "wonder":
+            from wattnot.proof.wonder_planner import WonderPlanner
+
+            planner = WonderPlanner(lo=a.wonder_lo, hi=a.wonder_hi, mock=True)
+        elif a.planner == "baseten-open":
             from wattnot.proof.baseten_planner import OpenWeightsPlanner
 
             planner = OpenWeightsPlanner(FakeMeta(rehearsal_planner_answers()))
@@ -1296,6 +1316,14 @@ def main(argv=None) -> int:
         )
         if a.planner == "bisect":
             planner = BisectPlanner()
+        elif a.planner == "wonder":
+            from wattnot.meta.wonder import WonderSupervisor
+            from wattnot.proof.wonder_planner import WonderPlanner, candidates
+
+            sup = WonderSupervisor(mock=not a.wonder_live,
+                                   candidates=candidates(a.wonder_lo, a.wonder_hi),
+                                   threshold=0.01, patience=3)
+            planner = WonderPlanner(sup, lo=a.wonder_lo, hi=a.wonder_hi)
         elif a.planner == "baseten-open":
             if not os.environ.get("BASETEN_API_KEY", "").strip():
                 ap.error("BASETEN_API_KEY is not set")
