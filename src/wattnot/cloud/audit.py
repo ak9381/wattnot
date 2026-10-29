@@ -89,8 +89,14 @@ def window_for(receipt: Mapping, pad_min: int = 2) -> tuple[str, str]:
     start = datetime.fromisoformat(w["start"].replace("Z", "+00:00"))
     end = datetime.fromisoformat(w["end"].replace("Z", "+00:00")) + timedelta(minutes=pad_min)
     start = start.astimezone(UTC).replace(second=0, microsecond=0)
+    # The usage endpoint's 1-minute buckets are aligned to the minute and end_time is the
+    # exclusive upper edge. Flooring the start pulls in the bucket the run began in; the end must
+    # be pushed to the *next* minute boundary so the bucket the run (plus pad) ended in is still
+    # inside the half-open window. Keeping the raw seconds drops that final bucket whenever the
+    # end lands on a minute boundary -- which whole-second receipt timestamps make common.
+    end = end.astimezone(UTC).replace(second=0, microsecond=0) + timedelta(minutes=1)
     fmt = "%Y-%m-%dT%H:%M:%SZ"
-    return start.strftime(fmt), end.astimezone(UTC).strftime(fmt)
+    return start.strftime(fmt), end.strftime(fmt)
 
 
 def _why(e: urllib.error.HTTPError, key: str) -> str:
