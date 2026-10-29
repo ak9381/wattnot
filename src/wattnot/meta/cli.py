@@ -53,7 +53,7 @@ def add_parser(sub) -> None:
     wo = s.add_parser("wonder", help="Muse Wonder cap/clock Pareto supervisor")
     wo.add_argument("--input", help="compact per-trial JSON summaries file")
     wo.add_argument("--out", default="wonder_out", help="output directory for summary (json + md)")
-    wo.add_argument("--model", default="muse-wonder", help="Wonder model id")
+    wo.add_argument("--model", default="muse-wonder-1.0", help="Wonder model id")
     wo.add_argument("--threshold", type=float, default=0.01, help="Pareto improvement threshold")
     wo.add_argument("--patience", type=int, default=3, help="Pareto patience in trials")
     wo.add_argument("--mock", dest="mock", action="store_true", default=True, help="mock mode (default)")
