@@ -231,6 +231,19 @@ th .pdot,td .pdot{margin-left:0}
 .lab-legend{display:inline-flex;gap:10px;flex-wrap:wrap;align-items:center;font:10.5px var(--mono);color:var(--dim);margin:6px 0}
 .lab-legend .li{display:inline-flex;gap:5px;align-items:center;white-space:nowrap}
 .lab-legend .pdot{margin-left:0}
+/* ---- Code Mode detection card ---- */
+.cm-card{margin:14px 0}
+.cm-head{color:var(--ink2);font-size:14px;margin:4px 0 8px}
+.cm-legend{display:inline-flex;gap:12px;flex-wrap:wrap;align-items:center;font:10.5px var(--mono);color:var(--dim);margin:4px 0 8px}
+.cm-legend span{display:inline-flex;gap:5px;align-items:center;white-space:nowrap}
+.cm-legend .pdot{margin-left:0}
+.cm-cand{margin:12px 0;padding-top:8px;border-top:1px solid var(--hair)}
+.cm-cand h4{margin:0 0 4px;font:13px var(--mono);color:var(--ink2)}
+.cm-why{margin:2px 0 6px 18px;padding:0;font-size:12.5px;color:var(--dim)}
+.cm-tot{font-size:14px}
+/* a pending value: dimmed, with its own muted dot so it reads as "not filled in yet" */
+.n.n-pending{color:var(--dim);opacity:.6}
+.pdot.n-pending{background:transparent;border:1px dashed var(--dim)}
 /* ---- partner tags: plain white text in a small glass box, never coloured ---- */
 .bdg,.pb,.pwb,.src.ms,.who .cr b,.bdg.mp{color:#F4F8FB!important;background:rgba(255,255,255,.06)!important;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.22)!important;border-radius:5px;box-shadow:none!important}
 .who .cr b{min-width:0;padding:0 6px}
