@@ -23,7 +23,7 @@ Stages (each is a separate, opt-in command; nothing runs on import):
   modal run modal/spark_topk_sprint.py::prefetch    # CPU container -> Volume, NVFP4 533 GB
   modal run modal/spark_topk_sprint.py::power_probe # 1xT4 ~60 s: can we read NVML power?
   modal run modal/spark_topk_sprint.py::smoke       # 1xL4 Llama 3.2 1B, same code path
-  modal run modal/spark_topk_sprint.py::sprint      # 8xB200 top-k 8/6/4 (+8 repeat), checkpointed
+  modal run modal/spark_topk_sprint.py::sprint_cli  # 8xB200 top-k 8/6/4 (+8 repeat), checkpointed
 
 The real 8xB200 serve (``_serve_b200`` -> deploy + endpoint discovery) is the only paid GPU
 path here and is gated by an explicit flag: it refuses, *before any Modal API call*, unless
@@ -295,11 +295,13 @@ def run_topk(topk: int, *, out_dir, transport, mode: str, guard, model: str = MO
     make_timer = make_timer or kill_timer
     out_dir = Path(out_dir)
     guard.check_new_item()                                   # soft/hard cap gate before spending
-    fn_timeout = cloud_timeout_s(guard)                      # server-side backstop for this arm
+    # Server-side backstop for this arm: the SMALLER of the guard's remaining headroom and the
+    # per-arm cap -- never the full budget, or one slow arm could burn the whole $98 before the
+    # next cap check. The same value backs the local timer, so both fire together.
+    fn_timeout = min(cloud_timeout_s(guard), arm_cap_s)
     if fn_timeout <= 0:
         raise HardStop(f"modal: no headroom to launch top-k {topk}")
-    stage_cap = min(fn_timeout, arm_cap_s)
-    timer = make_timer(stage_cap, APP_NAME)                  # local backstop next to the timeout
+    timer = make_timer(fn_timeout, APP_NAME)                 # local backstop next to the timeout
     started = clock()
     try:
         handle = (serve or _serve_b200)(topk, model, fn_timeout)
@@ -403,8 +405,9 @@ BASETEN_PLAN = (  # the three planned Baseten $98 runs (docs/spend-plan-98.md), 
 
 def baseten_dry_run(out_dir, *, sign_key=None, now=None) -> list[dict]:
     """CPU dry run of the Baseten $98 plan against a fake Baseten endpoint: baseline, the
-    thinking-level sweep and the judge. Each writes a signed receipt that verifies and can be
-    graded no higher than ESTIMATE (hosted energy is never MEASURED). No network, no money."""
+    thinking-level sweep and the judge. Each writes a SIMULATED, signed receipt that verifies and
+    can be graded no higher than ESTIMATE (hosted energy is never MEASURED). No network, no
+    money."""
     from pathlib import Path
     from wattnot.cloud import run as rn
 
@@ -421,7 +424,6 @@ def baseten_dry_run(out_dir, *, sign_key=None, now=None) -> list[dict]:
 
 try:
     import modal  # type: ignore
-    _local = modal.is_local()
     app = modal.App(APP_NAME)
     image = (modal.Image.from_registry("vllm/vllm-openai:latest")
              .pip_install("huggingface_hub[hf_transfer]")
@@ -431,32 +433,35 @@ try:
     weights = modal.Volume.from_name(VOL, create_if_missing=True)
     ckpt_vol = modal.Volume.from_name(CKPT, create_if_missing=True)
 
-    PREFETCH_S = stage_timeout(4 * 3600, 0.5, _local)   # CPU container, about $0.5/h (ESTIMATE)
-    PROBE_S = stage_timeout(300, T4_USD_H, _local)
-    SMOKE_S = stage_timeout(ARM_CAP_S, 1.5, _local)     # 1xL4, about $1.5/h (ESTIMATE)
+    # Decorator timeouts are the STATIC per-stage caps only. The guard-bounded value is applied
+    # LAZILY inside each entrypoint (via with_options), never here: constructing the spend Guard
+    # at import touches the ledger file and can SystemExit, both of which must not happen just
+    # because the module is imported (e.g. by a test harness or a `--plan` run).
+    PREFETCH_CAP_S = 4 * 3600                           # CPU container, about $0.5/h (ESTIMATE)
+    PROBE_CAP_S = 300
+    SMOKE_CAP_S = ARM_CAP_S                              # 1xL4, about $1.5/h (ESTIMATE)
+    B200_SERVE_CAP_S = ARM_CAP_S                         # per-arm cap; guard bound applied at launch
 
-    @app.function(image=image, cpu=8, memory=16384, timeout=PREFETCH_S,
+    @app.function(image=image, cpu=8, memory=16384, timeout=PREFETCH_CAP_S,
                   volumes={"/weights": weights}, secrets=[modal.Secret.from_name("hf")])
-    def prefetch():
+    def prefetch_vol():
         from huggingface_hub import snapshot_download
         snapshot_download(MODEL, cache_dir="/weights", max_workers=16)
         weights.commit()
 
-    @app.function(image=image, gpu="T4", timeout=PROBE_S)
+    @app.function(image=image, gpu="T4", timeout=PROBE_CAP_S)
     def power_probe():
         import subprocess
         return subprocess.run(["nvidia-smi", "--query-gpu=power.draw,power.limit,enforced.power.limit",
                                "--format=csv"], capture_output=True, text=True).stdout
 
-    @app.function(image=image, gpu="L4", timeout=SMOKE_S, volumes={"/weights": weights})
+    @app.function(image=image, gpu="L4", timeout=SMOKE_CAP_S, volumes={"/weights": weights})
     def smoke_serve():  # same serve code path as the real sprint, tiny model, cheap GPU
         import subprocess
         return subprocess.run(serve_args(8, SMOKE_MODEL, tp=1) + ["--dry-run"],
                               capture_output=True, text=True).stdout
 
-    B200_SERVE_S = stage_timeout(ARM_CAP_S, B200_8_USD_H, _local)  # per-arm cap, guard-bounded
-
-    @app.function(image=image, gpu=GPU_B200, timeout=B200_SERVE_S, max_containers=1,
+    @app.function(image=image, gpu=GPU_B200, timeout=B200_SERVE_CAP_S, max_containers=1,
                   volumes={"/weights": weights, "/ckpt": ckpt_vol},
                   secrets=[modal.Secret.from_name("hf")])
     @modal.concurrent(max_inputs=1000)
@@ -471,14 +476,24 @@ try:
         subprocess.Popen(serve_args(topk, model, tp=tp) + ["--port", str(SERVE_PORT)])
 
     @app.local_entrypoint()
+    def prefetch():  # GO-gated: a CPU container still costs money, so opt in like every other arm
+        _require_go("prefetch the NVFP4 weights to the Volume")
+        t = stage_timeout(PREFETCH_CAP_S, 0.5)          # guard bound, computed lazily
+        prefetch_vol.with_options(timeout=t).remote()
+
+    @app.local_entrypoint()
     def probe():
-        kill_timer(PROBE_S, APP_NAME)
-        print(power_probe.remote())
+        _require_go("run the T4 power probe")
+        t = stage_timeout(PROBE_CAP_S, T4_USD_H)        # guard bound, computed lazily
+        kill_timer(t, APP_NAME)
+        print(power_probe.with_options(timeout=t).remote())
 
     @app.local_entrypoint()
     def smoke():
-        kill_timer(SMOKE_S, APP_NAME)
-        print(smoke_serve.remote())
+        _require_go("run the L4 smoke serve")
+        t = stage_timeout(SMOKE_CAP_S, 1.5)             # guard bound, computed lazily
+        kill_timer(t, APP_NAME)
+        print(smoke_serve.with_options(timeout=t).remote())
 
     @app.local_entrypoint()
     def sprint_cli():  # pragma: no cover - deploys 8xB200, needs explicit go + money
@@ -493,8 +508,8 @@ try:
         # cheap L4 spec, never on 8xB200.
         smoke_first = os.environ.get(SMOKE_ENV) == "1"
         # Discover the (stable) endpoint URL once so the transport can be built before arm 0.
-        os.environ["MODAL_ENDPOINT_URL"] = _serve_b200(TOPKS[0], MODEL,
-                                                       B200_SERVE_S)["base_url"]
+        os.environ["MODAL_ENDPOINT_URL"] = _serve_b200(
+            TOPKS[0], MODEL, stage_timeout(B200_SERVE_CAP_S, B200_8_USD_H))["base_url"]
         from wattnot.cloud.transport import ModalLiveTransport
         res = sprint(out_dir="data/cloud/modal-sprint",
                      serve=_serve_b200, wait_serving=_wait_serving, smoke_first=smoke_first,

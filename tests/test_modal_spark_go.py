@@ -203,15 +203,18 @@ def test_smoke_arm_never_requests_b200(monkeypatch, tmp_path):
     assert smoke_sec["WATTNOT_SERVE_MODEL"] == m.SMOKE_MODEL and smoke_sec["WATTNOT_SERVE_TP"] == "1"
 
 
-def test_run_topk_fn_timeout_is_the_guard_cloud_timeout(monkeypatch, tmp_path):
-    """End to end through run_topk with the GO flag: the timeout handed to the serve path is the
-    guard's cloud_timeout_s, and the deploy re-asserts B200:8 -- all on the fake modal."""
+def test_run_topk_fn_timeout_is_capped_at_the_arm_budget(monkeypatch, tmp_path):
+    """End to end through run_topk with the GO flag: the server-side timeout handed to the serve
+    path is min(guard cloud_timeout_s, arm cap) -- never the full budget -- and the deploy
+    re-asserts B200:8. On a fresh $98 guard the remaining headroom dwarfs the per-arm cap, so the
+    arm cap is what binds."""
     monkeypatch.setenv("WATTNOT_MODAL_GO", "1")
     m, calls = _load_with_fake_modal()
     from wattnot.spend.guard import GPU_SECONDS, Guard, Ledger, Price, cloud_timeout_s
     g = Guard("modal", Price(GPU_SECONDS, usd_per_s=m.B200_8_USD_H / 3600),
               Ledger(tmp_path / "l.jsonl"), hard_usd=98.0, soft_usd=90.0)
-    expect = cloud_timeout_s(g)
+    expect = min(cloud_timeout_s(g), m.ARM_CAP_S)
+    assert expect == m.ARM_CAP_S < cloud_timeout_s(g)     # the arm cap is the binding limit here
 
     def fake_timer():
         class T:
@@ -225,3 +228,30 @@ def test_run_topk_fn_timeout_is_the_guard_cloud_timeout(monkeypatch, tmp_path):
     assert r["serving"] is True
     wo = next(kw for name, kw in calls if name == "with_options")
     assert wo["gpu"] == "B200:8" and wo["timeout"] == expect
+
+
+def test_probe_smoke_prefetch_entrypoints_refuse_without_go(monkeypatch):
+    """The three cheaper entrypoints (CPU prefetch, T4 probe, L4 smoke) are GO-gated just like the
+    8xB200 sprint: without WATTNOT_MODAL_GO=1 each refuses before any Modal call (no .remote)."""
+    monkeypatch.delenv("WATTNOT_MODAL_GO", raising=False)
+    for name in ("prefetch", "probe", "smoke"):
+        m, calls = _load_with_fake_modal()
+        with pytest.raises(SystemExit, match="WATTNOT_MODAL_GO"):
+            getattr(m, name)()
+        assert not any(c == "remote" for c, _ in calls), f"{name} touched Modal without GO"
+
+
+def test_import_has_no_guard_side_effect(monkeypatch):
+    """Importing the module (even with the SDK present and is_local True) must not construct the
+    spend Guard: that would create the ledger file and could SystemExit on no headroom. Make any
+    guard use at import explode, then assert the import still succeeds and exposes plain-int caps
+    (the guard bound is applied lazily in the entrypoints, not here)."""
+    import wattnot.spend.guard as guard
+
+    def boom(_g):   # stage_timeout -> guard_for(...) + cloud_timeout_s would hit this at import
+        raise AssertionError("the spend guard was touched at import time")
+
+    monkeypatch.setattr(guard, "cloud_timeout_s", boom)
+    m, _ = _load_with_fake_modal()          # must not raise (no stage_timeout at import)
+    assert isinstance(m.PREFETCH_CAP_S, int) and isinstance(m.B200_SERVE_CAP_S, int)
+    assert isinstance(m.PROBE_CAP_S, int) and isinstance(m.SMOKE_CAP_S, int)
