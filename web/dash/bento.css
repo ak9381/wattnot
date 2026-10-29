@@ -1,0 +1,32 @@
+/* Bento boxes: big number + short label; detail lives in the popup. */
+.wn-bento .wn-detail{display:none!important}
+.wn-bento{cursor:pointer;border:1px solid rgba(255,255,255,.08);transition:transform .12s ease,border-color .12s ease}
+.wn-bento:hover,.wn-bento:focus-visible{transform:translateY(-2px);border-color:rgba(255,255,255,.2);outline:none}
+.ov-kpi.wn-bento b,.hero-item.wn-bento .hero-val{font-size:32px}
+.ov-kpi.wn-bento .lvl,.hero-item.wn-bento .label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;opacity:.7}
+/* Label chips become an 8px dot with a tooltip; text stays for screen readers via aria-label. */
+.wn-dot{display:inline-block!important;width:8px!important;height:8px!important;min-width:8px;padding:0!important;margin:0 0 0 6px!important;border-radius:50%!important;border:0!important;font-size:0!important;line-height:0!important;overflow:hidden;vertical-align:middle;background:#9AA0AE;color:transparent!important;box-shadow:none!important}
+.wn-dot *{display:none!important}
+.wn-dot-measured{background:#2DD4A7}.wn-dot-estimate{background:#F5C451}.wn-dot-simulated{background:#5B9FE8}
+.wn-dot-replay{background:#A78BFA}.wn-dot-mock{background:#9AA0AE}.wn-dot-live{background:#34D399;box-shadow:0 0 0 2px rgba(52,211,153,.25)!important}.wn-dot-advice{background:#E39B7B}
+.wn-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:#A99FB8;margin:0 auto 12px;max-width:1240px;padding:0 4px}
+.wn-legend span{display:inline-flex;align-items:center;gap:6px}.wn-legend .wn-dot{margin:0!important}
+.wn-pop-scrim{position:fixed;inset:0;z-index:1000;background:rgba(10,8,16,.6);display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.wn-pop-scrim.on{display:flex}
+.wn-pop{width:min(480px,92vw);max-height:80vh;overflow:auto;background:#1F1A2F;border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:20px 22px;color:#DCD6E4;position:relative;font-size:14px;line-height:1.5}
+.wn-pop h3{margin:0 0 10px;font-size:16px}
+.wn-pop-x{position:absolute;top:10px;right:12px;background:none;border:0;color:#C9C1D6;font-size:22px;cursor:pointer}
+.wn-pop-full .wn-detail{display:block!important}.wn-pop-full{font-size:13px}.wn-pop-full code,.wn-pop-src code{font-size:12px;word-break:break-all}
+.wn-pop-lab,.wn-pop-src{margin:12px 0 0;font-size:12px;color:#A99FB8}
+.hotspot-card .hotspot-reason,.hotspot-card .hotspot-hash,.hotspot-card .hotspot-hash-label{display:none}
+.wn-pop .hotspot-reason,.wn-pop .hotspot-hash,.wn-pop .hotspot-hash-label{display:block}
+.wn-stub{opacity:.45}
+.wn-stub:hover,.wn-stub:focus-within{opacity:1}
+.wn-pend-note{font-size:12px;color:var(--dim,#9AA0AE);margin:6px 0 0}
+.wn-sample-h{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#9AA0AE;margin:40px 0 0}
+.ov-meta .mtags{display:flex;flex-wrap:wrap;gap:6px}
+.ov-meta .mtag{padding:4px 10px!important;min-height:0!important;width:auto!important;font-size:12px}
+#pickList li.pending:not(.now){display:none}
+.avn.stub{opacity:.45;transition:opacity .15s}
+.avn.stub:hover,.avn.stub:focus-within{opacity:1}
+.wn-pop-nodata{font-weight:600;margin:8px 0}

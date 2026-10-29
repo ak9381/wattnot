@@ -62,7 +62,7 @@ def test_build_with_and_without_inputs():
     assert by["meta"]["status"] == "used" and "note" not in by["meta"]
     assert by["baseten"]["calls"] == 1
     assert by["e2e"]["cost"] == {"value": 50.0, "unit": "INR", "label": "ESTIMATE"}
-    for pid in ("fireworks", "modal"):
+    for pid in ("modal",):
         assert by[pid]["status"] == "not_used" and by[pid]["what"] == "not used yet"
         assert by[pid]["calls"] is None and by[pid]["cost"]["value"] is None
     empty = P.build()

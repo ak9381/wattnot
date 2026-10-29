@@ -4,7 +4,7 @@
     if (document.querySelector("nav.wn-nav.gl")) return;
 
     const pathname = window.location.pathname || "";
-    const isRunPage = pathname.includes("/run/") || document.querySelector('script[src*="../dash/chrome.js"]');
+    const isRunPage = pathname.includes("/run/") || pathname.includes("/room/") || document.querySelector('script[src*="../dash/chrome.js"]');
     const prefix = isRunPage ? "../dash/" : "";
 
     const isLanding = !!(
@@ -23,33 +23,24 @@
 
     // 1. Injected Header
     const isV2Page = pathname.includes("v2.html") || !!document.querySelector("#pReport");
-    const v2TabsHtml = `
-      <nav class="tabs wn-tabs" id="tabs" aria-label="Views">
-        <button data-p="pHome" class="on">Overview</button>
-        <button data-p="pCfg">Configure</button>
-        <button data-p="pRun">Run</button>
-        <button data-p="pReport">Compare</button>
-        <button data-p="pProof">Proof</button>
-        <button data-p="pLearn">How it works</button>
-      </nav>
-    `;
+    // One header rule: the shared sticky header is the only nav on every page.
+    // v2 sections are reached by in-page anchors (#pCfg, #pRun, ...) and the links below.
 
     const nav = document.createElement("nav");
-    nav.className = "wn-nav gl" + (isV2Page ? " wn-nav-v2" : "");
+    nav.className = "wn-nav gl";
     nav.setAttribute("aria-label", "Main navigation");
     nav.innerHTML = `
       <div class="wn-nav-inner">
         <a class="wn-brand" href="${prefix}index.html">Watt<i>Not</i></a>
         <div class="wn-links" style="margin-left:auto">
-          <a class="wn-link" data-nav="dashboard" href="${prefix}runs.html">Dashboard</a>
-          <a class="wn-link" data-nav="runs" href="${prefix}runs.html#runs">Runs</a>
+          <a class="wn-link" data-nav="dashboard" href="${prefix}v2.html#pHome">Dashboard</a>
+          <a class="wn-link" data-nav="runs" href="${prefix}runs.html">Runs</a>
           <a class="wn-link" data-nav="compare" href="${prefix}v2.html#pReport">Compare</a>
           <a class="wn-link" data-nav="reports" href="${prefix}report.html?run=run2-llama-350w">Reports</a>
           <a class="wn-link" data-nav="graph" href="${prefix}graph.html">Live graph</a>
         </div>
         <div class="wn-slot-wrap" id="wn-slot-wrap"></div>
       </div>
-      ${isV2Page ? `<div class="wn-nav-subline">${v2TabsHtml}</div>` : ""}
     `;
 
     document.body.prepend(nav);
@@ -98,6 +89,12 @@
       }
     }
 
+    // 2b. Bento layer (quiet labels, one legend, click popups) on every page except the landing page.
+    if (!isLanding) {
+      const css = document.createElement("link"); css.rel = "stylesheet"; css.href = prefix + "bento.css"; document.head.append(css);
+      import(new URL(prefix + "bento.js", window.location.href).href).catch(() => {});
+    }
+
     // 3. Active link updater
     function updateActive() {
       const path = window.location.pathname || "";
@@ -109,14 +106,13 @@
 
       let targetNav = null;
       if (path.includes("runs.html")) {
-        if (hash === "#runs") targetNav = "runs";
-        else targetNav = "dashboard";
+        targetNav = "runs";
       } else if (path.includes("graph.html")) {
         targetNav = "graph";
       } else if (path.includes("report.html")) {
         targetNav = "reports";
-      } else if (path.includes("v2.html")) {
-        targetNav = "compare";
+      } else if (path.includes("v2.html") || isV2Page) {
+        targetNav = hash === "#pReport" ? "compare" : "dashboard";
       }
 
       if (targetNav) {
@@ -153,6 +149,17 @@
     `;
 
     document.body.appendChild(footer);
+    // Keep page content clear of the fixed footer: bottom padding = footer height + its offset + a gap.
+    const padForFooter = () => {
+      const need = footer.offsetHeight + 14 + 16;
+      document.documentElement.style.setProperty("--wn-foot", need + "px");
+      document.body.style.paddingBottom = "";
+      const base = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+      if (base < need) document.body.style.paddingBottom = need + "px";
+    };
+    padForFooter();
+    if (window.ResizeObserver) new ResizeObserver(padForFooter).observe(footer);
+    window.addEventListener("resize", padForFooter);
   }
 
   if (document.readyState === "loading") {

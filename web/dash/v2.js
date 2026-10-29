@@ -192,7 +192,7 @@ function renderCfg() {
   S.step ??= 1;
   const byId = Object.fromEntries(O.options.map((o) => [o.id, o]));
   const adv = O.options.filter((o) => !ESSENTIAL_IDS.includes(o.id)).map((o) => fld(o)).join("");
-  $("#pCfg").innerHTML = `<div class="intro"><div><h1>Configure a new run</h1><p>One question per page, six pages. Your answers collect on the right; press Edit on any of them to go back to that page. Everything else keeps a safe default. Use Tab and the arrow keys to move between cards, Enter to continue. Live GPU runs are locked on this screen; it only replays recorded runs, so it costs nothing.</p></div></div>
+  $("#pCfg").innerHTML = `<div class="intro"><div><h1>Configure a new run</h1><p>Six short questions. Edit any answer on the right. Replays recorded runs only: no GPU, no cost.</p></div></div>
     <div class="cfg-step bento"><div class="glass tile span4 lift step-main">
       <div class="step-prog"><span id="stepCount" role="status"></span><ol id="stepDots" aria-label="Progress"></ol></div>
       <div id="stepBody" aria-live="polite"></div>
@@ -1111,12 +1111,17 @@ function mountCompare() {
     });
     $$(".rad-node, .rad-leaf", stage).forEach((n) => n.remove());
 
+    let hiddenPending = 0;
+    const onPathAny = (id) => (S.cmpPath || []).includes(id);
     if (!S.cmpCollapsed && S.cmpActive) {
       // 1. Render child nodes for each level in path
       for (let d = 0; d <= S.cmpPath.length; d++) {
         for (const node of treeChildren(S.cmpPath.slice(0, d))) {
           const v = treeValue(rec, S.cmpActive, node);
           const has = !!(node.kids && node.kids.length);
+          // No value yet and nothing under it: leave it out (no node, no edge); a note counts it.
+          const anyData = (n) => !!treeValue(rec, S.cmpActive, n) || (n.kids || []).some(anyData);
+          if (!anyData(node) && !onPathAny(node.id)) { hiddenPending++; continue; }
           const onPath = S.cmpPath[d] === node.id;
           const desc = TREE_DESC[node.id] || "";
           const stableId = node.id === "waste" ? "agent-waste" : node.id;
@@ -1156,6 +1161,10 @@ function mountCompare() {
       }
     }
 
+    const wrap = stage.closest(".radial-wrap");
+    let note = wrap?.parentElement?.querySelector(":scope > .wn-pend-note");
+    if (wrap && hiddenPending && !note) { note = document.createElement("p"); note.className = "wn-pend-note"; wrap.after(note); }
+    if (note) { note.hidden = !hiddenPending; note.textContent = `${hiddenPending} pending ${hiddenPending === 1 ? "metric" : "metrics"} hidden until measured.`; }
     renderCrumb();
     layoutTree();
     setTimeout(() => S.radPan?.fit(), 30);
@@ -1324,6 +1333,8 @@ function layoutTree() {
 
   function allocateSlots(kids, depth) {
     for (const k of kids) {
+      // Only lay out nodes that were rendered, so hidden pending nodes leave no gap.
+      if (!stage.querySelector(`.rad-node[data-depth="${depth}"][data-node="${k.id}"]`)) continue;
       const key = `${depth}:${k.id}`;
       const isExpanded = path[depth] === k.id;
       const subKids = isExpanded ? treeChildren(path.slice(0, depth + 1)) : [];

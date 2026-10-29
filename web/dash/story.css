@@ -241,7 +241,7 @@ h2.hl{font:600 clamp(28px,2.7vw,50px)/1.1 Inter,system-ui,sans-serif;letter-spac
 #arch .av.aglass .avn .sum .v{white-space:normal;overflow-wrap:anywhere;font-size:1.35em}
 #arch .av.aglass .avn .sum .pill{flex:none;align-self:center}
 /* ---- infinite pan/zoom canvas (pancanvas.js): viewport + transformed inner ---- */
-#amap.pc-view{position:relative;overflow:hidden;height:calc(100vh - 230px);min-height:440px;border:1px solid var(--hair);border-radius:12px;background:#080C11;background-image:radial-gradient(circle,#1F1A2F 1px,transparent 1.2px);background-size:22px 22px;cursor:grab;touch-action:none}
+#amap.pc-view{position:relative;overflow:hidden;height:calc(100vh - 230px - var(--wn-foot,0px));min-height:360px;border:1px solid var(--hair);border-radius:12px;background:#080C11;background-image:radial-gradient(circle,#1F1A2F 1px,transparent 1.2px);background-size:22px 22px;cursor:grab;touch-action:none}
 #amap.pc-view:active{cursor:grabbing}
 #amap.pc-view:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
 #amap .pc-inner{transform-origin:0 0;will-change:transform}

@@ -113,8 +113,8 @@ test("root redirect page has description and OG tags", () => {
 
 test("shared chrome header has updated nav links and Live graph", () => {
   const chromeJs = fs.readFileSync(path.join(dashDir, "chrome.js"), "utf8");
-  assert.match(chromeJs, /href="\${prefix}runs\.html">Dashboard<\/a>/);
-  assert.match(chromeJs, /href="\${prefix}runs\.html#runs">Runs<\/a>/);
+  assert.match(chromeJs, /href="\${prefix}v2\.html#pHome">Dashboard<\/a>/);
+  assert.match(chromeJs, /href="\${prefix}runs\.html">Runs<\/a>/);
   assert.match(chromeJs, /href="\${prefix}v2\.html#pReport">Compare<\/a>/);
   assert.match(chromeJs, /href="\${prefix}report\.html\?run=run2-llama-350w">Reports<\/a>/);
   assert.match(chromeJs, /href="\${prefix}graph\.html">Live graph<\/a>/);
@@ -149,7 +149,7 @@ test("header and footer are fixed with Apple glassmorphism and glow blobs", () =
   assert.match(chromeCss, /#4F4A63/);
 
   const v2Css = fs.readFileSync(path.join(dashDir, "v2.css"), "utf8");
-  assert.match(v2Css, /height:\s*calc\(100vh - 340px\)/);
+  assert.match(v2Css, /height:\s*calc\(100vh - 340px( - var\(--wn-foot,0px\))?\)/);
   assert.doesNotMatch(v2Css, /footer\.wn-footer\.gl\s*\{\s*display:\s*none/);
 });
 

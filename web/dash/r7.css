@@ -178,3 +178,8 @@ body:not(.illus) [data-illus] { display: none !important; }
 @media (max-width:640px){header.top{flex-wrap:wrap;padding:8px 12px;gap:8px}header.top .sp,header.top .chip{display:none}#tabs.tabs{order:5;width:100%;margin-left:0}.pf-card{padding:12px}.pf-t{display:block;overflow-x:auto}}
 .pf-lb td:first-child { min-width: 220px; } .pf-pend { opacity: .6; } .pf-best td { background: rgba(46,157,91,.12); }
 .pf-tag { font-size: .75rem; border: 1px solid rgba(127,127,127,.4); border-radius: 6px; padding: 0 4px; }
+
+/* one header: no sidebar nav; legend inline, in-page anchors */
+.ov{grid-template-columns:1fr}
+.ov-jump{margin:6px 0 0;font-size:13px;color:#A99FB8}.ov-jump a{color:#C9B8E0;text-decoration:none;border-bottom:1px dotted rgba(201,184,224,.5)}.ov-jump a:hover{color:#fff}
+.ov-legend{margin-top:8px}.ov-legend .r7legend{flex-direction:row;flex-wrap:wrap;gap:12px;font-size:12px}
