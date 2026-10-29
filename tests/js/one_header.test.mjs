@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 const web = new URL("../../web/", import.meta.url);
 const read = (p) => readFileSync(new URL(p, web), "utf8");
-const PAGES = ["dash/index.html", "dash/v2.html", "dash/runs.html", "dash/report.html", "dash/graph.html", "dash/metatools.html", "run/index.html", "room/index.html"];
+const PAGES = ["dash/index.html", "dash/v2.html", "dash/runs.html", "dash/report.html", "dash/graph.html", "dash/metatools.html", "dash/costbudget.html", "run/index.html", "room/index.html"];
 // room/node.html is an embeddable widget, not a page; it carries no header at all.
 
 test("every page loads the shared header", () => {
