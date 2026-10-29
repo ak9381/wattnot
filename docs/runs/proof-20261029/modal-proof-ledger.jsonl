@@ -1,0 +1,2 @@
+{"item": "cpu30", "kind": "reserve", "provider": "modal", "rid": "modal-1422073-1793246289006280849-1", "t": 1793246289.0062842, "usd": 0.001843}
+{"error": "exception", "item": "cpu30", "kind": "settle", "provider": "modal", "rid": "modal-1422073-1793246289006280849-1", "t": 1793246491.5603924, "usd": 0.001843}

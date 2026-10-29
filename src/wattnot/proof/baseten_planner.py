@@ -2,7 +2,7 @@
 
 `BasetenClient` is a `client(body, purpose=...) -> dict` callable with the same
 shape `MusePlanner` already reads (`usage_of` / `_json`): it POSTs to
-`{base_url}/chat/completions` with the key from `BASETEN_API_KEY`, priced from
+`{base_url}/chat/completions` with the key from `BASETEN_METRICS_KEY` (fallback `BASETEN_API_KEY`), priced from
 the reply's usage at the published rates. `OpenWeightsPlanner` is a
 `MusePlanner` that talks through it under the name `muse-spark-open`.
 
@@ -24,7 +24,7 @@ from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 
-from wattnot.cloud import BASE_URL, KEY_ENV, MODEL
+from wattnot.cloud import BASE_URL, INFERENCE_KEY_ENVS, KEY_ENV, MODEL, inference_key
 from wattnot.meta.agent import _body, _json, usage_of
 from wattnot.proof.planner import (
     SCHEMA,
@@ -75,9 +75,9 @@ def _now() -> str:
 def _default_transport(req: Mapping) -> dict:
     """POST one chat-completions body with urllib. `req` carries url, body and
     timeout only: the key is read here, used in one header, and never returned."""
-    key = os.environ.get(KEY_ENV, "").strip()
+    _, key = inference_key()
     if not key:
-        raise BasetenError(f"{KEY_ENV} is not set. Export it in your shell; it is never "
+        raise BasetenError(f"none of {', '.join(INFERENCE_KEY_ENVS)} is set. Export it in your shell; it is never "
                            "read from a file or a flag.")
     data = json.dumps(req["body"]).encode()
     r = urllib.request.Request(
@@ -156,8 +156,8 @@ class BasetenClient:
     provider = PROVIDER
 
     def _check_key(self) -> None:
-        if not os.environ.get(KEY_ENV, "").strip():
-            raise BasetenError(f"{KEY_ENV} is not set. Export it in your shell; it is "
+        if not inference_key()[1]:
+            raise BasetenError(f"none of {', '.join(INFERENCE_KEY_ENVS)} is set. Export it in your shell; it is "
                                "never read from a file or a flag.")
 
     def __call__(self, body: Mapping, purpose: str = "unspecified") -> dict:

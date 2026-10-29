@@ -228,8 +228,8 @@ def build_bundle(results: Path) -> dict:
     scenes = []
     if main:
         scenes += flex_scenes(main) + sweep_scenes(main)
-    if rerun:
-        scenes += adaptive_scene(rerun)
+    # The H100 adaptive top-k scene (earlier non-Meta test) is no longer shown on the H100
+    # page: top-k is pending as a Spark-on-Modal test. adaptive_scene() stays for the record.
     dirs = [d for d in (main, rerun) if d]
     return {
         "source": "results folder of the H100 Oct 30 run (NVIDIA H100 80GB, E2E Networks, Delhi)",

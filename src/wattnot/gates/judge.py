@@ -17,15 +17,17 @@ from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 
 from wattnot.gates.result import GateResult
-from wattnot.planner.spark import MODEL as SPARK_MODEL
-from wattnot.planner.spark import SparkClient
 
-# The quality judge is a Meta model on our own GPU: Llama 3.1 8B behind vLLM's OpenAI API
-# (JUDGE_BASE_URL, e.g. http://127.0.0.1:8000/v1). Without that URL the judge falls back to
-# Muse Spark on the Meta API. RUN2 used fixed answer checks only, so its numbers stay apart
-# from Meta-judge numbers: every result names its judge.
+# The quality judge is Muse Spark (Meta), hosted on Baseten at low thinking, called through
+# proof/baseten_planner.py and behind the $98 spend guard (wattnot.spend.guard). Llama 3.1 8B
+# on our own vLLM (JUDGE_BASE_URL) is the fallback only: on 401/402, repeated 429s, a spend
+# stop or a network failure. Every verdict records which judge made it (`judge_model`,
+# `judge_path`). History: RUN2 used fixed answer checks only; Oct 27-28 builds judged with Llama.
+SPARK_HOSTED_JUDGE = "meta-models/muse-spark-open"
 LLAMA_JUDGE = "meta-llama/Llama-3.1-8B-Instruct"
-MODEL = os.environ.get("JUDGE_MODEL", LLAMA_JUDGE)
+MODEL = os.environ.get("JUDGE_MODEL", SPARK_HOSTED_JUDGE)
+JUDGE_EFFORT = "low"
+SPEND_LEDGER = Path(os.environ.get("WATTNOT_SPEND_DIR", "data/spend")) / "baseten.ledger.jsonl"
 
 
 class LocalJudge:
@@ -44,11 +46,90 @@ class LocalJudge:
             return json.loads(r.read())
 
 
+def _status(e: Exception) -> int | None:
+    import re
+    m = re.search(r"HTTP (\d{3})", str(e))
+    return int(m.group(1)) if m else getattr(e, "status", None)
+
+
+class HostedSparkJudge:
+    """Muse Spark on Baseten at low thinking, every call reserved and settled in the guard.
+
+    `client` is a BasetenClient-like `client(body, purpose=...) -> dict`; `guard` a
+    wattnot.spend.guard.Guard. Provider errors become guard ProviderErrors, so 402 is a hard
+    stop, 429 gets bounded retries and then a soft stop, 401 a soft stop."""
+
+    def __init__(self, client=None, guard=None) -> None:
+        from wattnot.spend.guard import Guard, Ledger, Price, TOKEN
+        if client is None:
+            from wattnot.proof.baseten_planner import BasetenClient
+            client = BasetenClient(model=SPARK_HOSTED_JUDGE, cap_usd=98.0)
+        self.client = client
+        self.guard = guard or Guard("baseten", Price(TOKEN, 1.25, 4.25), Ledger(SPEND_LEDGER))
+        self.model = SPARK_HOSTED_JUDGE
+
+    def __call__(self, body: dict) -> dict:
+        from wattnot.spend.guard import ProviderError
+        body = {**body, "model": self.model, "reasoning_effort": JUDGE_EFFORT, "temperature": 0}
+        n_in = len(json.dumps(body)) // 3 + 1
+        worst = self.guard.price.tokens(n_in, int(body.get("max_tokens") or 1500))
+        box: dict = {}
+
+        def call() -> dict:
+            try:
+                box["raw"] = self.client(body, purpose="judge")
+            except Exception as e:  # noqa: BLE001 - map to the guard's provider errors
+                st = _status(e)
+                if st is not None:
+                    raise ProviderError(st, "judge") from None
+                raise
+            u = box["raw"].get("usage") or {}
+            return {"tokens_in": int(u.get("prompt_tokens", 0)),
+                    "tokens_out": int(u.get("completion_tokens", 0))}
+
+        if hasattr(self.client, "_check_key"):
+            self.client._check_key()   # no key: fall back without reserving spend
+        self.guard.check_new_item()
+        self.guard.call(call, worst, item="judge")
+        return box["raw"]
+
+
+class FallbackJudge:
+    """Try the primary (hosted Spark); on auth/credit/rate/spend/network failure use the
+    fallback (Llama). `last` names the judge that actually answered and why."""
+
+    def __init__(self, primary, fallback, primary_model: str, fallback_model: str) -> None:
+        self.primary, self.fallback = primary, fallback
+        self.primary_model, self.fallback_model = primary_model, fallback_model
+        self.last: dict = {}
+
+    def __call__(self, body: dict) -> dict:
+        from wattnot.spend.guard import HardStop, SoftStop
+        try:
+            raw = self.primary(body)
+            self.last = {"judge_model": self.primary_model, "judge_path": "hosted-spark"}
+            return raw
+        except (HardStop, SoftStop, OSError, RuntimeError) as e:
+            if self.fallback is None:
+                raise
+            why = f"{type(e).__name__}: {str(e)[:120]}"
+        raw = self.fallback({k: v for k, v in body.items() if k != "model"})
+        self.last = {"judge_model": self.fallback_model, "judge_path": "llama-fallback",
+                     "fallback_reason": why}
+        return raw
+
+
 def default_transport(model: str = MODEL):
+    """Hosted Spark first, Llama (JUDGE_BASE_URL) as the fallback. JUDGE_MODEL=<llama id>
+    forces the local judge (e.g. offline tests)."""
     base = os.environ.get("JUDGE_BASE_URL")
-    if base and not model.startswith("muse-"):
+    local = LocalJudge(base, LLAMA_JUDGE) if base else None
+    if model.startswith("meta-llama/"):
+        if local is None:
+            raise RuntimeError("JUDGE_BASE_URL is not set for the local judge")
         return LocalJudge(base, model), model
-    return SparkClient(model=SPARK_MODEL, purpose="judge"), SPARK_MODEL
+    return FallbackJudge(HostedSparkJudge(), local, SPARK_HOSTED_JUDGE, LLAMA_JUDGE), \
+        SPARK_HOSTED_JUDGE
 
 VERDICTS = ("same", "better", "worse")
 JUDGE_SET = Path(__file__).resolve().parents[3] / "data" / "judge-30.jsonl"
@@ -84,7 +165,12 @@ def request_body(items: Sequence[Mapping], model: str = MODEL, max_tokens: int =
 
 
 def parse_verdicts(raw: Mapping, ids: Sequence[str]) -> dict[str, str]:
-    data = json.loads(raw["choices"][0]["message"]["content"])
+    content = raw["choices"][0]["message"].get("content")
+    if not content:
+        # max_tokens was all spent on reasoning (seen live on Spark at max_tokens 64): no verdict.
+        # Treated as a cut-off: the caller falls back / counts it as a fail, never as a pass.
+        raise ValueError("judge reply cut off: no content (max_tokens spent on reasoning)")
+    data = json.loads(content)
     out = {v["id"]: v["verdict"] for v in data["verdicts"]
            if v.get("id") in ids and v.get("verdict") in VERDICTS}
     missing = set(ids) - set(out)
@@ -113,14 +199,19 @@ def judge(base_out: Mapping[str, str], cand_out: Mapping[str, str], items: Seque
         verdicts = parse_verdicts(raw, ids)
     except Exception as e:  # network, schema, missing items
         return GateResult("judge", False, f"judge unavailable: {type(e).__name__}",
-                          {"model": model, "n": len(ids)})
+                          {"model": model, "judge_model": None, "n": len(ids)})
     usage = raw.get("usage") or {}
+    who = dict(getattr(send, "last", None) or {})
+    jm = who.get("judge_model") or raw.get("model", model)
     worse = sum(v == "worse" for v in verdicts.values())
     rate = worse / len(ids)
     passed = rate <= max_worse
     return GateResult("judge", passed,
                       f"{worse}/{len(ids)} judged worse ({rate:.1%}, limit {max_worse:.0%})",
-                      {"model": raw.get("model", model), "judge_era": "meta-judge", "n": len(ids), "worse": worse,
+                      {"model": jm, "judge_model": jm,
+                       "judge_path": who.get("judge_path", "direct"),
+                       **({"fallback_reason": who["fallback_reason"]} if "fallback_reason" in who else {}),
+                       "judge_era": "meta-judge", "n": len(ids), "worse": worse,
                        "same": sum(v == "same" for v in verdicts.values()),
                        "better": sum(v == "better" for v in verdicts.values()),
                        "worse_rate": round(rate, 4), "max_worse": max_worse,

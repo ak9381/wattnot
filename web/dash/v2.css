@@ -429,3 +429,8 @@ h1,h2,h3,h4,.brand,nav.tabs button,.kpi .c,.lvl{font-family:"Montserrat",system-
 @media (max-height:860px){body:has(#pReport.on){overflow:auto;height:auto;max-height:none}}
 .rad-node.rad-pend{opacity:.65}.rad-node.rad-pend:hover,.rad-node.rad-pend:focus-within{opacity:1}
 .rad-pend-dot{display:inline-block;width:8px;height:8px;border-radius:50%;border:1.5px dashed #B2A6C3;box-sizing:border-box;margin-right:6px;vertical-align:-1px}
+
+/* pending items: dimmed with a dashed dot, never hidden */
+.is-pending{opacity:.6}
+.b-chip-pending .b-pending{display:inline-block;width:9px;height:9px;border-radius:50%;border:1.5px dashed #9AA0AE;font-size:0;color:transparent;vertical-align:middle}
+.b-chip-pending{opacity:.75}

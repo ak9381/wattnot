@@ -15,7 +15,10 @@ pkill -f "vllm serve" 2>/dev/null || true
 docker rm -f glimmer >/dev/null 2>&1 || true
 sleep 5
 EXTRA=()
-[ "$PREC" = fp8 ] && EXTRA+=(--quantization fp8)
+if [ "$PREC" = fp8 ]; then EXTRA+=(--quantization fp8); fi
+# e.g. GLIMMER_EXTRA_ARGS="--enable-prefix-caching" (prefix_cache_ab.py sets it per arm)
+# shellcheck disable=SC2206
+if [ -n "${GLIMMER_EXTRA_ARGS:-}" ]; then EXTRA+=(${GLIMMER_EXTRA_ARGS}); fi
 docker run -d --name glimmer --gpus device=0 --ipc=host -p "$PORT:$PORT" \
   -v "$HOME/.cache/huggingface:/root/.cache/huggingface" -e HF_TOKEN \
   "$IMAGE" "$MODEL" --port "$PORT" --served-model-name "$MODEL" \
@@ -24,6 +27,8 @@ docker run -d --name glimmer --gpus device=0 --ipc=host -p "$PORT:$PORT" \
 docker logs -f glimmer > "$LOG/vllm-glimmer-$PREC.log" 2>&1 &
 for _ in $(seq 1 240); do
   curl -fs "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1 && break
+  # fail fast if the server died (bad flag, OOM): don't burn 20 min of GPU waiting
+  if [ "$(docker inspect -f '{{.State.Running}}' glimmer 2>/dev/null)" != "true" ]; then break; fi
   sleep 5
 done
 curl -fs "http://127.0.0.1:$PORT/v1/models" >/dev/null || { echo "[glimmer] $PREC did not come up"; tail -n 30 "$LOG/vllm-glimmer-$PREC.log"; exit 22; }

@@ -18,7 +18,7 @@
  },
  "meta_judge": {
   "label": "PENDING",
-  "judge": "Llama 3.1 8B Instruct",
+  "judge": "Muse Spark (hosted on Baseten, low thinking); Llama 3.1 8B fallback",
   "note": "measured in the long GPU run; kept apart from RUN2"
  },
  "trace": {

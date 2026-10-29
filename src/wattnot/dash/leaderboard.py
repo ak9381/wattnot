@@ -164,9 +164,9 @@ def meta_models(ledger_path: Path | None = None, snapshot: Path | None = None) -
     elif snapshot and snapshot.exists():
         rows = json.loads(snapshot.read_text())["api"]
     local = [
-        {"model": "Llama 3.1 8B Instruct", "job": "the served model in RUN2; small model in small-first; quality judge",
+        {"model": "Llama 3.1 8B Instruct", "job": "the served model in RUN2; small model in small-first; judge fallback",
          "calls": None, "usd": None, "label": "MEASURED", "source": "own H100, cost is GPU hours (not an API bill)"},
-        {"model": "Muse Spark Open (Baseten)", "job": "big model when the small one fails a check; hosted planner",
+        {"model": "Muse Spark Open (Baseten)", "job": "big model when the small one fails a check; hosted planner; default quality judge",
          "calls": 1, "usd": 0.004, "label": "MEASURED", "source": "docs/runs/spark-open-planner-smoke.ledger.json"},
     ]
     return rows + local

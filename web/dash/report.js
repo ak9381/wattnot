@@ -4,6 +4,7 @@
 // Receipt details. Every number carries its data label word visibly next to it;
 // anything the run did not measure shows "—" pending.
 
+import { sharedLegend } from "./legend.js";
 import { mountMetaTools } from "./metatools.js";
 import { mountHotspotCard } from "./hotspot.js";
 import { mountEuLink, mountEuCard } from "./eulink.js";
@@ -286,11 +287,7 @@ function render() {
     <span>·</span><span class="v-chip ${fwTag}"><i class="v-lab ${fwTag}"></i>${esc(fwName)}</span>
     ${chip(d.label || "REPLAY")}</div>`;
 
-  $("#legend").innerHTML = `<span><i class="v-lab MEASURED"></i>MEASURED</span>
-    <span><i class="v-lab ESTIMATE"></i>ESTIMATE</span>
-    <span><i class="v-lab SIMULATED"></i>SIMULATED</span>
-    <span><i class="v-lab MOCK"></i>MOCK</span>
-    <span><i class="v-lab REPLAY"></i>REPLAY</span>`;
+  $("#legend").innerHTML = sharedLegend();
 
   $("#heroRunBadge").innerHTML = `<span class="v-chip ${fwTag}" style="margin-right:6px"><i class="v-lab ${fwTag}"></i>${esc(fwName)}</span>${chip(d.label || "REPLAY")}`;
 

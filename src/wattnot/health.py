@@ -50,6 +50,9 @@ def _key(ep: Mapping, env: Mapping) -> str | None:
             return load_key() or None
         except Exception:
             return None
+    if ep["id"] == "baseten":   # the one key lookup for Baseten (working key first, then the API key)
+        from wattnot.cloud import inference_key
+        return inference_key(env)[1] or None
     return env.get(ep["key_env"]) or None
 
 

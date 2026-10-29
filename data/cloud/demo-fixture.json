@@ -1,6 +1,6 @@
 {
  "format": "wattnot.cloud-fixture/1",
- "model": "meta-models/muse-spark-open-1026",
+ "model": "meta-models/muse-spark-open",
  "note": "made up by scripts/gen_cloud_fixture.py; no API call was made",
  "replies": {
   "arith-1|high|0": {
@@ -17,7 +17,7 @@
      }
     ],
     "id": "chatcmpl-sim-000115",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1546,
      "completion_tokens_details": {
@@ -52,7 +52,7 @@
      }
     ],
     "id": "chatcmpl-sim-000116",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1638,
      "completion_tokens_details": {
@@ -87,7 +87,7 @@
      }
     ],
     "id": "chatcmpl-sim-000117",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1795,
      "completion_tokens_details": {
@@ -122,7 +122,7 @@
      }
     ],
     "id": "chatcmpl-sim-000109",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 296,
      "completion_tokens_details": {
@@ -157,7 +157,7 @@
      }
     ],
     "id": "chatcmpl-sim-000110",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 290,
      "completion_tokens_details": {
@@ -192,7 +192,7 @@
      }
     ],
     "id": "chatcmpl-sim-000111",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 326,
      "completion_tokens_details": {
@@ -227,7 +227,7 @@
      }
     ],
     "id": "chatcmpl-sim-000112",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 774,
      "completion_tokens_details": {
@@ -262,7 +262,7 @@
      }
     ],
     "id": "chatcmpl-sim-000113",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 874,
      "completion_tokens_details": {
@@ -297,7 +297,7 @@
      }
     ],
     "id": "chatcmpl-sim-000114",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 799,
      "completion_tokens_details": {
@@ -332,7 +332,7 @@
      }
     ],
     "id": "chatcmpl-sim-000118",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 2582,
      "completion_tokens_details": {
@@ -367,7 +367,7 @@
      }
     ],
     "id": "chatcmpl-sim-000119",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 2915,
      "completion_tokens_details": {
@@ -402,7 +402,7 @@
      }
     ],
     "id": "chatcmpl-sim-000120",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 2845,
      "completion_tokens_details": {
@@ -437,7 +437,7 @@
      }
     ],
     "id": "chatcmpl-sim-000127",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1513,
      "completion_tokens_details": {
@@ -472,7 +472,7 @@
      }
     ],
     "id": "chatcmpl-sim-000128",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1702,
      "completion_tokens_details": {
@@ -507,7 +507,7 @@
      }
     ],
     "id": "chatcmpl-sim-000129",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1545,
      "completion_tokens_details": {
@@ -542,7 +542,7 @@
      }
     ],
     "id": "chatcmpl-sim-000121",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 304,
      "completion_tokens_details": {
@@ -577,7 +577,7 @@
      }
     ],
     "id": "chatcmpl-sim-000122",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 350,
      "completion_tokens_details": {
@@ -612,7 +612,7 @@
      }
     ],
     "id": "chatcmpl-sim-000123",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 333,
      "completion_tokens_details": {
@@ -647,7 +647,7 @@
      }
     ],
     "id": "chatcmpl-sim-000124",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 709,
      "completion_tokens_details": {
@@ -682,7 +682,7 @@
      }
     ],
     "id": "chatcmpl-sim-000125",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 725,
      "completion_tokens_details": {
@@ -717,7 +717,7 @@
      }
     ],
     "id": "chatcmpl-sim-000126",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 709,
      "completion_tokens_details": {
@@ -752,7 +752,7 @@
      }
     ],
     "id": "chatcmpl-sim-000130",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 2662,
      "completion_tokens_details": {
@@ -787,7 +787,7 @@
      }
     ],
     "id": "chatcmpl-sim-000131",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 2604,
      "completion_tokens_details": {
@@ -822,7 +822,7 @@
      }
     ],
     "id": "chatcmpl-sim-000132",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 2560,
      "completion_tokens_details": {
@@ -857,7 +857,7 @@
      }
     ],
     "id": "chatcmpl-sim-000139",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1687,
      "completion_tokens_details": {
@@ -892,7 +892,7 @@
      }
     ],
     "id": "chatcmpl-sim-000140",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1508,
      "completion_tokens_details": {
@@ -927,7 +927,7 @@
      }
     ],
     "id": "chatcmpl-sim-000141",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1580,
      "completion_tokens_details": {
@@ -962,7 +962,7 @@
      }
     ],
     "id": "chatcmpl-sim-000133",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 325,
      "completion_tokens_details": {
@@ -997,7 +997,7 @@
      }
     ],
     "id": "chatcmpl-sim-000134",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 351,
      "completion_tokens_details": {
@@ -1032,7 +1032,7 @@
      }
     ],
     "id": "chatcmpl-sim-000135",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 324,
      "completion_tokens_details": {
@@ -1067,7 +1067,7 @@
      }
     ],
     "id": "chatcmpl-sim-000136",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 866,
      "completion_tokens_details": {
@@ -1102,7 +1102,7 @@
      }
     ],
     "id": "chatcmpl-sim-000137",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 794,
      "completion_tokens_details": {
@@ -1137,7 +1137,7 @@
      }
     ],
     "id": "chatcmpl-sim-000138",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 722,
      "completion_tokens_details": {
@@ -1172,7 +1172,7 @@
      }
     ],
     "id": "chatcmpl-sim-000142",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 2446,
      "completion_tokens_details": {
@@ -1207,7 +1207,7 @@
      }
     ],
     "id": "chatcmpl-sim-000143",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 2338,
      "completion_tokens_details": {
@@ -1242,7 +1242,7 @@
      }
     ],
     "id": "chatcmpl-sim-000144",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 2574,
      "completion_tokens_details": {
@@ -1277,7 +1277,7 @@
      }
     ],
     "id": "chatcmpl-sim-000198",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1312,7 +1312,7 @@
      }
     ],
     "id": "chatcmpl-sim-000199",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1347,7 +1347,7 @@
      }
     ],
     "id": "chatcmpl-sim-000200",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1382,7 +1382,7 @@
      }
     ],
     "id": "chatcmpl-sim-000201",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1417,7 +1417,7 @@
      }
     ],
     "id": "chatcmpl-sim-000202",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1452,7 +1452,7 @@
      }
     ],
     "id": "chatcmpl-sim-000203",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1487,7 +1487,7 @@
      }
     ],
     "id": "chatcmpl-sim-000204",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1522,7 +1522,7 @@
      }
     ],
     "id": "chatcmpl-sim-000205",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1557,7 +1557,7 @@
      }
     ],
     "id": "chatcmpl-sim-000190",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1592,7 +1592,7 @@
      }
     ],
     "id": "chatcmpl-sim-000191",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1627,7 +1627,7 @@
      }
     ],
     "id": "chatcmpl-sim-000192",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1662,7 +1662,7 @@
      }
     ],
     "id": "chatcmpl-sim-000193",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1697,7 +1697,7 @@
      }
     ],
     "id": "chatcmpl-sim-000194",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1732,7 +1732,7 @@
      }
     ],
     "id": "chatcmpl-sim-000195",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1767,7 +1767,7 @@
      }
     ],
     "id": "chatcmpl-sim-000196",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1802,7 +1802,7 @@
      }
     ],
     "id": "chatcmpl-sim-000197",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1837,7 +1837,7 @@
      }
     ],
     "id": "chatcmpl-sim-000182",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1872,7 +1872,7 @@
      }
     ],
     "id": "chatcmpl-sim-000183",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1907,7 +1907,7 @@
      }
     ],
     "id": "chatcmpl-sim-000184",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1942,7 +1942,7 @@
      }
     ],
     "id": "chatcmpl-sim-000185",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -1977,7 +1977,7 @@
      }
     ],
     "id": "chatcmpl-sim-000186",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -2012,7 +2012,7 @@
      }
     ],
     "id": "chatcmpl-sim-000187",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -2047,7 +2047,7 @@
      }
     ],
     "id": "chatcmpl-sim-000188",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -2082,7 +2082,7 @@
      }
     ],
     "id": "chatcmpl-sim-000189",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 20,
      "completion_tokens_details": {
@@ -2117,7 +2117,7 @@
      }
     ],
     "id": "chatcmpl-sim-000043",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 489,
      "completion_tokens_details": {
@@ -2152,7 +2152,7 @@
      }
     ],
     "id": "chatcmpl-sim-000044",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 473,
      "completion_tokens_details": {
@@ -2187,7 +2187,7 @@
      }
     ],
     "id": "chatcmpl-sim-000045",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 433,
      "completion_tokens_details": {
@@ -2222,7 +2222,7 @@
      }
     ],
     "id": "chatcmpl-sim-000037",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 96,
      "completion_tokens_details": {
@@ -2257,7 +2257,7 @@
      }
     ],
     "id": "chatcmpl-sim-000038",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 102,
      "completion_tokens_details": {
@@ -2292,7 +2292,7 @@
      }
     ],
     "id": "chatcmpl-sim-000039",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 108,
      "completion_tokens_details": {
@@ -2327,7 +2327,7 @@
      }
     ],
     "id": "chatcmpl-sim-000040",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 217,
      "completion_tokens_details": {
@@ -2362,7 +2362,7 @@
      }
     ],
     "id": "chatcmpl-sim-000041",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 246,
      "completion_tokens_details": {
@@ -2397,7 +2397,7 @@
      }
     ],
     "id": "chatcmpl-sim-000042",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 221,
      "completion_tokens_details": {
@@ -2432,7 +2432,7 @@
      }
     ],
     "id": "chatcmpl-sim-000046",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 778,
      "completion_tokens_details": {
@@ -2467,7 +2467,7 @@
      }
     ],
     "id": "chatcmpl-sim-000047",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 689,
      "completion_tokens_details": {
@@ -2502,7 +2502,7 @@
      }
     ],
     "id": "chatcmpl-sim-000048",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 713,
      "completion_tokens_details": {
@@ -2537,7 +2537,7 @@
      }
     ],
     "id": "chatcmpl-sim-000055",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 477,
      "completion_tokens_details": {
@@ -2572,7 +2572,7 @@
      }
     ],
     "id": "chatcmpl-sim-000056",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 463,
      "completion_tokens_details": {
@@ -2607,7 +2607,7 @@
      }
     ],
     "id": "chatcmpl-sim-000057",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 412,
      "completion_tokens_details": {
@@ -2642,7 +2642,7 @@
      }
     ],
     "id": "chatcmpl-sim-000049",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 99,
      "completion_tokens_details": {
@@ -2677,7 +2677,7 @@
      }
     ],
     "id": "chatcmpl-sim-000050",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 96,
      "completion_tokens_details": {
@@ -2712,7 +2712,7 @@
      }
     ],
     "id": "chatcmpl-sim-000051",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 92,
      "completion_tokens_details": {
@@ -2747,7 +2747,7 @@
      }
     ],
     "id": "chatcmpl-sim-000052",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 246,
      "completion_tokens_details": {
@@ -2782,7 +2782,7 @@
      }
     ],
     "id": "chatcmpl-sim-000053",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 222,
      "completion_tokens_details": {
@@ -2817,7 +2817,7 @@
      }
     ],
     "id": "chatcmpl-sim-000054",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 219,
      "completion_tokens_details": {
@@ -2852,7 +2852,7 @@
      }
     ],
     "id": "chatcmpl-sim-000058",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 732,
      "completion_tokens_details": {
@@ -2887,7 +2887,7 @@
      }
     ],
     "id": "chatcmpl-sim-000059",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 792,
      "completion_tokens_details": {
@@ -2922,7 +2922,7 @@
      }
     ],
     "id": "chatcmpl-sim-000060",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 644,
      "completion_tokens_details": {
@@ -2957,7 +2957,7 @@
      }
     ],
     "id": "chatcmpl-sim-000067",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 434,
      "completion_tokens_details": {
@@ -2992,7 +2992,7 @@
      }
     ],
     "id": "chatcmpl-sim-000068",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 471,
      "completion_tokens_details": {
@@ -3027,7 +3027,7 @@
      }
     ],
     "id": "chatcmpl-sim-000069",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 409,
      "completion_tokens_details": {
@@ -3062,7 +3062,7 @@
      }
     ],
     "id": "chatcmpl-sim-000061",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 103,
      "completion_tokens_details": {
@@ -3097,7 +3097,7 @@
      }
     ],
     "id": "chatcmpl-sim-000062",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 108,
      "completion_tokens_details": {
@@ -3132,7 +3132,7 @@
      }
     ],
     "id": "chatcmpl-sim-000063",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 105,
      "completion_tokens_details": {
@@ -3167,7 +3167,7 @@
      }
     ],
     "id": "chatcmpl-sim-000064",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 222,
      "completion_tokens_details": {
@@ -3202,7 +3202,7 @@
      }
     ],
     "id": "chatcmpl-sim-000065",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 237,
      "completion_tokens_details": {
@@ -3237,7 +3237,7 @@
      }
     ],
     "id": "chatcmpl-sim-000066",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 199,
      "completion_tokens_details": {
@@ -3272,7 +3272,7 @@
      }
     ],
     "id": "chatcmpl-sim-000070",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 683,
      "completion_tokens_details": {
@@ -3307,7 +3307,7 @@
      }
     ],
     "id": "chatcmpl-sim-000071",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 765,
      "completion_tokens_details": {
@@ -3342,7 +3342,7 @@
      }
     ],
     "id": "chatcmpl-sim-000072",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 647,
      "completion_tokens_details": {
@@ -3377,7 +3377,7 @@
      }
     ],
     "id": "chatcmpl-sim-000007",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 544,
      "completion_tokens_details": {
@@ -3412,7 +3412,7 @@
      }
     ],
     "id": "chatcmpl-sim-000008",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 600,
      "completion_tokens_details": {
@@ -3447,7 +3447,7 @@
      }
     ],
     "id": "chatcmpl-sim-000009",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 614,
      "completion_tokens_details": {
@@ -3482,7 +3482,7 @@
      }
     ],
     "id": "chatcmpl-sim-000001",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 109,
      "completion_tokens_details": {
@@ -3517,7 +3517,7 @@
      }
     ],
     "id": "chatcmpl-sim-000002",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 119,
      "completion_tokens_details": {
@@ -3552,7 +3552,7 @@
      }
     ],
     "id": "chatcmpl-sim-000003",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 123,
      "completion_tokens_details": {
@@ -3587,7 +3587,7 @@
      }
     ],
     "id": "chatcmpl-sim-000004",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 298,
      "completion_tokens_details": {
@@ -3622,7 +3622,7 @@
      }
     ],
     "id": "chatcmpl-sim-000005",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 286,
      "completion_tokens_details": {
@@ -3657,7 +3657,7 @@
      }
     ],
     "id": "chatcmpl-sim-000006",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 258,
      "completion_tokens_details": {
@@ -3692,7 +3692,7 @@
      }
     ],
     "id": "chatcmpl-sim-000010",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 808,
      "completion_tokens_details": {
@@ -3727,7 +3727,7 @@
      }
     ],
     "id": "chatcmpl-sim-000011",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 994,
      "completion_tokens_details": {
@@ -3762,7 +3762,7 @@
      }
     ],
     "id": "chatcmpl-sim-000012",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 995,
      "completion_tokens_details": {
@@ -3797,7 +3797,7 @@
      }
     ],
     "id": "chatcmpl-sim-000019",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 545,
      "completion_tokens_details": {
@@ -3832,7 +3832,7 @@
      }
     ],
     "id": "chatcmpl-sim-000020",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 541,
      "completion_tokens_details": {
@@ -3867,7 +3867,7 @@
      }
     ],
     "id": "chatcmpl-sim-000021",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 581,
      "completion_tokens_details": {
@@ -3902,7 +3902,7 @@
      }
     ],
     "id": "chatcmpl-sim-000013",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 121,
      "completion_tokens_details": {
@@ -3937,7 +3937,7 @@
      }
     ],
     "id": "chatcmpl-sim-000014",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 118,
      "completion_tokens_details": {
@@ -3972,7 +3972,7 @@
      }
     ],
     "id": "chatcmpl-sim-000015",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 132,
      "completion_tokens_details": {
@@ -4007,7 +4007,7 @@
      }
     ],
     "id": "chatcmpl-sim-000016",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 279,
      "completion_tokens_details": {
@@ -4042,7 +4042,7 @@
      }
     ],
     "id": "chatcmpl-sim-000017",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 276,
      "completion_tokens_details": {
@@ -4077,7 +4077,7 @@
      }
     ],
     "id": "chatcmpl-sim-000018",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 256,
      "completion_tokens_details": {
@@ -4112,7 +4112,7 @@
      }
     ],
     "id": "chatcmpl-sim-000022",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1021,
      "completion_tokens_details": {
@@ -4147,7 +4147,7 @@
      }
     ],
     "id": "chatcmpl-sim-000023",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 933,
      "completion_tokens_details": {
@@ -4182,7 +4182,7 @@
      }
     ],
     "id": "chatcmpl-sim-000024",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 839,
      "completion_tokens_details": {
@@ -4217,7 +4217,7 @@
      }
     ],
     "id": "chatcmpl-sim-000031",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 512,
      "completion_tokens_details": {
@@ -4252,7 +4252,7 @@
      }
     ],
     "id": "chatcmpl-sim-000032",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 581,
      "completion_tokens_details": {
@@ -4287,7 +4287,7 @@
      }
     ],
     "id": "chatcmpl-sim-000033",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 539,
      "completion_tokens_details": {
@@ -4322,7 +4322,7 @@
      }
     ],
     "id": "chatcmpl-sim-000025",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 111,
      "completion_tokens_details": {
@@ -4357,7 +4357,7 @@
      }
     ],
     "id": "chatcmpl-sim-000026",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 110,
      "completion_tokens_details": {
@@ -4392,7 +4392,7 @@
      }
     ],
     "id": "chatcmpl-sim-000027",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 122,
      "completion_tokens_details": {
@@ -4427,7 +4427,7 @@
      }
     ],
     "id": "chatcmpl-sim-000028",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 270,
      "completion_tokens_details": {
@@ -4462,7 +4462,7 @@
      }
     ],
     "id": "chatcmpl-sim-000029",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 253,
      "completion_tokens_details": {
@@ -4497,7 +4497,7 @@
      }
     ],
     "id": "chatcmpl-sim-000030",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 294,
      "completion_tokens_details": {
@@ -4532,7 +4532,7 @@
      }
     ],
     "id": "chatcmpl-sim-000034",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 847,
      "completion_tokens_details": {
@@ -4567,7 +4567,7 @@
      }
     ],
     "id": "chatcmpl-sim-000035",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 855,
      "completion_tokens_details": {
@@ -4602,7 +4602,7 @@
      }
     ],
     "id": "chatcmpl-sim-000036",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 912,
      "completion_tokens_details": {
@@ -4637,7 +4637,7 @@
      }
     ],
     "id": "chatcmpl-sim-000151",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 4331,
      "completion_tokens_details": {
@@ -4672,7 +4672,7 @@
      }
     ],
     "id": "chatcmpl-sim-000152",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 4473,
      "completion_tokens_details": {
@@ -4707,7 +4707,7 @@
      }
     ],
     "id": "chatcmpl-sim-000153",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 4324,
      "completion_tokens_details": {
@@ -4742,7 +4742,7 @@
      }
     ],
     "id": "chatcmpl-sim-000145",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 703,
      "completion_tokens_details": {
@@ -4777,7 +4777,7 @@
      }
     ],
     "id": "chatcmpl-sim-000146",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 768,
      "completion_tokens_details": {
@@ -4812,7 +4812,7 @@
      }
     ],
     "id": "chatcmpl-sim-000147",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 719,
      "completion_tokens_details": {
@@ -4847,7 +4847,7 @@
      }
     ],
     "id": "chatcmpl-sim-000148",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1905,
      "completion_tokens_details": {
@@ -4882,7 +4882,7 @@
      }
     ],
     "id": "chatcmpl-sim-000149",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1962,
      "completion_tokens_details": {
@@ -4917,7 +4917,7 @@
      }
     ],
     "id": "chatcmpl-sim-000150",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1755,
      "completion_tokens_details": {
@@ -4952,7 +4952,7 @@
      }
     ],
     "id": "chatcmpl-sim-000154",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 7147,
      "completion_tokens_details": {
@@ -4987,7 +4987,7 @@
      }
     ],
     "id": "chatcmpl-sim-000155",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 5778,
      "completion_tokens_details": {
@@ -5022,7 +5022,7 @@
      }
     ],
     "id": "chatcmpl-sim-000156",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 5749,
      "completion_tokens_details": {
@@ -5057,7 +5057,7 @@
      }
     ],
     "id": "chatcmpl-sim-000163",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 3653,
      "completion_tokens_details": {
@@ -5092,7 +5092,7 @@
      }
     ],
     "id": "chatcmpl-sim-000164",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 4031,
      "completion_tokens_details": {
@@ -5127,7 +5127,7 @@
      }
     ],
     "id": "chatcmpl-sim-000165",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 4246,
      "completion_tokens_details": {
@@ -5162,7 +5162,7 @@
      }
     ],
     "id": "chatcmpl-sim-000157",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 882,
      "completion_tokens_details": {
@@ -5197,7 +5197,7 @@
      }
     ],
     "id": "chatcmpl-sim-000158",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 878,
      "completion_tokens_details": {
@@ -5232,7 +5232,7 @@
      }
     ],
     "id": "chatcmpl-sim-000159",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 872,
      "completion_tokens_details": {
@@ -5267,7 +5267,7 @@
      }
     ],
     "id": "chatcmpl-sim-000160",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 2190,
      "completion_tokens_details": {
@@ -5302,7 +5302,7 @@
      }
     ],
     "id": "chatcmpl-sim-000161",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 2085,
      "completion_tokens_details": {
@@ -5337,7 +5337,7 @@
      }
     ],
     "id": "chatcmpl-sim-000162",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 2052,
      "completion_tokens_details": {
@@ -5372,7 +5372,7 @@
      }
     ],
     "id": "chatcmpl-sim-000166",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 6084,
      "completion_tokens_details": {
@@ -5407,7 +5407,7 @@
      }
     ],
     "id": "chatcmpl-sim-000167",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 6007,
      "completion_tokens_details": {
@@ -5442,7 +5442,7 @@
      }
     ],
     "id": "chatcmpl-sim-000168",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 6435,
      "completion_tokens_details": {
@@ -5477,7 +5477,7 @@
      }
     ],
     "id": "chatcmpl-sim-000175",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 3684,
      "completion_tokens_details": {
@@ -5512,7 +5512,7 @@
      }
     ],
     "id": "chatcmpl-sim-000176",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 4052,
      "completion_tokens_details": {
@@ -5547,7 +5547,7 @@
      }
     ],
     "id": "chatcmpl-sim-000177",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 4313,
      "completion_tokens_details": {
@@ -5582,7 +5582,7 @@
      }
     ],
     "id": "chatcmpl-sim-000169",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1560,
      "completion_tokens_details": {
@@ -5617,7 +5617,7 @@
      }
     ],
     "id": "chatcmpl-sim-000170",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1560,
      "completion_tokens_details": {
@@ -5652,7 +5652,7 @@
      }
     ],
     "id": "chatcmpl-sim-000171",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1560,
      "completion_tokens_details": {
@@ -5687,7 +5687,7 @@
      }
     ],
     "id": "chatcmpl-sim-000172",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 2030,
      "completion_tokens_details": {
@@ -5722,7 +5722,7 @@
      }
     ],
     "id": "chatcmpl-sim-000173",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 2073,
      "completion_tokens_details": {
@@ -5757,7 +5757,7 @@
      }
     ],
     "id": "chatcmpl-sim-000174",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1805,
      "completion_tokens_details": {
@@ -5792,7 +5792,7 @@
      }
     ],
     "id": "chatcmpl-sim-000178",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 7209,
      "completion_tokens_details": {
@@ -5827,7 +5827,7 @@
      }
     ],
     "id": "chatcmpl-sim-000179",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 6396,
      "completion_tokens_details": {
@@ -5862,7 +5862,7 @@
      }
     ],
     "id": "chatcmpl-sim-000180",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 6972,
      "completion_tokens_details": {
@@ -5897,7 +5897,7 @@
      }
     ],
     "id": "chatcmpl-sim-000207",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 8,
      "completion_tokens_details": {
@@ -5932,7 +5932,7 @@
      }
     ],
     "id": "chatcmpl-sim-000213",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 8,
      "completion_tokens_details": {
@@ -5967,7 +5967,7 @@
      }
     ],
     "id": "chatcmpl-sim-000209",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 8,
      "completion_tokens_details": {
@@ -6002,7 +6002,7 @@
      }
     ],
     "id": "chatcmpl-sim-000211",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 8,
      "completion_tokens_details": {
@@ -6037,7 +6037,7 @@
      }
     ],
     "id": "chatcmpl-sim-000215",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 8,
      "completion_tokens_details": {
@@ -6072,7 +6072,7 @@
      }
     ],
     "id": "chatcmpl-sim-000206",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 8,
      "completion_tokens_details": {
@@ -6107,7 +6107,7 @@
      }
     ],
     "id": "chatcmpl-sim-000212",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 8,
      "completion_tokens_details": {
@@ -6142,7 +6142,7 @@
      }
     ],
     "id": "chatcmpl-sim-000208",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 8,
      "completion_tokens_details": {
@@ -6177,7 +6177,7 @@
      }
     ],
     "id": "chatcmpl-sim-000210",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 8,
      "completion_tokens_details": {
@@ -6212,7 +6212,7 @@
      }
     ],
     "id": "chatcmpl-sim-000214",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 8,
      "completion_tokens_details": {
@@ -6247,7 +6247,7 @@
      }
     ],
     "id": "chatcmpl-sim-000181",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 90,
      "completion_tokens_details": {
@@ -6282,7 +6282,7 @@
      }
     ],
     "id": "chatcmpl-sim-000079",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 984,
      "completion_tokens_details": {
@@ -6317,7 +6317,7 @@
      }
     ],
     "id": "chatcmpl-sim-000080",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 904,
      "completion_tokens_details": {
@@ -6352,7 +6352,7 @@
      }
     ],
     "id": "chatcmpl-sim-000081",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 849,
      "completion_tokens_details": {
@@ -6387,7 +6387,7 @@
      }
     ],
     "id": "chatcmpl-sim-000073",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 171,
      "completion_tokens_details": {
@@ -6422,7 +6422,7 @@
      }
     ],
     "id": "chatcmpl-sim-000074",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 162,
      "completion_tokens_details": {
@@ -6457,7 +6457,7 @@
      }
     ],
     "id": "chatcmpl-sim-000075",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 195,
      "completion_tokens_details": {
@@ -6492,7 +6492,7 @@
      }
     ],
     "id": "chatcmpl-sim-000076",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 419,
      "completion_tokens_details": {
@@ -6527,7 +6527,7 @@
      }
     ],
     "id": "chatcmpl-sim-000077",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 420,
      "completion_tokens_details": {
@@ -6562,7 +6562,7 @@
      }
     ],
     "id": "chatcmpl-sim-000078",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 435,
      "completion_tokens_details": {
@@ -6597,7 +6597,7 @@
      }
     ],
     "id": "chatcmpl-sim-000082",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1384,
      "completion_tokens_details": {
@@ -6632,7 +6632,7 @@
      }
     ],
     "id": "chatcmpl-sim-000083",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1281,
      "completion_tokens_details": {
@@ -6667,7 +6667,7 @@
      }
     ],
     "id": "chatcmpl-sim-000084",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1566,
      "completion_tokens_details": {
@@ -6702,7 +6702,7 @@
      }
     ],
     "id": "chatcmpl-sim-000091",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 869,
      "completion_tokens_details": {
@@ -6737,7 +6737,7 @@
      }
     ],
     "id": "chatcmpl-sim-000092",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 970,
      "completion_tokens_details": {
@@ -6772,7 +6772,7 @@
      }
     ],
     "id": "chatcmpl-sim-000093",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 875,
      "completion_tokens_details": {
@@ -6807,7 +6807,7 @@
      }
     ],
     "id": "chatcmpl-sim-000085",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 186,
      "completion_tokens_details": {
@@ -6842,7 +6842,7 @@
      }
     ],
     "id": "chatcmpl-sim-000086",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 176,
      "completion_tokens_details": {
@@ -6877,7 +6877,7 @@
      }
     ],
     "id": "chatcmpl-sim-000087",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 198,
      "completion_tokens_details": {
@@ -6912,7 +6912,7 @@
      }
     ],
     "id": "chatcmpl-sim-000088",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 413,
      "completion_tokens_details": {
@@ -6947,7 +6947,7 @@
      }
     ],
     "id": "chatcmpl-sim-000089",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 399,
      "completion_tokens_details": {
@@ -6982,7 +6982,7 @@
      }
     ],
     "id": "chatcmpl-sim-000090",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 405,
      "completion_tokens_details": {
@@ -7017,7 +7017,7 @@
      }
     ],
     "id": "chatcmpl-sim-000094",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1305,
      "completion_tokens_details": {
@@ -7052,7 +7052,7 @@
      }
     ],
     "id": "chatcmpl-sim-000095",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1278,
      "completion_tokens_details": {
@@ -7087,7 +7087,7 @@
      }
     ],
     "id": "chatcmpl-sim-000096",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1552,
      "completion_tokens_details": {
@@ -7122,7 +7122,7 @@
      }
     ],
     "id": "chatcmpl-sim-000103",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 908,
      "completion_tokens_details": {
@@ -7157,7 +7157,7 @@
      }
     ],
     "id": "chatcmpl-sim-000104",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 810,
      "completion_tokens_details": {
@@ -7192,7 +7192,7 @@
      }
     ],
     "id": "chatcmpl-sim-000105",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 930,
      "completion_tokens_details": {
@@ -7227,7 +7227,7 @@
      }
     ],
     "id": "chatcmpl-sim-000097",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 187,
      "completion_tokens_details": {
@@ -7262,7 +7262,7 @@
      }
     ],
     "id": "chatcmpl-sim-000098",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 183,
      "completion_tokens_details": {
@@ -7297,7 +7297,7 @@
      }
     ],
     "id": "chatcmpl-sim-000099",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 192,
      "completion_tokens_details": {
@@ -7332,7 +7332,7 @@
      }
     ],
     "id": "chatcmpl-sim-000100",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 430,
      "completion_tokens_details": {
@@ -7367,7 +7367,7 @@
      }
     ],
     "id": "chatcmpl-sim-000101",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 449,
      "completion_tokens_details": {
@@ -7402,7 +7402,7 @@
      }
     ],
     "id": "chatcmpl-sim-000102",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 387,
      "completion_tokens_details": {
@@ -7437,7 +7437,7 @@
      }
     ],
     "id": "chatcmpl-sim-000106",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1279,
      "completion_tokens_details": {
@@ -7472,7 +7472,7 @@
      }
     ],
     "id": "chatcmpl-sim-000107",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1412,
      "completion_tokens_details": {
@@ -7507,7 +7507,7 @@
      }
     ],
     "id": "chatcmpl-sim-000108",
-    "model": "meta-models/muse-spark-open-1026",
+    "model": "meta-models/muse-spark-open",
     "usage": {
      "completion_tokens": 1296,
      "completion_tokens_details": {

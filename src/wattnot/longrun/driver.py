@@ -115,10 +115,20 @@ def plan_glimmer(out: Path) -> list[Block]:
         Block("g5-fp8", "FP8 vs BF16, gated keep/reject on the same tiers", 1.5,
               tiers("g5", "muse-glimmer-30b-fp8", "--compare-to", full), min_hours=0.75,
               trim=tiers("g5", "muse-glimmer-30b-fp8", "--per-tier", "8", "--compare-to", full)),
-        # g6: free slot for the thinking-budget block (designed separately). Adaptive top-k is
-        # not in the H100 run: Glimmer is dense, and top-k is planned on Spark via Modal.
+        # Adaptive top-k is not in the H100 run: Glimmer is dense, and top-k is planned on
+        # Spark via Modal. In its place: the thinking budget per tier and prefix caching.
+        Block("g6-think", "Thinking budget per tier: 11 cells, stop-and-force-answer, "
+              "J/correct gate (1 pt), thinking_policy.json", 0.75,
+              _py("wattnot.longrun.thinking_budget", "--fake", "--out",
+                  str(out / "runs" / "g6")), min_hours=0.5,
+              trim=_py("wattnot.longrun.thinking_budget", "--fake", "--per-tier", "8", "--out",
+                       str(out / "runs" / "g6"))),
+        Block("g6b-prefix", "Prefix caching off vs on, Complex tier (ABBA, n>=3)", 0.42,
+              [sys.executable, str(Path(__file__).resolve().parents[3] / "scripts" /
+                                   "prefix_cache_ab.py"), "--fake", "--out",
+               str(out / "runs" / "g6b")]),
         Block("g7-flex", "Flex / load-shed test", 0.75, None),
-        Block("g8-buffer", "Buffer for redoing failed blocks", 1.0, None),
+        Block("g8-buffer", "Buffer for redoing failed blocks (15 min went to g6)", 0.75, None),
     ]
 
 
@@ -281,6 +291,13 @@ class Driver:
                 if ok:
                     break
                 self._note(kind="retry" if attempt == 1 else "gave-up", block=b.id, rc=rc)
+                # the retry runs the trimmed version when there is one, so one lost link does
+                # not push the blocks after it off the plan (g2 full redo = 2.75 h, trimmed 1.5 h)
+                if attempt == 1 and b.min_hours is not None and b.trim is not None \
+                        and not b.title.endswith("(trimmed)"):
+                    self._note(kind="trimmed", block=b.id, hours=b.min_hours, left=None, why="retry")
+                    b = Block(b.id, b.title + " (trimmed)", b.min_hours, b.trim, b.capture,
+                              b.optional)
         if not self.state["stopped"] and not getattr(self.vm, "deleted", False):
             d = self._teardown(why="end of plan", finished=True)
             self.state["stopped"] = "finished" if d.delete else "finished, VM kept (copy failed)"

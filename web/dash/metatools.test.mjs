@@ -21,7 +21,7 @@ test("extractMetaToolsData extracts judge, wonder, and musecode fields", () => {
   // Judge
   assert.equal(d.judgeVerdict, "pass");
   assert.equal(d.judgeScore, 0.942);
-  assert.equal(d.judgeModel, "meta-llama/Llama-3.1-8B-Instruct");
+  assert.equal(d.judgeModel, "meta-models/muse-spark-open");
 
   // Spark Trace ID
   assert.equal(d.sparkTraceId, "spark-9a8b7c6d5e4f3210");
@@ -50,8 +50,8 @@ test("renderMetaToolsHTML renders glass card with required elements and labels",
   assert.match(html, /class="metatools-pill pass"/);
   assert.match(html, /PASS/);
 
-  // Llama judge and spark trace ID
-  assert.match(html, /meta-llama\/Llama-3.1-8B-Instruct/);
+  // judge model and spark trace ID
+  assert.match(html, /meta-models\/muse-spark-open/);
   assert.match(html, /spark-9a8b7c6d5e4f3210/);
   assert.match(html, /94\.2%/);
 
@@ -124,7 +124,7 @@ test("compareRows formats comparative data across multiple receipts", () => {
   assert.ok(Array.isArray(rows));
   assert.ok(rows.length >= 6);
 
-  const verdictRow = rows.find((r) => r.metric === "Llama 8B Judge Verdict");
+  const verdictRow = rows.find((r) => r.metric === "Quality Judge Verdict");
   const expectedTag = sampleReceipt.measurement?.label || "SIMULATED";
   assert.deepEqual(verdictRow.values, [
     { text: "PASS", tag: expectedTag },

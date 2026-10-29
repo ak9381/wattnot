@@ -1,0 +1,6 @@
+{"item": "p0", "kind": "reserve", "provider": "baseten", "rid": "baseten-1415003-1793246220984602789-1", "t": 1793246220.9846056, "usd": 0.001338}
+{"item": "p0", "kind": "settle", "provider": "baseten", "rid": "baseten-1415003-1793246220984602789-1", "seconds": null, "t": 1793246222.9362195, "tokens_in": 158, "tokens_out": 23, "usd": 0.000295}
+{"item": "p1", "kind": "reserve", "provider": "baseten", "rid": "baseten-1415003-1793246222938842726-2", "t": 1793246222.9388456, "usd": 0.001338}
+{"item": "p1", "kind": "settle", "provider": "baseten", "rid": "baseten-1415003-1793246222938842726-2", "seconds": null, "t": 1793246224.181968, "tokens_in": 152, "tokens_out": 32, "usd": 0.000326}
+{"item": "p2", "kind": "reserve", "provider": "baseten", "rid": "baseten-1415003-1793246224183661300-3", "t": 1793246224.1836638, "usd": 0.001338}
+{"item": "p2", "kind": "settle", "provider": "baseten", "rid": "baseten-1415003-1793246224183661300-3", "seconds": null, "t": 1793246237.0612073, "tokens_in": 154, "tokens_out": 106, "usd": 0.000643}

@@ -24,7 +24,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from wattnot.cloud import BASE_URL, KEY_ENV, MODEL
+from wattnot.cloud import BASE_URL, INFERENCE_KEY_ENVS, KEY_ENV, MODEL, inference_key
 
 FIXTURE_FORMAT = "wattnot.cloud-fixture/1"
 RATE_HEADERS = ("x-ratelimit-limit-requests", "x-ratelimit-remaining-requests",
@@ -71,9 +71,9 @@ def read_env(name: str, env: Mapping[str, str] | None = None) -> str:
 
 
 def read_key(env: Mapping[str, str] | None = None) -> str:
-    key = read_env(KEY_ENV, env)
+    _, key = inference_key(env)
     if not key:
-        raise MissingKey(f"{KEY_ENV} is not set. Export it in your shell; it is never read from "
+        raise MissingKey(f"none of {', '.join(INFERENCE_KEY_ENVS)} is set. Export it in your shell; it is never read from "
                          "a file or a flag.")
     return key
 
