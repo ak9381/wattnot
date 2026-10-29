@@ -969,6 +969,7 @@ const TREE_DESC = {
   budget: "Spend must stay inside the run's budget.",
   sam: "SAM 3.1 outlines each rack; WattNot marks the rack it can cool. Heat is simulated from the measured power drop.",
 };
+const PEND_TIP = "Pending: fills in after the long H100 run.";
 const treeVal = (v, branch) => {
   if (!v) return `<span class="rad-miss">–</span><span class="rad-pending">pending</span>`;
   if (v.gate) return v.pass ? `<span class="rad-pass">✓ pass</span> ${badge("MEASURED")}` : `<span class="rad-fail">✕ fail</span> ${badge("MEASURED")}`;
@@ -1111,24 +1112,23 @@ function mountCompare() {
     });
     $$(".rad-node, .rad-leaf", stage).forEach((n) => n.remove());
 
-    let hiddenPending = 0;
-    const onPathAny = (id) => (S.cmpPath || []).includes(id);
     if (!S.cmpCollapsed && S.cmpActive) {
       // 1. Render child nodes for each level in path
       for (let d = 0; d <= S.cmpPath.length; d++) {
         for (const node of treeChildren(S.cmpPath.slice(0, d))) {
           const v = treeValue(rec, S.cmpActive, node);
           const has = !!(node.kids && node.kids.length);
-          // No value yet and nothing under it: leave it out (no node, no edge); a note counts it.
+          // No value yet and nothing under it: show it dimmed with a pending dot; it fills in after the long run.
           const anyData = (n) => !!treeValue(rec, S.cmpActive, n) || (n.kids || []).some(anyData);
-          if (!anyData(node) && !onPathAny(node.id)) { hiddenPending++; continue; }
+          const pend = !anyData(node);
           const onPath = S.cmpPath[d] === node.id;
           const desc = TREE_DESC[node.id] || "";
           const stableId = node.id === "waste" ? "agent-waste" : node.id;
           const nodeVal = v?.val || (v?.status === "pass" ? "pass" : (v?.status === "fail" ? "fail" : "–"));
           const nodeTag = v?.tag || (node.kind === "gate" ? "MEASURED" : "ESTIMATE");
           const el = document.createElement("div");
-          el.className = `rad-node min${onPath ? " on" : ""}`;
+          el.className = `rad-node min${onPath ? " on" : ""}${pend ? " rad-pend" : ""}`;
+          if (pend) el.title = PEND_TIP;
           el.dataset.depth = d;
           el.dataset.node = node.id;
           el.setAttribute("data-explain", `compare.${S.cmpActive}.${stableId}`);
@@ -1136,7 +1136,7 @@ function mountCompare() {
           el.setAttribute("data-explain-label", nodeTag);
           el.setAttribute("data-explain-source", `tree.${node.id}`);
           el.innerHTML = `<button class="rad-head2" aria-expanded="${onPath}" aria-label="${esc(node.name)}${has ? ": open its routes" : ""}">`
-            + `<div class="rad-node-row"><b>${esc(node.name)}</b>${has ? `<span class="rad-chev" aria-hidden="true">›</span>` : ""}</div>`
+            + `<div class="rad-node-row">${pend ? `<i class="rad-pend-dot" aria-label="${PEND_TIP}"></i>` : ""}<b>${esc(node.name)}</b>${has ? `<span class="rad-chev" aria-hidden="true">›</span>` : ""}</div>`
             + `<div class="rad-val">${treeVal(v, S.cmpActive)}</div>`
             + `${desc ? `<div class="rad-node-desc">${esc(desc)}</div>` : ""}`
             + `${node.own_only ? `<small class="rad-sub">own GPU only</small>` : ""}</button>`
@@ -1161,10 +1161,6 @@ function mountCompare() {
       }
     }
 
-    const wrap = stage.closest(".radial-wrap");
-    let note = wrap?.parentElement?.querySelector(":scope > .wn-pend-note");
-    if (wrap && hiddenPending && !note) { note = document.createElement("p"); note.className = "wn-pend-note"; wrap.after(note); }
-    if (note) { note.hidden = !hiddenPending; note.textContent = `${hiddenPending} pending ${hiddenPending === 1 ? "metric" : "metrics"} hidden until measured.`; }
     renderCrumb();
     layoutTree();
     setTimeout(() => S.radPan?.fit(), 30);

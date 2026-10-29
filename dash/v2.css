@@ -427,3 +427,5 @@ h1,h2,h3,h4,.brand,nav.tabs button,.kpi .c,.lvl{font-family:"Montserrat",system-
 
 /* Short viewports: let Compare scroll so the fixed footer never covers the graph. */
 @media (max-height:860px){body:has(#pReport.on){overflow:auto;height:auto;max-height:none}}
+.rad-node.rad-pend{opacity:.65}.rad-node.rad-pend:hover,.rad-node.rad-pend:focus-within{opacity:1}
+.rad-pend-dot{display:inline-block;width:8px;height:8px;border-radius:50%;border:1.5px dashed #B2A6C3;box-sizing:border-box;margin-right:6px;vertical-align:-1px}

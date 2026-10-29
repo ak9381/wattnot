@@ -22,7 +22,6 @@
 .wn-pop .hotspot-reason,.wn-pop .hotspot-hash,.wn-pop .hotspot-hash-label{display:block}
 .wn-stub{opacity:.45}
 .wn-stub:hover,.wn-stub:focus-within{opacity:1}
-.wn-pend-note{font-size:12px;color:var(--dim,#9AA0AE);margin:6px 0 0}
 .wn-sample-h{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#9AA0AE;margin:40px 0 0}
 .ov-meta .mtags{display:flex;flex-wrap:wrap;gap:6px}
 .ov-meta .mtag{padding:4px 10px!important;min-height:0!important;width:auto!important;font-size:12px}
