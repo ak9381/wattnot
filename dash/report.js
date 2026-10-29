@@ -381,6 +381,7 @@ function render() {
       const d = a?.data; if (!d) return;
       mountHotspotCard($("#hotspot-mount"), { hotspot_cap: { live: true, mask: d.mask, decision: d.decision, heat_label: d.labels?.heat_attribution,
         response_id: d.sam?.response_id,
+        photo: { url: "media/rack.jpg", w: 960, h: 720, credit: "Photo: Compaq server rack, Wikimedia Commons, CC BY 2.0 (not thermal)." },
         reason: `Live SAM 3.1 box on the public rack photo (response ${d.sam?.response_id}). The photo is not thermal, so the hot slot is simulated; the cap change is advice only.` } });
     }).catch(() => {});
   }
