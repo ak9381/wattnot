@@ -12,7 +12,8 @@ them, plus the read-only API check.
 
 > **Ground rules for this work (do not break):** launch nothing paid, no GPU, enable nothing live,
 > do not post anywhere, never delete any real VM or cloud resource, at most one local server at a
-> time (and shut it down), do not change the water factor (1.8 L/kWh). Nothing below launches or
+> time (and shut it down), do not change the water factor (0.36 L/kWh on-site cooling headline, up
+> to 1.8 L/kWh including power-plant water, WUE ESTIMATE). Nothing below launches or
 > deletes anything on its own — every live step is an explicit, reversible human action.
 
 ---
