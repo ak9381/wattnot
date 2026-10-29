@@ -4,3 +4,10 @@
 .lv-note{color:#C9B8F0}.lv-meta,.lv-sig{font-size:12px;color:#A99BC2}.lv-row code{font-family:"Fira Code",monospace;font-size:11.5px}
 .lv-row a{color:#C7B3FF}.lv-chip{display:inline-block;font:600 10.5px "Fira Code",monospace;padding:2px 7px;border-radius:999px;margin:0 2px;background:rgba(199,179,255,.16);color:#D8CCFF}
 .lv-live{background:rgba(120,220,180,.18);color:#9FF0CF}.lv-simulated{background:rgba(255,200,120,.16);color:#FFD59A}.lv-estimate{background:rgba(255,230,150,.14);color:#F3E2A6}.lv-advice{background:rgba(160,200,255,.16);color:#BCD6FF}
+/* bento: four boxes in a row; detail opens in the popup */
+.lv-card{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.lv-card>h3{grid-column:1/-1}
+.lv-card .lv-row{border-top:0;border-radius:14px;padding:16px;background:rgba(255,255,255,.03)}
+.lv-big{font:600 26px Montserrat,sans-serif;color:#E9E3F2;margin-bottom:6px}
+.lv-row.wn-bento .lv-lab,.lv-row.wn-bento .lv-lab *,.lv-row.wn-bento .lv-meta,.lv-row.wn-bento .lv-note,.lv-row.wn-bento .lv-sig{display:none!important}
+.lv-card .lv-sub{display:block;margin:4px 0 0}
+@media (max-width:900px){.lv-card{grid-template-columns:1fr 1fr}}
