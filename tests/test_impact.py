@@ -7,7 +7,9 @@ from wattnot.impact import estimate
 def test_math():
     i = estimate(0.01, 100_000, 8)  # 0.01 Wh x 100k req x 8 GPUs x 30 days
     assert i.kwh == pytest.approx(240.0)
-    assert i.usd == pytest.approx(28.8) and i.litres == pytest.approx(432.0)
+    # headline water is the on-site-cooling factor 0.36 L/kWh; upper is 1.8 L/kWh.
+    assert i.usd == pytest.approx(28.8) and i.litres == pytest.approx(86.4)
+    assert i.litres_upper == pytest.approx(432.0)
     j = estimate(0.01, 100_000, 8, pue=1.5, tariff_usd_per_kwh=0.1, wue_l_per_kwh=0, days=1)
     assert j.kwh == pytest.approx(12.0) and j.usd == pytest.approx(1.2) and j.litres == 0
 
@@ -25,7 +27,8 @@ def test_cli_every_line_is_estimate(capsys):
     lines = capsys.readouterr().out.strip().splitlines()
     assert all(x.startswith("ESTIMATE") for x in lines[:4])
     assert "Recommended actions:" in lines
-    assert "240.0 kWh" in lines[0] and "$28.80" in lines[1] and "432 L" in lines[2]
+    assert "240.0 kWh" in lines[0] and "$28.80" in lines[1]
+    assert "86 L" in lines[2] and "up to 432 L" in lines[2] and "0.36 L/kWh" in lines[2]
 
 
 def test_cli_negative_delta_says_added(capsys):

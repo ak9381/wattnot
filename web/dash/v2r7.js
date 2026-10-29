@@ -3,7 +3,7 @@
 // info-panel texts. Numbers come only from the run record; anything the
 // record does not hold reads "Measured in the long run".
 import { sharedLegend } from "./legend.js";
-import { popup, registerInfo, infoBtn, tip, lineChart, donut, gauge, workedExample, wireR7, KWH_PER_J, WATER_L_PER_KWH } from "./r7.js";
+import { popup, registerInfo, infoBtn, tip, lineChart, donut, gauge, workedExample, wireR7, KWH_PER_J, WATER_L_PER_KWH, WATER_L_PER_KWH_UPPER } from "./r7.js";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const fmt = (v, d = 2) => (v == null || Number.isNaN(+v) ? "–" : (+v).toLocaleString("en-US", { maximumFractionDigits: d }));
@@ -283,7 +283,7 @@ export function hostedChain(e) {
   return `<li>Tokens saved: ${n(fmt(e.tokens_saved?.value, 0), e.tokens_saved?.label || "ESTIMATE")} (with vs without, ${esc(e.basis || "")}; scaled up from ${esc(String(e.n_per_arm ?? "a few"))} calls per arm).</li>
     <li>× ${n(fmt(e.j_per_token?.value, 2), "ESTIMATE")} J/token = ${n(fmt(e.energy_j?.value, 0), "ESTIMATE")} J. Assumption: ${esc(e.j_per_token?.method || "")}; energy per token scales with active parameters.</li>
     <li>÷ 3,600,000 = ${n(fmt(e.energy_kwh?.value, 5), "ESTIMATE")} kWh.</li>
-    <li>× ${WATER_L_PER_KWH} L/kWh = ${n(fmt(e.water_l?.value, 5), "ESTIMATE")} L water.</li>
+    <li>× ${WATER_L_PER_KWH} L/kWh (on-site cooling) = ${n(fmt(e.water_l?.value, 5), "ESTIMATE")} L water; up to ${WATER_L_PER_KWH_UPPER} L/kWh including power-plant water${e.water_l_upper?.value == null ? "" : ` = ${n(fmt(e.water_l_upper.value, 5), "ESTIMATE")} L`} (ESTIMATE).</li>
     <li>Cost saved: ${n(`$${fmt(e.usd_saved?.value, 4)}`, "MEASURED")} (tokens × list price).</li>`;
 }
 function hostedDetail(rec, host) {
@@ -333,7 +333,7 @@ export function branchPopup(rec, id, price = 0.1387, water = WATER_L_PER_KWH) {
     <div>${optionBars(c.id, rec)}</div></div>${metaInRun(rec)}</div>`;
   return popup(c.title, html, { sub: `${esc(rec?.run_name || "")} · red is without WattNot, green is with`, onMount: (root) => wireCompare(root, rec, price, water) });
 }
-const BEXP = { power: "Energy per answer, in joules, with and without WattNot on the same prompts.", cost: "Electricity cost of a million answers, from the measured joules at the run's price per kWh. Derived from power: the % is the same as Power because dollars scale linearly with kWh, so it is an ESTIMATE, not a separate result.", water: "Cooling water for a million answers, from the measured joules at 1.8 L per kWh. Derived from power: the % is the same as Power because litres scale linearly with kWh, so it is an ESTIMATE, not a separate result." };
+const BEXP = { power: "Energy per answer, in joules, with and without WattNot on the same prompts.", cost: "Electricity cost of a million answers, from the measured joules at the run's price per kWh. Derived from power: the % is the same as Power because dollars scale linearly with kWh, so it is an ESTIMATE, not a separate result.", water: `Cooling water for a million answers, from the measured joules at ${WATER_L_PER_KWH} L per kWh (on-site cooling, ESTIMATE); up to ${WATER_L_PER_KWH_UPPER} L per kWh including power-plant water (ESTIMATE). Derived from power: the % is the same as Power because litres scale linearly with kWh, so it is an ESTIMATE, not a separate result.` };
 export function branchInfo(rec, id, price = 0.1387, water = WATER_L_PER_KWH) {
   const c = cardsData(rec, price, water).find((x) => x.id === id); if (!c) return null;
   const bj = rec?.phases?.baseline?.metrics?.j_per_req, wj = rec?.phases?.wattnot?.metrics?.j_per_req;
@@ -422,13 +422,13 @@ registerInfo({
   compare: { title: "How the comparison works", html: `<p>Every run is done twice on the same prompts: first without WattNot (the baseline), then with WattNot. Each card shows the difference.</p><p>Power is measured on the GPU. Cost and water are arithmetic on that measurement, so they are estimates. Open the ⓘ on any card for the worked example.</p>` },
   "calc-power": { title: "Energy per answer", html: `<p>Joules the GPU used, divided by answers served. Read from NVIDIA's NVML counter 10 times a second.</p><h3>Example</h3><p>350 W for 33 s serving 1,000 answers = 11,550 J ÷ 1,000 = 11.6 J per answer.</p>` },
   "calc-cost": { title: "From joules to dollars", html: `<p>1 kWh = 3,600,000 J. Cost = kWh × electricity price ($0.1387 per kWh, EIA US average).</p><h3>Worked example</h3>${workedExample(15.96, 11.63)}` },
-  "calc-water": { title: "From joules to litres of water", html: `<p>Data centres use water to cool the servers. Water = kWh × ${WATER_L_PER_KWH} L per kWh (industry-average WUE, on-site cooling only).</p><h3>Worked example</h3>${workedExample(15.96, 11.63)}` },
+  "calc-water": { title: "From joules to litres of water", html: `<p>Data centres use water to cool the servers. Water = kWh × ${WATER_L_PER_KWH} L per kWh (0.36, on-site cooling, ESTIMATE); up to ${WATER_L_PER_KWH_UPPER} L/kWh (1.8) including power-plant water (ESTIMATE).</p><h3>Worked example</h3>${workedExample(15.96, 11.63)}` },
   tiered: { title: "Tiered and k-means experts", html: `<p>A mixture-of-experts model has many small "experts" and uses only a few per word. Some experts are used all the time, most rarely.</p><p><b>Tiered</b> keeps the hot experts on the GPU at higher precision, warm ones at lower precision, and cold ones in RAM or on the CPU. <b>k-means</b> groups experts that are used together so each group can live in one place.</p><h3>Example</h3><p>40 experts: 8 hot ones stay on the GPU in 8-bit, 16 warm ones in 4-bit, 16 cold ones in CPU RAM. Less GPU memory, fewer watts, if quality holds.</p><p><b>What we measured:</b> in RUN1, tiered placement tied plain uniform 4-bit quantization (no gain, no loss).</p>` },
   router: { title: "WattNot picks per workload", html: `<p>All three places run on every compare: your GPU, Baseten and Modal. WattNot then picks one per kind of work.</p><ul><li><b>Interactive chat:</b> lowest p99 that passes the quality gate.</li><li><b>Batch:</b> lowest cost per 1k answers.</li><li><b>Private data:</b> your GPU only; prompts never leave.</li></ul><p>It always says why: "WattNot chose X because…", with the gate results. Hosted energy is an estimate because hosts do not share power meters.</p>` },
   thermal: { title: "Thermal floor plan", html: `<p>SAM 3.1 outlines each rack in a room photo. Each rack is coloured by temperature like an infrared camera: dark blue cool, yellow and white hot.</p><p>Rack outlines come from the scan. Temperatures are simulated from replayed GPU power: inlet 22 °C + 0.05 °C per watt.</p>` },
   experts: { title: "Expert routing", html: `<p>Each column is one step of the prompt; each row is one expert. Brighter cells mean more words were sent to that expert.</p><p>Adaptive top-k drops experts that carry little weight for a word: the bottom strip shows how many experts each word used, 8 without and about 6.7 with.</p>` },
 });
-export { wireR7, WATER_L_PER_KWH };
+export { wireR7, WATER_L_PER_KWH, WATER_L_PER_KWH_UPPER };
 
 // ---------- Compare empty / unreadable state ----------
 // Compare never silently shows the bundled RUN2 numbers in place of a missing run.

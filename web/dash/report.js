@@ -38,7 +38,10 @@ const RECEIPTS = {
     sig: "../receipts/run2/rcpt_20261027_run2_cap350.sigstore.json",
   },
 };
-const LEVER = { factor_l_per_kwh: 1.8, usd_per_kwh: 0.1387 };
+// Water factor ESTIMATE: headline 0.36 L/kWh (on-site cooling, LBNL 2024);
+// upper 1.8 L/kWh including power-plant (electricity) water.
+const LEVER = { factor_l_per_kwh: 0.36, usd_per_kwh: 0.1387 };
+const WATER_UPPER_L_PER_KWH = 1.8;
 
 // The context saver's recorded numbers, read defensively.
 function contextSaver() {
@@ -179,7 +182,7 @@ function steps(X) {
           <dt>Cost saved</dt><dd>$${num(X.costSaved, 4)}</dd>
           <dt>Water saved</dt><dd>${num(X.waterSaved, 4)} L</dd>
         </dl>
-        <p>Energy is measured joules (${num(X.reqs, 0)} requests). Cost uses $${X.usd}/kWh and water uses ${X.wue} L/kWh — both ${chip("ESTIMATE")} derived from the measured joules.</p>`
+        <p>Energy is measured joules (${num(X.reqs, 0)} requests). Cost uses $${X.usd}/kWh and water uses ${X.wue} L/kWh (on-site cooling); up to ${WATER_UPPER_L_PER_KWH} L/kWh including power-plant water — both ${chip("ESTIMATE")} derived from the measured joules.</p>`
         : `<p>This run has no tuned phase to compare against the baseline.</p>`,
     },
     {

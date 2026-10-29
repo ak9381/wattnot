@@ -160,16 +160,28 @@
   ],
   "estimates": {
     "water_ml_per_req": {
+      "value": 0.015559,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"
+    },
+    "water_ml_per_req_upper": {
       "value": 0.077796,
       "label": "ESTIMATE",
-      "method": "Wh/request x WUE (L/kWh), site energy only",
-      "source": "assumed WUE 1.8 L/kWh (industry average); not measured"
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"
     },
     "baseline_water_ml_per_req": {
+      "value": 0.017287,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"
+    },
+    "baseline_water_ml_per_req_upper": {
       "value": 0.086436,
       "label": "ESTIMATE",
-      "method": "Wh/request x WUE (L/kWh), site energy only",
-      "source": "assumed WUE 1.8 L/kWh (industry average); not measured"
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"
     }
   },
   "joules": {
@@ -194,7 +206,7 @@
   "grade": "VALID",
   "integrity": {
     "canonicalization": "JCS RFC 8785",
-    "sha256": "1836f6491abe3cc1e950be4bee7adce3aa0c8f64ff3902dea4d060f971518f61",
+    "sha256": "f1e46fb91054b54b3c2cfedba3b66120d6b8657e5524e09dddc25296685605b4",
     "prev_sha256": null,
     "signer": null,
     "rekor": null

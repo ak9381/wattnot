@@ -41,7 +41,7 @@ test("each try is measured against the last kept state, not the baseline", () =>
 test("money and water use the impact maths and are estimates", () => {
   close(monthlyKwh(0.001), 0.001 * 100000 * 8 * 30 / 1000);
   close(usd(0.001), monthlyKwh(0.001) * 0.12);
-  close(litres(0.001), monthlyKwh(0.001) * 1.8);
+  close(litres(0.001), monthlyKwh(0.001) * 0.36);
   const c = attribute(demo).counters;
   assert.equal(c.usd.label, "ESTIMATE");
   assert.equal(c.water.label, "ESTIMATE");

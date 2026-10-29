@@ -15,7 +15,8 @@ const EM = "—"; // em dash for missing values
 
 // ---- constants from story.json (shown with their own labels) ----
 const USD_PER_KWH = 0.1387; // ESTIMATE — US commercial electricity price
-const WATER_L_PER_KWH = 1.8; // ESTIMATE — industry-average site water factor (WUE L/kWh)
+const WATER_L_PER_KWH = 0.36; // headline ESTIMATE — on-site cooling water factor (WUE L/kWh), LBNL 2024
+const WATER_L_PER_KWH_UPPER = 1.8; // upper ESTIMATE — includes power-plant (electricity) water
 const LEVER_NAMES = { cap: "Power cap", topk: "Adaptive top-k", hosted: "Hosted routing" };
 
 // ---------- tiny helpers ----------
@@ -202,8 +203,9 @@ function renderKpis(runsList, details) {
       <li><span class="k">kWh saved</span><span class="vv">${isNum(kWh) ? `${fmt(kWh, 4)}${dot("MEASURED")}` : `<span class="emdash">${EM}</span>`}</span></li>
       <li><span class="k">Water factor</span><span class="vv">${fmt(WATER_L_PER_KWH, 2)} L/kWh${dot("ESTIMATE")}</span></li>
     </ul>
-    <p class="note">The energy is measured; the water factor is an industry-average
-      estimate, so the result is an ESTIMATE.</p>`;
+    <p class="note">The energy is measured; the water factor is 0.36 L/kWh
+      (on-site cooling, ESTIMATE); up to ${fmt(WATER_L_PER_KWH_UPPER, 2)} L/kWh
+      including power-plant water (ESTIMATE).</p>`;
 
   sidePanels.k_cost = `
     <h3>Cost saved</h3>
@@ -241,7 +243,7 @@ function renderKpis(runsList, details) {
       <div class="big">${isNum(litres)
         ? `<span class="v-num">${fmt(litres, 3)}</span><span class="unit">L</span>`
         : `<span class="emdash">${EM}</span>`}</div>
-      <div class="foot">${isNum(litres) ? `From energy &times; ${WATER_L_PER_KWH} L/kWh` : "Needs metered energy"}</div>
+      <div class="foot">${isNum(litres) ? `From energy &times; ${WATER_L_PER_KWH} L/kWh (on-site, ESTIMATE); up to ${WATER_L_PER_KWH_UPPER} L/kWh incl. power-plant water` : "Needs metered energy"}</div>
     </div>
     <div class="kpi v-glass" data-side="k_cost" data-explain="runs.total.cost" data-explain-value="${esc(isNum(usd) ? '$' + fmt(usd, 4) : EM)}" data-explain-label="ESTIMATE" data-explain-source="usd_per_kwh" role="button" tabindex="0">
       <span class="more">Details &rarr;</span>

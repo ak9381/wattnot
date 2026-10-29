@@ -61,7 +61,7 @@ export function renderEuCardHTML(d) {
       <button class="eucard-x" type="button" aria-label="Close">×</button>
       <h3>EU efficiency report</h3>
       <p><b>What:</b> the fields software can fill for EU Energy Efficiency Directive data-centre reporting (Delegated Reg. (EU) 2024/1364), from one signed receipt. Facility fields (PUE, renewables, heat reuse) show NOT_AVAILABLE.</p>
-      <p><b>How:</b> ${esc(d.method)}. Baseline vs 350 W cap, same prompts and grader. The report is mixed: energy MEASURED, water ESTIMATE, facility fields NOT_AVAILABLE.</p>
+      <p><b>How:</b> ${esc(d.method)}. Baseline vs 350 W cap, same prompts and grader. The report is mixed: energy MEASURED, water ESTIMATE (0.36 L/kWh on-site cooling; up to 1.8 L/kWh including power-plant water), facility fields NOT_AVAILABLE.</p>
       <p><b>Receipt:</b> <code>${esc(d.receiptId || DASH)}</code> · label ${d.label ? esc(d.label) : DASH}${dot(d.label)}</p>
       <p class="eucard-note">${esc(d.disclaimer)} CSRD: roadmap.</p>
     </dialog>
@@ -89,7 +89,7 @@ export function renderEuLinkHTML(d) {
       <div class="eulink-metrics">
         <div class="eulink-metric-box"><div class="eulink-metric-label">Window IT Energy</div><div class="eulink-metric-val">${val(d.windowKwh, 4, "kWh", L)}</div></div>
         <div class="eulink-metric-box"><div class="eulink-metric-label">Joules / Correct</div><div class="eulink-metric-val">${val(d.jCand, 2, "J/ans", d.jLabel || L)}</div></div>
-        <div class="eulink-metric-box"><div class="eulink-metric-label">Water Consumption</div><div class="eulink-metric-val">${val(d.waterMlPerReq, 4, "mL/req", d.waterMlPerReq == null ? null : "ESTIMATE")}</div></div>
+        <div class="eulink-metric-box"><div class="eulink-metric-label">Water Consumption</div><div class="eulink-metric-val">${val(d.waterMlPerReq, 4, "mL/req", d.waterMlPerReq == null ? null : "ESTIMATE")}</div><div class="eulink-metric-note">0.36 L/kWh on-site cooling (ESTIMATE); up to 1.8 L/kWh incl. power-plant water (ESTIMATE)</div></div>
         <div class="eulink-metric-box"><div class="eulink-metric-label">Billed Saving</div><div class="eulink-metric-val">${d.billedSavingPct == null ? `${DASH}${dot(null)}` : `${fix(d.billedSavingPct, 1)}%${dot(L)}`}</div></div>
       </div>
       <div class="eulink-actions">${href ? `<a class="eulink-btn" href="${href}" target="_blank" rel="noopener"><span>View EU Report (HTML)</span></a>
