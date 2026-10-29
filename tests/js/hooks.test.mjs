@@ -149,7 +149,7 @@ test("header and footer are fixed with Apple glassmorphism and glow blobs", () =
   assert.match(chromeCss, /#4F4A63/);
 
   const v2Css = fs.readFileSync(path.join(dashDir, "v2.css"), "utf8");
-  assert.match(v2Css, /height:\s*calc\(100vh - 340px\)/);
+  assert.match(v2Css, /height:\s*calc\(100vh - 340px( - var\(--wn-foot,0px\))?\)/);
   assert.doesNotMatch(v2Css, /footer\.wn-footer\.gl\s*\{\s*display:\s*none/);
 });
 

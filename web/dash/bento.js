@@ -84,6 +84,7 @@ function openPop(card) {
   pop.querySelector(".wn-pop-b").innerHTML = `<h3 id="wn-pop-t">${title}</h3>
     <div class="wn-pop-full">${full}</div>
     ${labels.length ? `<p class="wn-pop-lab">${labels.map((l) => `<b>${l}</b>: ${LABELS[l]}`).join("<br>")}</p>` : ""}
+    ${d.explainValue === "—" ? `<p class="wn-pop-nodata">No data in this run.</p>` : ""}
     ${d.explainSource ? `<p class="wn-pop-src">Source: <code>${d.explainSource}</code></p>` : ""}`;
   pop.classList.add("on"); pop.querySelector(".wn-pop-x").focus();
 }
@@ -107,16 +108,15 @@ function trim(root) {
   root.querySelectorAll(".st, .bdg").forEach((e) => {
     if (e.textContent.trim() === "stub, not wired") e.closest(".node, .card, article, li, [class*=node]")?.classList.add("wn-stub");
   });
+  root.querySelectorAll('[data-explain-value="—"]').forEach((c) => { if (!c.title) c.title = "No data in this run."; });
   const cmp = root.querySelector("#pReport");
   if (!cmp) return;
-  let n = 0;
-  cmp.querySelectorAll("tr, li, .row, div").forEach((r) => {
-    if (r.dataset.wnPend || r.children.length < 2 || r.children.length > 3 || r.querySelector("div div")) return;
-    if ([...r.children].some((c) => c.textContent.trim() === "PENDING")) { r.dataset.wnPend = "1"; r.hidden = true; n++; }
-  });
-  if (n && !cmp.querySelector(".wn-pend-note")) {
-    const p = document.createElement("p"); p.className = "wn-pend-note"; p.textContent = `${n} pending checks hidden until they have data.`;
-    cmp.querySelector("[data-wn-pend]")?.parentElement?.append(p);
+  const n = cmp.querySelectorAll(".rad-node .rad-pending").length;
+  const stage = cmp.querySelector(".radial-wrap");
+  if (n && stage && !cmp.querySelector(".wn-pend-note")) {
+    const p = document.createElement("p"); p.className = "wn-pend-note";
+    p.textContent = `${n} pending ${n === 1 ? "metric" : "metrics"} hidden until measured.`;
+    stage.after(p);
   }
 }
 
