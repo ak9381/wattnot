@@ -105,7 +105,7 @@ def options(cfg: dict) -> dict:
            [_c(v, f"{v}%") for v in (90, 94, 95, 97, 99)], q, group="gates", applies="replay", flag="min_quality_pct",
            what="The share of answers that must match the stock model's answers on a fixed test set.",
            why="Saving energy is worthless if the model gets worse. This is the quality gate.",
-           example="Granite scored 94.5% at one setting, under a 95% bar, so that setting was not kept."),
+           example="One earlier setting scored 94.5%, under a 95% bar, so it was not kept."),
         _o("strict_quality", "Keep only quality-checked changes",
            [_c(False, "No: show pending checks too"), _c(True, "Yes: strict")], bool(lim.get("strict_quality", {}).get("default", False)),
            group="gates", applies="replay", flag="strict_quality",

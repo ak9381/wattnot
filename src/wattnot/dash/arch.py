@@ -370,7 +370,7 @@ def node_stats(repo: Path, h: dict, lg: dict, bt: dict) -> dict[str, list[dict]]
     # Meta-only (Oct 29): the main card is pending (planned on Spark via Modal). The Qwen3 and Granite
     # numbers are an earlier test on non-Meta models: kept only as dated history (details popup).
     S["adaptive"] = [
-        missing("spark", "Muse Spark Open (Meta) energy per token", "planned Modal sprint",
+        missing("spark", "Pending: planned on Spark via Modal (Muse Spark Open, Meta)", "planned Modal sprint",
                 "planned on Spark via Modal"),
     ]
     S["adaptive_history"] = [
