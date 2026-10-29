@@ -24,6 +24,8 @@ export function extractHotspotData(receipt) {
     // Stock caps of the other GPUs are demo values: MOCK without a live call, SIMULATED with one.
     capLabel: hc.live ? "SIMULATED" : "MOCK",
     responseId: hc.response_id || null,
+    // Real photo + SAM box (live only): image size comes from the SAM raw output (w=960, h=720).
+    photo: hc.photo || null,
   };
 }
 
@@ -42,7 +44,14 @@ export function renderHotspotHTML(data) {
 
       <div class="hotspot-grid">
         <div class="hotspot-visual">
-          <svg class="hotspot-svg-wrap" viewBox="0 0 640 960" xmlns="http://www.w3.org/2000/svg">
+          ${data.live && data.photo ? `<svg class="hotspot-svg-wrap" viewBox="0 0 ${data.photo.w} ${data.photo.h}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Rack photo with the live SAM 3.1 box">
+            <image href="${data.photo.url}" x="0" y="0" width="${data.photo.w}" height="${data.photo.h}" />
+            <rect x="${data.bbox[0]}" y="${data.bbox[1]}" width="${data.bbox[2] - data.bbox[0]}" height="${data.bbox[3] - data.bbox[1]}" fill="rgba(224,108,117,0.22)" stroke="#E06C75" stroke-width="4" stroke-dasharray="10,6" />
+            <rect x="${data.bbox[0] + 6}" y="${data.bbox[1] + 6}" width="300" height="64" rx="6" fill="rgba(20,16,30,.82)" />
+            <text x="${data.bbox[0] + 16}" y="${data.bbox[1] + 32}" fill="#E06C75" font-size="22" font-family="Montserrat" font-weight="bold">SAM 3.1 box [MEASURED]</text>
+            <text x="${data.bbox[0] + 16}" y="${data.bbox[1] + 58}" fill="#DCD6E4" font-size="17" font-family="Fira Code">GPU ${data.gpuId} hot: ${data.heatLabel} · ${data.newCapW} W ${data.decisionLabel}</text>
+          </svg>
+          <p class="hotspot-photo-credit" style="margin:6px 0 0;font-size:11px;color:#8E7A9E">Box [${data.bbox.join(", ")}] from response ${data.responseId}. ${data.photo.credit || ""}</p>` : `<svg class="hotspot-svg-wrap" viewBox="0 0 640 960" xmlns="http://www.w3.org/2000/svg">
             <!-- Rack outline -->
             <rect x="160" y="50" width="310" height="860" rx="8" fill="#1F1A2F" stroke="#4F4A63" stroke-width="3" />
             <!-- Normal slots -->
@@ -67,7 +76,7 @@ export function renderHotspotHTML(data) {
             <!-- PDU side bar -->
             <rect x="490" y="110" width="70" height="710" rx="4" fill="#2B2637" stroke="#4F4A63" stroke-width="1.5" />
             <text x="525" y="470" fill="#6C5E7C" font-size="16" font-family="Montserrat" text-anchor="middle" transform="rotate(-90 525 470)">PDU FEED</text>
-          </svg>
+          </svg>`}
         </div>
 
         <div class="hotspot-details">

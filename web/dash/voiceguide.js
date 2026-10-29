@@ -1,3 +1,4 @@
+import { answerFromReceipts, loadReceiptDocs } from "./receiptanswers.js";
 // Voice Guide Self-Mounting Component - Meta Tools v5
 
 export function classifyLocalIntent(text) {
@@ -137,6 +138,12 @@ export function mountVoiceGuide(customMountEl = null) {
     panel.classList.add("active");
   }
 
+  // No API (e.g. GitHub Pages): answer from the signed RUN2 receipt and addenda, labelled REPLAY.
+  async function groundedAnswer(query) {
+    const docs = await loadReceiptDocs();
+    return answerFromReceipts(query, docs);
+  }
+
   async function handleQuery(query) {
     if (!query || !query.trim()) return;
 
@@ -175,6 +182,8 @@ export function mountVoiceGuide(customMountEl = null) {
         }
         displayResponse(full);
       } else {
+        const grounded = await groundedAnswer(query);
+        if (grounded) { displayResponse(grounded); return; }
         // Fallback local response
         displayResponse({
           intent: quick.intent,
@@ -183,6 +192,8 @@ export function mountVoiceGuide(customMountEl = null) {
         });
       }
     } catch {
+      const grounded = await groundedAnswer(query).catch(() => null);
+      if (grounded) { displayResponse(grounded); return; }
       // Offline fallback
       displayResponse({
         intent: quick.intent,
