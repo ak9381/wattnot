@@ -87,19 +87,6 @@
       "source": "offline signature bundle"
     },
     {
-      "id": "fireworks",
-      "name": "Fireworks",
-      "what": "not used yet",
-      "status": "not_used",
-      "calls": null,
-      "cost": {
-        "value": null,
-        "unit": null,
-        "label": null
-      },
-      "source": null
-    },
-    {
       "id": "modal",
       "name": "Modal",
       "what": "not used yet",

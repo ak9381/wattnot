@@ -16,7 +16,7 @@ const snap = {
       cost: { value: 1215.0, unit: "INR", label: "ESTIMATE" }, source: "e2e-runs.json" },
     { id: "nvidia", name: "NVIDIA", what: "GPU power counter (NVML)", status: "free", calls: null,
       cost: { value: null, unit: null, label: null }, source: "read from the card" },
-    { id: "fireworks", name: "Fireworks", what: "not used yet", status: "not_used", calls: null,
+    { id: "modal", name: "Modal", what: "not used yet", status: "not_used", calls: null,
       cost: { value: null, unit: null, label: null }, source: null },
   ],
 };
