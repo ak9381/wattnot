@@ -1,0 +1,13 @@
+{
+ "provider": "baseten",
+ "stop_level": "done",
+ "why": "all items finished",
+ "items_done": 3,
+ "ledger_committed_usd": 0.001264,
+ "ledger_spent_usd": 0.001264,
+ "provider_reported_usd": 0.0,
+ "soft_usd": 0.009,
+ "hard_usd": 0.01,
+ "orphans_after_teardown": [],
+ "label": "ESTIMATE until reconciled"
+}

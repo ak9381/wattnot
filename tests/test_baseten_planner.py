@@ -73,8 +73,9 @@ def test_another_model_is_refused(key, tmp_path):
 
 def test_missing_key_is_refused_before_anything_moves(tmp_path, monkeypatch):
     monkeypatch.delenv("BASETEN_API_KEY", raising=False)
+    monkeypatch.delenv("BASETEN_METRICS_KEY", raising=False)
     c = _client(tmp_path)
-    with pytest.raises(BasetenError, match="BASETEN_API_KEY is not set"):
+    with pytest.raises(BasetenError, match="is set"):
         c({"messages": []})
     assert c.seen == []
 

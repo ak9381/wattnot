@@ -1,0 +1,2 @@
+{"item": "cpu30", "kind": "reserve", "provider": "modal", "rid": "modal-1447025-1793246509147936270-1", "t": 1793246509.1479404, "usd": 0.001843}
+{"item": "cpu30", "kind": "settle", "provider": "modal", "rid": "modal-1447025-1793246509147936270-1", "seconds": 44.02366328239441, "t": 1793246553.1722538, "tokens_in": null, "tokens_out": null, "usd": 0.000676}

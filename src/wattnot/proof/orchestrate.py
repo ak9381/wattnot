@@ -1325,8 +1325,9 @@ def main(argv=None) -> int:
                                    threshold=0.01, patience=3)
             planner = WonderPlanner(sup, lo=a.wonder_lo, hi=a.wonder_hi)
         elif a.planner == "baseten-open":
-            if not os.environ.get("BASETEN_API_KEY", "").strip():
-                ap.error("BASETEN_API_KEY is not set")
+            from wattnot.cloud import inference_key
+            if not inference_key()[1]:
+                ap.error("BASETEN_METRICS_KEY (or BASETEN_API_KEY) is not set")
             from wattnot.proof.baseten_planner import BasetenClient, OpenWeightsPlanner
 
             planner = OpenWeightsPlanner(BasetenClient(

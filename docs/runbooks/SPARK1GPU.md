@@ -80,7 +80,7 @@ Hugging Face tree listing on 27 Oct 2026.
 export HF_TOKEN=...                         # read from the environment by `hf`, never printed
 bash scripts/spark1gpu_build_llama.sh       # CUDA build for sm_90 if nvcc is found
 bash scripts/spark1gpu_fetch.sh --dry-run   # the plan, nothing downloaded
-export BASETEN_API_KEY=...                  # only for --baseten live
+export BASETEN_METRICS_KEY=...                     # only for --baseten live
 bash scripts/spark1gpu_run.sh --baseten live
 ```
 
@@ -94,7 +94,7 @@ does not fit or fails), tunes, serves the best setting, runs the head to head, r
 prices the worst case (prompt plus the full max_tokens) and stops if the total already spent plus that
 would pass **$0.50**. The running total is kept in `~/.wattnot/baseten_h2h_spend.json`. Six calls
 measured $0.0047. All 15 should be about $0.012 (ESTIMATE). Calls are 4 s apart and only for the
-`meta-models/muse-spark-open-1026` model.
+`meta-models/muse-spark-open` model.
 
 ### Time and cost (ESTIMATE)
 

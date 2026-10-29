@@ -246,9 +246,10 @@ def test_cli_demo_end_to_end(tmp_path, capsys):
 
 def test_cli_live_without_key_fails_clearly(monkeypatch, capsys, tmp_path):
     monkeypatch.delenv("BASETEN_API_KEY", raising=False)
+    monkeypatch.delenv("BASETEN_METRICS_KEY", raising=False)
     assert cli.main(["cloud", "tune", "--live", "--out", str(tmp_path)]) == 2
     err = capsys.readouterr().err
-    assert "BASETEN_API_KEY is not set" in err
+    assert "BASETEN_METRICS_KEY, BASETEN_API_KEY is set" in err
     assert cli.main(["cloud", "tune", "--out", str(tmp_path)]) == 2  # no source picked
 
 
@@ -261,6 +262,7 @@ def test_cli_cache_and_probe_demo_are_simulated(tmp_path, capsys):
 
 def test_cli_audit_without_key_says_not_available(monkeypatch, tmp_path, capsys):
     monkeypatch.delenv("BASETEN_API_KEY", raising=False)
+    monkeypatch.delenv("BASETEN_METRICS_KEY", raising=False)
     path, _ = demo(tmp_path)
     assert cli.main(["cloud", "audit", str(path), "--source", "meter"]) == 3
     assert "NOT_AVAILABLE" in capsys.readouterr().out

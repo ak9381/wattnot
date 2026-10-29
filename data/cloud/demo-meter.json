@@ -6,7 +6,7 @@
    "end_time": "2026-10-27T06:01:00Z",
    "results": [
     {
-     "model": "meta-models/muse-spark-open-1026",
+     "model": "meta-models/muse-spark-open",
      "request_count": 79,
      "input_tokens": 7928,
      "cached_input_tokens": 0,
