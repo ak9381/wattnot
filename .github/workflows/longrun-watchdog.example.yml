@@ -1,0 +1,74 @@
+# DISABLED EXAMPLE — this file never runs.
+#
+# It is named `*.example.yml` (not `.yml` picked up by Actions) and has NO firing trigger, so
+# GitHub will not schedule it. It is a template for the box-independent layer described in
+# docs/watchdogs.md: a GitHub-hosted cron that deletes the E2E long-run VM if its deadline passes
+# or a budget stop-file says so — off the control box entirely.
+#
+# To make it real (a human decision, never automated):
+#   1. rename to `longrun-watchdog.yml`
+#   2. uncomment the `schedule:` trigger below
+#   3. add the repo secret E2E_API_KEY and set the VM id (secret or committed run manifest)
+#   4. confirm it can only ever delete OUR VM id — never a VM that is not ours
+#
+# Keep a live-firing version OUT of the default branch unless the long run is actually active.
+
+name: longrun-watchdog (example, disabled)
+
+# No active trigger. `workflow_dispatch` alone still would not run on a schedule; the real
+# schedule is intentionally commented out so this file cannot fire as committed.
+on:
+  # schedule:
+  #   - cron: "*/15 * * * *"   # every 15 min — UNCOMMENT only to enable
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "type DELETE to actually delete (otherwise dry-run)"
+        required: false
+        default: "dry-run"
+
+permissions:
+  contents: read
+
+jobs:
+  teardown:
+    # Guard: this job body is a no-op dry-run unless a human explicitly confirms.
+    if: ${{ false }}   # <- remove this line to enable; left here so the example never acts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the run deadline and VM id
+        id: manifest
+        run: |
+          # The long run would commit a small manifest (vm id + deadline) that this reads.
+          # Placeholder values; wire to the real manifest / secret before enabling.
+          echo "vm_id=${VM_ID:-UNSET}" >> "$GITHUB_OUTPUT"
+          echo "deadline_epoch=${DEADLINE_EPOCH:-0}" >> "$GITHUB_OUTPUT"
+        env:
+          VM_ID: ${{ secrets.LONGRUN_VM_ID }}
+          DEADLINE_EPOCH: ${{ vars.LONGRUN_DEADLINE_EPOCH }}
+
+      - name: Delete past the deadline (dry-run unless confirmed)
+        env:
+          E2E_API_KEY: ${{ secrets.E2E_API_KEY }}
+          VM_ID: ${{ steps.manifest.outputs.vm_id }}
+          DEADLINE_EPOCH: ${{ steps.manifest.outputs.deadline_epoch }}
+          CONFIRM: ${{ github.event.inputs.confirm }}
+        run: |
+          set -euo pipefail
+          now=$(date +%s)
+          if [ "${VM_ID}" = "UNSET" ] || [ -z "${VM_ID}" ]; then
+            echo "no VM id configured; nothing to do"; exit 0
+          fi
+          if [ "${now}" -lt "${DEADLINE_EPOCH}" ]; then
+            echo "deadline not reached (now ${now} < ${DEADLINE_EPOCH}); not deleting"; exit 0
+          fi
+          if [ "${CONFIRM}" != "DELETE" ]; then
+            echo "DRY RUN: would DELETE E2E VM ${VM_ID} (past deadline). Set confirm=DELETE to act."
+            exit 0
+          fi
+          # Real delete (only reached when confirmed AND the job `if` guard is removed):
+          curl -sS -X DELETE \
+            -H "Authorization: Bearer ${E2E_API_KEY}" \
+            "https://api.e2enetworks.com/myaccount/api/v1/gpu/notebooks/${VM_ID}/"
