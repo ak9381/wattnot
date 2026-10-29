@@ -192,7 +192,7 @@ class Driver:
                  hours_used: Callable[[], float], capture: bool = False, include_optional=(),
                  sleep=time.sleep, clock=time.monotonic, log=print,
                  heartbeat_path: Path | None = None, wallclock: Callable[[], float] = time.time,
-                 balance_floor_inr: float = BALANCE_FLOOR_INR) -> None:
+                 balance_floor_inr: float = BALANCE_FLOOR_INR, publisher=None) -> None:
         self.out, self.blocks, self.vm, self.label = out, blocks, vm, label
         self.run, self.max_hours, self.balance, self.used = run, max_hours, balance_inr, hours_used
         self.capture, self.include = capture, set(include_optional)
@@ -200,6 +200,10 @@ class Driver:
         # Heartbeat the three watchdog layers read (wattnot.longrun.watchdog). Opt-in: off when
         # no path is given, so the watchdogs never see a stale beat from an unrelated run.
         self.heartbeat_path, self.wallclock = heartbeat_path, wallclock
+        # Optional off-box publisher (wattnot.longrun.watchdog.publisher). When set, each local
+        # heartbeat is also pushed off-box for layers 4/5 to read. Dry-run by default, rate-limited
+        # and failure-tolerant on its own, so it can never crash or slow the run.
+        self.publisher = publisher
         self.balance_floor = balance_floor_inr
         self._launch_wall = wallclock()
         self.state_path = out / "driver_state.json"
@@ -224,10 +228,16 @@ class Driver:
             return
         from wattnot.longrun.watchdog.core import Heartbeat, write_heartbeat
         now = self.wallclock()
-        write_heartbeat(self.heartbeat_path, Heartbeat(
+        hb = Heartbeat(
             ts=now, launch_ts=self._launch_wall,
             deadline_ts=self._launch_wall + self.max_hours * 3600.0,
-            spent_inr=round(self.used() * INR_PER_H, 2), block=block, note=note))
+            spent_inr=round(self.used() * INR_PER_H, 2), block=block, note=note)
+        write_heartbeat(self.heartbeat_path, hb)
+        if self.publisher is not None:
+            try:  # the publisher is already failure-tolerant; this guard is belt-and-braces
+                self.publisher.publish(hb.as_dict())
+            except Exception:  # noqa: BLE001 - publishing must never interrupt the run
+                pass
 
     def _teardown(self, **kw):
         d = plan_teardown(ssh_alive=self.vm.alive, api_state=self.vm.api_state, pull=self.vm.pull,

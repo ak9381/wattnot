@@ -59,8 +59,10 @@ jobs:
           E2E_VM_ID: ${{ vars.E2E_VM_ID }}
           E2E_PROJECT_ID: ${{ vars.E2E_PROJECT_ID }}
           E2E_LOCATION: ${{ vars.E2E_LOCATION }}
-          # Where the run publishes its heartbeat, and the caps to enforce.
+          # Where the run publishes its heartbeat, and the caps to enforce. If the repo variable
+          # is unset we fall back (below) to the dedicated branch this repo's publisher pushes to.
           HEARTBEAT_URL: ${{ vars.WATCHDOG_HEARTBEAT_URL }}
+          HEARTBEAT_BRANCH: ${{ vars.WATCHDOG_HEARTBEAT_BRANCH }}
           BUDGET_CAP_INR: ${{ vars.WATCHDOG_BUDGET_CAP_INR }}
           MAX_HOURS: ${{ vars.WATCHDOG_MAX_HOURS }}
           # Live only when BOTH the dispatch input and the repo variable say so.
@@ -68,9 +70,13 @@ jobs:
           WATCHDOG_LIVE: ${{ vars.WATCHDOG_LIVE }}
         run: |
           set -euo pipefail
+          # Default source: the raw URL of the dedicated branch the run's publisher force-updates
+          # (wattnot.longrun.watchdog.publisher). Override with the WATCHDOG_HEARTBEAT_URL variable
+          # (e.g. to point at a gist). Branch name defaults to 'watchdog-heartbeat'.
           if [ -z "${HEARTBEAT_URL:-}" ]; then
-            echo "WATCHDOG_HEARTBEAT_URL is unset; nothing to poll. (Dry, no-op.)"
-            exit 0
+            branch="${HEARTBEAT_BRANCH:-watchdog-heartbeat}"
+            HEARTBEAT_URL="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${branch}/heartbeat.json"
+            echo "WATCHDOG_HEARTBEAT_URL unset; defaulting to the published branch: ${HEARTBEAT_URL}"
           fi
           live=""
           if [ "${DISPATCH_MODE:-}" = "live" ] && [ "${WATCHDOG_LIVE:-}" = "true" ]; then
