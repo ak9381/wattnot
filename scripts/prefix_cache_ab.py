@@ -9,12 +9,14 @@ quality gate, for both arms.
 Dry run anywhere (no GPU, mock numbers, labels MOCK):
     python scripts/prefix_cache_ab.py --fake --out /tmp/prefix-dry
 On the GPU host (vLLM is (re)started per arm with/without --enable-prefix-caching):
-    python scripts/prefix_cache_ab.py --out /root/run3/results/prefix --model meta-llama/Llama-3.1-8B-Instruct
+    python scripts/prefix_cache_ab.py --out runs/g6b       # Glimmer via scripts/glimmer_serve.sh
 """
 import argparse, json, sys, time, urllib.request
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT))  # for `import scripts.phase_ab`
 from wattnot.context_saver import prefix_cache as PC
 
 
@@ -42,11 +44,29 @@ def _real(out: Path, o) -> dict:  # pragma: no cover - needs a GPU and vLLM
     import scripts.phase_ab as PA
     a = PA.rig_args(extra)
 
+    def serve(on: bool):
+        """(Re)start the server for one arm. Glimmer runs in its container via
+        glimmer_serve.sh (same flags as every other block); plain vLLM for other models."""
+        import os
+        import subprocess
+        flag = "--enable-prefix-caching" if on else "--no-enable-prefix-caching"
+        log = out / f"vllm-{'on' if on else 'off'}.log"
+        if "Glimmer" in o.model:
+            rc = subprocess.run(["bash", str(ROOT / "scripts" / "glimmer_serve.sh"), "bf16",
+                                 str(o.port)], env={**os.environ, "GLIMMER_EXTRA_ARGS": flag,
+                                                    "LOG": str(out)}).returncode
+            if rc != 0:
+                raise RuntimeError(f"glimmer_serve.sh exited {rc} for prefix caching {flag}")
+            return None
+        argv = ["vllm", "serve", o.model, "--port", str(o.port), "--max-model-len", "4096",
+                "--gpu-memory-utilization", "0.90", "--served-model-name", o.model, flag]
+        p = subprocess.Popen(argv, stdout=log.open("ab"), stderr=subprocess.STDOUT)
+        R.wait_http(f"{url}/v1/models", 900)
+        return p
+
     def trial(on: bool, rep: int) -> dict:
-        srv = R.serve(o.model, int(o.port), out / f"vllm-{'on' if on else 'off'}.log",
-                      extra=(["--enable-prefix-caching"] if on else ["--no-enable-prefix-caching"]))
+        srv = serve(on)
         try:
-            R.wait_ready(url)
             m0 = _metrics(url)
             rig, guard = R.open_rig(a)
             try:
@@ -58,7 +78,9 @@ def _real(out: Path, o) -> dict:  # pragma: no cover - needs a GPU and vLLM
                     "ttft_ms": b.get("ttft_ms"), "p99_ms": (b.get("p99_s") or 0) * 1000,
                     "cache_hit_rate": PC.hit_rate_from_metrics(m0, m1)}
         finally:
-            srv.terminate()
+            if srv is not None:
+                srv.terminate()
+                srv.wait(timeout=60)
             time.sleep(2)
 
     summ = PC.run_ab(trial, o.reps, label="MEASURED")
@@ -70,7 +92,7 @@ def _real(out: Path, o) -> dict:  # pragma: no cover - needs a GPU and vLLM
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, required=True)
-    ap.add_argument("--model", default="meta-llama/Llama-3.1-8B-Instruct")
+    ap.add_argument("--model", default="meta-models/Muse-Glimmer-30B")
     ap.add_argument("--port", default="8000")
     ap.add_argument("--reps", type=int, default=3)
     ap.add_argument("--profile", default="standard")

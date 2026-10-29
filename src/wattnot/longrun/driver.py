@@ -115,10 +115,20 @@ def plan_glimmer(out: Path) -> list[Block]:
         Block("g5-fp8", "FP8 vs BF16, gated keep/reject on the same tiers", 1.5,
               tiers("g5", "muse-glimmer-30b-fp8", "--compare-to", full), min_hours=0.75,
               trim=tiers("g5", "muse-glimmer-30b-fp8", "--per-tier", "8", "--compare-to", full)),
-        # g6: free slot for the thinking-budget block (designed separately). Adaptive top-k is
-        # not in the H100 run: Glimmer is dense, and top-k is planned on Spark via Modal.
+        # Adaptive top-k is not in the H100 run: Glimmer is dense, and top-k is planned on
+        # Spark via Modal. In its place: the thinking budget per tier and prefix caching.
+        Block("g6-think", "Thinking budget per tier: 11 cells, stop-and-force-answer, "
+              "J/correct gate (1 pt), thinking_policy.json", 0.75,
+              _py("wattnot.longrun.thinking_budget", "--fake", "--out",
+                  str(out / "runs" / "g6")), min_hours=0.5,
+              trim=_py("wattnot.longrun.thinking_budget", "--fake", "--per-tier", "8", "--out",
+                       str(out / "runs" / "g6"))),
+        Block("g6b-prefix", "Prefix caching off vs on, Complex tier (ABBA, n>=3)", 0.42,
+              [sys.executable, str(Path(__file__).resolve().parents[3] / "scripts" /
+                                   "prefix_cache_ab.py"), "--fake", "--out",
+               str(out / "runs" / "g6b")]),
         Block("g7-flex", "Flex / load-shed test", 0.75, None),
-        Block("g8-buffer", "Buffer for redoing failed blocks", 1.0, None),
+        Block("g8-buffer", "Buffer for redoing failed blocks (15 min went to g6)", 0.75, None),
     ]
 
 

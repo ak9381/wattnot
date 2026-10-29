@@ -36,6 +36,12 @@ def _read_from(path: Path, offset: int) -> tuple[list[str], int]:
     return lines, offset + cut
 
 
+def _atomic(path: Path, text: str) -> None:
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(text)
+    os.replace(tmp, path)
+
+
 def snapshot(lines: list[str]) -> dict:
     steps: dict[str, dict] = {}
     types: dict[str, int] = {}
@@ -136,6 +142,10 @@ class Recorder:
         self.head = self._head()
         d = self.root / block_id
         d.mkdir(parents=True, exist_ok=True)
+        # an empty timeline from the start: a reader that looks mid-block (replay, pull,
+        # receipt hashing) finds a file instead of "timeline.jsonl not found"
+        if not (d / "timeline.jsonl").exists():
+            (d / "timeline.jsonl").touch()
         info = {"capture": False}
         if capture:
             why = Capture.available()
@@ -150,6 +160,7 @@ class Recorder:
     def end(self, result: dict | None = None) -> Path:
         assert self.block, "begin() first"
         d = self.root / self.block
+        d.mkdir(parents=True, exist_ok=True)   # the run may have wiped out/ (e.g. --fresh)
         if self.capture:
             self.capture.stop()
             self.capture = None
@@ -158,7 +169,7 @@ class Recorder:
             # the run rewrote the file (e.g. --fresh): take it all
             self.start_offset = 0
         lines, self.offset = _read_from(self.live, self.start_offset)
-        (d / "timeline.jsonl").write_text("".join(ln + "\n" for ln in lines))
+        _atomic(d / "timeline.jsonl", "".join(ln + "\n" for ln in lines))
         st = snapshot(lines)
         if result is not None:
             st["result"] = result
@@ -177,6 +188,9 @@ def replay(timeline: Path, sink: Path, *, speed: float = 1.0, sleep=time.sleep,
     """Re-emit a recorded block into a live file with its original pacing (gaps capped)."""
     from datetime import datetime
     n, prev = 0, None
+    if not timeline.exists():
+        raise SystemExit(f"no recording at {timeline}: that block has not ended yet, or the "
+                         "out dir is wrong (blocks write recordings/<block>/timeline.jsonl)")
     with sink.open("a") as out:
         for ln in timeline.read_text().splitlines():
             if not ln.strip():
