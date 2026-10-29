@@ -76,7 +76,7 @@ def prices_from_catalog(doc: Mapping, model: str = MODEL) -> dict:
                         "cached_per_m": None,  # the catalog does not list a cached rate
                         "source": "GET /v1/model_apis (Baseten list price)"}
             except (KeyError, TypeError, ValueError):
-                break
+                continue  # a malformed entry: skip it, another may carry a usable price
     raise CloudError(f"no usable list price for {model} in the model catalog")
 
 

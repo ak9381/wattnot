@@ -132,6 +132,18 @@ def test_catalog_without_the_model_is_an_error():
         pc.prices_from_catalog({"items": [{"name": "other/model"}]}, "meta-models/x")
 
 
+def test_a_malformed_matching_entry_is_skipped_and_a_later_one_still_wins():
+    model = "meta-models/muse-spark-open"
+    catalog = {"items": [
+        {"name": model},  # matches the family but carries no cost fields
+        {"name": model + "-1026", "cost_per_million_input_tokens": 1.25,
+         "cost_per_million_output_tokens": 4.25},
+    ]}
+    px = pc.prices_from_catalog(catalog, model)
+    assert px["input_per_m"] == 1.25 and px["output_per_m"] == 4.25
+    assert px["model_listed_as"] == model + "-1026"
+
+
 def test_cli_defaults_to_per_call_and_writes_a_sidecar_the_page_shows(made, tmp_path, capsys,
                                                                       monkeypatch):
     monkeypatch.delenv("BASETEN_METRICS_KEY", raising=False)
