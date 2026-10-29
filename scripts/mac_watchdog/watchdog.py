@@ -227,9 +227,14 @@ def check_once(*, source, client, budget_cap_inr, max_hours=None,
 
 def run_loop(*, source, client, budget_cap_inr, max_hours=None,
              max_stale_s=DEFAULT_MAX_STALE_S, poll_every_s=120.0, dry_run=True,
-             now: Callable[[], float] = time.monotonic, sleep: Callable[[float], None] = time.sleep,
+             now: Callable[[], float] = time.time, sleep: Callable[[float], None] = time.sleep,
              opener=None, max_ticks=None, log=lambda m: None) -> dict:
-    """Poll until a cap trips and the VM is torn down (or `max_ticks` is hit)."""
+    """Poll until a cap trips and the VM is torn down (or `max_ticks` is hit).
+
+    `now` MUST be a wall-clock epoch clock (`time.time`): the rule compares it against the
+    heartbeat's epoch timestamps (ts / launch_ts / deadline_ts), so a monotonic clock (which
+    counts from an arbitrary origin) would make every age and deadline comparison meaningless.
+    `time.monotonic` is only ever right for sleep pacing, never for these comparisons."""
     tick, last = 0, {}
     while True:
         tick += 1

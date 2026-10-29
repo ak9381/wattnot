@@ -233,6 +233,20 @@ def test_mac_run_loop_polls_until_a_cap_trips():
     assert res["teardown"] and "time cap" in res["reasons"] and not vm.present
 
 
+def test_mac_run_loop_default_clock_is_epoch_not_monotonic():
+    # No injected `now`: run_loop must fall back to a wall-clock epoch clock (time.time), because
+    # the rule compares `now` against the heartbeat's epoch timestamps. A monotonic default would
+    # make `now - heartbeat_ts` nonsense and this real-epoch stale beat would never trip.
+    import time as _time
+    old = _time.time() - 2 * HOUR                       # a real heartbeat written two hours ago
+    hb = {"ts": old, "launch_ts": old, "deadline_ts": old + 100 * HOUR, "spent_inr": 1.0}
+    vm = FakeVm()
+    res = mac.run_loop(source="https://h/hb.json", client=FakeE2EClient(vm), budget_cap_inr=1e9,
+                       max_hours=None, max_stale_s=STALE, dry_run=False,
+                       sleep=lambda s: None, opener=_opener(hb), max_ticks=1)
+    assert res["teardown"] and "stale heartbeat" in res["reasons"] and not vm.present
+
+
 # --------------------------------------------------------------------------- keychain (mocked)
 
 
