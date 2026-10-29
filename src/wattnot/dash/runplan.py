@@ -150,7 +150,10 @@ def build_config(h: dict, bt: dict, scenes: list[dict], water: dict, price: dict
         models.append({"id": "glimmer", "name": "Muse Glimmer 30B", "place": "h100", "workload": "coding", "levers": ["cap"], "meta": True, "product": "Muse Glimmer 30B"})
     if "llama" in data["cap"]:
         models.append({"id": "llama", "name": "Llama 3.1 8B Instruct", "place": "h100", "workload": "coding", "levers": ["cap"], "meta": True, "product": "Llama 3.1 8B"})
-    for mid, nm in (("qwen3", "Qwen3-30B-A3B (earlier test, non-Meta)"), ("granite", "Granite 3.1 3B-A800M (earlier test, non-Meta)")):
+    # The earlier non-Meta top-k tests (Qwen3, Granite) on the H100 are history only and are not
+    # offered: top-k is not part of the H100 run (Glimmer is dense) and is pending as a Spark
+    # test on Modal. Their data stays in data["topk"] for the record.
+    for mid, nm in ():
         if mid in data["topk"]:
             models.append({"id": mid, "name": nm, "place": "h100", "workload": "moe", "levers": ["topk"], "meta": False, "product": None})
     if data["hosted"]:

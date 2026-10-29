@@ -2,6 +2,7 @@
 // comparison cards, the "Where should this model run?" head-to-head, and the
 // info-panel texts. Numbers come only from the run record; anything the
 // record does not hold reads "Measured in the long run".
+import { sharedLegend } from "./legend.js";
 import { popup, registerInfo, infoBtn, tip, lineChart, donut, gauge, workedExample, wireR7, KWH_PER_J } from "./r7.js";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -9,11 +10,11 @@ const fmt = (v, d = 2) => (v == null || Number.isNaN(+v) ? "–" : (+v).toLocale
 const CLS = { MEASURED: "n-measured", ESTIMATE: "n-estimate", SIMULATED: "n-simulated", MOCK: "n-mock", REPLAY: "n-replay" };
 const n = (text, tag) => `<span class="${CLS[tag] || ""}" title="${tag || ""}">${text}</span>`;
 const PENDING = "Measured in the long run";
-export const legend = () => `<div class="r7legend" role="note" aria-label="Number colours"><span><i style="background:var(--r7-blue)"></i>measured</span><span><i style="background:var(--r7-gold)"></i>estimate</span><span><i style="background:var(--r7-mauve)"></i>simulated</span><span><i style="background:#8FBBA0"></i>replay</span><span><i style="background:var(--r7-green)"></i>with WattNot</span><span><i style="background:var(--r7-red)"></i>without WattNot</span><span title="Pending: measured in the long H100 run."><i style="background:transparent;border:1.5px dashed #B2A6C3;box-sizing:border-box"></i>pending</span></div>`;
+export const legend = () => sharedLegend(`<span style="display:inline-flex;align-items:center;gap:6px;opacity:.8"><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--r7-green)"></i>with WattNot</span><span style="display:inline-flex;align-items:center;gap:6px;opacity:.8"><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--r7-red)"></i>without WattNot</span>`);
 
 // ---------- the three places a model can run (always all three) ----------
 export const OPTIONS = [
-  { id: "own", name: "Your GPU", sub: "Muse Spark Open · adaptive top-k + tiered / k-means experts + quantization", partner: "E2E Networks · NVIDIA" },
+  { id: "own", name: "Your GPU", sub: "Muse Glimmer 30B (Meta) · power caps + FP8 · thinking budget and prefix caching pending", partner: "E2E Networks · NVIDIA" },
   { id: "baseten", name: "Baseten hosted", sub: "Muse Spark Open on Baseten, paid per answer", partner: "Baseten" },
   { id: "modal", name: "Modal hosted", sub: "Muse Spark Open on Modal, paid per GPU-second", partner: "Modal" },
 ];
@@ -54,7 +55,7 @@ function pickHtml(rec) {
   const { decisions } = routing(rec);
   if (!decisions.length) return `<h3>WattNot chose: <span class="r7miss">pending the long run</span></h3>
       <p>After the long run WattNot picks the best place for each kind of work and says why, for example "WattNot chose Your GPU for batch because it was cheapest and passed all gates".</p>
-      <ul class="wr-gates">${["Quality gate (power cap: pass rate within 1 pt of uncapped; top-k: 95%+ agreement)", "Speed gate (p99 within the limit)", "Budget gate"].map((g) => `<li><span class="r7miss">${esc(g)}: ${PENDING}</span></li>`).join("")}</ul>`;
+      <ul class="wr-gates">${["Quality gate (pass rate within 1 pt of the uncapped run)", "Speed gate (p99 within the limit)", "Budget gate"].map((g) => `<li><span class="r7miss">${esc(g)}: ${PENDING}</span></li>`).join("")}</ul>`;
   const name = (id) => OPTIONS.find((o) => PID[o.id] === id)?.name || id;
   return decisions.map((d) => `<h3>${esc(d.workload?.name || "")}: WattNot chose ${d.chosen ? esc(name(d.chosen)) : "nothing"}</h3>
       <p>because ${esc(d.reason)}${d.rule ? ` <small>(rule: ${esc(d.rule)})</small>` : ""}</p>
@@ -97,7 +98,7 @@ function cardsData(rec, price, water) {
       saved: ok ? `${fmt((k1m(bj) - k1m(wj)) * water, 2)} L` : null, sub: ok ? `per million answers · ${fmt(k1m(bj) * water)} → ${fmt(k1m(wj) * water)} L` : null, f: (j) => k1m(j) * water },
   ];
 }
-const METHODS = [["caps", "Power caps"], ["topk", "Adaptive top-k"], ["tiered", "Tiered / k-means experts"], ["gate", "Quality gates"], ["waste", "Agent-waste saver"], ["router", "Where-to-run router"], ["cache", "Prompt cache"], ["quant", "Quantization (tiered / k-means experts)"], ["baseten", "Baseten (hosted)"], ["modal", "Modal (hosted)"]];
+const METHODS = [["caps", "Power caps"], ["think", "Thinking budget per tier"], ["prefix", "Prefix caching (Complex tier)"], ["topk", "Adaptive top-k (Spark on Modal)"], ["gate", "Quality gates"], ["waste", "Agent-waste saver"], ["router", "Where-to-run router"], ["cache", "Prompt cache"], ["quant", "Quantization (tiered / k-means experts)"], ["baseten", "Baseten (hosted)"], ["modal", "Modal (hosted)"]];
 export function compareHtml(rec, price = 0.1387, water = 0.36) {
   const cards = cardsData(rec, price, water);
   return `<div class="cmp-head"><div><h1>What WattNot saved</h1><p class="lead">${esc(rec?.run_name || "Pick a run")} ${infoBtn("compare", "how this is compared")}</p></div></div>${metaInRun(rec)}${legend()}
@@ -130,7 +131,9 @@ export function wireCompare(root, rec, price = 0.1387, water = 0.36) {
 }
 const HOW = {
   caps: "Lower the GPU's watt limit and keep the lowest cap that passes the quality and speed gates. Own GPU only: hosted platforms give no GPU access.",
-  topk: "Send each word to fewer experts when one or two carry almost all the weight.",
+  think: "Give each difficulty tier its own thinking budget, picked by measured joules per correct answer behind a 1-point pass-rate gate. Pending: measured in the H100 long run.",
+  prefix: "Keep the shared prompt prefix of Complex agent turns cached instead of computing it again. Pending: measured in the H100 long run.",
+  topk: "Send each word to fewer experts on Muse Spark Open (a mixture-of-experts model). Not part of the H100 run (Glimmer is dense); pending as a separate Spark test on Modal (8x B200, NVFP4).",
   tiered: "Keep busy experts on the GPU at higher precision, quiet ones at lower precision or in CPU RAM.",
   gate: "Refuse any setting that drops answer quality or slows p99 past the limit; its 'saving' is the risk it blocked.",
   waste: "Stop agent loops that call the model again without new information.",
@@ -141,7 +144,7 @@ const HOW = {
   modal: "Run the same open model on Modal and pay per GPU-second. Energy is an estimate.",
 };
 // Minimal radial cards: only power caps has a measured share in this run.
-export const CHILDREN = [["caps", "Power caps"], ["topk", "Adaptive top-k"], ["quant", "Quantization"], ["baseten", "Baseten (hosted)"], ["modal", "Modal (hosted)"], ["gate", "Quality gate"], ["waste", "Agent-waste saver"], ["sam", "Cooling hotspots (SAM 3.1)"]];
+export const CHILDREN = [["caps", "Power caps"], ["think", "Thinking budget (pending)"], ["prefix", "Prefix caching (pending)"], ["quant", "Quantization"], ["topk", "Adaptive top-k: Spark on Modal (pending)"], ["baseten", "Baseten (hosted)"], ["modal", "Modal (hosted)"], ["gate", "Quality gate"], ["waste", "Agent-waste saver"], ["sam", "Cooling hotspots (SAM 3.1)"]];
 // Children that only make sense under one branch.
 export const CHILD_ONLY = { sam: "power" };
 export const DERIVED_HINT = "Derived from power: same % because dollars and litres scale linearly with kWh (ESTIMATE).";
@@ -187,7 +190,8 @@ export const TREE = [
         { id: "capsweep", name: "Fixed cap sweep" },
         { id: "clocks", name: "Phase-aware clocks" },
       ] },
-      { id: "topk", name: "Adaptive top-k / tiered experts", own_only: true },
+      { id: "think", name: "Thinking budget per tier (pending)", own_only: true },
+      { id: "prefix", name: "Prefix caching, Complex tier (pending)", own_only: true },
       { id: "quant", name: "Quantization", own_only: true },
     ] },
     { id: "baseten", name: "Baseten", host: "baseten", kids: [
@@ -273,7 +277,7 @@ export function treeValue(rec, branch, node) {
   }
   return null; // owngpu/waste/where/topk/quant/... not attributed in this run
 }
-const OWN_ONLY = { caps: "Power caps", quant: "Quantization", topk: "Adaptive top-k / tiered experts" };
+const OWN_ONLY = { caps: "Power caps", quant: "Quantization", think: "Thinking budget per tier (pending)", prefix: "Prefix caching (pending)" };
 export function hostedChain(e) {
   if (!e) return "";
   return `<li>Tokens saved: ${n(fmt(e.tokens_saved?.value, 0), e.tokens_saved?.label || "ESTIMATE")} (with vs without, ${esc(e.basis || "")}; scaled up from ${esc(String(e.n_per_arm ?? "a few"))} calls per arm).</li>

@@ -21,7 +21,7 @@ const STATIC_PB = {
     { id: "e2e", name: "E2E H100", what: "the GPU it runs on" },
     { id: "planner", name: "planner", what: "proposes the next cap" },
   ],
-  topk: [{ id: "e2e", name: "E2E H100", what: "the GPU it runs on" }],
+  topk: [{ id: "modal", name: "Modal 8x B200", what: "where the pending Spark top-k test runs" }],
   keep: [{ id: "e2e", name: "E2E H100", what: "the GPU it runs on" }],
   waste: [{ id: "meta", name: "Meta Muse Spark", what: "the planning agent it watches" }],
   approve: [{ id: "operator", name: "Operator", what: "a person decides" }],

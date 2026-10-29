@@ -145,7 +145,7 @@ const TRAFFIC_CARDS = [
 ];
 const CARE_CARDS = [
   { v: "gentle", t: "Gentle", d: "Stays well inside the limits; keeps less.", ex: "Slowest 1% may rise 5%, answers must agree 97%.", icon: "shield" },
-  { v: "balanced", t: "Balanced", d: "The default limits.", ex: "Slowest 1% may rise 10%. Power cap: fixed-check pass rate may drop at most 1 point. Top-k and routing: 95% agreement.", icon: "shield" },
+  { v: "balanced", t: "Balanced", d: "The default limits.", ex: "Slowest 1% may rise 10%. Power cap: fixed-check pass rate may drop at most 1 point. Routing: 95% agreement.", icon: "shield" },
   { v: "bold", t: "Bold", d: "Pushes the limits to save the most.", ex: "Slowest 1% may rise 15%, answers must agree 94%.", icon: "shield" },
 ];
 const MODEL_BLURB = {
@@ -276,7 +276,7 @@ function renderStep() {
     ${CARE_CARDS.map((c) => pickCard("care", c, S.choice.care === c.v)).join("")}</div>`;
   else body.innerHTML = `<h2>${esc(STEP_Q[5])}</h2>
     <p class="lock">This run measures both: baseline first, then WattNot.</p>
-    <div class="where3"><h3>Where it runs</h3><p class="lock">All three are compared in this run.</p><ul>${["Your GPU · adaptive top-k + tiered / k-means experts + quantization", "Baseten hosted", "Modal hosted"].map((t) => `<li><span class="chk" aria-hidden="true">✓</span>${esc(t)}</li>`).join("")}</ul></div>
+    <div class="where3"><h3>Where it runs</h3><p class="lock">All three are compared in this run.</p><ul>${["Your GPU · Muse Glimmer 30B (Meta) · power caps + FP8 · thinking budget and prefix caching pending", "Baseten hosted", "Modal hosted"].map((t) => `<li><span class="chk" aria-hidden="true">✓</span>${esc(t)}</li>`).join("")}</ul></div>
     <div class="fld namerow"><label for="f-name">Run name<small>free text</small></label><input type="text" id="f-name" value="${esc(S.choice.name || "My first replay")}"></div>
     <button class="btn pri big" id="startRun">Start replay</button>
     <p class="lock">Replay only, no GPU. Live mode needs the owner's okay and the command line.</p>`;
@@ -472,7 +472,7 @@ function mapTopics() {
     { id: "power", color: "#B2A6C3", name: "Power", sub: "Energy per request",
       kids: [leaf("pw-s", "bolt", "Without WattNot", e ? `700 W stock · <b>${esc(e.stock)}</b>/req ${badge(e.tag)}` : "700 W stock · not measured"),
              leaf("pw-w", "bolt", "With WattNot", e ? `350 W cap · <b>${esc(e.wattnot)}</b>/req · <b>${esc(e.delta)}</b> ${badge(e.tag)}` : "350 W cap · not measured")],
-      detail: `<b>What went right.</b> RUN2 on Llama 3.1 8B at a 350 W cap: <b>−27.1%</b> joules per request ${badge("MEASURED")} (data/h100-run2/vm/steps/cap350.json). Earlier sweep on Muse Glimmer 30B at 400 W: <b>−21.0%</b> with p99 +3.7% ${badge("MEASURED")} (H100 run sweep.csv, NVML). Qwen3 adaptive top-k saved 7.0% and passed all three gates at 95.7% agreement ${badge("MEASURED")}.` },
+      detail: `<b>What went right.</b> RUN2 on Llama 3.1 8B at a 350 W cap: <b>−27.1%</b> joules per request ${badge("MEASURED")} (data/h100-run2/vm/steps/cap350.json). Earlier sweep on Muse Glimmer 30B at 400 W: <b>−21.0%</b> with p99 +3.7% ${badge("MEASURED")} (H100 run sweep.csv, NVML). Next on the H100: a thinking budget per tier and prefix caching <span class="rad-pending">pending</span>.` },
     { id: "cost", color: "#C4B4D6", name: "Cost", sub: "Electricity per 1M requests",
       kids: [leaf("c-s", "coin", "Without WattNot", c ? `Stock: <b>${esc(c.stock)}</b>` : "Stock cost: not measured"),
              leaf("c-w", "coin", "With WattNot", c ? `Capped: <b>${esc(c.wattnot)}</b> (<b>${esc(c.delta)}</b>)` : "Capped cost: not measured")],
@@ -496,11 +496,11 @@ function mapTopics() {
     { id: "rejected", color: "#D48389", name: "Rejected options", sub: "What we refused, and why",
       kids: [leaf("r-s", "x", "Without WattNot", `No gate: 325 W would just run slower at p99 <b>+10.9%</b>`),
              leaf("r-w", "x", "With WattNot", `Gate rejects 325 W: p99 <b>+10.9%</b> is over the <b>10%</b> limit ${badge("MEASURED")}`)],
-      detail: `<b>325 W rejected:</b> p99 rose <b>+10.9%</b>, over the 10% limit ${badge("MEASURED")} (data/h100-run2/vm/steps/cap325.json). <b>Granite adaptive top-k rejected:</b> 94.53% agreement, under the 95% gate ${badge("MEASURED")} (story bundle adaptive stats). Rejections are the system working.` },
+      detail: `<b>325 W rejected:</b> p99 rose <b>+10.9%</b>, over the 10% limit ${badge("MEASURED")} (data/h100-run2/vm/steps/cap325.json). Rejections are the system working.` },
     { id: "proof", color: "#DCD6E4", name: "Proof", sub: "Fingerprint, verifier, raw files",
       kids: [leaf("f-s", "doc", "Without WattNot", `A chart you cannot re-check`),
              leaf("f-w", "doc", "With WattNot", `Fingerprint plus verifier plus raw files ${badge("SAMPLE")}`)],
-      detail: `The fingerprint covers the headline numbers only, with sorted keys and no timestamps. The verifier re-checks sample receipts ${badge("SAMPLE")}. Raw data: data/h100-run2/vm/steps/cap350.json, data/h100-run2/vm/steps/cap325.json, data/h100-run2/vm/adaptive_topk/, verifier/samples/.` },
+      detail: `The fingerprint covers the headline numbers only, with sorted keys and no timestamps. The verifier re-checks sample receipts ${badge("SAMPLE")}. Raw data: data/h100-run2/vm/steps/cap350.json, data/h100-run2/vm/steps/cap325.json, verifier/samples/.` },
   ];
 }
 let mapWired = false;
@@ -586,7 +586,9 @@ function wireMap() {
 // run". Totals are never split across methods.
 const RAD_METHODS = [
   { id: "caps", name: "Power caps", hint: "Lower watt limit; keep the lowest cap that passes the gates." },
-  { id: "topk", name: "Adaptive top-k", hint: "Fewer experts per word when the weight is concentrated." },
+  { id: "think", name: "Thinking budget per tier", hint: "Pending: each tier gets the cheapest thinking budget that keeps the pass rate (H100 long run)." },
+  { id: "prefix", name: "Prefix caching", hint: "Pending: reuse the shared prompt prefix of Complex agent turns (H100 long run)." },
+  { id: "topk", name: "Adaptive top-k (Spark on Modal)", hint: "Pending: fewer experts per word on Muse Spark Open, tested on Modal 8x B200, not on the H100." },
   { id: "gate", name: "Quality-gate effect", hint: "Caps the gates refused, and what they would have cost." },
   { id: "waste", name: "Agent-waste saver", hint: "Stops tool-call loops that repeat without new information." },
   { id: "router", name: "Hosted-router choice", hint: "Own GPU with a cap, or paying a host per answer." },
@@ -1459,7 +1461,9 @@ async function startQuiet() { const r = await fetch("/api/dash/v2/run", { method
 // ---------- how it works ----------
 const FEATURES = [
   ["cap", "⚡", "Power caps", "Lower the GPU's watt limit and keep the lowest one that stays fast enough.", "An H100 ships at 700 W. Many workloads do not need all of it. WattNot tries 650, 600 … 400 W, measures energy per request and the p99 at each, and keeps the lowest cap that passes. On Muse Glimmer 30B, 400 W used 21% less energy per request, and p99 rose 3.7%.", "MEASURED"],
-  ["topk", "◇", "Adaptive top-k", "Let each word use fewer of the model's 'experts' when it does not need them.", "Mixture-of-Experts models send every token to a fixed number of experts. Often the first one or two carry almost all the weight. Adaptive top-k drops the rest. It saved 6 to 7% energy on Granite and Qwen3-30B in RUN1. At the safer setting that passes the 95% quality bar, it saves about 1.5%. Those were older non-Meta models; the main path now targets Muse Spark Open with a reduced expert count, measured in the long GPU run.", "MEASURED"],
+  ["topk", "◇", "Adaptive top-k", "Let each word use fewer of the model's 'experts' when it does not need them.", "Mixture-of-Experts models send every token to a fixed number of experts. Often the first one or two carry almost all the weight. Adaptive top-k drops the rest. It is not part of the H100 run: Muse Glimmer is dense. It is planned as a separate test on Muse Spark Open (Meta's mixture-of-experts model) on Modal, 8x B200 with the official 4-bit weights, at 8, 6 and 4 experts behind the quality gate.", "PENDING"],
+  ["think", "◎", "Thinking budget per tier", "Give easy questions less thinking time than hard ones.", "Reasoning models think before they answer. WattNot tries a few thinking budgets per difficulty tier, stops the thinking at the budget and asks for the answer, and keeps the budget with the lowest energy per correct answer as long as the pass rate drops at most 1 point. Cut-off answers count as fails. Builds on s1, TALE, L1 and ThinkPrune; what is new is choosing by measured joules. Measured in the H100 long run.", "PENDING"],
+  ["prefix", "↻", "Prefix caching", "Do not recompute the same prompt start on every agent turn.", "Agent turns resend the same system prompt, tools and history. Prefix caching keeps that part computed. WattNot runs it off and on, in alternating order, on the Complex tier and keeps it only if answers stay the same. Measured in the H100 long run.", "PENDING"],
   ["waste", "♻", "Agent waste saver", "Stop AI agents that keep calling the model after the job is done.", "Agents loop: they retry broken tools, repeat searches, or never print the 'done' word the harness waits for. The saver watches for repetition and no new information and stops the loop. On 12 failure cases with real Muse Spark calls, it cut tokens 67% and calls 57%. On normal tasks it is a tie.", "MEASURED"],
   ["approve", "✋", "Approve and undo", "Nothing risky touches a GPU without a person saying yes.", "Each proposed change gets a risk level. High-risk changes wait for a click; no answer in 10 minutes counts as no. Every decision records who and when. Any applied change can be rolled back in one click, and the rollback is logged too.", "MOCK"],
   ["spark", "☁", "Muse Spark Open vs Baseten", "Run the open model on our own H100, or pay a host per answer.", "Same model, two ways. On our own GPU we can measure and cap power. On Baseten we get a bill and an estimated energy figure. A small live check on Baseten passed 6 of 6 prompts at $0.79 per 1,000 answers. The own-GPU side runs in the next long H100 session.", "MEASURED"],
@@ -1469,7 +1473,7 @@ const FEATURES = [
 ];
 function renderLearn() {
   $("#pLearn").innerHTML = `<div class="intro"><div><h1>How it works, one feature at a time</h1><p>Each card is a feature we built. The first line says what it does. Open it for how, the numbers, and where they come from.</p></div></div>${ctrl()}
-  <div class="feat">${FEATURES.map(([id, ic, t, s, body, tag]) => `<div>${card(`f-${id}`, ic, t, s, `<p>${esc(body)} ${badge(tag)}</p>`)}</div>`).join("")}</div>`;
+  <div class="feat">${FEATURES.map(([id, ic, t, s, body, tag]) => `<div${tag === "PENDING" ? ' class="is-pending" title="Pending: not measured yet"' : ""}>${card(`f-${id}`, ic, t, s, `<p>${esc(body)} ${badge(tag)}</p>`)}</div>`).join("")}</div>`;
 }
 
 // ---------- boot ----------
