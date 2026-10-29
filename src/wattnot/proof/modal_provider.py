@@ -9,7 +9,9 @@ allow-list and bisect fallback, so receipts carry the same `call` fields
 (provider, model id, prompt hash, latency, fallback).
 
 Credentials, env only, never printed:
-- `MODAL_ENDPOINT_URL`: the endpoint base URL (ending in `/v1` or not).
+- `WATTNOT_MODAL_URL` (or the legacy `MODAL_ENDPOINT_URL`): the endpoint base URL (ending in
+  `/v1` or not). If neither is set it is resolved via opt-in SDK discovery or a cached file; see
+  `wattnot.cloud.modal_url`. The URL is not a secret.
 - `MODAL_PROXY_TOKEN_ID` + `MODAL_PROXY_TOKEN_SECRET`: a workspace Proxy Token,
   sent as `Authorization: Bearer <id>.<secret>`. These are not the account
   tokens in `MODAL_TOKEN_ID`/`MODAL_TOKEN_SECRET`, which drive the CLI
@@ -46,10 +48,14 @@ class ModalError(BasetenError):
 
 
 def base_url_from_env() -> str:
-    url = os.environ.get(URL_ENV, "").strip().rstrip("/")
-    if not url:
-        raise ModalError(f"{URL_ENV} is not set (the Modal Endpoint URL).")
-    return url if url.endswith("/v1") else url + "/v1"
+    """The Modal endpoint base URL (ending in /v1), resolved via the shared resolver:
+    WATTNOT_MODAL_URL, then the legacy MODAL_ENDPOINT_URL, then opt-in SDK discovery, then a
+    cached file -- else a clear error. No network on the default path."""
+    from wattnot.cloud.modal_url import ModalUrlUnset, resolve_modal_base_url
+    try:
+        return resolve_modal_base_url()
+    except ModalUrlUnset as e:
+        raise ModalError(str(e)) from None
 
 
 def _default_transport(req: Mapping) -> dict:
