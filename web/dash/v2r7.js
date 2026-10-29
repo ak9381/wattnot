@@ -191,7 +191,7 @@ export const TREE = [
         { id: "clocks", name: "Phase-aware clocks" },
       ] },
       { id: "think", name: "Thinking budget per tier (pending)", own_only: true },
-      { id: "prefix", name: "Prefix caching, Complex tier (pending)", own_only: true },
+      { id: "prefixcache", name: "Prefix caching, Complex tier (pending)", own_only: true },
       { id: "quant", name: "Quantization", own_only: true },
     ] },
     { id: "baseten", name: "Baseten", host: "baseten", kids: [
