@@ -89,15 +89,15 @@
     {
       "id": "modal",
       "name": "Modal",
-      "what": "not used yet",
-      "status": "not_used",
-      "calls": null,
+      "what": "serverless compute (CPU access check so far)",
+      "status": "used",
+      "calls": 1,
       "cost": {
-        "value": null,
-        "unit": null,
-        "label": null
+        "value": 0.0001,
+        "unit": "USD",
+        "label": "ESTIMATE"
       },
-      "source": null
+      "source": "meta-usage/MODAL-LOG.md"
     }
   ]
 }
