@@ -123,11 +123,30 @@ h1 {
   transform: translateY(-1px);
 }
 .powered {
-  color: var(--mu);
-  font-size: 13.5px;
-  font-weight: 300;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 28px;
+}
+.powered-label {
+  color: var(--tx);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+.powered .chip {
+  display: inline-block;
+  padding: 5px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--tx);
+  font-size: 13px;
+  font-weight: 500;
   letter-spacing: 0.01em;
-  margin-top: 24px;
 }
 
 @media (max-width: 900px) {
@@ -149,7 +168,16 @@ h1 {
     <div class="cta">
       <a class="btn pr" href="runs.html">Let WattNot guide your agents</a>
     </div>
-    <p class="powered">Powered by Meta Muse Spark, Wonder, Glimmer, Voice, Llama and SAM 3.1</p>
+    <div class="powered" aria-label="Powered by Meta tools">
+      <span class="powered-label">Powered by Meta</span>
+      <span class="chip">Muse Spark</span>
+      <span class="chip">Muse Wonder</span>
+      <span class="chip">Muse Glimmer</span>
+      <span class="chip">Muse Code</span>
+      <span class="chip">Voice</span>
+      <span class="chip">Llama</span>
+      <span class="chip">SAM 3.1</span>
+    </div>
   </div>
 </header>
 </body>

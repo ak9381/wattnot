@@ -437,9 +437,24 @@ def test_landing_page_head_tags_and_content():
     # Headline and body lines
     assert "Was that agent call worth the watts?" in html
     assert "Every watt checked, plus every dollar and litre." in html
-    assert "Powered by Meta Muse Spark, Wonder, Glimmer, Voice, Llama and SAM 3.1" in html
     assert "Let WattNot guide your agents" in html
     assert 'href="runs.html"' in html
+
+    # "Powered by" lists the pinned set of Meta tools WattNot actually uses, each
+    # rendered as a prominent chip. Muse Image is never listed (no code usage).
+    assert "Powered by Meta" in html
+    powered_tools = [
+        "Muse Spark",
+        "Muse Wonder",
+        "Muse Glimmer",
+        "Muse Code",
+        "Voice",
+        "Llama",
+        "SAM 3.1",
+    ]
+    for tool in powered_tools:
+        assert f'<span class="chip">{tool}</span>' in html
+    assert "Muse Image" not in html
 
 
 def test_configure_stack_step_and_framework_choices():
