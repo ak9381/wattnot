@@ -9,7 +9,9 @@
 `setup` ships `git archive HEAD` of this repo to /root/wattnot (the path SshTransport expects),
 writes the Hugging Face token to a 0600 file on the host (never on a command line, never in a
 log), starts the setup script detached, and follows its log until READY, a failure, or the
-timeout. Exit codes: 0 ok; 2 setup failed (the script's own code is printed); 3 timeout.
+timeout. Exit codes: 0 ok; 2 setup failed (the script's own code is printed); 3 timeout;
+4 SSH lost for the whole reconnect budget (state unknown, VM NOT deleted); 5 unreachable.
+    python scripts/run2_remote.py alive  --host IP                    0 alive, 5 unreachable
 Needs `paramiko`. Reads HF_TOKEN from the environment.
 """
 
@@ -59,23 +61,63 @@ def sh(c, cmd: str, timeout: float = 60) -> tuple[int, str]:
     return out.channel.recv_exit_status(), data
 
 
-def reconnecting(host: str, key: str):
-    """A command runner that reconnects when the link drops (the remote work is detached)."""
-    state = {"c": None}
+RECONNECT_BUDGET_S = 900.0  # RUN3 died after ~2 min of lost SSH; a VM reboot or a long
+#                            network blip can take longer than that, so wait up to 15 min
+BACKOFF_MAX_S = 60.0
+
+
+class LinkLost(ConnectionError):
+    """SSH has not answered for the whole reconnect budget. The remote work is detached and may
+    still be running: this is NOT proof the VM is dead (see wattnot.proof.teardown)."""
+
+
+def reconnecting(host: str, key: str, *, budget_s: float = RECONNECT_BUDGET_S,
+                 backoff_max_s: float = BACKOFF_MAX_S, sleep=time.sleep, clock=time.monotonic,
+                 connector=None, log=None):
+    """A command runner that reconnects when the link drops (the remote work is detached).
+
+    Retries with exponential backoff (1, 2, 4 ... capped at `backoff_max_s`) until `budget_s`
+    seconds have passed without one successful command, then raises LinkLost. The budget
+    restarts after every success, so a run with several short blips never runs out."""
+    state = {"c": None, "fails": 0}
+    conn = connector or connect
 
     def run(cmd: str, timeout: float = 60) -> tuple[int, str]:
-        for attempt in range(8):
+        start, attempt = clock(), 0
+        while True:
             try:
                 if state["c"] is None or not state["c"].get_transport().is_active():
-                    state["c"] = connect(host, key)
-                return sh(state["c"], cmd, timeout)
-            except Exception:  # noqa: BLE001
+                    state["c"] = conn(host, key)
+                out = sh(state["c"], cmd, timeout)
+                state["fails"] = 0
+                return out
+            except Exception as e:  # noqa: BLE001
                 state["c"] = None
-                time.sleep(min(30, 2**attempt))
-        raise ConnectionError(f"cannot reach {host}")
+                state["fails"] += 1
+                waited = clock() - start
+                if waited >= budget_s:
+                    raise LinkLost(f"cannot reach {host} for {waited:.0f} s "
+                                   f"({state['fails']} tries): {type(e).__name__}") from None
+                pause = min(backoff_max_s, 2.0 ** attempt, max(0.0, budget_s - waited))
+                if log:
+                    log(f"[link] {type(e).__name__}; retry in {pause:.0f} s "
+                        f"({waited:.0f}/{budget_s:.0f} s)")
+                sleep(pause)
+                attempt += 1
 
     run.state = state  # type: ignore[attr-defined]
     return run
+
+
+def is_alive(host: str, key: str = KEY, *, connector=None) -> bool:
+    """One cheap probe: SSH answers and a trivial command runs."""
+    try:
+        c = (connector or connect)(host, key)
+        rc, out = sh(c, "echo alive", 20)
+        c.close()
+        return rc == 0 and "alive" in out
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def cmd_wait(a) -> int:
@@ -140,11 +182,18 @@ def cmd_setup(a) -> int:
     )
     assert "started" in out, out
     c.close()
-    run = reconnecting(a.host, a.key)
+    run = reconnecting(a.host, a.key, budget_s=getattr(a, "reconnect_budget_s", RECONNECT_BUDGET_S),
+                       log=lambda m: print(m, file=sys.stderr, flush=True))
     offset, t0, buf = 0, time.time(), b""
     while True:
-        rc, chunk = run(f"tail -c +{offset + 1} {SETUP_LOG} 2>/dev/null; "
+        try:
+            rc, chunk = run(f"tail -c +{offset + 1} {SETUP_LOG} 2>/dev/null; "
                         f"printf '\\n__RC__%s' \"$(cat {REMOTE_LOG}/setup.rc 2>/dev/null)\"")
+        except LinkLost as e:
+            # Not a setup failure: the host may still be working. Exit 4 so the driver checks
+            # whether the VM is really dead before it does anything else (never delete here).
+            print(f"[run2_remote] {e}; setup state unknown", file=sys.stderr)
+            return 4
         body, sep, code = chunk.rpartition("\n__RC__")
         if sep:
             raw = body.encode()
@@ -179,10 +228,26 @@ def cmd_status(a) -> int:
     return 0
 
 
+def cmd_alive(a) -> int:
+    ok = is_alive(a.host, a.key)
+    print("alive" if ok else "unreachable")
+    return 0 if ok else 5
+
+
 def cmd_pull(a) -> int:
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    c = connect(a.host, a.key)
+    c = None
+    for attempt in range(6):  # a pull right after a blip must not give up on the first refusal
+        try:
+            c = connect(a.host, a.key)
+            break
+        except Exception as e:  # noqa: BLE001
+            print(f"[pull] connect failed ({type(e).__name__}); retry", file=sys.stderr)
+            time.sleep(min(60, 5 * 2**attempt))
+    if c is None:
+        print("[pull] host unreachable; nothing copied", file=sys.stderr)
+        return 5
     sh(
         c,
         f"nvidia-smi -q -d POWER,CLOCK,TEMPERATURE,PERFORMANCE > {REMOTE_LOG}/nvsmi_power_end.txt "
@@ -219,7 +284,7 @@ def cmd_pull(a) -> int:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("wait", "setup", "status", "pull"):
+    for name in ("wait", "setup", "status", "pull", "alive"):
         p = sub.add_parser(name)
         p.add_argument(
             "--host", default=os.environ.get("VM_IP"), required=not os.environ.get("VM_IP")
@@ -230,10 +295,12 @@ def main(argv=None) -> int:
         if name == "setup":
             p.add_argument("--model", default="meta-llama/Llama-3.1-8B-Instruct")
             p.add_argument("--moe", default="ibm-granite/granite-3.1-3b-a800m-instruct")
+            p.add_argument("--reconnect-budget-s", type=float, default=RECONNECT_BUDGET_S)
         if name == "pull":
             p.add_argument("--out", default="run2-pulled")
     a = ap.parse_args(argv)
-    return {"wait": cmd_wait, "setup": cmd_setup, "status": cmd_status, "pull": cmd_pull}[a.cmd](a)
+    return {"wait": cmd_wait, "setup": cmd_setup, "status": cmd_status, "pull": cmd_pull,
+            "alive": cmd_alive}[a.cmd](a)
 
 
 if __name__ == "__main__":
