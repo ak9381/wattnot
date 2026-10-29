@@ -366,6 +366,8 @@ def create_app(root: str | os.PathLike[str] = ".") -> FastAPI:
         d = base / "cloud-receipts"
         rows = []
         for p in sorted(d.glob("cloud_*.json")) if d.is_dir() else []:
+            if p.name.endswith(".sigstore.json"):  # skip signature bundles, not receipts
+                continue
             r = json.loads(p.read_text(encoding="utf-8"))
             t = r["totals"]
             rows.append({"receipt_id": r["receipt_id"], "label": r["label"], "mode": r["mode"],

@@ -136,7 +136,7 @@ def _run_receipt(a: argparse.Namespace) -> int:
         return 0 if ok else 1
     if a.receipt_cmd == "from-cloud":
         from wattnot.receipt.cloud_adapter import from_cloud
-        from wattnot.receipt.sign import sign
+        from wattnot.receipt.sign import sign_run_receipt
 
         cloud = json.loads(Path(a.cloud_receipt).read_text(encoding="utf-8"))
         r = from_cloud(cloud)
@@ -144,8 +144,9 @@ def _run_receipt(a: argparse.Namespace) -> int:
         out.mkdir(parents=True, exist_ok=True)
         path = out / f"{r['receipt_id']}.json"
         path.write_text(json.dumps(r, indent=2) + "\n", encoding="utf-8")
-        if a.sign_key:
-            sign(path, no_rekor=True, key_path=a.sign_key)
+        # The adapted receipt is a new document, so it gets its own offline signature
+        # automatically (the local key, or --sign-key); unsigned if no key is configured.
+        sign_run_receipt(path, key_path=a.sign_key)
         print(f"{path}  grade {r['grade']}  sha256 {r['integrity']['sha256'][:16]}...")
         return 0
     if a.receipt_cmd != "build":

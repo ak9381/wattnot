@@ -33,6 +33,10 @@ Rough per-call at ~400 in / ~2,000 out: ~$0.009 -> one 92-item pass ~ $0.85.
 | **Total** | ~12,500 | **~85** |
 Story: hosted $/correct and tokens/correct vs H100 Glimmer J/correct and $/correct; budget/effort lever
 measured on a second Meta model.
+The three headline arms (baseline, thinking-level sweep, judge) are dry-run end to end against a
+fake hosted endpoint by `modal/spark_topk_sprint.py::baseten_dry_run`: each produces a signed cloud
+receipt that verifies, with energy labelled and graded no higher than ESTIMATE (hosted runs never
+see a power meter). No network, no money; covered by `tests/test_modal_spark_topk.py`.
 Dedicated deployment on the same platform: possible in principle (our own vLLM could take a top-k override),
 but Spark NVFP4 needs 8x B200 (~$80/h list) plus a 533 GB load, and no power caps/NVML control. Under $98
 that is <1 h with load risk, and duplicates Modal. Not recommended.
@@ -50,6 +54,22 @@ that is <1 h with load risk, and duplicates Modal. Not recommended.
 | **Total** | | **~88** |
 Branch: if k=6 fails the gate badly, skip k=4 and move ~20 min into k=8/k=6 repeats.
 Volume storage: 533 GB is under the 1 TiB/month free allowance.
+
+Sprint driver (`modal/spark_topk_sprint.py`), one shared guard (hard $98 / soft $90 / effective
+hard $96), the rails on every arm: `check_new_item()` before spending; `cloud_timeout_s()` as the
+remote function's own `timeout` (server-side backstop); a local `kill_timer` next to it; stop the
+arm and save results if the server is not answering by minute 15; **one server restart per top-k
+value** (8 then 6 then 4), then a top-k 8 repeat for the noise floor. The tuner runs on the laptop
+against the Modal endpoint, so the remote side only serves vLLM and the file never imports
+`wattnot` at module top (the proof run's crash-loop). After each top-k the arm's cloud receipt is
+built and signed offline via `wattnot.receipt.sign.sign_run_receipt` (no network, no Rekor) and
+written to its own dir before any stop or teardown; Modal energy stays an ESTIMATE.
+
+Validation is **CPU dry runs only** (`--dry-run`, or `dry_run()`/`baseten_dry_run()`): an
+in-process fake vLLM server answers from the workload's known-good answers and a fake
+`modal billing report` meter stands in for reconcile. The dry run opens no socket, launches
+nothing on Modal and spends nothing, yet exercises the whole driver and proves each arm's receipt
+is signed, verifies, and can never be graded above ESTIMATE. See `tests/test_modal_spark_topk.py`.
 
 ## Hosted Spark reasoning controls (docs, 29 Oct)
 - `reasoning_effort`: `low` (strength 8), `medium` (32), `high` (256), `xhigh` (512, default). `none`/`minimal`

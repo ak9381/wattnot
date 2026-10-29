@@ -32,6 +32,16 @@ from wattnot.receipt.canon import canonical_sha256
 
 OFFLINE_MEDIA_TYPE = "application/vnd.wattnot.offline-signature.v1+json"
 
+# The local offline key used to sign run receipts automatically. $WATTNOT_SIGN_KEY
+# points at a PEM file; otherwise the default below is tried. Nothing is ever created
+# here and no key material is printed or returned.
+KEY_ENV = "WATTNOT_SIGN_KEY"
+DEFAULT_KEY = Path.home() / ".wattnot" / "test-key.pem"
+
+# Written to integrity.signer when no local key is configured, so a reader can tell at a
+# glance that the receipt was left unsigned on purpose (the run is never failed for this).
+UNSIGNED = "unsigned: no local signing key configured"
+
 
 class PublicSigningRefused(RuntimeError):
     """Raised when a public (Rekor) signature is asked for without approval."""
@@ -60,6 +70,44 @@ def key_id(pub: Ed25519PublicKey) -> str:
 def bundle_path(receipt_path: str | Path) -> Path:
     p = Path(receipt_path)
     return p.with_name(p.stem + ".sigstore.json")
+
+
+def local_key_path(env: Mapping[str, str] | None = None) -> Path | None:
+    """The offline key that run receipts are signed with, or None if none is configured.
+
+    `$WATTNOT_SIGN_KEY` wins (an explicitly chosen path; if it does not exist, nothing is
+    signed, rather than silently falling back). Otherwise the default `~/.wattnot/test-key.pem`
+    is used when it exists. The path is never created here and the key is never read aloud.
+    """
+
+    env = os.environ if env is None else env
+    raw = (env.get(KEY_ENV) or "").strip()
+    p = Path(raw).expanduser() if raw else DEFAULT_KEY
+    return p if p.is_file() else None
+
+
+def sign_run_receipt(receipt_path: str | Path, *, key_path: str | Path | None = None,
+                     env: Mapping[str, str] | None = None) -> tuple[Path | None, str]:
+    """Sign a freshly written run receipt offline, automatically.
+
+    Returns `(bundle_path, signer)`. If `key_path` is given it is used; otherwise the local
+    key (`local_key_path`) is. When no key is available the receipt is clearly marked unsigned
+    in its `integrity` block and `(None, UNSIGNED)` is returned -- a run is never failed just
+    because no signing key is present. Marking the receipt unsigned does not change its hash
+    (the `integrity` block is excluded from the canonical digest), and signing never upgrades a
+    grade: it only fills `integrity.signer`/`rekor`.
+    """
+
+    receipt_path = Path(receipt_path)
+    key = Path(key_path).expanduser() if key_path else local_key_path(env)
+    if key is None or not key.is_file():
+        receipt = json.loads(receipt_path.read_text())
+        receipt["integrity"]["signer"] = UNSIGNED
+        receipt_path.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
+        return None, UNSIGNED
+    out = sign(receipt_path, no_rekor=True, key_path=key)
+    signer = json.loads(receipt_path.read_text())["integrity"]["signer"]
+    return out, signer
 
 
 def sign(receipt_path: str | Path, *, no_rekor: bool = True,
