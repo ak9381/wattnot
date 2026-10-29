@@ -283,7 +283,7 @@ export function hostedChain(e) {
   return `<li>Tokens saved: ${n(fmt(e.tokens_saved?.value, 0), e.tokens_saved?.label || "ESTIMATE")} (with vs without, ${esc(e.basis || "")}; scaled up from ${esc(String(e.n_per_arm ?? "a few"))} calls per arm).</li>
     <li>× ${n(fmt(e.j_per_token?.value, 2), "ESTIMATE")} J/token = ${n(fmt(e.energy_j?.value, 0), "ESTIMATE")} J. Assumption: ${esc(e.j_per_token?.method || "")}; energy per token scales with active parameters.</li>
     <li>÷ 3,600,000 = ${n(fmt(e.energy_kwh?.value, 5), "ESTIMATE")} kWh.</li>
-    <li>× ${WATER_L_PER_KWH} L/kWh = ${n(fmt(e.water_l?.value, 5), "ESTIMATE")} L water.</li>
+    <li>× ${WATER_L_PER_KWH} L/kWh (on-site cooling) = ${n(fmt(e.water_l?.value, 5), "ESTIMATE")} L water; up to ${WATER_L_PER_KWH_UPPER} L/kWh including power-plant water${e.water_l_upper?.value == null ? "" : ` = ${n(fmt(e.water_l_upper.value, 5), "ESTIMATE")} L`} (ESTIMATE).</li>
     <li>Cost saved: ${n(`$${fmt(e.usd_saved?.value, 4)}`, "MEASURED")} (tokens × list price).</li>`;
 }
 function hostedDetail(rec, host) {

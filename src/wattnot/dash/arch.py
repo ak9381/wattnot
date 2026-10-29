@@ -26,7 +26,7 @@ WATER = {
     "factor_l_per_kwh": 0.36,
     "factor_upper_l_per_kwh": 1.8,
     "name": "Data-center water use (WUE)",
-    "source": "Headline 0.36 L/kWh (on-site cooling), ESTIMATE, from LBNL 2024 United States Data Center Energy Usage Report (Dec 2024); up to 1.8 L/kWh including power-plant water (upper ESTIMATE); not measured",
+    "source": "Headline WUE 0.36 L/kWh (on-site cooling), ESTIMATE, from LBNL 2024 United States Data Center Energy Usage Report (Dec 2024); up to 1.8 L/kWh including power-plant water (upper ESTIMATE); not measured",
     "url": "https://eta-publications.lbl.gov/sites/default/files/2024-12/lbnl-2024-united-states-data-center-energy-usage-report.pdf",
     "formula": "litres = measured GPU kWh x 0.36 L/kWh (headline); up to x 1.8 L/kWh (upper, incl. power-plant water)",
     "caveat": "0.36 L/kWh is on-site cooling water applied to GPU energy only (ESTIMATE); the 1.8 L/kWh upper also includes the water used to generate the electricity. A given site can be far lower or higher.",
