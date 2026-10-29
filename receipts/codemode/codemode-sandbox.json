@@ -1,0 +1,228 @@
+{
+  "spec": "wattnot.codemode-sandbox-receipt/1",
+  "label": "MEASURED",
+  "source": "recorded Muse Spark agent runs (data/agent-waste/v3/runs.jsonl), replayed as a typed tool API and run as one program in a locked-down sandbox",
+  "generated": "2026-10-29T13:18:52Z",
+  "prev_sha256": null,
+  "env": {
+    "net_isolation": "audit-hook",
+    "rapl_readable": false,
+    "rapl_reason": "no RAPL interface at /sys/class/powercap"
+  },
+  "limits": {
+    "cpu_s": 5,
+    "as_bytes": 536870912,
+    "wall_s": 15.0
+  },
+  "tokenizer": "repo approximation: len(text) // 4 (same rule as route/stack.py)",
+  "summary": {
+    "candidates": 2
+  },
+  "rows": [
+    {
+      "task": "noprog-1-search-summarize",
+      "before": {
+        "round_trips": {
+          "value": 15,
+          "label": "MEASURED"
+        },
+        "total_tokens": {
+          "value": 81493,
+          "label": "MEASURED"
+        },
+        "wall_s": {
+          "value": 43.66,
+          "label": "MEASURED"
+        },
+        "joules": {
+          "value": 965.0,
+          "label": "ESTIMATE"
+        }
+      },
+      "after": {
+        "model_round_trips": {
+          "value": 1,
+          "label": "ESTIMATE"
+        },
+        "code_executions": {
+          "value": 1,
+          "label": "MEASURED"
+        },
+        "code_tokens": {
+          "value": 856,
+          "label": "TOKENIZER",
+          "note": "repo approximation: len(text) // 4 (same rule as route/stack.py)"
+        },
+        "result_tokens": {
+          "value": 1684,
+          "label": "TOKENIZER",
+          "note": "repo approximation: len(text) // 4 (same rule as route/stack.py)"
+        },
+        "total_tokens": {
+          "value": 2540,
+          "label": "TOKENIZER",
+          "note": "repo approximation: len(text) // 4 (same rule as route/stack.py)"
+        },
+        "sandbox_wall_s": {
+          "value": 0.0247,
+          "label": "MEASURED"
+        },
+        "cpu_s": {
+          "value": 0.0274,
+          "label": "MEASURED"
+        },
+        "peak_rss_kb": {
+          "value": 38660,
+          "label": "MEASURED"
+        },
+        "model_latency_s": {
+          "value": null,
+          "label": "ESTIMATE",
+          "note": "no live model call"
+        },
+        "sandbox_energy_j": {
+          "value": null,
+          "label": "PENDING",
+          "note": "no RAPL interface at /sys/class/powercap"
+        },
+        "model_energy_j": {
+          "value": 128.1,
+          "label": "ESTIMATE",
+          "note": "RUN2 j/token on code tokens; stand-in rate, not measured"
+        }
+      },
+      "sandbox": {
+        "ok": true,
+        "exit_status": 0,
+        "signal": null,
+        "timed_out": false,
+        "net_isolation": "audit-hook",
+        "net_blocked": true,
+        "writes_outside_tmp_blocked": true,
+        "tool_calls": 59,
+        "distinct_tools": 6,
+        "program_lines": 71,
+        "error": null
+      },
+      "saved": {
+        "round_trips": {
+          "value": 14,
+          "label": "MEASURED-vs-ESTIMATE"
+        },
+        "total_tokens": {
+          "value": 78953,
+          "label": "MEASURED-vs-TOKENIZER"
+        }
+      }
+    },
+    {
+      "task": "sprawl-3-recursive-split",
+      "before": {
+        "round_trips": {
+          "value": 11,
+          "label": "MEASURED"
+        },
+        "total_tokens": {
+          "value": 27700,
+          "label": "MEASURED"
+        },
+        "wall_s": {
+          "value": 20.416,
+          "label": "MEASURED"
+        },
+        "joules": {
+          "value": 420.9,
+          "label": "ESTIMATE"
+        }
+      },
+      "after": {
+        "model_round_trips": {
+          "value": 1,
+          "label": "ESTIMATE"
+        },
+        "code_executions": {
+          "value": 1,
+          "label": "MEASURED"
+        },
+        "code_tokens": {
+          "value": 317,
+          "label": "TOKENIZER",
+          "note": "repo approximation: len(text) // 4 (same rule as route/stack.py)"
+        },
+        "result_tokens": {
+          "value": 330,
+          "label": "TOKENIZER",
+          "note": "repo approximation: len(text) // 4 (same rule as route/stack.py)"
+        },
+        "total_tokens": {
+          "value": 647,
+          "label": "TOKENIZER",
+          "note": "repo approximation: len(text) // 4 (same rule as route/stack.py)"
+        },
+        "sandbox_wall_s": {
+          "value": 0.0194,
+          "label": "MEASURED"
+        },
+        "cpu_s": {
+          "value": 0.0215,
+          "label": "MEASURED"
+        },
+        "peak_rss_kb": {
+          "value": 38908,
+          "label": "MEASURED"
+        },
+        "model_latency_s": {
+          "value": null,
+          "label": "ESTIMATE",
+          "note": "no live model call"
+        },
+        "sandbox_energy_j": {
+          "value": null,
+          "label": "PENDING",
+          "note": "no RAPL interface at /sys/class/powercap"
+        },
+        "model_energy_j": {
+          "value": 47.4,
+          "label": "ESTIMATE",
+          "note": "RUN2 j/token on code tokens; stand-in rate, not measured"
+        }
+      },
+      "sandbox": {
+        "ok": true,
+        "exit_status": 0,
+        "signal": null,
+        "timed_out": false,
+        "net_isolation": "audit-hook",
+        "net_blocked": true,
+        "writes_outside_tmp_blocked": true,
+        "tool_calls": 18,
+        "distinct_tools": 5,
+        "program_lines": 30,
+        "error": null
+      },
+      "saved": {
+        "round_trips": {
+          "value": 10,
+          "label": "MEASURED-vs-ESTIMATE"
+        },
+        "total_tokens": {
+          "value": 27053,
+          "label": "MEASURED-vs-TOKENIZER"
+        }
+      }
+    }
+  ],
+  "notes": [
+    "Code Mode runs the agent's task as ONE generated program that calls the tools as a typed API, instead of a big tool list taken over many round trips.",
+    "The tool API is a faithful replay of the recorded trace: each (tool, args) returns the exact recorded output, deterministically. No live model, no network, no GPU.",
+    "MEASURED = produced by actually running the locked-down sandbox (wall time, CPU seconds, peak RSS, exit status, and that the network / out-of-dir writes were refused). The sandbox blocks network (unshare -n when the kernel allows it, else a socket-refusing audit hook), caps CPU/memory/wall time, and forbids writes outside a temp dir.",
+    "TOKENIZER = a count of the generated program and its final result using the repo's chars//4 approximation (route/stack.py). It is bytes we hold, not a billed model figure.",
+    "ESTIMATE = the single model round trip Code Mode implies and the model-side latency/energy of emitting the program: no live model is called here, so these are modelled, not measured. Sandbox CPU-package energy is read from RAPL when readable, else left null with the reason."
+  ],
+  "integrity": {
+    "canonicalization": "JCS RFC 8785",
+    "sha256": "af56fd2a2e548e70dfa9e3465468c3fc525a52babddace05250aba83c297bd22",
+    "signer": "offline:cc61d7cb91526c69",
+    "rekor": null
+  }
+}

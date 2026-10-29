@@ -1,0 +1,222 @@
+{
+  "spec": "wattnot.codemode-sandbox/1",
+  "generated": "2026-10-29T13:18:52Z",
+  "tokenizer": "repo approximation: len(text) // 4 (same rule as route/stack.py)",
+  "limits": {
+    "cpu_s": 5,
+    "as_bytes": 536870912,
+    "wall_s": 15.0
+  },
+  "env": {
+    "net_isolation": "audit-hook",
+    "rapl_readable": false,
+    "rapl_reason": "no RAPL interface at /sys/class/powercap"
+  },
+  "candidates": 2,
+  "rows": [
+    {
+      "task": "noprog-1-search-summarize",
+      "after": {
+        "model_round_trips": {
+          "value": 1,
+          "label": "ESTIMATE"
+        },
+        "code_executions": {
+          "value": 1,
+          "label": "MEASURED"
+        },
+        "code_tokens": {
+          "value": 856,
+          "label": "TOKENIZER",
+          "note": "repo approximation: len(text) // 4 (same rule as route/stack.py)"
+        },
+        "result_tokens": {
+          "value": 1684,
+          "label": "TOKENIZER",
+          "note": "repo approximation: len(text) // 4 (same rule as route/stack.py)"
+        },
+        "total_tokens": {
+          "value": 2540,
+          "label": "TOKENIZER",
+          "note": "repo approximation: len(text) // 4 (same rule as route/stack.py)"
+        },
+        "sandbox_wall_s": {
+          "value": 0.0247,
+          "label": "MEASURED"
+        },
+        "cpu_s": {
+          "value": 0.0274,
+          "label": "MEASURED"
+        },
+        "peak_rss_kb": {
+          "value": 38660,
+          "label": "MEASURED"
+        },
+        "model_latency_s": {
+          "value": null,
+          "label": "ESTIMATE",
+          "note": "no live model call"
+        },
+        "sandbox_energy_j": {
+          "value": null,
+          "label": "PENDING",
+          "note": "no RAPL interface at /sys/class/powercap"
+        },
+        "model_energy_j": {
+          "value": 128.1,
+          "label": "ESTIMATE",
+          "note": "RUN2 j/token on code tokens; stand-in rate, not measured"
+        }
+      },
+      "sandbox": {
+        "ok": true,
+        "exit_status": 0,
+        "signal": null,
+        "timed_out": false,
+        "net_isolation": "audit-hook",
+        "net_blocked": true,
+        "writes_outside_tmp_blocked": true,
+        "tool_calls": 59,
+        "distinct_tools": 6,
+        "program_lines": 71,
+        "error": null
+      },
+      "program_src": "# Code Mode program (generated from the recorded trace, one turn).\n# `tools` is injected by the sandbox bootstrap; see stub.py.\nimport json\noutputs = []\noutputs.append(tools.search_docs(query='audit-log retention period'))\noutputs.append(tools.search_docs(query='audit log retention'))\noutputs.append(tools.search_docs(query='audit log'))\noutputs.append(tools.search_docs(query='retention period'))\noutputs.append(tools.search_docs(query='retention'))\noutputs.append(tools.list_files(dir='/'))\noutputs.append(tools.search_docs(query='logs'))\noutputs.append(tools.search_docs(query='audit'))\noutputs.append(tools.search_docs(query='policy'))\noutputs.append(tools.read_file(path='/README.txt'))\noutputs.append(tools.read_file(path='/config/app.yaml'))\noutputs.append(tools.read_file(path='/notes/todo.txt'))\noutputs.append(tools.read_file(path='/reports/limits.txt'))\noutputs.append(tools.read_file(path='/drafts/a.txt'))\noutputs.append(tools.search_docs(query='compliance'))\noutputs.append(tools.search_docs(query='security'))\noutputs.append(tools.search_docs(query='storage'))\noutputs.append(tools.search_docs(query='data retention'))\noutputs.append(tools.search_docs(query='days'))\noutputs.append(tools.search_docs(query='keep'))\noutputs.append(tools.search_docs(query='log'))\noutputs.append(tools.list_files(dir='/config'))\noutputs.append(tools.list_files(dir='/notes'))\noutputs.append(tools.search_docs(query='audit-log'))\noutputs.append(tools.search_docs(query='period'))\noutputs.append(tools.search_docs(query='retained'))\noutputs.append(tools.search_docs(query='year'))\noutputs.append(tools.search_docs(query='month'))\noutputs.append(tools.search_docs(query='a'))\noutputs.append(tools.search_docs(query='the'))\noutputs.append(tools.search_docs(query='kept'))\noutputs.append(tools.list_tickets())\noutputs.append(tools.search_docs(query='audit logs'))\noutputs.append(tools.search_docs(query='log retention'))\noutputs.append(tools.get_ticket(id='T-108'))\noutputs.append(tools.get_ticket(id='T-104'))\noutputs.append(tools.list_files(dir='/reports'))\noutputs.append(tools.list_files(dir='/drafts'))\noutputs.append(tools.search_docs(query='audit-logs'))\noutputs.append(tools.search_docs(query='compliance retention audit'))\noutputs.append(tools.search_docs(query='SOC2'))\noutputs.append(tools.search_docs(query='365 days'))\noutputs.append(tools.service_status(name='all'))\noutputs.append(tools.search_docs(query='stale'))\noutputs.append(tools.search_docs(query='index'))\noutputs.append(tools.get_ticket(id='T-101'))\noutputs.append(tools.get_ticket(id='T-102'))\noutputs.append(tools.get_ticket(id='T-103'))\noutputs.append(tools.get_ticket(id='T-105'))\noutputs.append(tools.get_ticket(id='T-106'))\noutputs.append(tools.search_docs(query='how long are audit logs kept'))\noutputs.append(tools.search_docs(query='compliance logs'))\noutputs.append(tools.search_docs(query='security logs'))\noutputs.append(tools.search_docs(query='password'))\noutputs.append(tools.search_docs(query='encryption'))\noutputs.append(tools.list_files(dir='/docs'))\noutputs.append(tools.get_ticket(id='T-107'))\noutputs.append(tools.get_ticket(id='T-109'))\noutputs.append(tools.get_ticket(id='T-110'))\n# Compose the final result from the collected tool outputs.\nanswer = {\n    'task': 'noprog-1-search-summarize',\n    'tool_calls': len(outputs),\n    'distinct_calls': len(outputs),\n    'result': outputs[-1] if outputs else '',\n    'collected': outputs,\n}\n",
+      "result_preview": "{\"task\": \"noprog-1-search-summarize\", \"tool_calls\": 59, \"distinct_calls\": 59, \"result\": \"{\\\"id\\\":\\\"T-110\\\",\\\"title\\\":\\\"Dashboard typo\\\",\\\"status\\\":\\\"blocked\\\",\\\"owner\\\":\\\"lee\\\",\\\"priority\\\":\\\"low\\\"}\", \"collected\": [\"[{\\\"title\\\":\\\"rate limits\\\",\\\"text\\\":\\\"Default rate limit is 600",
+      "before": {
+        "round_trips": {
+          "value": 15,
+          "label": "MEASURED"
+        },
+        "total_tokens": {
+          "value": 81493,
+          "label": "MEASURED"
+        },
+        "wall_s": {
+          "value": 43.66,
+          "label": "MEASURED"
+        },
+        "joules": {
+          "value": 965.0,
+          "label": "ESTIMATE"
+        }
+      },
+      "saved": {
+        "round_trips": {
+          "value": 14,
+          "label": "MEASURED-vs-ESTIMATE"
+        },
+        "total_tokens": {
+          "value": 78953,
+          "label": "MEASURED-vs-TOKENIZER"
+        }
+      }
+    },
+    {
+      "task": "sprawl-3-recursive-split",
+      "after": {
+        "model_round_trips": {
+          "value": 1,
+          "label": "ESTIMATE"
+        },
+        "code_executions": {
+          "value": 1,
+          "label": "MEASURED"
+        },
+        "code_tokens": {
+          "value": 317,
+          "label": "TOKENIZER",
+          "note": "repo approximation: len(text) // 4 (same rule as route/stack.py)"
+        },
+        "result_tokens": {
+          "value": 330,
+          "label": "TOKENIZER",
+          "note": "repo approximation: len(text) // 4 (same rule as route/stack.py)"
+        },
+        "total_tokens": {
+          "value": 647,
+          "label": "TOKENIZER",
+          "note": "repo approximation: len(text) // 4 (same rule as route/stack.py)"
+        },
+        "sandbox_wall_s": {
+          "value": 0.0194,
+          "label": "MEASURED"
+        },
+        "cpu_s": {
+          "value": 0.0215,
+          "label": "MEASURED"
+        },
+        "peak_rss_kb": {
+          "value": 38908,
+          "label": "MEASURED"
+        },
+        "model_latency_s": {
+          "value": null,
+          "label": "ESTIMATE",
+          "note": "no live model call"
+        },
+        "sandbox_energy_j": {
+          "value": null,
+          "label": "PENDING",
+          "note": "no RAPL interface at /sys/class/powercap"
+        },
+        "model_energy_j": {
+          "value": 47.4,
+          "label": "ESTIMATE",
+          "note": "RUN2 j/token on code tokens; stand-in rate, not measured"
+        }
+      },
+      "sandbox": {
+        "ok": true,
+        "exit_status": 0,
+        "signal": null,
+        "timed_out": false,
+        "net_isolation": "audit-hook",
+        "net_blocked": true,
+        "writes_outside_tmp_blocked": true,
+        "tool_calls": 18,
+        "distinct_tools": 5,
+        "program_lines": 30,
+        "error": null
+      },
+      "program_src": "# Code Mode program (generated from the recorded trace, one turn).\n# `tools` is injected by the sandbox bootstrap; see stub.py.\nimport json\noutputs = []\noutputs.append(tools.delegate())\noutputs.append(tools.search_docs(query='audit log retention'))\noutputs.append(tools.search_docs(query='audit-log retention period'))\noutputs.append(tools.search_docs(query='retention'))\noutputs.append(tools.search_docs(query='audit'))\noutputs.append(tools.search_docs(query='log'))\noutputs.append(tools.search_docs(query='retention period'))\noutputs.append(tools.list_files(dir='/'))\noutputs.append(tools.delegate())\noutputs.append(tools.delegate())\noutputs.append(tools.delegate())\noutputs.append(tools.delegate())\noutputs.append(tools.read_file(path='/README.txt'))\noutputs.append(tools.read_file(path='/config/app.yaml'))\noutputs.append(tools.read_file(path='/reports/limits.txt'))\noutputs.append(tools.read_file(path='/drafts/a.txt'))\noutputs.append(tools.read_file(path='/notes/todo.txt'))\noutputs.append(tools.post_message())\n# Compose the final result from the collected tool outputs.\nanswer = {\n    'task': 'sprawl-3-recursive-split',\n    'tool_calls': len(outputs),\n    'distinct_calls': len(outputs),\n    'result': outputs[-1] if outputs else '',\n    'collected': outputs,\n}\n",
+      "result_preview": "{\"task\": \"sprawl-3-recursive-split\", \"tool_calls\": 18, \"distinct_calls\": 18, \"result\": \"{\\\"ok\\\":true}\", \"collected\": [\"No retention period found: search_docs queries for \\\"audit log retention\\\", \\\"audit-log retention period\\\", \\\"rete\u2026\", \"[]\", \"[]\", \"[]\", \"[]\", \"[]\", \"[]\", \"[\\\"/RE",
+      "before": {
+        "round_trips": {
+          "value": 11,
+          "label": "MEASURED"
+        },
+        "total_tokens": {
+          "value": 27700,
+          "label": "MEASURED"
+        },
+        "wall_s": {
+          "value": 20.416,
+          "label": "MEASURED"
+        },
+        "joules": {
+          "value": 420.9,
+          "label": "ESTIMATE"
+        }
+      },
+      "saved": {
+        "round_trips": {
+          "value": 10,
+          "label": "MEASURED-vs-ESTIMATE"
+        },
+        "total_tokens": {
+          "value": 27053,
+          "label": "MEASURED-vs-TOKENIZER"
+        }
+      }
+    }
+  ],
+  "skipped": [],
+  "notes": [
+    "Code Mode runs the agent's task as ONE generated program that calls the tools as a typed API, instead of a big tool list taken over many round trips.",
+    "The tool API is a faithful replay of the recorded trace: each (tool, args) returns the exact recorded output, deterministically. No live model, no network, no GPU.",
+    "MEASURED = produced by actually running the locked-down sandbox (wall time, CPU seconds, peak RSS, exit status, and that the network / out-of-dir writes were refused). The sandbox blocks network (unshare -n when the kernel allows it, else a socket-refusing audit hook), caps CPU/memory/wall time, and forbids writes outside a temp dir.",
+    "TOKENIZER = a count of the generated program and its final result using the repo's chars//4 approximation (route/stack.py). It is bytes we hold, not a billed model figure.",
+    "ESTIMATE = the single model round trip Code Mode implies and the model-side latency/energy of emitting the program: no live model is called here, so these are modelled, not measured. Sandbox CPU-package energy is read from RAPL when readable, else left null with the reason."
+  ]
+}
