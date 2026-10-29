@@ -397,7 +397,7 @@ export function overviewHtml(S) {
           ok ? `${fmt(js / (qs / 100), 2)} → ${fmt(jc / (qc / 100), 2)} J · ${r.cap_w} W cap vs ${r.stock_w} W. Cost and water are ESTIMATES from these joules` : "", "calc-power");
       })()}
       ${kpi("Slowest 1% (p99)", r.p99_change_pct != null ? `${r.p99_change_pct > 0 ? "+" : ""}${fmt(r.p99_change_pct, 1)}%` : null, "MEASURED", "limit +10%", "p99")}
-      ${kpi("Quality: fixed-check pass rate", r.quality_cap_pct != null ? `${fmt(r.quality_cap_pct, 1)}%` : null, "MEASURED", r.quality_stock_pct != null ? `uncapped ${fmt(r.quality_stock_pct, 1)}% · gate: drop ≤ 1.0 pt` : "", "quality")}
+      ${kpi("Quality: fixed-check pass rate", r.quality_cap_pct != null ? `${fmt(r.quality_cap_pct, 1)}%` : null, "MEASURED", r.quality_stock_pct != null ? `uncapped ${fmt(r.quality_stock_pct, 1)}% · share of fixed checks passed · gate: drop ≤ 1.0 pt` : "", "quality")}
       ${kpi("Meta API spend", led.total_usd != null ? `$${fmt(led.total_usd)}` : null, "MEASURED", led.calls != null ? `${fmt(led.calls, 0)} calls recorded` : "", null)}
     </div>
     ${metaTile()}

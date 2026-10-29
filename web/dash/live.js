@@ -34,7 +34,7 @@ export function renderLive(el, L) {
   const m = L.musecode_pr?.data;
   if (m) {
     parts.push(row("Muse Code: Apply as PR", chip("LIVE"),
-      `<p>Muse Code edited <code>launch.sh</code> and <code>values.yaml</code> for the kept 350 W change and opened a real pull request on the demo fixture repo (nothing is deployed):
+      `<p>Muse Code edited <code>launch.sh</code> and <code>values.yaml</code> for the kept 350 W change and opened a real pull request on the demo fixture repo (<strong>nothing is deployed</strong>):
        <a href="${esc(m.pr_url)}" target="_blank" rel="noopener">${esc(m.pr_url.replace("https://github.com/", ""))}</a>. The PR body carries the receipt hash.</p>
        <p class="lv-meta">Session <code>${esc(m.muse_code?.session_id)}</code> · run <code>${esc(m.muse_code?.run_id)}</code> · patch <code>${esc(m.patch_sha256?.slice(0, 12))}…</code> · ~$${Number(m.muse_code?.spend_usd_estimate).toFixed(4)} ${chip("ESTIMATE")}</p>`, L.musecode_pr));
   }
@@ -53,7 +53,7 @@ export function renderLive(el, L) {
   }
   if (!parts.length) { el.innerHTML = ""; return; }
   el.innerHTML = `<section class="lv-card" data-explain="report.live" data-explain-label="LIVE" data-explain-source="receipts/run2/*.json (signed addenda)">
-    <h3>Live Meta calls on this run <span class="lv-sub">four real API calls, each saved as a signed addendum to the RUN2 receipt</span></h3>${parts.join("")}</section>`;
+    <h3>Live Meta calls on this run <span class="lv-sub">four real API calls (each output labelled LIVE, MEASURED, SIMULATED or ESTIMATE), each saved as a signed addendum to the RUN2 receipt</span></h3>${parts.join("")}</section>`;
 }
 
 export async function mountLive(sel = "#live-mount") {
