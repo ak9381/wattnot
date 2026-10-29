@@ -1,0 +1,37 @@
+{
+  "spec": "wattnot.receipt.addendum/1",
+  "receipt_id": "rcpt_20261027_run2_cap350.quality_definition",
+  "parent": {
+    "receipt_id": "rcpt_20261027_run2_cap350",
+    "sha256": "1945ab485ace682f16ba71786e2ff57ee6d4a0a992bcf24685be56e41de31c29"
+  },
+  "label": "MEASURED",
+  "section": "quality_definition",
+  "data": {
+    "section": "quality_definition",
+    "label": "MEASURED",
+    "metric": "fixed-check pass rate",
+    "definition": "Share of checked answers (666 checked, as recorded in cap350.json quality.checked) whose output passes every fixed check for its prompt; a missing output counts as a fail (src/wattnot/gates/fixed.py).",
+    "gate": "Capped pass rate must be at least the uncapped (700 W) pass rate minus 1.0 percentage point (max_drop_pts = 1.0).",
+    "run2": {
+      "uncapped_pct": 93.694,
+      "capped_350w_pct": 93.694,
+      "drop_pts": 0.0,
+      "passed": true,
+      "source": "data/h100-run2/vm/steps/cap350.json quality"
+    },
+    "not_this_metric": "The 95% figure elsewhere in WattNot is a different gate: token or answer agreement with the unchanged setup, used for adaptive top-k and model routing only. It does not apply to power caps.",
+    "headline": {
+      "metric": "joules per correct answer",
+      "change_pct": -27.0923,
+      "label": "MEASURED",
+      "source": "receipt joules.change_pct.j_per_good_answer"
+    }
+  },
+  "integrity": {
+    "canonicalization": "JCS RFC 8785",
+    "sha256": "80c684b3d86691611dbe32d788aefda3494937512e10682eda0fe388d07cf919",
+    "signer": "offline:56475aa75463474c",
+    "rekor": null
+  }
+}
