@@ -44,7 +44,7 @@ LEVERS = [
     {"id": "cap", "title": "Power cap", "partner": "nvidia", "needs": "a recorded cap sweep",
      "desc": "Lower the card's power limit in 50 W steps and keep the lowest one that stays inside your latency limit."},
     {"id": "topk", "title": "Adaptive top-k", "partner": "hf", "needs": "a Mixture-of-Experts model",
-     "desc": "Let each token use only as many experts as its router weights need."},
+     "desc": "Let each token use only as many experts as its router weights need. Pending as a Muse Spark Open test on Modal; not on the H100."},
     {"id": "effort", "title": "Effort routing", "partner": "baseten", "needs": "a hosted reasoning model",
      "desc": "Use the cheapest reasoning level that still passes the quality and latency checks, per prompt class."},
     {"id": "cache", "title": "Cache-friendly order", "partner": "baseten", "needs": "a hosted model with prefix caching",
