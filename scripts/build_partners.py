@@ -1,6 +1,6 @@
 """Build data/dash/partners.json from the saved usage logs.
 
-Reads the Meta and Baseten markdown usage tables and a JSON file with the
+Reads the Meta, Baseten and Modal markdown usage tables and a JSON file with the
 rented-GPU runs, then writes the `wattnot.partners/1` snapshot the dashboard
 serves. No secrets, no prompts, no absolute paths in the output.
 """
@@ -21,6 +21,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--meta-log", type=Path, default=None)
     ap.add_argument("--baseten-log", type=Path, default=None)
+    ap.add_argument("--modal-log", type=Path, default=None)
     ap.add_argument("--e2e-runs", type=Path, default=None,
                     help="JSON list of rented-GPU runs (or an object with a 'runs' list)")
     ap.add_argument("--agent-waste-results", type=Path,
@@ -30,6 +31,7 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     meta_text = a.meta_log.read_text(encoding="utf-8") if a.meta_log else None
     baseten_text = a.baseten_log.read_text(encoding="utf-8") if a.baseten_log else None
+    modal_text = a.modal_log.read_text(encoding="utf-8") if a.modal_log else None
     runs = None
     if a.e2e_runs:
         doc = json.loads(a.e2e_runs.read_text(encoding="utf-8"))
@@ -42,7 +44,7 @@ def main(argv=None) -> int:
         except ValueError:
             waste_usd = None
     snap = build(meta_text=meta_text, baseten_text=baseten_text, e2e_runs=runs,
-                 agent_waste_usd=waste_usd)
+                 agent_waste_usd=waste_usd, modal_text=modal_text)
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(snap, indent=2) + "\n", encoding="utf-8")
     providers = [p["id"] for p in snap["partners"]]

@@ -124,3 +124,15 @@ def test_repo_snapshot_shows_agent_waste_spend():
     by = {p["id"]: p for p in json.loads(SNAP.read_text())["partners"]}
     aw = by["meta"]["agent_waste"]
     assert aw["label"] == "MEASURED" and aw["usd"] > 0
+
+
+def test_modal_log_marks_modal_used():
+    from wattnot.dash.partners import build
+    log = ("| Time | Task | Calls | Cost |\n|---|---|---|---|\n"
+           "| t | ping | 1 | $0.0001 (estimate) |\n")
+    snap = build(modal_text=log, now="2026-10-29T00:00:00+00:00")
+    m = next(p for p in snap["partners"] if p["id"] == "modal")
+    assert m["status"] == "used" and m["calls"] == 1
+    assert m["cost"] == {"value": 0.0001, "unit": "USD", "label": "ESTIMATE"}
+    idle = next(p for p in build(now="x")["partners"] if p["id"] == "modal")
+    assert idle["status"] == "not_used"
