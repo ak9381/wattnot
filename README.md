@@ -26,6 +26,7 @@ H100 run: `bash scripts/h100_run.sh --dry-run` first, then see [docs/runbooks/H1
 - **Leaderboard (net joules per correct answer):** on the Proof tab of the replay, rebuilt by `scripts/reproduce_leaderboard.sh`. Method and how to submit: [docs/joules-per-correct-answer.md](docs/joules-per-correct-answer.md).
 - **Context saver:** prefix caching A/B, memory compression and tool-output dedup, each behind the quality gate: [docs/CONTEXT-SAVER.md](docs/CONTEXT-SAVER.md).
 - **Drop-in for agent frameworks:** set the base URL in openai-python, LangChain or LlamaIndex: [docs/frameworks.md](docs/frameworks.md) (tests are MOCK).
+- **The whole journey on one page:** innovations, features, measured results, decisions and tests as a mind map and knowledge graph — [docs/JOURNEY.md](docs/JOURNEY.md).
 
 | Setup | J / correct (mean ± sd) | vs default | p99 | Gate |
 |---|---|---|---|---|
@@ -138,6 +139,7 @@ Built during the Meta Global AI Developer Hackathon, Oct 26 – Nov 4 2026. Befo
 
 ## Docs
 
+- `docs/JOURNEY.md`: the build journey as a mind map and knowledge graph — innovations, features, measured results, decisions and tests
 - `docs/PRD-00-overview.md`: goals, scope and rules
 - `docs/modules/`: one PRD and one TDD per module (M01–M13)
 - `docs/schemas/`: run-event, receipt and ui-view schemas
