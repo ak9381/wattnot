@@ -170,6 +170,9 @@ class HFBackend:
             self.cfg.model, dtype=torch.bfloat16, device_map="cuda").eval()
         layers = find_moe_layers(self.model)
         self.top_k = int(_router_of(layers[0]).top_k)
+        if self.top_k < 2:
+            raise AdaptiveError(f"top-{self.top_k} router (e.g. Llama 4 Scout: 1 routed + shared "
+                                "expert): there is no k to lower; not run")
         sanity = self._sanity()
         self.st, self._restore = install_hooks(self.model, torch)
         ok = self._hooked_off_matches(sanity["_stock"])

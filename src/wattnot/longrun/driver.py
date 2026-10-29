@@ -74,7 +74,7 @@ def plan(out: Path, model: str = "llama") -> list[Block]:  # see plan_glimmer fo
         Block("b4-camera", "Camera-ready run in one take", 1.0, reh("b4"), capture=True),
         Block("b5-second-model", "Second model (Glimmer 30B)", 2.5, None, optional=True),
         Block("b6-flex", "Flex / load-shed test", 0.75, None),
-        Block("b7-topk", "Adaptive top-k (Granite)", 1.0, reh("b7")),
+        # b7 (adaptive top-k) dropped Oct 29: Meta-only rule; top-k is planned on Spark via Modal.
         Block("b8-spark-open", "Spark Open 816B on one GPU", 3.5, None),
         Block("b9-buffer", "Buffer for redoing failed blocks", 1.5, None),
     ]
@@ -115,6 +115,8 @@ def plan_glimmer(out: Path) -> list[Block]:
         Block("g5-fp8", "FP8 vs BF16, gated keep/reject on the same tiers", 1.5,
               tiers("g5", "muse-glimmer-30b-fp8", "--compare-to", full), min_hours=0.75,
               trim=tiers("g5", "muse-glimmer-30b-fp8", "--per-tier", "8", "--compare-to", full)),
+        # g6: free slot for the thinking-budget block (designed separately). Adaptive top-k is
+        # not in the H100 run: Glimmer is dense, and top-k is planned on Spark via Modal.
         Block("g7-flex", "Flex / load-shed test", 0.75, None),
         Block("g8-buffer", "Buffer for redoing failed blocks", 1.0, None),
     ]

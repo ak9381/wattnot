@@ -4,7 +4,9 @@ WattNot is an agent that cuts the energy and cost of each LLM inference request 
 
 Token trimmers cut your bill, but not your watts. WattNot measures the joules each request burns on the GPU, and checks quality before it keeps any change.
 
-H100 run: `bash scripts/h100_run.sh --dry-run` first, then see [docs/runbooks/H100.md](docs/runbooks/H100.md). Optional, off by default: an adaptive top-k trial on a small MoE model (a known technique, [docs/ADAPTIVE-TOPK.md](docs/ADAPTIVE-TOPK.md)).
+H100 run: `bash scripts/h100_run.sh --dry-run` first, then see [docs/runbooks/H100.md](docs/runbooks/H100.md). Adaptive top-k ([docs/ADAPTIVE-TOPK.md](docs/ADAPTIVE-TOPK.md)) is not in the H100 run; it is planned on Muse Spark Open via Modal. Earlier top-k tests used non-Meta models and are kept only as dated history.
+
+**Every model WattNot runs is a Meta model (Glimmer, Llama, Spark, SAM 3.1, Wonder).**
 
 ## For judges: check it in five minutes
 

@@ -12,7 +12,7 @@
 # server). tests/test_vm_setup.py drives them in a clean sandbox on a CPU box.
 set -euo pipefail
 MODEL="${1:-meta-llama/Llama-3.1-8B-Instruct}"
-MOE="${2:-ibm-granite/granite-3.1-3b-a800m-instruct}"
+MOE="${2:-none}"   # optional MoE for the top-k step; Meta-only (e.g. meta-llama/Llama-4-Scout-17B-16E-Instruct). "none" = skip
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 ROOT="${SETUP_ROOT:-/root}"
 LOG="$ROOT/run2"
@@ -130,8 +130,12 @@ else:
     sys.exit(1)
 PY
 # the MoE model for the adaptive step downloads in parallel with the main model
-"$VENV/bin/python" "$LOG/dl.py" "$MOE" > "$LOG/moe_download.log" 2>&1 &
-MOE_PID=$!
+if [ "$MOE" != "none" ]; then
+  "$VENV/bin/python" "$LOG/dl.py" "$MOE" > "$LOG/moe_download.log" 2>&1 &
+  MOE_PID=$!
+else
+  true & MOE_PID=$!
+fi
 "$VENV/bin/python" "$LOG/dl.py" "$MODEL"
 echo "[setup] $(date +%T) main weights downloaded"
 df -h / | tail -n 1

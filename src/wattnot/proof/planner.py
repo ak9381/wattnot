@@ -57,7 +57,7 @@ class BisectPlanner:
 SYSTEM = (
     "You tune a GPU power cap for lower energy per request without breaking quality or p99 "
     "latency. One H100 serves Llama 3.1 8B. A cap is accepted only when ALL hold: the pass rate "
-    "on a fixed answer-checked task set drops by at most 2 points, mean p99 latency rises by at "
+    "on a fixed answer-checked task set drops by at most 1 point, mean p99 latency rises by at "
     "most 10%, and the 95% confidence interval of the J/request change is below zero. Each trial "
     "is measured in paired, interleaved runs. You get the cap range, the caps still allowed and "
     "the trials so far. Pick ONE next cap from `allowed` (kind=try), or kind=stop when more trials "

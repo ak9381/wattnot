@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# HISTORICAL (RUN2, Oct 27-30): kept as the record of the earlier test. It used non-Meta
+# models (Granite / Qwen) and is not called by the long run. Every model WattNot runs now is a Meta model.
 """Record which experts a Granite MoE model uses, token by token, as a JSONL stream.
 
 It runs the real model (CPU or GPU) on a fixed set of tagged prompts and writes one `tick` line

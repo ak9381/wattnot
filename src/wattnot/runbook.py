@@ -923,7 +923,7 @@ def main(argv=None) -> int:
                     help="flex stage: load generator requests per second")
     ap.add_argument("--models", default="",
                     help="comma list of model keys to serve, in order (default: all that fit). "
-                         "Example without an HF token: muse-glimmer,qwen2.5-7b")
+                         "Example without an HF token: muse-glimmer (every model WattNot runs is a Meta model)")
     ap.add_argument("--fail-probe", action="store_true", help="fake rig: simulate a no-go")
     ap.add_argument("--adaptive-topk", action="store_true",
                     help="also run the OPTIONAL adaptive top-k trial after the other stages "
@@ -931,7 +931,7 @@ def main(argv=None) -> int:
     ap.add_argument("--adaptive-mass", type=float, default=0.95,
                     help="adaptive top-k: share of router weight to keep per token (default 0.95)")
     ap.add_argument("--adaptive-model", default="",
-                    help="adaptive top-k: MoE model repo (default: the documented Granite model)")
+                    help="adaptive top-k: MoE model repo (default: Llama 4 Scout, a Meta MoE; it is top-1, so the step stops cleanly. Top-k is planned on Spark via Modal)")
     ap.add_argument("--adaptive-budget-s", type=float, default=1500.0,
                     help="adaptive top-k: time box for the whole stage (default 1500 s)")
     ap.add_argument("--adaptive-min-agree", type=float, default=95.0,
