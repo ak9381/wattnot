@@ -1,0 +1,20 @@
+{
+  "section": "voice_transcribe_live",
+  "label": "LIVE",
+  "model": "muse-voice-transcribe-1.0",
+  "audio": {
+    "path": "data/voice/tts-question.wav",
+    "sha256": "c6fa502286b1efd764845d4590d850de3df77ed6c5e6ce3f2e606c3d5080d5ab",
+    "duration_s": 3.1,
+    "source": "SYNTHETIC: ffmpeg flite TTS (voice slt), not a human recording",
+    "script": "Why was three hundred twenty five watts rejected?"
+  },
+  "transcript": "Why was 325 watts rejected?",
+  "session_id": "voyager/transcribe/16F874CA571E4AD884E12429D6B83258",
+  "audio_duration_ms": 3120,
+  "request_id_header": null,
+  "usage": null,
+  "latency_s": 0.93,
+  "spend_usd_estimate": 0.000155,
+  "created_at": "2026-10-29T06:13:07+0530"
+}
