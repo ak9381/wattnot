@@ -337,6 +337,37 @@ def test_api_voice_audio_is_mock_unless_switched_on(monkeypatch):
     assert "Type your question" in r.json()["text"]
 
 
+def test_why_325_rejected_answered_from_receipt():
+    # The headline live-replay transcript asks exactly this; it must be answered
+    # from the signed Wonder addendum trials, not refused.
+    for q in ("why was 325 watts rejected", "Why was 325 watts rejected?", "why was 325 w rejected"):
+        out = process_voice_query(query_text=q, root_dir=REPO_ROOT, mock=True)
+        assert out["action"] == "answer", q
+        assert not out.get("refusal"), q
+        # Same measured facts the client (receiptanswers.js) shows, read from the
+        # receipt: p99 rise vs the 10% limit, J per correct, pass rate, MEASURED.
+        assert "p99 latency rose 10.9% against the 10% limit" in out["text"], q
+        assert "11.8444 J" in out["text"], q
+        assert "93.7%" in out["text"], q
+        assert "[MEASURED]" in out["text"], q
+        assert "rcpt_20261027_run2_cap350" in out["citations"], q
+        assert "rcpt_20261027_run2_cap350.wonder_live" in out["citations"], q
+
+
+def test_accepted_cap_question_reports_kept():
+    out = process_voice_query(query_text="why did 350 watts fail", root_dir=REPO_ROOT, mock=True)
+    assert not out.get("refusal")
+    assert "350 W was kept" in out["text"]
+    assert "within the 10% limit" in out["text"]
+
+
+def test_unknown_cap_rejection_keeps_honest_refusal():
+    # A cap with no trial in the receipt must still refuse, not invent numbers.
+    out = process_voice_query(query_text="why was 999 watts rejected", root_dir=REPO_ROOT, mock=True)
+    assert out.get("refusal") is True
+    assert out["citations"] == []
+
+
 def test_api_voice_live_failure_degrades(monkeypatch):
     import base64
     from fastapi.testclient import TestClient

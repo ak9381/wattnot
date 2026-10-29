@@ -335,10 +335,12 @@ export function mountVoiceGuide(customMountEl = null) {
           isRecording = false;
           micBtn.classList.remove("listening");
           hideStatus();
-          const denied = err && (err.name === "NotAllowedError" || err.name === "SecurityError");
+          // Only a genuinely absent device is "not found". A denial, a security
+          // block, or anything else means the mic is unavailable to us.
+          const notFound = err && err.name === "NotFoundError";
           displayResponse({ intent: "answer", label: "MOCK",
-            text: denied ? "Microphone permission was blocked. Allow the mic, or type your question instead."
-                         : "No microphone was found. Type your question instead." });
+            text: notFound ? "No microphone was found. Type your question instead."
+                           : "Microphone permission was blocked or the mic is unavailable. Type your question instead." });
         }
       } else {
         isRecording = false;
