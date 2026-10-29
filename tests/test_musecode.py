@@ -234,8 +234,8 @@ def test_build_muse_command_argv(tmp_path):
         "--json",
         "--workspace",
         str(repo),
-        "--worktree",
-        "create",
+        "--trust-workspace",
+        "--disable-approval",
         "--model",
         "my-model",
         "--prompt-file",
@@ -340,3 +340,14 @@ def test_snippets_validation_success_path_with_mock_validator(tmp_path):
     assert openai_res.status == "validated"
     assert openai_res.label == LABEL_VALIDATED
     assert openai_res.response == "Simulated answer from mock upstream"
+
+
+def test_parse_muse_v14_run_usage():
+    lines = [
+        '{"stream":{"kind":"session","id":"S1"},"payload_type":"x","payload":{}}',
+        '{"stream":{"kind":"run","id":"R1"},"payload_type":"run.usage","payload":{"run_stream":{"id":"R1"},'
+        '"models":[{"input_tokens":10,"output_tokens":3}]}}',
+    ]
+    out = parse_muse_jsonl(lines)
+    assert out["session_id"] == "S1" and out["trace_id"] == "R1"
+    assert out["input_tokens"] == 10 and out["total_tokens"] == 13

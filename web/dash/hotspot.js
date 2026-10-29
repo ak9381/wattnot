@@ -19,6 +19,11 @@ export function extractHotspotData(receipt) {
     polygon: mask.polygon || [[190, 280], [430, 280], [430, 420], [190, 420]],
     bbox: mask.bbox || [190, 280, 430, 420],
     reason: hc.reason || "Hotspot detected in rack slot 1; power cap derated for target GPU only.",
+    live: Boolean(hc.live),
+    heatLabel: hc.heat_label || (hc.live ? "SIMULATED" : "MOCK"),
+    // Stock caps of the other GPUs are demo values: MOCK without a live call, SIMULATED with one.
+    capLabel: hc.live ? "SIMULATED" : "MOCK",
+    responseId: hc.response_id || null,
   };
 }
 
@@ -30,7 +35,7 @@ export function renderHotspotHTML(data) {
       <div class="hotspot-header">
         <h3 class="hotspot-title">
           <span>Cooling Hotspots</span>
-          <span class="hotspot-badge">SAM 3.1 &bull; ${data.maskLabel}</span>
+          <span class="hotspot-badge">SAM 3.1 &bull; ${data.live ? "segmentation " : ""}${data.maskLabel}</span>${data.live ? `<span class="hotspot-badge" title="Not a thermal photo">heat &bull; ${data.heatLabel}</span>` : ""}
         </h3>
         <span class="hotspot-stat-tag">${data.decisionLabel}</span>
       </div>
@@ -43,7 +48,7 @@ export function renderHotspotHTML(data) {
             <!-- Normal slots -->
             <rect x="190" y="110" width="240" height="140" rx="4" fill="#2E2B44" stroke="#6C5E7C" stroke-width="1.5" />
             <text x="310" y="185" fill="#8E7A9E" font-size="20" font-family="Montserrat" text-anchor="middle">GPU 0</text>
-            <text x="310" y="215" fill="#6C5E7C" font-size="14" font-family="Fira Code" text-anchor="middle">400 W [MOCK]</text>
+            <text x="310" y="215" fill="#6C5E7C" font-size="14" font-family="Fira Code" text-anchor="middle">400 W [${data.capLabel}]</text>
 
             <!-- Hotspot Slot 1 with Mask Overlay -->
             <polygon points="${pointsStr}" fill="rgba(224, 108, 117, 0.25)" stroke="#E06C75" stroke-width="3" stroke-dasharray="6,4" />
@@ -53,11 +58,11 @@ export function renderHotspotHTML(data) {
             <!-- Remaining slots -->
             <rect x="190" y="450" width="240" height="140" rx="4" fill="#2E2B44" stroke="#6C5E7C" stroke-width="1.5" />
             <text x="310" y="525" fill="#8E7A9E" font-size="20" font-family="Montserrat" text-anchor="middle">GPU 2</text>
-            <text x="310" y="555" fill="#6C5E7C" font-size="14" font-family="Fira Code" text-anchor="middle">400 W [MOCK]</text>
+            <text x="310" y="555" fill="#6C5E7C" font-size="14" font-family="Fira Code" text-anchor="middle">400 W [${data.capLabel}]</text>
 
             <rect x="190" y="620" width="240" height="140" rx="4" fill="#2E2B44" stroke="#6C5E7C" stroke-width="1.5" />
             <text x="310" y="695" fill="#8E7A9E" font-size="20" font-family="Montserrat" text-anchor="middle">GPU 3</text>
-            <text x="310" y="725" fill="#6C5E7C" font-size="14" font-family="Fira Code" text-anchor="middle">400 W [MOCK]</text>
+            <text x="310" y="725" fill="#6C5E7C" font-size="14" font-family="Fira Code" text-anchor="middle">400 W [${data.capLabel}]</text>
 
             <!-- PDU side bar -->
             <rect x="490" y="110" width="70" height="710" rx="4" fill="#2B2637" stroke="#4F4A63" stroke-width="1.5" />
@@ -73,14 +78,14 @@ export function renderHotspotHTML(data) {
             </div>
             <div class="hotspot-stat-box">
               <div class="hotspot-stat-label">Cap Before</div>
-              <div class="hotspot-stat-value">${data.oldCapW} <span style="font-size:0.8rem">W</span><span class="hotspot-stat-tag">MOCK</span></div>
+              <div class="hotspot-stat-value">${data.oldCapW} <span style="font-size:0.8rem">W</span><span class="hotspot-stat-tag">${data.capLabel}</span></div>
             </div>
             <div class="hotspot-stat-box">
               <div class="hotspot-stat-label">Cap After</div>
               <div class="hotspot-stat-value" style="color:#A3BE8C">${data.newCapW} <span style="font-size:0.8rem">W</span><span class="hotspot-stat-tag">${data.decisionLabel}</span></div>
             </div>
             <div class="hotspot-stat-box">
-              <div class="hotspot-stat-label">Derate Step</div>
+              <div class="hotspot-stat-label">Derate Step (not auto-applied)</div>
               <div class="hotspot-stat-value" style="color:#E06C75">${data.deltaW} <span style="font-size:0.8rem">W</span><span class="hotspot-stat-tag">ADVICE</span></div>
             </div>
           </div>

@@ -19,7 +19,7 @@ from typing import Any
 from wattnot.meta.client import GuardedClient
 from wattnot.meta.ledger import SpendLedger
 
-DEFAULT_MODEL = "muse-wonder"
+DEFAULT_MODEL = "muse-wonder-1.0"
 DEFAULT_CANDIDATES: list[tuple[int, str]] = [
     (400, "base"),
     (350, "locked-high"),
@@ -40,7 +40,7 @@ WONDER_SYSTEM = (
 WONDER_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
-    "required": ["action", "reason"],
+    "required": ["action", "cap_w", "clock_profile", "reason"],
     "properties": {
         "action": {"enum": ["trial", "stop"]},
         "cap_w": {"type": ["integer", "null"]},

@@ -1,0 +1,78 @@
+{
+  "section": "sam_hotspot_live",
+  "label": "LIVE",
+  "labels": {
+    "segmentation": "MEASURED",
+    "heat_attribution": "SIMULATED",
+    "cap_decision": "ADVICE"
+  },
+  "note": "Real SAM 3.1 call on a public rack photo (CC BY 2.0). Not a thermal image: the hot slot is SIMULATED; the cap change is advice, never applied (no GPU).",
+  "photo": {
+    "path": "rack/real/rack.jpg",
+    "sha256": "86c7546ca7bb018f96427f0875427c853787889998de5163e5284e8a77fe9687"
+  },
+  "prompt": "server",
+  "earlier_attempt": "prompt 'thermal hotspot rack slot' returned no boxes (photo is not thermal)",
+  "sam": {
+    "model": "sam-3.1",
+    "response_id": "resp_6ae2964ccee8ad9a7fe94e91",
+    "http_status": 200,
+    "usage": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 0,
+      "images_processed": 1
+    },
+    "raw_output_file": "rack/real/sam-raw/hotspot-live.txt",
+    "raw_output_sha256": "e54760e795e9917a03b1a6b5a204bfe3ae8bfb25e0e7dac33ddee25c8f4900b5",
+    "raw_boxes": 3
+  },
+  "mask": {
+    "bbox": [
+      0,
+      66,
+      122,
+      588
+    ],
+    "polygon": [
+      [
+        0,
+        66
+      ],
+      [
+        122,
+        66
+      ],
+      [
+        122,
+        588
+      ],
+      [
+        0,
+        588
+      ]
+    ],
+    "rle": "0,66,122,522",
+    "label": "MEASURED",
+    "sha256": "ce7a2b891a4310ee695c57d1f950826dae4a483a7eab868084d7a10390413cb0"
+  },
+  "decision": {
+    "gpu_id": 1,
+    "old_cap_w": 400,
+    "new_cap_w": 350,
+    "delta_w": -50,
+    "min_cap_w": 250,
+    "step_w": 50,
+    "label": "ADVICE"
+  },
+  "spend_usd": 0.0025,
+  "ledger_total_usd": 23.278021,
+  "created_at": "2026-10-29T06:11:49+0530",
+  "spend_usd_both_attempts": 0.005
+}
