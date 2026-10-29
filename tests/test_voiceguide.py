@@ -199,6 +199,29 @@ def test_voiceguide_api_endpoints() -> None:
     assert "prefill" in data_get
 
 
+def test_voiceguide_post_content_type_handling() -> None:
+    app = create_app(str(REPO_ROOT))
+    client = TestClient(app)
+
+    # application/json with a charset parameter is still accepted.
+    ok = client.post("/api/voiceguide", content=json.dumps({"query": "compare runs"}),
+                     headers={"content-type": "application/json; charset=utf-8"})
+    assert ok.status_code == 200
+    assert ok.json()["action"] == "navigate"
+
+    # A non-JSON media type is refused cleanly with a 415 and a JSON body.
+    bad = client.post("/api/voiceguide", content="compare runs",
+                      headers={"content-type": "text/plain"})
+    assert bad.status_code == 415
+    assert bad.json()["code"] == "unsupported_media_type"
+
+    # application/json that is not valid JSON is a clean 400, not a guessed parse.
+    broken = client.post("/api/voiceguide", content="{not json",
+                         headers={"content-type": "application/json"})
+    assert broken.status_code == 400
+    assert broken.json()["code"] == "bad_json"
+
+
 SPOKEN_SETUP_PHRASINGS = [
     # (phrase, expected cap_w, expected workload, expected framework)
     ("try 325 watts on the batch workload with langchain", 325, "batch", "langchain"),

@@ -411,19 +411,28 @@ def create_app(root: str | os.PathLike[str] = ".") -> FastAPI:
         query_text = ""
         audio_bytes = None
         if raw:
+            # Only application/json is accepted; a charset (or other) parameter is fine, but any
+            # other media type is a clean 415 rather than a guessed parse.
+            ctype = request.headers.get("content-type", "").split(";")[0].strip().lower()
+            if ctype != "application/json":
+                return JSONResponse(
+                    {"code": "unsupported_media_type",
+                     "text": "send Content-Type: application/json"}, status_code=415)
             try:
                 body = json.loads(raw)
-                if isinstance(body, dict):
-                    query_text = body.get("query") or body.get("text") or ""
-                    b64 = body.get("audio_b64")
-                    if not query_text and isinstance(b64, str) and b64:
-                        import base64 as _b64
-                        try:
-                            audio_bytes = _b64.b64decode(b64, validate=True)
-                        except Exception:
-                            audio_bytes = None
             except ValueError:
-                audio_bytes = raw
+                return JSONResponse(
+                    {"code": "bad_json", "text": "the request body must be JSON"},
+                    status_code=400)
+            if isinstance(body, dict):
+                query_text = body.get("query") or body.get("text") or ""
+                b64 = body.get("audio_b64")
+                if not query_text and isinstance(b64, str) and b64:
+                    import base64 as _b64
+                    try:
+                        audio_bytes = _b64.b64decode(b64, validate=True)
+                    except Exception:
+                        audio_bytes = None
         # Live Muse Voice Transcribe only when explicitly switched on (paid call).
         live = bool(audio_bytes) and os.environ.get("WATTNOT_VOICE_LIVE") == "1" \
             and os.environ.get("WATTNOT_META_MOCK") != "1"
