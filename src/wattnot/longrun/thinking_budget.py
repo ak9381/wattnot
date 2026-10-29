@@ -32,6 +32,7 @@ from pathlib import Path
 
 from wattnot.proof.client import Reply, strip_reasoning
 
+from . import think_stream
 from .grade import grade_one
 from .tasks import TIERS, Task, build
 
@@ -286,6 +287,11 @@ def run(out: Path, *, fake: bool, per_tier: int = 0, url: str = "", model: str =
     tasks = build()
     if per_tier:
         tasks = [t for tier in TIERS for t in [x for x in tasks if x.tier == tier][:per_tier]]
+    probe = None
+    if not fake and think_stream.ENABLED:  # pragma: no cover - GPU host only
+        probe = think_stream.probe_mode(think_stream.StreamBudgetChat(url, model, 0)._stream_post,
+                                        model)
+        log(f"g6-think transport: {probe.mode} (confident={probe.confident}) {probe.note}")
     cells: list[Cell] = []
     for tier in TIERS:
         ts = [t for t in tasks if t.tier == tier]
@@ -294,7 +300,12 @@ def run(out: Path, *, fake: bool, per_tier: int = 0, url: str = "", model: str =
                 items = fake_cell(ts, x)
                 cells.append(Cell(tier, x, items, sum(i["joules"] for i in items)))
             else:  # pragma: no cover - GPU host only
-                chat = BudgetChat(url, model, 0)
+                # Streaming enforcer when the self-probe is confident (survives a hidden close
+                # marker); the raw-marker BudgetChat stays as the fallback.
+                if probe is not None and probe.confident and think_stream.ENABLED:
+                    chat = think_stream.StreamBudgetChat(url, model, 0, mode=probe.mode)
+                else:
+                    chat = BudgetChat(url, model, 0)
                 e0 = nvml.total_energy_mj(handle)
                 items = []
                 for t in ts:
@@ -314,10 +325,16 @@ def run(out: Path, *, fake: bool, per_tier: int = 0, url: str = "", model: str =
         log(f"WARNING: forced-close rate {fc['forced_close_rate']:.0%} on the first "
             f"{fc['first_n']} items is over {fc['threshold']:.0%} — the server may not be "
             f"emitting {THINK_CLOSE}; block marked suspect, not a trusted saving")
+    transport = ({"mode": "fake-dry-run", "confident": False,
+                  "note": "CPU mock: no server to probe"} if fake else probe.as_receipt())
+    transport["enforcer"] = ("stream-reasoning-budget" if not fake and probe and probe.confident
+                             and think_stream.ENABLED else "raw-marker stop-and-force")
+    transport["chars_per_token"] = think_stream.CHARS_PER_TOKEN
     doc = {"format": "wattnot.thinking-policy/1", "label": "MOCK" if fake else "MEASURED",
            "forced_close_check": fc,
            "model": model or "muse-glimmer-30b (fake)", "mechanism": "stop-and-force-answer",
-           "think_markers": [THINK_OPEN, THINK_CLOSE], "grid": GRID,
+           "think_markers": [THINK_OPEN, THINK_CLOSE], "think_transport": transport,
+           "transport_modes": list(think_stream.MODES), "grid": GRID,
            "gate": {"max_drop_pts": MAX_DROP_PTS, "max_regressed": MAX_REGRESSED,
                     "cut_off_counts_as_fail": True, "metric": "J per correct answer"},
            "router": {"model": ROUTER_MODEL, "unsure": "round up a tier"},
