@@ -9,7 +9,7 @@ const fmt = (v, d = 2) => (v == null || Number.isNaN(+v) ? "–" : (+v).toLocale
 const CLS = { MEASURED: "n-measured", ESTIMATE: "n-estimate", SIMULATED: "n-simulated", MOCK: "n-mock", REPLAY: "n-replay" };
 const n = (text, tag) => `<span class="${CLS[tag] || ""}" title="${tag || ""}">${text}</span>`;
 const PENDING = "Measured in the long run";
-export const legend = () => `<div class="r7legend" role="note" aria-label="Number colours"><span><i style="background:var(--r7-blue)"></i>measured</span><span><i style="background:var(--r7-gold)"></i>estimate</span><span><i style="background:var(--r7-mauve)"></i>simulated</span><span><i style="background:#8FBBA0"></i>replay</span><span><i style="background:var(--r7-green)"></i>with WattNot</span><span><i style="background:var(--r7-red)"></i>without WattNot</span></div>`;
+export const legend = () => `<div class="r7legend" role="note" aria-label="Number colours"><span><i style="background:var(--r7-blue)"></i>measured</span><span><i style="background:var(--r7-gold)"></i>estimate</span><span><i style="background:var(--r7-mauve)"></i>simulated</span><span><i style="background:#8FBBA0"></i>replay</span><span><i style="background:var(--r7-green)"></i>with WattNot</span><span><i style="background:var(--r7-red)"></i>without WattNot</span><span title="Pending: measured in the long H100 run."><i style="background:transparent;border:1.5px dashed #B2A6C3;box-sizing:border-box"></i>pending</span></div>`;
 
 // ---------- the three places a model can run (always all three) ----------
 export const OPTIONS = [
