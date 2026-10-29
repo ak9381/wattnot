@@ -79,7 +79,7 @@ def main(out: Path) -> None:
     v2.write_text(s)
     # The all-runs dashboard and the per-run report need the same static-api
     # shim; each carries a <!-- static-api --> marker where it is injected.
-    for name in ("runs.html", "report.html"):
+    for name in ("runs.html", "report.html", "index.html"):
         p = out / "dash" / name
         if p.exists():
             p.write_text(p.read_text().replace("<!-- static-api -->", '<script src="static-api.js"></script>', 1))
