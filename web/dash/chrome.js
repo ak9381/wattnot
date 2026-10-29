@@ -149,6 +149,17 @@
     `;
 
     document.body.appendChild(footer);
+    // Keep page content clear of the fixed footer: bottom padding = footer height + its offset + a gap.
+    const padForFooter = () => {
+      const need = footer.offsetHeight + 14 + 16;
+      document.documentElement.style.setProperty("--wn-foot", need + "px");
+      document.body.style.paddingBottom = "";
+      const base = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+      if (base < need) document.body.style.paddingBottom = need + "px";
+    };
+    padForFooter();
+    if (window.ResizeObserver) new ResizeObserver(padForFooter).observe(footer);
+    window.addEventListener("resize", padForFooter);
   }
 
   if (document.readyState === "loading") {
