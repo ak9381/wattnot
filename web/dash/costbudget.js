@@ -111,16 +111,17 @@ export function mountCostBudget(el, result) {
   el.innerHTML = renderBudget(result);
 }
 
-// The built-in RUN2 sample (no network): the same numbers the jslo demo prints for
-// --budget 15 --cost-budget 1.75 --usd-per-hour 2.5. Energy is MEASURED; the throughput is still
-// synthetic, so every cost derived from it is an ESTIMATE carrying the throughput note - real
-// numbers come from the H100 run.
+// The built-in RUN2 sample (no network): RUN2 is the signed 350 W cap run, so the card serves at
+// that cap - the one measured config, which is therefore both the greenest and the cost floor.
+// Energy is MEASURED (12.42 J/correct = the receipt's 11.64 J/req over the 0.937 pass rate); the
+// throughput is still synthetic, so every cost derived from it is an ESTIMATE carrying the
+// throughput note - real numbers come from the H100 run.
 export const RUN2_SAMPLE = {
-  verdict: "admit", binds: "cost", chosen: 450, greenest: 350, label: "MEASURED",
-  budget_j_per_correct: 15.0, achieved_j_per_correct: 14.69, headroom_j: 0.31,
+  verdict: "admit", binds: "cost", chosen: 350, greenest: 350, label: "MEASURED",
+  budget_j_per_correct: 15.0, achieved_j_per_correct: 12.42, headroom_j: 2.58,
   floor_j_per_correct: 12.42, p99_ceiling_pct: 10.0,
   budget_usd_per_1k_correct: 1.75, usd_per_hour: 2.5,
-  achieved_usd_per_1k_correct: 1.7241, cost_basis: "ESTIMATE", headroom_usd: 0.0259,
+  achieved_usd_per_1k_correct: 1.5625, cost_basis: "ESTIMATE", headroom_usd: 0.1875,
   cost_note: "throughput not yet measured; real numbers come from the H100 run",
   cost_floor_usd_per_1k_correct: 1.5625, cost_floor_basis: "ESTIMATE",
 };
