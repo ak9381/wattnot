@@ -1,4 +1,4 @@
-import { esc, badge, num, cnum, legendHtml, stageState, ledgerRows, run2Rows, verifySummary, phaseLabel } from "./v2lib.js";
+import { esc, badge, num, cnum, legendHtml, stageState, ledgerRows, run2Rows, verifySummary, phaseLabel, frameworkStackBadge, frameworkChip } from "./v2lib.js";
 import { openThermal } from "./thermal.js";
 import { renderProof, wireIllus } from "./proof.js";
 import { init as initPanCanvas } from "./pancanvas.js";
@@ -267,7 +267,7 @@ function renderStep() {
     const curFw = S.choice.framework || "openai-python";
     const curCard = STACK_CARDS.find((c) => c.v === curFw) || STACK_CARDS[0];
     body.innerHTML = `<h2>${esc(STEP_Q[3])}</h2><p class="step-note">WattNot is a drop-in proxy. Connect your framework by updating the <code>base_url</code> to point to WattNot.</p>
-      <div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[3])}">${STACK_CARDS.map((c) => pickCard("stack", c, curFw === c.v)).join("")}</div>
+      <div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[3])}">${STACK_CARDS.map((c) => pickCard("stack", c, curFw === c.v, frameworkStackBadge(S.frameworks, c.v))).join("")}</div>
       <div class="stack-box glass" style="margin-top:14px;padding:12px 14px;border-radius:14px;background:rgba(31,26,47,.75);border:1px solid rgba(220,214,228,.14)">
         <div style="font-size:12px;color:var(--mu);margin-bottom:6px">One-line change for <b>${esc(curCard.t)}</b>:</div>
         <pre style="margin:0;font-family:var(--mo);color:#DCD6E4;font-size:13px;padding:8px 12px;background:rgba(0,0,0,.35);border-radius:8px;overflow-x:auto"><code>${esc(curCard.snippet)}</code></pre>
@@ -1095,10 +1095,7 @@ function mountCompare() {
     const cap = (s) => s[0].toUpperCase() + s.slice(1);
     const parts = [{ label: "WattNot", depth: -1 }, { label: cap(S.cmpActive || "power"), depth: 0 }];
     (S.cmpPath || []).forEach((id, i) => parts.push({ label: treeFind(id)?.name || id, depth: i + 1 }));
-    const fw = rec?.receipt?.framework || rec?.receipt?.frameworks?.[0] || rec?.framework;
-    const fwInfo = fw
-      ? { name: fw === "plain" ? "plain API" : fw, label: rec?.label === "MEASURED" ? "MEASURED" : "MOCK" }
-      : { name: "framework: none recorded", label: "MOCK" };
+    const fwInfo = frameworkChip(rec);
     el.innerHTML = `<button class="crumb-back" data-back aria-label="Back one level">← Back</button>`
       + parts.map((p, i) => `<button class="crumb" data-crumb="${p.depth}">${esc(p.label)}</button>${i < parts.length - 1 ? '<span class="crumb-sep" aria-hidden="true">›</span>' : ""}`).join("")
       + `<span class="v-chip ${fwInfo.label}" style="margin-left:8px"><i class="v-lab ${fwInfo.label}"></i>${esc(fwInfo.name)}</span>`;
@@ -1478,8 +1475,8 @@ function renderLearn() {
 
 // ---------- boot ----------
 (async () => {
-  const [opts, story, partners, run2, runs] = await Promise.all([fetch("/api/dash/v2/options").then((r) => r.json()), fetch("/api/dash/story").then((r) => r.json()).catch(() => null), fetch("/api/dash/partners").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/run2").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/runs").then((r) => r.json()).catch(() => null)]);
-  S.opts = opts; S.story = story; S.partners = partners; S.run2 = run2; S.runs = runs; S.pipeline = story?.config?.pipeline || [];
+  const [opts, story, partners, run2, runs, frameworks] = await Promise.all([fetch("/api/dash/v2/options").then((r) => r.json()), fetch("/api/dash/story").then((r) => r.json()).catch(() => null), fetch("/api/dash/partners").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/run2").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/runs").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/frameworks").then((r) => (r.ok ? r.json() : null)).catch(() => null)]);
+  S.opts = opts; S.story = story; S.partners = partners; S.run2 = run2; S.runs = runs; S.frameworks = frameworks; S.pipeline = story?.config?.pipeline || [];
   S.radRecs ??= {};
   const firstRun = runs?.runs?.[0]?.id;
   if (firstRun) S.radRecs[firstRun] = await fetch(`/api/dash/v2/runs/${encodeURIComponent(firstRun)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);

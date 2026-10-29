@@ -32,7 +32,23 @@ function formatDiff(diffText) {
     .join("\n");
 }
 
-export function extractMetaToolsData(receipt) {
+// Turn the framework-validation artifact (data/frameworks/validation.json, served at
+// /api/dash/v2/frameworks) into the snippet rows the card renders. Honest labels only:
+// validated frameworks carry VALIDATED-LOCAL (mock upstream); skipped ones say why.
+export function validationSnippets(validation) {
+  const list = validation?.frameworks;
+  if (!Array.isArray(list) || !list.length) return null;
+  return list.map((f) => {
+    const ver = f.version ? ` (${f.package || "pkg"} v${f.version})` : "";
+    return f.status === "validated"
+      ? { framework: f.framework, status: "validated", label: f.label || "VALIDATED-LOCAL (mock upstream)",
+          response: ((f.response || "verified via local mock upstream") + ver).trim() }
+      : { framework: f.framework, status: "skipped", label: f.label || "MOCK (not run)",
+          reason: (f.reason || "not run") + ver };
+  });
+}
+
+export function extractMetaToolsData(receipt, validation) {
   const m = receipt?.measurement || {};
   const candQuality = receipt?.candidate?.quality || {};
   const res = receipt?.result || {};
@@ -77,7 +93,9 @@ export function extractMetaToolsData(receipt) {
 
   const defaultOai = "open" + "ai-python";
   const defaultReason = "Library not installed: " + "langchain_open" + "ai is not installed";
-  const snippets = musecode.snippets || [
+  // Real status wins: the validation artifact (if passed in) is the source of truth, then any
+  // snippets baked into the receipt, then the honest not-run default.
+  const snippets = validationSnippets(validation) || musecode.snippets || [
     {
       framework: defaultOai,
       status: "validated",
@@ -122,8 +140,8 @@ export function extractMetaToolsData(receipt) {
   };
 }
 
-export function renderMetaToolsHTML(receipt) {
-  const d = extractMetaToolsData(receipt);
+export function renderMetaToolsHTML(receipt, validation) {
+  const d = extractMetaToolsData(receipt, validation);
   const isPass = String(d.judgeVerdict).toLowerCase() === "pass";
 
   let spendRows = "";
@@ -288,9 +306,9 @@ export function renderMetaToolsHTML(receipt) {
   `;
 }
 
-export function mountMetaTools(el, receipt) {
+export function mountMetaTools(el, receipt, validation) {
   if (!el) return;
-  const html = renderMetaToolsHTML(receipt);
+  const html = renderMetaToolsHTML(receipt, validation);
   el.innerHTML = html;
 
   if (typeof document !== "undefined") {

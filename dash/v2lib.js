@@ -152,6 +152,37 @@ export function reportRows(results, extra = {}) {
   return { rows, lever: lv, pct };
 }
 
+// ---------- framework drop-in validation ----------
+// All three read the real artifact (data/frameworks/validation.json, served at
+// /api/dash/v2/frameworks). Labels stay honest: we only ever claim a local mock upstream.
+
+// The artifact entry for one framework key (e.g. "langchain"), or null if not present.
+export function frameworkValidation(validation, key) {
+  return (validation?.frameworks || []).find((f) => f.framework === key) || null;
+}
+
+// A small status badge for a setup-wizard stack card. Empty string when the artifact has
+// nothing for that framework (so the card renders exactly as before).
+export function frameworkStackBadge(validation, key) {
+  const f = frameworkValidation(validation, key);
+  if (!f) return "";
+  const ok = f.status === "validated";
+  const ver = f.version ? ` v${esc(f.version)}` : "";
+  const text = ok ? `${esc(f.label || "VALIDATED-LOCAL (mock upstream)")}${ver}`
+                  : `${esc(f.label || "MOCK (not run)")}${ver}`;
+  return `<span class="fw-val fw-val-${ok ? "ok" : "skip"}" title="${esc(f.reason || f.response || "")}">${text}</span>`;
+}
+
+// The framework chip for the receipt view. Reads frameworks[] / framework from the receipt;
+// never claims a live upstream (label follows the receipt, defaulting to MOCK).
+export function frameworkChip(rec) {
+  const r = rec?.receipt || rec || {};
+  const fw = r.framework || (Array.isArray(r.frameworks) ? r.frameworks[0] : null) || rec?.framework;
+  const name = fw ? (fw === "plain" ? "plain API" : fw) : "framework: none recorded";
+  const label = (rec?.label || r.label) === "MEASURED" ? "MEASURED" : "MOCK";
+  return { name, label, present: !!fw };
+}
+
 export function verifySummary(v) {
   const r = (v?.receipts || []).map((x) => {
     const s = Object.fromEntries(x.steps.map((k) => [k.name, k]));

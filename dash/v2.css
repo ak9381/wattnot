@@ -434,3 +434,9 @@ h1,h2,h3,h4,.brand,nav.tabs button,.kpi .c,.lvl{font-family:"Montserrat",system-
 .is-pending{opacity:.6}
 .b-chip-pending .b-pending{display:inline-block;width:9px;height:9px;border-radius:50%;border:1.5px dashed #9AA0AE;font-size:0;color:transparent;vertical-align:middle}
 .b-chip-pending{opacity:.75}
+
+/* framework drop-in validation badge on the setup-wizard stack cards: sage = validated
+   against the local mock upstream, muted = not run. Honest text, never "live". */
+.fw-val{display:inline-block;margin-top:6px;font-size:11px;font-family:var(--mo);padding:2px 8px;border-radius:999px;line-height:1.5;border:1px solid}
+.fw-val-ok{color:var(--tl);border-color:rgba(127,168,138,.5);background:rgba(127,168,138,.1)}
+.fw-val-skip{color:var(--mu);border-color:rgba(167,155,185,.4);background:rgba(167,155,185,.08)}
