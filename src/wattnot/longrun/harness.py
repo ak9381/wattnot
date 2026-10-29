@@ -28,7 +28,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from wattnot.impact import TARIFF_USD_PER_KWH, WUE_L_PER_KWH
-from wattnot.proof.client import Reply
+from wattnot.proof.client import Reply, strip_reasoning
 from wattnot.proof.session import MAX_DROP_PTS, P99_SLACK_PCT
 
 from .grade import Graded, grade_one, last_number
@@ -43,9 +43,9 @@ MODELS = {
                      "concurrency_scale": 1.0, "reasoning": False},
     # Muse Glimmer 30B is Meta's own open-weights model (dense, BF16, reasoning).
     "muse-glimmer-30b": {"model": "meta-models/Muse-Glimmer-30B", "origin": "Meta", "max_tokens_scale": 8.0,
-                         "concurrency_scale": 0.5, "reasoning": True},
+                         "concurrency_scale": 0.5, "reasoning": True, "max_model_len": 8192},
     "muse-glimmer-30b-fp8": {"model": "meta-models/Muse-Glimmer-30B", "origin": "Meta", "max_tokens_scale": 8.0,
-                             "concurrency_scale": 0.5, "reasoning": True,
+                             "concurrency_scale": 0.5, "reasoning": True, "max_model_len": 8192,
                              "serve_args": ["--quantization", "fp8"]},
 }
 
@@ -58,6 +58,26 @@ def model_config(name_or_path: str) -> dict:
     if missing:
         raise ValueError(f"model config needs {sorted(missing)}")
     return {"name": Path(name_or_path).stem, "reasoning": False, **d}
+
+
+# vLLM prints this when the reasoning parser can't find the think tokens (seen in RUN1); then the
+# thinking leaks into `content` and pass rates mean nothing.
+PARSER_WARNINGS = ("Auto-initialization of reasoning token IDs failed",)
+
+
+def reasoning_check(vllm_log: str, replies: int, with_reasoning: int,
+                    min_share: float = 0.5) -> dict:
+    """Shakedown gate for a reasoning model: the parser came up clean and most replies carry
+    `reasoning_content`. Anything else fails, and the run falls back (plan: Llama) or gets fixed."""
+    why = [f"vLLM log: {w!r}" for w in PARSER_WARNINGS if w in vllm_log]
+    if not vllm_log:
+        why.append("no vLLM log to check")
+    if replies == 0:
+        why.append("no replies")
+    elif with_reasoning / replies < min_share:
+        why.append(f"only {with_reasoning}/{replies} replies had reasoning_content")
+    return {"ok": not why, "why": why or ["parser clean, reasoning_content present"],
+            "replies": replies, "with_reasoning": with_reasoning}
 
 
 def apply_model(tasks: list[Task], cfg: dict) -> list[Task]:
@@ -75,10 +95,13 @@ class Chat:
 
     def __init__(self, url: str, model: str, timeout_s: float = 120) -> None:
         self.url, self.model, self.timeout_s = url, model, timeout_s
+        self.replies = self.reasoning_seen = 0   # for the shakedown reasoning check
+        self.context_limit: int | None = None     # set from the model's max_model_len
 
     def __call__(self, messages: list[dict], max_tokens: int) -> Reply:
-        body = json.dumps({"model": self.model, "temperature": 0, "max_tokens": max_tokens,
-                           "messages": messages}).encode()
+        # greedy; seed and top_k too, so results stay repeatable if temperature is ever raised
+        body = json.dumps({"model": self.model, "temperature": 0, "seed": 0, "top_k": -1,
+                           "max_tokens": max_tokens, "messages": messages}).encode()
         req = urllib.request.Request(self.url, data=body, method="POST",
                                      headers={"Content-Type": "application/json"})
         t0 = time.perf_counter()
@@ -86,8 +109,12 @@ class Chat:
             with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
                 d = json.loads(resp.read())
             ch = d["choices"][0]
-            text = re.sub(r"<think>.*?(</think>|$)", "", ch["message"].get("content") or "",
-                          flags=re.S).strip()   # grade the answer, never the reasoning
+            msg = ch["message"]
+            if msg.get("reasoning_content") or msg.get("reasoning"):
+                self.reasoning_seen += 1
+            self.replies += 1
+            # grade the answer, never the reasoning (pattern set in proof/client.py)
+            text = strip_reasoning(msg.get("content") or "")
             return Reply(time.perf_counter() - t0, int(d.get("usage", {}).get(
                 "completion_tokens", 0)), text,
                 ch.get("finish_reason") or "stop")
@@ -355,6 +382,9 @@ def main(argv=None) -> int:
                     help="trim: at most N items per tier (0 = all); used when time runs short")
     ap.add_argument("--compare-to", type=Path, default=None,
                     help="a full-precision tiers_summary.json: also write the keep/reject verdict")
+    ap.add_argument("--require-reasoning", type=Path, default=None, metavar="VLLM_LOG",
+                    help="shakedown: fail (exit 6) if this vLLM log shows the reasoning-parser "
+                         "warning or replies carry no reasoning_content")
     ap.add_argument("--gpu-usd-per-h", type=float, default=GPU_USD_PER_H)
     a = ap.parse_args(argv)
     cfg = model_config(a.model_config)
@@ -373,6 +403,7 @@ def main(argv=None) -> int:
         h = nvml.device_handle(0)
         CapGuard(nvml, h).__enter__()  # restores the saved limit on exit and on SIGTERM
         chat = Chat(a.url, cfg["model"])
+        chat.context_limit = cfg.get("max_model_len")
     clock = None
     if a.clock and a.clock != "base":
         from wattnot.proof.clocks import ClockLock
@@ -394,6 +425,13 @@ def main(argv=None) -> int:
         v = compare_quant(json.loads(a.compare_to.read_text()), summ)
         (a.out / "quant_verdict.json").write_text(json.dumps(v, indent=1))
         print(f"{cfg['name']} vs full precision: {v['decision'].upper()}")
+    if a.require_reasoning is not None:
+        log = a.require_reasoning.read_text(errors="replace") if a.require_reasoning.exists() else ""
+        chk = reasoning_check(log, getattr(chat, "replies", 0), getattr(chat, "reasoning_seen", 0))
+        (a.out / "reasoning_check.json").write_text(json.dumps(chk, indent=1))
+        print(f"reasoning check: {'PASS' if chk['ok'] else 'FAIL'} {'; '.join(chk['why'])}")
+        if not chk["ok"]:
+            return 6
     return 0
 
 

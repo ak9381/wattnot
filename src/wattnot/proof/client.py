@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
 import urllib.request
@@ -16,12 +17,23 @@ from dataclasses import dataclass
 # always sees the answer. No-op when the parser works (no tags) or on a non-reasoning model; an
 # unterminated block (thinking cut off by max_tokens) is stripped to empty, which the token-limit
 # rule already fails. Mirrors wattnot.longrun.harness.Chat.
-_THINK = re.compile(r"<think>.*?(</think>|$)", re.S)
+# The delimiters are a guess until the GPU shakedown sees Glimmer's real output. Change them in
+# one place with WATTNOT_THINK_OPEN / WATTNOT_THINK_CLOSE (plain text, not regex); the long-run
+# harness uses the same pattern through strip_reasoning().
+THINK_OPEN = os.environ.get("WATTNOT_THINK_OPEN", "<think>")
+THINK_CLOSE = os.environ.get("WATTNOT_THINK_CLOSE", "</think>")
 
 
-def strip_reasoning(text: str) -> str:
+def think_pattern(open_: str = THINK_OPEN, close: str = THINK_CLOSE) -> re.Pattern:
+    return re.compile(re.escape(open_) + r".*?(" + re.escape(close) + r"|$)", re.S)
+
+
+_THINK = think_pattern()
+
+
+def strip_reasoning(text: str, pattern: re.Pattern | None = None) -> str:
     """Remove a leaked <think>...</think> block; return the final answer, stripped."""
-    return _THINK.sub("", text).strip()
+    return (pattern or _THINK).sub("", text).strip()
 
 
 @dataclass(frozen=True)

@@ -96,11 +96,22 @@ _CALL = re.compile(r"^\s*CALL\s+(\w+)\s*(\{.*\})?\s*$", re.M)
 _FINAL = re.compile(r"^\s*FINAL\s+(.+)$", re.M)
 
 
+def _est_tokens(msgs: list[dict]) -> int:
+    """Upper-side token estimate (3 chars per token + 8 per message for the template)."""
+    return sum(len(m.get("content") or "") // 3 + 8 for m in msgs)
+
+
 def run_agent(chat, task_text: str, world: World, trace: Trace, *, max_turns: int = 10,
-              max_tokens: int = 192, depth: int = 0) -> float | None:
+              max_tokens: int = 192, depth: int = 0,
+              context_limit: int | None = None) -> float | None:
+    """`context_limit` (tokens, e.g. 8192 for Glimmer) stops the agent cleanly before the next
+    turn could overflow the server's max_model_len: a fail ("context-limit"), not a vLLM error."""
     msgs = [{"role": "user", "content": task_text}]
     last_tool = None
     for _ in range(max_turns):
+        if context_limit and _est_tokens(msgs) + max_tokens > context_limit:
+            trace.stopped = "context-limit"
+            return None
         r = chat(msgs, max_tokens)
         trace.turns += 1
         trace.tokens += r.tokens
@@ -133,7 +144,7 @@ def run_agent(chat, task_text: str, world: World, trace: Trace, *, max_turns: in
                 trace.subagents += 1
                 sub = run_agent(chat, TOOLS_DOC + "\n\nTask: " + str(args.get("task", "")),
                                 world, trace, max_turns=max_turns, max_tokens=max_tokens,
-                                depth=depth + 1)
+                                depth=depth + 1, context_limit=context_limit)
                 res = "ERROR the sub-agent gave no answer" if sub is None else sub
         else:
             res = world.call(tool, args, trace)
@@ -155,7 +166,8 @@ class Graded:
 def grade_one(task: Task, chat) -> Graded:
     if task.tier == "complex":
         tr = Trace()
-        got = run_agent(chat, task.prompt, World(task.world or {}), tr, max_tokens=task.max_tokens)
+        got = run_agent(chat, task.prompt, World(task.world or {}), tr, max_tokens=task.max_tokens,
+                        context_limit=getattr(chat, "context_limit", None))
         used = {c[0] for c in tr.calls}
         ok = (same_number(got, task.answer) and set(task.needs_tools) <= used
               and (not task.needs_subagent or tr.subagents > 0))

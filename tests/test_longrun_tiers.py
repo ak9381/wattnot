@@ -117,3 +117,48 @@ def test_fp8_keep_or_reject(tmp_path):
     bad = json.loads(json.dumps(s))
     bad["tiers"][3]["stock"]["pass_pct"] -= 10
     assert harness.compare_quant(s, bad)["decision"] == "reject"
+
+
+def test_reasoning_check_and_think_pattern(monkeypatch):
+    from wattnot.longrun.harness import reasoning_check
+    from wattnot.proof.client import strip_reasoning, think_pattern
+    assert reasoning_check("ok\n", 10, 9)["ok"]
+    assert not reasoning_check("Auto-initialization of reasoning token IDs failed", 10, 10)["ok"]
+    assert not reasoning_check("ok", 10, 2)["ok"]
+    assert not reasoning_check("", 10, 10)["ok"]
+    assert strip_reasoning("<think>x</think> 42") == "42"
+    assert strip_reasoning("[T]x[/T] 7", think_pattern("[T]", "[/T]")) == "7"
+
+
+def test_context_limit_is_a_clean_fail():
+    from wattnot.longrun.grade import Trace, World, run_agent
+    from wattnot.proof.client import Reply
+    calls = []
+
+    def chat(msgs, max_tokens):
+        calls.append(1)
+        return Reply(0.01, 10, "CALL calc " + "{\"expr\": \"1+1\"}" + " " * 3000, "stop")
+    tr = Trace()
+    assert run_agent(chat, "task", World({}), tr, max_tokens=1536, context_limit=8192) is None
+    assert tr.stopped == "context-limit" and len(calls) < 10
+
+
+def test_chat_sends_seed_and_topk(monkeypatch):
+    import json as _j
+    from wattnot.longrun import harness
+    seen = {}
+
+    class R:
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def read(self):
+            return _j.dumps({"choices": [{"message": {"content": "<think>a</think>5",
+                             "reasoning_content": "a"}, "finish_reason": "stop"}],
+                             "usage": {"completion_tokens": 3}}).encode()
+
+    def fake_open(req, timeout):
+        seen.update(_j.loads(req.data)); return R()
+    monkeypatch.setattr(harness.urllib.request, "urlopen", fake_open)
+    c = harness.Chat("http://x", "m")
+    r = c([{"role": "user", "content": "q"}], 8)
+    assert seen["seed"] == 0 and seen["top_k"] == -1 and r.text == "5" and c.reasoning_seen == 1
