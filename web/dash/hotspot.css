@@ -132,3 +132,6 @@
   color: #6C5E7C;
   word-break: break-all;
 }
+/* bento: let the real photo fill its box */
+.hotspot-visual .hotspot-svg-wrap{width:100%;height:auto;max-height:none}
+.hotspot-visual .hotspot-svg-wrap{max-width:none;aspect-ratio:auto}
