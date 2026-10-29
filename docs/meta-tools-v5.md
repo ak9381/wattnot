@@ -107,7 +107,7 @@ All Meta Tools v5 verifications are placed directly inside the receipt's `measur
 
 - **`judge_verdict`**: `"pass"` or `"fail"`
 - **`judge_score`**: judge agreement fraction (e.g. `0.942` `[MEASURED]`)
-- **`judge_model`**: the judge that made the verdict, e.g. `"meta-models/muse-spark-open-1026"` (default) or `"meta-llama/Llama-3.1-8B-Instruct"` (fallback); `judge_path` says which
+- **`judge_model`**: the judge that made the verdict, e.g. `"meta-models/muse-spark-open"` (default) or `"meta-llama/Llama-3.1-8B-Instruct"` (fallback); `judge_path` says which
 - **`spark_trace_id`**: Deterministic decision hash (e.g. `spark-9a8b7c6d5e4f3210`)
 - **`wonder_trace_ids`**: List of supervisor trace identifiers
 - **`per_model_spend`**: Spend tally for `spark`, `wonder`, `glimmer`, `llama`, and `sam`

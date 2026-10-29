@@ -15,6 +15,7 @@ OK = {"model": "x", "usage": {"prompt_tokens": 100, "completion_tokens": 20},
 
 
 def _hosted(tmp_path, transport, monkeypatch, **gk):
+    monkeypatch.delenv("BASETEN_METRICS_KEY", raising=False)
     monkeypatch.setenv("BASETEN_API_KEY", "test-not-a-key")
     g = Guard("baseten", Price(TOKEN, 1.25, 4.25), Ledger(tmp_path / "l.jsonl"),
               sleep=lambda s: None, **gk)
@@ -87,3 +88,11 @@ def test_no_key_falls_back_and_reserves_nothing(tmp_path, monkeypatch):
     monkeypatch.delenv("BASETEN_API_KEY")
     r = _run(h)
     assert r.detail["judge_path"] == "llama-fallback" and g.committed() == 0
+
+
+def test_health_uses_the_one_baseten_key_lookup():
+    from wattnot import health
+    ep = next(e for e in health.ENDPOINTS if e["id"] == "baseten")
+    assert health._key(ep, {"BASETEN_METRICS_KEY": "a", "BASETEN_API_KEY": "b"}) == "a"
+    assert health._key(ep, {"BASETEN_API_KEY": "b"}) == "b"
+    assert health._key(ep, {}) is None

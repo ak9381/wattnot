@@ -21,7 +21,7 @@ test("extractMetaToolsData extracts judge, wonder, and musecode fields", () => {
   // Judge
   assert.equal(d.judgeVerdict, "pass");
   assert.equal(d.judgeScore, 0.942);
-  assert.equal(d.judgeModel, "meta-models/muse-spark-open-1026");
+  assert.equal(d.judgeModel, "meta-models/muse-spark-open");
 
   // Spark Trace ID
   assert.equal(d.sparkTraceId, "spark-9a8b7c6d5e4f3210");
@@ -51,7 +51,7 @@ test("renderMetaToolsHTML renders glass card with required elements and labels",
   assert.match(html, /PASS/);
 
   // judge model and spark trace ID
-  assert.match(html, /meta-models\/muse-spark-open-1026/);
+  assert.match(html, /meta-models\/muse-spark-open/);
   assert.match(html, /spark-9a8b7c6d5e4f3210/);
   assert.match(html, /94\.2%/);
 

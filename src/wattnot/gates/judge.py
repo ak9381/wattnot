@@ -23,7 +23,7 @@ from wattnot.gates.result import GateResult
 # on our own vLLM (JUDGE_BASE_URL) is the fallback only: on 401/402, repeated 429s, a spend
 # stop or a network failure. Every verdict records which judge made it (`judge_model`,
 # `judge_path`). History: RUN2 used fixed answer checks only; Oct 27-28 builds judged with Llama.
-SPARK_HOSTED_JUDGE = "meta-models/muse-spark-open-1026"
+SPARK_HOSTED_JUDGE = "meta-models/muse-spark-open"
 LLAMA_JUDGE = "meta-llama/Llama-3.1-8B-Instruct"
 MODEL = os.environ.get("JUDGE_MODEL", SPARK_HOSTED_JUDGE)
 JUDGE_EFFORT = "low"

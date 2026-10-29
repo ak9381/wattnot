@@ -126,7 +126,7 @@
     "spark_trace_id": "spark-9a8b7c6d5e4f3210",
     "judge_verdict": "pass",
     "judge_score": 0.942,
-    "judge_model": "meta-models/muse-spark-open-1026", "judge_path": "hosted-spark",
+    "judge_model": "meta-models/muse-spark-open", "judge_path": "hosted-spark",
     "wonder_trace_ids": [
       "wonder-8f12a34b5c6d7e01"
     ],
