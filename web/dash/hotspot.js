@@ -35,7 +35,7 @@ export function renderHotspotHTML(data) {
       <div class="hotspot-header">
         <h3 class="hotspot-title">
           <span>Cooling Hotspots</span>
-          <span class="hotspot-badge">SAM 3.1 &bull; ${data.live ? "LIVE segmentation " : ""}${data.maskLabel}</span>${data.live ? `<span class="hotspot-badge" title="Not a thermal photo">heat &bull; ${data.heatLabel}</span>` : ""}
+          <span class="hotspot-badge">SAM 3.1 &bull; ${data.live ? "segmentation " : ""}${data.maskLabel}</span>${data.live ? `<span class="hotspot-badge" title="Not a thermal photo">heat &bull; ${data.heatLabel}</span>` : ""}
         </h3>
         <span class="hotspot-stat-tag">${data.decisionLabel}</span>
       </div>
@@ -85,7 +85,7 @@ export function renderHotspotHTML(data) {
               <div class="hotspot-stat-value" style="color:#A3BE8C">${data.newCapW} <span style="font-size:0.8rem">W</span><span class="hotspot-stat-tag">${data.decisionLabel}</span></div>
             </div>
             <div class="hotspot-stat-box">
-              <div class="hotspot-stat-label">Derate Step</div>
+              <div class="hotspot-stat-label">Derate Step (not auto-applied)</div>
               <div class="hotspot-stat-value" style="color:#E06C75">${data.deltaW} <span style="font-size:0.8rem">W</span><span class="hotspot-stat-tag">ADVICE</span></div>
             </div>
           </div>
