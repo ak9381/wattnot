@@ -24,6 +24,8 @@ node_modules/
 # Data and large artifacts
 # Repo-root run output only; recorded test fixtures under tests/fixtures/runs/ stay tracked.
 /runs/
+# Local spend ledgers must never be committed.
+data/spend/
 *.mp4
 *.err
 *-out.json
