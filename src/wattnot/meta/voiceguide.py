@@ -116,7 +116,9 @@ def transcribe_audio(
     except UnicodeDecodeError:
         pass
 
-    return "compare runs"
+    # Real audio with no live transcriber: say we heard nothing rather than
+    # invent a query (it used to answer "compare runs" for any recording).
+    return ""
 
 
 def _words_to_int(words: list[str]) -> int | None:
@@ -370,10 +372,21 @@ def process_voice_query(
     """Execute voice guide workflow: Audio/Text -> Spark intent -> Guarded Read-Only Action."""
     root = Path(root_dir) if root_dir else Path(__file__).resolve().parents[3]
     text = transcribe_audio(audio_data, fallback_text=query_text or "", live=live, mock=mock, ledger=ledger)
+    if audio_data and not (query_text or "").strip() and not text:
+        return {
+            "intent": "answer",
+            "action": "none",
+            "transcript": "",
+            "text": ("Voice transcription is off on this server, so the recording was not turned into text. "
+                     "Type your question instead." if (mock or not live) else
+                     "Muse Voice Transcribe returned no words for that recording. Try again or type your question."),
+            "label": "MOCK" if (mock or not live) else "LIVE",
+        }
 
     intent = classify_intent(text)
     quick = get_quick_ack(intent, text)
-    label = "MOCK" if (mock or not live) else "MEASURED"
+    # Top-level label describes the voice path; numbers carry their own receipt labels.
+    label = "MOCK" if (mock or not live) else "LIVE"
 
     result: dict[str, Any]
 
@@ -449,9 +462,14 @@ def process_voice_query(
         # Intent: answer. Grounded strictly in signed receipts and EU efficiency reports.
         receipts = _load_signed_receipts(root)
         t_low = text.lower()
+        # "run two" / "run to" (a common mishearing) / "run 2" -> "run2", so receipts match by run.
+        t_low = re.sub(r"\brun[\s_-]*(?:two|to|too|2)\b", "run2", t_low)
+        t_low = re.sub(r"\brun[\s_-]*(?:one|1)\b", "run1", t_low)
+        run_tok = re.search(r"\brun\d+\b", t_low)
 
         # Check if the query asks about energy, savings, water, or specific receipts
-        answerable_keywords = ("saving", "savings", "energy", "wh", "kwh", "joule", "joules", "water", "cap", "receipt", "receipts", "grade")
+        answerable_keywords = ("saving", "savings", "energy", "wh", "kwh", "joule", "joules", "water", "cap", "receipt", "receipts", "grade",
+                               "save", "saved", "saves")
         is_answerable = any(re.search(r"\b" + re.escape(k) + r"\b", t_low) for k in answerable_keywords) or any(
             bool(r.get("receipt_id")) and r["receipt_id"].lower() in t_low for r in receipts
         )
@@ -464,6 +482,13 @@ def process_voice_query(
                 if r.get("receipt_id", "").lower() in t_low:
                     matched = r
                     break
+            else:
+                if run_tok:
+                    tag = f"_{run_tok.group(0)}_"
+                    for r in receipts:
+                        if tag in r.get("receipt_id", "").lower() + "_":
+                            matched = r
+                            break
 
             rid = matched["receipt_id"]
             res = matched.get("result", {})
@@ -521,4 +546,6 @@ def process_voice_query(
             f"Voice guide is strictly read-only and restricted to {sorted(ALLOWED_ACTIONS)}."
         )
 
+    if audio_data and not (query_text or "").strip():
+        result.setdefault("transcript", text)
     return result

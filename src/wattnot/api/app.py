@@ -417,13 +417,33 @@ def create_app(root: str | os.PathLike[str] = ".") -> FastAPI:
                             audio_bytes = None
             except ValueError:
                 audio_bytes = raw
-        return process_voice_query(query_text=query_text, audio_data=audio_bytes, root_dir=base)
+        # Live Muse Voice Transcribe only when explicitly switched on (paid call).
+        live = bool(audio_bytes) and os.environ.get("WATTNOT_VOICE_LIVE") == "1" \
+            and os.environ.get("WATTNOT_META_MOCK") != "1"
+        try:
+            out = process_voice_query(query_text=query_text, audio_data=audio_bytes, root_dir=base,
+                                      live=live, mock=not live)
+        except Exception as exc:  # noqa: BLE001 - never leak a stack trace to the page
+            return JSONResponse({"intent": "answer", "label": "MOCK", "code": "transcribe_failed",
+                                 "text": f"Voice transcription failed ({type(exc).__name__}). "
+                                         "Type your question instead."}, status_code=502)
+        if live and isinstance(out, dict):
+            out.setdefault("transcript_source", "LIVE: Muse Voice Transcribe")
+        return out
 
     @app.get("/api/voiceguide")
     def voiceguide_get(q: str = "") -> Any:
         from wattnot.meta.voiceguide import process_voice_query
 
         return process_voice_query(query_text=q, root_dir=base)
+
+    # Serve the dashboard pages same-origin so the page mic can reach /api/voiceguide.
+    # Mounted last, so every /api route above wins.
+    from fastapi.staticfiles import StaticFiles
+
+    for prefix, sub in (("/dash", Path(base) / "web" / "dash"), ("/receipts", Path(base) / "receipts")):
+        if sub.is_dir():
+            app.mount(prefix, StaticFiles(directory=str(sub), html=True), name=prefix.strip("/"))
 
     return app
 

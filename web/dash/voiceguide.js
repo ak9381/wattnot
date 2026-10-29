@@ -76,6 +76,28 @@ export function buildVoiceGuideDOM() {
   return container;
 }
 
+// Decode any recorded blob and re-encode as 16 kHz mono 16-bit PCM WAV.
+export async function toWav16k(blob) {
+  const AC = globalThis.OfflineAudioContext || globalThis.webkitOfflineAudioContext;
+  const ctxAC = globalThis.AudioContext || globalThis.webkitAudioContext;
+  if (!AC || !ctxAC) throw new Error("no AudioContext");
+  const dec = await new ctxAC().decodeAudioData(await blob.arrayBuffer());
+  const rate = 16000, n = Math.max(1, Math.ceil(dec.duration * rate));
+  const off = new AC(1, n, rate);
+  const src = off.createBufferSource(); src.buffer = dec; src.connect(off.destination); src.start();
+  const pcm = (await off.startRendering()).getChannelData(0);
+  const out = new DataView(new ArrayBuffer(44 + pcm.length * 2));
+  const w = (o, t) => { for (let i = 0; i < t.length; i++) out.setUint8(o + i, t.charCodeAt(i)); };
+  w(0, "RIFF"); out.setUint32(4, 36 + pcm.length * 2, true); w(8, "WAVE"); w(12, "fmt ");
+  out.setUint32(16, 16, true); out.setUint16(20, 1, true); out.setUint16(22, 1, true);
+  out.setUint32(24, rate, true); out.setUint32(28, rate * 2, true); out.setUint16(32, 2, true);
+  out.setUint16(34, 16, true); w(36, "data"); out.setUint32(40, pcm.length * 2, true);
+  for (let i = 0; i < pcm.length; i++) {
+    const v = Math.max(-1, Math.min(1, pcm[i])); out.setInt16(44 + i * 2, v < 0 ? v * 0x8000 : v * 0x7fff, true);
+  }
+  return new Uint8Array(out.buffer);
+}
+
 export function mountVoiceGuide(customMountEl = null) {
   if (typeof document === "undefined") return null;
   if (document.getElementById("wattnot-voiceguide-slot")) return null;
@@ -261,7 +283,9 @@ export function mountVoiceGuide(customMountEl = null) {
       return;
     }
     try {
-      const buf = new Uint8Array(await blob.arrayBuffer());
+      // Muse Voice Transcribe takes WAV; MediaRecorder gives webm/ogg, so re-encode.
+      const buf = await toWav16k(blob).catch(() => new Uint8Array(0));
+      if (!buf.length) throw new Error("wav encode failed");
       let bin = "";
       for (const b of buf) bin += String.fromCharCode(b);
       const res = await fetch("/api/voiceguide", {
@@ -269,8 +293,14 @@ export function mountVoiceGuide(customMountEl = null) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ audio_b64: btoa(bin) }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      displayResponse(await res.json());
+      if (!res.ok) {
+        const j = await res.json().catch(() => null);
+        if (j && j.text) { displayResponse(j); return; }
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const out = await res.json();
+      if (out && out.transcript) inputEl.value = out.transcript;
+      displayResponse(out);
     } catch {
       // No transcription available offline: say so rather than invent a query.
       displayResponse({ intent: "answer", label: "MOCK",
@@ -300,10 +330,22 @@ export function mountVoiceGuide(customMountEl = null) {
             sendRecording();
           });
           mediaRecorder.start();
-        } catch {
+        } catch (err) {
           stopStream();
-          // Mic permission or unavailable, stay in listening simulation
+          isRecording = false;
+          micBtn.classList.remove("listening");
+          hideStatus();
+          const denied = err && (err.name === "NotAllowedError" || err.name === "SecurityError");
+          displayResponse({ intent: "answer", label: "MOCK",
+            text: denied ? "Microphone permission was blocked. Allow the mic, or type your question instead."
+                         : "No microphone was found. Type your question instead." });
         }
+      } else {
+        isRecording = false;
+        micBtn.classList.remove("listening");
+        hideStatus();
+        displayResponse({ intent: "answer", label: "MOCK",
+          text: "This browser cannot record audio here. Type your question instead." });
       }
     } else {
       // Instant 'Thinking…' state
