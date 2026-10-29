@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WattNot — Energy &amp; cost budget</title>
+  <link rel="icon" href="data:,">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./chrome.css">
+  <script src="./chrome.js" defer></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 32px 24px;
+      background-color: #080B10;
+      color: #DCD6E4;
+      font-family: 'Source Sans 3', sans-serif;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .preview-container { max-width: 760px; margin: 0 auto; }
+    .preview-header { margin-bottom: 24px; border-bottom: 1px solid rgba(178, 166, 195, 0.15); padding-bottom: 12px; }
+    .preview-title { font-family: 'Montserrat', sans-serif; font-size: 1.5rem; font-weight: 700; color: #DCD6E4; margin: 0 0 6px 0; }
+    .preview-desc { font-size: 0.9rem; color: #8E7A9E; }
+  </style>
+</head>
+<body>
+  <div class="preview-container">
+    <div class="preview-header">
+      <h1 class="preview-title">Energy &amp; cost budget</h1>
+      <div class="preview-desc">Ask one setting to serve under both a joules-per-correct budget and a dollars-per-1,000-correct budget. The card names which budget binds and keeps every number's honesty label. RUN2 sample; no live calls.</div>
+    </div>
+    <div id="cost-budget-mount"></div>
+  </div>
+
+  <script type="module">
+    import { mountCostBudget, RUN2_SAMPLE } from './costbudget.js';
+    mountCostBudget(document.getElementById('cost-budget-mount'), RUN2_SAMPLE);
+  </script>
+</body>
+</html>

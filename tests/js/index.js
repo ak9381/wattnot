@@ -1,5 +1,6 @@
 import "./compare_empty.test.mjs";
 import "./core.test.mjs";
+import "./costbudget.test.mjs";
 import "./guard.test.mjs";
 import "./hosted.test.mjs";
 import "./water_factor.test.mjs";
