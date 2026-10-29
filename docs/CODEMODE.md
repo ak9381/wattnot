@@ -10,8 +10,10 @@ one short program that calls them. The tool schemas are sent **once** (as an API
 and the many round trips collapse into a single program turn.
 
 This layer **detects** that pattern in recorded traffic and **models** the Code Mode
-"after". It does not run a sandbox: there is no code-execution runtime here, so the "after"
-numbers are an explicit model, labelled `ESTIMATE`.
+"after" (that modelled view is labelled `ESTIMATE`). It is paired with a **sandbox runtime**
+(see *The sandbox runtime* below) that actually *runs* each candidate's task as one program
+in a locked-down subprocess and reports what the run really cost — so the "after" can be
+`MEASURED` where we ran it, not only modelled.
 
 ## Prior art
 
@@ -85,11 +87,71 @@ Reads the recorded traces offline (no network, no model, no server), writes
 the existing receipt path (`wattnot.receipt.sign`). Signing only fills the `integrity`
 block, so it never changes the hash or lifts a grade.
 
+## The sandbox runtime (measured run)
+
+`src/wattnot/agentwaste/sandbox/` takes a detected candidate and actually *runs* its task,
+collapsed to **one program**, instead of only modelling the "after". Nothing runs live and
+nothing is paid: the tools are a replay of the recorded trace.
+
+**What it does, per candidate:**
+
+1. **Typed tool stub from the trace** (`sandbox/stub.py`). The distinct tool names become
+   methods on a generated `Tools` class, each taking exactly the keyword arguments the trace
+   recorded for it (a wrong call is a `TypeError`, like a real typed client). Every
+   `(tool, args)` the trace saw maps to the **exact recorded output**, keyed by canonical
+   (sorted-key) args — so a call **replays deterministically** and the same inputs always
+   return the same bytes. It is a faithful replay, not an estimate.
+2. **One-turn program, generated from the trace.** The multi-turn trace repeated and
+   re-queried; the Code Mode rewrite issues each *distinct* `(tool, args)` once, collects the
+   outputs, and composes a single answer — a straight-line equivalent of the loop a model
+   would emit, generated deterministically (no live model).
+3. **Locked-down subprocess** (`sandbox/runner.py`), defence in depth:
+   - **No network** — `unshare -n` drops the child into an empty network namespace when the
+     kernel allows unprivileged user namespaces; where it does not (most CI/containers), the
+     child installs a Python **audit hook** that refuses every `socket.*` event. Which layer
+     applied is recorded (`net_isolation`).
+   - **Resource limits** — `RLIMIT_CPU` (SIGXCPU/kill on overrun) and `RLIMIT_AS`
+     (address-space cap → `MemoryError`) set in a `preexec_fn`, plus a parent **wall-clock
+     timeout** that kills the whole process group if the child wedges without burning CPU.
+   - **No stray writes** — the child runs in a throwaway temp dir; the audit hook refuses any
+     `open` for writing whose resolved path is outside that dir (reads are left alone).
+   - **Minimal environment** — only `PATH` and a fixed `PYTHONHASHSEED`, so none of the
+     parent's secrets leak in.
+
+**Honest labels, shown side by side on the card:**
+
+| label | what it covers |
+|-------|----------------|
+| `MEASURED` | produced by actually running the sandbox: wall time, CPU seconds, peak RSS, exit status, and that the network / out-of-dir writes were refused |
+| `TOKENIZER` | a count of the generated program + its final result using the repo's `len(text)//4` rule (`route/stack.py`). It is bytes we hold, **not** a billed model figure |
+| `ESTIMATE` | the single model round trip Code Mode implies, and the model-side latency/energy of emitting the program — no live model is called, so these are modelled |
+| `null` + reason | CPU-package energy is read from RAPL (`/sys/class/powercap`) when readable; where it is not (containers, no permission) the value is `null` with the reason recorded, never invented |
+
+### Running it
+
+```
+python scripts/codemode_sandbox.py
+```
+
+Runs each candidate in the sandbox offline (no network, no model, no server) and writes
+`data/agent-waste/codemode/sandbox_results.json` (the sandbox card reads this) and
+`receipts/codemode/codemode-sandbox.json` — a before/after receipt **signed offline** through
+the same receipt path (`wattnot.receipt.sign`). `build_pages.py` copies the results next to
+the dashboard (`dash/codemode/sandbox_results.json`). The receipt's `label` is `MEASURED`
+(the run really happened); the modelled fields inside still carry their own `ESTIMATE` labels.
+
 ## Tests
 
 - `tests/test_codemode.py` — detection (both thresholds required), the before/after math,
   the conservative token clamp, the honest labels (energy-after stays pending), configurable
   thresholds, `analyze` over the real recorded traces, and sign + verify of the receipt.
-- `tests/js/codemode.test.mjs` — the dashboard card (`web/dash/codemode.js`): colours by
+- `tests/test_codemode_sandbox.py` — the sandbox runtime: it actually runs the subprocess and
+  asserts the network is blocked, the CPU/memory/wall limits are enforced, writes outside the
+  temp dir are refused, the typed stub replays deterministically, energy stays null-with-reason
+  when RAPL is unreadable, and the receipt signs + verifies.
+- `tests/js/codemode.test.mjs` — the detection card (`web/dash/codemode.js`): colours by
   label, dims pending values with a dot, and never renders a fabricated "after" energy
   number. Registered in `tests/js/index.js`.
+- `tests/js/codemode_sandbox.test.mjs` — the sandbox card: renders MEASURED (the run) and
+  ESTIMATE (the model-side fields) side by side, colours the TOKENIZER counts distinctly, and
+  never fabricates a model latency or energy number.
