@@ -50,8 +50,41 @@ def done_arms(ckpt: dict) -> list[int]:
     return [k for k in TOPKS if ckpt.get(str(k), {}).get("status") == "done"]
 
 
+LEDGER = "data/spend/modal.ledger.jsonl"
+T4_USD_H = 0.59                                          # list price (ESTIMATE)
+
+
+def stage_timeout(cap_s: int, usd_h: float, local: bool = True) -> int:
+    """Every Modal function's timeout: the smaller of the stage cap and what the $98 spend guard
+    still allows (cloud_timeout_s). wattnot is imported here, locally only: the container does
+    not ship the package, so a top-level import would crash it."""
+    if not local:
+        return cap_s
+    from pathlib import Path
+    from wattnot.spend.guard import GPU_SECONDS, Guard, Ledger, Price, cloud_timeout_s
+    g = Guard("modal", Price(GPU_SECONDS, usd_per_s=usd_h / 3600), Ledger(Path(LEDGER)))
+    t = min(cap_s, cloud_timeout_s(g))
+    if t <= 0:
+        raise SystemExit("spend guard: no headroom left, not launching")
+    return t
+
+
+def kill_timer(seconds: int, app_name: str):
+    """Local backstop next to the server-side timeout: stop the app and exit when time is up."""
+    import os, subprocess, threading
+
+    def fire():
+        subprocess.run(["modal", "app", "stop", app_name], timeout=60, check=False)
+        os._exit(3)
+    t = threading.Timer(seconds + 60, fire)
+    t.daemon = True
+    t.start()
+    return t
+
+
 try:  # Modal definitions only if the SDK is installed; never deployed from this branch
     import modal  # type: ignore
+    _local = modal.is_local()
     app = modal.App("wattnot-spark-topk-draft")
     image = (modal.Image.from_registry("vllm/vllm-openai:latest")
              .pip_install("huggingface_hub[hf_transfer]")
@@ -61,18 +94,26 @@ try:  # Modal definitions only if the SDK is installed; never deployed from this
     weights = modal.Volume.from_name(VOL, create_if_missing=True)
     ckpt_vol = modal.Volume.from_name(CKPT, create_if_missing=True)
 
-    @app.function(image=image, cpu=8, memory=16384, timeout=4 * 3600,
+    PREFETCH_S = stage_timeout(4 * 3600, 0.5, _local)   # CPU container, about $0.5/h (ESTIMATE)
+    PROBE_S = stage_timeout(300, T4_USD_H, _local)
+
+    @app.function(image=image, cpu=8, memory=16384, timeout=PREFETCH_S,
                   volumes={"/weights": weights}, secrets=[modal.Secret.from_name("hf")])
     def prefetch():
         from huggingface_hub import snapshot_download
         snapshot_download(MODEL, cache_dir="/weights", max_workers=16)
         weights.commit()
 
-    @app.function(image=image, gpu="T4", timeout=300)
+    @app.function(image=image, gpu="T4", timeout=PROBE_S)
     def power_probe():
         import subprocess
         return subprocess.run(["nvidia-smi", "--query-gpu=power.draw,power.limit,enforced.power.limit",
                                "--format=csv"], capture_output=True, text=True).stdout
+    @app.local_entrypoint()
+    def probe():
+        kill_timer(PROBE_S, "wattnot-spark-topk-draft")
+        print(power_probe.remote())
+
 except (ImportError, AttributeError):  # SDK missing, or the repo modal/ dir shadows it
     app = None
 
