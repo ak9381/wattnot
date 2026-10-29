@@ -181,10 +181,8 @@ code and left disabled**. One more box-independent fix is **still proposed, not 
    keep billing its disk). So this is a safety net that caps compute, not a guarantee the bill
    stops; it must be paired with a real delete (which any of layers 1-5 performs).
 
-An earlier, simpler curl-only template of the GitHub cron remains at
-`.github/workflows/longrun-watchdog.example.yml` (named `*.example.yml` with no firing trigger, so
-Actions ignores it). The canonical layer 4 is `e2e-watchdog.yml` + `watchdog/offbox.py`, which
-reuses the shared rule instead of duplicating a curl; prefer it. Neither fires as committed.
+The canonical layer 4 is `e2e-watchdog.yml` + `watchdog/offbox.py`, which reuses the shared rule
+instead of duplicating a curl. It does not fire as committed.
 
 ## Testing
 
