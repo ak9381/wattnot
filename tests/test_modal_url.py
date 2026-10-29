@@ -58,6 +58,15 @@ def test_discovery_failure_falls_through_to_cache(tmp_path):
         "https://cached.modal.run"
 
 
+def test_cache_with_invalid_utf8_falls_through_to_error(tmp_path):
+    # A corrupt cache file (invalid UTF-8) must not raise UnicodeDecodeError; it falls through
+    # to the clear ModalUrlUnset error like any other unreadable cache.
+    cache = tmp_path / "modal_url"
+    cache.write_bytes(b"\xff\xfe not utf-8")
+    with pytest.raises(ModalUrlUnset):
+        resolve_modal_url({}, discover=lambda: None, cache_path=cache)
+
+
 def test_cache_env_points_at_file(tmp_path):
     cache = tmp_path / "url.txt"
     cache.write_text("https://from-cache-env.modal.run", encoding="utf-8")

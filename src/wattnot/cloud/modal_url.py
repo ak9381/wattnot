@@ -51,9 +51,11 @@ def _sdk_discover() -> str | None:
 
 
 def _from_cache(path) -> str | None:
+    # A missing/unreadable cache (OSError) or a file with invalid UTF-8 (UnicodeDecodeError,
+    # a ValueError) must fall through to the clear error, never escape as an unrelated crash.
     try:
         return _clean(Path(path).read_text(encoding="utf-8"))
-    except OSError:
+    except (OSError, ValueError):
         return None
 
 

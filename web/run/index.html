@@ -24,7 +24,7 @@
 <div id="viewport" class="viewport" tabindex="0" aria-label="Run graph canvas">
   <div id="world" class="world"><svg id="edges" class="edges"></svg><div id="groups"></div><div id="nodes"></div></div>
   <div class="ctl" role="toolbar" aria-label="Canvas controls">
-    <button id="zin" title="Zoom in (+)"></button><button id="zout" title="Zoom out (−)"></button><button id="fit" title="Fit to screen (F)"></button>
+    <button id="zin" title="Zoom in (+)" aria-label="Zoom in"></button><button id="zout" title="Zoom out (−)" aria-label="Zoom out"></button><button id="fit" title="Fit to screen (F)" aria-label="Fit to screen"></button>
     <span id="zoomv" class="mono muted"></span>
   </div>
   <div class="legend"><span><i class="sw wn"></i>WattNot (we build)</span><span><i class="sw mt"></i>Meta model</span><span><i class="sw rv"></i>Revert only</span><span><i class="sw op"></i>Optional path</span></div>
@@ -33,13 +33,13 @@
 </div>
 <aside id="savings" class="savings" aria-label="Live savings"></aside>
 </main>
-<aside id="drawer" class="drawer" hidden aria-label="Node details"><button id="dclose" class="x" title="Close (Esc)"></button><div id="dbody"></div></aside>
+<aside id="drawer" class="drawer" hidden aria-label="Node details"><button id="dclose" class="x" title="Close (Esc)" aria-label="Close details"></button><div id="dbody"></div></aside>
 <section id="results" class="results" hidden></section>
 <footer class="timeline">
   <div class="tl-row">
-    <button id="back" class="ib" title="Step back (←)"></button>
-    <button id="play" class="ib primary" title="Play / pause (Space)"></button>
-    <button id="fwd" class="ib" title="Step forward (→)"></button>
+    <button id="back" class="ib" title="Step back (←)" aria-label="Step back"></button>
+    <button id="play" class="ib primary" title="Play / pause (Space)" aria-label="Play or pause"></button>
+    <button id="fwd" class="ib" title="Step forward (→)" aria-label="Step forward"></button>
     <label class="spd mono">speed <select id="speed"><option>0.5</option><option selected>1</option><option>2</option><option>4</option></select>×</label>
     <span id="evlabel" class="mono"></span>
     <span class="sp"></span>

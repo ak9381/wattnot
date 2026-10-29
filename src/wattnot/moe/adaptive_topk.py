@@ -216,6 +216,11 @@ def summarize(result: TrialResult) -> dict:
                 "active_experts": statistics.fmean(act) if act else None}
 
     a, b = arm_stats(off), arm_stats(on)
+    # The saving and p99 change are expressed as a fraction of the normal top-k ("off") arm, so a
+    # zero baseline (a degenerate run with no measured energy or latency) has no defined change.
+    # Fail with a clear AdaptiveError rather than a bare ZeroDivisionError.
+    if a["j_per_token"]["mean"] <= 0 or a["p99_ms"] <= 0:
+        raise AdaptiveError("normal top-k arm has zero joules/token or p99: nothing to compare")
     saving = 100 * (a["j_per_token"]["mean"] - b["j_per_token"]["mean"]) / a["j_per_token"]["mean"]
     n = min(len(off), len(on))
     lower = sum(1 for x, y in zip(off[:n], on[:n], strict=True) if y.j_per_token < x.j_per_token)
