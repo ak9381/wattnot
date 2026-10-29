@@ -258,7 +258,16 @@ def main(argv=None, *, env=None) -> int:
 
     env = os.environ if env is None else env
     ap = argparse.ArgumentParser(description="Layer 5: macOS off-box long-run VM watchdog")
-    ap.add_argument("--heartbeat-source", required=True, help="http(s) URL or local file path")
+    ap.add_argument("--heartbeat-source", default=None,
+                    help="http(s) URL or local file path. If omitted, defaults to the raw URL of "
+                         "the dedicated branch the run publishes to (needs --repo-slug or "
+                         "env WATCHDOG_PUBLISH_REPO).")
+    ap.add_argument("--repo-slug", default=None,
+                    help="'owner/name'; used to build the default heartbeat URL "
+                         "(or env WATCHDOG_PUBLISH_REPO)")
+    ap.add_argument("--heartbeat-branch", default=None,
+                    help="branch holding the published heartbeat (default 'watchdog-heartbeat', "
+                         "or env WATCHDOG_PUBLISH_BRANCH)")
     ap.add_argument("--budget-cap-inr", default=None)
     ap.add_argument("--max-hours", default=None)
     ap.add_argument("--max-stale-s", default=str(DEFAULT_MAX_STALE_S))
@@ -270,6 +279,17 @@ def main(argv=None, *, env=None) -> int:
     ap.add_argument("--live", dest="dry_run", action="store_false",
                     help="actually delete on a cap (needs credentials)")
     a = ap.parse_args(argv)
+
+    source = a.heartbeat_source
+    if not source:
+        slug = a.repo_slug or env.get("WATCHDOG_PUBLISH_REPO")
+        branch = a.heartbeat_branch or env.get("WATCHDOG_PUBLISH_BRANCH") or "watchdog-heartbeat"
+        if not slug:
+            sys.stderr.write(
+                "no --heartbeat-source and no --repo-slug / WATCHDOG_PUBLISH_REPO to build the "
+                "default published-branch URL. Pass one.\n")
+            return 2
+        source = f"https://raw.githubusercontent.com/{slug}/{branch}/heartbeat.json"
 
     client = None
     if not a.dry_run:
@@ -284,7 +304,7 @@ def main(argv=None, *, env=None) -> int:
                                project_id=env.get("E2E_PROJECT_ID"),
                                location=env.get("E2E_LOCATION", "Delhi"))
 
-    kw = dict(source=a.heartbeat_source, client=client,
+    kw = dict(source=source, client=client,
               budget_cap_inr=_optfloat(a.budget_cap_inr), max_hours=_optfloat(a.max_hours),
               max_stale_s=_optfloat(a.max_stale_s), dry_run=a.dry_run, log=print)
     res = check_once(**kw) if a.once else run_loop(poll_every_s=a.poll_every_s, **kw)

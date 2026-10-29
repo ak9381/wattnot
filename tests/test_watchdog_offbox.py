@@ -273,6 +273,34 @@ def test_mac_main_dry_run_prints_and_never_builds_a_client(tmp_path, capsys):
     assert rc == 0 and out["teardown"] and "WOULD_DELETE" in out["deleted"]
 
 
+def test_mac_main_defaults_source_to_published_branch(monkeypatch, capsys):
+    # No --heartbeat-source: it derives the raw URL of the published branch from the repo slug,
+    # then fetches via load_heartbeat. We stub the fetch to confirm the derived URL is used.
+    seen = {}
+
+    def fake_load(source, *, opener=None):
+        seen["source"] = source
+        return None  # a missing beat never tears down; enough to prove the URL was built
+
+    monkeypatch.setattr(mac, "load_heartbeat", fake_load)
+    rc = mac.main(["--repo-slug", "o/r", "--once"], env={})
+    assert rc == 0
+    assert seen["source"] == "https://raw.githubusercontent.com/o/r/watchdog-heartbeat/heartbeat.json"
+
+
+def test_mac_main_default_source_honours_branch_env(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(mac, "load_heartbeat",
+                        lambda source, **k: seen.update(source=source) or None)
+    rc = mac.main(["--once"], env={"WATCHDOG_PUBLISH_REPO": "a/b",
+                                   "WATCHDOG_PUBLISH_BRANCH": "beats"})
+    assert rc == 0 and seen["source"] == "https://raw.githubusercontent.com/a/b/beats/heartbeat.json"
+
+
+def test_mac_main_no_source_and_no_slug_refuses():
+    assert mac.main(["--once"], env={}) == 2
+
+
 def test_mac_main_live_refuses_without_a_key(tmp_path, monkeypatch):
     # keychain mocked to "no key"; no env key -> live must refuse, not act.
     monkeypatch.setattr(mac, "keychain_api_key", lambda *a, **k: None)
