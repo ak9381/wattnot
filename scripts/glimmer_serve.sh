@@ -9,6 +9,15 @@ PREC="${1:-bf16}"; PORT="${2:-8000}"
 MODEL=meta-models/Muse-Glimmer-30B
 IMAGE="${GLIMMER_IMAGE:-vllm/vllm-openai:muse-glimmer}"
 LOG="${LOG:-/root/run2/logs}"; mkdir -p "$LOG"
+# Serving knobs. Defaults are unchanged from RUN1 (64 seqs, 0.90 memory util, vLLM's own KV
+# dtype). The optional batch-size / KV-cache sweep overrides these per arm via the environment;
+# the 2 h plan leaves them at the defaults unless time allows the sweep.
+MAX_NUM_SEQS="${MAX_NUM_SEQS:-64}"
+GPU_MEM_UTIL="${GPU_MEM_UTIL:-0.90}"
+KV_CACHE_DTYPE="${KV_CACHE_DTYPE:-}"       # e.g. fp8 (optional); empty = vLLM default (auto)
+# Muse Glimmer 30B reads text + one image per request (Meta docs). Cap multimodal inputs at one
+# image per prompt so a malformed request cannot blow up the KV budget; configurable.
+LIMIT_MM_IMAGE="${LIMIT_MM_IMAGE:-1}"
 command -v docker >/dev/null || { echo "[glimmer] docker missing: cannot serve Glimmer"; exit 21; }
 docker image inspect "$IMAGE" >/dev/null 2>&1 || docker pull -q "$IMAGE" >/dev/null
 pkill -f "vllm serve" 2>/dev/null || true
@@ -16,14 +25,17 @@ docker rm -f glimmer >/dev/null 2>&1 || true
 sleep 5
 EXTRA=()
 if [ "$PREC" = fp8 ]; then EXTRA+=(--quantization fp8); fi
+if [ -n "$KV_CACHE_DTYPE" ]; then EXTRA+=(--kv-cache-dtype "$KV_CACHE_DTYPE"); fi
 # e.g. GLIMMER_EXTRA_ARGS="--enable-prefix-caching" (prefix_cache_ab.py sets it per arm)
 # shellcheck disable=SC2206
 if [ -n "${GLIMMER_EXTRA_ARGS:-}" ]; then EXTRA+=(${GLIMMER_EXTRA_ARGS}); fi
+echo "[glimmer] $PREC seqs=$MAX_NUM_SEQS mem_util=$GPU_MEM_UTIL kv_dtype=${KV_CACHE_DTYPE:-auto} limit_mm_image=$LIMIT_MM_IMAGE"
 docker run -d --name glimmer --gpus device=0 --ipc=host -p "$PORT:$PORT" \
   -v "$HOME/.cache/huggingface:/root/.cache/huggingface" -e HF_TOKEN \
   "$IMAGE" "$MODEL" --port "$PORT" --served-model-name "$MODEL" \
   --reasoning-parser muse_glimmer --max-model-len 8192 \
-  --gpu-memory-utilization 0.90 --max-num-seqs 64 "${EXTRA[@]}" > /dev/null
+  --gpu-memory-utilization "$GPU_MEM_UTIL" --max-num-seqs "$MAX_NUM_SEQS" \
+  --limit-mm-per-prompt.image "$LIMIT_MM_IMAGE" "${EXTRA[@]}" > /dev/null
 docker logs -f glimmer > "$LOG/vllm-glimmer-$PREC.log" 2>&1 &
 for _ in $(seq 1 240); do
   curl -fs "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1 && break
