@@ -87,6 +87,49 @@ wattnot cloud tune --live --budget-usd 10 --record data/cloud/recorded-run1.json
 
 What is and isn't checked yet is listed in [docs/runbooks/BASETEN.md](docs/runbooks/BASETEN.md). The bundled numbers are SIMULATED until a live run is recorded.
 
+## What SAM does in a run
+
+SAM 3.1 outlines the racks in a room photo. Each outline gets a temperature
+from a thermal frame, and that heat is checked against GPU power: hot and high
+power means cap the rack or move load off it; hot and low power means flag a
+cooling fault instead (a cap would hide it, not fix it). The room scan is step
+1 of the run, and its pick only orders the work: the planner and the gates
+still decide. Only the H100's own power is MEASURED. Every other rack and all
+temperatures are SIMULATED. The photo is real; the thermal frame is painted
+from power and watermarked as simulated. Details: [docs/SAM-ROLE.md](docs/SAM-ROLE.md).
+
+## Replicate RUN2
+
+You need one H100 host with root (the power cap is written through NVML and
+put back at exit), vLLM, and a Meta key as `META_API_KEY` or the Muse login
+file, so Muse Spark can propose caps. Without a key a plain bisect rule plans
+instead. Llama 3.1 also needs a Hugging Face token with its licence accepted.
+
+```bash
+bash scripts/h100_proof.sh --model meta-llama/Llama-3.1-8B-Instruct --out results/proof
+```
+
+Options: `--planner muse|bisect`, `--reps 3`. Plan on one to three hours on
+the box plus the model download, and the matching rental at the rate on the
+day (both ESTIMATE). Meta calls go through the spend guard and are logged.
+
+No GPU? The rehearsal runs the whole flow on a fake meter, every number MOCK:
+
+```bash
+python -m wattnot.proof.orchestrate --mode rehearsal --out OUT --live-file OUT/live/run.events.jsonl
+```
+
+A real run lands in `OUT`: events in `runs/<run_id>/events.jsonl` (mirrored
+to `--live-file`), the report in `vm/results.json`, `vm/results.md` and
+`vm/MANIFEST.sha256`, and the signed receipt in `proof-<id>.json` with its
+signature bundle. To watch or replay a saved run in the dashboard:
+
+```bash
+python -m wattnot.dash --events OUT/runs/<run_id>/events.jsonl
+```
+
+To host that replay for others, see [docs/HOSTING.md](docs/HOSTING.md).
+
 ## Meta open-weight models
 
 - **Muse Spark Open on Baseten picks the power caps.** In the cap sweep (`--planner baseten-open`), each step sends Muse Spark Open (`meta-models/muse-spark-open`, served by Baseten) the caps still allowed and the measured results so far, and it answers with the next cap to try or "stop". Its pick only counts if it is on the allow-list; the gate still decides keep or roll back.

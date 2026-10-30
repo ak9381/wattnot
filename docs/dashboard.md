@@ -79,6 +79,13 @@ standard harness that already stops by itself. Calls, tokens, wall time and succ
 Muse Spark; energy and dollars are ESTIMATE, using RUN2's measured joules per token for Llama 3.1 8B
 as a stand-in rate. A missing value is a dash.
 
+The Configure screen also shows a **Command for this run** panel (`POST
+/api/dash/run/command`, labelled ADVICE): the exact `python -m wattnot.proof.run`
+and `python -m wattnot.proof.orchestrate` commands for the current selection, with a
+copy button and plain-words notes. It is text only. The dashboard never runs it;
+copy it onto an H100 host. Selections with no shell command (for example hosted
+models) show a dash.
+
 `?tab=power|experts|arch` and `?tab=arch&filter=meta` still work.
 
 ### What is REPLAY and what is LIVE
