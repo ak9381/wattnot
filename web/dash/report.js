@@ -9,6 +9,7 @@ import { mountMetaTools } from "./metatools.js";
 import { mountHotspotCard } from "./hotspot.js";
 import { mountEyeTest } from "./eyetest.js";
 import { mountHotspotSet } from "./hotspotset.js";
+import { mountWonderChart } from "./wonderchart.js";
 import { mountEuLink, mountEuCard } from "./eulink.js";
 import { mountCodemode, mountSandbox } from "./codemode.js";
 
@@ -392,6 +393,7 @@ function render() {
   // sample — so the panel stays hidden until a run really carries one.
   if ($("#eyetest-mount")) mountEyeTest($("#eyetest-mount"), STATE.receipt || {});
   if ($("#hotspotset-mount")) mountHotspotSet($("#hotspotset-mount"), STATE.receipt || {});
+  if ($("#wonderchart-mount")) mountWonderChart($("#wonderchart-mount"), STATE.receipt || {});
   if ($("#eulink-mount")) mountEuLink($("#eulink-mount"), STATE.receipt || {});
   if ($("#eu-card-mount")) mountEuCard($("#eu-card-mount"));
   if ($("#codemode-mount")) mountCodemode($("#codemode-mount"));

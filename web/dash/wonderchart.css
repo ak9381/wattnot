@@ -1,0 +1,86 @@
+/* "Wonder reads the chart" glass card — matches the eye-test / hotspot /
+   hotspot-set / meta-tools palette. */
+.wc-card {
+  background: rgba(31, 26, 47, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(142, 122, 158, 0.35);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  color: #DCD6E4;
+  font-family: "Source Sans 3", "Source Sans Pro", system-ui, sans-serif;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.wc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(110, 94, 124, 0.25);
+  padding-bottom: 0.75rem;
+}
+
+.wc-title {
+  font-family: "Montserrat", sans-serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.wc-badge {
+  font-family: "Fira Code", monospace;
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(142, 122, 158, 0.2);
+  color: #DCD6E4;
+}
+.wc-energy { color: #C4B4D6; }
+
+.wc-verdict {
+  font-family: "Fira Code", monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+}
+.wc-try { color: #A3BE8C; background: rgba(163, 190, 140, 0.14); }
+.wc-stop { color: #C4B4D6; background: rgba(142, 122, 158, 0.18); }
+
+.wc-sub { color: #B2A6C3; font-size: 0.9rem; margin: 0 0 0.5rem; }
+.wc-source { color: #B2A6C3; font-size: 0.85rem; margin: 0 0 0.75rem; }
+.wc-reason { font-size: 0.9rem; margin: 0.75rem 0 0; }
+.wc-foot { color: #8E7A9E; font-size: 0.78rem; margin: 0.5rem 0 0; }
+.wc-source code, .wc-reason code, .wc-foot code {
+  font-family: "Fira Code", monospace;
+  font-size: 0.92em;
+  color: #C4B4D6;
+}
+
+/* inline scatter redrawn from the receipt's plotted points */
+.wc-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 0.25rem 0;
+}
+.wc-frame { fill: none; stroke: rgba(142, 122, 158, 0.6); stroke-width: 1; }
+.wc-grid { stroke: rgba(110, 94, 124, 0.3); stroke-width: 1; }
+.wc-tick, .wc-axis, .wc-legend, .wc-dotlabel {
+  fill: #8E7A9E;
+  font-family: "Fira Code", monospace;
+  font-size: 10px;
+}
+.wc-axis { fill: #B2A6C3; font-family: "Montserrat", sans-serif; font-size: 11px; }
+.wc-dotlabel { fill: #DCD6E4; }
+.wc-dot { stroke: #DCD6E4; stroke-width: 1; }
+.wc-kept { fill: #2EA043; }
+.wc-rejected { fill: #E06C75; }

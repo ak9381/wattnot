@@ -478,6 +478,51 @@
               }
             }
           }
+        },
+        "wonder_chart": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "label": { "type": "string" },
+            "chart_sha256": { "type": "string" },
+            "source": { "type": "string" },
+            "offline_fallback": { "type": "boolean" },
+            "model": { "type": "string" },
+            "suggestion": {
+              "type": "object",
+              "properties": {
+                "action": { "type": "string" },
+                "cap_w": { "type": ["integer", "null"] },
+                "clock_profile": { "type": ["string", "null"] }
+              }
+            },
+            "reason": { "type": "string" },
+            "trace_id": { "type": "string" },
+            "est_wh": {
+              "type": "object",
+              "properties": {
+                "value": { "type": "number" },
+                "label": { "type": "string" }
+              }
+            },
+            "points": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "setting": { "type": "string" },
+                  "cap_w": { "type": "integer" },
+                  "clock_profile": { "type": "string" },
+                  "joules_per_correct": { "type": "number" },
+                  "quality": { "type": "number" },
+                  "kept": { "type": "boolean" },
+                  "label": { "type": "string" }
+                }
+              }
+            }
+          }
         }
       }
     },

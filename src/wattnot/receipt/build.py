@@ -122,6 +122,48 @@ def _hotspot_test_entry(ht: Mapping) -> dict:
     }
 
 
+def _wonder_chart_entry(wc: Mapping) -> dict:
+    """Normalise a 'Wonder reads the chart' result into the receipt's
+    ``measurement.wonder_chart`` block: numbers, short settings, the chart hash and
+    SYNTHETIC / ESTIMATE labels only, so it stays lint-clean and signature-covered.
+    The chart PNG is referenced by hash; its pixels never enter the public receipt."""
+
+    sugg = wc.get("suggestion") or {}
+    est = wc.get("est_wh") or {}
+    wh = est.get("value")
+    if wh is None:
+        wh = wc.get("est_wh_value", 0.5)
+    points = []
+    for row in wc.get("points", []):
+        points.append({
+            "setting": str(row.get("setting", ""))[:48],
+            "cap_w": int(row.get("cap_w", 0)),
+            "clock_profile": str(row.get("clock_profile", ""))[:32],
+            "joules_per_correct": round(float(row.get("joules_per_correct", 0.0)), 6),
+            "quality": round(float(row.get("quality", 0.0)), 6),
+            "kept": bool(row.get("kept")),
+            "label": str(row.get("label", "MEASURED"))[:32],
+        })
+    cap = sugg.get("cap_w")
+    return {
+        "label": str(wc.get("label", "SYNTHETIC"))[:32],
+        "chart_sha256": str(wc.get("chart_sha256", ""))[:64],
+        "source": str(wc.get("source", "fallback"))[:16],
+        "offline_fallback": bool(wc.get("offline_fallback", wc.get("source") == "fallback")),
+        "model": str(wc.get("model", "unrecorded"))[:64],
+        "suggestion": {
+            "action": str(sugg.get("action", "stop"))[:8],
+            "cap_w": int(cap) if cap is not None else None,
+            "clock_profile": (str(sugg.get("clock_profile"))[:32]
+                              if sugg.get("clock_profile") is not None else None),
+        },
+        "reason": str(wc.get("reason", ""))[:195],
+        "trace_id": str(wc.get("trace_id", ""))[:80],
+        "est_wh": {"value": round(float(wh), 6), "label": "ESTIMATE"},
+        "points": points,
+    }
+
+
 def planner_trace_from_events(events: Sequence[Mapping]) -> list[dict]:
     trace, n = [], 0
     for e in events:
@@ -158,7 +200,8 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
                   musecode_pr_url: str | None = None,
                   hotspot_cap: Mapping[str, Any] | None = None,
                   eye_test: Mapping[str, Any] | None = None,
-                  hotspot_test: Mapping[str, Any] | None = None) -> dict[str, Any]:
+                  hotspot_test: Mapping[str, Any] | None = None,
+                  wonder_chart: Mapping[str, Any] | None = None) -> dict[str, Any]:
     base, cand = run["baseline"], run["candidate"]
     base_samples = base.get("wh_samples") or (base.get("wh_per_req") or {}).get("samples") or []
     cand_samples = cand.get("wh_samples") or (cand.get("wh_per_req") or {}).get("samples") or []
@@ -330,6 +373,15 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
                 break
     if ht is not None:
         m["hotspot_test"] = _hotspot_test_entry(ht)
+
+    wc = wonder_chart if wonder_chart is not None else run.get("wonder_chart")
+    if wc is None:
+        for ev in events:
+            if ev.get("type") in ("wonder.chart", "wonder_chart"):
+                wc = ev.get("data")
+                break
+    if wc is not None:
+        m["wonder_chart"] = _wonder_chart_entry(wc)
 
     with_joules(receipt)
     receipt["grade"] = claimed_grade(receipt, rekor=rekor)

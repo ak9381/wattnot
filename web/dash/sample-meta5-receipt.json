@@ -461,6 +461,62 @@
           "label": "SYNTHETIC"
         }
       ]
+    },
+    "wonder_chart": {
+      "label": "SYNTHETIC",
+      "chart_sha256": "730db1395ab84eb674c80b1f221c7d8d3a0678b73e32b34cb843d325e8eb33be",
+      "source": "wonder",
+      "offline_fallback": false,
+      "model": "muse-wonder-1.0",
+      "suggestion": {
+        "action": "try",
+        "cap_w": 325,
+        "clock_profile": "locked-mid"
+      },
+      "reason": "325 W is the efficiency knee on the kept front; a locked-mid clock should trim joules-per-correct further without risking the quality drop seen at 300 W.",
+      "trace_id": "wonder-2fe98b728061a6bc",
+      "est_wh": {
+        "value": 0.5,
+        "label": "ESTIMATE"
+      },
+      "points": [
+        {
+          "setting": "375W/base",
+          "cap_w": 375,
+          "clock_profile": "base",
+          "joules_per_correct": 1.0,
+          "quality": 0.99,
+          "kept": true,
+          "label": "MEASURED"
+        },
+        {
+          "setting": "350W/base",
+          "cap_w": 350,
+          "clock_profile": "base",
+          "joules_per_correct": 0.94,
+          "quality": 0.98,
+          "kept": true,
+          "label": "MEASURED"
+        },
+        {
+          "setting": "325W/base",
+          "cap_w": 325,
+          "clock_profile": "base",
+          "joules_per_correct": 0.91,
+          "quality": 0.97,
+          "kept": true,
+          "label": "MEASURED"
+        },
+        {
+          "setting": "300W/base",
+          "cap_w": 300,
+          "clock_profile": "base",
+          "joules_per_correct": 0.95,
+          "quality": 0.88,
+          "kept": false,
+          "label": "MEASURED"
+        }
+      ]
     }
   },
   "attribution": {

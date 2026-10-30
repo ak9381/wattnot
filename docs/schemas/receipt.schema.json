@@ -437,6 +437,92 @@
               }
             }
           }
+        },
+        "hotspot_test": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "label": { "type": "string" },
+            "detector": { "type": "string" },
+            "passed": { "type": "boolean" },
+            "checked": { "type": "integer" },
+            "passed_count": { "type": "integer" },
+            "missed": { "type": "array", "items": { "type": "string" } },
+            "faults": { "type": "array", "items": { "type": "string" } },
+            "iou_pass": { "type": "number" },
+            "reason": { "type": "string" },
+            "est_wh_per_image": {
+              "type": "object",
+              "properties": {
+                "value": { "type": "number" },
+                "label": { "type": "string" }
+              }
+            },
+            "scenes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "fault": { "type": "string" },
+                  "slot": { "type": "integer" },
+                  "expected_bbox": { "type": "array", "items": { "type": "number" } },
+                  "got_bbox": { "type": "array", "items": { "type": "number" } },
+                  "iou": { "type": "number" },
+                  "ok": { "type": "boolean" },
+                  "mask_label": { "type": "string" },
+                  "label": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "wonder_chart": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "label": { "type": "string" },
+            "chart_sha256": { "type": "string" },
+            "source": { "type": "string" },
+            "offline_fallback": { "type": "boolean" },
+            "model": { "type": "string" },
+            "suggestion": {
+              "type": "object",
+              "properties": {
+                "action": { "type": "string" },
+                "cap_w": { "type": ["integer", "null"] },
+                "clock_profile": { "type": ["string", "null"] }
+              }
+            },
+            "reason": { "type": "string" },
+            "trace_id": { "type": "string" },
+            "est_wh": {
+              "type": "object",
+              "properties": {
+                "value": { "type": "number" },
+                "label": { "type": "string" }
+              }
+            },
+            "points": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "setting": { "type": "string" },
+                  "cap_w": { "type": "integer" },
+                  "clock_profile": { "type": "string" },
+                  "joules_per_correct": { "type": "number" },
+                  "quality": { "type": "number" },
+                  "kept": { "type": "boolean" },
+                  "label": { "type": "string" }
+                }
+              }
+            }
+          }
         }
       }
     },
