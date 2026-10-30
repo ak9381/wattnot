@@ -166,7 +166,7 @@ export function mountVoiceGuide(customMountEl = null) {
 
   function displayResponse(data) {
     panelIntent.textContent = data.intent || "ANSWER";
-    panelTag.textContent = data.label || "MOCK";
+    panelTag.textContent = data.label || "SIMULATED";
 
     // A spoken tuning command: show Spark's dry-run plan and read the summary aloud with
     // the browser voice. The plan HTML is built from our own structured data and escaped

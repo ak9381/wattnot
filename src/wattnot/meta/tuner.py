@@ -263,7 +263,7 @@ def run_tune(text: str, *, root_dir: str | Path | None = None, live: bool = Fals
     plan = plan_with_spark(parsed, current_cap_w=stock_cap_w, min_w=min_w, max_w=max_w)
     decisions = plan["decisions"]
     mode = "live" if live else "dry-run"
-    label = "ESTIMATE" if live else "MOCK"
+    label = "ESTIMATE" if live else "SIMULATED"
 
     planner_view = {"name": "Spark", "model": SPARK_PLANNER["model"],
                     "note": ("planned offline for a dry run; no paid Spark call"
@@ -354,8 +354,9 @@ def _summaries(command: str, changes: list[dict], unsupported: list[str],
                mode: str) -> tuple[str, str]:
     """Display text and a speech-friendly line summarising the guarded plan."""
     n = len(changes)
-    prefix = "Dry run — nothing was changed." if mode == "dry-run" else \
-             "Live plan — filed for a person to approve; nothing was changed yet."
+    prefix = ("Dry run (SIMULATED, assuming the quality checks pass) — nothing was changed."
+              if mode == "dry-run" else \
+             "Live plan — filed for a person to approve; nothing was changed yet.")
 
     display = [f"{prefix} Spark planned {n} change{'s' if n != 1 else ''} from your command:"]
     for i, c in enumerate(changes, 1):
@@ -366,7 +367,7 @@ def _summaries(command: str, changes: list[dict], unsupported: list[str],
     if unsupported:
         display.append("Not planned (unknown to Spark): " + "; ".join(unsupported) + ".")
 
-    speak_parts = [f"{'Dry run' if mode == 'dry-run' else 'Live plan'}. "
+    speak_parts = [f"{'Dry run, assuming the quality checks pass' if mode == 'dry-run' else 'Live plan'}. "
                    f"Spark planned {n} change{'s' if n != 1 else ''}."]
     for c in changes:
         verdict = "a person must approve this" if c["needs_person"] else \

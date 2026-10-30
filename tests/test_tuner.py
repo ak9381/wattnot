@@ -114,7 +114,8 @@ def test_run_tune_dry_run_plans_and_routes_without_applying() -> None:
     assert r["intent"] == "command"
     assert r["action"] == "tune"
     assert r["mode"] == "dry-run"
-    assert r["label"] == "MOCK"
+    assert r["label"] == "SIMULATED"
+    assert "assuming the quality checks pass" in r["text"]
     # two changes, each high-risk -> needs a person, nothing applied
     changes = r["guard"]["changes"]
     assert [c["kind"] for c in changes] == ["power_cap", "vllm_config"]
