@@ -183,7 +183,7 @@ def plan_glimmer_test(out: Path) -> list[Block]:
     """The 3.5 h Glimmer test VM, GPU-first so the core proof is saved before anything optional.
 
     Order: setup -> probe (cap write + image acceptance) -> BF16 power-cap sweep + signed receipt
-    -> one forced-SSH-drop resume test -> eye + spoken on BF16 -> FP8 swap -> eye + spoken on FP8
+    -> a short BF16 block with resume armed (the forced drop is dry-run only) -> eye + spoken on BF16 -> FP8 swap -> eye + spoken on FP8
     -> copy results back. Two prompts per tier. Budgeted to 162 min of the 202 usable (3.5 h
     minus the 8 min watchdog margin). The prefix-cache A/B is NOT here; it is in the long run.
 
@@ -256,8 +256,9 @@ def plan_glimmer_test(out: Path) -> list[Block]:
               "no GPU time; checks the receipt's SHA-256 first)", _m(1),
               ["bash", "-c", eu_cmd],
               live=["bash", "-c", eu_cmd], depends_on=("t1-sweep",)),
-        Block("t1-resume", "Forced-SSH-drop resume test: a short BF16 workload the driver re-runs "
-              "after the link drops mid-block", _m(5), tiers_dry("t1-resume", "muse-glimmer-30b"),
+        Block("t1-resume", "Short BF16 workload with the resume path armed: the driver re-runs it "
+              "if the link drops. The forced drop is injected in the dry run only (MOCK); live, "
+              "resume runs only on a real drop, so a live pass is not a resume proof", _m(5), tiers_dry("t1-resume", "muse-glimmer-30b"),
               live=tiers_live("t1-resume", "muse-glimmer-30b"), host=True),
         Block("t1-eye", "BF16 eye test: served vision reads the images (90 s budget); a miss "
               "rejects FP8 below", _m(3), eye_dry("t1-eye"), live=eye_live("t1-eye"), host=True),

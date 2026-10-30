@@ -88,3 +88,9 @@ preflight passes.
 | 30 | No-mock | A source like `live-replay-x` passed on its real-looking prefix. | FIXED: any mock word fails. |
 | 31 | Probe | `glimmer_probe.sh` wrote the cap without persistence mode. | FIXED. |
 | -- | Signing | The live receipt is signed with a per-run offline key; verify reads the key from its own bundle. | NOT FIXED: the SHA-256 still shows tampering; the signature shows the receipt is unchanged since signing, not who signed. A stable key in `trusted-keys.json` needs a key-custody decision. |
+
+## Review round 5 (2026-10-30, night)
+
+| # | Area | Finding | Fix |
+|---|------|---------|-----|
+| 32 | Resume | `t1-resume` was titled a forced-SSH-drop test, but the drop is only injected in the dry run; live it is a normal BF16 block. | FIXED (label): the title and plan say the forced drop is dry-run only (MOCK); a live pass is not claimed as a resume proof. |

@@ -42,3 +42,9 @@ def test_watchdog_retries_a_failed_delete(monkeypatch):
     monkeypatch.setattr("builtins.open", lambda *a, **k: io.StringIO())
     m.main(["watchdog"])
     assert len(tries) == 3
+
+
+def test_t1_resume_does_not_claim_a_live_forced_drop(tmp_path):
+    b = {x.id: x for x in driver.plan_glimmer_test(tmp_path)}["t1-resume"]
+    assert "Forced-SSH-drop resume test" not in b.title
+    assert "dry run only" in b.title
