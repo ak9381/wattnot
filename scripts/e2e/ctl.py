@@ -121,6 +121,17 @@ def _nomock_or_die():
             print(f"  - {f['where']}: {f['what']}\n      fix: {f['fix']}", file=sys.stderr)
         sys.exit(6)
     print(f"no-mock preflight OK ({len(report['checked'])} blocks checked)")
+    # the unattended sweep approves only through an operator-set policy: check it BEFORE spend
+    from pathlib import Path
+
+    from wattnot.longrun.driver import APPROVAL_POLICY, approval_policy_problem
+    why = approval_policy_problem(Path(APPROVAL_POLICY))
+    if why:
+        print(f"APPROVAL POLICY: {why}; refusing to launch. Set it with:\n  wattnot proposals "
+              f"--dir /tmp/wn-policy policy set --by '<your name>' --file {APPROVAL_POLICY}",
+              file=sys.stderr)
+        sys.exit(6)
+    print("approval policy OK")
 
 
 def main(argv=None):

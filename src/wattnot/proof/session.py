@@ -12,6 +12,8 @@ Accepted when all three hold:
 
 from __future__ import annotations
 
+import math
+
 import hashlib
 import json
 from pathlib import Path
@@ -84,6 +86,20 @@ def summarize(cap_w: int, stock: list[dict], capped: list[dict], workload: Workl
         why.append(f"p99 up {p_mean:.1f}% (limit {p99_slack_pct:.0f}%)")
     if not e_ok:
         why.append("energy change not clearly below zero")
+    n_err = sum(b["errors"] for b in stock + capped)
+    if n_err:
+        # an errored request grades as a wrong answer; on the stock arm that would flatter the
+        # cap, so any error in either arm blocks acceptance
+        why.append(f"{n_err} request errors in this step")
+    from wattnot.gates.noise import welch
+    js, jc = [s["j_per_req"] for s in stock], [c["j_per_req"] for c in capped]
+    if len(js) >= 2 and len(jc) >= 2:
+        w = welch(js, jc)
+        welch_d = {"t": w.t if math.isfinite(w.t) else None, "df": w.df, "p_value": w.p_value,
+                   "n_stock_blocks": len(js), "n_cap_blocks": len(jc),
+                   "samples": "per-block J/request (NVML counter per block, not per request)"}
+    else:
+        welch_d = None
     return {
         "cap_w": cap_w, "repeats": n, "label": "MEASURED",
         "j_per_req_stock": [s["j_per_req"] for s in stock],
@@ -94,6 +110,7 @@ def summarize(cap_w: int, stock: list[dict], capped: list[dict], workload: Workl
         "p50_change_pct": {"per_pair": d_p50, "mean": mean_sd(d_p50)[0]},
         "j_per_token_change_pct": {"mean": mean_sd(d_tok)[0]},
         "stock_noise": stock_noise(stock),
+        "welch_per_block": welch_d,
         "p99_s": {"stock": mean_sd([s["p99_s"] for s in stock])[0],
                   "cap": mean_sd([c["p99_s"] for c in capped])[0]},
         "quality": {"stock_pct": q.detail["baseline_pct"], "cap_pct": q.detail["candidate_pct"],
@@ -104,7 +121,7 @@ def summarize(cap_w: int, stock: list[dict], capped: list[dict], workload: Workl
         "max_temp_c_by_arm": {"stock": max(b["max_temp_c"] or 0 for b in stock),
                               "cap": max(b["max_temp_c"] or 0 for b in capped)},
         "errors": sum(b["errors"] for b in stock + capped),
-        "accepted": bool(q.passed and p_ok and e_ok and not any(b["errors"] for b in capped)),
+        "accepted": bool(q.passed and p_ok and e_ok and not n_err),
         "why_not": why,
     }
 

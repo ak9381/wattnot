@@ -46,6 +46,20 @@ done
 curl -fs "http://127.0.0.1:$PORT/v1/models" >/dev/null || { echo "[glimmer] $PREC did not come up"; tail -n 30 "$LOG/vllm-glimmer-$PREC.log"; exit 22; }
 # the numbers the shakedown needs, straight from the vLLM log
 grep -E "Model loading took|Available KV cache memory|GPU KV cache size|init engine" \
-  "$LOG/vllm-glimmer-$PREC.log" | sed "s/^/[glimmer $PREC] /"
+  "$LOG/vllm-glimmer-$PREC.log" | sed "s/^/[glimmer $PREC] /" || true   # info only, never fatal
 nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader | sed "s/^/[glimmer $PREC] mem /"
+# verify from the server itself what is being served: the model id from /v1/models, and for
+# FP8 the engine's own config line. A mismatch stops here so nothing is labelled wrongly.
+curl -fs "http://127.0.0.1:$PORT/v1/models" > "$LOG/served-models-$PREC.json"
+grep -q "\"id\": *\"$MODEL\"" "$LOG/served-models-$PREC.json" || \
+  { echo "[glimmer] served model is not $MODEL (see $LOG/served-models-$PREC.json)"; exit 23; }
+if [ "$PREC" = fp8 ]; then
+  grep -qiE "quantization[=: ]+'?fp8" "$LOG/vllm-glimmer-$PREC.log" || \
+    { echo "[glimmer] engine log does not show quantization=fp8: not labelling this FP8"; exit 24; }
+else
+  if grep -qiE "quantization[=: ]+'?fp8" "$LOG/vllm-glimmer-$PREC.log"; then
+    echo "[glimmer] engine log shows fp8 quantization on the $PREC server"; exit 24
+  fi
+fi
+echo "[glimmer] verified: $MODEL $PREC (from /v1/models and the engine config)"
 echo "[glimmer] $PREC READY on :$PORT"

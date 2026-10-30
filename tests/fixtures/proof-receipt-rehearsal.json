@@ -1,0 +1,402 @@
+{
+  "spec": "wattnot.proof-receipt/1",
+  "receipt_id": "proof-4f3076",
+  "run_id": "run_20261030_141939_4f3076",
+  "created": "2026-10-30T14:21:02+00:00",
+  "label": "MOCK",
+  "mode": "rehearsal",
+  "hardware": {
+    "gpu": "NVIDIA H100 80GB HBM3 (FAKE)",
+    "default_cap_w": 700,
+    "cap_range_w": [
+      200,
+      700
+    ]
+  },
+  "model": "meta-models/Muse-Glimmer-30B",
+  "workload": {
+    "name": "proof-v1",
+    "prompts": 111,
+    "sha256": "279ccc4a5f29fdc507ffd64d059cc51a906cbec0082e3de58255aaa87b534c5f"
+  },
+  "method": {
+    "energy": "NVML total_energy_mj counter, before and after each block",
+    "design": "interleaved stock/cap blocks, 3 rounds per cap",
+    "accept": "quality drop <= 1 pt, mean p99 change <= +10%, 95% CI of the J/request change entirely below 0"
+  },
+  "control": {
+    "label": "MEASURED",
+    "stock_pass_pct": 100.0,
+    "stock2_pass_pct": 100.0,
+    "truncated_pass_pct": 0.0,
+    "token_scale": 0.2,
+    "bad_setting_rejected": true,
+    "stock_vs_stock_accepted": true,
+    "stock_vs_stock_j_per_req_change_pct": 0.0,
+    "stock_blocks": 4,
+    "stock_j_per_req": [
+      0.1687162162162162,
+      0.1687162162162162,
+      0.1687162162162162,
+      0.1687162162162162
+    ],
+    "stock_noise_cv_pct": 0.0,
+    "stock_range_pct": 0.0
+  },
+  "steps": [
+    {
+      "cap_w": 500,
+      "repeats": 3,
+      "label": "MEASURED",
+      "j_per_req_stock": [
+        0.1687162162162162,
+        0.1687162162162162,
+        0.1687162162162162
+      ],
+      "j_per_req_cap": [
+        0.14857657657657658,
+        0.14857657657657658,
+        0.14857657657657658
+      ],
+      "energy_change_pct": {
+        "per_pair": [
+          -11.936991055933783,
+          -11.936991055933783,
+          -11.936991055933783
+        ],
+        "mean": -11.936991055933783,
+        "sd": 0.0,
+        "ci95_half": 0.0
+      },
+      "p99_change_pct": {
+        "per_pair": [
+          5.7692307692307745,
+          5.7692307692307745,
+          5.7692307692307745
+        ],
+        "mean": 5.7692307692307745,
+        "sd": 0.0
+      },
+      "p50_change_pct": {
+        "per_pair": [
+          5.8823529411764754,
+          5.8823529411764754,
+          5.8823529411764754
+        ],
+        "mean": 5.8823529411764754
+      },
+      "j_per_token_change_pct": {
+        "mean": -11.936991055933772
+      },
+      "stock_noise": {
+        "label": "MEASURED",
+        "blocks": 3,
+        "cv_pct": 0.0
+      },
+      "p99_s": {
+        "stock": 1.04,
+        "cap": 1.1
+      },
+      "quality": {
+        "stock_pct": 100.0,
+        "cap_pct": 100.0,
+        "checked": 666,
+        "passed": true,
+        "reason": "pass rate 100.0% vs 100.0%"
+      },
+      "mean_w": {
+        "stock": 484.9240290009655,
+        "cap": 423.9971382426067
+      },
+      "max_temp_c": 66,
+      "max_temp_c_by_arm": {
+        "stock": 66,
+        "cap": 64
+      },
+      "errors": 0,
+      "accepted": true,
+      "why_not": [],
+      "clock_requested": "base",
+      "clock_applied": true,
+      "clock_profile": "base",
+      "chosen_by": "muse-spark",
+      "planner_reason": "p99 has headroom at 700 W; start in the middle"
+    },
+    {
+      "cap_w": 400,
+      "repeats": 3,
+      "label": "MEASURED",
+      "j_per_req_stock": [
+        0.1687162162162162,
+        0.1687162162162162,
+        0.1687162162162162
+      ],
+      "j_per_req_cap": [
+        0.12000000000000001,
+        0.12000000000000001,
+        0.12000000000000001
+      ],
+      "energy_change_pct": {
+        "per_pair": [
+          -28.874649579495387,
+          -28.874649579495387,
+          -28.874649579495387
+        ],
+        "mean": -28.874649579495387,
+        "sd": 0.0,
+        "ci95_half": 0.0
+      },
+      "p99_change_pct": {
+        "per_pair": [
+          8.65384615384616,
+          8.65384615384616,
+          8.65384615384616
+        ],
+        "mean": 8.65384615384616,
+        "sd": 0.0
+      },
+      "p50_change_pct": {
+        "per_pair": [
+          8.823529411764714,
+          8.823529411764714,
+          8.823529411764714
+        ],
+        "mean": 8.823529411764714
+      },
+      "j_per_token_change_pct": {
+        "mean": -28.874649579495383
+      },
+      "stock_noise": {
+        "label": "MEASURED",
+        "blocks": 3,
+        "cv_pct": 0.0
+      },
+      "p99_s": {
+        "stock": 1.04,
+        "cap": 1.1300000000000001
+      },
+      "quality": {
+        "stock_pct": 100.0,
+        "cap_pct": 100.0,
+        "checked": 666,
+        "passed": true,
+        "reason": "pass rate 100.0% vs 100.0%"
+      },
+      "mean_w": {
+        "stock": 473.7142947699029,
+        "cap": 336.5684921321362
+      },
+      "max_temp_c": 66,
+      "max_temp_c_by_arm": {
+        "stock": 66,
+        "cap": 60
+      },
+      "errors": 0,
+      "accepted": true,
+      "why_not": [],
+      "clock_requested": "base",
+      "clock_applied": true,
+      "clock_profile": "base",
+      "chosen_by": "muse-spark",
+      "planner_reason": "500 W passed with energy down; push lower"
+    },
+    {
+      "cap_w": 300,
+      "repeats": 3,
+      "label": "MEASURED",
+      "j_per_req_stock": [
+        0.1687162162162162,
+        0.1687162162162162,
+        0.1687162162162162
+      ],
+      "j_per_req_cap": [
+        0.09,
+        0.09,
+        0.09
+      ],
+      "energy_change_pct": {
+        "per_pair": [
+          -46.655987184621544,
+          -46.655987184621544,
+          -46.655987184621544
+        ],
+        "mean": -46.655987184621544,
+        "sd": 0.0,
+        "ci95_half": 0.0
+      },
+      "p99_change_pct": {
+        "per_pair": [
+          48.07692307692307,
+          48.07692307692307,
+          48.07692307692307
+        ],
+        "mean": 48.07692307692307,
+        "sd": 0.0
+      },
+      "p50_change_pct": {
+        "per_pair": [
+          49.01960784313725,
+          49.01960784313725,
+          49.01960784313725
+        ],
+        "mean": 49.01960784313726
+      },
+      "j_per_token_change_pct": {
+        "mean": -46.655987184621544
+      },
+      "stock_noise": {
+        "label": "MEASURED",
+        "blocks": 3,
+        "cv_pct": 0.0
+      },
+      "p99_s": {
+        "stock": 1.04,
+        "cap": 1.54
+      },
+      "quality": {
+        "stock_pct": 100.0,
+        "cap_pct": 100.0,
+        "checked": 666,
+        "passed": true,
+        "reason": "pass rate 100.0% vs 100.0%"
+      },
+      "mean_w": {
+        "stock": 472.4151740593348,
+        "cap": 254.0252772580268
+      },
+      "max_temp_c": 66,
+      "max_temp_c_by_arm": {
+        "stock": 66,
+        "cap": 56
+      },
+      "errors": 0,
+      "accepted": false,
+      "why_not": [
+        "p99 up 48.1% (limit 10%)"
+      ],
+      "clock_requested": "base",
+      "clock_applied": true,
+      "clock_profile": "base",
+      "chosen_by": "muse-spark",
+      "planner_reason": "400 W passed; probe the floor"
+    }
+  ],
+  "best_cap_w": 400,
+  "planner": {
+    "name": "muse-spark",
+    "model": "muse-spark-1.3",
+    "partner": "meta",
+    "tier": "standard"
+  },
+  "adaptive_topk": null,
+  "room": {
+    "slot": "R03",
+    "labels": {
+      "rack_count": "MEASURED",
+      "rack_outline": "MEASURED",
+      "rack_to_gpu_map": "SIMULATED",
+      "thermal_frame": "SIMULATED",
+      "rack_temp_c": "SIMULATED",
+      "gpu_power_w": "REPLAY",
+      "gpu_temp_c": "SIMULATED",
+      "decision": "ADVICE",
+      "after": "SIMULATED",
+      "load_factors": "SIMULATED",
+      "example_racks": "SIMULATED",
+      "h100_gpu_power_w": "MEASURED",
+      "h100_slot_power_w": "MOCK",
+      "h100_slot_temp_c": "MOCK",
+      "h100_slot_temp_note": "GPU die sensor (NVML), not a camera surface reading",
+      "h100_slot_decision": "MOCK"
+    },
+    "slot_before": {
+      "temp_c": 66,
+      "power_w": 473.7
+    },
+    "slot_after": {
+      "temp_c": 60,
+      "power_w": 336.6
+    },
+    "sam": {
+      "model": "sam-3.1",
+      "prompt": "server rack",
+      "racks_found": 11
+    }
+  },
+  "events": {
+    "file": "events.jsonl",
+    "n_events_so_far": 367,
+    "sha256_so_far": "fbf50d26e148de2dd0c65e9c544ff0622e03200ffc265425aa58d00ed566d891"
+  },
+  "manifest_sha256": "3bde12f78a5796aa2beb79f0d2bc186448dcb67cec561edc9a580498927c81f5",
+  "results_sha256": "ed7c9707f10132973bce166a00e1b51a05e83c341f719ce6306b7729e4808d49",
+  "guardrail": {
+    "spec": "wattnot.guardrail-ops/1",
+    "config": {
+      "format": "wattnot.guardrail/1",
+      "low_cap_drop_pct": 15,
+      "high_below_tdp_pct": 70,
+      "max_gpus_auto": 1,
+      "approval_timeout_s": 600,
+      "tiers": {
+        "muse-spark": "standard",
+        "bisect": "standard",
+        "muse-spark-open": "strict",
+        "modal-open": "strict"
+      }
+    },
+    "auto_approve": false,
+    "approval_policy": {
+      "format": "wattnot.auto-approve/1",
+      "enabled": true,
+      "allowed_labels": [
+        "MEASURED"
+      ],
+      "kinds": {
+        "power_cap": {
+          "min_saving_pct": 3.0,
+          "max_p99_increase_pct": 10.0,
+          "max_cap_drop_pct": 45.0
+        }
+      },
+      "max_per_day": 3,
+      "set_by": "Akash K Raju",
+      "set_at": "2026-10-30T14:19:31Z",
+      "sha256": "90ea3d4c68490b1d6633ff7d8c387c284f348654ecf1bf910ffaf72d573b9964",
+      "operator_line": "approved by policy, set by operator Akash K Raju at 2026-10-30T14:19:31Z"
+    },
+    "ops": [
+      {
+        "op": "reject",
+        "change_id": "prop_20261030_142059_65e05abf",
+        "by": "system:timeout",
+        "via": "system",
+        "at": "2026-10-30T14:21:02Z",
+        "note": "",
+        "risk": "high",
+        "planner": {
+          "name": "muse-spark",
+          "model": "muse-spark-1.3",
+          "partner": "meta",
+          "tier": "standard"
+        },
+        "partner": {
+          "id": "policy",
+          "name": "Auto policy"
+        },
+        "proposed_by": {
+          "id": "meta",
+          "name": "Meta"
+        }
+      }
+    ],
+    "audit_chain_ok": true,
+    "audit_head_sha256": "e3b4b627e296f2ac2ff0c199eaf72554c01f4e7c5e4f42ff1d0001b085f5db02",
+    "source": "MOCK"
+  },
+  "integrity": {
+    "sha256": "e5727ebf8449cc46641dab13f1f7c1856a8d9ffd9342c33611a744298fdc6c85",
+    "signer": "offline:5fc87417374a144a",
+    "rekor": null
+  }
+}

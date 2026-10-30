@@ -47,6 +47,16 @@ class Policy:
     allowed_labels: tuple[str, ...] = ("MEASURED",)
     kinds: Mapping[str, Mapping[str, float]] = field(default_factory=dict)
     max_per_day: int | None = None
+    # who set the policy and when (ISO 8601 UTC). The live H100 sweep refuses a policy
+    # without both, so an unattended approval always names the person who authorised it.
+    set_by: str | None = None
+    set_at: str | None = None
+
+    def operator_line(self) -> str:
+        """'approved by policy, set by operator <who> at <when>' — the words a policy
+        approval carries in the audit trail, the receipt and the UI."""
+        return (f"approved by policy, set by operator {self.set_by or 'unknown'} "
+                f"at {self.set_at or 'unknown time'}")
 
     @staticmethod
     def off() -> Policy:
@@ -80,14 +90,22 @@ class Policy:
         cap = d.get("max_per_day")
         if cap is not None and (not isinstance(cap, int) or cap < 1):
             raise PolicyError("max_per_day must be a whole number >= 1")
+        set_by, set_at = d.get("set_by"), d.get("set_at")
+        for k, v in (("set_by", set_by), ("set_at", set_at)):
+            if v is not None and (not isinstance(v, str) or not v.strip()):
+                raise PolicyError(f"{k} must be a non-empty string")
+        if set_at is not None:
+            m.parse_iso(set_at)  # raises on a malformed time
         return Policy(bool(d.get("enabled", False)), labels,
-                      {k: dict(v) for k, v in kinds.items()}, cap)
+                      {k: dict(v) for k, v in kinds.items()}, cap, set_by, set_at)
 
     def to_dict(self) -> dict:
         return {"format": FORMAT, "enabled": self.enabled,
                 "allowed_labels": list(self.allowed_labels),
                 "kinds": {k: dict(v) for k, v in self.kinds.items()},
-                **({"max_per_day": self.max_per_day} if self.max_per_day else {})}
+                **({"max_per_day": self.max_per_day} if self.max_per_day else {}),
+                **({"set_by": self.set_by} if self.set_by else {}),
+                **({"set_at": self.set_at} if self.set_at else {})}
 
     def sha256(self) -> str:
         return m.sha256_hex(m.canon(self.to_dict()))

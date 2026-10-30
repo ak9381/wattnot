@@ -11,8 +11,8 @@ Meta API call. This guard enforces it before any VM time is spent.
 It fails (exit 3) if, on the LIVE path:
 
 * a block's live command carries a mock switch: ``--fake``, ``--dry-run``, ``--sam replay`` /
-  ``replay``, ``--auto-approve-as-proof``, ``--mock`` (plain ``--auto-approve`` is allowed: it is
-  logged as a flag, not claimed as a human proof);
+  ``replay``, ``--auto-approve-as-proof``, ``--mock``; a live sweep with ``--auto-approve`` (it must use
+  ``--approval-policy``, set by a named operator, so the receipt says who authorised it);
 * the eye-test / hotspot images are still placeholders (manifest ``source`` is placeholder /
   offline / synthetic / simulated / stub, or an image file is missing);
 * a spoken-answer WAV is a stub (< 10 KB, or the manifest ``source`` is a stub / placeholder);
@@ -60,6 +60,9 @@ def _banned_tokens(argv: list[str]) -> list[str]:
             and argv[argv.index("--mode") + 1:argv.index("--mode") + 2] == ["live"]:
         if not any(argv[i] == "--sam" and argv[i + 1:i + 2] == ["live"] for i in range(len(argv))):
             hits.append("--sam replay (default)")
+        # an approval must come from a person or an operator-set policy, never a bare flag
+        if "--auto-approve" in argv:
+            hits.append("--auto-approve (use --approval-policy: an operator-set policy)")
     for i, tok in enumerate(argv):
         low = tok.lower()
         if low in BANNED_FLAGS or any(low.startswith(f + "=") for f in BANNED_FLAGS):

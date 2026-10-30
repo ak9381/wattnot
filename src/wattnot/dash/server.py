@@ -293,6 +293,7 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
             "undo_available": p["status"] == "applied" and p.get("kind") in approvals.appliers,
             "content_sha256": p.get("content_sha256"),
             "planner": (p.get("source") or {}).get("planner"),
+            "evidence": (p.get("receipt_preview") or {}).get("evidence"),
         }
 
     def _err(code: str, message: str, status: int) -> JSONResponse:

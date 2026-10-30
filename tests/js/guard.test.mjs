@@ -328,3 +328,22 @@ test("product.js maps the approve step and mounts the guard panel", () => {
   assert.match(src, /proposal\.created/);
   assert.match(src, /destroyRun\(\)[^}]*guard\?\.stop/);
 });
+
+test("an operator-set policy approval names the operator and the time, never a person's click", async () => {
+  const { decidedLine } = await import("../../web/dash/guard.js");
+  const line = decidedLine({ decision: { by: "auto-policy:90ea3d4c6849", via: "auto-policy",
+    note: "approved by policy, set by operator Akash K Raju at 2026-10-30T14:19:31Z; every threshold held" } });
+  assert.equal(line, "approved by policy, set by operator Akash K Raju at 2026-10-30T14:19:31Z");
+  assert.match(decidedLine({ decision: { by: "auto-policy:abc", note: "every threshold held" } }), /no operator named/);
+});
+
+test("a pending card shows the measured evidence with its label", async () => {
+  const { pendingCard } = await import("../../web/dash/guard.js");
+  const html = pendingCard({ id: "p1", title: "Cap GPU 0 at 400 W", change: { before: { power_cap_w: 700 }, after: { power_cap_w: 400 } },
+    risk: { level: "high", reasons: [] }, label: "MEASURED",
+    evidence: { label: "MEASURED", rounds: 3, energy_change_pct: { mean: -21.3, ci95_half: 1.2 }, p99_change_pct_mean: 4.1,
+      answers_checked: 666, welch_per_block: { p_value: 0.0012 } } });
+  assert.match(html, /Evidence: energy -21\.3% per request \(±1\.2, 3 rounds\)/);
+  assert.match(html, /Welch p=0\.0012 \(per block\)/);
+  assert.match(html, /pill MEASURED/);
+});

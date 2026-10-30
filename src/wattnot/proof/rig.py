@@ -112,6 +112,11 @@ class Rig:
             stop.set()
             th.join(timeout=2)
         joules, wall = (e1 - e0) / 1000.0, t1 - t0
+        if e1 <= e0:
+            # NVML's counter is mJ since driver load (64-bit: no wrap in practice). Going
+            # backwards means the driver reset mid-block; never record that as a reading.
+            raise RuntimeError(f"NVML energy counter did not advance ({e0} -> {e1} mJ): "
+                               "driver reset or a stuck counter; refusing to record this block")
         self._ph("metered", "end", requests=len(replies), joules=joules, wall_s=wall,
                  p50_s=percentile([r.latency_s for r in replies], 50),
                  p99_s=percentile([r.latency_s for r in replies], 99),

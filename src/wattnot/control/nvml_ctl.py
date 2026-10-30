@@ -28,11 +28,15 @@ class CapGuard:
         self.saved_mw: int | None = None
         self._handle_sigterm = handle_sigterm
         self._old_handler = None
+        self._old_hup = None
 
     def __enter__(self) -> CapGuard:
         self.saved_mw = int(self.nvml.power_limit_mw(self.handle))
         if self._handle_sigterm and threading.current_thread() is threading.main_thread():
             self._old_handler = signal.signal(signal.SIGTERM, self._on_term)
+            # an SSH link drop sends SIGHUP: restore the cap then too
+            if hasattr(signal, "SIGHUP"):
+                self._old_hup = signal.signal(signal.SIGHUP, self._on_term)
         return self
 
     def __exit__(self, *exc: object) -> None:
@@ -42,6 +46,9 @@ class CapGuard:
             if self._old_handler is not None:
                 signal.signal(signal.SIGTERM, self._old_handler)
                 self._old_handler = None
+            if self._old_hup is not None:
+                signal.signal(signal.SIGHUP, self._old_hup)
+                self._old_hup = None
 
     def _on_term(self, signum, frame) -> None:
         self.restore()

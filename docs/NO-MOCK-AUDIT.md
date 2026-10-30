@@ -59,3 +59,18 @@ preflight passes.
 | 12 | `t2-fp8` | The block ran the harness with the FP8 config but never restarted the server, so it would have measured BF16 and labelled it FP8 (`serve_args` in `harness.py` is not used to start a server). | FIXED: the live command restarts Glimmer with `glimmer_serve.sh fp8` first. A test asserts it. |
 | 13 | `t1-sweep` | `orchestrate --sam` defaults to `replay`, so a live sweep replayed saved SAM masks without saying so. The guard only caught an explicit `--sam replay`. | FIXED: the live sweep passes `--sam live`; the guard now flags a live orchestrate run that does not ask for live SAM. |
 | 14 | Guard | A mock switch inside a `bash -c "..."` string was not seen. | FIXED: the guard splits shell strings before checking. |
+
+## Third pass (2026-10-30, night)
+
+| # | Area | Finding | Fix |
+|---|------|---------|-----|
+| 15 | Approvals | The live sweep approved the kept cap with `--auto-approve` (a flag, no person, no policy). | FIXED: `--approval-policy` (operator-set, names who and when); the change shows pending first; the guard flags `--auto-approve` on a live sweep; launch refuses without the policy. |
+| 16 | EU report | `wattnot report eu` could not read the sweep's receipt. | FIXED: adapter for `proof-receipt/1`, hash-checked; block `t1-eu`. |
+| 17 | Quick profile | No warm-up seconds, no burn-in block, stock always first. | FIXED for the H100 test: `--warmup-s 10 --burn-in 1 --counterbalance`. |
+| 18 | Stock errors | An errored request on the stock arm graded as a wrong answer and could flatter the cap. | FIXED: any request error in either arm blocks acceptance. |
+| 19 | Energy counter | A driver reset mid-block (counter going backwards) would have recorded negative joules. | FIXED: the block is refused. |
+| 20 | Cap restore | SIGTERM restored the stock cap, SIGHUP (SSH drop) did not. | FIXED: SIGHUP too. |
+| 21 | Served config | Model and FP8 were not verified from the server. | FIXED: `glimmer_serve.sh` checks `/v1/models` and the engine's quantization line, exits on mismatch. |
+| 22 | Balance | The driver assumed Rs 10,000 when the balance API failed. | FIXED: keeps the last real reading (ctl.py's watchdog checks too). |
+| 23 | Welch | The proof sweep accepts on a paired t CI of per-block J/request; it did not run Welch. | FIXED: each step now records Welch on per-block J/request (n = blocks, said so); per-request energy is not measurable from the counter under concurrency. |
+| -- | Room view | Per-GPU power in the room scan is REPLAY of RUN1 and the thermal frame SIMULATED, even live (one GPU, a room of racks). | NOT FIXED: labelled REPLAY / SIMULATED in the receipt and the UI; must never be called measured. |

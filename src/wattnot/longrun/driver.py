@@ -224,7 +224,9 @@ def plan_glimmer_test(out: Path) -> list[Block]:
                      "--key", "{KEY}", "--model", GLIMMER_MODEL, "--out", str(out / "runs" / "t1-sweep"),
                      "--profile", "quick", "--planner", "wonder", "--no-adaptive",
                      "--sweep-budget-s", "1900", "--sign-key", "receipt-offline-key.pem",
-                     "--sam", "live", "--auto-approve", "--live-file", str(live_file))
+                     "--sam", "live", "--warmup-s", "10", "--burn-in", "1", "--counterbalance",
+                     "--approval-policy", APPROVAL_POLICY, "--policy-hold-s", "20",
+                     "--live-file", str(live_file))
     sweep_dir = out / "runs" / "t1-sweep"
     py = shlex.quote(sys.executable)
     wonder_live = ["bash", "-c",
@@ -232,6 +234,9 @@ def plan_glimmer_test(out: Path) -> list[Block]:
                    f"{py} -m wattnot.wonderchart.run --live --sweep "
                    f"{shlex.quote(str(sweep_dir / 'sweep_trials.json'))} "
                    f"--out {shlex.quote(str(sweep_dir / 'wonder'))}"]
+    eu_out = sweep_dir / "eu" / "eu-2024-1364"
+    eu_cmd = (f"{py} -m wattnot.cli report eu --receipts {shlex.quote(str(sweep_dir))}/proof-*.json "
+              f"--out {shlex.quote(str(eu_out))}")
     fp8_live = ["bash", "-c", "bash scripts/glimmer_serve.sh fp8 && "
                 + " ".join(shlex.quote(a) for a in tiers_live("t2-fp8", "muse-glimmer-30b-fp8"))]
 
@@ -247,6 +252,10 @@ def plan_glimmer_test(out: Path) -> list[Block]:
               "(control box, paid API, cents)", _m(2),
               _py("wattnot.wonderchart.run", "--fake", "--out", str(sweep_dir / "wonder")),
               live=wonder_live, depends_on=("t1-sweep",)),
+        Block("t1-eu", "EU 2024/1364 field export from the signed sweep receipt (control box, "
+              "no GPU time; checks the receipt's SHA-256 first)", _m(1),
+              ["bash", "-c", eu_cmd],
+              live=["bash", "-c", eu_cmd], depends_on=("t1-sweep",)),
         Block("t1-resume", "Forced-SSH-drop resume test: a short BF16 workload the driver re-runs "
               "after the link drops mid-block", _m(5), tiers_dry("t1-resume", "muse-glimmer-30b"),
               live=tiers_live("t1-resume", "muse-glimmer-30b"), host=True),
@@ -672,21 +681,37 @@ def live_run(out: Path, *, host: str, key: str = "~/.ssh/e2e_h100", model: str =
             print(f"  - {f['where']}: {f['what']}", file=sys.stderr)
         return {"stopped": "no-mock preflight failed", "nomock": report, "blocks": {}}
 
+    if model == "glimmer-test":
+        why = approval_policy_problem(Path(APPROVAL_POLICY))
+        if why:
+            print(f"APPROVAL POLICY: {why}; refusing to start (set it with: wattnot proposals "
+                  f"--dir /tmp policy set --by <your name> --file {APPROVAL_POLICY})",
+                  file=sys.stderr)
+            return {"stopped": "approval policy missing", "blocks": {}}
     blocks = plan(out, model)
     vm = RemoteVm(host=host, key=key, out_dir=out / "pulled")
     hours = max_hours if max_hours is not None else (3.5 if model == "glimmer-test" else 18.0)
     run = _live_runner(out, host, key, vm)
 
+    last = {"inr": None}
+
     def balance_inr() -> float:
+        # an unreachable balance API keeps the last real reading (ctl.py's own watchdog also
+        # checks the balance); before any reading, the 24 h launch floor that ctl.py checked
         try:
-            return _ctl_balance()
-        except Exception:  # noqa: BLE001 - if the balance API is unreachable, assume healthy
-            return 10_000.0
+            last["inr"] = _ctl_balance()
+        except Exception as e:  # noqa: BLE001
+            print(f"[driver] balance check failed ({type(e).__name__}); using last reading "
+                  f"{last['inr']}", file=sys.stderr)
+        return last["inr"] if last["inr"] is not None else 9097.0
 
     d = Driver(out, blocks, vm, label="MEASURED", run=run, max_hours=hours,
                balance_inr=balance_inr, hours_used=lambda: (time.time() - d._launch_wall) / 3600.0,
                include_optional=include_optional, heartbeat_path=out / "heartbeat.json",
                watchdog_margin_h=WATCHDOG_MARGIN_H if model == "glimmer-test" else 0.0)
+    # anchor the clock to the VM's real launch (ctl.py's vm.json), so the driver's deadline is never
+    # later than the off-box watchdog's; only ever moves it earlier
+    d._launch_wall = min(d._launch_wall, vm_launch_wall(VM_RECORD) or d._launch_wall)
     try:
         return d.go()
     except BaseException:
@@ -694,6 +719,38 @@ def live_run(out: Path, *, host: str, key: str = "~/.ssh/e2e_h100", model: str =
         if not vm.deleted:
             d._teardown(why="driver crashed", finished=True)
         raise
+
+
+VM_RECORD = Path("/workspace/hackathon/e2e-glimmer-test/vm.json")   # written by scripts/e2e/ctl.py
+
+
+def vm_launch_wall(path: Path) -> float | None:
+    """Epoch seconds of the VM launch from ctl.py's record (local naive ISO), else None (logged)."""
+    try:
+        import datetime as _dt
+        return _dt.datetime.fromisoformat(json.loads(path.read_text())["launch_ts"]).timestamp()
+    except Exception as e:  # noqa: BLE001
+        print(f"[driver] no VM launch time from {path} ({type(e).__name__}); clock starts now",
+              file=sys.stderr)
+        return None
+
+
+# set by the operator before launch (wattnot proposals policy set --by NAME), never by the plan
+APPROVAL_POLICY = str(Path(__file__).resolve().parents[3] / "approval-policy.json")
+
+
+def approval_policy_problem(path: Path) -> str | None:
+    """None if `path` is an enabled approval policy naming who set it and when."""
+    from wattnot.approvals import policy as pol
+    if not path.is_file():
+        return f"{path} not found"
+    try:
+        p = pol.Policy.from_dict(json.loads(path.read_text(encoding="utf-8")))
+    except Exception as e:  # noqa: BLE001
+        return f"{path} is not a valid policy ({e})"
+    if not (p.enabled and p.set_by and p.set_at):
+        return f"{path} must be enabled and name set_by and set_at"
+    return None
 
 
 def _ctl_balance() -> float:
@@ -737,8 +794,10 @@ def main(argv=None) -> int:
             print(f"{k:18} {v.get('status', '?'):8} rc={v.get('rc', '-')} "
                   f"{v.get('wall_s', '')}s {v.get('why', v.get('teardown', ''))}")
         print("stopped:", st.get("stopped"))
-        return 0 if all(v.get("status") in ("done", "skipped", "dropped")
-                        for v in st.get("blocks", {}).values()) else 1
+        # an early stop (money rule, VM dead) is not a success even if every block that ran passed
+        return 0 if str(st.get("stopped", "")).startswith("finished") and all(
+            v.get("status") in ("done", "skipped", "dropped")
+            for v in st.get("blocks", {}).values()) else 1
 
     drop = {}
     if a.drop_link:

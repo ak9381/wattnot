@@ -42,3 +42,4 @@ results/
 *.pem
 !verifier/samples/test-key.pem
 site/
+approval-policy.json

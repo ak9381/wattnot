@@ -18,7 +18,11 @@ def trials_from(results: dict) -> list[dict]:
     for s in results.get("steps") or []:
         j = s.get("j_per_req_cap") or []
         q = ((s.get("quality") or {}).get("cap_pct"))
-        if not j or not q:
+        if not j or q is None:
+            continue
+        if q == 0:   # the chart cannot plot an unbounded J/correct (it would draw at 0 = best)
+            print(f"[trials] cap {s['cap_w']} W: 0% graded pass rate, J/correct unbounded; "
+                  "left off the chart, see the sweep receipt", file=sys.stderr)
             continue
         mean_j = sum(j) / len(j)
         out.append({"cap_w": s["cap_w"], "clock_profile": s.get("clock_profile") or "base",

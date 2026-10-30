@@ -35,7 +35,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from wattnot.approvals.appliers import CallbackApplier
-from wattnot.approvals.guard import Guard
+from wattnot.approvals.guard import PENDING_POLICY, Guard
 from wattnot.approvals.risk import RiskConfig, tier_for
 from wattnot.approvals.risk import load_config as load_guard_config
 from wattnot.approvals.service import Approvals
@@ -150,7 +150,30 @@ def _make_guard(a, out: Path) -> Guard:
     else:
         cfg = load_guard_config(root)
     auto_by = "orchestrate" if getattr(a, "auto_approve", False) else None
+    pol_path = getattr(a, "approval_policy", None)
+    if pol_path is not None:
+        install_policy(Path(pol_path), root)
+        if auto_by:
+            raise SystemExit("--approval-policy and --auto-approve together: pick one")
     return Guard(Approvals(root), cfg, auto_approve_by=auto_by)
+
+
+def install_policy(src: Path, root: Path) -> None:
+    """Put an operator-set approval policy into the run's approvals folder, unchanged.
+    Refuses a policy that is off or does not say who set it and when."""
+    from wattnot.approvals import policy as pol
+    raw = src.read_text(encoding="utf-8")
+    p = pol.Policy.from_dict(json.loads(raw))
+    if not (p.enabled and p.set_by and p.set_at):
+        raise SystemExit(f"{src}: an approval policy must be enabled and name set_by and "
+                         "set_at (use: wattnot proposals policy set --by <name>)")
+    root.mkdir(parents=True, exist_ok=True)
+    dest = root / "policy.json"
+    if dest.exists():
+        if pol.Policy.from_dict(json.loads(dest.read_text(encoding="utf-8"))).sha256() != p.sha256():
+            raise SystemExit(f"{dest} holds a different policy; not replacing it")
+        return
+    dest.write_text(raw, encoding="utf-8")
 
 
 def workload_sha() -> str | None:
@@ -660,7 +683,19 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                                 f"({saving:.1f}% less energy per request)."),
                     "change": {"gpu": 0, "gpus": [0],
                                "before": {"power_cap_w": stock_w},
-                               "after": {"power_cap_w": cap_w}},
+                               "after": {"power_cap_w": cap_w},
+                               "drop_pct": round((stock_w - cap_w) / stock_w * 100, 2)},
+                    "receipt_preview": {"evidence": {
+                        "label": label,
+                        "rounds": best.get("repeats"),
+                        "j_per_req_stock": best.get("j_per_req_stock"),
+                        "j_per_req_cap": best.get("j_per_req_cap"),
+                        "energy_change_pct": best["energy_change_pct"],
+                        "p99_change_pct_mean": best["p99_change_pct"]["mean"],
+                        "answers_checked": best["quality"].get("checked"),
+                        "stock_noise_cv_pct": (best.get("stock_noise") or {}).get("cv_pct"),
+                        "welch_per_block": best.get("welch_per_block"),
+                    }},
                     "savings": [{"metric": "energy per request", "value": round(saving, 2),
                                  "unit": "%", "label": label}],
                     "checks": {
@@ -718,7 +753,17 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                 ) as st:
                     st.tag = label
                     t0 = time.time()
-                    if route.startswith("pending"):
+                    if route == PENDING_POLICY:
+                        # pending first, for everyone to see; a person can still approve or
+                        # reject in this window. Then the operator-set policy decides.
+                        hold_end = time.time() + max(0.0, a.policy_hold_s)
+                        while (time.time() < hold_end
+                               and guard.approvals.store.get(chg)["status"] == "pending"):
+                            time.sleep(0.2)
+                        if guard.approvals.store.get(chg)["status"] == "pending":
+                            guard.decide_by_policy(chg)
+                        decision = guard.wait(chg, timeout_s=a.approval_timeout_s, poll_s=0.2)
+                    elif route.startswith("pending"):
                         decision = guard.wait(chg, timeout_s=a.approval_timeout_s,
                                               poll_s=0.2)
                     else:
@@ -733,6 +778,11 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                     st.add("approved via", dec.get("via"), "")
                     st.outputs = (f"{decision} by {dec.get('by') or '?'} "
                                   f"after {waited:.1f} s")
+                    live.sink({"type": "proposal.decided",
+                               "data": {"change_id": chg, "status": decision,
+                                        "by": dec.get("by"), "via": dec.get("via"),
+                                        "note": dec.get("note"), "route": route},
+                               "step_id": "approve.decide", "parent_step_id": "approve"})
                 ap.tag = label
                 ap.outputs = f"{risk.level} risk: {decision}"
                 ap.add("risk level", risk.level, "", "ADVICE")
@@ -1246,6 +1296,13 @@ def main(argv=None) -> int:
     ap.add_argument("--auto-approve", action="store_true",
                     help="approve the kept change without waiting for an operator; "
                          "logged as auto-approve-flag, not a person's decision")
+    ap.add_argument("--approval-policy", type=Path, default=None,
+                    help="an operator-set policy (wattnot proposals policy set --by NAME): the "
+                         "change is filed PENDING, then approved only if the policy's thresholds "
+                         "hold; the receipt records who set it and when")
+    ap.add_argument("--policy-hold-s", type=float, default=20.0,
+                    help="seconds the change stays pending (visible, a person may decide) "
+                         "before the policy decides")
     ap.add_argument("--approvals-dir", type=Path, default=None,
                     help="folder for guardrail proposals (default: <out>/approvals)")
     ap.add_argument("--approval-timeout-s", type=float, default=600,

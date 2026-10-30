@@ -88,9 +88,13 @@ class Approvals:
             ok, why = policy.evaluate(p, approved_today=today)
             if not ok:
                 return p
+            note = "; ".join(why)
+            extra = {"policy_sha256": policy.sha256()}
+            if policy.set_by:
+                note = f"{policy.operator_line()}; {note}"
+                extra.update(policy_set_by=policy.set_by, policy_set_at=policy.set_at)
             return self._decide(p, m.APPROVED, by=f"auto-policy:{policy.sha256()[:12]}",
-                                via=AUTO, note="; ".join(why),
-                                extra={"policy_sha256": policy.sha256()})
+                                via=AUTO, note=note, extra=extra)
 
     def _auto_approved_since(self, since: float) -> int:
         return sum(1 for e in self.store.audit_entries()

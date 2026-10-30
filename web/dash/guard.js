@@ -51,6 +51,19 @@ export function plannerLine(planner) {
 const labelPill = (label) =>
   label ? `<span class="pill ${esc(label)}">${esc(label)}</span>` : "";
 
+// The measured evidence a proposal carries (from the sweep), as one line with its label.
+export function evidenceLine(ev) {
+  if (!ev || typeof ev !== "object") return "";
+  const e = ev.energy_change_pct || {};
+  const f = (v, d = 1) => (typeof v === "number" && Number.isFinite(v) ? v.toFixed(d) : "–");
+  const parts = [`energy ${f(e.mean)}% per request (±${f(e.ci95_half)}, ${esc(String(ev.rounds ?? "–"))} rounds)`,
+    `p99 ${f(ev.p99_change_pct_mean)}%`];
+  if (ev.answers_checked != null) parts.push(`${esc(String(ev.answers_checked))} answers graded`);
+  const w = ev.welch_per_block;
+  if (w && typeof w.p_value === "number") parts.push(`Welch p=${w.p_value.toPrecision(2)} (per block)`);
+  return `<p class="gev">Evidence: ${parts.join(" · ")} ${labelPill(ev.label)}</p>`;
+}
+
 // One pending change: what it is, the risk with reasons, Approve / Reject.
 export function pendingCard(item) {
   const risk = item.risk || {};
@@ -60,6 +73,7 @@ export function pendingCard(item) {
     + (item.summary ? `<p class="gsum">${esc(item.summary)}</p>` : "")
     + plannerLine(item.planner)
     + `<p class="gchg">${changeText(item.change)}</p>`
+    + evidenceLine(item.evidence)
     + `<p>${riskTag(risk.level)} ${labelPill(item.label)}</p>`
     + (reasons.length ? `<ul class="grsn">${reasons.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>` : "")
     + `<p class="gcd" data-left="${item.seconds_left == null ? "" : esc(String(item.seconds_left))}">${esc(leftText(item.seconds_left))}</p>`
@@ -76,6 +90,12 @@ export const decidedLine = (item) => {
   const by = d.by || "";
   if (typeof by === "string" && by.startsWith("auto-approve-flag:")) return "auto-approved by the --auto-approve flag";
   if (by === "guardrail:low-risk") return "low risk, auto-applied";
+  if (typeof by === "string" && by.startsWith("auto-policy:")) {
+    // the policy's own words from the audit trail: "approved by policy, set by operator X at T"
+    const note = typeof d.note === "string" ? d.note : "";
+    const m = note.match(/^approved by policy, set by operator [^;]+/);
+    return m ? esc(m[0]) : "approved by an auto-approve policy (no operator named)";
+  }
   if (by) return `approved by ${esc(by)}${d.via ? ` <span class="muted">via ${esc(d.via)}</span>` : ""}`;
   return "applied";
 };
