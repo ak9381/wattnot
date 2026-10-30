@@ -104,6 +104,10 @@ class Guard:
         fails it stays pending (a person may still decide, or it times out = reject)."""
         return self.approvals.auto_approve(pid)
 
+    def decline_by_policy(self, pid: str) -> dict:
+        """After the hold: a change the policy does not allow is rejected now, with its reasons."""
+        return self.approvals.decline_by_policy(pid)
+
     # ---- waiting
     def wait(self, pid: str, timeout_s: float | None = None, poll_s: float = 0.5,
              sleep: Callable[[float], None] = time.sleep) -> str:

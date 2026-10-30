@@ -75,7 +75,7 @@ def _real(out: Path, o) -> dict:  # pragma: no cover - needs a GPU and vLLM
                 guard.__exit__(None, None, None)
             m1 = _metrics(url)
             return {"j_per_req": b.get("j_per_req"), "pass_pct": b.get("pass_pct"),
-                    "ttft_ms": b.get("ttft_ms"), "p99_ms": (b.get("p99_s") or 0) * 1000,
+                    "ttft_ms": PC.ttft_ms_from_metrics(m0, m1), "p99_ms": (b.get("p99_s") or 0) * 1000,
                     "cache_hit_rate": PC.hit_rate_from_metrics(m0, m1)}
         finally:
             if srv is not None:

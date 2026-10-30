@@ -217,20 +217,27 @@ def plan_glimmer_test(out: Path) -> list[Block]:
         return _rpy("wattnot.spokenanswer.run", "--base-url", HOST_BASE_URL,
                     "--out", f"{REMOTE_RESULTS}/{tag}", "--budget-s", str(SPOKEN_TEST_BUDGET_S))
 
+    guard_cfg = str(Path(__file__).resolve().parents[3] / "examples/longrun/guardrails-wonder.json")
+    # the dry sweep takes the live approval path (operator policy + hold + Wonder guardrail tiers,
+    # warm-up, burn-in, counterbalance, signing), not --auto-approve: round 6 found two live-only
+    # bugs that --auto-approve hid. MOCK numbers can never pass a policy, so the dry run shows the
+    # decline -> reject -> roll back path; the live run differs only in mode, host, model, SAM.
     sweep_dry = _py("wattnot.proof.orchestrate", "--mode", "rehearsal", "--out",
                     str(out / "runs" / "t1-sweep"), "--profile", "quick", "--planner", "wonder",
-                    "--no-adaptive", "--auto-approve", "--fresh", "--live-file", str(live_file))
+                    "--no-adaptive", "--fresh", "--sign-key", "receipt-offline-key.pem",
+                    "--warmup-s", "10", "--burn-in", "1", "--counterbalance",
+                    "--approval-policy", str(out / DRY_POLICY_NAME), "--policy-hold-s", "2",
+                    "--guardrail-config", guard_cfg, "--live-file", str(live_file))
     sweep_live = _py("wattnot.proof.orchestrate", "--mode", "live", "--host", "{HOST}",
                      "--key", "{KEY}", "--model", GLIMMER_MODEL, "--out", str(out / "runs" / "t1-sweep"),
-                     "--profile", "quick", "--planner", "wonder", "--no-adaptive",
+                     "--profile", "quick", "--planner", "wonder", "--no-adaptive", "--fresh",
                      "--sweep-budget-s", "1900", "--sign-key", "receipt-offline-key.pem",
                      "--sam", "live", "--warmup-s", "10", "--burn-in", "1", "--counterbalance",
                      "--approval-policy", APPROVAL_POLICY, "--policy-hold-s", "20",
                      # muse-wonder must be a standard tier, or a 300-375 W cap (high risk) goes
                      # PENDING_STRICT, the operator policy is never consulted, and the sweep waits
                      # 600 s then rolls the measured cap back as "no approval"
-                     "--guardrail-config", str(Path(__file__).resolve().parents[3]
-                                               / "examples/longrun/guardrails-wonder.json"),
+                     "--guardrail-config", guard_cfg,
                      "--live-file", str(live_file))
     sweep_dir = out / "runs" / "t1-sweep"
     py = shlex.quote(sys.executable)
@@ -239,6 +246,8 @@ def plan_glimmer_test(out: Path) -> list[Block]:
                    f"{py} -m wattnot.wonderchart.run --live --sweep "
                    f"{shlex.quote(str(sweep_dir / 'sweep_trials.json'))} "
                    f"--out {shlex.quote(str(sweep_dir / 'wonder'))}"]
+    # dry: the same sweep_to_trials step on the dry sweep, then the offline chart (no paid API)
+    wonder_dry = ["bash", "-c", wonder_live[2].replace(" --live ", " --fake ")]
     eu_out = sweep_dir / "eu" / "eu-2024-1364"
     # proof-*.json also matches the proof-<id>.sigstore.json bundle, which is not a receipt
     # (export would KeyError and t1-eu would fail every run): pass the receipts only.
@@ -259,8 +268,7 @@ def plan_glimmer_test(out: Path) -> list[Block]:
               "(quick, 2 control blocks)", _m(35), sweep_dry, live=sweep_live),
         Block("t1-wonder", "Muse Wonder reads the measured sweep chart and names the next cap "
               "(control box, paid API, cents)", _m(2),
-              _py("wattnot.wonderchart.run", "--fake", "--out", str(sweep_dir / "wonder")),
-              live=wonder_live, depends_on=("t1-sweep",)),
+              wonder_dry, live=wonder_live, depends_on=("t1-sweep",)),
         Block("t1-eu", "EU 2024/1364 field export from the signed sweep receipt (control box, "
               "no GPU time; checks the receipt's SHA-256 first)", _m(1),
               ["bash", "-c", eu_cmd],
@@ -316,6 +324,8 @@ class FakeVm:
     deleted: bool = False
     pulls: int = 0
     log: list = field(default_factory=list)
+    mismatch: list = field(default_factory=list)   # scripted sha256 mismatches after a pull
+    copy_mismatched: list = field(default_factory=list)
 
     def arm(self, block_id: str) -> None:
         self.down = self.drop.pop(block_id, 0)  # each scripted drop happens once
@@ -333,7 +343,10 @@ class FakeVm:
 
     def pull(self) -> bool:
         self.pulls += 1
-        return self.alive()
+        ok = self.alive()
+        if ok:
+            self.copy_mismatched = list(self.mismatch)
+        return ok
 
     def delete(self) -> None:
         self.deleted = True
@@ -348,6 +361,7 @@ class RemoteVm:
     key: str = "~/.ssh/e2e_h100"
     out_dir: Path = Path("run3-pulled")
     _deleted: bool = False
+    copy_mismatched: list = field(default_factory=list)
 
     def alive(self) -> bool:
         try:
@@ -365,6 +379,17 @@ class RemoteVm:
     def pull(self) -> bool:
         rc = subprocess.run([sys.executable, str(RUN2_REMOTE), "pull", "--host", self.host,
                              "--key", self.key, "--out", str(self.out_dir)]).returncode
+        if rc == 0:
+            # a copy whose sha256 differs from the VM's is still a copy (the VM must still be
+            # deleted), but the run is flagged: see Driver._copy_verify
+            try:
+                v = json.loads((self.out_dir / "run2" / "pull-verify.json").read_text())
+                # a *.log the server is still appending to (vLLM keeps serving until delete)
+                # differs by design; any other file that differs is a bad copy of a result
+                self.copy_mismatched = [x for x in (v.get("mismatched") or [])
+                                        if not str(x).endswith(".log")]
+            except (OSError, ValueError):
+                self.copy_mismatched = ["pull-verify.json unreadable"]
         return rc == 0
 
     @property
@@ -476,6 +501,9 @@ class Driver:
         prev = self.state.get("last_receipt")
         body = {"format": "wattnot.block-receipt/1", "block": block_id, "label": self.label,
                 "files": files, "prev": prev}
+        bad = list(getattr(self.vm, "copy_mismatched", None) or [])
+        if bad:
+            body["copy_verify"] = {"status": "FLAGGED", "mismatched": bad}
         h = hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()
         (d / "receipt.json").write_text(json.dumps({**body, "sha256": h}, indent=1))
         self.state["last_receipt"] = h
@@ -552,7 +580,12 @@ class Driver:
                         return self.state
                 copied = self.vm.pull()
                 result["copied"] = copied
-                tiers = self.out / "runs" / b.id.split("-")[0] / "tiers_summary.json"
+                if copied and getattr(self.vm, "copy_mismatched", None):
+                    result["copy_verify"] = {"status": "FLAGGED",
+                                             "mismatched": list(self.vm.copy_mismatched)}
+                cands = [self.out / "runs" / b.id / "tiers_summary.json",
+                         self.out / "pulled" / "run2" / "results" / b.id / "tiers_summary.json"]
+                tiers = next((c for c in cands if c.exists()), cands[0])
                 if tiers.exists():   # the tier table goes into the block's recorded state
                     try:
                         result["tiers"] = json.loads(tiers.read_text())
@@ -576,14 +609,46 @@ class Driver:
         if not self.state["stopped"] and not getattr(self.vm, "deleted", False):
             d = self._teardown(why="end of plan", finished=True)
             self.state["stopped"] = "finished" if d.delete else "finished, VM kept (copy failed)"
+        bad = list(getattr(self.vm, "copy_mismatched", None) or [])
+        if bad:
+            # the final copy differs from the VM's sha256 after a retry: the VM is still deleted
+            # (billing stops), but the run is FLAGGED, never reported as a clean success
+            self.state["copy_verify"] = {"status": "FLAGGED", "mismatched": bad,
+                                         "note": "sha256 of the copy differs from the VM's"}
+            self._note(kind="copy-verify-flagged", mismatched=bad[:20])
+            if not str(self.state.get("stopped", "")).endswith("FLAGGED"):
+                self.state["stopped"] = f"{self.state.get('stopped')}; copy checksum FLAGGED"
+        else:
+            self.state["copy_verify"] = {"status": "OK"}
         self._save()
         return self.state
+
+
+DRY_POLICY_NAME = "dry-approval-policy.json"
+
+
+def write_dry_policy(out: Path) -> Path:
+    """The dry sweep's approval policy: a copy of the operator's policy when it is valid (so the
+    dry run checks the same thresholds), else a built-in one marked as set by the dry run."""
+    dst = out / DRY_POLICY_NAME
+    src = Path(APPROVAL_POLICY)
+    if src.is_file() and approval_policy_problem(src) is None:
+        dst.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+    else:
+        dst.write_text(json.dumps({
+            "format": "wattnot.auto-approve/1", "enabled": True, "allowed_labels": ["MEASURED"],
+            "kinds": {"power_cap": {"min_saving_pct": 3.0, "max_p99_increase_pct": 10.0,
+                                    "max_cap_drop_pct": 45.0}},
+            "max_per_day": 3, "set_by": "dry-run", "set_at": "1970-01-01T00:00:00Z"}, indent=1),
+            encoding="utf-8")
+    return dst
 
 
 def dry_run(out: Path, *, drop: dict | None = None, dead_after: str | None = None,
             include_optional=(), runner=None, timeout_s: float = 900, model: str = "llama",
             max_hours: float = 18.0) -> dict:  # the plan's watchdog hard cap
     out.mkdir(parents=True, exist_ok=True)
+    write_dry_policy(out)
     blocks = plan(out, model)
     sim = {"h": 0.0}
     env = dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[2]))
@@ -638,7 +703,9 @@ def _live_runner(out: Path, host: str, key: str, vm: RemoteVm, log=print):
                                    "--key", key, "--model", GLIMMER_MODEL, "--moe", "none"],
                                   timeout=budget_s).returncode
         if b.infra == "pull":
-            return 0 if vm.pull() else 1
+            if not vm.pull():
+                return 1
+            return 7 if vm.copy_mismatched else 0   # copied, but sha256 mismatch: block fails
         if b.live is None:
             return 0
         argv = fill(b.live)
@@ -701,6 +768,8 @@ def live_run(out: Path, *, host: str, key: str = "~/.ssh/e2e_h100", model: str =
                   f"--dir {POLICY_DIR}/proposals policy set --by <your name> --file {APPROVAL_POLICY})",
                   file=sys.stderr)
             return {"stopped": "approval policy missing", "blocks": {}}
+        for w in approval_policy_warnings(Path(APPROVAL_POLICY)):
+            print(f"APPROVAL POLICY WARNING: {w}", file=sys.stderr)
     blocks = plan(out, model)
     vm = RemoteVm(host=host, key=key, out_dir=out / "pulled")
     hours = max_hours if max_hours is not None else (3.5 if model == "glimmer-test" else 18.0)
@@ -768,6 +837,31 @@ def approval_policy_problem(path: Path) -> str | None:
     return None
 
 
+H100_STOCK_W = 700.0   # H100 SXM default power limit (the E2E H100 card)
+
+
+def approval_policy_warnings(path: Path, stock_w: float = H100_STOCK_W) -> list[str]:
+    """Non-fatal: say so when the policy would decline every cap the Wonder planner can propose
+    (300-375 W). Then each measured cap is rejected after the hold and rolled back: the sweep's
+    numbers are still recorded, but no change is ever applied by the policy."""
+    from wattnot.approvals import policy as pol
+    from wattnot.proof.wonder_planner import HI_W, LO_W
+    try:
+        p = pol.Policy.from_dict(json.loads(path.read_text(encoding="utf-8")))
+    except Exception:  # noqa: BLE001 - approval_policy_problem reports a bad file
+        return []
+    rules = p.kinds.get("power_cap") or {}
+    mx = rules.get("max_cap_drop_pct")
+    least = round((1 - HI_W / stock_w) * 100, 1)
+    most = round((1 - LO_W / stock_w) * 100, 1)
+    if isinstance(mx, int | float) and mx < least:
+        return [f"max_cap_drop_pct {mx:g}% is below every Wonder cap ({LO_W}-{HI_W} W on a "
+                f"{stock_w:g} W card = {least:g}-{most:g}% drop): the policy will decline each "
+                f"one after the hold and the cap is rolled back (numbers still recorded). "
+                f"Raise it to {int(most) + 1} to let the policy approve."]
+    return []
+
+
 def _ctl_balance() -> float:
     import importlib.util
     spec = importlib.util.spec_from_file_location("ctl", CTL)
@@ -809,7 +903,10 @@ def main(argv=None) -> int:
             print(f"{k:18} {v.get('status', '?'):8} rc={v.get('rc', '-')} "
                   f"{v.get('wall_s', '')}s {v.get('why', v.get('teardown', ''))}")
         print("stopped:", st.get("stopped"))
+        print("copy verify:", (st.get("copy_verify") or {}).get("status", "?"))
         # an early stop (money rule, VM dead) is not a success even if every block that ran passed
+        if (st.get("copy_verify") or {}).get("status") == "FLAGGED":
+            return 1
         return 0 if str(st.get("stopped", "")).startswith("finished") and all(
             v.get("status") in ("done", "skipped", "dropped")
             for v in st.get("blocks", {}).values()) else 1
@@ -826,6 +923,8 @@ def main(argv=None) -> int:
         print(f"{k:18} {v['status']:8} rc={v.get('rc', '-')} {v.get('wall_s', '')}s "
               f"{v.get('why', v.get('teardown', ''))}")
     print("stopped:", st["stopped"], "| sim:", st["sim"])
+    if (st.get("copy_verify") or {}).get("status") == "FLAGGED":
+        return 1
     return 0 if all(v["status"] in ("done", "skipped", "dropped")
                     for v in st["blocks"].values()) else 1
 

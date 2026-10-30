@@ -124,7 +124,8 @@ def _nomock_or_die():
     # the unattended sweep approves only through an operator-set policy: check it BEFORE spend
     from pathlib import Path
 
-    from wattnot.longrun.driver import APPROVAL_POLICY, POLICY_DIR, approval_policy_problem
+    from wattnot.longrun.driver import (APPROVAL_POLICY, POLICY_DIR, approval_policy_problem,
+                                        approval_policy_warnings)
     why = approval_policy_problem(Path(APPROVAL_POLICY))
     if why:
         print(f"APPROVAL POLICY: {why}; refusing to launch. Set it with:\n  wattnot proposals "
@@ -132,6 +133,8 @@ def _nomock_or_die():
               file=sys.stderr)
         sys.exit(6)
     print("approval policy OK")
+    for w in approval_policy_warnings(Path(APPROVAL_POLICY)):
+        print(f"APPROVAL POLICY WARNING: {w}")
 
 
 def main(argv=None):

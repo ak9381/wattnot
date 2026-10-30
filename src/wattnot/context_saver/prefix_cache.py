@@ -25,6 +25,24 @@ _HITS = re.compile(r"^vllm:prefix_cache_hits_total(?:\{[^}]*\})?\s+([0-9.eE+]+)"
 _GAUGE = re.compile(r"^vllm:gpu_prefix_cache_hit_rate(?:\{[^}]*\})?\s+([0-9.eE+]+)", re.M)
 
 
+_TTFT_SUM = re.compile(r'^vllm:time_to_first_token_seconds_sum(?:\{[^}]*\})?\s+([0-9.eE+-]+)', re.M)
+_TTFT_COUNT = re.compile(r'^vllm:time_to_first_token_seconds_count(?:\{[^}]*\})?\s+([0-9.eE+-]+)',
+                         re.M)
+
+
+def ttft_ms_from_metrics(before_text: str, after_text: str) -> float | None:
+    """Mean time to first token (ms) over a window, from vLLM's TTFT histogram sum/count deltas.
+    None if the histogram is absent or nothing was served in the window (never a made-up 0)."""
+    def _sum(pat, text):
+        vals = [float(x) for x in pat.findall(text)]
+        return sum(vals) if vals else None
+    s0, s1 = _sum(_TTFT_SUM, before_text), _sum(_TTFT_SUM, after_text)
+    c0, c1 = _sum(_TTFT_COUNT, before_text), _sum(_TTFT_COUNT, after_text)
+    if None in (s0, s1, c0, c1) or c1 - c0 <= 0 or s1 - s0 < 0:
+        return None
+    return round((s1 - s0) / (c1 - c0) * 1000.0, 2)
+
+
 def hit_rate_from_metrics(before_text: str, after_text: str) -> float | None:
     """Prefix-cache hit rate over a window: delta hits / delta queries from vLLM counters.
 

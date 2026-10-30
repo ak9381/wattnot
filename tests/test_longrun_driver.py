@@ -1,3 +1,5 @@
+import json
+
 from wattnot.longrun.driver import dry_run
 
 
@@ -182,3 +184,73 @@ def test_overrunning_block_is_killed_and_recorded(tmp_path):
                 log=lambda m: None).go()
     assert any(e["kind"] == "overran" and e["block"] == "b3-tiers" for e in st["events"])
     assert st["blocks"]["b3-tiers"]["status"] == "done"  # the retry succeeded
+
+
+def test_final_copy_checksum_mismatch_flags_the_run_but_still_deletes(tmp_path):
+    from wattnot.longrun.driver import Driver, FakeVm, plan_glimmer_test
+    vm = FakeVm(mismatch=["t1-sweep/proof-x.json"])
+    t = {"now": 0.0}
+
+    def sleep(s):
+        t["now"] += s
+
+    d = Driver(tmp_path, plan_glimmer_test(tmp_path), vm, label="MOCK", run=lambda b, s: 0,
+               max_hours=3.5, balance_inr=lambda: 10_000.0, hours_used=lambda: t["now"] / 3600,
+               sleep=sleep, clock=lambda: t["now"])
+    st = d.go()
+    assert vm.deleted
+    assert st["copy_verify"]["status"] == "FLAGGED"
+    assert st["stopped"].endswith("copy checksum FLAGGED")
+    rc = json.loads((tmp_path / "blocks" / "t3-copy" / "receipt.json").read_text()) \
+        if (tmp_path / "blocks" / "t3-copy" / "receipt.json").exists() else None
+    if rc is not None:
+        assert rc["copy_verify"]["status"] == "FLAGGED"
+
+
+def test_clean_copy_is_marked_ok(tmp_path):
+    st = dry_run(tmp_path, model="glimmer-test", runner=ok, max_hours=3.5)
+    assert st["copy_verify"]["status"] == "OK"
+
+
+def test_dry_sweep_takes_the_live_approval_path(tmp_path):
+    from wattnot.longrun.driver import plan_glimmer_test
+    b = {x.id: x for x in plan_glimmer_test(tmp_path)}
+    dry, live = b["t1-sweep"].dry, b["t1-sweep"].live
+    assert "--auto-approve" not in dry
+    for flag in ("--approval-policy", "--guardrail-config", "--sign-key", "--warmup-s",
+                 "--burn-in", "--counterbalance", "--policy-hold-s"):
+        assert flag in dry and flag in live, flag
+    assert dry[dry.index("--guardrail-config") + 1] == live[live.index("--guardrail-config") + 1]
+    w = b["t1-wonder"]
+    assert "sweep_to_trials.py" in w.dry[2] and "--fake" in w.dry[2] and "--live" in w.live[2]
+
+
+def test_policy_warning_when_every_wonder_cap_is_over_the_limit(tmp_path):
+    from wattnot.longrun.driver import approval_policy_warnings
+    p = {"format": "wattnot.auto-approve/1", "enabled": True, "allowed_labels": ["MEASURED"],
+         "kinds": {"power_cap": {"min_saving_pct": 3, "max_p99_increase_pct": 10,
+                                 "max_cap_drop_pct": 45}}, "set_by": "x", "set_at": "2026-10-30T00:00:00Z", "max_per_day": 3}
+    f = tmp_path / "p.json"
+    f.write_text(json.dumps(p))
+    assert approval_policy_warnings(f)
+    p["kinds"]["power_cap"]["max_cap_drop_pct"] = 58
+    f.write_text(json.dumps(p))
+    assert approval_policy_warnings(f) == []
+
+
+def test_live_sweep_retry_moves_the_old_event_log_aside(tmp_path):
+    # a retry re-runs the same argv into the same live.jsonl: without --fresh orchestrate exits 2
+    from wattnot.longrun.driver import plan_glimmer_test
+    b = {x.id: x for x in plan_glimmer_test(tmp_path)}
+    assert "--fresh" in b["t1-sweep"].live and "--fresh" in b["t1-sweep"].dry
+
+
+def test_prefix_ttft_from_vllm_histogram():
+    from wattnot.context_saver.prefix_cache import ttft_ms_from_metrics
+    m0 = ('vllm:time_to_first_token_seconds_sum{model_name="m"} 1.0\n'
+          'vllm:time_to_first_token_seconds_count{model_name="m"} 10\n')
+    m1 = ('vllm:time_to_first_token_seconds_sum{model_name="m"} 3.0\n'
+          'vllm:time_to_first_token_seconds_count{model_name="m"} 30\n')
+    assert ttft_ms_from_metrics(m0, m1) == 100.0
+    assert ttft_ms_from_metrics("", m1) is None
+    assert ttft_ms_from_metrics(m1, m1) is None
