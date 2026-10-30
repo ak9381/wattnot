@@ -27,7 +27,7 @@ with its measured evidence, holds it for 20 s (visible in the dashboard's Guard 
 a person can approve or reject), then lets an operator-set policy decide. `ctl.py launch` and the
 driver both refuse to start without the policy, before any spend:
 
-    wattnot proposals --dir /tmp/wn-policy policy set --by "<your name>" --file approval-policy.json
+    wattnot proposals --dir ~/.config/wattnot/proposals policy set --by "<your name>" --file ~/.config/wattnot/approval-policy.json
 
 The file (repo root, git-ignored) records `set_by` and `set_at`; thresholds default to a saving of
 at least 3%, p99 up at most 10%, a cap drop of at most 45%, MEASURED numbers only. The receipt's

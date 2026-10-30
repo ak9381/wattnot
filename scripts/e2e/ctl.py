@@ -124,11 +124,11 @@ def _nomock_or_die():
     # the unattended sweep approves only through an operator-set policy: check it BEFORE spend
     from pathlib import Path
 
-    from wattnot.longrun.driver import APPROVAL_POLICY, approval_policy_problem
+    from wattnot.longrun.driver import APPROVAL_POLICY, POLICY_DIR, approval_policy_problem
     why = approval_policy_problem(Path(APPROVAL_POLICY))
     if why:
         print(f"APPROVAL POLICY: {why}; refusing to launch. Set it with:\n  wattnot proposals "
-              f"--dir /tmp/wn-policy policy set --by '<your name>' --file {APPROVAL_POLICY}",
+              f"--dir {POLICY_DIR}/proposals policy set --by '<your name>' --file {APPROVAL_POLICY}",
               file=sys.stderr)
         sys.exit(6)
     print("approval policy OK")
@@ -251,6 +251,17 @@ def main(argv=None):
                 if b < 1500: open(f"{D}/ctl.log","a").write(f"{dt.datetime.now()} BALANCE WATCHDOG {b:.2f}\n"); break
             except Exception as e: open(f"{D}/ctl.log","a").write(f"{dt.datetime.now()} bal err {type(e).__name__}\n")
             time.sleep(120)
-        delete()
+        # a failed or crashed delete must never end the watchdog while the VM still bills
+        i = 0
+        while not os.path.exists(f"{D}/DELETED"):   # never give up while the VM may still bill
+            i += 1
+            try:
+                delete(); return
+            except SystemExit:
+                pass
+            except Exception as e:  # noqa: BLE001 - network error: log the type only, retry
+                open(f"{D}/ctl.log","a").write(f"{dt.datetime.now()} delete err {type(e).__name__}\n")
+            open(f"{D}/ctl.log","a").write(f"{dt.datetime.now()} WATCHDOG delete retry {i}\n")
+            time.sleep(min(60 * i, 300))
 if __name__ == "__main__":
     main()

@@ -544,7 +544,10 @@ class Driver:
                 result["copied"] = copied
                 tiers = self.out / "runs" / b.id.split("-")[0] / "tiers_summary.json"
                 if tiers.exists():   # the tier table goes into the block's recorded state
-                    result["tiers"] = json.loads(tiers.read_text())
+                    try:
+                        result["tiers"] = json.loads(tiers.read_text())
+                    except (OSError, ValueError) as e:   # a truncated pull never aborts the plan
+                        result["tiers_error"] = f"{type(e).__name__}: unreadable tiers_summary.json"
                 d = self.rec.end(result)
                 self._receipt(d, b.id)
                 ok = rc == 0 and not linkdown
@@ -685,7 +688,7 @@ def live_run(out: Path, *, host: str, key: str = "~/.ssh/e2e_h100", model: str =
         why = approval_policy_problem(Path(APPROVAL_POLICY))
         if why:
             print(f"APPROVAL POLICY: {why}; refusing to start (set it with: wattnot proposals "
-                  f"--dir /tmp policy set --by <your name> --file {APPROVAL_POLICY})",
+                  f"--dir {POLICY_DIR}/proposals policy set --by <your name> --file {APPROVAL_POLICY})",
                   file=sys.stderr)
             return {"stopped": "approval policy missing", "blocks": {}}
     blocks = plan(out, model)
@@ -736,7 +739,9 @@ def vm_launch_wall(path: Path) -> float | None:
 
 
 # set by the operator before launch (wattnot proposals policy set --by NAME), never by the plan
-APPROVAL_POLICY = str(Path(__file__).resolve().parents[3] / "approval-policy.json")
+# persistent per user (never /tmp, never one checkout); WATTNOT_APPROVAL_POLICY overrides
+POLICY_DIR = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / "wattnot"
+APPROVAL_POLICY = os.environ.get("WATTNOT_APPROVAL_POLICY") or str(POLICY_DIR / "approval-policy.json")
 
 
 def approval_policy_problem(path: Path) -> str | None:
