@@ -763,6 +763,18 @@ def _live_runner(out: Path, host: str, key: str, vm: RemoteVm, log=print):
     return run
 
 
+def _live_publisher(env=None):
+    """The off-box heartbeat publisher for a live run (layers 4/5 read it), or None when
+    WATCHDOG_PUBLISH_REPO / _GIST_ID is not set. Live runs push for real; failures never raise."""
+    from wattnot.longrun.watchdog.publisher import publisher_from_env
+    pub = publisher_from_env(env, dry_run=False,
+                             log=lambda m: print(f"[driver] {m}", file=sys.stderr))
+    if pub is not None:
+        print(f"[driver] publishing heartbeat off-box to {pub.raw_url() or pub.mode}",
+              file=sys.stderr)
+    return pub
+
+
 def live_run(out: Path, *, host: str, key: str = "~/.ssh/e2e_h100", model: str = "glimmer-test",
              max_hours: float | None = None, include_optional=()) -> dict:
     """Drive a REAL VM (already launched by scripts/e2e/ctl.py). Runs the no-mock preflight first
@@ -807,7 +819,8 @@ def live_run(out: Path, *, host: str, key: str = "~/.ssh/e2e_h100", model: str =
     d = Driver(out, blocks, vm, label="MEASURED", run=run, max_hours=hours,
                balance_inr=balance_inr, hours_used=lambda: (time.time() - d._launch_wall) / 3600.0,
                include_optional=include_optional, heartbeat_path=out / "heartbeat.json",
-               watchdog_margin_h=WATCHDOG_MARGIN_H if model == "glimmer-test" else 0.0)
+               watchdog_margin_h=WATCHDOG_MARGIN_H if model == "glimmer-test" else 0.0,
+               publisher=_live_publisher())
     # anchor the clock to the VM's real launch (ctl.py's vm.json), so the driver's deadline is never
     # later than the off-box watchdog's; only ever moves it earlier
     d._launch_wall = min(d._launch_wall, vm_launch_wall(VM_RECORD) or d._launch_wall)

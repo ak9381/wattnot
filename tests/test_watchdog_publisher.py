@@ -183,3 +183,23 @@ def test_publisher_from_env_branch_and_gist_and_unconfigured():
     assert p is not None and p.mode == "branch" and p.repo_slug == "o/r" and p.dry_run is True
     g = publisher_from_env({"WATCHDOG_PUBLISH_MODE": "gist", "WATCHDOG_PUBLISH_GIST_ID": "x"})
     assert g is not None and g.mode == "gist" and g.gist_id == "x"
+
+
+def test_concurrent_publish_is_skipped_not_doubled():
+    from wattnot.longrun.watchdog.publisher import HeartbeatPublisher
+    p = HeartbeatPublisher(repo_slug="o/r", dry_run=True)
+    p._lock.acquire()
+    try:
+        r = p.publish({"ts": 1.0})
+    finally:
+        p._lock.release()
+    assert r["published"] is False and "in progress" in r["reason"]
+    assert p.publish({"ts": 1.0})["would_publish"] is True
+
+
+def test_live_publisher_wiring():
+    from wattnot.longrun.driver import _live_publisher
+    assert _live_publisher({}) is None
+    pub = _live_publisher({"WATCHDOG_PUBLISH_REPO": "o/r", "WATCHDOG_PUBLISH_TOKEN": "x"})
+    assert pub is not None and pub.dry_run is False
+    assert pub.raw_url() == "https://raw.githubusercontent.com/o/r/watchdog-heartbeat/heartbeat.json"
