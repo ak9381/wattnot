@@ -86,7 +86,10 @@ class ServedSpokenAnswerer:
             return json.loads(r.read() or b"{}")
 
     def __call__(self, item: SpokenItem) -> str:
-        data = self._call(self._body(item))
+        try:
+            data = self._call(self._body(item))
+        except (OSError, ValueError):  # HTTP error, refused, timeout, bad JSON: a miss, not a crash
+            return ""
         try:
             return str(data["choices"][0]["message"]["content"]).strip()
         except (KeyError, IndexError, TypeError):

@@ -81,6 +81,8 @@ def evaluate_ab(off: dict, on: dict, *, p99_limit_pct: float = P99_LIMIT_PCT,
         failed.append(f"pass rate dropped {drop:g} pts (> {quality_drop_pts:g})")
     if not p99_ok:
         failed.append(f"p99 rose {p99_change:g}% (> {p99_limit_pct:g}%)")
+    if off_pass <= 0 or on_pass <= 0:   # both arms broken would read as "no drop" = a pass
+        failed.append("0% graded pass rate on an arm: nothing to compare")
     return {
         "spec": SPEC,
         "lever": "enable_prefix_caching",
@@ -93,10 +95,10 @@ def evaluate_ab(off: dict, on: dict, *, p99_limit_pct: float = P99_LIMIT_PCT,
                                "on": on["cache_hit_rate"]["mean"]},
             "label": on["label"],
         },
-        "gate": {"passed": quality_ok and p99_ok, "failed": failed,
+        "gate": {"passed": not failed, "failed": failed,
                  "pass_drop_pts": drop, "p99_change_pct": p99_change,
                  "quality_drop_limit_pts": quality_drop_pts, "p99_limit_pct": p99_limit_pct},
-        "kept": quality_ok and p99_ok,
+        "kept": not failed,
     }
 
 

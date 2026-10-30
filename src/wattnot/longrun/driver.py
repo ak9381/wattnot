@@ -226,6 +226,11 @@ def plan_glimmer_test(out: Path) -> list[Block]:
                      "--sweep-budget-s", "1900", "--sign-key", "receipt-offline-key.pem",
                      "--sam", "live", "--warmup-s", "10", "--burn-in", "1", "--counterbalance",
                      "--approval-policy", APPROVAL_POLICY, "--policy-hold-s", "20",
+                     # muse-wonder must be a standard tier, or a 300-375 W cap (high risk) goes
+                     # PENDING_STRICT, the operator policy is never consulted, and the sweep waits
+                     # 600 s then rolls the measured cap back as "no approval"
+                     "--guardrail-config", str(Path(__file__).resolve().parents[3]
+                                               / "examples/longrun/guardrails-wonder.json"),
                      "--live-file", str(live_file))
     sweep_dir = out / "runs" / "t1-sweep"
     py = shlex.quote(sys.executable)
@@ -235,7 +240,11 @@ def plan_glimmer_test(out: Path) -> list[Block]:
                    f"{shlex.quote(str(sweep_dir / 'sweep_trials.json'))} "
                    f"--out {shlex.quote(str(sweep_dir / 'wonder'))}"]
     eu_out = sweep_dir / "eu" / "eu-2024-1364"
-    eu_cmd = (f"{py} -m wattnot.cli report eu --receipts {shlex.quote(str(sweep_dir))}/proof-*.json "
+    # proof-*.json also matches the proof-<id>.sigstore.json bundle, which is not a receipt
+    # (export would KeyError and t1-eu would fail every run): pass the receipts only.
+    eu_cmd = (f"set -o pipefail; rcpts=$(ls {shlex.quote(str(sweep_dir))}/proof-*.json "
+              f"| grep -v '\\.sigstore\\.json$') && "
+              f"{py} -m wattnot.cli report eu --receipts $rcpts "
               f"--out {shlex.quote(str(eu_out))}")
     fp8_live = ["bash", "-c", "bash scripts/glimmer_serve.sh fp8 && "
                 + " ".join(shlex.quote(a) for a in tiers_live("t2-fp8", "muse-glimmer-30b-fp8"))]
