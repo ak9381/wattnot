@@ -1,0 +1,17 @@
+.git
+.github
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+node_modules
+tests/
+results/
+runs/
+saved/
+*.pem
+*.key
+.env
+*secret*
+*id_rsa*
+*id_ed25519*
