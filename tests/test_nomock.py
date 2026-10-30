@@ -62,7 +62,13 @@ def test_guard_passes_when_assets_are_real(tmp_path, monkeypatch):
 
 
 def test_cli_exit_codes(tmp_path, monkeypatch):
-    assert nomock.main(["--model", "glimmer-test"]) == 3           # placeholders present
+    ph = tmp_path / "ph"
+    ph.mkdir()
+    (ph / "img.png").write_bytes(b"\x89PNG" + b"0" * 2048)
+    (ph / "answers.json").write_text(json.dumps({"label": "SYNTHETIC", "source": "placeholder-offline",
+        "items": [{"id": "a", "file": "img.png", "kind": "text", "question": "q", "answer": "x"}]}))
+    monkeypatch.setattr("wattnot.vision.assets.DEFAULT_ASSETS_DIR", ph)
+    assert nomock.main(["--model", "glimmer-test"]) == 3           # placeholder images present
     eye, spk = _write_real_assets(tmp_path)
     monkeypatch.setattr("wattnot.vision.assets.DEFAULT_ASSETS_DIR", eye)
     monkeypatch.setattr("wattnot.spokenanswer.assets.DEFAULT_ASSETS_DIR", spk)

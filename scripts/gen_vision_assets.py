@@ -73,6 +73,18 @@ def _post(base_url: str, key: str, prompt: str, timeout: float = 120) -> bytes:
     return base64.b64decode(data["data"][0]["b64_json"])
 
 
+_LEDGER = None
+
+
+def _charge(purpose: str) -> str | None:
+    """Record each image on the Meta spend ledger before sending ($0.01/image, MEASURED price)."""
+    global _LEDGER
+    if _LEDGER is None:
+        from wattnot.meta.ledger import SpendLedger
+        _LEDGER = SpendLedger()
+    return _LEDGER.charge_image(MODEL, purpose)
+
+
 def main(argv: list[str] | None = None) -> int:
     if os.environ.get("WATTNOT_GEN_VISION_GO") != "1":
         print("refusing: this is a PAID one-time script. Set WATTNOT_GEN_VISION_GO=1 to run.",
@@ -93,7 +105,12 @@ def main(argv: list[str] | None = None) -> int:
         if not prompt:
             print(f"  skip {item['id']}: no prompt", file=sys.stderr)
             continue
-        webp = _post(base_url, key, prompt)
+        eid = _charge(f"vision-gen:{item['id']}")
+        try:
+            webp = _post(base_url, key, prompt)
+        except Exception:
+            _LEDGER.refund(eid, "generation failed")
+            raise
         out_name = f"{item['id']}.webp"
         (ASSETS / out_name).write_bytes(webp)
         item["file"] = out_name
@@ -123,7 +140,12 @@ def _gen_hotspots(base_url: str, key: str) -> None:
         if not prompt:
             print(f"  skip {scene['id']}: no prompt for fault {scene['fault']!r}", file=sys.stderr)
             continue
-        webp = _post(base_url, key, f"{prompt}; {scene.get('scene', '')}")
+        eid = _charge(f"vision-gen:{scene['id']}")
+        try:
+            webp = _post(base_url, key, f"{prompt}; {scene.get('scene', '')}")
+        except Exception:
+            _LEDGER.refund(eid, "generation failed")
+            raise
         out_name = f"{scene['id']}.webp"
         (HOTSPOTS / out_name).write_bytes(webp)
         scene["file"] = out_name

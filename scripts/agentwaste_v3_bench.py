@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import sys
 import threading
@@ -44,7 +45,9 @@ from wattnot.agentwaste.config import WasteConfig  # noqa: E402
 from wattnot.meta.client import GuardedClient  # noqa: E402
 from wattnot.meta.ledger import SpendLedger  # noqa: E402
 
-JOB_CEILING = 24.00      # the user's ceiling for this job; their overall hard ceiling is 39.50
+# Ledger ceiling for this job (env WATTNOT_AW_CEILING). Akash approved Meta-credit runs to a soft cap of
+# about $40 on the shared ledger (Oct 30), so the default stays under it.
+JOB_CEILING = float(os.environ.get("WATTNOT_AW_CEILING", "39.50"))
 PURPOSE = "agentwaste-v3"
 SCOPE = ("sprawl", "noprog", "normal")
 V2_DIR = ROOT / "data" / "agent-waste" / "v2"

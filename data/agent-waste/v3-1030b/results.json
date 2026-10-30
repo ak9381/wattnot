@@ -1,0 +1,5279 @@
+{
+ "schema": "wattnot.agent-waste-v3/1",
+ "model": "muse-spark-1.3",
+ "j_per_token": 0.149666,
+ "j_per_token_source": "data/h100-run2/vm/baseline.json (Llama-3.1-8B-Instruct, one H100, stock 700 W)",
+ "price_source": "https://dev.meta.ai/docs/pricing-rate-limits (muse-spark-1.3, standard rates)",
+ "labels": {
+  "calls": "MEASURED",
+  "tokens": "MEASURED",
+  "wall_time": "MEASURED",
+  "success": "MEASURED",
+  "miss": "MEASURED",
+  "energy_j": "ESTIMATE",
+  "usd": "ESTIMATE"
+ },
+ "normal": {
+  "harness": {
+   "runs": 36,
+   "success": 36,
+   "success_pct": 100.0,
+   "calls": 120,
+   "calls_per_run": 3.33,
+   "prompt_tokens": 157743,
+   "completion_tokens": 11122,
+   "reasoning_tokens": 3860,
+   "total_tokens": 168865,
+   "tokens_per_run": 4691,
+   "tool_calls": 96,
+   "mutations": 24,
+   "wall_s_per_run": 3.57,
+   "usd": 0.1539,
+   "usd_per_run": 0.00427,
+   "joules": 1664.6,
+   "ended_by": {
+    "final": 24,
+    "marker": 12
+   },
+   "miss_runs": 0,
+   "nudges": 0,
+   "helpers": 0,
+   "errors": 0,
+   "n": 36
+  },
+  "harness+saver": {
+   "runs": 36,
+   "success": 36,
+   "success_pct": 100.0,
+   "calls": 120,
+   "calls_per_run": 3.33,
+   "prompt_tokens": 165717,
+   "completion_tokens": 12505,
+   "reasoning_tokens": 4882,
+   "total_tokens": 178222,
+   "tokens_per_run": 4951,
+   "tool_calls": 96,
+   "mutations": 24,
+   "wall_s_per_run": 7.54,
+   "usd": 0.1637,
+   "usd_per_run": 0.00455,
+   "joules": 1871.6,
+   "ended_by": {
+    "final": 17,
+    "marker": 11,
+    "saver-done": 8
+   },
+   "miss_runs": 0,
+   "nudges": 0,
+   "helpers": 0,
+   "errors": 0,
+   "n": 36
+  },
+  "saver_vs_harness": {
+   "calls": 0.0,
+   "total_tokens": 5.5,
+   "completion_tokens": 12.4,
+   "wall_s_per_run": 111.2,
+   "usd": 6.4,
+   "joules": 12.4,
+   "success_points": 0.0
+  }
+ },
+ "injected": {
+  "harness": {
+   "runs": 12,
+   "success": 12,
+   "success_pct": 100.0,
+   "calls": 157,
+   "calls_per_run": 13.08,
+   "prompt_tokens": 354556,
+   "completion_tokens": 24847,
+   "reasoning_tokens": 8750,
+   "total_tokens": 379403,
+   "tokens_per_run": 31617,
+   "tool_calls": 261,
+   "mutations": 0,
+   "wall_s_per_run": 25.22,
+   "usd": 0.3288,
+   "usd_per_run": 0.0274,
+   "joules": 3718.7,
+   "ended_by": {
+    "cap": 6,
+    "final": 6
+   },
+   "miss_runs": 6,
+   "nudges": 0,
+   "helpers": 18,
+   "errors": 0,
+   "n": 12
+  },
+  "harness+saver": {
+   "runs": 12,
+   "success": 12,
+   "success_pct": 100.0,
+   "calls": 94,
+   "calls_per_run": 7.83,
+   "prompt_tokens": 154415,
+   "completion_tokens": 16353,
+   "reasoning_tokens": 6752,
+   "total_tokens": 170768,
+   "tokens_per_run": 14231,
+   "tool_calls": 135,
+   "mutations": 0,
+   "wall_s_per_run": 10.9,
+   "usd": 0.1924,
+   "usd_per_run": 0.01603,
+   "joules": 2447.5,
+   "ended_by": {
+    "final": 1,
+    "saver-done": 5,
+    "saver-stop": 6
+   },
+   "miss_runs": 0,
+   "nudges": 12,
+   "helpers": 19,
+   "errors": 0,
+   "n": 12
+  },
+  "saver_vs_harness": {
+   "calls": -40.1,
+   "total_tokens": -55.0,
+   "completion_tokens": -34.2,
+   "wall_s_per_run": -56.8,
+   "usd": -41.5,
+   "joules": -34.2,
+   "success_points": 0.0
+  }
+ },
+ "by_category": {
+  "normal": {
+   "harness": {
+    "runs": 36,
+    "success": 36,
+    "success_pct": 100.0,
+    "calls": 120,
+    "calls_per_run": 3.33,
+    "prompt_tokens": 157743,
+    "completion_tokens": 11122,
+    "reasoning_tokens": 3860,
+    "total_tokens": 168865,
+    "tokens_per_run": 4691,
+    "tool_calls": 96,
+    "mutations": 24,
+    "wall_s_per_run": 3.57,
+    "usd": 0.1539,
+    "usd_per_run": 0.00427,
+    "joules": 1664.6,
+    "ended_by": {
+     "final": 24,
+     "marker": 12
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 36
+   },
+   "harness+saver": {
+    "runs": 36,
+    "success": 36,
+    "success_pct": 100.0,
+    "calls": 120,
+    "calls_per_run": 3.33,
+    "prompt_tokens": 165717,
+    "completion_tokens": 12505,
+    "reasoning_tokens": 4882,
+    "total_tokens": 178222,
+    "tokens_per_run": 4951,
+    "tool_calls": 96,
+    "mutations": 24,
+    "wall_s_per_run": 7.54,
+    "usd": 0.1637,
+    "usd_per_run": 0.00455,
+    "joules": 1871.6,
+    "ended_by": {
+     "final": 17,
+     "marker": 11,
+     "saver-done": 8
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 36
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 5.5,
+    "completion_tokens": 12.4,
+    "wall_s_per_run": 111.2,
+    "usd": 6.4,
+    "joules": 12.4,
+    "success_points": 0.0
+   }
+  },
+  "noprogress": {
+   "harness": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 90,
+    "calls_per_run": 15.0,
+    "prompt_tokens": 259993,
+    "completion_tokens": 15687,
+    "reasoning_tokens": 5774,
+    "total_tokens": 275680,
+    "tokens_per_run": 45947,
+    "tool_calls": 178,
+    "mutations": 0,
+    "wall_s_per_run": 34.78,
+    "usd": 0.2084,
+    "usd_per_run": 0.03474,
+    "joules": 2347.8,
+    "ended_by": {
+     "cap": 6
+    },
+    "miss_runs": 6,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 6
+   },
+   "harness+saver": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 34,
+    "calls_per_run": 5.67,
+    "prompt_tokens": 63450,
+    "completion_tokens": 6120,
+    "reasoning_tokens": 2571,
+    "total_tokens": 69570,
+    "tokens_per_run": 11595,
+    "tool_calls": 58,
+    "mutations": 0,
+    "wall_s_per_run": 8.22,
+    "usd": 0.0734,
+    "usd_per_run": 0.01224,
+    "joules": 916.0,
+    "ended_by": {
+     "saver-done": 4,
+     "saver-stop": 2
+    },
+    "miss_runs": 0,
+    "nudges": 6,
+    "helpers": 0,
+    "errors": 0,
+    "n": 6
+   },
+   "saver_vs_harness": {
+    "calls": -62.2,
+    "total_tokens": -74.8,
+    "completion_tokens": -61.0,
+    "wall_s_per_run": -76.4,
+    "usd": -64.8,
+    "joules": -61.0,
+    "success_points": 0.0
+   }
+  },
+  "sprawl": {
+   "harness": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 67,
+    "calls_per_run": 11.17,
+    "prompt_tokens": 94563,
+    "completion_tokens": 9160,
+    "reasoning_tokens": 2976,
+    "total_tokens": 103723,
+    "tokens_per_run": 17287,
+    "tool_calls": 83,
+    "mutations": 0,
+    "wall_s_per_run": 15.67,
+    "usd": 0.1203,
+    "usd_per_run": 0.02006,
+    "joules": 1370.9,
+    "ended_by": {
+     "final": 6
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 18,
+    "errors": 0,
+    "n": 6
+   },
+   "harness+saver": {
+    "runs": 6,
+    "success": 6,
+    "success_pct": 100.0,
+    "calls": 60,
+    "calls_per_run": 10.0,
+    "prompt_tokens": 90965,
+    "completion_tokens": 10233,
+    "reasoning_tokens": 4181,
+    "total_tokens": 101198,
+    "tokens_per_run": 16866,
+    "tool_calls": 77,
+    "mutations": 0,
+    "wall_s_per_run": 13.58,
+    "usd": 0.119,
+    "usd_per_run": 0.01983,
+    "joules": 1531.5,
+    "ended_by": {
+     "final": 1,
+     "saver-done": 1,
+     "saver-stop": 4
+    },
+    "miss_runs": 0,
+    "nudges": 6,
+    "helpers": 19,
+    "errors": 0,
+    "n": 6
+   },
+   "saver_vs_harness": {
+    "calls": -10.4,
+    "total_tokens": -2.4,
+    "completion_tokens": 11.7,
+    "wall_s_per_run": -13.3,
+    "usd": -1.1,
+    "joules": 11.7,
+    "success_points": 0.0
+   }
+  }
+ },
+ "by_harness_normal": {
+  "planner": {
+   "harness": {
+    "runs": 12,
+    "success": 12,
+    "success_pct": 100.0,
+    "calls": 40,
+    "calls_per_run": 3.33,
+    "prompt_tokens": 54651,
+    "completion_tokens": 3711,
+    "reasoning_tokens": 1327,
+    "total_tokens": 58362,
+    "tokens_per_run": 4864,
+    "tool_calls": 32,
+    "mutations": 8,
+    "wall_s_per_run": 3.46,
+    "usd": 0.0581,
+    "usd_per_run": 0.00484,
+    "joules": 555.4,
+    "ended_by": {
+     "final": 12
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 12
+   },
+   "harness+saver": {
+    "runs": 12,
+    "success": 12,
+    "success_pct": 100.0,
+    "calls": 40,
+    "calls_per_run": 3.33,
+    "prompt_tokens": 57293,
+    "completion_tokens": 4602,
+    "reasoning_tokens": 2187,
+    "total_tokens": 61895,
+    "tokens_per_run": 5158,
+    "tool_calls": 32,
+    "mutations": 8,
+    "wall_s_per_run": 9.52,
+    "usd": 0.0561,
+    "usd_per_run": 0.00468,
+    "joules": 688.8,
+    "ended_by": {
+     "final": 12
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 12
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 6.1,
+    "completion_tokens": 24.0,
+    "wall_s_per_run": 175.1,
+    "usd": -3.4,
+    "joules": 24.0,
+    "success_points": 0.0
+   }
+  },
+  "react": {
+   "harness": {
+    "runs": 12,
+    "success": 12,
+    "success_pct": 100.0,
+    "calls": 40,
+    "calls_per_run": 3.33,
+    "prompt_tokens": 51264,
+    "completion_tokens": 3809,
+    "reasoning_tokens": 1368,
+    "total_tokens": 55073,
+    "tokens_per_run": 4589,
+    "tool_calls": 32,
+    "mutations": 8,
+    "wall_s_per_run": 3.75,
+    "usd": 0.0501,
+    "usd_per_run": 0.00418,
+    "joules": 570.1,
+    "ended_by": {
+     "final": 12
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 12
+   },
+   "harness+saver": {
+    "runs": 12,
+    "success": 12,
+    "success_pct": 100.0,
+    "calls": 40,
+    "calls_per_run": 3.33,
+    "prompt_tokens": 53956,
+    "completion_tokens": 4117,
+    "reasoning_tokens": 1379,
+    "total_tokens": 58073,
+    "tokens_per_run": 4839,
+    "tool_calls": 32,
+    "mutations": 8,
+    "wall_s_per_run": 9.44,
+    "usd": 0.054,
+    "usd_per_run": 0.0045,
+    "joules": 616.2,
+    "ended_by": {
+     "final": 5,
+     "saver-done": 7
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 12
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 5.4,
+    "completion_tokens": 8.1,
+    "wall_s_per_run": 151.7,
+    "usd": 7.8,
+    "joules": 8.1,
+    "success_points": 0.0
+   }
+  },
+  "stop": {
+   "harness": {
+    "runs": 12,
+    "success": 12,
+    "success_pct": 100.0,
+    "calls": 40,
+    "calls_per_run": 3.33,
+    "prompt_tokens": 51828,
+    "completion_tokens": 3602,
+    "reasoning_tokens": 1165,
+    "total_tokens": 55430,
+    "tokens_per_run": 4619,
+    "tool_calls": 32,
+    "mutations": 8,
+    "wall_s_per_run": 3.49,
+    "usd": 0.0457,
+    "usd_per_run": 0.0038,
+    "joules": 539.1,
+    "ended_by": {
+     "marker": 12
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 12
+   },
+   "harness+saver": {
+    "runs": 12,
+    "success": 12,
+    "success_pct": 100.0,
+    "calls": 40,
+    "calls_per_run": 3.33,
+    "prompt_tokens": 54468,
+    "completion_tokens": 3786,
+    "reasoning_tokens": 1316,
+    "total_tokens": 58254,
+    "tokens_per_run": 4854,
+    "tool_calls": 32,
+    "mutations": 8,
+    "wall_s_per_run": 3.67,
+    "usd": 0.0536,
+    "usd_per_run": 0.00447,
+    "joules": 566.6,
+    "ended_by": {
+     "marker": 11,
+     "saver-done": 1
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 12
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 5.1,
+    "completion_tokens": 5.1,
+    "wall_s_per_run": 5.2,
+    "usd": 17.3,
+    "joules": 5.1,
+    "success_points": 0.0
+   }
+  }
+ },
+ "cases": {
+  "noprog-1-search-summarize": {
+   "category": "noprogress",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 30,
+    "calls_per_run": 15.0,
+    "prompt_tokens": 147997,
+    "completion_tokens": 11461,
+    "reasoning_tokens": 4990,
+    "total_tokens": 159458,
+    "tokens_per_run": 79729,
+    "tool_calls": 118,
+    "mutations": 0,
+    "wall_s_per_run": 73.45,
+    "usd": 0.1351,
+    "usd_per_run": 0.06755,
+    "joules": 1715.3,
+    "ended_by": {
+     "cap": 2
+    },
+    "miss_runs": 2,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "the search ignores the query and returns the same three docs, reordered",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 14,
+    "calls_per_run": 7.0,
+    "prompt_tokens": 33951,
+    "completion_tokens": 3291,
+    "reasoning_tokens": 1041,
+    "total_tokens": 37242,
+    "tokens_per_run": 18621,
+    "tool_calls": 38,
+    "mutations": 0,
+    "wall_s_per_run": 12.57,
+    "usd": 0.0426,
+    "usd_per_run": 0.02131,
+    "joules": 492.6,
+    "ended_by": {
+     "saver-done": 2
+    },
+    "miss_runs": 0,
+    "nudges": 2,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": -53.3,
+    "total_tokens": -76.6,
+    "completion_tokens": -71.3,
+    "wall_s_per_run": -82.9,
+    "usd": -68.5,
+    "joules": -71.3,
+    "success_points": 0.0
+   }
+  },
+  "noprog-2-ticket-poll": {
+   "category": "noprogress",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 30,
+    "calls_per_run": 15.0,
+    "prompt_tokens": 56975,
+    "completion_tokens": 1899,
+    "reasoning_tokens": 327,
+    "total_tokens": 58874,
+    "tokens_per_run": 29437,
+    "tool_calls": 30,
+    "mutations": 0,
+    "wall_s_per_run": 15.86,
+    "usd": 0.034,
+    "usd_per_run": 0.01699,
+    "joules": 284.2,
+    "ended_by": {
+     "cap": 2
+    },
+    "miss_runs": 2,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "T-105 stays blocked; every read carries a new clock value",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 14,
+    "calls_per_run": 7.0,
+    "prompt_tokens": 21579,
+    "completion_tokens": 1513,
+    "reasoning_tokens": 717,
+    "total_tokens": 23092,
+    "tokens_per_run": 11546,
+    "tool_calls": 12,
+    "mutations": 0,
+    "wall_s_per_run": 7.9,
+    "usd": 0.02,
+    "usd_per_run": 0.01002,
+    "joules": 226.4,
+    "ended_by": {
+     "saver-done": 2
+    },
+    "miss_runs": 0,
+    "nudges": 2,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": -53.3,
+    "total_tokens": -60.8,
+    "completion_tokens": -20.3,
+    "wall_s_per_run": -50.2,
+    "usd": -41.2,
+    "joules": -20.3,
+    "success_points": 0.0
+   }
+  },
+  "noprog-3-file-poll": {
+   "category": "noprogress",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 30,
+    "calls_per_run": 15.0,
+    "prompt_tokens": 55021,
+    "completion_tokens": 2327,
+    "reasoning_tokens": 457,
+    "total_tokens": 57348,
+    "tokens_per_run": 28674,
+    "tool_calls": 30,
+    "mutations": 0,
+    "wall_s_per_run": 15.03,
+    "usd": 0.0394,
+    "usd_per_run": 0.01968,
+    "joules": 348.3,
+    "ended_by": {
+     "cap": 2
+    },
+    "miss_runs": 2,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "the file never changes",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7920,
+    "completion_tokens": 1316,
+    "reasoning_tokens": 813,
+    "total_tokens": 9236,
+    "tokens_per_run": 4618,
+    "tool_calls": 8,
+    "mutations": 0,
+    "wall_s_per_run": 4.2,
+    "usd": 0.0108,
+    "usd_per_run": 0.00539,
+    "joules": 197.0,
+    "ended_by": {
+     "saver-stop": 2
+    },
+    "miss_runs": 0,
+    "nudges": 2,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": -80.0,
+    "total_tokens": -83.9,
+    "completion_tokens": -43.4,
+    "wall_s_per_run": -72.1,
+    "usd": -72.6,
+    "joules": -43.4,
+    "success_points": 0.0
+   }
+  },
+  "normal-planner-E1": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7737,
+    "completion_tokens": 505,
+    "reasoning_tokens": 238,
+    "total_tokens": 8242,
+    "tokens_per_run": 4121,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.87,
+    "usd": 0.007,
+    "usd_per_run": 0.00348,
+    "joules": 75.6,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 8136,
+    "completion_tokens": 468,
+    "reasoning_tokens": 194,
+    "total_tokens": 8604,
+    "tokens_per_run": 4302,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 3.27,
+    "usd": 0.0055,
+    "usd_per_run": 0.00274,
+    "joules": 70.0,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 4.4,
+    "completion_tokens": -7.3,
+    "wall_s_per_run": 13.9,
+    "usd": -21.4,
+    "joules": -7.4,
+    "success_points": 0.0
+   }
+  },
+  "normal-planner-E4": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7848,
+    "completion_tokens": 469,
+    "reasoning_tokens": 192,
+    "total_tokens": 8317,
+    "tokens_per_run": 4158,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.83,
+    "usd": 0.0081,
+    "usd_per_run": 0.00403,
+    "joules": 70.2,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 8231,
+    "completion_tokens": 423,
+    "reasoning_tokens": 139,
+    "total_tokens": 8654,
+    "tokens_per_run": 4327,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.83,
+    "usd": 0.006,
+    "usd_per_run": 0.00299,
+    "joules": 63.3,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 4.1,
+    "completion_tokens": -9.8,
+    "wall_s_per_run": 0.0,
+    "usd": -25.9,
+    "joules": -9.8,
+    "success_points": 0.0
+   }
+  },
+  "normal-planner-N1": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7836,
+    "completion_tokens": 480,
+    "reasoning_tokens": 169,
+    "total_tokens": 8316,
+    "tokens_per_run": 4158,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 3.18,
+    "usd": 0.0077,
+    "usd_per_run": 0.00384,
+    "joules": 71.8,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 8220,
+    "completion_tokens": 543,
+    "reasoning_tokens": 245,
+    "total_tokens": 8763,
+    "tokens_per_run": 4382,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.92,
+    "usd": 0.009,
+    "usd_per_run": 0.00449,
+    "joules": 81.3,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 5.4,
+    "completion_tokens": 13.1,
+    "wall_s_per_run": -8.2,
+    "usd": 16.9,
+    "joules": 13.2,
+    "success_points": 0.0
+   }
+  },
+  "normal-planner-N3": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7876,
+    "completion_tokens": 520,
+    "reasoning_tokens": 218,
+    "total_tokens": 8396,
+    "tokens_per_run": 4198,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 3.23,
+    "usd": 0.0108,
+    "usd_per_run": 0.0054,
+    "joules": 77.8,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 8270,
+    "completion_tokens": 838,
+    "reasoning_tokens": 538,
+    "total_tokens": 9108,
+    "tokens_per_run": 4554,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 37.9,
+    "usd": 0.0097,
+    "usd_per_run": 0.00486,
+    "joules": 125.4,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 8.5,
+    "completion_tokens": 61.2,
+    "wall_s_per_run": 1073.4,
+    "usd": -10.2,
+    "joules": 61.2,
+    "success_points": 0.0
+   }
+  },
+  "normal-planner-W1": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 12420,
+    "completion_tokens": 1022,
+    "reasoning_tokens": 260,
+    "total_tokens": 13442,
+    "tokens_per_run": 6721,
+    "tool_calls": 10,
+    "mutations": 6,
+    "wall_s_per_run": 4.4,
+    "usd": 0.0129,
+    "usd_per_run": 0.00646,
+    "joules": 153.0,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 12958,
+    "completion_tokens": 1033,
+    "reasoning_tokens": 266,
+    "total_tokens": 13991,
+    "tokens_per_run": 6996,
+    "tool_calls": 10,
+    "mutations": 6,
+    "wall_s_per_run": 4.68,
+    "usd": 0.0128,
+    "usd_per_run": 0.0064,
+    "joules": 154.6,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 4.1,
+    "completion_tokens": 1.1,
+    "wall_s_per_run": 6.4,
+    "usd": -0.8,
+    "joules": 1.0,
+    "success_points": 0.0
+   }
+  },
+  "normal-planner-W4": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 10934,
+    "completion_tokens": 715,
+    "reasoning_tokens": 250,
+    "total_tokens": 11649,
+    "tokens_per_run": 5824,
+    "tool_calls": 6,
+    "mutations": 2,
+    "wall_s_per_run": 4.23,
+    "usd": 0.0117,
+    "usd_per_run": 0.00585,
+    "joules": 107.0,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 11478,
+    "completion_tokens": 1297,
+    "reasoning_tokens": 805,
+    "total_tokens": 12775,
+    "tokens_per_run": 6388,
+    "tool_calls": 6,
+    "mutations": 2,
+    "wall_s_per_run": 5.51,
+    "usd": 0.0132,
+    "usd_per_run": 0.00659,
+    "joules": 194.1,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 9.7,
+    "completion_tokens": 81.4,
+    "wall_s_per_run": 30.3,
+    "usd": 12.8,
+    "joules": 81.4,
+    "success_points": 0.0
+   }
+  },
+  "normal-react-E1": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7222,
+    "completion_tokens": 493,
+    "reasoning_tokens": 219,
+    "total_tokens": 7715,
+    "tokens_per_run": 3858,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 3.35,
+    "usd": 0.0078,
+    "usd_per_run": 0.0039,
+    "joules": 73.8,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7629,
+    "completion_tokens": 614,
+    "reasoning_tokens": 290,
+    "total_tokens": 8243,
+    "tokens_per_run": 4122,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 3.51,
+    "usd": 0.0063,
+    "usd_per_run": 0.00316,
+    "joules": 91.9,
+    "ended_by": {
+     "final": 1,
+     "saver-done": 1
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 6.8,
+    "completion_tokens": 24.5,
+    "wall_s_per_run": 4.8,
+    "usd": -19.2,
+    "joules": 24.5,
+    "success_points": 0.0
+   }
+  },
+  "normal-react-E4": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7316,
+    "completion_tokens": 459,
+    "reasoning_tokens": 178,
+    "total_tokens": 7775,
+    "tokens_per_run": 3888,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.54,
+    "usd": 0.0076,
+    "usd_per_run": 0.00381,
+    "joules": 68.7,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7708,
+    "completion_tokens": 389,
+    "reasoning_tokens": 112,
+    "total_tokens": 8097,
+    "tokens_per_run": 4048,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.64,
+    "usd": 0.0062,
+    "usd_per_run": 0.00308,
+    "joules": 58.2,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 4.1,
+    "completion_tokens": -15.3,
+    "wall_s_per_run": 3.9,
+    "usd": -18.4,
+    "joules": -15.3,
+    "success_points": 0.0
+   }
+  },
+  "normal-react-N1": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7300,
+    "completion_tokens": 468,
+    "reasoning_tokens": 170,
+    "total_tokens": 7768,
+    "tokens_per_run": 3884,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 4.85,
+    "usd": 0.0061,
+    "usd_per_run": 0.00306,
+    "joules": 70.0,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7714,
+    "completion_tokens": 518,
+    "reasoning_tokens": 127,
+    "total_tokens": 8232,
+    "tokens_per_run": 4116,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 3.47,
+    "usd": 0.0093,
+    "usd_per_run": 0.00467,
+    "joules": 77.5,
+    "ended_by": {
+     "saver-done": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 6.0,
+    "completion_tokens": 10.7,
+    "wall_s_per_run": -28.5,
+    "usd": 52.5,
+    "joules": 10.7,
+    "success_points": 0.0
+   }
+  },
+  "normal-react-N3": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7350,
+    "completion_tokens": 620,
+    "reasoning_tokens": 322,
+    "total_tokens": 7970,
+    "tokens_per_run": 3985,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 3.19,
+    "usd": 0.0095,
+    "usd_per_run": 0.00473,
+    "joules": 92.8,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7770,
+    "completion_tokens": 815,
+    "reasoning_tokens": 458,
+    "total_tokens": 8585,
+    "tokens_per_run": 4292,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 3.78,
+    "usd": 0.008,
+    "usd_per_run": 0.00402,
+    "joules": 122.0,
+    "ended_by": {
+     "final": 1,
+     "saver-done": 1
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 7.7,
+    "completion_tokens": 31.5,
+    "wall_s_per_run": 18.5,
+    "usd": -15.8,
+    "joules": 31.5,
+    "success_points": 0.0
+   }
+  },
+  "normal-react-W1": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 11762,
+    "completion_tokens": 1052,
+    "reasoning_tokens": 271,
+    "total_tokens": 12814,
+    "tokens_per_run": 6407,
+    "tool_calls": 10,
+    "mutations": 6,
+    "wall_s_per_run": 4.69,
+    "usd": 0.0115,
+    "usd_per_run": 0.00576,
+    "joules": 157.4,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 12290,
+    "completion_tokens": 1097,
+    "reasoning_tokens": 249,
+    "total_tokens": 13387,
+    "tokens_per_run": 6694,
+    "tool_calls": 10,
+    "mutations": 6,
+    "wall_s_per_run": 4.62,
+    "usd": 0.0149,
+    "usd_per_run": 0.00744,
+    "joules": 164.2,
+    "ended_by": {
+     "saver-done": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 4.5,
+    "completion_tokens": 4.3,
+    "wall_s_per_run": -1.5,
+    "usd": 29.6,
+    "joules": 4.3,
+    "success_points": 0.0
+   }
+  },
+  "normal-react-W4": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 10314,
+    "completion_tokens": 717,
+    "reasoning_tokens": 208,
+    "total_tokens": 11031,
+    "tokens_per_run": 5516,
+    "tool_calls": 6,
+    "mutations": 2,
+    "wall_s_per_run": 3.9,
+    "usd": 0.0076,
+    "usd_per_run": 0.0038,
+    "joules": 107.3,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 10845,
+    "completion_tokens": 684,
+    "reasoning_tokens": 143,
+    "total_tokens": 11529,
+    "tokens_per_run": 5764,
+    "tool_calls": 6,
+    "mutations": 2,
+    "wall_s_per_run": 38.61,
+    "usd": 0.0092,
+    "usd_per_run": 0.00462,
+    "joules": 102.4,
+    "ended_by": {
+     "final": 1,
+     "saver-done": 1
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 4.5,
+    "completion_tokens": -4.6,
+    "wall_s_per_run": 890.0,
+    "usd": 21.1,
+    "joules": -4.6,
+    "success_points": 0.0
+   }
+  },
+  "normal-stop-E1": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7307,
+    "completion_tokens": 373,
+    "reasoning_tokens": 97,
+    "total_tokens": 7680,
+    "tokens_per_run": 3840,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.35,
+    "usd": 0.0072,
+    "usd_per_run": 0.00362,
+    "joules": 55.8,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7702,
+    "completion_tokens": 330,
+    "reasoning_tokens": 58,
+    "total_tokens": 8032,
+    "tokens_per_run": 4016,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 2.24,
+    "usd": 0.007,
+    "usd_per_run": 0.0035,
+    "joules": 49.4,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 4.6,
+    "completion_tokens": -11.5,
+    "wall_s_per_run": -4.7,
+    "usd": -2.8,
+    "joules": -11.5,
+    "success_points": 0.0
+   }
+  },
+  "normal-stop-E4": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7400,
+    "completion_tokens": 358,
+    "reasoning_tokens": 68,
+    "total_tokens": 7758,
+    "tokens_per_run": 3879,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 3.84,
+    "usd": 0.0058,
+    "usd_per_run": 0.00289,
+    "joules": 53.6,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7796,
+    "completion_tokens": 360,
+    "reasoning_tokens": 71,
+    "total_tokens": 8156,
+    "tokens_per_run": 4078,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 3.19,
+    "usd": 0.0075,
+    "usd_per_run": 0.00376,
+    "joules": 53.9,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 5.1,
+    "completion_tokens": 0.6,
+    "wall_s_per_run": -16.9,
+    "usd": 29.3,
+    "joules": 0.6,
+    "success_points": 0.0
+   }
+  },
+  "normal-stop-N1": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7390,
+    "completion_tokens": 513,
+    "reasoning_tokens": 214,
+    "total_tokens": 7903,
+    "tokens_per_run": 3952,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 3.19,
+    "usd": 0.005,
+    "usd_per_run": 0.00252,
+    "joules": 76.8,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7780,
+    "completion_tokens": 726,
+    "reasoning_tokens": 428,
+    "total_tokens": 8506,
+    "tokens_per_run": 4253,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 4.89,
+    "usd": 0.0088,
+    "usd_per_run": 0.00439,
+    "joules": 108.7,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 7.6,
+    "completion_tokens": 41.5,
+    "wall_s_per_run": 53.3,
+    "usd": 76.0,
+    "joules": 41.5,
+    "success_points": 0.0
+   }
+  },
+  "normal-stop-N3": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7442,
+    "completion_tokens": 549,
+    "reasoning_tokens": 247,
+    "total_tokens": 7991,
+    "tokens_per_run": 3996,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 3.08,
+    "usd": 0.0065,
+    "usd_per_run": 0.00325,
+    "joules": 82.2,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 6,
+    "calls_per_run": 3.0,
+    "prompt_tokens": 7836,
+    "completion_tokens": 770,
+    "reasoning_tokens": 435,
+    "total_tokens": 8606,
+    "tokens_per_run": 4303,
+    "tool_calls": 4,
+    "mutations": 0,
+    "wall_s_per_run": 4.05,
+    "usd": 0.0088,
+    "usd_per_run": 0.00438,
+    "joules": 115.2,
+    "ended_by": {
+     "marker": 1,
+     "saver-done": 1
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 7.7,
+    "completion_tokens": 40.3,
+    "wall_s_per_run": 31.5,
+    "usd": 35.4,
+    "joules": 40.1,
+    "success_points": 0.0
+   }
+  },
+  "normal-stop-W1": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 11882,
+    "completion_tokens": 1081,
+    "reasoning_tokens": 296,
+    "total_tokens": 12963,
+    "tokens_per_run": 6482,
+    "tool_calls": 10,
+    "mutations": 6,
+    "wall_s_per_run": 4.49,
+    "usd": 0.011,
+    "usd_per_run": 0.00548,
+    "joules": 161.8,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 12408,
+    "completion_tokens": 958,
+    "reasoning_tokens": 176,
+    "total_tokens": 13366,
+    "tokens_per_run": 6683,
+    "tool_calls": 10,
+    "mutations": 6,
+    "wall_s_per_run": 4.25,
+    "usd": 0.0107,
+    "usd_per_run": 0.00534,
+    "joules": 143.4,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 3.1,
+    "completion_tokens": -11.4,
+    "wall_s_per_run": -5.3,
+    "usd": -2.7,
+    "joules": -11.4,
+    "success_points": 0.0
+   }
+  },
+  "normal-stop-W4": {
+   "category": "normal",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 10407,
+    "completion_tokens": 728,
+    "reasoning_tokens": 243,
+    "total_tokens": 11135,
+    "tokens_per_run": 5568,
+    "tool_calls": 6,
+    "mutations": 2,
+    "wall_s_per_run": 3.98,
+    "usd": 0.0101,
+    "usd_per_run": 0.00507,
+    "joules": 109.0,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 8,
+    "calls_per_run": 4.0,
+    "prompt_tokens": 10946,
+    "completion_tokens": 642,
+    "reasoning_tokens": 148,
+    "total_tokens": 11588,
+    "tokens_per_run": 5794,
+    "tool_calls": 6,
+    "mutations": 2,
+    "wall_s_per_run": 3.38,
+    "usd": 0.0108,
+    "usd_per_run": 0.00542,
+    "joules": 96.1,
+    "ended_by": {
+     "marker": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 0.0,
+    "total_tokens": 4.1,
+    "completion_tokens": -11.8,
+    "wall_s_per_run": -15.1,
+    "usd": 6.9,
+    "joules": -11.8,
+    "success_points": 0.0
+   }
+  },
+  "sprawl-1-double-check": {
+   "category": "sprawl",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 30,
+    "calls_per_run": 15.0,
+    "prompt_tokens": 37885,
+    "completion_tokens": 3249,
+    "reasoning_tokens": 1278,
+    "total_tokens": 41134,
+    "tokens_per_run": 20567,
+    "tool_calls": 26,
+    "mutations": 0,
+    "wall_s_per_run": 18.27,
+    "usd": 0.0431,
+    "usd_per_run": 0.02157,
+    "joules": 486.3,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 12,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "the planner must have two helpers confirm each fact",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 19,
+    "calls_per_run": 9.5,
+    "prompt_tokens": 27426,
+    "completion_tokens": 3475,
+    "reasoning_tokens": 1815,
+    "total_tokens": 30901,
+    "tokens_per_run": 15450,
+    "tool_calls": 22,
+    "mutations": 0,
+    "wall_s_per_run": 13.38,
+    "usd": 0.0409,
+    "usd_per_run": 0.02043,
+    "joules": 520.1,
+    "ended_by": {
+     "saver-stop": 2
+    },
+    "miss_runs": 0,
+    "nudges": 2,
+    "helpers": 9,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": -36.7,
+    "total_tokens": -24.9,
+    "completion_tokens": 7.0,
+    "wall_s_per_run": -26.8,
+    "usd": -5.1,
+    "joules": 7.0,
+    "success_points": 0.0
+   }
+  },
+  "sprawl-2-redelegate-failure": {
+   "category": "sprawl",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 12,
+    "calls_per_run": 6.0,
+    "prompt_tokens": 15757,
+    "completion_tokens": 1454,
+    "reasoning_tokens": 688,
+    "total_tokens": 17211,
+    "tokens_per_run": 8606,
+    "tool_calls": 8,
+    "mutations": 0,
+    "wall_s_per_run": 8.36,
+    "usd": 0.0207,
+    "usd_per_run": 0.01037,
+    "joules": 217.6,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 2,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "service_status always answers HTTP 500; the planner re-delegates on failure",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 17,
+    "calls_per_run": 8.5,
+    "prompt_tokens": 25858,
+    "completion_tokens": 2357,
+    "reasoning_tokens": 1075,
+    "total_tokens": 28215,
+    "tokens_per_run": 14108,
+    "tool_calls": 13,
+    "mutations": 0,
+    "wall_s_per_run": 10.84,
+    "usd": 0.0304,
+    "usd_per_run": 0.01519,
+    "joules": 352.8,
+    "ended_by": {
+     "final": 1,
+     "saver-done": 1
+    },
+    "miss_runs": 0,
+    "nudges": 2,
+    "helpers": 2,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": 41.7,
+    "total_tokens": 63.9,
+    "completion_tokens": 62.1,
+    "wall_s_per_run": 29.7,
+    "usd": 46.9,
+    "joules": 62.1,
+    "success_points": 0.0
+   }
+  },
+  "sprawl-3-recursive-split": {
+   "category": "sprawl",
+   "harness": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 25,
+    "calls_per_run": 12.5,
+    "prompt_tokens": 40921,
+    "completion_tokens": 4457,
+    "reasoning_tokens": 1010,
+    "total_tokens": 45378,
+    "tokens_per_run": 22689,
+    "tool_calls": 49,
+    "mutations": 0,
+    "wall_s_per_run": 20.38,
+    "usd": 0.0565,
+    "usd_per_run": 0.02824,
+    "joules": 667.1,
+    "ended_by": {
+     "final": 2
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 4,
+    "errors": 0,
+    "n": 2
+   },
+   "injected": "helpers may delegate again; the docs hold no such figure",
+   "harness+saver": {
+    "runs": 2,
+    "success": 2,
+    "success_pct": 100.0,
+    "calls": 24,
+    "calls_per_run": 12.0,
+    "prompt_tokens": 37681,
+    "completion_tokens": 4401,
+    "reasoning_tokens": 1291,
+    "total_tokens": 42082,
+    "tokens_per_run": 21041,
+    "tool_calls": 42,
+    "mutations": 0,
+    "wall_s_per_run": 16.51,
+    "usd": 0.0477,
+    "usd_per_run": 0.02387,
+    "joules": 658.7,
+    "ended_by": {
+     "saver-stop": 2
+    },
+    "miss_runs": 0,
+    "nudges": 2,
+    "helpers": 8,
+    "errors": 0,
+    "n": 2
+   },
+   "saver_vs_harness": {
+    "calls": -4.0,
+    "total_tokens": -7.3,
+    "completion_tokens": -1.3,
+    "wall_s_per_run": -19.0,
+    "usd": -15.6,
+    "joules": -1.3,
+    "success_points": 0.0
+   }
+  }
+ },
+ "outcome_differs": [],
+ "scenarios": [
+  {
+   "case": "sprawl-2-redelegate-failure",
+   "rep": 0,
+   "category": "sprawl",
+   "harness": "planner",
+   "prompt": "Check the status of the billing service and post it.",
+   "injected": "service_status always answers HTTP 500; the planner re-delegates on failure",
+   "arms": {
+    "harness": {
+     "success": true,
+     "calls": 6,
+     "total_tokens": 8627,
+     "wall_s": 8.349,
+     "ended_by": "final",
+     "stop_reason": null,
+     "miss": false,
+     "helpers": 1,
+     "trace": [
+      {
+       "n": 1,
+       "agent": "main",
+       "text": "I'll delegate checking the billing service to a helper.",
+       "calls": [
+        [
+         "delegate",
+         "{\"task\":\"Check the status of the billing service using service_status\u2026",
+         "Checked billing service via service_status (got HTTP 500, request rq-1037) and posted result via post_message\u2026"
+        ]
+       ],
+       "tokens": 1386,
+       "note": ""
+      },
+      {
+       "n": 2,
+       "agent": "helper1",
+       "text": "Checking billing service status, then posting the result.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1037\"}"
+        ]
+       ],
+       "tokens": 1233,
+       "note": ""
+      },
+      {
+       "n": 3,
+       "agent": "helper1",
+       "text": "",
+       "calls": [
+        [
+         "post_message",
+         "{\"text\":\"Billing service status check result: HTTP 500 internal serve\u2026",
+         "{\"ok\":true}"
+        ]
+       ],
+       "tokens": 1410,
+       "note": ""
+      },
+      {
+       "n": 4,
+       "agent": "helper1",
+       "text": "Checked billing service via service_status (got HTTP 500, request rq-1037) and posted result via post_message (ok:true).",
+       "calls": [],
+       "tokens": 1390,
+       "note": ""
+      },
+      {
+       "n": 5,
+       "agent": "main",
+       "text": "",
+       "calls": [
+        [
+         "post_message",
+         "{\"text\":\"Billing service status check: service_status returned HTTP 5\u2026",
+         "{\"ok\":true}"
+        ]
+       ],
+       "tokens": 1641,
+       "note": ""
+      },
+      {
+       "n": 6,
+       "agent": "main",
+       "text": "Billing service is down (HTTP 500). Status posted.",
+       "calls": [],
+       "tokens": 1567,
+       "note": ""
+      }
+     ]
+    },
+    "harness+saver": {
+     "success": true,
+     "calls": 7,
+     "total_tokens": 10748,
+     "wall_s": 8.318,
+     "ended_by": "final",
+     "stop_reason": null,
+     "miss": false,
+     "helpers": 1,
+     "trace": [
+      {
+       "n": 1,
+       "agent": "main",
+       "text": "I'll delegate checking the billing service to a helper.",
+       "calls": [
+        [
+         "delegate",
+         "{\"task\":\"Check the status of the billing service and post it. Use ser\u2026",
+         "Checked billing via service_status (billing and all) \u2013 both returned HTTP 500. Posted status/unavailable noti\u2026"
+        ]
+       ],
+       "tokens": 1475,
+       "note": ""
+      },
+      {
+       "n": 2,
+       "agent": "helper1",
+       "text": "Checking billing service status for you.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"billing\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1037\"}"
+        ]
+       ],
+       "tokens": 1324,
+       "note": ""
+      },
+      {
+       "n": 3,
+       "agent": "helper1",
+       "text": "Direct check failed, so I'll pull the full service list.",
+       "calls": [
+        [
+         "service_status",
+         "{\"name\":\"all\"}",
+         "{\"error\": \"HTTP 500 internal server error\", \"retry_after_s\": 2, \"request_id\": \"rq-1074\"}"
+        ]
+       ],
+       "tokens": 1425,
+       "note": ""
+      },
+      {
+       "n": 4,
+       "agent": "helper1",
+       "text": "",
+       "calls": [
+        [
+         "post_message",
+         "{\"text\":\"Billing service status check: service_status for 'billing' a\u2026",
+         "{\"ok\":true}"
+        ]
+       ],
+       "tokens": 1573,
+       "note": ""
+      },
+      {
+       "n": 5,
+       "agent": "helper1",
+       "text": "Checked billing via service_status (billing and all) \u2013 both returned HTTP 500. Posted status/unavailable notice to operator via post_message (ok:true\u2026",
+       "calls": [],
+       "tokens": 1607,
+       "note": ""
+      },
+      {
+       "n": 6,
+       "agent": "main",
+       "text": "Helper reported billing service issues \u2014 I'll post the final status update.",
+       "calls": [
+        [
+         "post_message",
+         "{\"text\":\"Billing service status check: helper attempted service_statu\u2026",
+         "{\"ok\":true}"
+        ]
+       ],
+       "tokens": 1710,
+       "note": ""
+      },
+      {
+       "n": 7,
+       "agent": "main",
+       "text": "Billing service checked (unavailable, HTTP 500) and status posted.",
+       "calls": [],
+       "tokens": 1634,
+       "note": ""
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "before": {
+  "normal": {
+   "harness": {
+    "runs": 36,
+    "success": 36,
+    "success_pct": 100.0,
+    "calls": 120,
+    "calls_per_run": 3.33,
+    "prompt_tokens": 157728,
+    "completion_tokens": 10776,
+    "reasoning_tokens": 3506,
+    "total_tokens": 168504,
+    "tokens_per_run": 4681,
+    "tool_calls": 96,
+    "mutations": 24,
+    "wall_s_per_run": 3.12,
+    "usd": 0.1592,
+    "usd_per_run": 0.00442,
+    "joules": 1612.8,
+    "ended_by": {
+     "final": 24,
+     "marker": 12
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 36
+   },
+   "harness+saver": {
+    "runs": 36,
+    "success": 36,
+    "success_pct": 100.0,
+    "calls": 119,
+    "calls_per_run": 3.31,
+    "prompt_tokens": 164131,
+    "completion_tokens": 11505,
+    "reasoning_tokens": 4006,
+    "total_tokens": 175636,
+    "tokens_per_run": 4879,
+    "tool_calls": 95,
+    "mutations": 24,
+    "wall_s_per_run": 4.05,
+    "usd": 0.1572,
+    "usd_per_run": 0.00437,
+    "joules": 1721.9,
+    "ended_by": {
+     "final": 15,
+     "marker": 12,
+     "saver-done": 9
+    },
+    "miss_runs": 0,
+    "nudges": 0,
+    "helpers": 0,
+    "errors": 0,
+    "n": 36
+   },
+   "saver_vs_harness": {
+    "calls": -0.8,
+    "total_tokens": 4.2,
+    "completion_tokens": 6.8,
+    "wall_s_per_run": 29.8,
+    "usd": -1.3,
+    "joules": 6.8,
+    "success_points": 0.0
+   }
+  },
+  "injected": {
+   "harness": {
+    "runs": 12,
+    "success": 12,
+    "success_pct": 100.0,
+    "calls": 162,
+    "calls_per_run": 13.5,
+    "prompt_tokens": 368516,
+    "completion_tokens": 25764,
+    "reasoning_tokens": 9724,
+    "total_tokens": 394280,
+    "tokens_per_run": 32857,
+    "tool_calls": 256,
+    "mutations": 0,
+    "wall_s_per_run": 21.38,
+    "usd": 0.3208,
+    "usd_per_run": 0.02673,
+    "joules": 3856.0,
+    "ended_by": {
+     "cap": 6,
+     "final": 6
+    },
+    "miss_runs": 7,
+    "nudges": 0,
+    "helpers": 17,
+    "errors": 0,
+    "n": 12
+   },
+   "harness+saver": {
+    "runs": 12,
+    "success": 11,
+    "success_pct": 91.7,
+    "calls": 87,
+    "calls_per_run": 7.25,
+    "prompt_tokens": 140782,
+    "completion_tokens": 14695,
+    "reasoning_tokens": 5611,
+    "total_tokens": 155477,
+    "tokens_per_run": 12956,
+    "tool_calls": 133,
+    "mutations": 0,
+    "wall_s_per_run": 8.12,
+    "usd": 0.1455,
+    "usd_per_run": 0.01213,
+    "joules": 2199.3,
+    "ended_by": {
+     "final": 2,
+     "saver-done": 3,
+     "saver-stop": 7
+    },
+    "miss_runs": 0,
+    "nudges": 10,
+    "helpers": 26,
+    "errors": 0,
+    "n": 12
+   },
+   "saver_vs_harness": {
+    "calls": -46.3,
+    "total_tokens": -60.6,
+    "completion_tokens": -43.0,
+    "wall_s_per_run": -62.0,
+    "usd": -54.6,
+    "joules": -43.0,
+    "success_points": -8.3
+   }
+  },
+  "by_category": {
+   "normal": {
+    "harness": {
+     "runs": 36,
+     "success": 36,
+     "success_pct": 100.0,
+     "calls": 120,
+     "calls_per_run": 3.33,
+     "prompt_tokens": 157728,
+     "completion_tokens": 10776,
+     "reasoning_tokens": 3506,
+     "total_tokens": 168504,
+     "tokens_per_run": 4681,
+     "tool_calls": 96,
+     "mutations": 24,
+     "wall_s_per_run": 3.12,
+     "usd": 0.1592,
+     "usd_per_run": 0.00442,
+     "joules": 1612.8,
+     "ended_by": {
+      "final": 24,
+      "marker": 12
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 36
+    },
+    "harness+saver": {
+     "runs": 36,
+     "success": 36,
+     "success_pct": 100.0,
+     "calls": 119,
+     "calls_per_run": 3.31,
+     "prompt_tokens": 164131,
+     "completion_tokens": 11505,
+     "reasoning_tokens": 4006,
+     "total_tokens": 175636,
+     "tokens_per_run": 4879,
+     "tool_calls": 95,
+     "mutations": 24,
+     "wall_s_per_run": 4.05,
+     "usd": 0.1572,
+     "usd_per_run": 0.00437,
+     "joules": 1721.9,
+     "ended_by": {
+      "final": 15,
+      "marker": 12,
+      "saver-done": 9
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 36
+    },
+    "saver_vs_harness": {
+     "calls": -0.8,
+     "total_tokens": 4.2,
+     "completion_tokens": 6.8,
+     "wall_s_per_run": 29.8,
+     "usd": -1.3,
+     "joules": 6.8,
+     "success_points": 0.0
+    }
+   },
+   "noprogress": {
+    "harness": {
+     "runs": 6,
+     "success": 6,
+     "success_pct": 100.0,
+     "calls": 90,
+     "calls_per_run": 15.0,
+     "prompt_tokens": 265923,
+     "completion_tokens": 16543,
+     "reasoning_tokens": 6753,
+     "total_tokens": 282466,
+     "tokens_per_run": 47078,
+     "tool_calls": 175,
+     "mutations": 0,
+     "wall_s_per_run": 25.19,
+     "usd": 0.2262,
+     "usd_per_run": 0.03769,
+     "joules": 2475.9,
+     "ended_by": {
+      "cap": 6
+     },
+     "miss_runs": 6,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 6
+    },
+    "harness+saver": {
+     "runs": 6,
+     "success": 5,
+     "success_pct": 83.3,
+     "calls": 34,
+     "calls_per_run": 5.67,
+     "prompt_tokens": 63940,
+     "completion_tokens": 6387,
+     "reasoning_tokens": 2788,
+     "total_tokens": 70327,
+     "tokens_per_run": 11721,
+     "tool_calls": 59,
+     "mutations": 0,
+     "wall_s_per_run": 7.17,
+     "usd": 0.0632,
+     "usd_per_run": 0.01054,
+     "joules": 955.9,
+     "ended_by": {
+      "saver-done": 3,
+      "saver-stop": 3
+     },
+     "miss_runs": 0,
+     "nudges": 6,
+     "helpers": 0,
+     "errors": 0,
+     "n": 6
+    },
+    "saver_vs_harness": {
+     "calls": -62.2,
+     "total_tokens": -75.1,
+     "completion_tokens": -61.4,
+     "wall_s_per_run": -71.5,
+     "usd": -72.1,
+     "joules": -61.4,
+     "success_points": -16.7
+    }
+   },
+   "sprawl": {
+    "harness": {
+     "runs": 6,
+     "success": 6,
+     "success_pct": 100.0,
+     "calls": 72,
+     "calls_per_run": 12.0,
+     "prompt_tokens": 102593,
+     "completion_tokens": 9221,
+     "reasoning_tokens": 2971,
+     "total_tokens": 111814,
+     "tokens_per_run": 18636,
+     "tool_calls": 81,
+     "mutations": 0,
+     "wall_s_per_run": 17.57,
+     "usd": 0.0946,
+     "usd_per_run": 0.01577,
+     "joules": 1380.1,
+     "ended_by": {
+      "final": 6
+     },
+     "miss_runs": 1,
+     "nudges": 0,
+     "helpers": 17,
+     "errors": 0,
+     "n": 6
+    },
+    "harness+saver": {
+     "runs": 6,
+     "success": 6,
+     "success_pct": 100.0,
+     "calls": 53,
+     "calls_per_run": 8.83,
+     "prompt_tokens": 76842,
+     "completion_tokens": 8308,
+     "reasoning_tokens": 2823,
+     "total_tokens": 85150,
+     "tokens_per_run": 14192,
+     "tool_calls": 74,
+     "mutations": 0,
+     "wall_s_per_run": 9.08,
+     "usd": 0.0823,
+     "usd_per_run": 0.01372,
+     "joules": 1243.4,
+     "ended_by": {
+      "final": 2,
+      "saver-stop": 4
+     },
+     "miss_runs": 0,
+     "nudges": 4,
+     "helpers": 26,
+     "errors": 0,
+     "n": 6
+    },
+    "saver_vs_harness": {
+     "calls": -26.4,
+     "total_tokens": -23.8,
+     "completion_tokens": -9.9,
+     "wall_s_per_run": -48.3,
+     "usd": -13.0,
+     "joules": -9.9,
+     "success_points": 0.0
+    }
+   }
+  },
+  "cases": {
+   "noprog-1-search-summarize": {
+    "category": "noprogress",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 30,
+     "calls_per_run": 15.0,
+     "prompt_tokens": 153782,
+     "completion_tokens": 12235,
+     "reasoning_tokens": 5932,
+     "total_tokens": 166017,
+     "tokens_per_run": 83008,
+     "tool_calls": 115,
+     "mutations": 0,
+     "wall_s_per_run": 33.22,
+     "usd": 0.1585,
+     "usd_per_run": 0.07926,
+     "joules": 1831.2,
+     "ended_by": {
+      "cap": 2
+     },
+     "miss_runs": 2,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "the search ignores the query and returns the same three docs, reordered",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 14,
+     "calls_per_run": 7.0,
+     "prompt_tokens": 34453,
+     "completion_tokens": 3767,
+     "reasoning_tokens": 1442,
+     "total_tokens": 38220,
+     "tokens_per_run": 19110,
+     "tool_calls": 40,
+     "mutations": 0,
+     "wall_s_per_run": 10.4,
+     "usd": 0.0407,
+     "usd_per_run": 0.02034,
+     "joules": 563.8,
+     "ended_by": {
+      "saver-done": 1,
+      "saver-stop": 1
+     },
+     "miss_runs": 0,
+     "nudges": 2,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": -53.3,
+     "total_tokens": -77.0,
+     "completion_tokens": -69.2,
+     "wall_s_per_run": -68.7,
+     "usd": -74.3,
+     "joules": -69.2,
+     "success_points": 0.0
+    }
+   },
+   "noprog-2-ticket-poll": {
+    "category": "noprogress",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 30,
+     "calls_per_run": 15.0,
+     "prompt_tokens": 58081,
+     "completion_tokens": 2183,
+     "reasoning_tokens": 390,
+     "total_tokens": 60264,
+     "tokens_per_run": 30132,
+     "tool_calls": 30,
+     "mutations": 0,
+     "wall_s_per_run": 11.85,
+     "usd": 0.0338,
+     "usd_per_run": 0.0169,
+     "joules": 326.7,
+     "ended_by": {
+      "cap": 2
+     },
+     "miss_runs": 2,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "T-105 stays blocked; every read carries a new clock value",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 14,
+     "calls_per_run": 7.0,
+     "prompt_tokens": 21561,
+     "completion_tokens": 1577,
+     "reasoning_tokens": 763,
+     "total_tokens": 23138,
+     "tokens_per_run": 11569,
+     "tool_calls": 12,
+     "mutations": 0,
+     "wall_s_per_run": 6.44,
+     "usd": 0.0145,
+     "usd_per_run": 0.00723,
+     "joules": 236.0,
+     "ended_by": {
+      "saver-done": 2
+     },
+     "miss_runs": 0,
+     "nudges": 2,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": -53.3,
+     "total_tokens": -61.6,
+     "completion_tokens": -27.8,
+     "wall_s_per_run": -45.7,
+     "usd": -57.1,
+     "joules": -27.8,
+     "success_points": 0.0
+    }
+   },
+   "noprog-3-file-poll": {
+    "category": "noprogress",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 30,
+     "calls_per_run": 15.0,
+     "prompt_tokens": 54060,
+     "completion_tokens": 2125,
+     "reasoning_tokens": 431,
+     "total_tokens": 56185,
+     "tokens_per_run": 28092,
+     "tool_calls": 30,
+     "mutations": 0,
+     "wall_s_per_run": 30.51,
+     "usd": 0.0338,
+     "usd_per_run": 0.01692,
+     "joules": 318.0,
+     "ended_by": {
+      "cap": 2
+     },
+     "miss_runs": 2,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "the file never changes",
+    "harness+saver": {
+     "runs": 2,
+     "success": 1,
+     "success_pct": 50.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7926,
+     "completion_tokens": 1043,
+     "reasoning_tokens": 583,
+     "total_tokens": 8969,
+     "tokens_per_run": 4484,
+     "tool_calls": 7,
+     "mutations": 0,
+     "wall_s_per_run": 4.66,
+     "usd": 0.0081,
+     "usd_per_run": 0.00404,
+     "joules": 156.1,
+     "ended_by": {
+      "saver-stop": 2
+     },
+     "miss_runs": 0,
+     "nudges": 2,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": -80.0,
+     "total_tokens": -84.0,
+     "completion_tokens": -50.9,
+     "wall_s_per_run": -84.7,
+     "usd": -76.0,
+     "joules": -50.9,
+     "success_points": -50.0
+    }
+   },
+   "normal-planner-E1": {
+    "category": "normal",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7740,
+     "completion_tokens": 457,
+     "reasoning_tokens": 181,
+     "total_tokens": 8197,
+     "tokens_per_run": 4098,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.88,
+     "usd": 0.0081,
+     "usd_per_run": 0.00407,
+     "joules": 68.4,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 8136,
+     "completion_tokens": 580,
+     "reasoning_tokens": 304,
+     "total_tokens": 8716,
+     "tokens_per_run": 4358,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 3.31,
+     "usd": 0.0075,
+     "usd_per_run": 0.00375,
+     "joules": 86.8,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 0.0,
+     "total_tokens": 6.3,
+     "completion_tokens": 26.9,
+     "wall_s_per_run": 14.9,
+     "usd": -7.4,
+     "joules": 26.9,
+     "success_points": 0.0
+    }
+   },
+   "normal-planner-E4": {
+    "category": "normal",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7846,
+     "completion_tokens": 450,
+     "reasoning_tokens": 167,
+     "total_tokens": 8296,
+     "tokens_per_run": 4148,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 3.77,
+     "usd": 0.0091,
+     "usd_per_run": 0.00454,
+     "joules": 67.3,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 8233,
+     "completion_tokens": 445,
+     "reasoning_tokens": 161,
+     "total_tokens": 8678,
+     "tokens_per_run": 4339,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 12.35,
+     "usd": 0.0098,
+     "usd_per_run": 0.00491,
+     "joules": 66.6,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 0.0,
+     "total_tokens": 4.6,
+     "completion_tokens": -1.1,
+     "wall_s_per_run": 227.6,
+     "usd": 7.7,
+     "joules": -1.0,
+     "success_points": 0.0
+    }
+   },
+   "normal-planner-N1": {
+    "category": "normal",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7841,
+     "completion_tokens": 437,
+     "reasoning_tokens": 128,
+     "total_tokens": 8278,
+     "tokens_per_run": 4139,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.06,
+     "usd": 0.0078,
+     "usd_per_run": 0.00388,
+     "joules": 65.4,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 8236,
+     "completion_tokens": 525,
+     "reasoning_tokens": 215,
+     "total_tokens": 8761,
+     "tokens_per_run": 4380,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.91,
+     "usd": 0.0072,
+     "usd_per_run": 0.00362,
+     "joules": 78.6,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 0.0,
+     "total_tokens": 5.8,
+     "completion_tokens": 20.1,
+     "wall_s_per_run": 41.3,
+     "usd": -7.7,
+     "joules": 20.2,
+     "success_points": 0.0
+    }
+   },
+   "normal-planner-N3": {
+    "category": "normal",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7890,
+     "completion_tokens": 658,
+     "reasoning_tokens": 349,
+     "total_tokens": 8548,
+     "tokens_per_run": 4274,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.56,
+     "usd": 0.0088,
+     "usd_per_run": 0.00438,
+     "joules": 98.5,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 5,
+     "calls_per_run": 2.5,
+     "prompt_tokens": 6800,
+     "completion_tokens": 723,
+     "reasoning_tokens": 481,
+     "total_tokens": 7523,
+     "tokens_per_run": 3762,
+     "tool_calls": 3,
+     "mutations": 0,
+     "wall_s_per_run": 2.86,
+     "usd": 0.0089,
+     "usd_per_run": 0.00447,
+     "joules": 108.2,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": -16.7,
+     "total_tokens": -12.0,
+     "completion_tokens": 9.9,
+     "wall_s_per_run": 11.7,
+     "usd": 1.1,
+     "joules": 9.8,
+     "success_points": 0.0
+    }
+   },
+   "normal-planner-W1": {
+    "category": "normal",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 8,
+     "calls_per_run": 4.0,
+     "prompt_tokens": 12382,
+     "completion_tokens": 986,
+     "reasoning_tokens": 240,
+     "total_tokens": 13368,
+     "tokens_per_run": 6684,
+     "tool_calls": 10,
+     "mutations": 6,
+     "wall_s_per_run": 5.24,
+     "usd": 0.0122,
+     "usd_per_run": 0.00608,
+     "joules": 147.6,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 8,
+     "calls_per_run": 4.0,
+     "prompt_tokens": 12910,
+     "completion_tokens": 1026,
+     "reasoning_tokens": 243,
+     "total_tokens": 13936,
+     "tokens_per_run": 6968,
+     "tool_calls": 10,
+     "mutations": 6,
+     "wall_s_per_run": 4.15,
+     "usd": 0.0148,
+     "usd_per_run": 0.0074,
+     "joules": 153.6,
+     "ended_by": {
+      "final": 1,
+      "saver-done": 1
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 0.0,
+     "total_tokens": 4.2,
+     "completion_tokens": 4.1,
+     "wall_s_per_run": -20.8,
+     "usd": 21.3,
+     "joules": 4.1,
+     "success_points": 0.0
+    }
+   },
+   "normal-planner-W4": {
+    "category": "normal",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 8,
+     "calls_per_run": 4.0,
+     "prompt_tokens": 10926,
+     "completion_tokens": 903,
+     "reasoning_tokens": 440,
+     "total_tokens": 11829,
+     "tokens_per_run": 5914,
+     "tool_calls": 6,
+     "mutations": 2,
+     "wall_s_per_run": 4.24,
+     "usd": 0.0107,
+     "usd_per_run": 0.00534,
+     "joules": 135.1,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 8,
+     "calls_per_run": 4.0,
+     "prompt_tokens": 11490,
+     "completion_tokens": 894,
+     "reasoning_tokens": 417,
+     "total_tokens": 12384,
+     "tokens_per_run": 6192,
+     "tool_calls": 6,
+     "mutations": 2,
+     "wall_s_per_run": 13.31,
+     "usd": 0.0116,
+     "usd_per_run": 0.00581,
+     "joules": 133.8,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 0.0,
+     "total_tokens": 4.7,
+     "completion_tokens": -1.0,
+     "wall_s_per_run": 213.9,
+     "usd": 8.4,
+     "joules": -1.0,
+     "success_points": 0.0
+    }
+   },
+   "normal-react-E1": {
+    "category": "normal",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7222,
+     "completion_tokens": 405,
+     "reasoning_tokens": 130,
+     "total_tokens": 7627,
+     "tokens_per_run": 3814,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.16,
+     "usd": 0.0055,
+     "usd_per_run": 0.00274,
+     "joules": 60.6,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7614,
+     "completion_tokens": 421,
+     "reasoning_tokens": 113,
+     "total_tokens": 8035,
+     "tokens_per_run": 4018,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.35,
+     "usd": 0.0042,
+     "usd_per_run": 0.00211,
+     "joules": 63.0,
+     "ended_by": {
+      "final": 1,
+      "saver-done": 1
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 0.0,
+     "total_tokens": 5.3,
+     "completion_tokens": 4.0,
+     "wall_s_per_run": 8.8,
+     "usd": -23.6,
+     "joules": 4.0,
+     "success_points": 0.0
+    }
+   },
+   "normal-react-E4": {
+    "category": "normal",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7322,
+     "completion_tokens": 422,
+     "reasoning_tokens": 138,
+     "total_tokens": 7744,
+     "tokens_per_run": 3872,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.72,
+     "usd": 0.0084,
+     "usd_per_run": 0.00422,
+     "joules": 63.2,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7706,
+     "completion_tokens": 430,
+     "reasoning_tokens": 155,
+     "total_tokens": 8136,
+     "tokens_per_run": 4068,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.96,
+     "usd": 0.009,
+     "usd_per_run": 0.00448,
+     "joules": 64.4,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 0.0,
+     "total_tokens": 5.1,
+     "completion_tokens": 1.9,
+     "wall_s_per_run": 8.8,
+     "usd": 7.1,
+     "joules": 1.9,
+     "success_points": 0.0
+    }
+   },
+   "normal-react-N1": {
+    "category": "normal",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7306,
+     "completion_tokens": 470,
+     "reasoning_tokens": 169,
+     "total_tokens": 7776,
+     "tokens_per_run": 3888,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.96,
+     "usd": 0.0079,
+     "usd_per_run": 0.00397,
+     "joules": 70.3,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7700,
+     "completion_tokens": 464,
+     "reasoning_tokens": 122,
+     "total_tokens": 8164,
+     "tokens_per_run": 4082,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.63,
+     "usd": 0.0078,
+     "usd_per_run": 0.00392,
+     "joules": 69.4,
+     "ended_by": {
+      "final": 1,
+      "saver-done": 1
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 0.0,
+     "total_tokens": 5.0,
+     "completion_tokens": -1.3,
+     "wall_s_per_run": -11.1,
+     "usd": -1.3,
+     "joules": -1.3,
+     "success_points": 0.0
+    }
+   },
+   "normal-react-N3": {
+    "category": "normal",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7354,
+     "completion_tokens": 541,
+     "reasoning_tokens": 239,
+     "total_tokens": 7895,
+     "tokens_per_run": 3948,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.83,
+     "usd": 0.0084,
+     "usd_per_run": 0.00422,
+     "joules": 81.0,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7750,
+     "completion_tokens": 587,
+     "reasoning_tokens": 213,
+     "total_tokens": 8337,
+     "tokens_per_run": 4168,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.69,
+     "usd": 0.0087,
+     "usd_per_run": 0.00436,
+     "joules": 87.9,
+     "ended_by": {
+      "saver-done": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 0.0,
+     "total_tokens": 5.6,
+     "completion_tokens": 8.5,
+     "wall_s_per_run": -4.9,
+     "usd": 3.6,
+     "joules": 8.5,
+     "success_points": 0.0
+    }
+   },
+   "normal-react-W1": {
+    "category": "normal",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 8,
+     "calls_per_run": 4.0,
+     "prompt_tokens": 11762,
+     "completion_tokens": 983,
+     "reasoning_tokens": 202,
+     "total_tokens": 12745,
+     "tokens_per_run": 6372,
+     "tool_calls": 10,
+     "mutations": 6,
+     "wall_s_per_run": 4.22,
+     "usd": 0.0115,
+     "usd_per_run": 0.00576,
+     "joules": 147.1,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 8,
+     "calls_per_run": 4.0,
+     "prompt_tokens": 12290,
+     "completion_tokens": 1053,
+     "reasoning_tokens": 205,
+     "total_tokens": 13343,
+     "tokens_per_run": 6672,
+     "tool_calls": 10,
+     "mutations": 6,
+     "wall_s_per_run": 3.84,
+     "usd": 0.0116,
+     "usd_per_run": 0.00582,
+     "joules": 157.6,
+     "ended_by": {
+      "saver-done": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 0.0,
+     "total_tokens": 4.7,
+     "completion_tokens": 7.1,
+     "wall_s_per_run": -9.0,
+     "usd": 0.9,
+     "joules": 7.1,
+     "success_points": 0.0
+    }
+   },
+   "normal-react-W4": {
+    "category": "normal",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 8,
+     "calls_per_run": 4.0,
+     "prompt_tokens": 10309,
+     "completion_tokens": 681,
+     "reasoning_tokens": 179,
+     "total_tokens": 10990,
+     "tokens_per_run": 5495,
+     "tool_calls": 6,
+     "mutations": 2,
+     "wall_s_per_run": 2.91,
+     "usd": 0.0112,
+     "usd_per_run": 0.0056,
+     "joules": 101.9,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 8,
+     "calls_per_run": 4.0,
+     "prompt_tokens": 10831,
+     "completion_tokens": 701,
+     "reasoning_tokens": 142,
+     "total_tokens": 11532,
+     "tokens_per_run": 5766,
+     "tool_calls": 6,
+     "mutations": 2,
+     "wall_s_per_run": 2.66,
+     "usd": 0.0104,
+     "usd_per_run": 0.0052,
+     "joules": 104.9,
+     "ended_by": {
+      "saver-done": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 0.0,
+     "total_tokens": 4.9,
+     "completion_tokens": 2.9,
+     "wall_s_per_run": -8.6,
+     "usd": -7.1,
+     "joules": 2.9,
+     "success_points": 0.0
+    }
+   },
+   "normal-stop-E1": {
+    "category": "normal",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7306,
+     "completion_tokens": 395,
+     "reasoning_tokens": 120,
+     "total_tokens": 7701,
+     "tokens_per_run": 3850,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 3.32,
+     "usd": 0.0071,
+     "usd_per_run": 0.00353,
+     "joules": 59.1,
+     "ended_by": {
+      "marker": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7703,
+     "completion_tokens": 403,
+     "reasoning_tokens": 127,
+     "total_tokens": 8106,
+     "tokens_per_run": 4053,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.48,
+     "usd": 0.0049,
+     "usd_per_run": 0.00247,
+     "joules": 60.3,
+     "ended_by": {
+      "marker": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 0.0,
+     "total_tokens": 5.3,
+     "completion_tokens": 2.0,
+     "wall_s_per_run": -25.3,
+     "usd": -31.0,
+     "joules": 2.0,
+     "success_points": 0.0
+    }
+   },
+   "normal-stop-E4": {
+    "category": "normal",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7398,
+     "completion_tokens": 356,
+     "reasoning_tokens": 68,
+     "total_tokens": 7754,
+     "tokens_per_run": 3877,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.89,
+     "usd": 0.0059,
+     "usd_per_run": 0.00295,
+     "joules": 53.3,
+     "ended_by": {
+      "marker": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7795,
+     "completion_tokens": 378,
+     "reasoning_tokens": 89,
+     "total_tokens": 8173,
+     "tokens_per_run": 4086,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.77,
+     "usd": 0.0055,
+     "usd_per_run": 0.00276,
+     "joules": 56.6,
+     "ended_by": {
+      "marker": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 0.0,
+     "total_tokens": 5.4,
+     "completion_tokens": 6.2,
+     "wall_s_per_run": -4.2,
+     "usd": -6.8,
+     "joules": 6.2,
+     "success_points": 0.0
+    }
+   },
+   "normal-stop-N1": {
+    "category": "normal",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7392,
+     "completion_tokens": 492,
+     "reasoning_tokens": 190,
+     "total_tokens": 7884,
+     "tokens_per_run": 3942,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.31,
+     "usd": 0.0076,
+     "usd_per_run": 0.00379,
+     "joules": 73.6,
+     "ended_by": {
+      "marker": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7792,
+     "completion_tokens": 724,
+     "reasoning_tokens": 420,
+     "total_tokens": 8516,
+     "tokens_per_run": 4258,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.3,
+     "usd": 0.0091,
+     "usd_per_run": 0.00453,
+     "joules": 108.4,
+     "ended_by": {
+      "marker": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 0.0,
+     "total_tokens": 8.0,
+     "completion_tokens": 47.2,
+     "wall_s_per_run": -0.4,
+     "usd": 19.7,
+     "joules": 47.3,
+     "success_points": 0.0
+    }
+   },
+   "normal-stop-N3": {
+    "category": "normal",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7440,
+     "completion_tokens": 487,
+     "reasoning_tokens": 187,
+     "total_tokens": 7927,
+     "tokens_per_run": 3964,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.39,
+     "usd": 0.0065,
+     "usd_per_run": 0.00325,
+     "joules": 72.9,
+     "ended_by": {
+      "marker": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 6,
+     "calls_per_run": 3.0,
+     "prompt_tokens": 7836,
+     "completion_tokens": 515,
+     "reasoning_tokens": 215,
+     "total_tokens": 8351,
+     "tokens_per_run": 4176,
+     "tool_calls": 4,
+     "mutations": 0,
+     "wall_s_per_run": 2.53,
+     "usd": 0.0077,
+     "usd_per_run": 0.00384,
+     "joules": 77.1,
+     "ended_by": {
+      "marker": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 0.0,
+     "total_tokens": 5.3,
+     "completion_tokens": 5.7,
+     "wall_s_per_run": 5.9,
+     "usd": 18.5,
+     "joules": 5.8,
+     "success_points": 0.0
+    }
+   },
+   "normal-stop-W1": {
+    "category": "normal",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 8,
+     "calls_per_run": 4.0,
+     "prompt_tokens": 11882,
+     "completion_tokens": 1015,
+     "reasoning_tokens": 231,
+     "total_tokens": 12897,
+     "tokens_per_run": 6448,
+     "tool_calls": 10,
+     "mutations": 6,
+     "wall_s_per_run": 3.71,
+     "usd": 0.0135,
+     "usd_per_run": 0.00674,
+     "joules": 151.9,
+     "ended_by": {
+      "marker": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 8,
+     "calls_per_run": 4.0,
+     "prompt_tokens": 12374,
+     "completion_tokens": 961,
+     "reasoning_tokens": 193,
+     "total_tokens": 13335,
+     "tokens_per_run": 6668,
+     "tool_calls": 10,
+     "mutations": 6,
+     "wall_s_per_run": 3.86,
+     "usd": 0.0112,
+     "usd_per_run": 0.0056,
+     "joules": 143.8,
+     "ended_by": {
+      "marker": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 0.0,
+     "total_tokens": 3.4,
+     "completion_tokens": -5.3,
+     "wall_s_per_run": 4.0,
+     "usd": -17.0,
+     "joules": -5.3,
+     "success_points": 0.0
+    }
+   },
+   "normal-stop-W4": {
+    "category": "normal",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 8,
+     "calls_per_run": 4.0,
+     "prompt_tokens": 10410,
+     "completion_tokens": 638,
+     "reasoning_tokens": 148,
+     "total_tokens": 11048,
+     "tokens_per_run": 5524,
+     "tool_calls": 6,
+     "mutations": 2,
+     "wall_s_per_run": 2.93,
+     "usd": 0.0091,
+     "usd_per_run": 0.00453,
+     "joules": 95.5,
+     "ended_by": {
+      "marker": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 8,
+     "calls_per_run": 4.0,
+     "prompt_tokens": 10935,
+     "completion_tokens": 675,
+     "reasoning_tokens": 191,
+     "total_tokens": 11610,
+     "tokens_per_run": 5805,
+     "tool_calls": 6,
+     "mutations": 2,
+     "wall_s_per_run": 2.95,
+     "usd": 0.0071,
+     "usd_per_run": 0.00354,
+     "joules": 101.0,
+     "ended_by": {
+      "marker": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 0,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 0.0,
+     "total_tokens": 5.1,
+     "completion_tokens": 5.8,
+     "wall_s_per_run": 0.7,
+     "usd": -22.0,
+     "joules": 5.8,
+     "success_points": 0.0
+    }
+   },
+   "sprawl-1-double-check": {
+    "category": "sprawl",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 30,
+     "calls_per_run": 15.0,
+     "prompt_tokens": 37902,
+     "completion_tokens": 3008,
+     "reasoning_tokens": 1025,
+     "total_tokens": 40910,
+     "tokens_per_run": 20455,
+     "tool_calls": 26,
+     "mutations": 0,
+     "wall_s_per_run": 13.21,
+     "usd": 0.0268,
+     "usd_per_run": 0.01341,
+     "joules": 450.2,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 12,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "the planner must have two helpers confirm each fact",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 16,
+     "calls_per_run": 8.0,
+     "prompt_tokens": 21274,
+     "completion_tokens": 2614,
+     "reasoning_tokens": 940,
+     "total_tokens": 23888,
+     "tokens_per_run": 11944,
+     "tool_calls": 23,
+     "mutations": 0,
+     "wall_s_per_run": 8.81,
+     "usd": 0.0216,
+     "usd_per_run": 0.01079,
+     "joules": 391.2,
+     "ended_by": {
+      "saver-stop": 2
+     },
+     "miss_runs": 0,
+     "nudges": 2,
+     "helpers": 17,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": -46.7,
+     "total_tokens": -41.6,
+     "completion_tokens": -13.1,
+     "wall_s_per_run": -33.3,
+     "usd": -19.4,
+     "joules": -13.1,
+     "success_points": 0.0
+    }
+   },
+   "sprawl-2-redelegate-failure": {
+    "category": "sprawl",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 25,
+     "calls_per_run": 12.5,
+     "prompt_tokens": 36747,
+     "completion_tokens": 2989,
+     "reasoning_tokens": 1166,
+     "total_tokens": 39736,
+     "tokens_per_run": 19868,
+     "tool_calls": 21,
+     "mutations": 0,
+     "wall_s_per_run": 29.45,
+     "usd": 0.0329,
+     "usd_per_run": 0.01646,
+     "joules": 447.4,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 1,
+     "nudges": 0,
+     "helpers": 3,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "service_status always answers HTTP 500; the planner re-delegates on failure",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 13,
+     "calls_per_run": 6.5,
+     "prompt_tokens": 18207,
+     "completion_tokens": 1580,
+     "reasoning_tokens": 723,
+     "total_tokens": 19787,
+     "tokens_per_run": 9894,
+     "tool_calls": 9,
+     "mutations": 0,
+     "wall_s_per_run": 6.23,
+     "usd": 0.0167,
+     "usd_per_run": 0.00834,
+     "joules": 236.5,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 2,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": -48.0,
+     "total_tokens": -50.2,
+     "completion_tokens": -47.1,
+     "wall_s_per_run": -78.8,
+     "usd": -49.2,
+     "joules": -47.1,
+     "success_points": 0.0
+    }
+   },
+   "sprawl-3-recursive-split": {
+    "category": "sprawl",
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 17,
+     "calls_per_run": 8.5,
+     "prompt_tokens": 27944,
+     "completion_tokens": 3224,
+     "reasoning_tokens": 780,
+     "total_tokens": 31168,
+     "tokens_per_run": 15584,
+     "tool_calls": 34,
+     "mutations": 0,
+     "wall_s_per_run": 10.06,
+     "usd": 0.0349,
+     "usd_per_run": 0.01744,
+     "joules": 482.5,
+     "ended_by": {
+      "final": 2
+     },
+     "miss_runs": 0,
+     "nudges": 0,
+     "helpers": 2,
+     "errors": 0,
+     "n": 2
+    },
+    "injected": "helpers may delegate again; the docs hold no such figure",
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "success_pct": 100.0,
+     "calls": 24,
+     "calls_per_run": 12.0,
+     "prompt_tokens": 37361,
+     "completion_tokens": 4114,
+     "reasoning_tokens": 1160,
+     "total_tokens": 41475,
+     "tokens_per_run": 20738,
+     "tool_calls": 42,
+     "mutations": 0,
+     "wall_s_per_run": 12.21,
+     "usd": 0.0441,
+     "usd_per_run": 0.02203,
+     "joules": 615.7,
+     "ended_by": {
+      "saver-stop": 2
+     },
+     "miss_runs": 0,
+     "nudges": 2,
+     "helpers": 7,
+     "errors": 0,
+     "n": 2
+    },
+    "saver_vs_harness": {
+     "calls": 41.2,
+     "total_tokens": 33.1,
+     "completion_tokens": 27.6,
+     "wall_s_per_run": 21.4,
+     "usd": 26.4,
+     "joules": 27.6,
+     "success_points": 0.0
+    }
+   }
+  },
+  "source": "data/agent-waste/v2/runs.jsonl (same cases, v2 code)"
+ },
+ "fixes": [
+  "a detector stop carries the latest tool result",
+  "a stopped helper returns 'stopped: no progress, do not re-delegate'",
+  "a subtask already stopped is not handed to a new helper"
+ ],
+ "notes": [
+  "Two reps per case. The model is not deterministic, so a one-run swing (for example the harness alone going from 8.5 to 15.5 calls on sprawl-3) is noise, not a trend.",
+  "noprog-3 passes because the stop message now carries the last tool value. The stop text says 'Nothing new came back', and the success check's FAIL word list matches 'nothing', so this pass is partly check-sensitive. The check was not changed.",
+  "A saver stop message counts as operator-visible text only when the main agent was stopped. Helper stop messages go to the planner and are not counted.",
+  "Before the final run, one smoke run (noprog-3 and sprawl-2, 1 rep, both arms, about $0.06) checked the plumbing. It is not in these results but is in the spend.",
+  "The 'before' columns are the v2 runs for the same cases, from a different day and different samples."
+ ],
+ "spread": [
+  {
+   "id": "noprog-1-search-summarize",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 2,
+     "calls": {
+      "mean": 15,
+      "sd": 0.0,
+      "min": 15,
+      "max": 15,
+      "median": 15.0
+     },
+     "tokens": {
+      "mean": 79729,
+      "sd": 2049.2,
+      "min": 78280,
+      "max": 81178,
+      "median": 79729.0
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 7,
+      "sd": 0.0,
+      "min": 7,
+      "max": 7,
+      "median": 7.0
+     },
+     "tokens": {
+      "mean": 18621,
+      "sd": 729.73,
+      "min": 18105,
+      "max": 19137,
+      "median": 18621.0
+     }
+    }
+   }
+  },
+  {
+   "id": "noprog-2-ticket-poll",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 2,
+     "calls": {
+      "mean": 15,
+      "sd": 0.0,
+      "min": 15,
+      "max": 15,
+      "median": 15.0
+     },
+     "tokens": {
+      "mean": 29437,
+      "sd": 188.09,
+      "min": 29304,
+      "max": 29570,
+      "median": 29437.0
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 7,
+      "sd": 0.0,
+      "min": 7,
+      "max": 7,
+      "median": 7.0
+     },
+     "tokens": {
+      "mean": 11546,
+      "sd": 79.2,
+      "min": 11490,
+      "max": 11602,
+      "median": 11546.0
+     }
+    }
+   }
+  },
+  {
+   "id": "noprog-3-file-poll",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 2,
+     "calls": {
+      "mean": 15,
+      "sd": 0.0,
+      "min": 15,
+      "max": 15,
+      "median": 15.0
+     },
+     "tokens": {
+      "mean": 28674,
+      "sd": 1343.5,
+      "min": 27724,
+      "max": 29624,
+      "median": 28674.0
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 4618,
+      "sd": 82.02,
+      "min": 4560,
+      "max": 4676,
+      "median": 4618.0
+     }
+    }
+   }
+  },
+  {
+   "id": "normal-planner-E1",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 4121,
+      "sd": 18.38,
+      "min": 4108,
+      "max": 4134,
+      "median": 4121.0
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 4302,
+      "sd": 2.83,
+      "min": 4300,
+      "max": 4304,
+      "median": 4302.0
+     }
+    }
+   }
+  },
+  {
+   "id": "normal-planner-E4",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 4158.5,
+      "sd": 57.28,
+      "min": 4118,
+      "max": 4199,
+      "median": 4158.5
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 4327,
+      "sd": 36.77,
+      "min": 4301,
+      "max": 4353,
+      "median": 4327.0
+     }
+    }
+   }
+  },
+  {
+   "id": "normal-planner-N1",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 4158,
+      "sd": 24.04,
+      "min": 4141,
+      "max": 4175,
+      "median": 4158.0
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 4381.5,
+      "sd": 7.78,
+      "min": 4376,
+      "max": 4387,
+      "median": 4381.5
+     }
+    }
+   }
+  },
+  {
+   "id": "normal-planner-N3",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 4198,
+      "sd": 5.66,
+      "min": 4194,
+      "max": 4202,
+      "median": 4198.0
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 4554,
+      "sd": 161.22,
+      "min": 4440,
+      "max": 4668,
+      "median": 4554.0
+     }
+    }
+   }
+  },
+  {
+   "id": "normal-planner-W1",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 4,
+      "sd": 0.0,
+      "min": 4,
+      "max": 4,
+      "median": 4.0
+     },
+     "tokens": {
+      "mean": 6721,
+      "sd": 50.91,
+      "min": 6685,
+      "max": 6757,
+      "median": 6721.0
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 4,
+      "sd": 0.0,
+      "min": 4,
+      "max": 4,
+      "median": 4.0
+     },
+     "tokens": {
+      "mean": 6995.5,
+      "sd": 37.48,
+      "min": 6969,
+      "max": 7022,
+      "median": 6995.5
+     }
+    }
+   }
+  },
+  {
+   "id": "normal-planner-W4",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 4,
+      "sd": 0.0,
+      "min": 4,
+      "max": 4,
+      "median": 4.0
+     },
+     "tokens": {
+      "mean": 5824.5,
+      "sd": 3.54,
+      "min": 5822,
+      "max": 5827,
+      "median": 5824.5
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 4,
+      "sd": 0.0,
+      "min": 4,
+      "max": 4,
+      "median": 4.0
+     },
+     "tokens": {
+      "mean": 6387.5,
+      "sd": 333.05,
+      "min": 6152,
+      "max": 6623,
+      "median": 6387.5
+     }
+    }
+   }
+  },
+  {
+   "id": "normal-react-E1",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 3857.5,
+      "sd": 7.78,
+      "min": 3852,
+      "max": 3863,
+      "median": 3857.5
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 4121.5,
+      "sd": 103.94,
+      "min": 4048,
+      "max": 4195,
+      "median": 4121.5
+     }
+    }
+   }
+  },
+  {
+   "id": "normal-react-E4",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 3887.5,
+      "sd": 4.95,
+      "min": 3884,
+      "max": 3891,
+      "median": 3887.5
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 4048.5,
+      "sd": 13.44,
+      "min": 4039,
+      "max": 4058,
+      "median": 4048.5
+     }
+    }
+   }
+  },
+  {
+   "id": "normal-react-N1",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 3884,
+      "sd": 11.31,
+      "min": 3876,
+      "max": 3892,
+      "median": 3884.0
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 4116,
+      "sd": 33.94,
+      "min": 4092,
+      "max": 4140,
+      "median": 4116.0
+     }
+    }
+   }
+  },
+  {
+   "id": "normal-react-N3",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 3985,
+      "sd": 15.56,
+      "min": 3974,
+      "max": 3996,
+      "median": 3985.0
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 4292.5,
+      "sd": 174.66,
+      "min": 4169,
+      "max": 4416,
+      "median": 4292.5
+     }
+    }
+   }
+  },
+  {
+   "id": "normal-react-W1",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 4,
+      "sd": 0.0,
+      "min": 4,
+      "max": 4,
+      "median": 4.0
+     },
+     "tokens": {
+      "mean": 6407,
+      "sd": 11.31,
+      "min": 6399,
+      "max": 6415,
+      "median": 6407.0
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 4,
+      "sd": 0.0,
+      "min": 4,
+      "max": 4,
+      "median": 4.0
+     },
+     "tokens": {
+      "mean": 6693.5,
+      "sd": 10.61,
+      "min": 6686,
+      "max": 6701,
+      "median": 6693.5
+     }
+    }
+   }
+  },
+  {
+   "id": "normal-react-W4",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 4,
+      "sd": 0.0,
+      "min": 4,
+      "max": 4,
+      "median": 4.0
+     },
+     "tokens": {
+      "mean": 5515.5,
+      "sd": 17.68,
+      "min": 5503,
+      "max": 5528,
+      "median": 5515.5
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 4,
+      "sd": 0.0,
+      "min": 4,
+      "max": 4,
+      "median": 4.0
+     },
+     "tokens": {
+      "mean": 5764.5,
+      "sd": 28.99,
+      "min": 5744,
+      "max": 5785,
+      "median": 5764.5
+     }
+    }
+   }
+  },
+  {
+   "id": "normal-stop-E1",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 3840,
+      "sd": 22.63,
+      "min": 3824,
+      "max": 3856,
+      "median": 3840.0
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 4016,
+      "sd": 0.0,
+      "min": 4016,
+      "max": 4016,
+      "median": 4016.0
+     }
+    }
+   }
+  },
+  {
+   "id": "normal-stop-E4",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 3879,
+      "sd": 1.41,
+      "min": 3878,
+      "max": 3880,
+      "median": 3879.0
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 4078,
+      "sd": 5.66,
+      "min": 4074,
+      "max": 4082,
+      "median": 4078.0
+     }
+    }
+   }
+  },
+  {
+   "id": "normal-stop-N1",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 3951.5,
+      "sd": 20.51,
+      "min": 3937,
+      "max": 3966,
+      "median": 3951.5
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 4253,
+      "sd": 196.58,
+      "min": 4114,
+      "max": 4392,
+      "median": 4253.0
+     }
+    }
+   }
+  },
+  {
+   "id": "normal-stop-N3",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 3995.5,
+      "sd": 10.61,
+      "min": 3988,
+      "max": 4003,
+      "median": 3995.5
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 3,
+      "sd": 0.0,
+      "min": 3,
+      "max": 3,
+      "median": 3.0
+     },
+     "tokens": {
+      "mean": 4303,
+      "sd": 69.3,
+      "min": 4254,
+      "max": 4352,
+      "median": 4303.0
+     }
+    }
+   }
+  },
+  {
+   "id": "normal-stop-W1",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 4,
+      "sd": 0.0,
+      "min": 4,
+      "max": 4,
+      "median": 4.0
+     },
+     "tokens": {
+      "mean": 6481.5,
+      "sd": 3.54,
+      "min": 6479,
+      "max": 6484,
+      "median": 6481.5
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 4,
+      "sd": 0.0,
+      "min": 4,
+      "max": 4,
+      "median": 4.0
+     },
+     "tokens": {
+      "mean": 6683,
+      "sd": 14.14,
+      "min": 6673,
+      "max": 6693,
+      "median": 6683.0
+     }
+    }
+   }
+  },
+  {
+   "id": "normal-stop-W4",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 4,
+      "sd": 0.0,
+      "min": 4,
+      "max": 4,
+      "median": 4.0
+     },
+     "tokens": {
+      "mean": 5567.5,
+      "sd": 17.68,
+      "min": 5555,
+      "max": 5580,
+      "median": 5567.5
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 4,
+      "sd": 0.0,
+      "min": 4,
+      "max": 4,
+      "median": 4.0
+     },
+     "tokens": {
+      "mean": 5794,
+      "sd": 11.31,
+      "min": 5786,
+      "max": 5802,
+      "median": 5794.0
+     }
+    }
+   }
+  },
+  {
+   "id": "sprawl-1-double-check",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 15,
+      "sd": 0.0,
+      "min": 15,
+      "max": 15,
+      "median": 15.0
+     },
+     "tokens": {
+      "mean": 20567,
+      "sd": 25.46,
+      "min": 20549,
+      "max": 20585,
+      "median": 20567.0
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 9.5,
+      "sd": 2.12,
+      "min": 8,
+      "max": 11,
+      "median": 9.5
+     },
+     "tokens": {
+      "mean": 15450.5,
+      "sd": 4695.9,
+      "min": 12130,
+      "max": 18771,
+      "median": 15450.5
+     }
+    }
+   }
+  },
+  {
+   "id": "sprawl-2-redelegate-failure",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 6,
+      "sd": 0.0,
+      "min": 6,
+      "max": 6,
+      "median": 6.0
+     },
+     "tokens": {
+      "mean": 8605.5,
+      "sd": 30.41,
+      "min": 8584,
+      "max": 8627,
+      "median": 8605.5
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 8.5,
+      "sd": 2.12,
+      "min": 7,
+      "max": 10,
+      "median": 8.5
+     },
+     "tokens": {
+      "mean": 14107.5,
+      "sd": 4751.05,
+      "min": 10748,
+      "max": 17467,
+      "median": 14107.5
+     }
+    }
+   }
+  },
+  {
+   "id": "sprawl-3-recursive-split",
+   "arms": {
+    "harness": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 12.5,
+      "sd": 4.95,
+      "min": 9,
+      "max": 16,
+      "median": 12.5
+     },
+     "tokens": {
+      "mean": 22689,
+      "sd": 8227.89,
+      "min": 16871,
+      "max": 28507,
+      "median": 22689.0
+     }
+    },
+    "harness+saver": {
+     "runs": 2,
+     "success": 2,
+     "miss_runs": 0,
+     "calls": {
+      "mean": 12,
+      "sd": 0.0,
+      "min": 12,
+      "max": 12,
+      "median": 12.0
+     },
+     "tokens": {
+      "mean": 21041,
+      "sd": 451.13,
+      "min": 20722,
+      "max": 21360,
+      "median": 21041.0
+     }
+    }
+   }
+  }
+ ],
+ "generated": "2026-10-30T12:52:46Z",
+ "reps": 2,
+ "effort": "low",
+ "caps": {
+  "react_max_iterations": 15,
+  "stop_max_rounds": 10,
+  "planner_max_iterations": 10,
+  "helper_max_iterations": 6,
+  "saver_shared_calls": 12
+ },
+ "waste_config": {
+  "max_steps": 12,
+  "max_total_tokens": 60000,
+  "repeat_limit": 2,
+  "noop_limit": 2,
+  "cycle_max_len": 4,
+  "reasoning_floor": 400,
+  "reasoning_ratio": 4.0,
+  "reasoning_hard_cap": 3000,
+  "max_nudges": 1,
+  "inject_done": true,
+  "done_tool": "done",
+  "error_limit": 3,
+  "empty_limit": 4,
+  "low_gain_window": 5,
+  "low_gain_max_new": 0.1,
+  "paraphrase_limit": 2
+ },
+ "cases_total": 24,
+ "runs": 96,
+ "errors": 0,
+ "spend_usd_own": 0.8388,
+ "spend_label": "MEASURED (Meta spend ledger)",
+ "ledger_total_after": 24.5801,
+ "ledger_total_before": 23.7413,
+ "job_ceiling": 39.5
+}
