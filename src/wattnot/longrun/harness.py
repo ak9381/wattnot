@@ -376,8 +376,8 @@ def main(argv=None) -> int:
     ap.add_argument("--reps", type=int, default=1)
     ap.add_argument("--fake", action="store_true")
     ap.add_argument("--url", default="http://127.0.0.1:8000/v1/chat/completions")
-    ap.add_argument("--model-config", default="llama-3.1-8b",
-                    help=f"one of {sorted(MODELS)} or a JSON file")
+    ap.add_argument("--model-config", default="muse-glimmer-30b",
+                    help=f"one of {sorted(MODELS)} or a JSON file (llama-3.1-8b is the fallback)")
     ap.add_argument("--clock", default=None)
     ap.add_argument("--per-tier", type=int, default=0,
                     help="trim: at most N items per tier (0 = all); used when time runs short")

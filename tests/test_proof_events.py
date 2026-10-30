@@ -44,7 +44,7 @@ def test_full_rehearsal(tmp_path, monkeypatch):
     pytest.importorskip("wattnot.sam.room")
     live = tmp_path / "live" / "run2.events.jsonl"
     argv = ["orchestrate", "--mode", "rehearsal", "--out", str(tmp_path / "o"),
-            "--live-file", str(live), *FAST, "--auto-approve"]
+            "--live-file", str(live), *FAST, "--auto-approve", "--adaptive"]  # adaptive is off by default now
     monkeypatch.setattr(sys, "argv", argv)
     orchestrate.main()
     events = [json.loads(x) for x in live.read_text().splitlines()]

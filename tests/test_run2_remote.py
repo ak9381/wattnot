@@ -122,9 +122,9 @@ def test_setup_reports_the_scripts_failure(tmp_path, monkeypatch, capsys):
     assert code == 2 and "exit code 12" in out
 
 
-def test_setup_needs_a_token(monkeypatch):
+def test_setup_needs_a_token_for_the_llama_fallback(monkeypatch):
     monkeypatch.delenv("HF_TOKEN", raising=False)
-    args = rr.argparse.Namespace(host="x", key="k", timeout=1, model="m", moe="e")
+    args = rr.argparse.Namespace(host="x", key="k", timeout=1, model="meta-llama/Llama-3.1-8B-Instruct", moe="none")
     assert rr.cmd_setup(args) == 2
 
 

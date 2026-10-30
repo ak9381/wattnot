@@ -51,7 +51,8 @@ class Profile:
 
 PROFILES = {
     "quick": Profile(reps=3, repeat=2, warmup=16, warmup_s=0, burn_in=0, counterbalance=False,
-                     control_blocks=0),  # what RUN2 ran
+                     control_blocks=2),  # RUN2 shape, but 2 control blocks so the Welch noise
+    #                                      floor is always measured (RUN2 ran 0, which left it blank)
     "standard": Profile(reps=5, repeat=6, warmup=16, warmup_s=10, burn_in=1, counterbalance=True,
                         control_blocks=2),
     # The long run (Nov 2026): about 60 s metered windows (18 x 111 prompts at RUN2's rate is

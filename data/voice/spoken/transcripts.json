@@ -1,8 +1,9 @@
 {
   "spec": "wattnot.spokenanswer.transcripts/1",
   "label": "SYNTHETIC",
-  "note": "Cached output of Muse Voice Transcribe (muse-voice-transcribe-1.0) over the 20 SYNTHETIC recordings, written once by scripts/gen_spoken_assets.py (a one-time paid script). Both the clean and data-center-noise takes transcribe to the same question text. The gate feeds this text to the served model (Glimmer) to answer; no transcription happens at test time.",
-  "transcriber": "muse-voice-transcribe-1.0",
+  "source": "TTS-ffmpeg-flite",
+  "note": "Transcripts of the spoken takes. The audio was synthesized from the question text with ffmpeg-flite (offline TTS, no API), so each transcript IS the question text. The gate feeds this text to the served model (Glimmer) to answer.",
+  "transcriber": "TTS-ffmpeg-flite",
   "transcripts": {
     "q-gpus-clean": "How many GPUs are in the rack?",
     "q-gpus-datacenter": "How many GPUs are in the rack?",

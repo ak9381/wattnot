@@ -10,11 +10,11 @@
     "script": "Why was three hundred twenty five watts rejected?"
   },
   "transcript": "Why was 325 watts rejected?",
-  "session_id": "voyager/transcribe/16F874CA571E4AD884E12429D6B83258",
+  "session_id": "voyager/transcribe/C0C5C214AA53446880C7D6036E620566",
   "audio_duration_ms": 3120,
   "request_id_header": null,
   "usage": null,
-  "latency_s": 0.93,
+  "latency_s": 1.36,
   "spend_usd_estimate": 0.000155,
-  "created_at": "2026-10-29T06:13:07+0530"
+  "created_at": "2026-10-30T18:10:50+0530"
 }

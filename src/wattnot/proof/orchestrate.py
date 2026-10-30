@@ -53,7 +53,7 @@ from wattnot.proof.sshutil import SshDown
 from wattnot.proof.transport import LocalTransport, Transport
 
 DEFAULT_GRID = (600, 500, 400, 350, 300)
-MODEL = "meta-llama/Llama-3.1-8B-Instruct"
+MODEL = "meta-models/Muse-Glimmer-30B"   # main model; Llama 3.1 8B is the fallback (pass --model)
 
 
 class Live:
@@ -1231,7 +1231,9 @@ def main(argv=None) -> int:
     ap.add_argument("--sam", choices=["replay", "live"], default="replay")
     ap.add_argument("--room", default="arsat")
     ap.add_argument("--scan-json", type=Path)
-    ap.add_argument("--adaptive", action=argparse.BooleanOptionalAction, default=True)
+    ap.add_argument("--adaptive", action=argparse.BooleanOptionalAction, default=False,
+                    help="opt-in MoE top-k step (off by default: Glimmer is dense and the H100 "
+                         "run is Meta-only; top-k is planned on Spark via Modal)")
     ap.add_argument("--adaptive-model", default="meta-llama/Llama-4-Scout-17B-16E-Instruct")
     ap.add_argument("--adaptive-budget-s", type=float, default=1200)
     ap.add_argument(

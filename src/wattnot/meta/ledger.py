@@ -82,7 +82,7 @@ PRICES: dict[str, Price] = {
 }
 ASSUMED = Price(4.00, 0.20, 20.00)  # unknown model: the highest published rate
 # Models billed per image, not per token: USD per image (SAM 3.1: $2.50 per 1,000 images).
-PER_IMAGE_USD: dict[str, float] = {"sam-3.1": 0.0025}
+PER_IMAGE_USD: dict[str, float] = {"sam-3.1": 0.0025, "muse-image-1.0": 0.01}  # Muse Image: $0.01 per image
 
 
 class BudgetExceeded(RuntimeError):

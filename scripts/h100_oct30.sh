@@ -26,12 +26,12 @@
 # session (nothing was changed).
 # OPTIONAL fourth job, off by default: --adaptive-topk [--adaptive-mass 0.9]
 #   4. adaptive_topk (~25 min, runs last)  adaptive top-k vs normal top-k on a small MoE model
-#                          (default Granite 3.1 3B-A800M, fits one H100 80GB): joules per token
+#                          (legacy, not in the 2 h plan): joules per token
 #                          from the NVML energy counter, p99, and agreement with normal top-k.
 #                          A KNOWN technique (see docs/ADAPTIVE-TOPK.md); it runs through
 #                          transformers, not vLLM. One signed receipt (MEASURED), and a pending
 #                          proposal only if the quality, p99 and energy gates all pass.
-#                          Add --adaptive-model REPO to try another Granite MoE.
+#                          Add --adaptive-model REPO to pick the MoE.
 #   It is time-boxed (--adaptive-budget-s, default 1500) and cannot change the exit codes
 #   above: if it fails or is skipped, summary.json says so and the code stays what the other
 #   jobs decided. It needs the trial grant, so --pre-approved covers it like the rest.

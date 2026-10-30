@@ -40,7 +40,7 @@ def _spark_transport():
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--out", type=Path, required=True)
-    ap.add_argument("--model", default="meta-llama/Llama-3.1-8B-Instruct"); ap.add_argument("--port", default="8000")
+    ap.add_argument("--model", default="meta-models/Muse-Glimmer-30B"); ap.add_argument("--port", default="8000")
     ap.add_argument("--reps", type=int, default=3); ap.add_argument("--cap", type=int, default=350)
     ap.add_argument("--high", type=int, default=1980); ap.add_argument("--lows", default="1410,1590")
     ap.add_argument("--profile", default="standard"); ap.add_argument("--fake", action="store_true"); ap.add_argument("--serve", action="store_true")

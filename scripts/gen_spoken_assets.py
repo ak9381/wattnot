@@ -1,100 +1,147 @@
 #!/usr/bin/env python3
-"""ONE-TIME PAID script: transcribe the spoken-answer recordings with Muse Voice.
+"""Generate REAL spoken-answer WAVs from the question text with an OFFLINE TTS.
 
-This is the only place a paid transcription call lives. It is NEVER run by the
-test suite or any automated flow — it needs an explicit go-ahead
-(``WATTNOT_GEN_SPOKEN_GO=1``) and a real API key, and it costs money.
+This replaces the 364-byte placeholder stubs with real audio so the
+watts-per-spoken-answer gate runs on real recordings, not stubs. It makes NO
+paid call and needs no API key: it speaks each question with an offline TTS that
+is already on this Linux box. The spoken content IS the question text, so the
+transcript of every take is exactly that text (no separate transcription step).
 
-It reads the SYNTHETIC recordings listed in ``data/voice/spoken/answers.json``,
-calls ``POST {META_BASE_URL}/asr/transcribe`` with ``muse-voice-transcribe-1.0``
-for each ``.wav``, and writes the cached text to ``transcripts.json`` next to the
-manifest (both the clean and the data-center-noise take of a question transcribe
-to the same text). The spoken gate later feeds this cached text to the served
-model (Glimmer) to answer — no transcription happens at test time.
+    python scripts/gen_spoken_assets.py            # synthesize all WAVs + transcripts
 
-    WATTNOT_GEN_SPOKEN_GO=1 META_API_KEY=... python scripts/gen_spoken_assets.py
+It picks the first available engine of: espeak-ng, espeak, pico2wave, flite. If
+none is installed it stops with a clear message and changes nothing (it never
+writes a fake WAV). Do NOT install system packages with sudo; if you have a venv
+TTS instead, put its CLI on PATH.
 
-Importing this module does nothing: no key is read and no call is made until
-``main()`` runs. The committed ``.wav`` files and ``transcripts.json`` are offline
-placeholders so the gate and its tests work without ever running this.
+For each manifest item it writes ``data/voice/spoken/<file>.wav``. The
+``datacenter`` takes get low-level noise mixed in (real speech + real added
+noise), so the clean/noisy split is genuine. It then rewrites ``transcripts.json``
+(transcript = the question text) and stamps the manifest ``source`` honestly as
+``TTS-<engine>`` so the no-mock guard accepts the live run.
+
+Importing this module does nothing until ``main()`` runs.
 """
 
 from __future__ import annotations
 
 import json
-import os
+import math
+import random
+import shutil
+import struct
+import subprocess
 import sys
-import urllib.request
+import tempfile
+import wave
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "data" / "voice" / "spoken"
-MODEL = "muse-voice-transcribe-1.0"
+
+# Engine -> argv builder: (text, out_wav) -> command. All are offline and free.
+ENGINES = {
+    "espeak-ng": lambda text, out: ["espeak-ng", "-v", "en", "-s", "150", "-w", str(out), text],
+    "espeak": lambda text, out: ["espeak", "-v", "en", "-s", "150", "-w", str(out), text],
+    "pico2wave": lambda text, out: ["pico2wave", "-l", "en-US", "-w", str(out), text],
+    "flite": lambda text, out: ["flite", "-t", text, "-o", str(out)],
+    # ffmpeg built with libflite: same voice, no separate CLI needed. 16 kHz mono 16-bit PCM.
+    "ffmpeg-flite": lambda text, out: ["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi",
+                                       "-i", "flite=text='" + text.replace("'", "").replace(":", " ") + "'",
+                                       "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", str(out)],
+}
 
 
-def _transcribe(base_url: str, key: str, wav: Path, timeout: float = 120) -> str:
-    """POST one recording to Muse Voice Transcribe and return the text."""
-    import mimetypes
-    import uuid
+def _ffmpeg_has_flite() -> bool:
+    if not shutil.which("ffmpeg"):
+        return False
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-filters"], capture_output=True, text=True)
+    return " flite " in r.stdout
 
-    boundary = f"----wattnot{uuid.uuid4().hex}"
-    audio = wav.read_bytes()
-    ctype = mimetypes.guess_type(wav.name)[0] or "audio/wav"
-    parts = [
-        f"--{boundary}\r\n".encode()
-        + f'Content-Disposition: form-data; name="model"\r\n\r\n{MODEL}\r\n'.encode(),
-        f"--{boundary}\r\n".encode()
-        + f'Content-Disposition: form-data; name="file"; filename="{wav.name}"\r\n'.encode()
-        + f"Content-Type: {ctype}\r\n\r\n".encode() + audio + b"\r\n",
-        f"--{boundary}--\r\n".encode(),
-    ]
-    body = b"".join(parts)
-    req = urllib.request.Request(
-        f"{base_url.rstrip('/')}/asr/transcribe", data=body,
-        headers={"Authorization": f"Bearer {key}",
-                 "Content-Type": f"multipart/form-data; boundary={boundary}"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310
-        data = json.loads(r.read() or b"{}")
-    return str(data.get("text", "")).strip()
+
+def pick_engine() -> str | None:
+    """The first offline TTS CLI on PATH, or None."""
+    for name in ENGINES:
+        if name == "ffmpeg-flite":
+            if _ffmpeg_has_flite():
+                return name
+        elif shutil.which(name):
+            return name
+    return None
+
+
+def _synthesize(engine: str, text: str, out: Path) -> None:
+    subprocess.run(ENGINES[engine](text, out), check=True,
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def _add_datacenter_noise(wav_path: Path, *, seed: int, level: float = 0.06) -> None:
+    """Mix low-level steady noise into a 16-bit PCM WAV in place (data-center hum + hiss).
+
+    Real speech with real added noise; deterministic given the seed so the asset is reproducible.
+    """
+    with wave.open(str(wav_path), "rb") as w:
+        n, sw, fr, nf = w.getnchannels(), w.getsampwidth(), w.getframerate(), w.getnframes()
+        frames = w.readframes(nf)
+    if sw != 2:  # the engines above emit 16-bit PCM; leave anything else untouched
+        return
+    rng = random.Random(seed)
+    samples = list(struct.unpack("<%dh" % (len(frames) // 2), frames))
+    peak = max((abs(s) for s in samples), default=1) or 1
+    amp = int(peak * level)
+    out = []
+    for i, s in enumerate(samples):
+        hum = amp * 0.5 * math.sin(2 * math.pi * 120.0 * (i / (fr * max(n, 1))))  # 120 Hz hum
+        hiss = rng.uniform(-amp, amp)
+        v = int(max(-32768, min(32767, s + hum + hiss)))
+        out.append(v)
+    with wave.open(str(wav_path), "wb") as w:
+        w.setnchannels(n)
+        w.setsampwidth(sw)
+        w.setframerate(fr)
+        w.writeframes(struct.pack("<%dh" % len(out), *out))
 
 
 def main(argv: list[str] | None = None) -> int:
-    if os.environ.get("WATTNOT_GEN_SPOKEN_GO") != "1":
-        print("refusing: this is a PAID one-time script. Set WATTNOT_GEN_SPOKEN_GO=1 to run.",
+    engine = pick_engine()
+    if engine is None:
+        print("no offline TTS found. Install one and put it on PATH (no sudo needed if it is a "
+              "venv CLI): tried espeak-ng, espeak, pico2wave, flite. Nothing was changed.",
               file=sys.stderr)
-        return 2
-    # Imported lazily so this module stays importable without the meta package wired.
-    from wattnot.meta.client import load_key
-    key = load_key()
-    if not key:
-        print("no API key: set META_API_KEY or log in with `muse login`", file=sys.stderr)
-        return 2
-    base_url = os.environ.get("META_BASE_URL", "https://api.meta.ai/v1")
+        return 3
 
     manifest = json.loads((ASSETS / "answers.json").read_text(encoding="utf-8"))
     items = manifest["items"]
-    print(f"PAID: transcribing {len(items)} recordings with {MODEL} at {base_url}")
+    print(f"synthesizing {len(items)} WAVs from question text with {engine} (offline, no API)")
     transcripts: dict[str, str] = {}
-    for item in items:
-        wav = ASSETS / item["file"]
-        if not wav.exists():
-            print(f"  skip {item['id']}: missing {wav.name}", file=sys.stderr)
-            continue
-        text = _transcribe(base_url, key, wav)
-        transcripts[item["id"]] = text
-        print(f"  {item['id']}: {text!r}")
+    for idx, item in enumerate(items):
+        text = str(item["question"])
+        out = ASSETS / item["file"]
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as tmp:
+            _synthesize(engine, text, Path(tmp.name))
+            shutil.copyfile(tmp.name, out)
+        if item.get("noise") == "datacenter":
+            _add_datacenter_noise(out, seed=1000 + idx)
+        transcripts[item["id"]] = text  # the spoken content is the question text itself
+        print(f"  {item['id']}: {out.stat().st_size} B  {text!r}")
 
-    out = {
+    source = f"TTS-{engine}"
+    (ASSETS / "transcripts.json").write_text(json.dumps({
         "spec": "wattnot.spokenanswer.transcripts/1",
         "label": "SYNTHETIC",
-        "note": ("Cached output of Muse Voice Transcribe over the SYNTHETIC recordings, written "
-                 "once by scripts/gen_spoken_assets.py (a one-time paid script). The gate feeds "
-                 "this text to the served model (Glimmer) to answer; no transcription at test time."),
-        "transcriber": MODEL,
+        "source": source,
+        "note": (f"Transcripts of the spoken takes. The audio was synthesized from the question "
+                 f"text with {engine} (offline TTS, no API), so each transcript IS the question "
+                 f"text. The gate feeds this text to the served model (Glimmer) to answer."),
+        "transcriber": source,
         "transcripts": transcripts,
-    }
-    (ASSETS / "transcripts.json").write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
-    print(f"done; rewrote transcripts.json ({len(transcripts)} SYNTHETIC transcripts)")
+    }, indent=2) + "\n", encoding="utf-8")
+
+    manifest["source"] = source
+    manifest["source_note"] = (f"Real audio synthesized from the question text with {engine} "
+                               f"(offline TTS). The transcript of each take is the question text.")
+    (ASSETS / "answers.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    print(f"done; wrote {len(items)} real WAVs + transcripts.json, stamped source={source!r}")
     return 0
 
 
