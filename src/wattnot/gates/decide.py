@@ -34,8 +34,14 @@ def decide(base: TrialResult, cand: TrialResult, base_outputs: Mapping[str, str]
            cand_outputs: Mapping[str, str], items: list[WorkloadItem], *,
            slack: float = 0.10, sla_s: float | None = None, max_drop_pts: float = 1.0,
            base_wh: list[float] | None = None, cand_wh: list[float] | None = None,
-           emit=None) -> Decision:
-    """With per-rep Wh lists, the noise gate runs third (Welch + bootstrap CI)."""
+           vision: GateResult | None = None, emit=None) -> Decision:
+    """With per-rep Wh lists, the noise gate runs third (Welch + bootstrap CI).
+
+    ``vision`` is an optional pre-computed eye-test ``GateResult`` (see
+    ``wattnot.vision.vision_gate``). When given it joins the gate set, so a
+    candidate the served vision model misreads is rejected and rolled back to
+    the last safe config just like a quality or latency failure.
+    """
 
     results = (
         fixed_checks(base_outputs, cand_outputs, items, max_drop_pts=max_drop_pts),
@@ -43,6 +49,8 @@ def decide(base: TrialResult, cand: TrialResult, base_outputs: Mapping[str, str]
     )
     if base_wh is not None and cand_wh is not None:
         results = (*results, noise_gate(base_wh, cand_wh))
+    if vision is not None:
+        results = (*results, vision)
     if emit is not None:
         for r in results:
             emit.emit("gate.result", r.event_data(cand.trial_id),

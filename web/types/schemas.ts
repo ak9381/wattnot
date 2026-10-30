@@ -109,6 +109,27 @@ export interface Receipt {
       };
       reason?: string;
     } | null;
+    eye_test?: {
+      label?: string;
+      passed?: boolean;
+      checked?: number;
+      passed_count?: number;
+      missed?: string[];
+      reason?: string;
+      model?: string;
+      est_wh_per_image?: {
+        value?: number;
+        label?: string;
+      };
+      images?: {
+        id?: string;
+        kind?: string;
+        expected?: string;
+        got?: string;
+        ok?: boolean;
+        label?: string;
+      }[];
+    } | null;
   };
   hotspot_cap?: Record<string, unknown> | null;
   attribution?: Record<string, unknown>;

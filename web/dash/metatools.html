@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Montserrat:wght@500;600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./metatools.css">
   <link rel="stylesheet" href="./hotspot.css">
+  <link rel="stylesheet" href="./eyetest.css">
   <link rel="stylesheet" href="./voiceguide.css">
   <link rel="stylesheet" href="./eulink.css">
   <link rel="stylesheet" href="./chrome.css">
@@ -53,6 +54,7 @@
     </div>
     <div id="metatools-mount"></div>
     <div id="hotspot-mount"></div>
+    <div id="eyetest-mount"></div>
     <div id="eulink-mount"></div>
 
     <div id="explain-demo" style="margin-top:28px;">
@@ -91,6 +93,7 @@
   <script type="module">
     import { mountMetaTools } from './metatools.js';
     import { mountHotspotCard } from './hotspot.js';
+    import { mountEyeTest } from './eyetest.js';
     import { mountEuLink } from './eulink.js';
 
     async function init() {
@@ -99,6 +102,7 @@
         const receipt = await res.json();
         mountMetaTools(document.getElementById('metatools-mount'), receipt);
         mountHotspotCard(document.getElementById('hotspot-mount'), receipt);
+        mountEyeTest(document.getElementById('eyetest-mount'), receipt);
         mountEuLink(document.getElementById('eulink-mount'), receipt);
       } catch (err) {
         console.error('Failed to load sample receipt:', err);

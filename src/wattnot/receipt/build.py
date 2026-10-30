@@ -50,6 +50,39 @@ def _arm(arm: Mapping, tariff: float) -> dict:
     return out
 
 
+def _eye_test_entry(et: Mapping) -> dict:
+    """Normalise a vision-gate result (or its detail dict) into the receipt's
+    ``measurement.eye_test`` block: numbers, ids, short tokens and SYNTHETIC /
+    ESTIMATE labels only, so it stays lint-clean and signature-covered."""
+
+    wh = et.get("est_wh_per_image")
+    if wh is None:
+        wh = (et.get("energy_per_image_wh") or {}).get("value", 0.5)
+    images = []
+    for row in et.get("images", []):
+        images.append({
+            "id": str(row.get("id", ""))[:64],
+            "kind": str(row.get("kind", ""))[:16],
+            "expected": str(row.get("expected", ""))[:64],
+            "got": str(row.get("got", ""))[:64],
+            "ok": bool(row.get("ok")),
+            "label": str(row.get("label", "SYNTHETIC"))[:32],
+        })
+    checked = et.get("checked", len(images))
+    missed = list(et.get("missed") or [r["id"] for r in images if not r["ok"]])
+    return {
+        "label": "SYNTHETIC",
+        "passed": bool(et.get("passed", not missed)),
+        "checked": int(checked),
+        "passed_count": int(et.get("passed_count", checked - len(missed))),
+        "missed": [str(x)[:64] for x in missed],
+        "reason": str(et.get("reason", ""))[:195],
+        "model": str(et.get("model", "unrecorded"))[:64],
+        "est_wh_per_image": {"value": round(float(wh), 6), "label": "ESTIMATE"},
+        "images": images,
+    }
+
+
 def planner_trace_from_events(events: Sequence[Mapping]) -> list[dict]:
     trace, n = [], 0
     for e in events:
@@ -84,7 +117,8 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
                   musecode_patch_sha256: str | None = None,
                   musecode_pr_sha256: str | None = None,
                   musecode_pr_url: str | None = None,
-                  hotspot_cap: Mapping[str, Any] | None = None) -> dict[str, Any]:
+                  hotspot_cap: Mapping[str, Any] | None = None,
+                  eye_test: Mapping[str, Any] | None = None) -> dict[str, Any]:
     base, cand = run["baseline"], run["candidate"]
     base_samples = base.get("wh_samples") or (base.get("wh_per_req") or {}).get("samples") or []
     cand_samples = cand.get("wh_samples") or (cand.get("wh_per_req") or {}).get("samples") or []
@@ -234,6 +268,17 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
         }
         m["hotspot_cap"] = hc_entry
         receipt["hotspot_cap"] = hc_entry
+
+    et = eye_test if eye_test is not None else run.get("eye_test")
+    if et is None:
+        for ev in events:
+            d = ev.get("data") or {}
+            if ev.get("type") == "gate.result" and d.get("gate") == "vision":
+                et = {"passed": d.get("passed"), "reason": d.get("reason"),
+                      **(d.get("detail") or {})}
+                break
+    if et is not None:
+        m["eye_test"] = _eye_test_entry(et)
 
     with_joules(receipt)
     receipt["grade"] = claimed_grade(receipt, rekor=rekor)

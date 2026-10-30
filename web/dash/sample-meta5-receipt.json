@@ -27,12 +27,24 @@
     "wh_per_req": {
       "mean": 0.04802,
       "sd": 0.000192,
-      "samples": [0.048, 0.0478, 0.0483, 0.0481, 0.0479]
+      "samples": [
+        0.048,
+        0.0478,
+        0.0483,
+        0.0481,
+        0.0479
+      ]
     },
     "usd_per_req": {
       "mean": 5.7624e-06,
       "sd": 2.31e-08,
-      "samples": [5.76e-06, 5.736e-06, 5.796e-06, 5.772e-06, 5.748e-06]
+      "samples": [
+        5.76e-06,
+        5.736e-06,
+        5.796e-06,
+        5.772e-06,
+        5.748e-06
+      ]
     },
     "p99_ms": 1000.0,
     "quality": {
@@ -48,12 +60,24 @@
     "wh_per_req": {
       "mean": 0.04322,
       "sd": 0.000192,
-      "samples": [0.0432, 0.043, 0.0435, 0.0431, 0.0433]
+      "samples": [
+        0.0432,
+        0.043,
+        0.0435,
+        0.0431,
+        0.0433
+      ]
     },
     "usd_per_req": {
       "mean": 5.1864e-06,
       "sd": 2.31e-08,
-      "samples": [5.184e-06, 5.16e-06, 5.22e-06, 5.172e-06, 5.196e-06]
+      "samples": [
+        5.184e-06,
+        5.16e-06,
+        5.22e-06,
+        5.172e-06,
+        5.196e-06
+      ]
     },
     "p99_ms": 1050.0,
     "quality": {
@@ -80,7 +104,7 @@
     },
     "billable": true,
     "billed_saving_pct": 9.4,
-    "fee_share": 0.20,
+    "fee_share": 0.2,
     "currency": "USD",
     "tariff_usd_per_kwh": {
       "value": 0.12,
@@ -126,7 +150,8 @@
     "spark_trace_id": "spark-9a8b7c6d5e4f3210",
     "judge_verdict": "pass",
     "judge_score": 0.942,
-    "judge_model": "meta-models/muse-spark-open", "judge_path": "hosted-spark",
+    "judge_model": "meta-models/muse-spark-open",
+    "judge_path": "hosted-spark",
     "wonder_trace_ids": [
       "wonder-8f12a34b5c6d7e01"
     ],
@@ -157,8 +182,30 @@
     "musecode_pr_url": "https://github.com/ak9381/wattnot-demo-deploy/pull/1",
     "hotspot_cap": {
       "mask": {
-        "bbox": [190, 280, 430, 420],
-        "polygon": [[190, 280], [430, 280], [430, 420], [190, 420]],
+        "bbox": [
+          190,
+          280,
+          430,
+          420
+        ],
+        "polygon": [
+          [
+            190,
+            280
+          ],
+          [
+            430,
+            280
+          ],
+          [
+            430,
+            420
+          ],
+          [
+            190,
+            420
+          ]
+        ],
         "rle": "190,280,240,140",
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "label": "MOCK"
@@ -172,6 +219,101 @@
         "label": "ADVICE"
       },
       "reason": "Hotspot detected on GPU 1 (thermal threshold exceeded); lowered cap from 400W to 350W (-50W step, min 250W); other GPUs unchanged."
+    },
+    "eye_test": {
+      "label": "SYNTHETIC",
+      "passed": true,
+      "checked": 10,
+      "passed_count": 10,
+      "missed": [],
+      "reason": "all 10 eye-test images read correctly",
+      "model": "meta-models/Muse-Glimmer-30B",
+      "est_wh_per_image": {
+        "value": 0.5,
+        "label": "ESTIMATE"
+      },
+      "images": [
+        {
+          "id": "plate-bus789",
+          "kind": "text",
+          "expected": "BUS-789",
+          "got": "BUS-789",
+          "ok": true,
+          "label": "SYNTHETIC"
+        },
+        {
+          "id": "plate-van204",
+          "kind": "text",
+          "expected": "VAN-204",
+          "got": "VAN-204",
+          "ok": true,
+          "label": "SYNTHETIC"
+        },
+        {
+          "id": "invoice-total",
+          "kind": "number",
+          "expected": "1284.50",
+          "got": "1284.50",
+          "ok": true,
+          "label": "SYNTHETIC"
+        },
+        {
+          "id": "invoice-subtotal",
+          "kind": "number",
+          "expected": "990.00",
+          "got": "990.00",
+          "ok": true,
+          "label": "SYNTHETIC"
+        },
+        {
+          "id": "count-cubes",
+          "kind": "count",
+          "expected": "7",
+          "got": "7",
+          "ok": true,
+          "label": "SYNTHETIC"
+        },
+        {
+          "id": "count-bottles",
+          "kind": "count",
+          "expected": "4",
+          "got": "4",
+          "ok": true,
+          "label": "SYNTHETIC"
+        },
+        {
+          "id": "color-chart-top",
+          "kind": "color",
+          "expected": "magenta",
+          "got": "magenta",
+          "ok": true,
+          "label": "SYNTHETIC"
+        },
+        {
+          "id": "color-chart-bottom",
+          "kind": "color",
+          "expected": "teal",
+          "got": "teal",
+          "ok": true,
+          "label": "SYNTHETIC"
+        },
+        {
+          "id": "gauge-reading",
+          "kind": "number",
+          "expected": "63",
+          "got": "63",
+          "ok": true,
+          "label": "SYNTHETIC"
+        },
+        {
+          "id": "sign-exit",
+          "kind": "text",
+          "expected": "EXIT 12B",
+          "got": "EXIT 12B",
+          "ok": true,
+          "label": "SYNTHETIC"
+        }
+      ]
     }
   },
   "attribution": {
@@ -222,7 +364,7 @@
     "pr_body": "# Apply WattNot Efficiency Optimizations\n\nAutomated configuration update from verified WattNot energy run.\n\n**Receipt Reference**: [wattnot://1836f6491abe3cc1e950be4bee7adce3aa0c8f64ff3902dea4d060f971518f61](wattnot://1836f6491abe3cc1e950be4bee7adce3aa0c8f64ff3902dea4d060f971518f61)\n\n## Configuration Changes\n- **Power Cap**: 350 W (label: MEASURED)\n- **Max Number of Sequences**: 256 (label: ADVICE)\n- **GPU Memory Utilization**: 0.90 (label: ADVICE)\n\n## Performance & Sustainability Impact\n- **Energy Saving**: 10.00% (label: MEASURED)\n- **P99 Latency Delta**: 50.00 ms (label: MEASURED)\n- **Water Usage**: 0.0778 mL/req (label: ESTIMATE)\n",
     "snippets": [
       {
-        "framework": "\u006f\u0070\u0065\u006e\u0061\u0069-python",
+        "framework": "openai-python",
         "status": "validated",
         "label": "VALIDATED-LOCAL (mock upstream)",
         "response": "WattNot local mock upstream verified response"
@@ -231,7 +373,7 @@
         "framework": "langchain",
         "status": "skipped",
         "label": "MOCK (not run)",
-        "reason": "Library not installed: langchain_\u006f\u0070\u0065\u006e\u0061\u0069 is not installed"
+        "reason": "Library not installed: langchain_openai is not installed"
       },
       {
         "framework": "llamaindex",
