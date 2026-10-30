@@ -43,6 +43,23 @@ MIN_REAL_WAV_BYTES = 10 * 1024
 def _banned_tokens(argv: list[str]) -> list[str]:
     """Mock switches present in a live command line (handles --sam replay and bare replay too)."""
     hits: list[str] = []
+    # look inside `bash -c "..."` strings too, so a mock switch cannot hide in a shell line
+    import shlex
+    flat: list[str] = []
+    for tok in argv:
+        if " " in tok:
+            try:
+                flat += shlex.split(tok)
+            except ValueError:
+                flat.append(tok)
+        else:
+            flat.append(tok)
+    argv = flat
+    # orchestrate's --sam defaults to replay: a live orchestrate run must ask for live SAM
+    if any("wattnot.proof.orchestrate" in t for t in argv) and "--mode" in argv \
+            and argv[argv.index("--mode") + 1:argv.index("--mode") + 2] == ["live"]:
+        if not any(argv[i] == "--sam" and argv[i + 1:i + 2] == ["live"] for i in range(len(argv))):
+            hits.append("--sam replay (default)")
     for i, tok in enumerate(argv):
         low = tok.lower()
         if low in BANNED_FLAGS or any(low.startswith(f + "=") for f in BANNED_FLAGS):

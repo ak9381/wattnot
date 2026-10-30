@@ -195,13 +195,13 @@ def main(argv=None) -> int:
                     help="http(s) URL (gist/raw branch) or local file path of the heartbeat JSON")
     # Caps are DEFAULT-ON backstops (same values as scripts/mac_watchdog) so an off-box run is
     # bounded even when the published heartbeat carries no deadline/spend of its own. Sized for the
-    # 2 h H100 test (2 h x Rs451.2 = Rs902, well under Rs2000); raise them for a longer run. Config
+    # 3.5 h H100 test (3.5 h x Rs451.2 = Rs1579, under Rs2000); raise them for a longer run. Config
     # values, not measurements. Pass "unset" (or "") to DISABLE a cap.
     ap.add_argument("--budget-cap-inr", default="2000",
-                    help="off-box spend ceiling in INR (default-on, 2000; a 2 h test costs ~902). "
+                    help="off-box spend ceiling in INR (default-on, 2000; the 3.5 h test costs at most ~1579). "
                          "Pass 'unset' to disable.")
-    ap.add_argument("--max-hours", default="3",
-                    help="time-cap backstop in hours (default-on, 3; the 2 h test plus margin). "
+    ap.add_argument("--max-hours", default="3.6",
+                    help="time-cap backstop in hours (default-on, 3.6; the 3.5 h test plus 6 min, behind ctl.py's delete at 3.5 h - 8 min). "
                          "Pass 'unset' to disable.")
     ap.add_argument("--max-stale-s", default=str(DEFAULT_MAX_STALE_S))
     ap.add_argument("--layer", default="layer4-offbox")

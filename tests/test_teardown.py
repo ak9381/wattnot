@@ -64,11 +64,22 @@ def test_finished_copies_before_delete():
     assert d.delete and d.copied and order == ["pull"]
 
 
-def test_finished_copy_fails_keeps_vm():
+def test_finished_copy_fails_still_deletes_after_grace():
+    # plan done (even early) but the final copy keeps failing: retry for the grace window, then
+    # DELETE so billing stops; the per-block pulls already saved the results
     c = Clock()
     d = plan_teardown(ssh_alive=lambda: True, api_state=lambda: "running", pull=lambda: False,
-                      finished=True, **_kw(c))
-    assert not d.delete and not d.copied
+                      finished=True, finish_grace_s=600, **_kw(c))
+    assert d.delete and d.forced and not d.copied
+    assert 600 <= c.t < 800
+
+
+def test_finished_copy_recovers_within_grace():
+    c = Clock()
+    tries = iter([False] * 4 + [True])
+    d = plan_teardown(ssh_alive=lambda: True, api_state=lambda: "running",
+                      pull=lambda: next(tries), finished=True, **_kw(c))
+    assert d.delete and d.copied and not d.forced
 
 
 def test_money_rule_forces_delete_even_without_copy():

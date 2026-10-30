@@ -86,3 +86,35 @@ def test_no_hardcoded_secrets():
     assert not hits, f"possible hardcoded secret(s) in {CTL}: {hits}"
     # the two credential names appear only as env-var references, never as literal assignments
     assert not re.search(r"""E2E_API_(?:KEY|TOKEN)\s*=\s*['"]""", src)
+
+
+def test_booking_is_3h30_and_watchdog_hard_deletes_at_cap_minus_8_min(monkeypatch):
+    import datetime as dt
+    monkeypatch.delenv("RUN3_MAX_H", raising=False)
+    m = _load()
+    assert m.MAX_H == 3.5
+    # the E2E launch rule (balance must cover the lifetime, never below the 24 h floor)
+    assert m.required_balance(3.5, 379.05) == m.LONG_RUN_FLOOR
+    launch = dt.datetime(2026, 11, 1, 10, 0, 0)
+    deadline = launch + dt.timedelta(hours=m.MAX_H)
+    monkeypatch.setattr(m, "vm", lambda: {"id": 1, "launch_ts": launch.isoformat(),
+                                         "deadline": deadline.isoformat()})
+    calls = []
+    monkeypatch.setattr(m, "delete", lambda: calls.append("delete"))
+    monkeypatch.setattr(m, "balance", lambda: 9000.0)
+    monkeypatch.setattr(m.os.path, "exists", lambda p: False)
+    monkeypatch.setattr(m.time, "sleep", lambda s: None)
+
+    class Clock(dt.datetime):
+        t = launch + dt.timedelta(hours=3, minutes=21)   # 1 min before cap - 8 min
+
+        @classmethod
+        def now(cls, tz=None):
+            cls.t += dt.timedelta(minutes=2)
+            return cls.t
+
+    monkeypatch.setattr(m.dt, "datetime", Clock)
+    monkeypatch.setattr("builtins.open", lambda *a, **k: __import__("io").StringIO())
+    m.main(["watchdog"])
+    assert calls == ["delete"]           # a hard DELETE (not a stop) once 3 h 22 min passed
+    assert Clock.t - launch <= dt.timedelta(hours=3, minutes=26)

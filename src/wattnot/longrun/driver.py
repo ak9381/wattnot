@@ -223,8 +223,17 @@ def plan_glimmer_test(out: Path) -> list[Block]:
     sweep_live = _py("wattnot.proof.orchestrate", "--mode", "live", "--host", "{HOST}",
                      "--key", "{KEY}", "--model", GLIMMER_MODEL, "--out", str(out / "runs" / "t1-sweep"),
                      "--profile", "quick", "--planner", "wonder", "--no-adaptive",
-                     "--sweep-budget-s", "1100", "--sign-key", "receipt-offline-key.pem",
-                     "--auto-approve", "--live-file", str(live_file))
+                     "--sweep-budget-s", "1900", "--sign-key", "receipt-offline-key.pem",
+                     "--sam", "live", "--auto-approve", "--live-file", str(live_file))
+    sweep_dir = out / "runs" / "t1-sweep"
+    py = shlex.quote(sys.executable)
+    wonder_live = ["bash", "-c",
+                   f"{py} scripts/sweep_to_trials.py {shlex.quote(str(sweep_dir))} && "
+                   f"{py} -m wattnot.wonderchart.run --live --sweep "
+                   f"{shlex.quote(str(sweep_dir / 'sweep_trials.json'))} "
+                   f"--out {shlex.quote(str(sweep_dir / 'wonder'))}"]
+    fp8_live = ["bash", "-c", "bash scripts/glimmer_serve.sh fp8 && "
+                + " ".join(shlex.quote(a) for a in tiers_live("t2-fp8", "muse-glimmer-30b-fp8"))]
 
     return [
         Block("t0-setup", "Launch, setup, Glimmer weights, BF16 serve", _m(34), None,
@@ -232,8 +241,12 @@ def plan_glimmer_test(out: Path) -> list[Block]:
         Block("t0-probe", "Probe / go-no-go: power-cap write + image acceptance on the server",
               _m(8), _py("wattnot.vision.imageprobe", "--fake"),
               live=["bash", "scripts/glimmer_probe.sh", HOST_BASE_URL], host=True),
-        Block("t1-sweep", "Glimmer BF16 power-cap sweep + signed receipt (quick, 2 control blocks)",
-              _m(22), sweep_dry, live=sweep_live),
+        Block("t1-sweep", "Glimmer BF16 power-cap sweep + live SAM 3.1 rack scan + signed receipt "
+              "(quick, 2 control blocks)", _m(35), sweep_dry, live=sweep_live),
+        Block("t1-wonder", "Muse Wonder reads the measured sweep chart and names the next cap "
+              "(control box, paid API, cents)", _m(2),
+              _py("wattnot.wonderchart.run", "--fake", "--out", str(sweep_dir / "wonder")),
+              live=wonder_live, depends_on=("t1-sweep",)),
         Block("t1-resume", "Forced-SSH-drop resume test: a short BF16 workload the driver re-runs "
               "after the link drops mid-block", _m(5), tiers_dry("t1-resume", "muse-glimmer-30b"),
               live=tiers_live("t1-resume", "muse-glimmer-30b"), host=True),
@@ -243,21 +256,26 @@ def plan_glimmer_test(out: Path) -> list[Block]:
               "data-center noise, 90 s budget); J/correct spoken reported", _m(3),
               spoken_dry("t1-spoken"), live=spoken_live("t1-spoken"), host=True),
         Block("t2-fp8", "FP8 swap: restart Glimmer FP8, memory + start time + the same mini tiers",
-              _m(20), tiers_dry("t2-fp8", "muse-glimmer-30b-fp8"),
-              live=tiers_live("t2-fp8", "muse-glimmer-30b-fp8"), host=True),
+              _m(20), tiers_dry("t2-fp8", "muse-glimmer-30b-fp8"), live=fp8_live, host=True),
         Block("t2-eye", "FP8 eye test: the quant candidate must read the same images or roll back",
               _m(3), eye_dry("t2-eye"), live=eye_live("t2-eye"), host=True,
               depends_on=("t2-fp8",)),
         Block("t2-spoken", "FP8 spoken answers: the quant candidate must answer the same questions "
               "or roll back", _m(3), spoken_dry("t2-spoken"), live=spoken_live("t2-spoken"),
               host=True, depends_on=("t2-fp8",)),
-        # OPTIONAL batch-size / KV-cache sweep: off in the 2 h plan (needs an explicit opt-in and
-        # is dropped if the time left cannot cover it). Not counted in the 100-110 min budget.
-        Block("t2b-batch", "OPTIONAL batch-size / KV-cache sweep: restart Glimmer per "
+        # Extra-hour blocks (3.5 h booking): after every core block, so the driver drops them
+        # first if Glimmer runs slow. Each restarts the server itself.
+        Block("t2b-batch", "Batch-size / KV-cache sweep: restart Glimmer per "
               "(max-num-seqs, kv-dtype) combo and measure", _m(15),
               _py("wattnot.longrun.harness", "--cap", "350", "--out", str(out / "runs" / "t2b-batch"),
                   "--fake", "--model-config", "muse-glimmer-30b", "--per-tier", "2"),
-              live=["bash", "scripts/batch_kv_sweep.sh", "bf16"], host=True, optional=True),
+              live=["bash", "scripts/batch_kv_sweep.sh", "bf16"], host=True),
+        Block("t2c-prefix", "Prefix cache off vs on, interleaved, 3 reps (J/correct, hit rate, "
+              "TTFT, p99, quality gate)", _m(25),
+              [sys.executable, "scripts/prefix_cache_ab.py", "--fake", "--out",
+               str(out / "runs" / "t2c-prefix")],
+              live=["python", "scripts/prefix_cache_ab.py", "--out", f"{REMOTE_RESULTS}/t2c-prefix",
+                    "--reps", "3"], host=True),
         Block("t3-copy", "Copy results back to the control box", _m(5), None, live=None,
               infra="pull"),
     ]
@@ -330,9 +348,20 @@ class RemoteVm:
                              "--key", self.key, "--out", str(self.out_dir)]).returncode
         return rc == 0
 
+    @property
+    def deleted(self) -> bool:
+        return self._deleted
+
     def delete(self) -> None:
-        subprocess.run([sys.executable, str(CTL), "delete"])
-        self._deleted = True
+        # ctl.py delete = DELETE + verify (GET 404, gone from the list); exit 2 = not confirmed.
+        # Retry so a flaky API call does not leave a billing VM behind.
+        for _ in range(3):
+            if subprocess.run([sys.executable, str(CTL), "delete"]).returncode == 0:
+                self._deleted = True
+                return
+            time.sleep(30)
+        print("VM DELETE NOT CONFIRMED after 3 tries: delete it in the E2E console now",
+              file=sys.stderr)
 
 
 class Driver:
@@ -645,7 +674,7 @@ def live_run(out: Path, *, host: str, key: str = "~/.ssh/e2e_h100", model: str =
 
     blocks = plan(out, model)
     vm = RemoteVm(host=host, key=key, out_dir=out / "pulled")
-    hours = max_hours if max_hours is not None else (2.5 if model == "glimmer-test" else 18.0)
+    hours = max_hours if max_hours is not None else (3.5 if model == "glimmer-test" else 18.0)
     run = _live_runner(out, host, key, vm)
 
     def balance_inr() -> float:
@@ -658,7 +687,13 @@ def live_run(out: Path, *, host: str, key: str = "~/.ssh/e2e_h100", model: str =
                balance_inr=balance_inr, hours_used=lambda: (time.time() - d._launch_wall) / 3600.0,
                include_optional=include_optional, heartbeat_path=out / "heartbeat.json",
                watchdog_margin_h=WATCHDOG_MARGIN_H if model == "glimmer-test" else 0.0)
-    return d.go()
+    try:
+        return d.go()
+    except BaseException:
+        # a driver crash or Ctrl-C must not leave a billing VM: copy what we can, then delete
+        if not vm.deleted:
+            d._teardown(why="driver crashed", finished=True)
+        raise
 
 
 def _ctl_balance() -> float:
@@ -711,7 +746,7 @@ def main(argv=None) -> int:
         drop[k] = int(n)
     if a.model != "llama" and a.drop_link == "b2-wonder-sweep:3":
         drop = {"g2-wonder-sweep": 3} if a.model == "glimmer" else {"t1-resume": 2}
-    hours = a.max_hours or (2.5 if a.model == "glimmer-test" else 18.0)
+    hours = a.max_hours or (3.5 if a.model == "glimmer-test" else 18.0)
     st = dry_run(a.out, drop=drop, model=a.model, max_hours=hours)
     for k, v in st["blocks"].items():
         print(f"{k:18} {v['status']:8} rc={v.get('rc', '-')} {v.get('wall_s', '')}s "
