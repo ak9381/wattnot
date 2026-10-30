@@ -201,10 +201,8 @@ def test_final_copy_checksum_mismatch_flags_the_run_but_still_deletes(tmp_path):
     assert vm.deleted
     assert st["copy_verify"]["status"] == "FLAGGED"
     assert st["stopped"].endswith("copy checksum FLAGGED")
-    rc = json.loads((tmp_path / "blocks" / "t3-copy" / "receipt.json").read_text()) \
-        if (tmp_path / "blocks" / "t3-copy" / "receipt.json").exists() else None
-    if rc is not None:
-        assert rc["copy_verify"]["status"] == "FLAGGED"
+    rc = json.loads((tmp_path / "recordings" / "t3-copy" / "receipt.json").read_text())
+    assert rc["copy_verify"]["status"] == "FLAGGED"
 
 
 def test_clean_copy_is_marked_ok(tmp_path):
@@ -254,3 +252,29 @@ def test_prefix_ttft_from_vllm_histogram():
     assert ttft_ms_from_metrics(m0, m1) == 100.0
     assert ttft_ms_from_metrics("", m1) is None
     assert ttft_ms_from_metrics(m1, m1) is None
+
+
+def test_policy_warning_covers_the_deeper_caps(tmp_path):
+    from wattnot.longrun.driver import approval_policy_warnings
+    p = {"format": "wattnot.auto-approve/1", "enabled": True, "allowed_labels": ["MEASURED"],
+         "kinds": {"power_cap": {"min_saving_pct": 3, "max_p99_increase_pct": 10,
+                                 "max_cap_drop_pct": 57}}, "set_by": "x",
+         "set_at": "2026-10-30T00:00:00Z", "max_per_day": 3}
+    f = tmp_path / "p.json"
+    f.write_text(json.dumps(p))
+    w = approval_policy_warnings(f)
+    assert w and "the deeper" in w[0] and "58" in w[0]
+
+
+def test_sweep_waits_for_the_probe(tmp_path):
+    from wattnot.longrun.driver import plan_glimmer_test
+    b = {x.id: x for x in plan_glimmer_test(tmp_path)}
+    assert "t0-probe" in b["t1-sweep"].depends_on
+
+
+def test_prefix_change_pct_tolerates_one_missing_arm():
+    from wattnot.context_saver.prefix_cache import _change_pct, ttft_ms_from_metrics
+    assert _change_pct(400.0, None) is None
+    m = ('vllm:time_to_first_token_seconds_sum 1.0\nvllm:time_to_first_token_seconds_count 10\n')
+    m2 = ('vllm:time_to_first_token_seconds_sum 1.0\nvllm:time_to_first_token_seconds_count 20\n')
+    assert ttft_ms_from_metrics(m, m2) is None
