@@ -180,11 +180,11 @@ HOST_BASE_URL = "http://127.0.0.1:8000/v1"
 
 
 def plan_glimmer_test(out: Path) -> list[Block]:
-    """The 2 h Glimmer test VM, GPU-first so the core proof is saved before anything optional.
+    """The 3.5 h Glimmer test VM, GPU-first so the core proof is saved before anything optional.
 
     Order: setup -> probe (cap write + image acceptance) -> BF16 power-cap sweep + signed receipt
     -> one forced-SSH-drop resume test -> eye + spoken on BF16 -> FP8 swap -> eye + spoken on FP8
-    -> copy results back. Two prompts per tier. Budgeted to 100-110 min of the ~112 usable (2 h
+    -> copy results back. Two prompts per tier. Budgeted to 162 min of the 202 usable (3.5 h
     minus the 8 min watchdog margin). The prefix-cache A/B is NOT here; it is in the long run.
 
     Every block carries both a dry argv (--fake, MOCK/SIMULATED) and a live argv (the real command,

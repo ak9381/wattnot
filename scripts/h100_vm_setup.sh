@@ -46,12 +46,22 @@ echo "[setup] power cap check ok: set $TEST_W W, read back $GOT W, restored $DEF
 FREE_GB="$(df -BG --output=avail / | tail -n1 | tr -dc 0-9)"
 echo "[setup] free disk: ${FREE_GB} GB (need $MIN_FREE_GB)"
 [ "$FREE_GB" -ge "$MIN_FREE_GB" ] || { echo "[setup] disk too small"; exit 14; }
-if [ -n "${HF_TOKEN:-}" ] && [ "${MODEL%%/*}" = "meta-llama" ]; then
-  code="$(curl -s -o /dev/null -w '%{http_code}' -L -H "Authorization: Bearer $HF_TOKEN" \
+if [ "${SETUP_SKIP_MODELS:-0}" != 1 ]; then   # any model, gated or not: fail before the download
+  AUTH=(); [ -n "${HF_TOKEN:-}" ] && AUTH=(-H "Authorization: Bearer $HF_TOKEN")
+  code="$(curl -s -o /dev/null -w '%{http_code}' -L "${AUTH[@]}" \
     "https://huggingface.co/$MODEL/resolve/main/config.json" || true)"
   echo "[setup] Hugging Face access to $MODEL: HTTP $code"
   [ "$code" = 200 ] || { echo "[setup] token cannot read $MODEL (gated?)"; exit 13; }
 fi
+if [ "${SETUP_SKIP_MODELS:-0}" != 1 ] && [[ "$MODEL" == *Glimmer* ]]; then
+  # the Glimmer server runs in docker with the NVIDIA runtime: check both before ~60 GB of weights
+  command -v docker >/dev/null || { echo "[setup] docker missing: the Glimmer server cannot start"; exit 15; }
+  docker info 2>/dev/null | grep -qi nvidia || { echo "[setup] docker has no NVIDIA runtime (nvidia-container-toolkit)"; exit 15; }
+  echo "[setup] docker + NVIDIA runtime ok"
+fi
+# clock: receipts and deadlines use the wall clock, so turn NTP on and record the state
+timedatectl set-ntp true >/dev/null 2>&1 || true
+(date -u +%FT%TZ; timedatectl show -p NTPSynchronized 2>/dev/null) > "$LOG/clock_at_setup.txt" 2>&1 || true
 [ "${SETUP_PREFLIGHT_ONLY:-0}" = 1 ] && { echo "[setup] preflight ok"; exit 0; }
 
 # --- install ------------------------------------------------------------------------------

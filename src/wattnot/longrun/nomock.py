@@ -79,6 +79,9 @@ def _source_ok(source: str) -> bool:
     s = (source or "").strip().lower()
     if not s or s in MOCK_SOURCES:
         return False
+    if any(w in s for w in ("mock", "stub", "placeholder", "replay", "fake", "simulat",
+                            "synthetic", "offline")):
+        return False   # a real-looking prefix never launders a mock word ("live-replay-...")
     if s.startswith("tts"):            # e.g. TTS-espeak-ng, TTS-pico2wave
         return True
     return any(s == good or s.startswith(good) for good in REAL_SOURCES)
