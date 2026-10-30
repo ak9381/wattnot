@@ -42,7 +42,7 @@ from wattnot.proof.session import run_control, run_step
 from wattnot.runner.workload import load_workload, workloads_dir
 
 DEFAULT_GRID = (600, 500, 400, 350, 300)
-MODEL = "meta-llama/Llama-3.1-8B-Instruct"
+MODEL = "meta-models/Muse-Glimmer-30B"   # main model; Llama 3.1 8B is the fallback (pass --model)
 
 
 def now() -> str:

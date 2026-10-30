@@ -148,7 +148,10 @@ def archive() -> bytes:
 
 def cmd_setup(a) -> int:
     token = os.environ.get("HF_TOKEN", "")
-    if not token:
+    # HF_TOKEN (with the Llama licence) is only needed for the gated Llama fallback. Muse Glimmer,
+    # the default main model, is not gated, so a Glimmer setup can run without a token.
+    needs_token = a.model.startswith("meta-llama/") or a.moe.startswith("meta-llama/")
+    if needs_token and not token:
         print("HF_TOKEN is not set: the gated Llama download would fail", file=sys.stderr)
         return 2
     c = connect(a.host, a.key)
@@ -293,8 +296,8 @@ def main(argv=None) -> int:
         if name in ("wait", "setup"):
             p.add_argument("--timeout", type=float, default=900 if name == "wait" else 1800)
         if name == "setup":
-            p.add_argument("--model", default="meta-llama/Llama-3.1-8B-Instruct")
-            p.add_argument("--moe", default="meta-llama/Llama-4-Scout-17B-16E-Instruct")
+            p.add_argument("--model", default="meta-models/Muse-Glimmer-30B")
+            p.add_argument("--moe", default="none")   # adaptive off by default; pass a Meta MoE to opt in
             p.add_argument("--reconnect-budget-s", type=float, default=RECONNECT_BUDGET_S)
         if name == "pull":
             p.add_argument("--out", default="run2-pulled")

@@ -11,14 +11,14 @@
 # install besides the kit; default "accelerate vllm"), SETUP_SKIP_MODELS=1 (no weights, no
 # server). tests/test_vm_setup.py drives them in a clean sandbox on a CPU box.
 set -euo pipefail
-MODEL="${1:-meta-llama/Llama-3.1-8B-Instruct}"
-MOE="${2:-none}"   # optional MoE for the top-k step; Meta-only (e.g. meta-llama/Llama-4-Scout-17B-16E-Instruct). "none" = skip
+MODEL="${1:-meta-models/Muse-Glimmer-30B}"   # main model; Llama is the fallback only (pass it as $1)
+MOE="${2:-none}"   # optional MoE for the top-k step; Meta-only (e.g. meta-llama/Llama-4-Scout-17B-16E-Instruct). "none" = skip (adaptive is off by default)
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 ROOT="${SETUP_ROOT:-/root}"
 LOG="$ROOT/run2"
 VENV="$ROOT/venv"
 PIP_EXTRA="${SETUP_PIP_EXTRA-accelerate vllm}"
-MIN_FREE_GB="${MIN_FREE_GB:-60}"
+MIN_FREE_GB="${MIN_FREE_GB:-150}"   # Glimmer weights (~60 GB) + the vLLM image + headroom
 mkdir -p "$LOG"
 echo "[setup] $(date +%T) start"
 command -v nvidia-smi >/dev/null || { echo "no nvidia-smi: not a GPU host"; exit 10; }
