@@ -265,7 +265,8 @@ def plan_glimmer_test(out: Path) -> list[Block]:
               _m(8), _py("wattnot.vision.imageprobe", "--fake"),
               live=["bash", "scripts/glimmer_probe.sh", HOST_BASE_URL], host=True),
         Block("t1-sweep", "Glimmer BF16 power-cap sweep + live SAM 3.1 rack scan + signed receipt "
-              "(quick, 2 control blocks)", _m(35), sweep_dry, live=sweep_live),
+              "(quick, 2 control blocks)", _m(35), sweep_dry, live=sweep_live,
+              depends_on=("t0-probe",)),   # no cap write / no images = no sweep
         Block("t1-wonder", "Muse Wonder reads the measured sweep chart and names the next cap "
               "(control box, paid API, cents)", _m(2),
               wonder_dry, live=wonder_live, depends_on=("t1-sweep",)),
@@ -452,7 +453,23 @@ class Driver:
     def _invoke(self, b: Block, timeout_s: float) -> int:
         """Run a block, bounded by `timeout_s`. Runners that take a second arg get the budget so
         they can kill an overrunning command; one-arg runners (tests) are called unchanged."""
-        return self.run(b, timeout_s) if self._run_arity >= 2 else self.run(b)
+        # keep the heartbeat fresh while a long block runs (setup 34 min, sweep 35 min), so a
+        # stale-heartbeat watchdog never mistakes a healthy block for a hung driver
+        import threading
+        stop = threading.Event()
+
+        def _beat():
+            while not stop.wait(60.0):
+                try:
+                    self._heartbeat(block=b.id, note="in-block")
+                except Exception:  # noqa: BLE001 - a beat must never break the block
+                    pass
+        t = threading.Thread(target=_beat, daemon=True)
+        t.start()
+        try:
+            return self.run(b, timeout_s) if self._run_arity >= 2 else self.run(b)
+        finally:
+            stop.set()
 
     def _save(self) -> None:
         tmp = self.state_path.with_suffix(".tmp")
@@ -852,13 +869,15 @@ def approval_policy_warnings(path: Path, stock_w: float = H100_STOCK_W) -> list[
         return []
     rules = p.kinds.get("power_cap") or {}
     mx = rules.get("max_cap_drop_pct")
-    least = round((1 - HI_W / stock_w) * 100, 1)
-    most = round((1 - LO_W / stock_w) * 100, 1)
-    if isinstance(mx, int | float) and mx < least:
-        return [f"max_cap_drop_pct {mx:g}% is below every Wonder cap ({LO_W}-{HI_W} W on a "
-                f"{stock_w:g} W card = {least:g}-{most:g}% drop): the policy will decline each "
-                f"one after the hold and the cap is rolled back (numbers still recorded). "
-                f"Raise it to {int(most) + 1} to let the policy approve."]
+    least = (1 - HI_W / stock_w) * 100   # shallowest cap
+    most = (1 - LO_W / stock_w) * 100    # deepest cap
+    if isinstance(mx, int | float) and mx < most:
+        import math
+        scope = "every" if mx < least else "the deeper"
+        return [f"max_cap_drop_pct {mx:g}% is below {scope} Wonder cap ({LO_W}-{HI_W} W on a "
+                f"{stock_w:g} W card = {least:.1f}-{most:.2f}% drop): the policy will decline "
+                f"{scope} cap after the hold and roll it back (numbers still recorded). "
+                f"Raise it to {math.ceil(most)} to let the policy approve every cap."]
     return []
 
 

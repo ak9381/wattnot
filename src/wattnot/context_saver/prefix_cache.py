@@ -38,7 +38,7 @@ def ttft_ms_from_metrics(before_text: str, after_text: str) -> float | None:
         return sum(vals) if vals else None
     s0, s1 = _sum(_TTFT_SUM, before_text), _sum(_TTFT_SUM, after_text)
     c0, c1 = _sum(_TTFT_COUNT, before_text), _sum(_TTFT_COUNT, after_text)
-    if None in (s0, s1, c0, c1) or c1 - c0 <= 0 or s1 - s0 < 0:
+    if None in (s0, s1, c0, c1) or c1 - c0 <= 0 or s1 - s0 <= 0:
         return None
     return round((s1 - s0) / (c1 - c0) * 1000.0, 2)
 
@@ -82,7 +82,7 @@ def arm_summary(name: str, rows: Sequence[dict], label: str) -> dict:
 
 
 def _change_pct(a, b):
-    return round(100 * (b - a) / a, 2) if a else None
+    return round(100 * (b - a) / a, 2) if a and b is not None else None
 
 
 def evaluate_ab(off: dict, on: dict, *, p99_limit_pct: float = P99_LIMIT_PCT,

@@ -811,7 +811,14 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
             )
             after_read = None
             if best and decision != "approved":
+                try:
+                    _by = str((guard.approvals.store.get(chg).get("decision") or {}).get("by")
+                              or "") if chg else ""
+                except Exception:  # noqa: BLE001 - the label only; never block the rollback
+                    _by = ""
                 reason = ("approval timed out" if decision == "expired"
+                          else "declined by the operator's approval policy"
+                          if _by.startswith("auto-policy:")
                           else "operator rejected the change")
                 s.emit(
                     "action.rolled_back",
