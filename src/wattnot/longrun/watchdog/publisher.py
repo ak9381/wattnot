@@ -31,6 +31,7 @@ import json
 import os
 import subprocess
 import tempfile
+import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -106,6 +107,8 @@ class HeartbeatPublisher:
         self.token = token if token is not None else env.get(token_env)
         self._explicit_remote = remote
         self._last_push: float | None = None
+        # the driver's main loop and its heartbeat ticker thread both publish; one push at a time
+        self._lock = threading.Lock()
 
     # ------------------------------------------------------------------ remote URL
     def _remote_url(self) -> str:
@@ -141,6 +144,15 @@ class HeartbeatPublisher:
         Returns a result dict: ``published`` (bool), plus ``reason``/``error`` describing why a
         push was skipped or failed. In dry-run it reports ``would_publish`` and makes no git call.
         """
+        if not self._lock.acquire(blocking=False):
+            return {"published": False, "mode": self.mode, "branch": self.branch,
+                    "dry_run": self.dry_run, "reason": "another push in progress"}
+        try:
+            return self._publish(heartbeat, force=force)
+        finally:
+            self._lock.release()
+
+    def _publish(self, heartbeat: dict, *, force: bool) -> dict:
         now = self.clock()
         base = {"published": False, "mode": self.mode, "branch": self.branch,
                 "dry_run": self.dry_run}
@@ -192,7 +204,7 @@ class HeartbeatPublisher:
             self._run(g + ["push", "-q", "--force", remote, f"HEAD:{self.branch}"])
 
     def _run(self, argv: list[str]) -> None:
-        r = self.runner(argv, capture_output=True, text=True)
+        r = self.runner(argv, capture_output=True, text=True, timeout=60)
         if getattr(r, "returncode", 0) != 0:
             err = _redact((getattr(r, "stderr", "") or getattr(r, "stdout", "") or "").strip(),
                           self.token or "")

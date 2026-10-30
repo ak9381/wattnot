@@ -3,8 +3,9 @@
 # SAFE BY DEFAULT. As committed this workflow cannot delete anything:
 #   * the scheduled run does nothing unless the repo VARIABLE `WATCHDOG_ENABLED` == 'true'
 #     (unset by default), so a fresh clone never acts on a cron;
-#   * every run defaults to DRY-RUN. A real delete needs BOTH the dispatch input mode=live AND
-#     the repo variable `WATCHDOG_LIVE` == 'true' AND the credentials below present;
+#   * every run defaults to DRY-RUN. A real delete needs the repo variable `WATCHDOG_LIVE` ==
+#     'true' AND the variable E2E_VM_ID AND the credentials below, on a scheduled tick or a
+#     dispatch with mode=live (a dispatch with mode=dry-run always stays dry);
 #   * the credentials (E2E_API_KEY / E2E_AUTH_TOKEN) live only in GitHub secrets, never the repo.
 #
 # It polls the SAME heartbeat the driver publishes off-box (a gist raw URL, or a file on a
@@ -84,7 +85,11 @@ jobs:
             echo "WATCHDOG_HEARTBEAT_URL unset; defaulting to the published branch: ${HEARTBEAT_URL}"
           fi
           live=""
-          if [ "${DISPATCH_MODE:-}" = "live" ] && [ "${WATCHDOG_LIVE:-}" = "true" ]; then
+          # Live when WATCHDOG_LIVE == 'true' AND a VM id is set, on a schedule tick (the real
+          # backstop) or a dispatch with mode=live. A dispatch with mode=dry-run stays dry.
+          want_live=""
+          if [ "${GITHUB_EVENT_NAME}" = "schedule" ] || [ "${DISPATCH_MODE:-}" = "live" ]; then want_live=1; fi
+          if [ -n "$want_live" ] && [ "${WATCHDOG_LIVE:-}" = "true" ] && [ -n "${E2E_VM_ID:-}" ]; then
             live="--live"
             echo "::warning::running in LIVE mode — a tripped cap WILL delete E2E VM ${E2E_VM_ID:-?}"
           else
