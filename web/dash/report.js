@@ -7,6 +7,10 @@
 import { sharedLegend } from "./legend.js";
 import { mountMetaTools } from "./metatools.js";
 import { mountHotspotCard } from "./hotspot.js";
+import { mountEyeTest } from "./eyetest.js";
+import { mountSpokenAnswer } from "./spokenanswer.js";
+import { mountHotspotSet } from "./hotspotset.js";
+import { mountWonderChart } from "./wonderchart.js";
 import { mountEuLink, mountEuCard } from "./eulink.js";
 import { mountCodemode, mountSandbox } from "./codemode.js";
 
@@ -386,6 +390,14 @@ function render() {
         reason: `Live SAM 3.1 box on the public rack photo (response ${d.sam?.response_id}). The photo is not thermal, so the hot slot is simulated; the cap change is advice only.` } });
     }).catch(() => {});
   }
+  // Eye test is shown only from the run's own receipt — never spliced from the
+  // sample — so the panel stays hidden until a run really carries one.
+  if ($("#eyetest-mount")) mountEyeTest($("#eyetest-mount"), STATE.receipt || {});
+  // Spoken answers, like the eye test, is shown only from the run's own receipt
+  // — never the sample — so the panel stays hidden until a run carries one.
+  if ($("#spokenanswer-mount")) mountSpokenAnswer($("#spokenanswer-mount"), STATE.receipt || {});
+  if ($("#hotspotset-mount")) mountHotspotSet($("#hotspotset-mount"), STATE.receipt || {});
+  if ($("#wonderchart-mount")) mountWonderChart($("#wonderchart-mount"), STATE.receipt || {});
   if ($("#eulink-mount")) mountEuLink($("#eulink-mount"), STATE.receipt || {});
   if ($("#eu-card-mount")) mountEuCard($("#eu-card-mount"));
   if ($("#codemode-mount")) mountCodemode($("#codemode-mount"));

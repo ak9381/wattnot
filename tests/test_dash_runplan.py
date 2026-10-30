@@ -326,7 +326,9 @@ def test_nodes_carry_powered_by():
                            "what": "finds the racks"}]
     assert by["approve"] == [{"id": "operator", "name": "Operator",
                               "what": "a person decides"}]
-    assert by["gate"] == [] and by["receipt"] == []
+    assert by["gate"] == [{"id": "muse_image", "name": "Meta Muse Image",
+                           "what": "generates the SYNTHETIC eye-test images the vision gate checks"}]
+    assert by["receipt"] == []
     assert by["baseline"] == [{"id": "e2e", "name": "E2E H100",
                                "what": "the GPU it runs on"}]
     assert by["keep"] == [{"id": "e2e", "name": "E2E H100",

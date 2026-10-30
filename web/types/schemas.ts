@@ -109,6 +109,109 @@ export interface Receipt {
       };
       reason?: string;
     } | null;
+    eye_test?: {
+      label?: string;
+      passed?: boolean;
+      checked?: number;
+      passed_count?: number;
+      missed?: string[];
+      reason?: string;
+      model?: string;
+      est_wh_per_image?: {
+        value?: number;
+        label?: string;
+      };
+      images?: {
+        id?: string;
+        kind?: string;
+        expected?: string;
+        got?: string;
+        ok?: boolean;
+        label?: string;
+      }[];
+    } | null;
+    hotspot_test?: {
+      label?: string;
+      detector?: string;
+      passed?: boolean;
+      checked?: number;
+      passed_count?: number;
+      missed?: string[];
+      faults?: string[];
+      iou_pass?: number;
+      reason?: string;
+      est_wh_per_image?: {
+        value?: number;
+        label?: string;
+      };
+      scenes?: {
+        id?: string;
+        fault?: string;
+        slot?: number;
+        expected_bbox?: number[];
+        got_bbox?: number[];
+        iou?: number;
+        ok?: boolean;
+        mask_label?: string;
+        label?: string;
+      }[];
+    } | null;
+    spoken_test?: {
+      label?: string;
+      transcriber?: string;
+      passed?: boolean;
+      checked?: number;
+      passed_count?: number;
+      missed?: string[];
+      missed_noisy?: string[];
+      reason?: string;
+      model?: string;
+      energy?: {
+        label?: string;
+        meter?: string;
+        wh_per_answer?: number | null;
+        j_per_spoken_answer?: number | null;
+        j_per_correct_spoken?: number | null;
+        j_per_token?: number | null;
+        j_per_correct_answer?: number | null;
+      };
+      items?: {
+        id?: string;
+        kind?: string;
+        noise?: string;
+        expected?: string;
+        got?: string;
+        ok?: boolean;
+        label?: string;
+      }[];
+    } | null;
+    wonder_chart?: {
+      label?: string;
+      chart_sha256?: string;
+      source?: string;
+      offline_fallback?: boolean;
+      model?: string;
+      suggestion?: {
+        action?: string;
+        cap_w?: number | null;
+        clock_profile?: string | null;
+      };
+      reason?: string;
+      trace_id?: string;
+      est_wh?: {
+        value?: number;
+        label?: string;
+      };
+      points?: {
+        setting?: string;
+        cap_w?: number;
+        clock_profile?: string;
+        joules_per_correct?: number;
+        quality?: number;
+        kept?: boolean;
+        label?: string;
+      }[];
+    } | null;
   };
   hotspot_cap?: Record<string, unknown> | null;
   attribution?: Record<string, unknown>;

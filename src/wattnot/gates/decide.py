@@ -34,8 +34,26 @@ def decide(base: TrialResult, cand: TrialResult, base_outputs: Mapping[str, str]
            cand_outputs: Mapping[str, str], items: list[WorkloadItem], *,
            slack: float = 0.10, sla_s: float | None = None, max_drop_pts: float = 1.0,
            base_wh: list[float] | None = None, cand_wh: list[float] | None = None,
-           emit=None) -> Decision:
-    """With per-rep Wh lists, the noise gate runs third (Welch + bootstrap CI)."""
+           vision: GateResult | None = None, hotspot: GateResult | None = None,
+           spoken: GateResult | None = None, emit=None) -> Decision:
+    """With per-rep Wh lists, the noise gate runs third (Welch + bootstrap CI).
+
+    ``vision`` is an optional pre-computed eye-test ``GateResult`` (see
+    ``wattnot.vision.vision_gate``). When given it joins the gate set, so a
+    candidate the served vision model misreads is rejected and rolled back to
+    the last safe config just like a quality or latency failure.
+
+    ``hotspot`` is an optional pre-computed SAM 3.1 hotspot-set ``GateResult``
+    (see ``wattnot.sam.hotspot_set.hotspot_set_gate``). When given it joins the
+    gate set the same way, so a candidate that breaks the hotspot detector on
+    the SYNTHETIC scenes is rejected and rolled back.
+
+    ``spoken`` is an optional pre-computed watts-per-spoken-answer ``GateResult``
+    (see ``wattnot.spokenanswer.spoken_answer_gate``). When given it joins the
+    gate set the same way, so a candidate the served model (Glimmer) mishears on
+    the SYNTHETIC recorded questions is rejected and rolled back, exactly like
+    the eye test.
+    """
 
     results = (
         fixed_checks(base_outputs, cand_outputs, items, max_drop_pts=max_drop_pts),
@@ -43,6 +61,12 @@ def decide(base: TrialResult, cand: TrialResult, base_outputs: Mapping[str, str]
     )
     if base_wh is not None and cand_wh is not None:
         results = (*results, noise_gate(base_wh, cand_wh))
+    if vision is not None:
+        results = (*results, vision)
+    if hotspot is not None:
+        results = (*results, hotspot)
+    if spoken is not None:
+        results = (*results, spoken)
     if emit is not None:
         for r in results:
             emit.emit("gate.result", r.event_data(cand.trial_id),

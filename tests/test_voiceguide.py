@@ -149,7 +149,7 @@ def test_configure_intent_returns_prefill_requiring_user_review() -> None:
 
 
 def test_action_allowlist_enforcement() -> None:
-    assert ALLOWED_ACTIONS == {"navigate", "answer", "prefill", "explain"}
+    assert ALLOWED_ACTIONS == {"navigate", "answer", "prefill", "explain", "tune"}
     # Verify that attempting an action outside the allowlist raises VoiceGuideActionError
     with pytest.raises(VoiceGuideActionError):
         from wattnot.meta import voiceguide

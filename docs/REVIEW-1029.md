@@ -151,3 +151,41 @@ Copy follow-ups (product decision, not a defect):
    control-box failure still bounds the bill.
 6. **Run the GPU side once as `h100_run.sh --dry-run` first** to confirm SIMULATED receipts,
    then the real run only with `HF_TOKEN` + `--pre-approved`.
+
+### Eye test (vision quality gate) in the 2h plan
+
+The vision quality gate runs inside the 2h Glimmer test, once per candidate, on a 90 s
+wall-clock budget (`EYE_TEST_BUDGET_S`, `longrun/driver.py`). It is a first-class step in
+`plan_glimmer_test` — `t1-eye` after BF16 and `t2-eye` after the FP8 restart — so a
+quantisation that quietly breaks vision is caught even when the text checks pass. The
+served vision model (Glimmer, or Spark via the Meta Model API) answers the pre-generated
+SYNTHETIC images in `data/vision/eyetest`; any miss fails the block, rejects the change,
+blocks the Muse Code PR, records the reason on the signed receipt
+(`measurement.eye_test`), and rolls back to the last safe config through the existing
+`decide`/`guarded_apply` loop. The images are cached, so it is seconds of served
+inference, not the 13 s generation hot path. No launch and no paid call: dry runs use the
+offline answerer (`wattnot.vision.run --fake`); the one-time paid image generation lives
+only in `scripts/gen_vision_assets.py` (needs `WATTNOT_GEN_VISION_GO=1`, never run by
+tests). Every generated image carries an ESTIMATE energy stamp.
+
+---
+
+## Vision gate review (2026-10-30) — GO
+
+Branch reviewed: `feat/vision-gate-1030` (eye test, SAM synthetic hotspot set, Wonder reads
+the chart, watts per spoken answer, talk to the tuner, review fixes). Merged into main from
+`feat/vision-gate-1030-clean`, which has the same code with tool trailers removed from three
+commit messages.
+
+- Schemas: `schemas/` matches `docs/schemas/` for every file this branch touched;
+  `scripts/gen_ts_types.py --check` reports `web/types/schemas.ts` up to date.
+- Labels: new panels use SYNTHETIC (SAM hotspots, spoken questions) and ESTIMATE. One fix:
+  the tuner dry run was labelled MOCK; it is now SIMULATED and its text and speech say it
+  assumes the quality checks pass (the dry run submits with `gates_passed=True`).
+- Frontend: hotspot set, Wonder chart and spoken answer panels are imported in
+  `report.js`, CSS linked in `report.html`; the tuner plan renders through `voiceguide.js`.
+- No secrets and no AI-company names in the diff (`openai` only as the OpenAI-compatible
+  API name).
+- Integration run: `python -m pytest -q` exit 0; `node tests/js/index.js` 163 passed, 0 failed.
+
+Verdict: **GO**.

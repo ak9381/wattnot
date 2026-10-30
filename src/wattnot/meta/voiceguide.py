@@ -10,11 +10,18 @@ Classifies audio or text input into exactly one of four strictly read-only inten
                  (cap_w, workload, framework) requiring user review before launching.
                  Never starts, stops, or changes a run.
   (d) explain: point-and-explain for on-screen elements or metrics.
+  (e) command: a spoken tuning command ("try 350W with FP8") planned by Spark and run
+               through the normal guarded loop in dry-run (see wattnot.meta.tuner). It
+               files proposals in a throwaway scratch store and returns a receipt summary;
+               it never applies anything or touches hardware. The summary is read aloud by
+               the browser's own speech synthesis (labelled "browser voice"), not a model.
 
 SAFETY ENFORCEMENT:
 The guide must NEVER launch, stop, or change a run. Only actions in ALLOWED_ACTIONS
-{"navigate", "answer", "prefill", "explain"} are permitted; any other action is rejected.
-All answers are text-only (no TTS).
+{"navigate", "answer", "prefill", "explain", "tune"} are permitted; any other action is
+rejected. The "tune" action is a dry-run plan only: it classifies and routes a change
+through the guardrail but applies nothing. Answers are text-only on the backend; the
+command summary is spoken only by the browser voice, never synthesised by a Meta model.
 """
 
 from __future__ import annotations
@@ -29,8 +36,8 @@ from typing import Any
 from wattnot.receipt.build import verify_hash
 from wattnot.report.eu import fields_for
 
-ALLOWED_ACTIONS = frozenset({"navigate", "answer", "prefill", "explain"})
-ALLOWED_INTENTS = frozenset({"navigate", "answer", "configure", "explain"})
+ALLOWED_ACTIONS = frozenset({"navigate", "answer", "prefill", "explain", "tune"})
+ALLOWED_INTENTS = frozenset({"navigate", "answer", "configure", "explain", "command"})
 
 # Canonical frameworks selectable via spoken run setup. Anything else -> None.
 FRAMEWORKS = ("openai-python", "langchain", "llamaindex", "plain-api")
@@ -246,8 +253,16 @@ def _has_run_setup_signals(t: str) -> bool:
 
 
 def classify_intent(text: str) -> str:
-    """Spark deterministic classifier: categorise query into navigate, answer, configure, or explain."""
+    """Spark deterministic classifier: navigate, answer, configure, explain, or command."""
     t = text.lower().strip()
+
+    # A spoken tuning command ("try 350W with FP8") is planned by Spark and run through
+    # the guarded loop (dry-run). It wins over configure/prefill when a knob is named, but
+    # never steals a question ("what does FP8 mean?"): is_tune_command excludes those.
+    from wattnot.meta.tuner import is_tune_command
+
+    if is_tune_command(text):
+        return "command"
 
     # Explicit configure keywords always win (except pure explain requests handled below).
     if any(k in t for k in ("configure", "prefill", "set up", "setup", "prepare run", "parameters for")):
@@ -284,6 +299,8 @@ def get_quick_ack(intent: str, text: str) -> dict[str, str]:
         if "compare" in text.lower():
             return {"intent": "navigate", "ack": "Opening Compare view...", "status": "ok"}
         return {"intent": "navigate", "ack": "Resolving latest report route...", "status": "ok"}
+    if intent == "command":
+        return {"intent": "command", "ack": "Asking Spark to plan this (dry run)...", "status": "ok"}
     if intent == "configure":
         return {"intent": "configure", "ack": "Preparing run setup pre-fill...", "status": "ok"}
     if intent == "explain":
@@ -469,6 +486,15 @@ def process_voice_query(
                 "quick_ack": quick["ack"],
                 "label": label,
             }
+
+    elif intent == "command":
+        # Spoken tuning command: Spark plans it and the guarded loop routes it in
+        # dry-run (nothing is applied, no hardware touched). The receipt summary is
+        # read aloud by the browser voice on the page.
+        from wattnot.meta.tuner import run_tune
+
+        result = run_tune(text)
+        result.setdefault("quick_ack", quick["ack"])
 
     elif intent == "configure":
         # Read-only pre-fill only: parse spoken setup, never start/stop/change a run.

@@ -50,6 +50,171 @@ def _arm(arm: Mapping, tariff: float) -> dict:
     return out
 
 
+def _eye_test_entry(et: Mapping) -> dict:
+    """Normalise a vision-gate result (or its detail dict) into the receipt's
+    ``measurement.eye_test`` block: numbers, ids, short tokens and SYNTHETIC /
+    ESTIMATE labels only, so it stays lint-clean and signature-covered."""
+
+    wh = et.get("est_wh_per_image")
+    if wh is None:
+        wh = (et.get("energy_per_image_wh") or {}).get("value", 0.5)
+    images = []
+    for row in et.get("images", []):
+        images.append({
+            "id": str(row.get("id", ""))[:64],
+            "kind": str(row.get("kind", ""))[:16],
+            "expected": str(row.get("expected", ""))[:64],
+            "got": str(row.get("got", ""))[:64],
+            "ok": bool(row.get("ok")),
+            "label": str(row.get("label", "SYNTHETIC"))[:32],
+        })
+    checked = et.get("checked", len(images))
+    missed = list(et.get("missed") or [r["id"] for r in images if not r["ok"]])
+    return {
+        "label": "SYNTHETIC",
+        "passed": bool(et.get("passed", not missed)),
+        "checked": int(checked),
+        "passed_count": int(et.get("passed_count", checked - len(missed))),
+        "missed": [str(x)[:64] for x in missed],
+        "reason": str(et.get("reason", ""))[:195],
+        "model": str(et.get("model", "unrecorded"))[:64],
+        "est_wh_per_image": {"value": round(float(wh), 6), "label": "ESTIMATE"},
+        "images": images,
+    }
+
+
+def _hotspot_test_entry(ht: Mapping) -> dict:
+    """Normalise a SAM hotspot-set result (or its detail dict) into the
+    receipt's ``measurement.hotspot_test`` block: numbers, ids, bboxes and
+    SYNTHETIC / ESTIMATE labels only, so it stays lint-clean and
+    signature-covered. These are SYNTHETIC tests, never a thermal measurement."""
+
+    wh = ht.get("est_wh_per_image")
+    if wh is None:
+        wh = (ht.get("energy_per_image_wh") or {}).get("value", 0.5)
+    scenes = []
+    for row in ht.get("scenes", []):
+        scenes.append({
+            "id": str(row.get("id", ""))[:64],
+            "fault": str(row.get("fault", ""))[:32],
+            "slot": int(row.get("slot", 0)),
+            "expected_bbox": [int(x) for x in (row.get("expected_bbox") or [])][:4],
+            "got_bbox": [int(x) for x in (row.get("got_bbox") or [])][:4],
+            "iou": round(float(row.get("iou", 0.0)), 6),
+            "ok": bool(row.get("ok")),
+            "mask_label": str(row.get("mask_label", ""))[:32],
+            "label": str(row.get("label", "SYNTHETIC"))[:32],
+        })
+    checked = ht.get("checked", len(scenes))
+    missed = list(ht.get("missed") or [s["id"] for s in scenes if not s["ok"]])
+    return {
+        "label": "SYNTHETIC",
+        "detector": str(ht.get("detector", "SAM 3.1"))[:64],
+        "passed": bool(ht.get("passed", not missed)),
+        "checked": int(checked),
+        "passed_count": int(ht.get("passed_count", checked - len(missed))),
+        "missed": [str(x)[:64] for x in missed],
+        "faults": [str(f)[:32] for f in (ht.get("faults") or [])],
+        "iou_pass": round(float(ht.get("iou_pass", 0.5)), 6),
+        "reason": str(ht.get("reason", ""))[:195],
+        "est_wh_per_image": {"value": round(float(wh), 6), "label": "ESTIMATE"},
+        "scenes": scenes,
+    }
+
+
+def _spoken_test_entry(st: Mapping) -> dict:
+    """Normalise a watts-per-spoken-answer result (or its detail dict) into the
+    receipt's ``measurement.spoken_test`` block: numbers, ids, short answer
+    tokens, the MEASURED joules-per-correct-spoken-answer triplet and SYNTHETIC
+    labels only, so it stays lint-clean and signature-covered. The spoken
+    questions and recordings are SYNTHETIC; the transcripts come from Muse Voice
+    Transcribe (cached, one-time paid). The reference ``question`` text is left
+    out on purpose so no prompt-like string ever reaches the public receipt."""
+
+    def _rf(v: Any) -> float | None:
+        return None if v is None else round(float(v), 6)
+
+    items = []
+    for row in st.get("items", []):
+        items.append({
+            "id": str(row.get("id", ""))[:64],
+            "kind": str(row.get("kind", ""))[:16],
+            "noise": str(row.get("noise", ""))[:16],
+            "expected": str(row.get("expected", ""))[:64],
+            "got": str(row.get("got", ""))[:64],
+            "ok": bool(row.get("ok")),
+            "label": str(row.get("label", "SYNTHETIC"))[:32],
+        })
+    checked = st.get("checked", len(items))
+    missed = list(st.get("missed") or [r["id"] for r in items if not r["ok"]])
+    entry: dict[str, Any] = {
+        "label": "SYNTHETIC",
+        "transcriber": str(st.get("transcriber", "muse-voice-transcribe-1.0"))[:64],
+        "passed": bool(st.get("passed", not missed)),
+        "checked": int(checked),
+        "passed_count": int(st.get("passed_count", checked - len(missed))),
+        "missed": [str(x)[:64] for x in missed],
+        "missed_noisy": [str(x)[:64] for x in (st.get("missed_noisy") or [])],
+        "reason": str(st.get("reason", ""))[:195],
+        "model": str(st.get("model", "unrecorded"))[:64],
+        "items": items,
+    }
+    energy = st.get("energy")
+    if energy:
+        entry["energy"] = {
+            "label": str(energy.get("label", "MEASURED"))[:16],
+            "meter": str(energy.get("meter", ""))[:64],
+            "wh_per_answer": _rf(energy.get("wh_per_answer")),
+            "j_per_spoken_answer": _rf(energy.get("j_per_spoken_answer")),
+            "j_per_correct_spoken": _rf(energy.get("j_per_correct_spoken")),
+            "j_per_token": _rf(energy.get("j_per_token")),
+            "j_per_correct_answer": _rf(energy.get("j_per_correct_answer")),
+        }
+    return entry
+
+
+def _wonder_chart_entry(wc: Mapping) -> dict:
+    """Normalise a 'Wonder reads the chart' result into the receipt's
+    ``measurement.wonder_chart`` block: numbers, short settings, the chart hash and
+    SYNTHETIC / ESTIMATE labels only, so it stays lint-clean and signature-covered.
+    The chart PNG is referenced by hash; its pixels never enter the public receipt."""
+
+    sugg = wc.get("suggestion") or {}
+    est = wc.get("est_wh") or {}
+    wh = est.get("value")
+    if wh is None:
+        wh = wc.get("est_wh_value", 0.5)
+    points = []
+    for row in wc.get("points", []):
+        points.append({
+            "setting": str(row.get("setting", ""))[:48],
+            "cap_w": int(row.get("cap_w", 0)),
+            "clock_profile": str(row.get("clock_profile", ""))[:32],
+            "joules_per_correct": round(float(row.get("joules_per_correct", 0.0)), 6),
+            "quality": round(float(row.get("quality", 0.0)), 6),
+            "kept": bool(row.get("kept")),
+            "label": str(row.get("label", "MEASURED"))[:32],
+        })
+    cap = sugg.get("cap_w")
+    return {
+        "label": str(wc.get("label", "SYNTHETIC"))[:32],
+        "chart_sha256": str(wc.get("chart_sha256", ""))[:64],
+        "source": str(wc.get("source", "fallback"))[:16],
+        "offline_fallback": bool(wc.get("offline_fallback", wc.get("source") == "fallback")),
+        "model": str(wc.get("model", "unrecorded"))[:64],
+        "suggestion": {
+            "action": str(sugg.get("action", "stop"))[:8],
+            "cap_w": int(cap) if cap is not None else None,
+            "clock_profile": (str(sugg.get("clock_profile"))[:32]
+                              if sugg.get("clock_profile") is not None else None),
+        },
+        "reason": str(wc.get("reason", ""))[:195],
+        "trace_id": str(wc.get("trace_id", ""))[:80],
+        "est_wh": {"value": round(float(wh), 6), "label": "ESTIMATE"},
+        "points": points,
+    }
+
+
 def planner_trace_from_events(events: Sequence[Mapping]) -> list[dict]:
     trace, n = [], 0
     for e in events:
@@ -84,7 +249,11 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
                   musecode_patch_sha256: str | None = None,
                   musecode_pr_sha256: str | None = None,
                   musecode_pr_url: str | None = None,
-                  hotspot_cap: Mapping[str, Any] | None = None) -> dict[str, Any]:
+                  hotspot_cap: Mapping[str, Any] | None = None,
+                  eye_test: Mapping[str, Any] | None = None,
+                  hotspot_test: Mapping[str, Any] | None = None,
+                  spoken_test: Mapping[str, Any] | None = None,
+                  wonder_chart: Mapping[str, Any] | None = None) -> dict[str, Any]:
     base, cand = run["baseline"], run["candidate"]
     base_samples = base.get("wh_samples") or (base.get("wh_per_req") or {}).get("samples") or []
     cand_samples = cand.get("wh_samples") or (cand.get("wh_per_req") or {}).get("samples") or []
@@ -234,6 +403,48 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
         }
         m["hotspot_cap"] = hc_entry
         receipt["hotspot_cap"] = hc_entry
+
+    et = eye_test if eye_test is not None else run.get("eye_test")
+    if et is None:
+        for ev in events:
+            d = ev.get("data") or {}
+            if ev.get("type") == "gate.result" and d.get("gate") == "vision":
+                et = {"passed": d.get("passed"), "reason": d.get("reason"),
+                      **(d.get("detail") or {})}
+                break
+    if et is not None:
+        m["eye_test"] = _eye_test_entry(et)
+
+    ht = hotspot_test if hotspot_test is not None else run.get("hotspot_test")
+    if ht is None:
+        for ev in events:
+            d = ev.get("data") or {}
+            if ev.get("type") == "gate.result" and d.get("gate") == "hotspot_set":
+                ht = {"passed": d.get("passed"), "reason": d.get("reason"),
+                      **(d.get("detail") or {})}
+                break
+    if ht is not None:
+        m["hotspot_test"] = _hotspot_test_entry(ht)
+
+    st = spoken_test if spoken_test is not None else run.get("spoken_test")
+    if st is None:
+        for ev in events:
+            d = ev.get("data") or {}
+            if ev.get("type") == "gate.result" and d.get("gate") == "spoken":
+                st = {"passed": d.get("passed"), "reason": d.get("reason"),
+                      **(d.get("detail") or {})}
+                break
+    if st is not None:
+        m["spoken_test"] = _spoken_test_entry(st)
+
+    wc = wonder_chart if wonder_chart is not None else run.get("wonder_chart")
+    if wc is None:
+        for ev in events:
+            if ev.get("type") in ("wonder.chart", "wonder_chart"):
+                wc = ev.get("data")
+                break
+    if wc is not None:
+        m["wonder_chart"] = _wonder_chart_entry(wc)
 
     with_joules(receipt)
     receipt["grade"] = claimed_grade(receipt, rekor=rekor)

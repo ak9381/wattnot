@@ -152,13 +152,17 @@ def _powered_by(nid: str, variant: str) -> list[dict]:
     planner = {"id": "planner", "name": "planner", "what": "proposes the next cap"}
     operator = {"id": "operator", "name": "Operator", "what": "a person decides"}
     muse = {"id": "meta", "name": "Meta Muse Spark", "what": "the planning agent it watches"}
+    muse_image = {"id": "muse_image", "name": "Meta Muse Image",
+                  "what": "generates the SYNTHETIC eye-test images the vision gate checks"}
     if nid == "room":
         return [meta]
     if nid == "approve":
         return [operator]
     if nid == "waste":
         return [muse]
-    if nid in ("gate", "receipt"):
+    if nid == "gate":
+        return [muse_image]
+    if nid == "receipt":
         return []
     if nid in ("baseline", "sweep") and variant == "hosted":
         return [hosted] + ([planner] if nid == "sweep" else [])

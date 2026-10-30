@@ -204,3 +204,93 @@
   cursor: pointer;
   font-size: 14px;
 }
+
+/* Talk to the tuner: Spark dry-run plan read aloud by the browser voice. */
+.vg-tune-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.vg-tune-mode {
+  font-family: "Fira Code", monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(142, 122, 158, 0.25);
+  color: #DCD6E4;
+}
+
+.vg-speak-btn {
+  background: #2E2B44;
+  border: 1px solid #6C5E7C;
+  color: #DCD6E4;
+  font-family: "Fira Code", monospace;
+  font-size: 0.65rem;
+  border-radius: 12px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vg-speak-btn:hover {
+  background: #3B3A54;
+  border-color: #8E7A9E;
+}
+
+.vg-tune-plan {
+  margin: 4px 0;
+  padding-left: 18px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.vg-tune-plan li {
+  margin-bottom: 4px;
+}
+
+.vg-tune-change {
+  font-family: "Fira Code", monospace;
+  font-size: 0.75rem;
+  color: #DCD6E4;
+}
+
+.vg-tune-route {
+  display: inline-block;
+  margin-left: 6px;
+  font-family: "Fira Code", monospace;
+  font-size: 0.62rem;
+  padding: 0 5px;
+  border-radius: 3px;
+}
+
+.vg-tune-person {
+  background: rgba(224, 108, 117, 0.2);
+  color: #F0A5AD;
+}
+
+.vg-tune-auto {
+  background: rgba(122, 158, 130, 0.2);
+  color: #9ED4A6;
+}
+
+.vg-tune-why {
+  color: #B2A6C3;
+  font-size: 0.75rem;
+}
+
+.vg-tune-skip,
+.vg-tune-note {
+  font-size: 0.72rem;
+  color: #B2A6C3;
+  margin: 6px 0 0;
+}
+
+.vg-tune-empty {
+  font-size: 0.82rem;
+  color: #DCD6E4;
+  margin: 4px 0;
+}
