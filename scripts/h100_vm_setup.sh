@@ -55,6 +55,34 @@ if [ "${SETUP_SKIP_MODELS:-0}" != 1 ]; then   # any model, gated or not: fail be
 fi
 if [ "${SETUP_SKIP_MODELS:-0}" != 1 ] && [[ "$MODEL" == *Glimmer* ]]; then
   # the Glimmer server runs in docker with the NVIDIA runtime: check both before ~60 GB of weights
+  # The E2E Ubuntu 24.04 CUDA image ships without docker (RUN3, Oct 31): install docker and the
+  # NVIDIA container toolkit when missing (a few minutes, before any weights). SETUP_NO_DOCKER_INSTALL=1
+  # keeps the old check-only behaviour. Re-checked below, so a failed install still exits 15.
+  if [ "${SETUP_NO_DOCKER_INSTALL:-0}" != 1 ]; then
+    SUDO=""; [ "$(id -u)" = 0 ] || SUDO="sudo"
+    if ! command -v docker >/dev/null; then
+      echo "[setup] docker missing: installing docker.io"
+      $SUDO env DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null 2>&1 || true
+      $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq docker.io >/dev/null 2>&1 \
+        || echo "[setup] apt-get install docker.io failed"
+      $SUDO systemctl enable --now docker >/dev/null 2>&1 || true
+    fi
+    if command -v docker >/dev/null && ! docker info 2>/dev/null | grep -qi nvidia; then
+      echo "[setup] installing nvidia-container-toolkit"
+      if ! command -v nvidia-ctk >/dev/null; then
+        curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey \
+          | $SUDO gpg --batch --yes --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+          && curl -fsSL https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list \
+          | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' \
+          | $SUDO tee /etc/apt/sources.list.d/nvidia-container-toolkit.list >/dev/null \
+          && $SUDO env DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null 2>&1 \
+          && $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq nvidia-container-toolkit >/dev/null 2>&1 \
+          || echo "[setup] nvidia-container-toolkit install failed"
+      fi
+      command -v nvidia-ctk >/dev/null && $SUDO nvidia-ctk runtime configure --runtime=docker >/dev/null 2>&1 \
+        && $SUDO systemctl restart docker >/dev/null 2>&1 || true
+    fi
+  fi
   command -v docker >/dev/null || { echo "[setup] docker missing: the Glimmer server cannot start"; exit 15; }
   docker info 2>/dev/null | grep -qi nvidia || { echo "[setup] docker has no NVIDIA runtime (nvidia-container-toolkit)"; exit 15; }
   echo "[setup] docker + NVIDIA runtime ok"
