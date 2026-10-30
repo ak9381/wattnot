@@ -174,17 +174,28 @@ def cmd_setup(a) -> int:
     if rc != 0:
         print("unpack failed:", out, file=sys.stderr)
         return 2
+    # A retried setup block must not start a SECOND setup while the first still runs (RUN3, Oct
+    # 31: a link drop made the driver retry, and two setups downloaded and restarted docker at
+    # once). The running setup's process group id is in setup.pgid: if it is alive and has not
+    # written setup.rc, adopt it (just tail its log) instead of launching another.
+    pg = f"{ROOT}/setup.pgid"
+    rc, out = sh(c, f"p=$(cat {pg} 2>/dev/null); if [ -n \"$p\" ] && kill -0 -- -$p 2>/dev/null "
+                    f"&& [ ! -s {REMOTE_LOG}/setup.rc ]; then echo ADOPT; fi")
+    adopt = "ADOPT" in out
     inner = (
-        f"cd {REMOTE_REPO} && export HF_TOKEN=$(cat {ROOT}/.hf_token) && "
+        f"echo $$ > {pg}; cd {REMOTE_REPO} && export HF_TOKEN=$(cat {ROOT}/.hf_token) && "
         f"bash scripts/h100_vm_setup.sh {shlex.quote(a.model)} {shlex.quote(a.moe)}; "
         f"echo $? > {REMOTE_LOG}/setup.rc"
     )
-    rc, out = sh(
-        c,
-        f"rm -f {REMOTE_LOG}/setup.rc; cd {ROOT} && (setsid nohup bash -c {shlex.quote(inner)} "
-        f"> {SETUP_LOG} 2>&1 < /dev/null &); echo started",
-    )
-    assert "started" in out, out
+    if adopt:
+        print("[run2_remote] a setup is already running on the host: adopting it", flush=True)
+    else:
+        rc, out = sh(
+            c,
+            f"rm -f {REMOTE_LOG}/setup.rc; cd {ROOT} && (setsid nohup bash -c {shlex.quote(inner)} "
+            f"> {SETUP_LOG} 2>&1 < /dev/null &); echo started",
+        )
+        assert "started" in out, out
     c.close()
     run = reconnecting(a.host, a.key, budget_s=getattr(a, "reconnect_budget_s", RECONNECT_BUDGET_S),
                        log=lambda m: print(m, file=sys.stderr, flush=True))
