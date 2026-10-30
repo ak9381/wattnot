@@ -22,6 +22,6 @@ USER wattnot
 
 EXPOSE 8765
 
-# The saved real run, when mounted at /app/saved (see docs/HOSTING.md).
+# The saved real run, when mounted at /app/saved.
 CMD if [ -f /app/saved/run.events.jsonl ]; then EVENTS="--events /app/saved/run.events.jsonl"; fi; \
     exec python -m wattnot.dash --host 0.0.0.0 --port 8765 --replay-only ${EVENTS}
