@@ -193,8 +193,16 @@ def main(argv=None) -> int:
         description="Off-box (layer 4) watchdog: poll a published heartbeat, tear down on a cap.")
     ap.add_argument("--heartbeat-source", required=True,
                     help="http(s) URL (gist/raw branch) or local file path of the heartbeat JSON")
-    ap.add_argument("--budget-cap-inr", default=None)
-    ap.add_argument("--max-hours", default=None)
+    # Caps are DEFAULT-ON backstops (same values as scripts/mac_watchdog) so an off-box run is
+    # bounded even when the published heartbeat carries no deadline/spend of its own. Sized for the
+    # 2 h H100 test (2 h x Rs451.2 = Rs902, well under Rs2000); raise them for a longer run. Config
+    # values, not measurements. Pass "unset" (or "") to DISABLE a cap.
+    ap.add_argument("--budget-cap-inr", default="2000",
+                    help="off-box spend ceiling in INR (default-on, 2000; a 2 h test costs ~902). "
+                         "Pass 'unset' to disable.")
+    ap.add_argument("--max-hours", default="3",
+                    help="time-cap backstop in hours (default-on, 3; the 2 h test plus margin). "
+                         "Pass 'unset' to disable.")
     ap.add_argument("--max-stale-s", default=str(DEFAULT_MAX_STALE_S))
     ap.add_argument("--layer", default="layer4-offbox")
     ap.add_argument("--live", action="store_true",

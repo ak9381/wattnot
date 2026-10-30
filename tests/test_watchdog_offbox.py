@@ -138,6 +138,25 @@ def test_offbox_cli_tolerates_empty_cap_strings(tmp_path, capsys):
     json.loads(capsys.readouterr().out.strip())
 
 
+def test_offbox_cli_caps_are_default_on(tmp_path, capsys):
+    import time
+    now = time.time()
+    p = tmp_path / "hb.json"
+    # fresh heartbeat, deadline far off, but spend over the DEFAULT-ON Rs2000 cap (no flags passed)
+    p.write_text(json.dumps({"ts": now, "launch_ts": now - HOUR, "deadline_ts": now + 10 * HOUR,
+                             "spent_inr": 3000.0}))
+    rc = offbox.main(["--heartbeat-source", str(p)])
+    out = json.loads(capsys.readouterr().out.strip())
+    assert rc == 0 and out["teardown"] is True   # default-on budget cap tripped without a flag
+
+    # a healthy run under the default caps must NOT trip
+    p.write_text(json.dumps({"ts": now, "launch_ts": now - HOUR, "deadline_ts": now + 10 * HOUR,
+                             "spent_inr": 100.0}))
+    rc = offbox.main(["--heartbeat-source", str(p)])
+    out = json.loads(capsys.readouterr().out.strip())
+    assert rc == 0 and out["teardown"] is False
+
+
 # =========================================================================== layer 5: macOS watchdog
 
 

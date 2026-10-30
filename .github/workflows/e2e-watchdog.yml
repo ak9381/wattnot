@@ -31,8 +31,13 @@ on:
         options: [dry-run, live]
         default: dry-run
   schedule:
-    # Every 15 min. The job below is a no-op unless WATCHDOG_ENABLED == 'true', so this cron is
-    # inert on a default clone. (Commenting the cron out entirely is the belt-and-braces option.)
+    # Every 15 min, but this is a BACKSTOP ONLY. GitHub's scheduled runs are best-effort and
+    # often fire late (minutes, sometimes much longer, under load), so this layer must never be
+    # the primary guard for a 2 h VM. The primary rails are on/near the box: the driver's own
+    # in-block timeout and deadline, layers 1-3 (the local loop + the two VM-side agents), and
+    # ctl.py's watchdog (deadline minus 8 min, low balance, spend cap). This cron only catches the
+    # case where the whole box died with layers 1-3. The job is also a no-op unless
+    # WATCHDOG_ENABLED == 'true', so this cron is inert on a default clone.
     - cron: "*/15 * * * *"
 
 permissions:
@@ -85,11 +90,16 @@ jobs:
           else
             echo "dry-run (no API call will be made)"
           fi
+          # Only pass a cap flag when the repo variable is set. Passing "" would parse to None and
+          # DISABLE the cap; omitting the flag lets the CLI's default-on backstops (3 h, Rs2000)
+          # apply. To deliberately disable a cap, set the repo variable to the literal 'unset'.
+          caps=()
+          if [ -n "${BUDGET_CAP_INR:-}" ]; then caps+=(--budget-cap-inr "${BUDGET_CAP_INR}"); fi
+          if [ -n "${MAX_HOURS:-}" ]; then caps+=(--max-hours "${MAX_HOURS}"); fi
           # No third-party deps needed: the watchdog core is stdlib-only, so run from src without
           # a pip install (keeps the runner offline-friendly and fast).
           PYTHONPATH=src python -m wattnot.longrun.watchdog.offbox \
             --heartbeat-source "${HEARTBEAT_URL}" \
-            --budget-cap-inr "${BUDGET_CAP_INR:-}" \
-            --max-hours "${MAX_HOURS:-}" \
+            "${caps[@]}" \
             --layer "layer4-github" \
             $live
