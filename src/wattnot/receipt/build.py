@@ -83,6 +83,45 @@ def _eye_test_entry(et: Mapping) -> dict:
     }
 
 
+def _hotspot_test_entry(ht: Mapping) -> dict:
+    """Normalise a SAM hotspot-set result (or its detail dict) into the
+    receipt's ``measurement.hotspot_test`` block: numbers, ids, bboxes and
+    SYNTHETIC / ESTIMATE labels only, so it stays lint-clean and
+    signature-covered. These are SYNTHETIC tests, never a thermal measurement."""
+
+    wh = ht.get("est_wh_per_image")
+    if wh is None:
+        wh = (ht.get("energy_per_image_wh") or {}).get("value", 0.5)
+    scenes = []
+    for row in ht.get("scenes", []):
+        scenes.append({
+            "id": str(row.get("id", ""))[:64],
+            "fault": str(row.get("fault", ""))[:32],
+            "slot": int(row.get("slot", 0)),
+            "expected_bbox": [int(x) for x in (row.get("expected_bbox") or [])][:4],
+            "got_bbox": [int(x) for x in (row.get("got_bbox") or [])][:4],
+            "iou": round(float(row.get("iou", 0.0)), 6),
+            "ok": bool(row.get("ok")),
+            "mask_label": str(row.get("mask_label", ""))[:32],
+            "label": str(row.get("label", "SYNTHETIC"))[:32],
+        })
+    checked = ht.get("checked", len(scenes))
+    missed = list(ht.get("missed") or [s["id"] for s in scenes if not s["ok"]])
+    return {
+        "label": "SYNTHETIC",
+        "detector": str(ht.get("detector", "SAM 3.1"))[:64],
+        "passed": bool(ht.get("passed", not missed)),
+        "checked": int(checked),
+        "passed_count": int(ht.get("passed_count", checked - len(missed))),
+        "missed": [str(x)[:64] for x in missed],
+        "faults": [str(f)[:32] for f in (ht.get("faults") or [])],
+        "iou_pass": round(float(ht.get("iou_pass", 0.5)), 6),
+        "reason": str(ht.get("reason", ""))[:195],
+        "est_wh_per_image": {"value": round(float(wh), 6), "label": "ESTIMATE"},
+        "scenes": scenes,
+    }
+
+
 def planner_trace_from_events(events: Sequence[Mapping]) -> list[dict]:
     trace, n = [], 0
     for e in events:
@@ -118,7 +157,8 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
                   musecode_pr_sha256: str | None = None,
                   musecode_pr_url: str | None = None,
                   hotspot_cap: Mapping[str, Any] | None = None,
-                  eye_test: Mapping[str, Any] | None = None) -> dict[str, Any]:
+                  eye_test: Mapping[str, Any] | None = None,
+                  hotspot_test: Mapping[str, Any] | None = None) -> dict[str, Any]:
     base, cand = run["baseline"], run["candidate"]
     base_samples = base.get("wh_samples") or (base.get("wh_per_req") or {}).get("samples") or []
     cand_samples = cand.get("wh_samples") or (cand.get("wh_per_req") or {}).get("samples") or []
@@ -279,6 +319,17 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
                 break
     if et is not None:
         m["eye_test"] = _eye_test_entry(et)
+
+    ht = hotspot_test if hotspot_test is not None else run.get("hotspot_test")
+    if ht is None:
+        for ev in events:
+            d = ev.get("data") or {}
+            if ev.get("type") == "gate.result" and d.get("gate") == "hotspot_set":
+                ht = {"passed": d.get("passed"), "reason": d.get("reason"),
+                      **(d.get("detail") or {})}
+                break
+    if ht is not None:
+        m["hotspot_test"] = _hotspot_test_entry(ht)
 
     with_joules(receipt)
     receipt["grade"] = claimed_grade(receipt, rekor=rekor)

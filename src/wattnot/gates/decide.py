@@ -34,13 +34,19 @@ def decide(base: TrialResult, cand: TrialResult, base_outputs: Mapping[str, str]
            cand_outputs: Mapping[str, str], items: list[WorkloadItem], *,
            slack: float = 0.10, sla_s: float | None = None, max_drop_pts: float = 1.0,
            base_wh: list[float] | None = None, cand_wh: list[float] | None = None,
-           vision: GateResult | None = None, emit=None) -> Decision:
+           vision: GateResult | None = None, hotspot: GateResult | None = None,
+           emit=None) -> Decision:
     """With per-rep Wh lists, the noise gate runs third (Welch + bootstrap CI).
 
     ``vision`` is an optional pre-computed eye-test ``GateResult`` (see
     ``wattnot.vision.vision_gate``). When given it joins the gate set, so a
     candidate the served vision model misreads is rejected and rolled back to
     the last safe config just like a quality or latency failure.
+
+    ``hotspot`` is an optional pre-computed SAM 3.1 hotspot-set ``GateResult``
+    (see ``wattnot.sam.hotspot_set.hotspot_set_gate``). When given it joins the
+    gate set the same way, so a candidate that breaks the hotspot detector on
+    the SYNTHETIC scenes is rejected and rolled back.
     """
 
     results = (
@@ -51,6 +57,8 @@ def decide(base: TrialResult, cand: TrialResult, base_outputs: Mapping[str, str]
         results = (*results, noise_gate(base_wh, cand_wh))
     if vision is not None:
         results = (*results, vision)
+    if hotspot is not None:
+        results = (*results, hotspot)
     if emit is not None:
         for r in results:
             emit.emit("gate.result", r.event_data(cand.trial_id),

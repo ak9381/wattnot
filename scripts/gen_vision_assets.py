@@ -28,7 +28,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "data" / "vision" / "eyetest"
+HOTSPOTS = ROOT / "data" / "vision" / "hotspots"
 MODEL = "muse-image-1.0"
+
+# One IR-thermal scene prompt per hotspot-set fault. Each must render a clear
+# hot region over the faulted rack slot and burn in a SYNTHETIC watermark, so
+# the SAM 3.1 hotspot detector has an honest-looking failure scene to find.
+HOTSPOT_PROMPTS = {
+    "blocked_fan": "an infrared thermal photo of a server rack where one GPU's intake fan is choked by debris, a bright red-yellow heat bloom over that slot, the rest of the rack cool blue",
+    "clogged_heatsink": "an infrared thermal photo of a server rack where one GPU's heatsink fins are clogged with dust, a bright hot patch pinned to that card, neighbouring slots cool",
+    "cable_airflow": "an infrared thermal photo of a server rack where a loose cable drapes across one slot and blocks airflow, a hot band glowing over that slot, other slots cool",
+}
 
 # A short scene prompt per item id. The scene must render the known answer
 # legibly and be hard enough that a vision-quant collapse misreads it. Every
@@ -94,7 +104,32 @@ def main(argv: list[str] | None = None) -> int:
                              "format": "b64 webp", "label": "SYNTHETIC"}
     (ASSETS / "answers.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print("done; rewrote answers.json (all SYNTHETIC)")
+
+    _gen_hotspots(base_url, key)
     return 0
+
+
+def _gen_hotspots(base_url: str, key: str) -> None:
+    """Generate the SAM synthetic hotspot scenes (IR thermal failures)."""
+
+    scenes = json.loads((HOTSPOTS / "scenes.json").read_text(encoding="utf-8"))
+    print(f"PAID: generating {len(scenes['scenes'])} hotspot scenes with {MODEL} at {base_url}")
+    for scene in scenes["scenes"]:
+        prompt = HOTSPOT_PROMPTS.get(scene["fault"])
+        if not prompt:
+            print(f"  skip {scene['id']}: no prompt for fault {scene['fault']!r}", file=sys.stderr)
+            continue
+        webp = _post(base_url, key, f"{prompt}; {scene.get('scene', '')}")
+        out_name = f"{scene['id']}.webp"
+        (HOTSPOTS / out_name).write_bytes(webp)
+        scene["file"] = out_name
+        scene["watermark"] = "SYNTHETIC"
+        print(f"  wrote {out_name} ({len(webp)} bytes)")
+    scenes["label"] = "SYNTHETIC"
+    scenes["generator"] = {"model": MODEL, "endpoint": "{META_BASE_URL}/images/generations",
+                           "format": "b64 webp", "label": "SYNTHETIC"}
+    (HOTSPOTS / "scenes.json").write_text(json.dumps(scenes, indent=2) + "\n", encoding="utf-8")
+    print("done; rewrote scenes.json (all SYNTHETIC)")
 
 
 if __name__ == "__main__":

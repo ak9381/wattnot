@@ -314,6 +314,153 @@
           "label": "SYNTHETIC"
         }
       ]
+    },
+    "hotspot_test": {
+      "label": "SYNTHETIC",
+      "detector": "SAM 3.1",
+      "passed": true,
+      "checked": 6,
+      "passed_count": 6,
+      "missed": [],
+      "faults": [
+        "blocked_fan",
+        "cable_airflow",
+        "clogged_heatsink"
+      ],
+      "iou_pass": 0.5,
+      "reason": "SAM 3.1 found all 6 SYNTHETIC hotspots",
+      "est_wh_per_image": {
+        "value": 0.5,
+        "label": "ESTIMATE"
+      },
+      "scenes": [
+        {
+          "id": "blocked-fan-0",
+          "fault": "blocked_fan",
+          "slot": 0,
+          "expected_bbox": [
+            190,
+            110,
+            430,
+            250
+          ],
+          "got_bbox": [
+            190,
+            110,
+            430,
+            250
+          ],
+          "iou": 1.0,
+          "ok": true,
+          "mask_label": "MOCK",
+          "label": "SYNTHETIC"
+        },
+        {
+          "id": "blocked-fan-3",
+          "fault": "blocked_fan",
+          "slot": 3,
+          "expected_bbox": [
+            190,
+            620,
+            430,
+            760
+          ],
+          "got_bbox": [
+            190,
+            620,
+            430,
+            760
+          ],
+          "iou": 1.0,
+          "ok": true,
+          "mask_label": "MOCK",
+          "label": "SYNTHETIC"
+        },
+        {
+          "id": "clogged-heatsink-1",
+          "fault": "clogged_heatsink",
+          "slot": 1,
+          "expected_bbox": [
+            190,
+            280,
+            430,
+            420
+          ],
+          "got_bbox": [
+            190,
+            280,
+            430,
+            420
+          ],
+          "iou": 1.0,
+          "ok": true,
+          "mask_label": "MOCK",
+          "label": "SYNTHETIC"
+        },
+        {
+          "id": "clogged-heatsink-2",
+          "fault": "clogged_heatsink",
+          "slot": 2,
+          "expected_bbox": [
+            190,
+            450,
+            430,
+            590
+          ],
+          "got_bbox": [
+            190,
+            450,
+            430,
+            590
+          ],
+          "iou": 1.0,
+          "ok": true,
+          "mask_label": "MOCK",
+          "label": "SYNTHETIC"
+        },
+        {
+          "id": "cable-airflow-2",
+          "fault": "cable_airflow",
+          "slot": 2,
+          "expected_bbox": [
+            190,
+            450,
+            430,
+            590
+          ],
+          "got_bbox": [
+            190,
+            450,
+            430,
+            590
+          ],
+          "iou": 1.0,
+          "ok": true,
+          "mask_label": "MOCK",
+          "label": "SYNTHETIC"
+        },
+        {
+          "id": "cable-airflow-0",
+          "fault": "cable_airflow",
+          "slot": 0,
+          "expected_bbox": [
+            190,
+            110,
+            430,
+            250
+          ],
+          "got_bbox": [
+            190,
+            110,
+            430,
+            250
+          ],
+          "iou": 1.0,
+          "ok": true,
+          "mask_label": "MOCK",
+          "label": "SYNTHETIC"
+        }
+      ]
     }
   },
   "attribution": {

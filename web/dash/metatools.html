@@ -55,6 +55,7 @@
     <div id="metatools-mount"></div>
     <div id="hotspot-mount"></div>
     <div id="eyetest-mount"></div>
+    <div id="hotspotset-mount"></div>
     <div id="eulink-mount"></div>
 
     <div id="explain-demo" style="margin-top:28px;">
@@ -94,6 +95,7 @@
     import { mountMetaTools } from './metatools.js';
     import { mountHotspotCard } from './hotspot.js';
     import { mountEyeTest } from './eyetest.js';
+    import { mountHotspotSet } from './hotspotset.js';
     import { mountEuLink } from './eulink.js';
 
     async function init() {
@@ -103,6 +105,7 @@
         mountMetaTools(document.getElementById('metatools-mount'), receipt);
         mountHotspotCard(document.getElementById('hotspot-mount'), receipt);
         mountEyeTest(document.getElementById('eyetest-mount'), receipt);
+        mountHotspotSet(document.getElementById('hotspotset-mount'), receipt);
         mountEuLink(document.getElementById('eulink-mount'), receipt);
       } catch (err) {
         console.error('Failed to load sample receipt:', err);
