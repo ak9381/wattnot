@@ -8,7 +8,7 @@ export interface RunEvent {
   run_id: string;
   seq: number;
   ts: string;
-  type: "run.started" | "step.started" | "step.progress" | "step.finished" | "telemetry.sample" | "trial.proposed" | "proposal.created" | "decision" | "trial.measured" | "gate.result" | "pareto.updated" | "action.applied" | "action.rolled_back" | "receipt.signed" | "recommendations" | "run.finished" | "error";
+  type: "run.started" | "step.started" | "step.progress" | "step.finished" | "telemetry.sample" | "trial.proposed" | "proposal.created" | "proposal.decided" | "decision" | "trial.measured" | "gate.result" | "pareto.updated" | "action.applied" | "action.rolled_back" | "receipt.signed" | "recommendations" | "run.finished" | "error";
   step_id?: string | null;
   parent_step_id?: string | null;
   data: Record<string, unknown>;

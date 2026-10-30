@@ -72,13 +72,43 @@ def add_parser(sub) -> None:
     lr.add_argument("id")
     lr.add_argument("receipt")
     po = ps.add_parser("policy", help="the optional auto-approve policy")
-    po.add_argument("policy_cmd", choices=("show", "init"))
+    po.add_argument("policy_cmd", choices=("show", "init", "set"))
+    po.add_argument("--by", help="set: the operator authorising the policy (required)")
+    po.add_argument("--min-saving-pct", type=float, default=3.0)
+    po.add_argument("--max-p99-increase-pct", type=float, default=10.0)
+    po.add_argument("--max-cap-drop-pct", type=float, default=45.0)
+    po.add_argument("--max-per-day", type=int, default=3)
+    po.add_argument("--file", type=Path, default=None,
+                    help="set: write here instead of <dir>/policy.json")
     sv = ps.add_parser("serve", help="local JSON API (127.0.0.1) for the frontend")
     sv.add_argument("--host", default="127.0.0.1")
     sv.add_argument("--port", type=int, default=8781)
 
 
 # ---- helpers
+
+def _policy_set(a, f: Path) -> int:
+    """Write an ENABLED power-cap policy signed off by a named operator, stamped now (UTC).
+    Used for an unattended run: every approval it makes says who set it and when."""
+    from datetime import UTC, datetime
+    if not (a.by or "").strip():
+        print("policy set needs --by <operator name>", file=sys.stderr)
+        return 2
+    if f.exists():
+        print(f"{f} already exists; not touching it", file=sys.stderr)
+        return 1
+    d = {"format": pol.FORMAT, "enabled": True, "allowed_labels": ["MEASURED"],
+         "kinds": {m.POWER_CAP: {"min_saving_pct": a.min_saving_pct,
+                                 "max_p99_increase_pct": a.max_p99_increase_pct,
+                                 "max_cap_drop_pct": a.max_cap_drop_pct}},
+         "max_per_day": a.max_per_day, "set_by": a.by.strip(),
+         "set_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")}
+    p = pol.Policy.from_dict(d)
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps(p.to_dict(), indent=2) + "\n", encoding="utf-8")
+    print(f"wrote {f}: {p.operator_line()} (sha256 {p.sha256()[:12]})")
+    return 0
+
 
 def _resolve(a: Approvals, pid: str) -> str:
     if a.store.exists(pid):
@@ -212,6 +242,8 @@ def dispatch(a) -> int:
             return 0
         if cmd == "policy":
             f = Path(apps.store.root) / "policy.json"
+            if a.policy_cmd == "set":
+                return _policy_set(a, Path(a.file) if a.file else f)
             if a.policy_cmd == "init":
                 if f.exists():
                     print(f"{f} already exists; not touching it")

@@ -97,7 +97,8 @@ def main(argv: list[str] | None = None) -> int:
         "mode": mode,
         "model": args.model,
         "transcriber": spoken.transcriber,
-        "label": "SYNTHETIC",
+        "label": "SYNTHETIC",   # the test items (images / audio) are synthetic
+        "answers_label": "MOCK" if mode == "fake" else "MEASURED",   # served-model answers
         "passed": result.passed,
         "reason": result.reason,
         "run": run_meta,

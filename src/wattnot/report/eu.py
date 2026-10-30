@@ -22,6 +22,7 @@ FACILITY = "needs facility data (operator meters); a GPU-level tool cannot see i
 COLUMNS = ("receipt_id", "field", "value", "unit", "label", "source")
 FRAMING = "supports EU Energy Efficiency Directive data-center reporting"
 CSRD = "CSRD roadmap"
+PROOF_SPEC = "wattnot.proof-receipt/1"
 DISCLAIMER = "Not a compliance claim; facility-level metrics require operator metering."
 
 
@@ -36,6 +37,8 @@ def _na(name, unit, why=FACILITY) -> dict:
 
 def fields_for(receipt: Mapping, *, grid_gco2_per_kwh: float | None = None,
                grid_source: str | None = None) -> list[dict]:
+    if receipt.get("spec") == PROOF_SPEC:
+        return proof_fields(receipt, grid_gco2_per_kwh=grid_gco2_per_kwh, grid_source=grid_source)
     m = receipt["measurement"]
     lab = m["label"]
     rid = receipt["receipt_id"]
@@ -48,16 +51,11 @@ def fields_for(receipt: Mapping, *, grid_gco2_per_kwh: float | None = None,
     window_kwh = (sum(samples) if samples else wh * cand["reps"]) * n / 1000
     res = receipt["result"]
     src = f"receipt {rid}, meter {m['meter']}"
-    # Water is a generated view, recomputed from the receipt's measured energy with the
-    # current owner-standardised factors (headline on-site cooling, plus an upper bound
-    # that includes power-plant water). The signed receipt is not modified.
-    from wattnot.receipt.build import WUE_L_PER_KWH, WUE_UPPER_L_PER_KWH
-    water_headline = round(wh * WUE_L_PER_KWH, 6)
-    water_upper = round(wh * WUE_UPPER_L_PER_KWH, 6)
-    water_method = "Wh/request x WUE (L/kWh)"
     out = [
-        _f("it_energy_measured_window", round(window_kwh, 6), "kWh", lab,
-           f"{src}: sum over {cand['reps']} reps x {n} requests"),
+        (_f("it_energy_measured_window", round(window_kwh, 6), "kWh", lab,
+            f"{src}: sum over {cand['reps']} reps x {n} requests") if samples else
+         _f("it_energy_measured_window", round(window_kwh, 6), "kWh", "ESTIMATE",
+            f"{src}: mean x {cand['reps']} reps x {n} requests (no per-rep samples)")),
         _f("energy_per_request", wh, "Wh/request", lab, src),
         _f("energy_per_request_baseline", base["wh_per_req"]["mean"], "Wh/request", lab, src),
         _f("energy_saving_billed", res["billed_saving_pct"], "%",
@@ -66,10 +64,6 @@ def fields_for(receipt: Mapping, *, grid_gco2_per_kwh: float | None = None,
            f"{res['welch']['p_value']:.3g}" + ("" if res["billable"] else " (not significant)")),
         (_f("idle_power", m["idle_w"], "W", lab, src) if m.get("idle_w") is not None
          else _na("idle_power", "W", "idle not measured in this run")),
-        _f("water_per_request", water_headline, "mL/request", "ESTIMATE",
-           f"{water_method}; 0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"),
-        _f("water_per_request_upper", water_upper, "mL/request", "ESTIMATE",
-           f"{water_method}; up to 1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"),
     ]
     joules_cand = (receipt.get("joules") or {}).get("candidate") or {}
     j_per_good = joules_cand.get("j_per_good_answer")
@@ -91,6 +85,109 @@ def fields_for(receipt: Mapping, *, grid_gco2_per_kwh: float | None = None,
             j_label = "ESTIMATE"
             j_src = f"{src}: candidate Wh/req x 3600; pass rate unavailable, assumed 1.0"
     out.append(_f("joules_per_correct_answer", j_per_good, "J/correct", j_label, j_src))
+    return _finish(out, wh, rid, grid_gco2_per_kwh, grid_source)
+
+
+def verify_proof_hash(receipt: Mapping) -> bool:
+    """The proof receipt's SHA-256 is over its canonical JSON with an empty integrity block."""
+    from wattnot.receipt.canon import canonical_sha256
+    body = json.loads(json.dumps(dict(receipt)))
+    want = (body.get("integrity") or {}).get("sha256")
+    body["integrity"] = {"sha256": None, "signer": None, "rekor": None}
+    return bool(want) and canonical_sha256(body) == want
+
+
+def proof_fields(receipt: Mapping, *, grid_gco2_per_kwh: float | None = None,
+                 grid_source: str | None = None) -> list[dict]:
+    """Adapter for the signed receipt the live power-cap sweep writes
+    (`wattnot.proof-receipt/1`, from `wattnot.proof.orchestrate`).
+
+    Energy comes from per-block NVML counter deltas (J/request per block, stock and cap
+    interleaved). The noise test is Welch's t on those per-block J/request samples plus a
+    bootstrap CI of the saving: the counter is read per block, not per request, so n is the
+    number of blocks, and the source says so. A MOCK receipt is reported as SIMULATED.
+    """
+    from wattnot.gates.noise import noise_gate
+    if not verify_proof_hash(receipt):
+        raise ValueError(f"receipt {receipt.get('receipt_id')}: SHA-256 does not match; "
+                         "not exporting an altered receipt")
+    rid = receipt["receipt_id"]
+    lab = "SIMULATED" if receipt.get("label") in ("MOCK", "SIMULATED") else receipt["label"]
+    if lab not in LABELS:
+        raise ValueError(f"receipt {rid}: unknown label {receipt.get('label')!r}")
+    steps = receipt.get("steps") or []
+    best_w = receipt.get("best_cap_w")
+    best = next((x for x in steps if x.get("cap_w") == best_w), None)
+    hw = receipt.get("hardware") or {}
+    src = (f"receipt {rid} (sha256 {receipt['integrity']['sha256'][:12]}), "
+           f"{(receipt.get('method') or {}).get('energy', 'NVML energy counter')}")
+
+    def per_block(x):  # requests per block in one arm
+        q = x.get("quality") or {}
+        reps = x.get("repeats") or len(x.get("j_per_req_stock") or []) or 1
+        return (q.get("checked") or 0) / reps
+
+    joules = sum((sum(x.get("j_per_req_stock") or []) + sum(x.get("j_per_req_cap") or []))
+                 * per_block(x) for x in steps)
+    n_blocks = sum(len(x.get("j_per_req_stock") or []) + len(x.get("j_per_req_cap") or [])
+                   for x in steps)
+    out = [_f("it_energy_measured_window", round(joules / 3.6e6, 6), "kWh", lab,
+              f"{src}: sum over {n_blocks} sweep blocks ({len(steps)} caps); GPU only")]
+    ref = best or (steps[0] if steps else None)
+    if ref is None:
+        raise ValueError(f"receipt {rid}: no sweep steps to report")
+    stock_j, cap_j = ref["j_per_req_stock"], ref["j_per_req_cap"]
+    wh_stock = sum(stock_j) / len(stock_j) / 3600
+    wh = (sum(cap_j) / len(cap_j) / 3600) if best else wh_stock
+    which = f"kept cap {best_w} W" if best else "stock (no cap was kept)"
+    out += [_f("energy_per_request", float(f"{wh:.6g}"), "Wh/request", lab, f"{src}: {which}"),
+            _f("energy_per_request_baseline", float(f"{wh_stock:.6g}"), "Wh/request", lab,
+               f"{src}: stock {hw.get('default_cap_w')} W, interleaved blocks")]
+    if best and len(stock_j) >= 2 and len(cap_j) >= 2:
+        g = noise_gate(stock_j, cap_j).detail
+        billable = g["grade"] == "billable"
+        out.append(_f("energy_saving_billed", g["billed_saving_pct"], "%",
+                      lab if billable or lab == "SIMULATED" else "ESTIMATE",
+                      f"{src}: lower bound of 95% bootstrap CI, Welch p={g['p_value']:.3g} on "
+                      f"per-block J/request (n={len(stock_j)}+{len(cap_j)} blocks, not per "
+                      "request)" + ("" if billable else " (not significant)")))
+    else:
+        out.append(_na("energy_saving_billed", "%",
+                       "no cap was kept, or under 2 blocks per arm: nothing to bill"))
+    out.append(_na("idle_power", "W", "idle not measured in the sweep"))
+    q = ref.get("quality") or {}
+    rate = (q.get("cap_pct") if best else q.get("stock_pct"))
+    if rate == 0:
+        out.append(_na("joules_per_correct_answer", "J/correct",
+                       f"graded pass rate was 0% ({q.get('checked')} answers checked): no correct "
+                       "answers, J/correct is unbounded"))
+    elif rate:
+        out.append(_f("joules_per_correct_answer", round(wh * 3600 / (rate / 100), 6),
+                      "J/correct", lab, f"{src}: J/request / graded pass rate {rate:g}% "
+                      f"({q.get('checked')} answers checked)"))
+    else:
+        out.append(_na("joules_per_correct_answer", "J/correct",
+                       "no graded pass rate in the receipt"))
+    if best and best.get("mean_w"):
+        out.append(_f("mean_gpu_power_at_kept_cap", round(best["mean_w"]["cap"], 1), "W", lab,
+                      f"{src}: counter energy / block time"))
+    return _finish(out, wh, rid, grid_gco2_per_kwh, grid_source)
+
+
+def _finish(out: list[dict], wh: float, rid: str, grid_gco2_per_kwh, grid_source) -> list[dict]:
+    """Shared tail: water and SCI views, facility fields, readiness, receipt id on each row."""
+    # Water is a generated view, recomputed from the receipt's measured energy with the
+    # current owner-standardised factors (headline on-site cooling, plus an upper bound
+    # that includes power-plant water). The signed receipt is not modified.
+    from wattnot.receipt.build import WUE_L_PER_KWH, WUE_UPPER_L_PER_KWH
+    water_headline = round(wh * WUE_L_PER_KWH, 6)
+    water_upper = round(wh * WUE_UPPER_L_PER_KWH, 6)
+    water_method = "Wh/request x WUE (L/kWh)"
+    out.insert(min(len(out), 5), _f("water_per_request", water_headline, "mL/request", "ESTIMATE",
+               f"{water_method}; 0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"))
+    out.insert(min(len(out), 6), _f("water_per_request_upper", water_upper, "mL/request",
+               "ESTIMATE", f"{water_method}; up to 1.8 L/kWh including power-plant water, "
+               "upper ESTIMATE; not measured"))
     if grid_gco2_per_kwh is not None and grid_source:
         out.append(_f("sci_per_request", round(wh / 1000 * grid_gco2_per_kwh, 6),
                       "gCO2e/request", "ESTIMATE",
@@ -109,6 +206,8 @@ def fields_for(receipt: Mapping, *, grid_gco2_per_kwh: float | None = None,
     for f in out:
         f["receipt_id"] = rid
     return out
+
+
 
 
 def to_csv(rows: Sequence[Mapping]) -> str:
@@ -163,7 +262,7 @@ def generate_report(receipt_or_path: Mapping | str | Path, out_dir: str | Path |
         receipt = dict(receipt_or_path)
 
     # Verify receipt integrity hash
-    if "integrity" in receipt:
+    if "integrity" in receipt and receipt.get("spec") != PROOF_SPEC:
         from wattnot.receipt.build import verify_hash
 
         ok, _, _ = verify_hash(receipt)

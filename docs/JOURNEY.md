@@ -183,7 +183,10 @@ What makes WattNot more than a token counter — the parts that are genuinely no
   decision.
 - **Approve-before-apply governance.** WattNot never changes a cap, a vLLM setting, a routing
   policy or a flex shed by itself; it files a proposal with the saving, the gates and a receipt
-  preview, and a person approves it. Every step is hash-chained.
+  preview, and a person approves it. On an unattended run (the H100 test) the approval comes
+  from a policy a named operator set beforehand: the change still shows as pending, is approved
+  only if the policy's thresholds hold, and the receipt says "approved by policy, set by
+  operator <who> at <when>". Every step is hash-chained.
 - **Five-layer long-run watchdog.** Three on-box layers plus two off-box (a cron job and a
   laptop daemon) read the same heartbeat and run the same idempotent teardown, so a dead
   control box can still be torn down.

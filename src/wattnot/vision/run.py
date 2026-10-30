@@ -53,7 +53,8 @@ def main(argv: list[str] | None = None) -> int:
         "spec": "wattnot.eyetest/1",
         "mode": mode,
         "model": args.model,
-        "label": "SYNTHETIC",
+        "label": "SYNTHETIC",   # the test items (images / audio) are synthetic
+        "answers_label": "MOCK" if mode == "fake" else "MEASURED",   # served-model answers
         "passed": result.passed,
         "reason": result.reason,
         "run": run_meta,

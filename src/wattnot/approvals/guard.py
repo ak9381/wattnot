@@ -25,6 +25,7 @@ from wattnot.approvals.service import Approvals
 LOW_RISK_BY = "guardrail:low-risk"
 TIMEOUT_BY = "system:timeout"
 PENDING_STRICT = "pending-strict"
+PENDING_POLICY = "pending-policy"
 STRICT_REASON = "proposed by an open-weights planner: needs a person"
 _PLANNER_PARTNERS = {"meta": {"id": "meta", "name": "Meta"},
                      "baseten": {"id": "baseten", "name": "Baseten"}}
@@ -90,9 +91,18 @@ class Guard:
             route = "auto-approve-flag"
         elif strict_high:
             route = PENDING_STRICT
+        elif self.approvals.policy().enabled:
+            # an operator-set policy: the change is filed and stays PENDING (visible in the
+            # UI) until `decide_by_policy` checks it against the policy's thresholds
+            route = PENDING_POLICY
         else:
             route = "pending"
         return {"proposal": p, "risk": risk, "route": route}
+
+    def decide_by_policy(self, pid: str) -> dict:
+        """Approve a pending proposal if the operator-set policy allows it. If any threshold
+        fails it stays pending (a person may still decide, or it times out = reject)."""
+        return self.approvals.auto_approve(pid)
 
     # ---- waiting
     def wait(self, pid: str, timeout_s: float | None = None, poll_s: float = 0.5,
@@ -254,10 +264,20 @@ class Guard:
         head = entries[-1]["sha256"] if entries else None
         return {"spec": "wattnot.guardrail-ops/1", "config": self.cfg.to_dict(),
                 "auto_approve": bool(self.auto_approve_by),
+                "approval_policy": self._policy_block(),
                 "ops": self.ops(pids),
                 "audit_chain_ok": self.approvals.verify() == [],
                 "audit_head_sha256": head}
 
+    def _policy_block(self) -> dict | None:
+        try:
+            pol = self.approvals.policy()
+        except Exception:  # noqa: BLE001 - a broken policy file approves nothing
+            return None
+        if not pol.enabled:
+            return None
+        return {**pol.to_dict(), "sha256": pol.sha256(), "approves_as": pol.operator_line()}
+
 
 __all__ = ["Guard", "NotApproved", "LOW_RISK_BY", "TIMEOUT_BY", "PENDING_STRICT",
-           "STRICT_REASON"]
+           "STRICT_REASON", "PENDING_POLICY"]
