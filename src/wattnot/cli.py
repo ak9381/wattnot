@@ -1,6 +1,8 @@
 """Console entry point for the `wattnot` command.
 
 Subcommands:
+  demo     open the dashboard on the bundled replay (no GPU, no network,
+           no keys); the fastest path for a judge to see WattNot
   impact   scale a measured Wh-per-request saving to monthly kWh, dollars
            and litres of water (all labelled ESTIMATE), then recommendations
   recommend  print "what this means for your data centre" from a run report
@@ -104,6 +106,12 @@ def build_parser() -> argparse.ArgumentParser:
     dsh = sub.add_parser("dash", help="live dashboard: GPU power, and a view of the experts")
     from wattnot.dash import __main__ as _dash
     _dash.add_args(dsh)
+    dm = sub.add_parser(
+        "demo",
+        help="open the dashboard on the bundled replay (no GPU, no network, no keys)",
+    )
+    from wattnot import demo as _demo
+    _demo.add_args(dm)
     return parser
 
 
@@ -284,6 +292,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         from wattnot.dash import __main__ as _dash
 
         return _dash.run(args)
+    if args.cmd == "demo":
+        from wattnot import demo as _demo
+
+        return _demo.run(args)
     if args.cmd == "health":
         from wattnot.health import main as _health
         return _health(["--json"] if args.json else [])
