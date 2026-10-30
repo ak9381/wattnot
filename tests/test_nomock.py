@@ -1,3 +1,4 @@
+from pathlib import Path
 import json
 
 from wattnot.longrun import nomock
@@ -20,11 +21,16 @@ def test_source_ok():
     assert not nomock._source_ok("")  # unknown provenance is not real
 
 
-def test_guard_fails_on_the_committed_placeholders_and_stubs(tmp_path):
+def test_guard_on_the_committed_assets(tmp_path):
+    # Spoken WAVs are now real TTS audio, so no stub finding. The eye-test images pass only
+    # once the paid generation has stamped them; until then the guard must fail on them.
     r = nomock.audit_plan("glimmer-test", tmp_path)
-    assert r["ok"] is False
-    assert any("eye-test images are not real" in f["what"] for f in r["findings"])
-    assert any("stub" in f["what"] for f in r["findings"])
+    assert not any("stub" in f["what"] for f in r["findings"])
+    root = Path(__file__).resolve().parents[1]
+    eye = json.loads((root / "data/vision/eyetest/answers.json").read_text())
+    if eye.get("source") == "placeholder-offline":
+        assert r["ok"] is False
+        assert any("eye-test images are not real" in f["what"] for f in r["findings"])
 
 
 def _write_real_assets(tmp_path):

@@ -45,13 +45,27 @@ ENGINES = {
     "espeak": lambda text, out: ["espeak", "-v", "en", "-s", "150", "-w", str(out), text],
     "pico2wave": lambda text, out: ["pico2wave", "-l", "en-US", "-w", str(out), text],
     "flite": lambda text, out: ["flite", "-t", text, "-o", str(out)],
+    # ffmpeg built with libflite: same voice, no separate CLI needed. 16 kHz mono 16-bit PCM.
+    "ffmpeg-flite": lambda text, out: ["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi",
+                                       "-i", "flite=text='" + text.replace("'", "").replace(":", " ") + "'",
+                                       "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", str(out)],
 }
+
+
+def _ffmpeg_has_flite() -> bool:
+    if not shutil.which("ffmpeg"):
+        return False
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-filters"], capture_output=True, text=True)
+    return " flite " in r.stdout
 
 
 def pick_engine() -> str | None:
     """The first offline TTS CLI on PATH, or None."""
     for name in ENGINES:
-        if shutil.which(name):
+        if name == "ffmpeg-flite":
+            if _ffmpeg_has_flite():
+                return name
+        elif shutil.which(name):
             return name
     return None
 
