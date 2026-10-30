@@ -51,6 +51,20 @@ restart_docker() {
   for _ in $(seq 1 30); do docker info >/dev/null 2>&1 && return 0; sleep 2; done
 }
 
+toolkit_debs() {   # apt cannot reach the Ubuntu archive: fetch the 4 toolkit .debs directly
+  local base=https://nvidia.github.io/libnvidia-container/stable/deb/amd64 v d f
+  v="$(curl -s -m 60 "$base/Packages" | awk '/^Package: nvidia-container-toolkit$/{p=1;next} p&&/^Version:/{print $2;p=0}' | sort -V | tail -n1)"
+  [ -n "$v" ] || { log "toolkit debs: no version in Packages"; return 1; }
+  d="$(mktemp -d)"
+  for f in libnvidia-container1 libnvidia-container-tools nvidia-container-toolkit-base nvidia-container-toolkit; do
+    curl -fsSL -m 180 "$base/${f}_${v}_amd64.deb" -o "$d/$f.deb" || { log "toolkit debs: $f download failed"; return 1; }
+  done
+  $SUDO dpkg -i "$d/libnvidia-container1.deb" "$d/libnvidia-container-tools.deb" \
+    "$d/nvidia-container-toolkit-base.deb" "$d/nvidia-container-toolkit.deb" >/dev/null 2>&1 \
+    || { log "toolkit debs: dpkg -i failed"; return 1; }
+  log "toolkit $v installed from .debs"
+}
+
 registry_mirror() {   # Docker Hub cache, used only if Hub itself is slow/unreachable
   $SUDO mkdir -p /etc/docker
   $SUDO python3 - <<'PY'
@@ -66,16 +80,26 @@ PY
 
 apt_sources_https
 if ! command -v docker >/dev/null; then
+  if reach https://archive.ubuntu.com/ubuntu/ || reach http://archive.ubuntu.com/ubuntu/; then
   log "docker missing: apt install docker.io"
   $SUDO timeout 300 "${APT[@]}" update -qq >/dev/null 2>&1 || log "apt-get update failed or timed out"
   $SUDO timeout 600 "${APT[@]}" install -y -qq docker.io >/dev/null 2>&1 || log "apt-get install docker.io failed"
   $SUDO systemctl enable --now docker >/dev/null 2>&1 || true
+  else log "Ubuntu archive unreachable: skipping apt, using static docker"; fi
   command -v docker >/dev/null || docker_static || log "static docker install failed"
 fi
 command -v docker >/dev/null || { log "docker missing: the Glimmer server cannot start"; exit 15; }
 registry_mirror
 
 if ! docker info 2>/dev/null | grep -qi nvidia; then
+  # first boot runs apt-daily / unattended-upgrades, which hold the dpkg lock for minutes
+  $SUDO systemctl stop apt-daily.service apt-daily-upgrade.service unattended-upgrades.service >/dev/null 2>&1 || true
+  $SUDO pkill -f apt.systemd.daily 2>/dev/null || true
+  if ! command -v nvidia-ctk >/dev/null && ! reach https://archive.ubuntu.com/ubuntu/ \
+     && ! reach http://archive.ubuntu.com/ubuntu/; then
+    log "Ubuntu archive unreachable: installing the toolkit from .debs"
+    toolkit_debs || true
+  fi
   if ! command -v nvidia-ctk >/dev/null; then
     log "installing nvidia-container-toolkit"
     curl -fsSL -m 60 https://nvidia.github.io/libnvidia-container/gpgkey \
