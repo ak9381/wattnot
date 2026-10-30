@@ -645,7 +645,7 @@ def live_run(out: Path, *, host: str, key: str = "~/.ssh/e2e_h100", model: str =
 
     blocks = plan(out, model)
     vm = RemoteVm(host=host, key=key, out_dir=out / "pulled")
-    hours = max_hours if max_hours is not None else (2.0 if model == "glimmer-test" else 18.0)
+    hours = max_hours if max_hours is not None else (2.5 if model == "glimmer-test" else 18.0)
     run = _live_runner(out, host, key, vm)
 
     def balance_inr() -> float:
@@ -711,7 +711,7 @@ def main(argv=None) -> int:
         drop[k] = int(n)
     if a.model != "llama" and a.drop_link == "b2-wonder-sweep:3":
         drop = {"g2-wonder-sweep": 3} if a.model == "glimmer" else {"t1-resume": 2}
-    hours = a.max_hours or (2.0 if a.model == "glimmer-test" else 18.0)
+    hours = a.max_hours or (2.5 if a.model == "glimmer-test" else 18.0)
     st = dry_run(a.out, drop=drop, model=a.model, max_hours=hours)
     for k, v in st["blocks"].items():
         print(f"{k:18} {v['status']:8} rc={v.get('rc', '-')} {v.get('wall_s', '')}s "

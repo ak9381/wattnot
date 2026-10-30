@@ -32,7 +32,7 @@ D = "/workspace/hackathon/e2e-glimmer-test"
 P = dict(project_id=18993, location="Delhi")
 SKU_ID, PRICE_ID = 525, 7087          # GDC.1xH10080-26.250GB_SXM_v3, Rs379.05/h (same as RUN1)
 SG, SSHKEY = 34486, 4364
-MAX_H = float(os.environ.get("RUN3_MAX_H", "2"))   # Glimmer test VM: 2 h hard cap
+MAX_H = float(os.environ.get("RUN3_MAX_H", "2.5"))   # Glimmer test VM: 2.5 h booking (Akash, Oct 30)
 # Default-on spend backstop for the watchdog (INR, taxed). Sized for the 2 h test (2 h x Rs451.2 =
 # Rs902, well under this), so it is a backstop, not the primary rail; raise it for a longer run.
 BUDGET_CAP_INR = float(os.environ.get("RUN3_BUDGET_CAP_INR", "2000"))
