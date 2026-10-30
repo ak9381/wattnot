@@ -1,0 +1,51 @@
+#!/usr/bin/env python3
+"""Turn an orchestrate sweep (vm/results.json) into the trials list the Wonder chart reads.
+
+    python scripts/sweep_to_trials.py RUN_DIR [--out RUN_DIR/sweep_trials.json]
+
+Each trial is one cap step: joules per correct answer = mean J/request at the cap divided by the
+cap arm's quality pass rate. The label is copied from the step (MEASURED on a live run), so a
+rehearsal sweep stays MOCK/SIMULATED. No API calls, no GPU.
+"""
+import argparse
+import json
+import sys
+from pathlib import Path
+
+
+def trials_from(results: dict) -> list[dict]:
+    out = []
+    for s in results.get("steps") or []:
+        j = s.get("j_per_req_cap") or []
+        q = ((s.get("quality") or {}).get("cap_pct"))
+        if not j or not q:
+            continue
+        mean_j = sum(j) / len(j)
+        out.append({"cap_w": s["cap_w"], "clock_profile": s.get("clock_profile") or "base",
+                    "joules_per_correct": round(mean_j / (q / 100.0), 6),
+                    "quality": round(q / 100.0, 4), "kept": bool(s.get("accepted")),
+                    "label": s.get("label", "MEASURED")})
+    return out
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("run_dir", type=Path)
+    ap.add_argument("--out", type=Path, default=None)
+    a = ap.parse_args(argv)
+    src = a.run_dir / "vm" / "results.json"
+    if not src.exists():
+        print(f"no sweep results at {src}", file=sys.stderr)
+        return 1
+    trials = trials_from(json.loads(src.read_text()))
+    if not trials:
+        print("sweep has no cap steps with quality", file=sys.stderr)
+        return 1
+    out = a.out or a.run_dir / "sweep_trials.json"
+    out.write_text(json.dumps({"trials": trials}, indent=2) + "\n")
+    print(f"{len(trials)} trials -> {out}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

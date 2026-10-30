@@ -28,6 +28,7 @@ DEAD_WINDOW_S = 900.0
 PROBE_EVERY_S = 60.0
 MIN_PROBES = 5
 PULL_TRIES = 3
+FINISH_GRACE_S = 600.0   # plan done but the last copy failed: keep retrying this long, then delete
 
 
 @dataclass
@@ -48,6 +49,7 @@ def plan_teardown(*, ssh_alive: Callable[[], bool], api_state: Callable[[], str 
                   balance_low: bool = False, finished: bool = False,
                   dead_window_s: float = DEAD_WINDOW_S, probe_every_s: float = PROBE_EVERY_S,
                   min_probes: int = MIN_PROBES, pull_tries: int = PULL_TRIES,
+                  finish_grace_s: float = FINISH_GRACE_S,
                   sleep: Callable[[float], None] = time.sleep,
                   clock: Callable[[], float] = time.monotonic) -> TeardownDecision:
     """Decide whether to delete the VM now. `why` is the event that asked for teardown.
@@ -72,14 +74,23 @@ def plan_teardown(*, ssh_alive: Callable[[], bool], api_state: Callable[[], str 
         return TeardownDecision(True, f"{rule} reached ({why}); delete regardless", "unknown",
                                 copied, forced=not copied, probes=probes)
 
-    # Normal end of the run: copy, then delete. If the copy fails, keep the VM (the time and
-    # balance watchdogs still bound the bill) and let a human or the next retry copy it.
+    # Normal end of the run (also an early finish): copy, then DELETE at once so billing stops.
+    # If the copy fails, keep retrying for `finish_grace_s`, then delete anyway. Every block was
+    # already pulled when it finished, so a failed final copy loses at most the last block's logs,
+    # while a kept VM bills until the deadline watchdog (Akash, Oct 30: delete when done early).
     if finished:
-        copied = try_pull()
-        if copied:
-            return TeardownDecision(True, "run finished, results copied", "alive", True)
-        return TeardownDecision(False, "run finished but the copy failed: keep the VM until a "
-                                "copy succeeds (watchdogs still bound the bill)", "alive", False)
+        start = clock()
+        while True:
+            if try_pull():
+                return TeardownDecision(True, "run finished, results copied; delete now",
+                                        "alive", True, probes=probes)
+            probes.append({"t": round(clock() - start, 1), "pull": False})
+            if clock() - start >= finish_grace_s:
+                return TeardownDecision(True, f"run finished; final copy failed for "
+                                        f"{clock() - start:.0f} s; delete anyway (per-block pulls "
+                                        "already saved the results)", "alive", False,
+                                        forced=True, probes=probes)
+            sleep(probe_every_s)
 
     # A failure. Is the VM really gone?
     start = clock()

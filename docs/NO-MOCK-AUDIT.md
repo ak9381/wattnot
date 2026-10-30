@@ -51,3 +51,11 @@ Running the preflight now on the committed tree **fails**, on purpose:
 This is the correct behaviour: the live 2 h run cannot start until those two inputs are real. Once
 the images are generated (his okay) and a TTS is on PATH, both stamp an honest `source` and the
 preflight passes.
+
+## Second pass (2026-10-30, evening)
+
+| # | Area | What could leak | Fix |
+|---|------|-----------------|-----|
+| 12 | `t2-fp8` | The block ran the harness with the FP8 config but never restarted the server, so it would have measured BF16 and labelled it FP8 (`serve_args` in `harness.py` is not used to start a server). | FIXED: the live command restarts Glimmer with `glimmer_serve.sh fp8` first. A test asserts it. |
+| 13 | `t1-sweep` | `orchestrate --sam` defaults to `replay`, so a live sweep replayed saved SAM masks without saying so. The guard only caught an explicit `--sam replay`. | FIXED: the live sweep passes `--sam live`; the guard now flags a live orchestrate run that does not ask for live SAM. |
+| 14 | Guard | A mock switch inside a `bash -c "..."` string was not seen. | FIXED: the guard splits shell strings before checking. |

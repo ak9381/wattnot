@@ -198,3 +198,14 @@ to delete once, the layer-4 CLI, and — for layer 5 — that its embedded rule 
 `decide`** (a drift guard), the **keychain lookup mocked** (parse success, not-found, and no
 `security` binary), env-over-keychain credential precedence, and a live run **refusing without a
 key**. All of it runs on CPU with fakes — no network, no GPU, no VM, no real keychain.
+
+## Glimmer test VM: 3.5 h booking (Oct 30)
+
+* `ctl.py` books 3.5 h (`RUN3_MAX_H`, default 3.5). Its watchdog hard-DELETEs the VM at
+  launch + 3.5 h - 8 min (3 h 22 min), then verifies the delete (GET 404, gone from the list).
+* The off-box and Mac watchdogs default to `--max-hours 3.6`, a backstop behind that.
+* Early finish: when the driver's plan ends (even early), it copies results and DELETEs the VM
+  at once. If the final copy fails it retries for 10 min, then deletes anyway (each block was
+  already pulled when it finished). A driver crash or Ctrl-C also copies then deletes.
+  `ctl.py delete` is retried 3 times; if it still cannot confirm, the driver prints a loud
+  "delete it in the E2E console" line. E2E bills by the minute, so an early delete stops billing.

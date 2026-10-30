@@ -95,30 +95,59 @@ def test_block_receipts_are_chained(tmp_path):
     assert b["prev"] == a["sha256"] and "timeline.jsonl" in a["files"]
 
 
-def test_glimmer_test_session_fits_two_hours(tmp_path):
-    from wattnot.longrun.driver import plan_glimmer_test
-    opt = {b.id for b in plan_glimmer_test(tmp_path) if b.optional}
-    st = dry_run(tmp_path, model="glimmer-test", runner=ok, max_hours=2.0)
-    for k, v in st["blocks"].items():
-        assert v["status"] == ("skipped" if k in opt else "done"), (k, v["status"])
-    assert opt and all(st["blocks"][o]["status"] == "skipped" for o in opt)  # sweep off by default
-    assert st["stopped"] == "finished" and st["sim"]["hours"] <= 2.0
+def test_glimmer_test_session_finishes_early_and_deletes(tmp_path):
+    # 3.5 h booking: the plan ends well before the cap, and the VM is DELETED at once (not
+    # stopped, not left for the deadline watchdog), so billing stops early
+    st = dry_run(tmp_path, model="glimmer-test", runner=ok, max_hours=3.5)
+    assert all(v["status"] == "done" for v in st["blocks"].values()), st["blocks"]
+    assert st["stopped"] == "finished" and st["sim"]["vm_deleted"]
+    assert st["sim"]["hours"] < 3.5 - 8 / 60
+    kinds = [e["kind"] for e in st["events"]]
+    assert kinds[-1] == "vm-deleted"
+    last = [e for e in st["events"] if e["kind"] == "teardown-decision"][-1]
+    assert last["delete"] is True and "finished" in last["reason"]
+
+
+def test_early_finish_deletes_even_if_final_copy_fails(tmp_path):
+    from wattnot.longrun.driver import Driver, FakeVm, plan_glimmer_test
+
+    class NoCopyVm(FakeVm):
+        def pull(self):
+            self.pulls += 1
+            return False
+
+    vm = NoCopyVm()
+    t = {"now": 0.0}
+
+    def sleep(s):
+        t["now"] += s
+
+    d = Driver(tmp_path, plan_glimmer_test(tmp_path), vm, label="MOCK", run=lambda b, s: 0,
+               max_hours=3.5, balance_inr=lambda: 10_000.0, hours_used=lambda: t["now"] / 3600,
+               sleep=sleep, clock=lambda: t["now"])
+    st = d.go()
+    assert vm.deleted and st["stopped"] == "finished"
+    last = [e for e in st["events"] if e["kind"] == "teardown-decision"][-1]
+    assert last["delete"] and last["forced"] and "delete anyway" in last["reason"]
 
 
 def test_glimmer_test_plan_fits_the_time_budget(tmp_path):
-    from wattnot.longrun.driver import plan_glimmer_test
+    from wattnot.longrun.driver import WATCHDOG_MARGIN_H, plan_glimmer_test
     p = plan_glimmer_test(tmp_path)
-    # the committed 2 h plan is the non-optional blocks; the batch sweep is opt-in and excluded
-    total_min = sum(b.hours for b in p if not b.optional) * 60
-    # must fit the ~112 usable min (2 h minus the 8 min watchdog margin) and use the window
-    assert total_min <= 110
-    assert 100 <= total_min
-    # GPU-first order: setup and probe lead, copy-back is last
+    total_min = sum(b.hours for b in p) * 60
+    usable = 3.5 * 60 - WATCHDOG_MARGIN_H * 60          # 202 min
+    core = sum(b.hours for b in p if b.id not in ("t2b-batch", "t2c-prefix")) * 60
+    assert core <= 125 and total_min <= usable - 30      # >= 30 min slack for a slow Glimmer
+    # core-proof-first order: setup and probe lead, extras after every core block, copy last
     ids = [b.id for b in p]
     assert ids[0] == "t0-setup" and ids[1] == "t0-probe" and ids[-1] == "t3-copy"
-    assert ids.index("t1-sweep") < ids.index("t2-fp8")  # BF16 sweep before the FP8 swap
-    # prefix-cache A/B is NOT in the 2 h test (it moved to the long run)
-    assert not any("prefix" in b.id for b in p)
+    assert ids.index("t1-sweep") < ids.index("t2-fp8") < ids.index("t2b-batch")
+    assert ids.index("t2-spoken") < ids.index("t2b-batch") < ids.index("t2c-prefix")
+    fp8 = next(b for b in p if b.id == "t2-fp8")
+    assert "glimmer_serve.sh fp8" in " ".join(fp8.live)   # FP8 really restarts the server
+    sweep = next(b for b in p if b.id == "t1-sweep")
+    i = sweep.live.index("--sam")
+    assert sweep.live[i + 1] == "live"
 
 
 def test_glimmer_test_live_blocks_use_real_commands(tmp_path):
