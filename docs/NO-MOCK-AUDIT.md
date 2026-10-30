@@ -74,3 +74,17 @@ preflight passes.
 | 22 | Balance | The driver assumed Rs 10,000 when the balance API failed. | FIXED: keeps the last real reading (ctl.py's watchdog checks too). |
 | 23 | Welch | The proof sweep accepts on a paired t CI of per-block J/request; it did not run Welch. | FIXED: each step now records Welch on per-block J/request (n = blocks, said so); per-request energy is not measurable from the counter under concurrency. |
 | -- | Room view | Per-GPU power in the room scan is REPLAY of RUN1 and the thermal frame SIMULATED, even live (one GPU, a room of racks). | NOT FIXED: labelled REPLAY / SIMULATED in the receipt and the UI; must never be called measured. |
+
+## Review round 3 (2026-10-30, evening)
+
+| # | Area | Finding | Fix |
+|---|------|---------|-----|
+| 24 | Setup | Docker and the NVIDIA container runtime were not checked before the ~60 GB download. | FIXED: preflight exits 15 before any download. |
+| 25 | Setup | The Hugging Face access check ran only for `meta-llama/*`, not the default Glimmer model. | FIXED: runs for any model. |
+| 26 | Copy | Results were copied with no end-to-end checksum. | FIXED: the VM's sha256 list is compared with the copy, mismatches retried once, `pull-verify.json` written. |
+| 27 | Clock | NTP was never enabled or recorded. | FIXED: `timedatectl set-ntp true` in setup; clock state saved at setup and every pull. |
+| 28 | Adopt | Adopting an existing VM restarted its 3.5 h lifetime from now. | FIXED: the clock starts at the recorded launch intent. |
+| 29 | Delete | A failed list read could still count as "deleted + verified". | FIXED: the list read must succeed and not contain the VM. |
+| 30 | No-mock | A source like `live-replay-x` passed on its real-looking prefix. | FIXED: any mock word fails. |
+| 31 | Probe | `glimmer_probe.sh` wrote the cap without persistence mode. | FIXED. |
+| -- | Signing | The live receipt is signed with a per-run offline key; verify reads the key from its own bundle. | NOT FIXED: the SHA-256 still shows tampering; the signature shows the receipt is unchanged since signing, not who signed. A stable key in `trusted-keys.json` needs a key-custody decision. |

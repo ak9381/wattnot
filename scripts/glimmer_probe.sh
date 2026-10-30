@@ -16,6 +16,7 @@ command -v "$PY" >/dev/null 2>&1 || PY=python3
 command -v nvidia-smi >/dev/null || { echo "[probe] no nvidia-smi: not a GPU host"; exit 10; }
 DEF_W="$(nvidia-smi --query-gpu=power.default_limit --format=csv,noheader,nounits | head -n1 | cut -d. -f1 | tr -d ' ')"
 TEST_W=$(( DEF_W > 600 ? 600 : DEF_W - 50 ))
+nvidia-smi -pm 1 >/dev/null 2>&1 || true   # some hosts refuse -pl without persistence mode
 if ! nvidia-smi -pl "$TEST_W" >/dev/null 2>&1; then
   echo "[probe] cannot set a power cap ($TEST_W W): the power-sweep proof cannot run"; exit 12
 fi

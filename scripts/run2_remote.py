@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import io
 import os
+import json
 import shlex
 import socket
 import stat
@@ -237,6 +238,17 @@ def cmd_alive(a) -> int:
     return 0 if ok else 5
 
 
+def verify_copy(root: Path, remote_sums: dict) -> list:
+    """Relative paths whose local sha256 is missing or differs from the VM's."""
+    import hashlib
+    bad = []
+    for rel, want in sorted(remote_sums.items()):
+        p = root / rel
+        if not p.is_file() or hashlib.sha256(p.read_bytes()).hexdigest() != want:
+            bad.append(rel)
+    return bad
+
+
 def cmd_pull(a) -> int:
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -255,8 +267,17 @@ def cmd_pull(a) -> int:
         c,
         f"nvidia-smi -q -d POWER,CLOCK,TEMPERATURE,PERFORMANCE > {REMOTE_LOG}/nvsmi_power_end.txt "
         f"2>&1; nvidia-smi --query-gpu=power.limit --format=csv,noheader "
-        f"> {REMOTE_LOG}/cap_at_end.txt 2>&1; true",
+        f"> {REMOTE_LOG}/cap_at_end.txt 2>&1; (date -u +%FT%TZ; timedatectl show -p NTPSynchronized "
+        f"2>/dev/null) > {REMOTE_LOG}/clock_at_pull.txt 2>&1; true",
     )
+    # the VM's own checksums, so the copy can be verified file by file
+    _, listing = sh(c, f"cd {REMOTE_LOG} && find . -type f ! -name sha256-manifest.txt -print0 | "
+                       f"xargs -0 -r sha256sum 2>/dev/null; true", timeout=300)
+    remote_sums = {}
+    for line in listing.splitlines():
+        parts = line.split("  ", 1)
+        if len(parts) == 2 and len(parts[0]) == 64:
+            remote_sums[parts[1].removeprefix("./")] = parts[0]
     sftp = c.open_sftp()
     n = 0
 
@@ -278,6 +299,20 @@ def cmd_pull(a) -> int:
                     print(f"[pull] skipped {r}/{e.filename}: {ex}", file=sys.stderr)
 
     walk(REMOTE_LOG, out / "run2")
+    bad = verify_copy(out / "run2", remote_sums)
+    for rel in bad:   # one retry per file that changed or did not copy whole
+        try:
+            sftp.get(f"{REMOTE_LOG}/{rel}", str(out / "run2" / rel))
+        except OSError:
+            pass
+    bad = verify_copy(out / "run2", remote_sums)
+    (out / "run2" / "pull-verify.json").write_text(json.dumps(
+        {"checked": len(remote_sums), "mismatched": bad,
+         "note": "sha256 on the VM vs sha256 of the copy; a log still being written can differ"},
+        indent=1))
+    if bad:
+        print(f"[pull] {len(bad)} file(s) differ from the VM's sha256 after a retry: "
+              f"{bad[:5]}", file=sys.stderr)
     sftp.close()
     c.close()
     print(f"[run2_remote] pulled {n} files to {out}")

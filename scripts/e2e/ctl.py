@@ -96,7 +96,7 @@ def delete():
         if g == 404: ok = True; break
     s, j = call("GET", "gpu/notebooks/", **P)
     left = [n for n in (j.get("data") or []) if n.get("id") == v["id"]] if isinstance(j, dict) else None
-    if ok and not left:
+    if ok and left == []:   # the list read itself must succeed and not hold the VM
         open(f"{D}/DELETED", "w").write(str(dt.datetime.now()))
         os.replace(f"{D}/vm.json", f"{D}/vm.{v['id']}.deleted.json")   # kept for the record; frees the next launch
         print("DELETED+VERIFIED")
@@ -179,6 +179,12 @@ def main(argv=None):
             existing = find_by_name(list_nodes(), VM_NAME)
             if existing is not None:
                 now = dt.datetime.now()
+                # never re-arm a fresh lifetime on adoption: start the clock at the recorded intent
+                try:
+                    now = min(now, dt.datetime.fromisoformat(
+                        json.load(open(f"{D}/vm.intent.json"))["ts"]))
+                except Exception:  # noqa: BLE001 - no intent record: clock starts now (logged)
+                    print("adopting with no vm.intent.json: deadline counted from now")
                 json.dump(dict(id=existing["id"], launch_ts=now.isoformat(), adopted=True,
                                deadline=(now + dt.timedelta(hours=MAX_H)).isoformat(), sg=SG,
                                ssh_key_pk=SSHKEY), open(f"{D}/vm.json", "w"))
