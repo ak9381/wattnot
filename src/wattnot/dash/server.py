@@ -58,7 +58,7 @@ from wattnot.approvals.risk import load_config as load_guard_config
 from wattnot.approvals.service import HTTP as _VIA_HTTP
 from wattnot.approvals.service import Approvals, StateError
 from wattnot.approvals.store import NotFound, resolve_root
-from wattnot.dash import configure, experts, gpu, run2, runplan
+from wattnot.dash import configure, experts, gpu, receiptview, run2, runplan
 
 ROOT = Path(__file__).resolve().parents[3]
 WEB = ROOT / "web" / "dash"
@@ -407,6 +407,18 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         if not frameworks_path.is_file():
             raise HTTPException(404, "no framework validation yet: run scripts/validate_frameworks.py")
         return Response(frameworks_path.read_bytes(), media_type="application/json")
+
+    @app.get("/api/dash/run/receipt")
+    def run_receipt():
+        """Trimmed view of the run's signed receipt, when one sits next to --events FILE."""
+        if events is None:
+            raise HTTPException(404, "no events file is being followed (start with --events FILE)")
+        try:
+            return receiptview.view(receiptview.load_receipt(receiptview.find_receipt(events)))
+        except FileNotFoundError:
+            raise HTTPException(404, "no signed receipt in this run folder yet") from None
+        except (ValueError, OSError) as e:
+            raise HTTPException(404, f"no valid receipt here: {e}") from None
 
     @app.get("/api/dash/meta/health")
     def meta_health(fresh: int = 0):

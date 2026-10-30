@@ -381,6 +381,7 @@ export class Product {
         <label class="scl">At <input id="scale" type="number" min="1" step="100000" value="${S}" aria-label="requests per day"> requests a day</label></div>
       <p class="rnote">Recorded run <code>${esc(R.run_id)}</code>, re-evaluated against your limits: p99 may rise ${R.limits.p99_slack_pct}%, agreement at least ${R.limits.min_quality_pct}%${R.limits.strict_quality ? ", quality must be verified" : ""}. Levers are shown separately and never added together.</p>
       ${R.room ? this.roomResults(R) : ""}
+      <div id="rcpt"></div>
       <div id="cards" class="bento">${R.levers.map((L) => this.card(L)).join("")}</div>
       <div id="wasteCard"></div>
       <div id="partners"></div>
@@ -391,6 +392,32 @@ export class Product {
     this.$("#scale").onchange = (e) => { const v = Math.max(1, +e.target.value || 1); this.scale = v; this.$("#cards").innerHTML = R.levers.map((L) => this.card(L)).join(""); };
     this.$("#back").onclick = () => this.go("config"); this.$("#seeRun").onclick = () => this.go("run"); this.$("#rerun").onclick = () => { this.runView(false); this.screen = "run"; this.done = false; this.renderRail(); };
     this.$("#openArch").onclick = () => this.D.drawer("arch");
+    this.receiptBlock();
+  }
+  // "From the signed receipt": the trimmed receipt view when the server follows a run that wrote one; nothing otherwise
+  async receiptBlock() {
+    const el = this.$("#rcpt"); if (!el) return;
+    let v = null;
+    try {
+      const r = await fetch("/api/dash/run/receipt");
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      v = await r.json();
+    } catch { el.remove(); return; }
+    if (!v?.hash) { el.remove(); return; }
+    const e = v.energy_j_per_req, c = v.cost_usd_per_1m, w = v.water_l_per_1m, p = v.p99_s, q = v.quality_pct;
+    const row = (k, b, a, tag) => `<tr><th scope="row">${esc(k)}</th><td class="num">${b}</td><td class="num"><b>${a}</b></td><td>${tagOf(tag)}</td></tr>`;
+    const sig = v.signature?.signed ? `Signed offline by ${v.signature.signer || "–"}${v.signature.rekor ? ` · public log entry ${v.signature.rekor}` : " · no public log entry"}` : "Not signed";
+    el.innerHTML = `<section class="rc ${v.kept ? "kept" : "nokept"}" aria-label="from the signed receipt"><header><h2>From the signed receipt</h2><span class="hd2 num">${v.kept ? `kept ${v.kept_cap_w} W` : "Not kept"}</span><span class="lb"><code>${esc(v.receipt_id || "–")}</code></span> ${tagOf(v.label)}</header>
+      <table class="cmpt"><thead><tr><th></th><th>Before</th><th>After</th><th></th></tr></thead><tbody>
+      ${row("Energy per request", `${num(e.before, 3)} J`, `${num(e.after, 3)} J`, e.label)}
+      ${row("Cost per 1M requests", `$${num(c.before, 2)}`, `$${num(c.after, 2)}`, c.label)}
+      ${row("Water per 1M requests", `${num(w.before, 1)} L`, `${num(w.after, 1)} L`, w.label)}
+      ${row("Slowest 1% of requests (p99)", `${num(p.before, 2)} s`, `${num(p.after, 2)} s`, p.label)}
+      ${row("Quality kept", `${num(q.stock, 1)}%`, `${num(q.cap, 1)}%`, q.label)}
+      </tbody></table>
+      <p class="hnt">Steps: ${v.steps.map((s) => `${s.cap_w} W ${s.accepted ? "kept" : "not kept"}${s.chosen_by ? `, picked by ${esc(s.chosen_by)}` : ""}`).join(" · ")}</p>
+      <p class="hnt">sha256 <code>${esc(v.hash)}</code></p>
+      <p class="hnt">${esc(sig)}</p></section>`;
   }
   roomResults(R) {
     const Rm = R.room, t = Rm.target, b = Rm.before.racks.find((x) => x.id === t), a = Rm.after.racks.find((x) => x.id === t), c = Rm.cooling;
