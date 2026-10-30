@@ -762,6 +762,10 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                             time.sleep(0.2)
                         if guard.approvals.store.get(chg)["status"] == "pending":
                             guard.decide_by_policy(chg)
+                        if guard.approvals.store.get(chg)["status"] == "pending":
+                            # the policy said no: reject now with its reasons, do not sit
+                            # until the approval timeout (10 min of paid GPU) then roll back
+                            guard.decline_by_policy(chg)
                         decision = guard.wait(chg, timeout_s=a.approval_timeout_s, poll_s=0.2)
                     elif route.startswith("pending"):
                         decision = guard.wait(chg, timeout_s=a.approval_timeout_s,

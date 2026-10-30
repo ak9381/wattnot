@@ -135,3 +135,25 @@ def test_live_sweep_uses_the_policy_not_the_flag(tmp_path):
     bad = ["python", "-m", "wattnot.proof.orchestrate", "--mode", "live", "--sam", "live",
            "--auto-approve"]
     assert any("--auto-approve" in h for h in nomock._banned_tokens(bad))
+
+
+def test_policy_declines_at_once_with_its_reasons(tmp_path):
+    # after the hold, a change the policy does not allow is rejected now (not left pending for
+    # the 600 s approval timeout on a paid GPU), and the reasons are recorded
+    g = guard_with(tmp_path, policy_dict())
+    out = g.submit(spec(after=300), gates_passed=True, stock_cap_w=700, tdp_w=700)  # 57% drop
+    pid = out["proposal"]["id"]
+    g.decide_by_policy(pid)
+    p = g.decline_by_policy(pid)
+    assert p["status"] == "rejected"
+    assert p["decision"]["by"].startswith("auto-policy:")
+    assert "declined by policy" in p["decision"]["note"]
+    assert "approved" not in p["decision"]["note"]
+    assert "max_cap_drop_pct" in p["decision"]["note"]
+
+
+def test_decline_leaves_an_allowed_change_alone(tmp_path):
+    g = guard_with(tmp_path, policy_dict())
+    out = g.submit(spec(), gates_passed=True, stock_cap_w=700, tdp_w=700)
+    pid = out["proposal"]["id"]
+    assert g.decline_by_policy(pid)["status"] == "pending"

@@ -96,6 +96,31 @@ class Approvals:
             return self._decide(p, m.APPROVED, by=f"auto-policy:{policy.sha256()[:12]}",
                                 via=AUTO, note=note, extra=extra)
 
+    def decline_by_policy(self, pid: str) -> dict:
+        """Reject `pid` now if it is still pending and the operator-set policy does not allow it,
+        with the policy's reasons. Used after the visible hold, so a declined change is rolled back
+        at once instead of sitting until the approval timeout (wasted GPU time on a paid run)."""
+        policy = self.policy()
+        with self.store.lock():
+            p = self.store.get(pid)
+            if p["status"] != m.PENDING:
+                return p
+            if policy.enabled:
+                today = self._auto_approved_since(self.clock() - 24 * 3600)
+                ok, why = policy.evaluate(p, approved_today=today)
+                if ok:
+                    return p
+            else:
+                why = ["auto-approve is off"]
+            note = "declined by policy: " + "; ".join(why)
+            extra = {"policy_sha256": policy.sha256()}
+            if policy.set_by:
+                note = (f"declined by policy, set by operator {policy.set_by} at "
+                        f"{policy.set_at or 'unknown time'}: " + "; ".join(why))
+                extra.update(policy_set_by=policy.set_by, policy_set_at=policy.set_at)
+            return self._decide(p, m.REJECTED, by=f"auto-policy:{policy.sha256()[:12]}",
+                                via=AUTO, note=note, extra=extra)
+
     def _auto_approved_since(self, since: float) -> int:
         return sum(1 for e in self.store.audit_entries()
                    if e["event"] == "approved" and e["via"] == AUTO
