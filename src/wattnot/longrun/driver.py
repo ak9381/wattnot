@@ -251,6 +251,13 @@ def plan_glimmer_test(out: Path) -> list[Block]:
         Block("t2-spoken", "FP8 spoken answers: the quant candidate must answer the same questions "
               "or roll back", _m(3), spoken_dry("t2-spoken"), live=spoken_live("t2-spoken"),
               host=True, depends_on=("t2-fp8",)),
+        # OPTIONAL batch-size / KV-cache sweep: off in the 2 h plan (needs an explicit opt-in and
+        # is dropped if the time left cannot cover it). Not counted in the 100-110 min budget.
+        Block("t2b-batch", "OPTIONAL batch-size / KV-cache sweep: restart Glimmer per "
+              "(max-num-seqs, kv-dtype) combo and measure", _m(15),
+              _py("wattnot.longrun.harness", "--cap", "350", "--out", str(out / "runs" / "t2b-batch"),
+                  "--fake", "--model-config", "muse-glimmer-30b", "--per-tier", "2"),
+              live=["bash", "scripts/batch_kv_sweep.sh", "bf16"], host=True, optional=True),
         Block("t3-copy", "Copy results back to the control box", _m(5), None, live=None,
               infra="pull"),
     ]

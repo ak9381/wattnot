@@ -96,15 +96,20 @@ def test_block_receipts_are_chained(tmp_path):
 
 
 def test_glimmer_test_session_fits_two_hours(tmp_path):
+    from wattnot.longrun.driver import plan_glimmer_test
+    opt = {b.id for b in plan_glimmer_test(tmp_path) if b.optional}
     st = dry_run(tmp_path, model="glimmer-test", runner=ok, max_hours=2.0)
-    assert all(v["status"] == "done" for v in st["blocks"].values())
+    for k, v in st["blocks"].items():
+        assert v["status"] == ("skipped" if k in opt else "done"), (k, v["status"])
+    assert opt and all(st["blocks"][o]["status"] == "skipped" for o in opt)  # sweep off by default
     assert st["stopped"] == "finished" and st["sim"]["hours"] <= 2.0
 
 
 def test_glimmer_test_plan_fits_the_time_budget(tmp_path):
     from wattnot.longrun.driver import plan_glimmer_test
     p = plan_glimmer_test(tmp_path)
-    total_min = sum(b.hours for b in p) * 60
+    # the committed 2 h plan is the non-optional blocks; the batch sweep is opt-in and excluded
+    total_min = sum(b.hours for b in p if not b.optional) * 60
     # must fit the ~112 usable min (2 h minus the 8 min watchdog margin) and use the window
     assert total_min <= 110
     assert 100 <= total_min
