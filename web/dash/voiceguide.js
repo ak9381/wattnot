@@ -1,8 +1,23 @@
 import { answerFromReceipts, loadReceiptDocs } from "./receiptanswers.js";
+import { isTuneResponse, renderTunePlanHTML, speakSummary, stopSpeaking } from "./tunervoice.js";
 // Voice Guide Self-Mounting Component - Meta Tools v5
+
+// A spoken tuning command ("try 350W with FP8") is planned by Spark and run through the
+// guarded loop; its summary is read aloud by the browser voice. Questions never match.
+const TUNE_KNOB_RE = /\bfp\s?8\b|prefix cach|chunked prefill|quantiz|max num seqs|batch size|gpu mem|memory utiliz|the tuner|\btune\b/i;
+export function looksLikeTuneCommand(text) {
+  const t = (text || "").toLowerCase().trim();
+  if (!t || /^(what|why|how|which|is |are |explain|tell me|describe|does |do )/.test(t) || t.includes("mean")) {
+    return false;
+  }
+  return TUNE_KNOB_RE.test(t);
+}
 
 export function classifyLocalIntent(text) {
   const t = (text || "").toLowerCase().trim();
+  if (looksLikeTuneCommand(text)) {
+    return "command";
+  }
   if (t.includes("configure") || t.includes("setup") || t.includes("prefill") || t.includes("prepare")) {
     return "configure";
   }
@@ -21,6 +36,13 @@ export function quickAckForQuery(text) {
     return {
       intent,
       ack: text.toLowerCase().includes("compare") ? "Opening Compare view..." : "Resolving latest report route...",
+      label: "MOCK",
+    };
+  }
+  if (intent === "command") {
+    return {
+      intent,
+      ack: "Asking Spark to plan this (dry run)...",
       label: "MOCK",
     };
   }
@@ -145,6 +167,21 @@ export function mountVoiceGuide(customMountEl = null) {
   function displayResponse(data) {
     panelIntent.textContent = data.intent || "ANSWER";
     panelTag.textContent = data.label || "MOCK";
+
+    // A spoken tuning command: show Spark's dry-run plan and read the summary aloud with
+    // the browser voice. The plan HTML is built from our own structured data and escaped
+    // in tunervoice.js, so innerHTML is safe here.
+    if (isTuneResponse(data)) {
+      panelBody.innerHTML = renderTunePlanHTML(data);
+      panelRoute.style.display = "none";
+      panel.classList.add("active");
+      const speakBtn = panelBody.querySelector(".vg-speak-btn");
+      const speak = () => speakSummary(data);
+      if (speakBtn) speakBtn.addEventListener("click", speak);
+      speak(); // auto-read once; the button replays it
+      return;
+    }
+
     panelBody.textContent = data.text || data.ack || "";
 
     if (data.route) {
@@ -229,6 +266,7 @@ export function mountVoiceGuide(customMountEl = null) {
 
   panelClose.addEventListener("click", () => {
     panel.classList.remove("active");
+    stopSpeaking(); // silence the browser voice if it is mid-summary
   });
 
   // Replay of one real Muse Voice Transcribe call (LIVE transcript of a synthetic TTS clip),
@@ -376,6 +414,7 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
     buildVoiceGuideDOM,
     classifyLocalIntent,
     quickAckForQuery,
+    looksLikeTuneCommand,
   };
 
   if (document.readyState === "loading") {

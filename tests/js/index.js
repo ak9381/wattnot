@@ -17,6 +17,7 @@ import "./wastereplay.test.mjs";
 import "./one_header.test.mjs";
 import "./chrome_voiceguide.test.mjs";
 import "./voiceguide_pages.test.mjs";
+import "./tunervoice.test.mjs";
 import "./frameworks.test.mjs";
 import "./codemode.test.mjs";
 import "./codemode_sandbox.test.mjs";
