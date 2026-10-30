@@ -122,6 +122,57 @@ def _hotspot_test_entry(ht: Mapping) -> dict:
     }
 
 
+def _spoken_test_entry(st: Mapping) -> dict:
+    """Normalise a watts-per-spoken-answer result (or its detail dict) into the
+    receipt's ``measurement.spoken_test`` block: numbers, ids, short answer
+    tokens, the MEASURED joules-per-correct-spoken-answer triplet and SYNTHETIC
+    labels only, so it stays lint-clean and signature-covered. The spoken
+    questions and recordings are SYNTHETIC; the transcripts come from Muse Voice
+    Transcribe (cached, one-time paid). The reference ``question`` text is left
+    out on purpose so no prompt-like string ever reaches the public receipt."""
+
+    def _rf(v: Any) -> float | None:
+        return None if v is None else round(float(v), 6)
+
+    items = []
+    for row in st.get("items", []):
+        items.append({
+            "id": str(row.get("id", ""))[:64],
+            "kind": str(row.get("kind", ""))[:16],
+            "noise": str(row.get("noise", ""))[:16],
+            "expected": str(row.get("expected", ""))[:64],
+            "got": str(row.get("got", ""))[:64],
+            "ok": bool(row.get("ok")),
+            "label": str(row.get("label", "SYNTHETIC"))[:32],
+        })
+    checked = st.get("checked", len(items))
+    missed = list(st.get("missed") or [r["id"] for r in items if not r["ok"]])
+    entry: dict[str, Any] = {
+        "label": "SYNTHETIC",
+        "transcriber": str(st.get("transcriber", "muse-voice-transcribe-1.0"))[:64],
+        "passed": bool(st.get("passed", not missed)),
+        "checked": int(checked),
+        "passed_count": int(st.get("passed_count", checked - len(missed))),
+        "missed": [str(x)[:64] for x in missed],
+        "missed_noisy": [str(x)[:64] for x in (st.get("missed_noisy") or [])],
+        "reason": str(st.get("reason", ""))[:195],
+        "model": str(st.get("model", "unrecorded"))[:64],
+        "items": items,
+    }
+    energy = st.get("energy")
+    if energy:
+        entry["energy"] = {
+            "label": str(energy.get("label", "MEASURED"))[:16],
+            "meter": str(energy.get("meter", ""))[:64],
+            "wh_per_answer": _rf(energy.get("wh_per_answer")),
+            "j_per_spoken_answer": _rf(energy.get("j_per_spoken_answer")),
+            "j_per_correct_spoken": _rf(energy.get("j_per_correct_spoken")),
+            "j_per_token": _rf(energy.get("j_per_token")),
+            "j_per_correct_answer": _rf(energy.get("j_per_correct_answer")),
+        }
+    return entry
+
+
 def _wonder_chart_entry(wc: Mapping) -> dict:
     """Normalise a 'Wonder reads the chart' result into the receipt's
     ``measurement.wonder_chart`` block: numbers, short settings, the chart hash and
@@ -201,6 +252,7 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
                   hotspot_cap: Mapping[str, Any] | None = None,
                   eye_test: Mapping[str, Any] | None = None,
                   hotspot_test: Mapping[str, Any] | None = None,
+                  spoken_test: Mapping[str, Any] | None = None,
                   wonder_chart: Mapping[str, Any] | None = None) -> dict[str, Any]:
     base, cand = run["baseline"], run["candidate"]
     base_samples = base.get("wh_samples") or (base.get("wh_per_req") or {}).get("samples") or []
@@ -373,6 +425,17 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
                 break
     if ht is not None:
         m["hotspot_test"] = _hotspot_test_entry(ht)
+
+    st = spoken_test if spoken_test is not None else run.get("spoken_test")
+    if st is None:
+        for ev in events:
+            d = ev.get("data") or {}
+            if ev.get("type") == "gate.result" and d.get("gate") == "spoken":
+                st = {"passed": d.get("passed"), "reason": d.get("reason"),
+                      **(d.get("detail") or {})}
+                break
+    if st is not None:
+        m["spoken_test"] = _spoken_test_entry(st)
 
     wc = wonder_chart if wonder_chart is not None else run.get("wonder_chart")
     if wc is None:

@@ -1,0 +1,28 @@
+{
+  "spec": "wattnot.spokenanswer.transcripts/1",
+  "label": "SYNTHETIC",
+  "note": "Cached output of Muse Voice Transcribe (muse-voice-transcribe-1.0) over the 20 SYNTHETIC recordings, written once by scripts/gen_spoken_assets.py (a one-time paid script). Both the clean and data-center-noise takes transcribe to the same question text. The gate feeds this text to the served model (Glimmer) to answer; no transcription happens at test time.",
+  "transcriber": "muse-voice-transcribe-1.0",
+  "transcripts": {
+    "q-gpus-clean": "How many GPUs are in the rack?",
+    "q-gpus-datacenter": "How many GPUs are in the rack?",
+    "q-cap-clean": "What is the power cap in watts?",
+    "q-cap-datacenter": "What is the power cap in watts?",
+    "q-light-clean": "What colour is the status light?",
+    "q-light-datacenter": "What colour is the status light?",
+    "q-meter-clean": "What does the power meter read in watts?",
+    "q-meter-datacenter": "What does the power meter read in watts?",
+    "q-bay-clean": "Which bay has the fault?",
+    "q-bay-datacenter": "Which bay has the fault?",
+    "q-fans-clean": "How many fans are spinning?",
+    "q-fans-datacenter": "How many fans are spinning?",
+    "q-coolant-clean": "What is the coolant temperature in celsius?",
+    "q-coolant-datacenter": "What is the coolant temperature in celsius?",
+    "q-rack-clean": "What is the rack id?",
+    "q-rack-datacenter": "What is the rack id?",
+    "q-servers-clean": "How many servers are online?",
+    "q-servers-datacenter": "How many servers are online?",
+    "q-speed-clean": "What is the fan speed percent?",
+    "q-speed-datacenter": "What is the fan speed percent?"
+  }
+}

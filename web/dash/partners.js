@@ -5,6 +5,7 @@ import { esc, dot, numLab } from "./theme.js";
 const PCOL = {
   meta: "var(--m)",
   muse_image: "var(--m)",
+  muse_voice: "var(--m)",
   baseten: "var(--bt)",
   e2e: "var(--e2)",
   huggingface: "var(--hf)",
@@ -26,6 +27,7 @@ const STATIC_PB = {
   keep: [
     { id: "e2e", name: "E2E H100", what: "the GPU it runs on" },
     { id: "muse_image", name: "Meta Muse Image", what: "generates the SYNTHETIC eye-test images the vision gate checks" },
+    { id: "muse_voice", name: "Meta Muse Voice", what: "transcribes the SYNTHETIC spoken-answer questions the watts-per-spoken-answer gate checks" },
   ],
   waste: [{ id: "meta", name: "Meta Muse Spark", what: "the planning agent it watches" }],
   approve: [{ id: "operator", name: "Operator", what: "a person decides" }],

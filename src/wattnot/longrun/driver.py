@@ -144,6 +144,18 @@ def _eye_test(out: Path, tag: str) -> list[str]:
                "--budget-s", str(EYE_TEST_BUDGET_S))
 
 
+# Watts-per-spoken-answer wall-clock budget inside the 2 h Glimmer test. The 20
+# SYNTHETIC recordings are transcribed once (cached), so answering them is just
+# seconds of served inference; 90 s is a comfortable cap per candidate.
+SPOKEN_TEST_BUDGET_S = 90.0
+
+
+def _spoken_answer(out: Path, tag: str) -> list[str]:
+    """Run the watts-per-spoken-answer gate for one candidate, inside the budget."""
+    return _py("wattnot.spokenanswer.run", "--fake", "--out", str(out / "runs" / tag),
+               "--budget-s", str(SPOKEN_TEST_BUDGET_S))
+
+
 def plan_glimmer_test(out: Path) -> list[Block]:
     """A standalone 1-2 h Glimmer test VM: memory, FP8, timings. Not a measured result."""
     tiers = lambda tag, cfg: _py("wattnot.longrun.harness", "--cap", "350", "--out",  # noqa: E731
@@ -155,10 +167,15 @@ def plan_glimmer_test(out: Path) -> list[Block]:
               tiers("t1", "muse-glimmer-30b")),
         Block("t1-eye", "BF16 eye test: served vision model reads the SYNTHETIC images "
               "(90 s budget); a miss rejects FP8 below", 0.05, _eye_test(out, "t1")),
+        Block("t1-spoken", "BF16 spoken answers: Glimmer answers the 20 SYNTHETIC recorded "
+              "questions (clean + data-center noise, 90 s budget); J/correct spoken reported, "
+              "a wrong answer rejects FP8 below", 0.05, _spoken_answer(out, "t1")),
         Block("t2-fp8", "FP8 restart: memory, start time, the same mini tiers", 0.5,
               tiers("t2", "muse-glimmer-30b-fp8")),
         Block("t2-eye", "FP8 eye test: the quant candidate must read the same images "
               "(90 s budget) or it is rolled back", 0.05, _eye_test(out, "t2")),
+        Block("t2-spoken", "FP8 spoken answers: the quant candidate must answer the same "
+              "spoken questions (90 s budget) or it is rolled back", 0.05, _spoken_answer(out, "t2")),
     ]
 
 

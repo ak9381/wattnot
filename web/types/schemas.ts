@@ -156,6 +156,35 @@ export interface Receipt {
         label?: string;
       }[];
     } | null;
+    spoken_test?: {
+      label?: string;
+      transcriber?: string;
+      passed?: boolean;
+      checked?: number;
+      passed_count?: number;
+      missed?: string[];
+      missed_noisy?: string[];
+      reason?: string;
+      model?: string;
+      energy?: {
+        label?: string;
+        meter?: string;
+        wh_per_answer?: number | null;
+        j_per_spoken_answer?: number | null;
+        j_per_correct_spoken?: number | null;
+        j_per_token?: number | null;
+        j_per_correct_answer?: number | null;
+      };
+      items?: {
+        id?: string;
+        kind?: string;
+        noise?: string;
+        expected?: string;
+        got?: string;
+        ok?: boolean;
+        label?: string;
+      }[];
+    } | null;
     wonder_chart?: {
       label?: string;
       chart_sha256?: string;

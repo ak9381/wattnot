@@ -1,0 +1,38 @@
+{
+  "spec": "wattnot.spokenanswer/1",
+  "label": "SYNTHETIC",
+  "note": "Watts-per-spoken-answer assets. The 20 recordings are SYNTHETIC: spoken test questions (clean and data-center-noise takes) recorded for this gate. Muse Voice Transcribe (muse-voice-transcribe-1.0) transcribes them once via scripts/gen_spoken_assets.py, a one-time paid script never run by tests; the cached text lives in transcripts.json. The committed .wav files are offline PLACEHOLDERS so the gate and its tests read without a paid call.",
+  "transcriber": {
+    "model": "muse-voice-transcribe-1.0",
+    "endpoint": "{META_BASE_URL}/asr/transcribe",
+    "cache": "transcripts.json",
+    "label": "SYNTHETIC"
+  },
+  "energy": {
+    "label": "MEASURED",
+    "meter": "NVML internal energy counter via pynvml",
+    "note": "Joules per correct spoken answer is MEASURED on the H100 when the served model (Glimmer) answers the transcribed questions; the --fake runner has no meter, so it reports MOCK."
+  },
+  "items": [
+    {"id": "q-gpus-clean", "file": "q-gpus-clean.wav", "kind": "text", "noise": "clean", "question": "How many GPUs are in the rack?", "answer": "8", "watermark": "SYNTHETIC"},
+    {"id": "q-gpus-datacenter", "file": "q-gpus-datacenter.wav", "kind": "text", "noise": "datacenter", "question": "How many GPUs are in the rack?", "answer": "8", "watermark": "SYNTHETIC"},
+    {"id": "q-cap-clean", "file": "q-cap-clean.wav", "kind": "number", "noise": "clean", "question": "What is the power cap in watts?", "answer": "350", "watermark": "SYNTHETIC"},
+    {"id": "q-cap-datacenter", "file": "q-cap-datacenter.wav", "kind": "number", "noise": "datacenter", "question": "What is the power cap in watts?", "answer": "350", "watermark": "SYNTHETIC"},
+    {"id": "q-light-clean", "file": "q-light-clean.wav", "kind": "text", "noise": "clean", "question": "What colour is the status light?", "answer": "green", "watermark": "SYNTHETIC"},
+    {"id": "q-light-datacenter", "file": "q-light-datacenter.wav", "kind": "text", "noise": "datacenter", "question": "What colour is the status light?", "answer": "green", "watermark": "SYNTHETIC"},
+    {"id": "q-meter-clean", "file": "q-meter-clean.wav", "kind": "number", "noise": "clean", "question": "What does the power meter read in watts?", "answer": "275", "watermark": "SYNTHETIC"},
+    {"id": "q-meter-datacenter", "file": "q-meter-datacenter.wav", "kind": "number", "noise": "datacenter", "question": "What does the power meter read in watts?", "answer": "275", "watermark": "SYNTHETIC"},
+    {"id": "q-bay-clean", "file": "q-bay-clean.wav", "kind": "text", "noise": "clean", "question": "Which bay has the fault?", "answer": "B3", "watermark": "SYNTHETIC"},
+    {"id": "q-bay-datacenter", "file": "q-bay-datacenter.wav", "kind": "text", "noise": "datacenter", "question": "Which bay has the fault?", "answer": "B3", "watermark": "SYNTHETIC"},
+    {"id": "q-fans-clean", "file": "q-fans-clean.wav", "kind": "number", "noise": "clean", "question": "How many fans are spinning?", "answer": "4", "watermark": "SYNTHETIC"},
+    {"id": "q-fans-datacenter", "file": "q-fans-datacenter.wav", "kind": "number", "noise": "datacenter", "question": "How many fans are spinning?", "answer": "4", "watermark": "SYNTHETIC"},
+    {"id": "q-coolant-clean", "file": "q-coolant-clean.wav", "kind": "number", "noise": "clean", "question": "What is the coolant temperature in celsius?", "answer": "29", "watermark": "SYNTHETIC"},
+    {"id": "q-coolant-datacenter", "file": "q-coolant-datacenter.wav", "kind": "number", "noise": "datacenter", "question": "What is the coolant temperature in celsius?", "answer": "29", "watermark": "SYNTHETIC"},
+    {"id": "q-rack-clean", "file": "q-rack-clean.wav", "kind": "text", "noise": "clean", "question": "What is the rack id?", "answer": "R12", "watermark": "SYNTHETIC"},
+    {"id": "q-rack-datacenter", "file": "q-rack-datacenter.wav", "kind": "text", "noise": "datacenter", "question": "What is the rack id?", "answer": "R12", "watermark": "SYNTHETIC"},
+    {"id": "q-servers-clean", "file": "q-servers-clean.wav", "kind": "number", "noise": "clean", "question": "How many servers are online?", "answer": "16", "watermark": "SYNTHETIC"},
+    {"id": "q-servers-datacenter", "file": "q-servers-datacenter.wav", "kind": "number", "noise": "datacenter", "question": "How many servers are online?", "answer": "16", "watermark": "SYNTHETIC"},
+    {"id": "q-speed-clean", "file": "q-speed-clean.wav", "kind": "number", "noise": "clean", "question": "What is the fan speed percent?", "answer": "80", "watermark": "SYNTHETIC"},
+    {"id": "q-speed-datacenter", "file": "q-speed-datacenter.wav", "kind": "number", "noise": "datacenter", "question": "What is the fan speed percent?", "answer": "80", "watermark": "SYNTHETIC"}
+  ]
+}

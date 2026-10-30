@@ -479,6 +479,50 @@
             }
           }
         },
+        "spoken_test": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "label": { "type": "string" },
+            "transcriber": { "type": "string" },
+            "passed": { "type": "boolean" },
+            "checked": { "type": "integer" },
+            "passed_count": { "type": "integer" },
+            "missed": { "type": "array", "items": { "type": "string" } },
+            "missed_noisy": { "type": "array", "items": { "type": "string" } },
+            "reason": { "type": "string" },
+            "model": { "type": "string" },
+            "energy": {
+              "type": "object",
+              "properties": {
+                "label": { "type": "string" },
+                "meter": { "type": "string" },
+                "wh_per_answer": { "type": ["number", "null"] },
+                "j_per_spoken_answer": { "type": ["number", "null"] },
+                "j_per_correct_spoken": { "type": ["number", "null"] },
+                "j_per_token": { "type": ["number", "null"] },
+                "j_per_correct_answer": { "type": ["number", "null"] }
+              }
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "kind": { "type": "string" },
+                  "noise": { "type": "string" },
+                  "expected": { "type": "string" },
+                  "got": { "type": "string" },
+                  "ok": { "type": "boolean" },
+                  "label": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
         "wonder_chart": {
           "type": [
             "object",

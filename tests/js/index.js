@@ -8,6 +8,7 @@ import "./fallback.test.mjs";
 import "./run_a11y.test.mjs";
 import "./partners.test.mjs";
 import "./eyetest.test.mjs";
+import "./spokenanswer.test.mjs";
 import "./hotspotset.test.mjs";
 import "./wonderchart.test.mjs";
 import "./replayclock.test.mjs";

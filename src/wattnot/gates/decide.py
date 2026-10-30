@@ -35,7 +35,7 @@ def decide(base: TrialResult, cand: TrialResult, base_outputs: Mapping[str, str]
            slack: float = 0.10, sla_s: float | None = None, max_drop_pts: float = 1.0,
            base_wh: list[float] | None = None, cand_wh: list[float] | None = None,
            vision: GateResult | None = None, hotspot: GateResult | None = None,
-           emit=None) -> Decision:
+           spoken: GateResult | None = None, emit=None) -> Decision:
     """With per-rep Wh lists, the noise gate runs third (Welch + bootstrap CI).
 
     ``vision`` is an optional pre-computed eye-test ``GateResult`` (see
@@ -47,6 +47,12 @@ def decide(base: TrialResult, cand: TrialResult, base_outputs: Mapping[str, str]
     (see ``wattnot.sam.hotspot_set.hotspot_set_gate``). When given it joins the
     gate set the same way, so a candidate that breaks the hotspot detector on
     the SYNTHETIC scenes is rejected and rolled back.
+
+    ``spoken`` is an optional pre-computed watts-per-spoken-answer ``GateResult``
+    (see ``wattnot.spokenanswer.spoken_answer_gate``). When given it joins the
+    gate set the same way, so a candidate the served model (Glimmer) mishears on
+    the SYNTHETIC recorded questions is rejected and rolled back, exactly like
+    the eye test.
     """
 
     results = (
@@ -59,6 +65,8 @@ def decide(base: TrialResult, cand: TrialResult, base_outputs: Mapping[str, str]
         results = (*results, vision)
     if hotspot is not None:
         results = (*results, hotspot)
+    if spoken is not None:
+        results = (*results, spoken)
     if emit is not None:
         for r in results:
             emit.emit("gate.result", r.event_data(cand.trial_id),
