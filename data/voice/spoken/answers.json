@@ -1,7 +1,9 @@
 {
   "spec": "wattnot.spokenanswer/1",
   "label": "SYNTHETIC",
-  "note": "Watts-per-spoken-answer assets. The 20 recordings are SYNTHETIC: spoken test questions (clean and data-center-noise takes) recorded for this gate. Muse Voice Transcribe (muse-voice-transcribe-1.0) transcribes them once via scripts/gen_spoken_assets.py, a one-time paid script never run by tests; the cached text lives in transcripts.json. The committed .wav files are offline PLACEHOLDERS so the gate and its tests read without a paid call.",
+  "source": "stub-offline",
+  "source_note": "Honest provenance of the .wav FILES (not the SYNTHETIC question content). 'stub-offline' = the committed 364-byte WAVs are stubs; the no-mock guard refuses a live run on them (they are also < 10 KB). scripts/gen_spoken_assets.py rewrites this to 'TTS-espeak-ng' (or whichever offline TTS it used) after it synthesizes the real audio from the question text.",
+  "note": "Watts-per-spoken-answer assets. The 20 recordings are SYNTHETIC test questions (clean and data-center-noise takes). scripts/gen_spoken_assets.py synthesizes the real audio from the question text with an offline TTS and writes transcripts.json (the transcript of each take is the question text itself). The committed .wav files are offline STUBS so the gate and its tests read without any generation; a live run needs the real WAVs.",
   "transcriber": {
     "model": "muse-voice-transcribe-1.0",
     "endpoint": "{META_BASE_URL}/asr/transcribe",
