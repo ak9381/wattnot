@@ -19,7 +19,7 @@ Commands::
 This module is import-safe: importing it runs no API calls and has no required side effects, so
 the launch-rule helpers can be unit tested on a host without the ``post`` helper.
 """
-import datetime as dt, json, os, subprocess, sys, time
+import argparse, datetime as dt, json, os, subprocess, sys, time
 
 _POST_DIR = os.environ.get("E2E_POST_DIR", "/workspace/e2e")
 if os.path.isdir(_POST_DIR) and _POST_DIR not in sys.path:
@@ -33,6 +33,10 @@ P = dict(project_id=18993, location="Delhi")
 SKU_ID, PRICE_ID = 525, 7087          # GDC.1xH10080-26.250GB_SXM_v3, Rs379.05/h (same as RUN1)
 SG, SSHKEY = 34486, 4364
 MAX_H = float(os.environ.get("RUN3_MAX_H", "2"))   # Glimmer test VM: 2 h hard cap
+# Default-on spend backstop for the watchdog (INR, taxed). Sized for the 2 h test (2 h x Rs451.2 =
+# Rs902, well under this), so it is a backstop, not the primary rail; raise it for a longer run.
+BUDGET_CAP_INR = float(os.environ.get("RUN3_BUDGET_CAP_INR", "2000"))
+INR_PER_H = 451.2   # E2E H100 + GST + disk (MEASURED price list), matches the driver
 DISK_GB = int(os.environ.get("RUN3_DISK_GB", "500"))   # first 30 GB free, then ~Rs5/GB/month (about Rs350/month for 100 GB; hours here = a few rupees)
 IMAGE_VERSION_ID = 111   # Ubuntu 24.04, CUDA 13.0 (checked in the E2E image list, Delhi)
 # E2E's launch gate needs the prepaid balance to cover the whole VM lifetime at
@@ -97,14 +101,51 @@ def delete():
         os.replace(f"{D}/vm.json", f"{D}/vm.{v['id']}.deleted.json")   # kept for the record; frees the next launch
         print("DELETED+VERIFIED")
     else: print("NOT CONFIRMED - retry delete / check console", file=sys.stderr); sys.exit(2)
-def main():
-    c = sys.argv[1]
+def _nomock_or_die():
+    """Run the no-mock preflight before a live launch; refuse if any live input/step is a mock.
+    Importing wattnot needs the repo src on the path (ctl.py runs from scripts/e2e)."""
+    src = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                       "src")
+    if src not in sys.path:
+        sys.path.insert(0, src)
+    try:
+        from wattnot.longrun import nomock
+    except Exception as e:  # noqa: BLE001 - never silently skip; a broken guard blocks the launch
+        print(f"no-mock preflight could not load ({type(e).__name__}: {e}); refusing to launch",
+              file=sys.stderr)
+        sys.exit(6)
+    report = nomock.audit_plan("glimmer-test")
+    if not report["ok"]:
+        print("NO-MOCK preflight FAILED; refusing to launch the live VM:", file=sys.stderr)
+        for f in report["findings"]:
+            print(f"  - {f['where']}: {f['what']}\n      fix: {f['fix']}", file=sys.stderr)
+        sys.exit(6)
+    print(f"no-mock preflight OK ({len(report['checked'])} blocks checked)")
+
+
+def main(argv=None):
+    argv = sys.argv[1:] if argv is None else argv
+    # subcommands + one-line help mirror the "Commands::" block above. No command / an unknown one
+    # makes argparse print usage to stderr and exit 2 (never an IndexError on sys.argv[1]).
+    p = argparse.ArgumentParser(prog="ctl.py", description=(__doc__ or "").strip().split("\n")[0])
+    sub = p.add_subparsers(dest="cmd", required=True, metavar="command")
+    sub.add_parser("images", help="list VM images (find the image_version_id to launch)")
+    pl = sub.add_parser("launch", help="needs env RUN3_GO=1; refuses if vm.json already exists")
+    pl.add_argument("--image-version-id", type=int, default=None,
+                    help=f"image_version_id to launch (default {IMAGE_VERSION_ID})")
+    sub.add_parser("status", help="show VM status + IP (writes the ip file when found)")
+    sub.add_parser("wait", help="poll until the IP shows (no GPU work happens here)")
+    sub.add_parser("delete", help="DELETE + verify (GET must be 404 / list empty)")
+    sub.add_parser("watchdog", help="deletes near the deadline, on low balance, or over the spend cap")
+    a = p.parse_args(argv)
+    c = a.cmd
     if c == "images":
         s, j = call("GET", "gpu/gpu_service/image/", category="vm", location="Delhi")
         for im in (j.get("data") or []):
             print(im["image_id"], im["name"], [(x["image_version_id"], x["version"]) for x in im["versions"]][:6])
     elif c == "launch":
         assert os.environ.get("RUN3_GO") == "1", "no go-ahead: set RUN3_GO=1 only after Akash approves"
+        _nomock_or_die()   # refuse to launch a live VM onto mock/placeholder/stub inputs
         VM_NAME = "wattnot-run3"
         # (1) O_EXCL lock: atomic, so two launchers can never both get past this point and both
         #     POST a VM. A second attempt (or a crashed prior one) refuses instead of racing.
@@ -134,7 +175,7 @@ def main():
                 subprocess.Popen([sys.executable, __file__, "watchdog"], stdout=open(f"{D}/wd.out", "a"),
                                  stderr=subprocess.STDOUT, start_new_session=True)
                 return
-            ivid = int(sys.argv[sys.argv.index("--image-version-id") + 1]) if "--image-version-id" in sys.argv else IMAGE_VERSION_ID
+            ivid = a.image_version_id if a.image_version_id is not None else IMAGE_VERSION_ID
             pub = open(os.path.expanduser("~/.ssh/e2e_h100.pub")).read().strip()
             body = dict(name=VM_NAME, cluster_type="tir-cluster", image_type="pre-built", kind="vm",
                         is_jupyterlab_enabled=False, notebook_type="new", notebook_url="", disk_size_in_gb=DISK_GB,
@@ -180,9 +221,14 @@ def main():
         print("no IP after 15 min", file=sys.stderr); sys.exit(3)
     elif c == "delete": delete()
     elif c == "watchdog":
+        launch_ts = dt.datetime.fromisoformat(vm()["launch_ts"])
         dl = dt.datetime.fromisoformat(vm()["deadline"]) - dt.timedelta(minutes=8)
         while dt.datetime.now() < dl:
             if os.path.exists(f"{D}/DELETED"): return
+            # default-on spend backstop: tear down if the elapsed VM time has cost more than the cap
+            spent = (dt.datetime.now() - launch_ts).total_seconds() / 3600.0 * INR_PER_H
+            if spent >= BUDGET_CAP_INR:
+                open(f"{D}/ctl.log","a").write(f"{dt.datetime.now()} SPEND WATCHDOG Rs{spent:.0f} >= cap Rs{BUDGET_CAP_INR:.0f}\n"); break
             try:
                 b = balance(); open(f"{D}/balance.log","a").write(f"{dt.datetime.now()} {b:.2f}\n")
                 if b < 1500: open(f"{D}/ctl.log","a").write(f"{dt.datetime.now()} BALANCE WATCHDOG {b:.2f}\n"); break

@@ -9,6 +9,8 @@ import re
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 CTL = ROOT / "scripts" / "e2e" / "ctl.py"
 
@@ -45,6 +47,36 @@ _SECRET_PATTERNS = [
     re.compile(r"[A-Za-z][A-Za-z0-9+.\-]*://[^/\s:@]+:[^/\s:@]+@"),  # scheme://user:pass@host
     re.compile(r"(?<![\w.])\d{1,3}(?:\.\d{1,3}){3}(?![\w.])"),       # literal dotted-quad IPv4
 ]
+
+
+def test_no_command_exits_2_not_indexerror(monkeypatch, tmp_path, capsys):
+    monkeypatch.setenv("E2E_POST_DIR", str(tmp_path / "nope"))
+    monkeypatch.setitem(sys.modules, "post", None)
+    m = _load()
+    with pytest.raises(SystemExit) as e:
+        m.main([])                       # no command: argparse usage, not IndexError on sys.argv[1]
+    assert e.value.code == 2
+    assert "usage" in capsys.readouterr().err.lower()
+
+
+def test_help_lists_the_subcommands(monkeypatch, tmp_path, capsys):
+    monkeypatch.setenv("E2E_POST_DIR", str(tmp_path / "nope"))
+    monkeypatch.setitem(sys.modules, "post", None)
+    m = _load()
+    with pytest.raises(SystemExit) as e:
+        m.main(["--help"])
+    assert e.value.code == 0
+    out = capsys.readouterr().out
+    assert "launch" in out and "watchdog" in out and "delete" in out
+
+
+def test_unknown_command_exits_2(monkeypatch, tmp_path):
+    monkeypatch.setenv("E2E_POST_DIR", str(tmp_path / "nope"))
+    monkeypatch.setitem(sys.modules, "post", None)
+    m = _load()
+    with pytest.raises(SystemExit) as e:
+        m.main(["frobnicate"])
+    assert e.value.code == 2
 
 
 def test_no_hardcoded_secrets():
