@@ -73,7 +73,7 @@ class ServedVisionAnswerer:
     def _body(self, item: EyeTestItem) -> dict:
         return {
             "model": self.model,
-            "max_completion_tokens": 32,
+            "max_completion_tokens": 1024,  # Glimmer reasons first; 32 left content empty
             "temperature": 0,
             "messages": [{"role": "user", "content": [
                 {"type": "text", "text": f"{item.question} {_INSTRUCTION}"},

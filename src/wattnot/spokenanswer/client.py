@@ -70,7 +70,7 @@ class ServedSpokenAnswerer:
     def _body(self, item: SpokenItem) -> dict:
         return {
             "model": self.model,
-            "max_completion_tokens": 32,
+            "max_completion_tokens": 1024,  # Glimmer reasons first; 32 left content empty
             "temperature": 0,
             "messages": [{"role": "user",
                           "content": f"{self._question(item)} {_INSTRUCTION}"}],

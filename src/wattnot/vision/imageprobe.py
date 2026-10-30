@@ -54,7 +54,7 @@ def _data_uri(png: bytes) -> str:
 def _body(model: str, data_uri: str) -> dict:
     return {
         "model": model,
-        "max_completion_tokens": 16,
+        "max_completion_tokens": 1024,  # Glimmer reasons first; 16 left content empty
         "temperature": 0,
         "messages": [{"role": "user", "content": [
             {"type": "text", "text": f"What digit is shown in the image? {_INSTRUCTION}"},
