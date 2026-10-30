@@ -12,6 +12,7 @@ rehearse-run3:
 lint:
 	python -m ruff check .
 
-# Placeholder until the demo lands (see later tasks).
+# Open the dashboard on the bundled replay. No GPU, no network, no key.
+# Needs WattNot installed (pip install -e .); run scripts/setup.sh first if not.
 demo:
-	@echo "wattnot demo: not built yet. Run 'make test' and 'make lint' for now."
+	python -m wattnot.cli demo

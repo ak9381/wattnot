@@ -8,9 +8,49 @@ H100 run: `bash scripts/h100_run.sh --dry-run` first, then see [docs/runbooks/H1
 
 **Every model WattNot runs is a Meta model (Glimmer, Llama, Spark, SAM 3.1, Wonder).**
 
-## For judges: check it in five minutes
+## For judges
 
-- **Replay, no install:** https://ak9381.github.io/wattnot/ (a replay of measured logs; nothing runs live). Open the **Proof** tab.
+**Fastest path — one command, then `wattnot demo`.** Clone the repo and run the
+setup script for your OS; it makes a local virtual environment, installs WattNot
+into it, and leaves you one step from the dashboard. No GPU, no network beyond
+PyPI, no key, nothing billed. Typical time from clone to dashboard is under two
+minutes.
+
+macOS (Intel or Apple Silicon) and Linux:
+
+```bash
+git clone https://github.com/ak9381/wattnot.git && cd wattnot
+bash scripts/setup.sh && source .venv/bin/activate && wattnot demo
+```
+
+Windows (PowerShell):
+
+```powershell
+git clone https://github.com/ak9381/wattnot.git; cd wattnot
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
+.\.venv\Scripts\Activate.ps1; wattnot demo
+```
+
+Prefer to do it by hand? With Python 3.11+ on your PATH: `pip install -e .` then
+`wattnot demo`. The demo picks a free port if 8765 is busy and opens your
+browser; pass `--no-browser` or `--port N` if you'd rather it didn't. If
+anything goes sideways, see [Troubleshooting](#troubleshooting).
+
+**What you'll see.** `wattnot demo` replays a recorded H100 run: the measured
+power-cap sweep (RUN2), each Muse Spark planner decision with its reasoning,
+the quality and p99 gate (including why 325 W was rolled back), and a signed
+receipt you can re-verify. Start on the **Proof** tab.
+
+**Nothing needs a key, a GPU or a paid call.** The demo plays back recorded
+logs — no Baseten key, no Meta API key, no Modal account, no GPU, no money
+spent. (A hosted replay of the same data is also at
+https://ak9381.github.io/wattnot/ if you'd rather not install anything.)
+
+**Every number carries a label:** **MEASURED** (recorded on a real H100),
+**ESTIMATE** (scaled from a measured number), and **SIMULATED / MOCK**
+(a software model or placeholder, hidden until you flip the "Illustrations"
+switch). The headline below is MEASURED.
+
 - **Headline (RUN2, MEASURED):** -27.1% joules per correct answer at a 350 W cap on an H100 (17.03 to 12.42 J), pass rate unchanged at 93.7% on 666 checked answers. RUN2 quality was judged by fixed answer checks (deterministic string and number matching, no model as a judge); results with the Meta judge (hosted Muse Spark, with a Llama 3.1 8B fallback) are reported separately when measured.
 - **What Spark decided:** every Muse Spark planner call in RUN2 (400 W, 350 W, 325 W, stop), with its reasoning, latency, tokens and the gate verdict. 325 W failed the p99 gate (+10.95% against a 10% limit); the (i) button explains why.
 - **Verify a receipt yourself:**
@@ -74,6 +114,38 @@ python -m wattnot.proof.run full --out results/proof     # control, planner caps
 ```
 
 `full` runs the whole proof. `step` and `control` write one result each, so a planner on another machine can drive the host. The dry run on a fake meter lives in the tests: `python -m pytest tests/test_proof.py -q`.
+
+## Troubleshooting
+
+The demo is meant to run on whatever a judge already has — Windows, macOS
+(Intel or Apple Silicon) or Linux, with or without a GPU or Docker.
+
+- **"Python 3.11 or newer" error, or `wattnot: command not found`.** WattNot
+  needs Python 3.11+. Check with `python --version` (`python3 --version` on
+  macOS/Linux). Install from [python.org/downloads](https://www.python.org/downloads/)
+  — on Windows tick "Add python.exe to PATH" — then open a new terminal and run
+  the setup script again. The `wattnot` command only exists after you activate
+  the virtual environment (`source .venv/bin/activate`, or
+  `.\.venv\Scripts\Activate.ps1` on Windows); until then use
+  `python -m wattnot.cli demo`.
+- **PowerShell won't run the script ("running scripts is disabled").** Start it
+  with `powershell -ExecutionPolicy Bypass -File scripts\setup.ps1`, which
+  bypasses the policy for that one run without changing a system setting.
+- **`python -m venv` fails on Linux.** Some distributions ship venv separately:
+  `sudo apt install python3-venv` (Debian/Ubuntu), then re-run `bash scripts/setup.sh`.
+- **The browser didn't open, or the port is busy.** The demo prints the URL it
+  is serving (it picks a free port if 8765 is taken). Open that URL by hand, or
+  re-run with `wattnot demo --port 8080`. Use `--no-browser` on a headless box.
+- **No GPU? No Docker?** Neither is needed. The demo replays recorded logs; any
+  `nvidia-smi`/NVML telemetry falls back to a labelled mock, and nothing is
+  launched.
+- **"pip install failed" behind a proxy or offline.** The only network the
+  setup touches is PyPI. On a restricted network, set `PIP_INDEX_URL` to your
+  mirror, or install the wheels once on a connected machine and copy the
+  `.venv`.
+- **Nothing should ever bill you.** The demo makes no Meta/Baseten/Modal call;
+  no key is read. If a command asks for a key, you're past the demo — those
+  live paths are opt-in and documented in `docs/runbooks/`.
 
 ## Cloud mode (hosted Muse Spark Open on Baseten)
 
