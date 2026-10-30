@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
 from wattnot.spokenanswer.assets import load_spoken_set, load_transcripts
@@ -77,10 +76,14 @@ def main(argv: list[str] | None = None) -> int:
         FAKE_WH_PER_ANSWER if mode == "fake" else None)
     energy = None
     if wh is not None:
+        # On a live (metered) run we never invent a token count: if
+        # --tokens-per-answer is omitted, j_per_token stays None rather than
+        # stamping the MOCK fallback with a MEASURED label. The fake runner,
+        # which has no meter, keeps the MOCK placeholder so the panel fills.
         energy = spoken_energy(
             wh_per_answer=wh,
-            tokens_per_answer=(args.tokens_per_answer
-                               if args.tokens_per_answer is not None else FAKE_TOKENS_PER_ANSWER),
+            tokens_per_answer=(args.tokens_per_answer if args.tokens_per_answer is not None
+                               else (FAKE_TOKENS_PER_ANSWER if mode == "fake" else None)),
             pass_rate=pass_rate,
             label="MOCK" if mode == "fake" else "MEASURED",
             j_per_correct_answer=(args.j_per_correct_answer if args.j_per_correct_answer is not None
