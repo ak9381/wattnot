@@ -167,3 +167,25 @@ inference, not the 13 s generation hot path. No launch and no paid call: dry run
 offline answerer (`wattnot.vision.run --fake`); the one-time paid image generation lives
 only in `scripts/gen_vision_assets.py` (needs `WATTNOT_GEN_VISION_GO=1`, never run by
 tests). Every generated image carries an ESTIMATE energy stamp.
+
+---
+
+## Vision gate review (2026-10-30) — GO
+
+Branch reviewed: `feat/vision-gate-1030` (eye test, SAM synthetic hotspot set, Wonder reads
+the chart, watts per spoken answer, talk to the tuner, review fixes). Merged into main from
+`feat/vision-gate-1030-clean`, which has the same code with tool trailers removed from three
+commit messages.
+
+- Schemas: `schemas/` matches `docs/schemas/` for every file this branch touched;
+  `scripts/gen_ts_types.py --check` reports `web/types/schemas.ts` up to date.
+- Labels: new panels use SYNTHETIC (SAM hotspots, spoken questions) and ESTIMATE. One fix:
+  the tuner dry run was labelled MOCK; it is now SIMULATED and its text and speech say it
+  assumes the quality checks pass (the dry run submits with `gates_passed=True`).
+- Frontend: hotspot set, Wonder chart and spoken answer panels are imported in
+  `report.js`, CSS linked in `report.html`; the tuner plan renders through `voiceguide.js`.
+- No secrets and no AI-company names in the diff (`openai` only as the OpenAI-compatible
+  API name).
+- Integration run: `python -m pytest -q` exit 0; `node tests/js/index.js` 163 passed, 0 failed.
+
+Verdict: **GO**.
