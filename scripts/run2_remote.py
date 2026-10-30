@@ -210,7 +210,11 @@ def cmd_setup(a) -> int:
                 if buf:
                     print("[vm]", buf.decode(errors="replace")[:240])
                 rcode = int(code.strip())
-                run(f"rm -f {ROOT}/.hf_token")  # the token is no longer needed on the host
+                try:
+                    run(f"rm -f {ROOT}/.hf_token")  # the token is no longer needed on the host
+                except LinkLost:  # a drop now must not turn a finished setup into a failure
+                    print("[run2_remote] link lost removing .hf_token; setup result kept",
+                          file=sys.stderr)
                 print(f"[run2_remote] setup exit code {rcode} after {time.time() - t0:.0f} s")
                 return 0 if rcode == 0 else 2
         if time.time() - t0 > a.timeout:

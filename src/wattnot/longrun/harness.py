@@ -267,6 +267,8 @@ def measure_arm(nvml, h, chat, tasks: list[Task], arm: str, limit_w: int,
         e0, t0 = nvml.total_energy_mj(h), time.perf_counter()
         g = run_tier(chat, ts, int(CONCURRENCY[tier] * conc_scale))
         e1, wall = nvml.total_energy_mj(h), time.perf_counter() - t0
+        if e1 <= e0:   # counter reset (driver reset / Xid): fail, never record a bogus number
+            raise RuntimeError(f"energy counter did not advance in tier {tier} ({e0} -> {e1} mJ)")
         out["tiers"][tier] = {"n": len(g), "pass": sum(x.ok for x in g), "joules": (e1 - e0) / 1000,
                               "wall_s": wall, "p99_s": p99([x.latency_s for x in g]),
                               "tokens": sum(x.tokens for x in g),
