@@ -4,8 +4,8 @@
 # Two real checks on the live card and the live server:
 #   1. power-cap write: set a safe cap, read it back, restore the default. If the cap cannot be
 #      set, the whole power-sweep proof is impossible, so stop now (exit 12).
-#   2. image acceptance: send ONE small real image to the served model over the OpenAI route and
-#      fail (exit 2) if it is rejected, so the eye test never runs blind on a text-only server.
+#   2. image acceptance: send ONE small real image to the served model over the /chat/completions
+#      route and fail (exit 2) if rejected, so the eye test never runs blind on a text-only server.
 # No model weights or paid calls here; it only pokes the card and the already-running server.
 set -euo pipefail
 BASE_URL="${1:-http://127.0.0.1:8000/v1}"

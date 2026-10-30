@@ -5,8 +5,8 @@
 
 Muse Glimmer 30B reads text + one image per request. Before the eye test spends
 any budget, this sends ONE small real image (a digit drawn with PIL, inlined as
-a data URI on the OpenAI ``/chat/completions`` route, exactly as the eye test
-does) and checks the server accepts it and answers. If the server was started
+a data URI on the ``/chat/completions`` chat route, exactly as the eye test does)
+and checks the server accepts it and answers. If the server was started
 without the multimodal flag it rejects the image (HTTP 400 / "not supported"),
 and this probe fails loudly with a clear message instead of letting the eye test
 quietly score every image as a miss.
