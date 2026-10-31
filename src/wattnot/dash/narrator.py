@@ -134,9 +134,13 @@ def narrate(frames: list[dict], *, client=None, model: str = DEFAULT_MODEL) -> d
     out: dict = {}
     for sid in narrated_step_ids(frames):
         facts = _facts_for(frames, sid)
-        body = {"model": model, "temperature": 0, "max_tokens": 120, "messages": [
-            {"role": "system", "content": _SYSTEM},
-            {"role": "user", "content": _prompt(facts)}]}
+        # reasoning_effort "minimal" is required: muse-spark otherwise spends the whole token
+        # budget on reasoning and returns empty content. Even at "minimal" it uses ~200 reasoning
+        # tokens on these structured prompts, so max_tokens must leave room for that PLUS the
+        # one/two-sentence line, or the reply is cut off (finish_reason "length", empty content).
+        body = {"model": model, "temperature": 0, "max_tokens": 512, "reasoning_effort": "minimal",
+                "messages": [{"role": "system", "content": _SYSTEM},
+                             {"role": "user", "content": _prompt(facts)}]}
         try:
             reply = client(body, purpose="dash-narrate")
             text = ((reply.get("choices") or [{}])[0].get("message") or {}).get("content")
@@ -159,9 +163,20 @@ def _default_client():
 
 # ---------------------------------------------------------------- the cache layer
 
+def cache_key(run_id: str) -> str:
+    """The stable part of a run_id to key the cache on.
+
+    runplan run_ids are ``run_<date>_<time>_<cfghash6>`` -- the timestamp changes on every
+    ``plan()`` call (the dashboard server builds the replay with ``now`` unset), so only the
+    trailing config hash is stable. Keying on it lets the cache written here be found by a later
+    replay of the same config, whatever its timestamp. A run_id without that shape keys on itself.
+    """
+    return run_id.rsplit("_", 1)[-1] or run_id
+
+
 def cache_path_for(run_id: str, root: str | Path | None = None) -> Path:
-    """Where a run's narration cache lives: ``<root>/<run_id>.json`` (default root ``data/narration-1031``)."""
-    return Path(root or CACHE_ROOT) / f"{run_id}.json"
+    """Where a run's narration cache lives: ``<root>/<cache_key>.json`` (default root ``data/narration-1031``)."""
+    return Path(root or CACHE_ROOT) / f"{cache_key(run_id)}.json"
 
 
 def generate_and_cache(frames: list[dict], cache_path: str | Path, *, client=None,

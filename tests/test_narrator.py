@@ -119,9 +119,14 @@ def test_load_cache_drops_mislabelled_entries(tmp_path):
     assert loaded["room.pick#1"]["label"] == "LIVE"
 
 
-def test_cache_path_for_uses_run_id_under_root():
-    p = narrator.cache_path_for("run_x", root="/tmp/narr")
-    assert p == Path("/tmp/narr/run_x.json")
+def test_cache_path_for_keys_on_stable_config_hash():
+    # The timestamp in a run_id changes every plan() call, so the cache keys on the trailing
+    # config hash: two timestamps of the same config resolve to the same cache file.
+    a = narrator.cache_path_for("run_20261031_120000_4604f3", root="/tmp/narr")
+    b = narrator.cache_path_for("run_20261031_235959_4604f3", root="/tmp/narr")
+    assert a == b == Path("/tmp/narr/4604f3.json")
+    # A run_id without the timestamped shape keys on itself.
+    assert narrator.cache_path_for("run_x", root="/tmp/narr") == Path("/tmp/narr/x.json")
 
 
 # ---------------------------------------------------------------- plan() wiring
