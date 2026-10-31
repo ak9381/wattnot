@@ -200,6 +200,7 @@ def fingerprint(a) -> dict:
     keys = (
         "mode", "model", "port", "concurrency", "settle_s", "load_s", "max_proposals", "planner",
         "sam", "room", "adaptive", "adaptive_model", "adaptive_mass", "remote_out", "profile",
+        "reasoning_floor",
         *PROFILE_FIELDS,
     )
     fp = {k: getattr(a, k, None) for k in keys}
@@ -256,6 +257,8 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
         "--counterbalance" if a.counterbalance else "--no-counterbalance",
         "--control-blocks",
         str(a.control_blocks),
+        "--reasoning-floor",
+        str(getattr(a, "reasoning_floor", 0)),
         "--emit",
     ]
     if mock:
@@ -1273,6 +1276,9 @@ def main(argv=None) -> int:
     ap.add_argument("--port", type=int, default=8000)
     add_profile_args(ap)
     ap.add_argument("--concurrency", type=int, default=32)
+    ap.add_argument("--reasoning-floor", type=int, default=0,
+                    help="min completion tokens per request for a reasoning model (forwarded to "
+                         "each VM step), so proof-v1's small QA/math caps are not cut off")
     ap.add_argument("--settle-s", type=float, default=4.0)
     ap.add_argument(
         "--load-s", type=float, default=30.0, help="room scan: seconds of load at stock"

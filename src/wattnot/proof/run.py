@@ -215,6 +215,7 @@ def open_rig(args) -> tuple[Rig, object]:  # pragma: no cover
                   concurrency=args.concurrency, repeat=args.repeat, settle_s=args.settle_s,
                   warmup=args.warmup, warmup_s=args.warmup_s, burn_in=args.burn_in,
                   counterbalance=args.counterbalance, control_blocks=args.control_blocks,
+                  reasoning_floor=getattr(args, "reasoning_floor", 0),
                   sleep=lambda x: time.sleep(min(x, 0.2)))
         return rig, _NoGuard()
     from wattnot.control.nvml_ctl import CapGuard
@@ -227,7 +228,8 @@ def open_rig(args) -> tuple[Rig, object]:  # pragma: no cover
     rig = Rig(nvml, handle, client, wl, concurrency=args.concurrency, repeat=args.repeat,
               settle_s=args.settle_s, warmup=args.warmup, warmup_s=args.warmup_s,
               burn_in=args.burn_in, counterbalance=args.counterbalance,
-              control_blocks=args.control_blocks)
+              control_blocks=args.control_blocks,
+              reasoning_floor=getattr(args, "reasoning_floor", 0))
     return rig, guard
 
 
@@ -285,6 +287,10 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover
                     help="step: SM clock profile for the cap arm (falls back to caps-only)")
     add_profile_args(ap)
     ap.add_argument("--concurrency", type=int, default=32)
+    ap.add_argument("--reasoning-floor", type=int, default=0,
+                    help="min completion tokens per request for a reasoning model (e.g. 1024 for "
+                         "Glimmer), so proof-v1's small QA/math caps are not cut off; the "
+                         "deliberately-short control is left truncated")
     ap.add_argument("--grid", default=",".join(map(str, DEFAULT_GRID)))
     ap.add_argument("--planner", choices=["muse", "bisect"], default="muse")
     ap.add_argument("--max-proposals", type=int, default=4)

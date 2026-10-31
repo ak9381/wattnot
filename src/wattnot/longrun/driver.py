@@ -259,6 +259,9 @@ def sweep_live_argv(out: Path, live_file: Path, guard_cfg: str, *, sweep_budget_
                "--profile", "quick", "--planner", "wonder", "--wonder-live", "--no-adaptive",
                "--fresh", "--sweep-budget-s", str(sweep_budget_s), "--warmup", str(warmup),
                "--reps", str(reps), "--grid", grid,
+               # Glimmer reasons before answering: floor each request so proof-v1's small QA/math
+               # caps are not cut off (the gap test lost 64/64 QA answers). Thinking stays ON.
+               "--reasoning-floor", "1024",
                "--sign-key", "receipt-offline-key.pem",
                "--sam", "live", "--warmup-s", str(warmup_s), "--burn-in", "1", "--counterbalance",
                "--approval-policy", APPROVAL_POLICY, "--policy-hold-s", "20",

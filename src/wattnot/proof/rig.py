@@ -25,16 +25,32 @@ def pooled_items(workload: Workload, copies: int) -> list[WorkloadItem]:
     return [dataclasses.replace(it, id=f"{it.id}#{c}") for c in range(copies) for it in workload]
 
 
+def request_tokens(item_max_tokens: int, token_scale: float, reasoning_floor: int = 0) -> int:
+    """Completion-token cap for one request. A reasoning model (Glimmer, served with a reasoning
+    parser) thinks before the answer, so proof-v1's small per-item caps cut the answer off
+    (finish=length): the gap test lost 64/64 QA answers and ~40% of math in every block. The floor
+    gives every request room for thinking + answer. It is applied ONLY on the normal path; the
+    deliberately-short control (`token_scale` < 1) must stay truncated so the gate self-check still
+    rejects a bad setting."""
+    cap = max(8, int(item_max_tokens * token_scale))
+    if reasoning_floor and token_scale >= 1.0:
+        cap = max(cap, reasoning_floor)
+    return cap
+
+
 class Rig:
     def __init__(self, nvml, handle, client: ChatClient, workload: Workload, *,
                  concurrency: int = 32, repeat: int = 2, settle_s: float = 4.0, warmup: int = 16,
                  warmup_s: float = 0.0, burn_in: int = 0, counterbalance: bool = False,
-                 control_blocks: int = 0, sleep: Callable[[float], None] = time.sleep,
+                 control_blocks: int = 0, reasoning_floor: int = 0,
+                 sleep: Callable[[float], None] = time.sleep,
                  on_phase: Callable[..., None] | None = None,
                  on_sample: Callable[[dict], None] | None = None) -> None:
         self.nvml, self.handle, self.client, self.workload = nvml, handle, client, workload
         self.concurrency, self.repeat, self.settle_s, self.warmup = (
             concurrency, repeat, settle_s, warmup)
+        # a reasoning model's per-request completion floor (0 = off, for non-reasoning models)
+        self.reasoning_floor = reasoning_floor
         # noise controls (see wattnot.proof.profile): a timed warm-up before every block, one
         # unmetered stock block before the first measurement, alternating arm order, and extra
         # stock blocks in the gate self-check so stock-vs-stock noise is measured, not assumed
@@ -68,18 +84,19 @@ class Rig:
                  readback_w=int(self.nvml.power_limit_mw(self.handle)) // 1000,
                  settle_s=self.settle_s)
         items = list(self.workload)
+
+        def tokens_for(it) -> int:
+            return request_tokens(it.max_tokens, token_scale, self.reasoning_floor)
         self._ph("warmup", "start", n=self.warmup)
         for k in range(self.warmup):
             it = items[k % len(items)]
-            self.client.ask(it.prompt, max(8, int(it.max_tokens * token_scale)))
+            self.client.ask(it.prompt, tokens_for(it))
         if self.warmup_s > 0:  # keep the card busy at this cap until clocks and temps settle
             tw = time.perf_counter()
             with ThreadPoolExecutor(max_workers=self.concurrency) as pool:
                 while time.perf_counter() - tw < self.warmup_s:
-                    list(pool.map(
-                        lambda it: self.client.ask(it.prompt, max(8, int(it.max_tokens
-                                                                         * token_scale))),
-                        items[:self.concurrency]))
+                    list(pool.map(lambda it: self.client.ask(it.prompt, tokens_for(it)),
+                                  items[:self.concurrency]))
         self._ph("warmup", "end", n=self.warmup, seconds=self.warmup_s)
         reqs = [(c, it) for c in range(self.repeat) for it in items]
         samples: list[tuple[float, float, int, int]] = []
@@ -105,8 +122,7 @@ class Rig:
         try:
             with ThreadPoolExecutor(max_workers=self.concurrency) as pool:
                 replies: list[Reply] = list(pool.map(
-                    lambda ci: self.client.ask(ci[1].prompt,
-                                               max(8, int(ci[1].max_tokens * token_scale))), reqs))
+                    lambda ci: self.client.ask(ci[1].prompt, tokens_for(ci[1])), reqs))
         finally:
             e1, t1 = int(self.nvml.total_energy_mj(self.handle)), time.perf_counter()
             stop.set()
