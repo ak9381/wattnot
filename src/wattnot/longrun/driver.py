@@ -270,7 +270,7 @@ def sweep_live_argv(out: Path, live_file: Path, guard_cfg: str, *, sweep_budget_
     with a shorter warm-up; the 375/350/325/300 W grid fills every cap even if the planner stops
     early. 300 W is the floor: it is the deepest Wonder candidate and stays above the ~294 W floor
     (58% max drop from 700 W stock; orchestrate refuses live caps below it). The approval demo
-    policy uses 45%, so it declines every sweep cap by design; the MEASURED numbers still stand."""
+    policy allows a 58% drop, so it approves every sweep cap that passes the gates."""
     return _py("wattnot.proof.orchestrate", "--mode", "live", "--host", "{HOST}",
                "--key", "{KEY}", "--model", GLIMMER_MODEL, "--out", str(out / "runs" / "t1-sweep"),
                "--profile", "quick", "--planner", "wonder", "--wonder-live", "--no-adaptive",
@@ -826,7 +826,7 @@ def write_dry_policy(out: Path) -> Path:
         dst.write_text(json.dumps({
             "format": "wattnot.auto-approve/1", "enabled": True, "allowed_labels": ["MEASURED"],
             "kinds": {"power_cap": {"min_saving_pct": 3.0, "max_p99_increase_pct": 10.0,
-                                    "max_cap_drop_pct": 45.0}},
+                                    "max_cap_drop_pct": 58.0}},
             "max_per_day": 3, "set_by": "dry-run", "set_at": "1970-01-01T00:00:00Z"}, indent=1),
             encoding="utf-8")
     return dst
