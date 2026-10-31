@@ -417,7 +417,7 @@ def _room_steps(S, scan, tgt, cfg):
     S.step("room", "rank", "Hotspot ranking: " + (", ".join(f"{r['id']} {r['temp_c']:.0f} °C" for r in rk[:3]) if rk else "–"), tag=lab,
            say="Racks are ranked by heat. " + " ".join(f"{i + 1}. {r['id']}: {r['reason']}" for i, r in enumerate(rk[:2])), inputs="°C, power, card access", outputs="a ranked list", pace=1200)
     why = f"{tgt['id']} is the hottest rack WattNot can act on. {tgt['reason']}" if tgt else "No rack in this scan has a card WattNot can act on, so there is nothing to start with."
-    S.step("room", "pick", f"Muse Spark picks: start with {tgt['id']}" if tgt else "No rack to act on", tag="SIMULATED" if ex else None,
+    S.step("room", "pick", f"Rule-based pick (Muse Spark not called): start with {tgt['id']}" if tgt else "No rack to act on", tag="SIMULATED" if ex else None,
            say=f"Start with {tgt['id']}. {tgt['reason']}" if tgt else why, inputs="the ranked list", outputs=f"target {tgt['id']}" if tgt else "none", pace=1300,
            extras=[("decision", {"choice": {"kind": "room_target", "racks": [tgt["id"]] if tgt else []}, "reason": why, "model": None,
                                  "narration_note": "Rule-based placeholder. A Muse Spark reply replaces this line when the run's event stream carries one."})])

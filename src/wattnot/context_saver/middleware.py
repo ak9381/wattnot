@@ -6,7 +6,7 @@ length, since the server's tokenizer is not available off-GPU), and offers a qua
 rolls a cut back when the pass rate drops by more than one point.
 
 No network, no secrets. Summarisation goes through an injected callable so tests use a mock and a
-live run uses a Llama 8B client.
+live run uses :class:`SparkSummarizer` (Muse Spark).
 """
 
 from __future__ import annotations
@@ -70,13 +70,13 @@ def _canon_args(arguments: object) -> str:
 
 
 class MockSummarizer:
-    """Deterministic, offline stand-in for a Llama 8B summariser (no network).
+    """Deterministic, offline stand-in for the Muse Spark summariser (no network).
 
     Keeps the first sentence and the salient words, so a summary is shorter than the source but
     still carries its keywords for retrieval. Counts how many times it was called.
     """
 
-    model = "meta-llama/Llama-3.1-8B-Instruct (mock)"
+    model = "offline-first-sentence (MOCK)"
 
     def __init__(self, max_chars: int = 160) -> None:
         self.max_chars = max_chars
@@ -88,6 +88,42 @@ class MockSummarizer:
         if len(head) > self.max_chars:
             head = head[: self.max_chars - 1].rstrip() + "…"
         return head
+
+
+class SparkSummarizer:
+    """Live summariser on Muse Spark through the guarded, ledgered Meta client.
+
+    Opt-in: pass ``SparkSummarizer()`` as ``summarize``. Every call is reserved and settled in the
+    Meta spend ledger, so the hard cap still holds. Falls back to the source's first sentence
+    (and counts a failure) if a call errors, so one bad reply never breaks the agent's request.
+    """
+
+    model = "muse-spark-1.3"
+
+    def __init__(self, client=None, max_tokens: int = 120) -> None:
+        if client is None:
+            from wattnot.meta.client import GuardedClient
+            client = GuardedClient()
+        self.client = client
+        self.max_tokens = max_tokens
+        self.calls = 0
+        self.failures = 0
+
+    def __call__(self, text: str) -> str:
+        self.calls += 1
+        body = {"model": self.model, "max_tokens": self.max_tokens, "reasoning_effort": "minimal",
+                "messages": [{"role": "system", "content": "Summarise this agent turn in one or two "
+                              "short sentences. Keep file names, numbers, ids and tool names."},
+                             {"role": "user", "content": text[:8000]}]}
+        try:
+            raw = self.client(body, purpose="context_saver.memory_compression")
+            out = str(((raw.get("choices") or [{}])[0].get("message") or {}).get("content") or "").strip()
+            if out:
+                return out
+        except Exception:  # noqa: BLE001 - never break the agent call over a summary
+            pass
+        self.failures += 1
+        return MockSummarizer.__call__(MockSummarizer(), text)
 
 
 @dataclass
@@ -122,7 +158,7 @@ class ChunkStore:
 
 @dataclass
 class MemoryCompressionMiddleware:
-    """Summarise old agent turns with Llama 8B, keep a chunk store, retrieve relevant chunks back.
+    """Summarise old agent turns (Muse Spark live, offline mock by default), keep a chunk store, retrieve relevant chunks back.
 
     The system prompt and the last ``keep_last`` messages stay verbatim. Older non-system messages
     are summarised (one chunk each) into ``store``; then the chunks most relevant to the latest
