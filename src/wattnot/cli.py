@@ -82,6 +82,10 @@ def build_parser() -> argparse.ArgumentParser:
     rj = rsub.add_parser("joules", help="print joules per answer and per good answer")
     rj.add_argument("receipt", help="receipt JSON file")
     rj.add_argument("--json", action="store_true", help="print the derived block as JSON")
+    rcv = rsub.add_parser("convert", help="build a judge pack the standalone verifier checks "
+                                          "(copies receipts unchanged, checks addenda; signs nothing)")
+    rcv.add_argument("src", nargs="?", default="receipts", help="receipts folder")
+    rcv.add_argument("--out", default="judge-pack", help="output folder (default %(default)s)")
     rcl = rsub.add_parser("from-cloud", help="adapt a cloud receipt to the receipt spec "
                                              "(grade capped at ESTIMATE)")
     rcl.add_argument("cloud_receipt", help="cloud-receipts/cloud_<id>.json")
@@ -118,6 +122,15 @@ def build_parser() -> argparse.ArgumentParser:
 def _run_receipt(a: argparse.Namespace) -> int:
     from wattnot.receipt import build_from_dir
 
+    if a.receipt_cmd == "convert":
+        import importlib.util
+        vdir = Path(__file__).resolve().parents[2] / "verifier"
+        spec = importlib.util.spec_from_file_location("convert_receipts", vdir / "convert_receipts.py")
+        if spec is None or not (vdir / "convert_receipts.py").exists():
+            raise ValueError("verifier/convert_receipts.py not found (run from a source checkout)")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.main([a.src, "--out", a.out])
     if a.receipt_cmd == "sign":
         from wattnot.receipt.sign import sign
         out = sign(a.receipt, no_rekor=a.no_rekor, key_path=a.key)
