@@ -610,8 +610,12 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                     break
                 measure(int(prop["cap_w"]), by, prop["reason"], prop.get("clock_profile"),
                         prop.get("trace_id"))
+            # the grid is the mandatory coverage (retest 31 Oct: the 840 s budget was spent on the
+            # first Wonder cap and 350/325/300 W were silently skipped). The budget only limits
+            # Wonder's extra proposals above; every grid cap is always measured, and the driver's
+            # block timeout is the hard time rail.
             for cap in a.grid or ():
-                if cap in tried or (deadline and time.time() > deadline):
+                if cap in tried:
                     continue
                 measure(cap, "grid", None)
             best = best_of(done)
@@ -1163,8 +1167,19 @@ def finish_receipt(
         parent="receipt",
         inputs="sorted keys, no whitespace (RFC 8785)",
     ) as st:
+        from wattnot.receipt.canon import scrub_nonfinite
+        clean, nonfinite = scrub_nonfinite(body)
+        if nonfinite:
+            # e.g. a 95% interval from one paired round: null with a reason, never a crash
+            body.clear()
+            body.update(clean)
+            body["nonfinite"] = {
+                "paths": nonfinite,
+                "why": "not computable (NaN/Infinity), written as null; usually a 95% interval "
+                       "or p-value from fewer than 2 paired rounds"}
         digest = canonical_sha256(body)
-        st.outputs = f"{len(body)} top-level fields"
+        st.outputs = f"{len(body)} top-level fields" + (
+            f"; {len(nonfinite)} non-finite value(s) written as null" if nonfinite else "")
     with s.step(
         "receipt.hash",
         "receipts",

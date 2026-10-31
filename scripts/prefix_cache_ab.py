@@ -56,6 +56,8 @@ def annotate_combined(summ: dict, cap_on: int, cap_off: int) -> dict:
     """Label a combined-block summary: the headline J/correct change is the combined saving %
     (best cap + prefix ON vs stock baseline + prefix OFF). Negative = a saving."""
     summ["mode"] = "combined"
+    # name both levers so the raw JSON is not read as a prefix-only result
+    summ["lever"] = "power_cap + enable_prefix_caching"
     summ["caps"] = {"on_prefix_w": cap_on, "off_baseline_w": cap_off}
     summ["combined_saving_pct"] = summ["headline"]["j_per_correct_change_pct"]
     return summ
@@ -119,7 +121,10 @@ def _real(out: Path, o) -> dict:  # pragma: no cover - needs a GPU and vLLM
                     "ttft_ms": PC.ttft_ms_from_metrics(m0, m1), "p99_ms": (b.get("p99_s") or 0) * 1000,
                     "cache_hit_rate": PC.hit_rate_from_metrics(m0, m1),
                     "reasoning_token_share": round(rtok / ctok, 4) if ctok else None,
-                    "reasoning_measured": bool(b.get("reasoning_measured"))}
+                    "reasoning_measured": bool(b.get("reasoning_measured")),
+                    # carry the arm's request-error count so a failed request can't silently
+                    # flatter either arm's J/correct (mirrors wattnot.proof.session.summarize)
+                    "errors": b.get("errors") or 0, "truncated": b.get("truncated") or 0}
         finally:
             if srv is not None:
                 srv.terminate()

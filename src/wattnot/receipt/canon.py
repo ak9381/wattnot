@@ -92,3 +92,24 @@ def canonical_sha256(receipt: Mapping) -> str:
 
     body = {k: v for k, v in receipt.items() if k != "integrity"}
     return hashlib.sha256(canonical_bytes(body)).hexdigest()
+
+
+def scrub_nonfinite(obj: Any, path: str = "") -> tuple[Any, list[str]]:
+    """Copy of ``obj`` with every NaN/Infinity float replaced by None, plus the paths replaced.
+
+    JCS (RFC 8785) forbids non-finite numbers, so a statistic that cannot be computed (a 95%
+    interval or p-value from a single paired round, a % change against zero) must be written as
+    null with a reason instead of crashing the receipt. ``canonicalize`` itself stays strict."""
+    found: list[str] = []
+
+    def walk(o: Any, p: str) -> Any:
+        if isinstance(o, float) and not math.isfinite(o):
+            found.append(p or "$")
+            return None
+        if isinstance(o, Mapping):
+            return {k: walk(v, f"{p}.{k}" if p else str(k)) for k, v in o.items()}
+        if isinstance(o, (list, tuple)):
+            return [walk(v, f"{p}[{i}]") for i, v in enumerate(o)]
+        return o
+
+    return walk(obj, path), found

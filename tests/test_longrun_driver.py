@@ -138,8 +138,11 @@ def test_glimmer_test_plan_fits_the_time_budget(tmp_path):
     p = plan_glimmer_test(tmp_path)
     total_min = sum(b.hours for b in p) * 60
     usable = 3.5 * 60 - WATCHDOG_MARGIN_H * 60          # 202 min
-    core = sum(b.hours for b in p if b.id not in ("t2b-batch", "t2c-prefix")) * 60
-    assert core <= 125 and total_min <= usable - 30      # >= 30 min slack for a slow Glimmer
+    core = sum(b.hours for b in p if b.id not in ("t2b-batch", "t2c-prefix", "t2d-combined")) * 60
+    # t2d-combined is skip_if_short (dropped, never overrun): 30 min slack without it, 15 with it
+    no_comb = sum(b.hours for b in p if b.id != "t2d-combined") * 60
+    assert next(b for b in p if b.id == "t2d-combined").skip_if_short
+    assert core <= 125 and no_comb <= usable - 30 and total_min <= usable - 15
     # core-proof-first order: setup and probe lead, extras after every core block, copy last
     ids = [b.id for b in p]
     assert ids[0] == "t0-setup" and ids[1] == "t0-probe" and ids[-1] == "t3-copy"
@@ -314,11 +317,14 @@ def test_retest_plan_fits_two_hours_and_reruns_the_failures(tmp_path):
         assert failed in ids                               # every previously failed block is kept
     assert "t1-wonder" not in ids and "t1-eu" not in ids   # these passed in RUN3
     total_min = sum(b.hours for b in p) * 60
-    usable = 2.0 * 60 - WATCHDOG_MARGIN_H * 60
-    assert total_min <= usable, (total_min, usable)        # fits 2 h minus the watchdog margin
+    usable = 3.5 * 60 - WATCHDOG_MARGIN_H * 60
+    assert total_min <= usable, (total_min, usable)        # 31 Oct: 4 caps x 2 rounds needs ~3.5 h
     sweep = next(b for b in p if b.id == "t1-sweep")
-    assert sweep.live[sweep.live.index("--sweep-budget-s") + 1] == "840"   # tighter than full test
-    assert sweep.live[sweep.live.index("--reps") + 1] == "1"
+    assert sweep.live[sweep.live.index("--sweep-budget-s") + 1] == "600"   # Wonder's extra picks only
+    # one paired round gives a NaN 95% interval, so no cap can ever pass the energy gate
+    assert int(sweep.live[sweep.live.index("--reps") + 1]) >= 2
+    assert sweep.live[sweep.live.index("--grid") + 1] == "375,350,325,300"
+    assert sweep.hours * 60 >= 80                          # room for all four grid caps
 
 
 def test_combined_block_follows_the_sweep_and_is_the_give_way(tmp_path):
@@ -338,7 +344,11 @@ def test_combined_block_follows_the_sweep_and_is_the_give_way(tmp_path):
 def test_combined_block_is_skipped_for_time_not_dropped(tmp_path):
     # a slow run that leaves <8 min when the combined block is reached: it skips (logged
     # "skipped: time") rather than displacing a previously failed block
-    st = dry_run(tmp_path, model="glimmer-test", plan_name="retest", runner=ok, max_hours=1.85)
+    from wattnot.longrun.driver import WATCHDOG_MARGIN_H, plan_glimmer_retest
+    p = plan_glimmer_retest(tmp_path)
+    before = sum(b.hours for b in p[:[b.id for b in p].index("t2d-combined")])
+    st = dry_run(tmp_path, model="glimmer-test", plan_name="retest", runner=ok,
+                 max_hours=before + WATCHDOG_MARGIN_H + 4 / 60)
     c = st["blocks"]["t2d-combined"]
     assert c["status"] == "skipped" and "skipped: time" in c["why"]
     assert st["sim"]["vm_deleted"]                         # teardown still runs after the skip
@@ -358,7 +368,7 @@ def test_best_cap_from_sweep_reads_results_json(tmp_path):
 
 
 def test_retest_dry_run_finishes_and_deletes(tmp_path):
-    st = dry_run(tmp_path, model="glimmer-test", plan_name="retest", runner=ok, max_hours=2.0)
+    st = dry_run(tmp_path, model="glimmer-test", plan_name="retest", runner=ok, max_hours=3.5)
     assert all(v["status"] == "done" for v in st["blocks"].values()), st["blocks"]
     assert st["stopped"] == "finished" and st["sim"]["vm_deleted"]
 
@@ -391,3 +401,19 @@ def test_builtin_dry_policy_and_cli_default_allow_every_wonder_cap(tmp_path, mon
     assert driver.approval_policy_warnings(f) == []
     import inspect
     assert "default=58.0" in inspect.getsource(cli)
+
+
+def test_full_glimmer_test_plan_has_combined_block(tmp_path):
+    """The long run (glimmer-test, plan full) must carry the WattNot-vs-stock combined block."""
+    from wattnot.longrun.driver import plan
+    p = plan(tmp_path, "glimmer-test", "full")
+    ids = [b.id for b in p]
+    assert ids.count("t2d-combined") == 1
+    assert ids.index("t2c-prefix") < ids.index("t2d-combined") < ids.index("t3-copy")
+    c = next(b for b in p if b.id == "t2d-combined")
+    assert c.live[c.live.index("--reps") + 1] == "3"
+    assert "{BEST_CAP}" in c.live and "--fake" not in c.live
+    r = plan(tmp_path, "glimmer-test", "retest")
+    assert [b.id for b in r].count("t2d-combined") == 1
+    rc = next(b for b in r if b.id == "t2d-combined")
+    assert rc.live[rc.live.index("--reps") + 1] == "2"

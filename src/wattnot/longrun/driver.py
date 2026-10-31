@@ -405,6 +405,9 @@ def plan_glimmer_test(out: Path) -> list[Block]:
                str(out / "runs" / "t2c-prefix")],
               live=["python", "scripts/prefix_cache_ab.py", "--out", f"{REMOTE_RESULTS}/t2c-prefix",
                     "--reps", "3"], host=True),
+        # The headline WattNot-vs-stock number (best cap + prefix ON vs stock 700 W + prefix OFF).
+        # The retest had it; the long run must too, with the full 3 reps.
+        _combined_block(out, minutes=15, reps=3),
         Block("t3-copy", "Copy results back to the control box", _m(5), None, live=None,
               infra="pull"),
     ]
@@ -420,11 +423,14 @@ RETEST_BLOCKS = ("t0-setup", "t0-probe", "t1-sweep", "t1-resume", "t1-eye", "t1-
 # usable after the 8 min watchdog margin). Setup (weight load) and the gates are fixed; the sweep,
 # FP8 and the two extras are trimmed to make room, but every previously failed block is kept.
 # Unlisted blocks keep their plan_glimmer_test budget. Sum (incl. t2d-combined) = 111 min.
-RETEST_HOURS_MIN = {"t0-probe": 5, "t1-sweep": 16, "t1-resume": 3, "t2-fp8": 13,
-                    "t2b-batch": 8, "t2c-prefix": 7, "t2d-combined": 8}
+# 31 Oct: t1-sweep 16 -> 85 min (4 caps x 2 paired rounds, ~5 min per arm MEASURED on Glimmer),
+# t1-resume 3 -> 8 min (it timed out at 276 s with 21k completion tokens, mostly reasoning),
+# t2d-combined 8 -> 15 min. A full retest now needs a ~3.5 h VM; a rerun of only these blocks fits.
+RETEST_HOURS_MIN = {"t0-probe": 5, "t1-sweep": 85, "t1-resume": 8, "t2-fp8": 13,
+                    "t2b-batch": 8, "t2c-prefix": 7, "t2d-combined": 15}
 
 
-def _combined_block(out: Path) -> Block:
+def _combined_block(out: Path, minutes: float | None = None, reps: int = 2) -> Block:
     """Item 12: best passing cap + prefix caching ON vs the stock baseline (700 W, prefix OFF),
     interleaved reps. {BEST_CAP} is filled from the sweep's results.json at run time; if the sweep
     found no passing cap the script prints a skip and exits 0. skip_if_short=True so a slow upstream
@@ -433,12 +439,12 @@ def _combined_block(out: Path) -> Block:
         "t2d-combined",
         "Combined: best passing cap + vLLM prefix caching ON vs stock 700 W + prefix OFF, "
         "interleaved (MEASURED J/request, J/correct, quality + p99 gates, combined saving %)",
-        _m(RETEST_HOURS_MIN["t2d-combined"]),
+        _m(RETEST_HOURS_MIN["t2d-combined"] if minutes is None else minutes),
         [sys.executable, "scripts/prefix_cache_ab.py", "--fake", "--combined",
-         "--cap-on", "325", "--cap-off", "700", "--reps", "2",
+         "--cap-on", "325", "--cap-off", "700", "--reps", str(reps),
          "--out", str(out / "runs" / "t2d-combined")],
         live=["python", "scripts/prefix_cache_ab.py", "--combined", "--cap-on", "{BEST_CAP}",
-              "--cap-off", str(int(H100_STOCK_W)), "--reps", "2",
+              "--cap-off", str(int(H100_STOCK_W)), "--reps", str(reps),
               "--out", f"{REMOTE_RESULTS}/t2d-combined"],
         host=True, depends_on=("t1-sweep",), skip_if_short=True)
 
@@ -451,7 +457,11 @@ def plan_glimmer_retest(out: Path) -> list[Block]:
     full = {b.id: b for b in plan_glimmer_test(out)}
     live_file = out / "live.jsonl"
     guard_cfg = str(Path(__file__).resolve().parents[3] / "examples/longrun/guardrails-wonder.json")
-    retune = {"t1-sweep": sweep_live_argv(out, live_file, guard_cfg, sweep_budget_s=840, reps=1,
+    # reps=2, not 1: with one paired round the 95% interval is undefined (NaN), so the energy gate
+    # can never pass (retest 31 Oct: 375 W measured -27.8% J/request on 1 round and was rejected
+    # as "not clearly below zero"). The 600 s budget only limits Wonder's extra picks; the four
+    # grid caps are always measured (orchestrate), inside the block timeout below.
+    retune = {"t1-sweep": sweep_live_argv(out, live_file, guard_cfg, sweep_budget_s=600, reps=2,
                                           warmup=2, warmup_s=0, grid="375,350,325,300"),
               # the trimmed t2c-prefix budget (7 min) fits 2 reps, not the full-test 3
               "t2c-prefix": ["python", "scripts/prefix_cache_ab.py", "--out",
@@ -459,7 +469,7 @@ def plan_glimmer_retest(out: Path) -> list[Block]:
     blocks = []
     for bid in RETEST_BLOCKS:
         b = full[bid]
-        if bid == "t3-copy":
+        if bid == "t3-copy":   # the retest's own trimmed combined block (2 reps, 8 min)
             blocks.append(_combined_block(out))   # item 12 runs just before the copy
         kw = {}
         if bid in RETEST_HOURS_MIN:
@@ -981,7 +991,7 @@ def live_run(out: Path, *, host: str, key: str = "~/.ssh/e2e_h100", model: str =
             print(f"APPROVAL POLICY WARNING: {w}", file=sys.stderr)
     blocks = plan(out, model, plan_name)
     vm = RemoteVm(host=host, key=key, out_dir=out / "pulled")
-    default_h = (2.0 if plan_name == "retest" else 3.5) if model == "glimmer-test" else 18.0
+    default_h = 3.5 if model == "glimmer-test" else 18.0
     hours = max_hours if max_hours is not None else default_h
     run = _live_runner(out, host, key, vm)
 
@@ -1151,7 +1161,7 @@ def main(argv=None) -> int:
         drop[k] = int(n)
     if a.model != "llama" and a.drop_link == "b2-wonder-sweep:3":
         drop = {"g2-wonder-sweep": 3} if a.model == "glimmer" else {"t1-resume": 2}
-    default_h = (2.0 if a.plan == "retest" else 3.5) if a.model == "glimmer-test" else 18.0
+    default_h = 3.5 if a.model == "glimmer-test" else 18.0
     hours = a.max_hours or default_h
     st = dry_run(a.out, drop=drop, model=a.model, max_hours=hours, plan_name=a.plan)
     for k, v in st["blocks"].items():

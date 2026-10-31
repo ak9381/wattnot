@@ -12,9 +12,13 @@ caller passes MEASURED rows; cache hit rate and latency come straight from vLLM 
 
 from __future__ import annotations
 
+import math
 import re
 import statistics as st
 from collections.abc import Sequence
+
+from wattnot.gates.noise import t_sf
+from wattnot.proof.stats import ci95, mean_sd
 
 SPEC = "wattnot.prefix-cache-ab/1"
 P99_LIMIT_PCT = 10.0
@@ -80,6 +84,17 @@ def arm_summary(name: str, rows: Sequence[dict], label: str) -> dict:
     jpr = out["j_per_req"]["mean"]
     passm = out["pass_pct"]["mean"]
     out["j_per_correct"] = round(jpr / (passm / 100), 4) if jpr and passm else None
+    # Per-rep values kept in rep order so evaluate_ab can pair off[i] with on[i] (run_ab appends
+    # one off and one on per rep, in rep order) and compute a CI + p-value on the PAIRED
+    # differences, the same rigour the power-cap sweep uses (wattnot.proof.session.summarize).
+    def _jpc(r: dict) -> float | None:
+        j, p = r.get("j_per_req"), r.get("pass_pct")
+        return round(j / (p / 100), 4) if j and p else None
+    out["j_per_req_reps"] = [r.get("j_per_req") for r in rows]
+    out["j_per_correct_reps"] = [_jpc(r) for r in rows]
+    # request errors across this arm's reps: an errored request grades as a wrong answer and its
+    # energy is still counted, so it must be surfaced, not silently absorbed into the pass rate.
+    out["errors"] = sum((r.get("errors") or 0) for r in rows)
     # label the reasoning share: MOCK for a rehearsal, else MEASURED only when every rep's count
     # came from server usage, otherwise ESTIMATE (sized from the reasoning text)
     measured = all(r.get("reasoning_measured") for r in rows) if rows else False
@@ -89,6 +104,36 @@ def arm_summary(name: str, rows: Sequence[dict], label: str) -> dict:
 
 def _change_pct(a, b):
     return round(100 * (b - a) / a, 2) if a and b is not None else None
+
+
+def paired_change(off_vals: Sequence[float | None], on_vals: Sequence[float | None]) -> dict:
+    """CI and p-value on the PAIRED per-rep change (on vs off), the same rigour the power-cap
+    sweep uses (wattnot.proof.session.summarize): pair rep i of each arm, take the per-rep percent
+    change, and report its mean, the half-width of its 95% CI (Student t, reps-1 df), whether that
+    CI is entirely below zero (a real saving, not noise), and a two-sided paired-t p-value.
+
+    off_vals[i] and on_vals[i] must be the same rep. Reps where either arm is missing a value are
+    dropped from the pair set. Returns all-None fields when fewer than two usable pairs survive
+    (n<2 can carry no CI), so a thin run reports "not enough reps", never a fake certainty.
+    """
+    pairs = [(o, n) for o, n in zip(off_vals, on_vals)
+             if o not in (None, 0) and n is not None]
+    deltas = [100.0 * (n - o) / o for o, n in pairs]
+    n = len(deltas)
+    if n < 2:
+        return {"mean": None, "ci95_half": None, "ci95_excludes_zero": None,
+                "below_zero": None, "p_value": None, "n": n, "per_pair": deltas}
+    m, half = ci95(deltas)
+    _, sd = mean_sd(deltas)
+    if sd == 0:   # every rep moved by the identical fraction: a definite, zero-variance result
+        p_value = 0.0 if m != 0 else 1.0
+    else:
+        t = m / (sd / math.sqrt(n))
+        p_value = round(min(1.0, 2 * t_sf(abs(t), n - 1)), 6)  # two-sided
+    excludes_zero = (m + half < 0) or (m - half > 0)
+    return {"mean": round(m, 4), "ci95_half": round(half, 4),
+            "ci95_excludes_zero": bool(excludes_zero), "below_zero": bool(m < 0),
+            "p_value": p_value, "n": n, "per_pair": [round(d, 4) for d in deltas]}
 
 
 def evaluate_ab(off: dict, on: dict, *, p99_limit_pct: float = P99_LIMIT_PCT,
@@ -107,6 +152,25 @@ def evaluate_ab(off: dict, on: dict, *, p99_limit_pct: float = P99_LIMIT_PCT,
         failed.append(f"p99 rose {p99_change:g}% (> {p99_limit_pct:g}%)")
     if off_pass <= 0 or on_pass <= 0:   # both arms broken would read as "no drop" = a pass
         failed.append("0% graded pass rate on an arm: nothing to compare")
+    # Any request error in either arm blocks the gate, the same rule the power-cap sweep uses
+    # (wattnot.proof.session.summarize): an errored request grades as wrong and its energy is
+    # counted, so an error on the stock/off arm would flatter the on arm's J/correct saving.
+    n_err = (off.get("errors") or 0) + (on.get("errors") or 0)
+    if n_err:
+        failed.append(f"{n_err} request errors across the arms (off {off.get('errors') or 0}, "
+                      f"on {on.get('errors') or 0}): errors can flatter the J/correct saving")
+    # CI + p-value on the PAIRED per-rep difference (item 7): the headline saving % is no longer a
+    # bare mean-to-mean point estimate. j_per_req is the clean energy signal (no pass-rate mixed
+    # in); j_per_correct is reported too for the headline number the combined block quotes.
+    energy_paired = paired_change(off.get("j_per_req_reps") or [], on.get("j_per_req_reps") or [])
+    jpc_paired = paired_change(off.get("j_per_correct_reps") or [], on.get("j_per_correct_reps") or [])
+    # A saving is "significant" only when the paired CI is entirely below zero AND p < 0.05 — the
+    # same bar the sweep's energy gate uses. Reported, not a hard gate here: the combined block
+    # can run as few as 2 reps, where a true saving may still miss significance; the flag keeps the
+    # headline honest instead of asserting a saving the n cannot support.
+    energy_saving_significant = bool(
+        energy_paired["below_zero"] and energy_paired["ci95_excludes_zero"]
+        and energy_paired["p_value"] is not None and energy_paired["p_value"] < 0.05)
     return {
         "spec": SPEC,
         "lever": "enable_prefix_caching",
@@ -115,6 +179,10 @@ def evaluate_ab(off: dict, on: dict, *, p99_limit_pct: float = P99_LIMIT_PCT,
             "j_per_correct_change_pct": _change_pct(off["j_per_correct"], on["j_per_correct"]),
             "ttft_change_pct": _change_pct(off["ttft_ms"]["mean"], on["ttft_ms"]["mean"]),
             "p99_change_pct": p99_change,
+            # paired (per-rep) uncertainty on the energy saving; None fields when < 2 reps
+            "j_per_req_change_pct_paired": energy_paired,
+            "j_per_correct_change_pct_paired": jpc_paired,
+            "energy_saving_significant": energy_saving_significant,
             "cache_hit_rate": {"off": off["cache_hit_rate"]["mean"],
                                "on": on["cache_hit_rate"]["mean"]},
             "reasoning_token_share": {"off": (off.get("reasoning_token_share") or {}).get("mean"),
@@ -124,6 +192,7 @@ def evaluate_ab(off: dict, on: dict, *, p99_limit_pct: float = P99_LIMIT_PCT,
         },
         "gate": {"passed": not failed, "failed": failed,
                  "pass_drop_pts": drop, "p99_change_pct": p99_change,
+                 "errors": {"off": off.get("errors") or 0, "on": on.get("errors") or 0},
                  "quality_drop_limit_pts": quality_drop_pts, "p99_limit_pct": p99_limit_pct},
         "kept": not failed,
     }
