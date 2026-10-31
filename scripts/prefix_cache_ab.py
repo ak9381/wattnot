@@ -40,10 +40,30 @@ def save_arm_raw(out: Path, on: bool, rep: int, block: dict) -> Path:
     return out / "raw" / f"{tag}.jsonl"
 
 
-def _fake(out: Path, reps: int) -> dict:
-    summ = PC.mock_ab(reps)
+def parse_cap(v) -> int | None:
+    """A positive int cap, or None (so an unresolved {BEST_CAP} / 'NONE' skips the combined block)."""
+    try:
+        w = int(v)
+    except (TypeError, ValueError):
+        return None
+    return w if w > 0 else None
+
+
+def annotate_combined(summ: dict, cap_on: int, cap_off: int) -> dict:
+    """Label a combined-block summary: the headline J/correct change is the combined saving %
+    (best cap + prefix ON vs stock baseline + prefix OFF). Negative = a saving."""
+    summ["mode"] = "combined"
+    summ["caps"] = {"on_prefix_w": cap_on, "off_baseline_w": cap_off}
+    summ["combined_saving_pct"] = summ["headline"]["j_per_correct_change_pct"]
+    return summ
+
+
+def _fake(out: Path, o) -> dict:
+    summ = PC.mock_ab(o.reps)
     summ["label"] = "MOCK"
-    summ["workload"] = "workloads/prefix-cache-v1.jsonl"
+    summ["workload"] = o.workload
+    if getattr(o, "combined", False):
+        annotate_combined(summ, o.cap_on_w, o.cap_off_w)
     (out / "prefix_cache_summary.json").write_text(json.dumps(summ, indent=1))
     return summ
 
@@ -52,7 +72,8 @@ def _real(out: Path, o) -> dict:  # pragma: no cover - needs a GPU and vLLM
     from wattnot.proof import run as R
     url = f"http://127.0.0.1:{o.port}"
     extra = ["step", "--out", str(out), "--model", o.model, "--port", o.port,
-             "--profile", o.profile, "--workload", o.workload]
+             "--profile", o.profile, "--workload", o.workload,
+             "--reasoning-floor", str(o.reasoning_floor)]
     # Reuse phase_ab's trick: resolve the proof profile into a rig args namespace.
     import scripts.phase_ab as PA
     a = PA.rig_args(extra)
@@ -83,7 +104,9 @@ def _real(out: Path, o) -> dict:  # pragma: no cover - needs a GPU and vLLM
             m0 = _metrics(url)
             rig, guard = R.open_rig(a)
             try:
-                b = rig.block(700)
+                # combined block: the prefix-ON arm runs at the best passing cap, the baseline at
+                # stock. The plain prefix A/B measures the prefix effect at stock on both arms.
+                b = rig.block(o.cap_on_w if on else o.cap_off_w)
             finally:
                 guard.__exit__(None, None, None)
             save_arm_raw(out, on, rep, b)   # keep this arm/rep's raw answer texts
@@ -102,6 +125,8 @@ def _real(out: Path, o) -> dict:  # pragma: no cover - needs a GPU and vLLM
 
     summ = PC.run_ab(trial, o.reps, label="MEASURED")
     summ["workload"] = o.workload
+    if getattr(o, "combined", False):
+        annotate_combined(summ, o.cap_on_w, o.cap_off_w)
     (out / "prefix_cache_summary.json").write_text(json.dumps(summ, indent=1))
     return summ
 
@@ -114,15 +139,35 @@ def main(argv=None) -> int:
     ap.add_argument("--reps", type=int, default=3)
     ap.add_argument("--profile", default="standard")
     ap.add_argument("--workload", default="workloads/prefix-cache-v1.jsonl")
+    ap.add_argument("--reasoning-floor", type=int, default=1024,
+                    help="min completion tokens per request so Glimmer's answers are not cut off")
+    ap.add_argument("--combined", action="store_true",
+                    help="combined block: best passing cap + prefix ON vs stock baseline + prefix "
+                         "OFF (interleaved); reports the combined saving %%")
+    ap.add_argument("--cap-on", default="700",
+                    help="combined: cap for the prefix-ON arm (the best passing cap from the "
+                         "sweep); NONE/0 skips the block when the sweep found no passing cap")
+    ap.add_argument("--cap-off", type=int, default=700, help="combined: baseline (stock) cap")
     ap.add_argument("--fake", action="store_true")
     o = ap.parse_args(argv)
+    if o.combined:
+        cap_on = parse_cap(o.cap_on)
+        if cap_on is None:
+            print("combined block skipped: no passing cap from the sweep "
+                  f"(cap-on={o.cap_on!r} is not a cap)")
+            return 0
+        o.cap_on_w, o.cap_off_w = cap_on, o.cap_off
+    else:
+        o.cap_on_w = o.cap_off_w = 700   # the plain prefix A/B runs both arms at stock
     o.out.mkdir(parents=True, exist_ok=True)
-    summ = _fake(o.out, o.reps) if o.fake else _real(o.out, o)
+    summ = _fake(o.out, o) if o.fake else _real(o.out, o)
     print("PREFIX_CACHE_JSON " + json.dumps(summ))
     h = summ["headline"]
-    print(f"prefix caching: J/correct {h['j_per_correct_change_pct']}% , "
+    rs = h.get("reasoning_token_share") or {}
+    lever = "combined (best cap + prefix)" if o.combined else "prefix caching"
+    print(f"{lever}: J/correct {h['j_per_correct_change_pct']}% , "
           f"hit rate off {h['cache_hit_rate']['off']} -> on {h['cache_hit_rate']['on']}, "
-          f"gate {'passed' if summ['kept'] else 'FAILED'}")
+          f"reasoning share {rs.get('on')}, gate {'passed' if summ['kept'] else 'FAILED'}")
     return 0
 
 

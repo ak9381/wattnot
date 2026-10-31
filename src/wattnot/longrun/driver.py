@@ -113,6 +113,7 @@ class Block:
     depends_on: tuple[str, ...] = ()  # skip this block unless every dep finished 'done'
     host: bool = False             # live: run `live` on the GPU host over SSH (else on control)
     infra: str = ""                # live: a driver-run infra step: "setup" | "pull"
+    skip_if_short: bool = False    # when the time left can't cover it, log "skipped: time" and go on
 
 
 def _py(*args: str) -> list[str]:
@@ -123,6 +124,21 @@ def _py(*args: str) -> list[str]:
 def _rpy(*args: str) -> list[str]:
     """A GPU-host command, run under the remote venv (`python` after activate)."""
     return ["python", "-m", *args]
+
+
+def best_cap_from_sweep(out: Path) -> int | None:
+    """The best accepted cap from the sweep's results.json (written on the control box by
+    orchestrate), for the combined block's prefix-ON arm. None when the sweep produced no passing
+    cap — the combined block then skips cleanly instead of measuring against nothing."""
+    p = out / "runs" / "t1-sweep" / "vm" / "results.json"
+    try:
+        bc = json.loads(p.read_text()).get("best_cap_w")
+    except (OSError, ValueError):
+        return None
+    try:
+        return int(bc) if bc else None
+    except (TypeError, ValueError):
+        return None
 
 
 def host_inner(argv: list[str]) -> str:
@@ -394,29 +410,56 @@ def plan_glimmer_test(out: Path) -> list[Block]:
 
 
 # The blocks a retest re-runs: setup, probe, the sweep, and the blocks that failed in RUN3
-# (t1-resume, t1-eye, t1-spoken, t2-fp8 and its FP8 eye/spoken gates, t2b-batch, t2c-prefix),
-# then the copy. t1-wonder / t1-eu passed and are dropped.
+# (t1-resume, t1-eye, t1-spoken, t2-fp8 and its FP8 eye/spoken gates, t2b-batch, t2c-prefix), then
+# the combined block (item 12) and the copy. t1-wonder / t1-eu passed and are dropped. The combined
+# block is built here (not in plan_glimmer_test) and inserted before t3-copy.
 RETEST_BLOCKS = ("t0-setup", "t0-probe", "t1-sweep", "t1-resume", "t1-eye", "t1-spoken",
                  "t2-fp8", "t2-eye", "t2-spoken", "t2b-batch", "t2c-prefix", "t3-copy")
-# Trimmed per-block budgets (minutes) so the retest fits a 2 h VM (112 min usable after the 8 min
-# watchdog margin). Setup (weight load) and the gates are fixed; the sweep, FP8 and the two extras
-# are trimmed. Unlisted blocks keep their plan_glimmer_test budget.
-RETEST_HOURS_MIN = {"t0-probe": 6, "t1-sweep": 16, "t1-resume": 4, "t2-fp8": 16,
-                    "t2b-batch": 8, "t2c-prefix": 10}
+# Trimmed per-block budgets (minutes) so the retest, WITH the combined block, fits a 2 h VM (112 min
+# usable after the 8 min watchdog margin). Setup (weight load) and the gates are fixed; the sweep,
+# FP8 and the two extras are trimmed to make room, but every previously failed block is kept.
+# Unlisted blocks keep their plan_glimmer_test budget. Sum (incl. t2d-combined) = 111 min.
+RETEST_HOURS_MIN = {"t0-probe": 5, "t1-sweep": 16, "t1-resume": 3, "t2-fp8": 13,
+                    "t2b-batch": 8, "t2c-prefix": 7, "t2d-combined": 8}
+
+
+def _combined_block(out: Path) -> Block:
+    """Item 12: best passing cap + prefix caching ON vs the stock baseline (700 W, prefix OFF),
+    interleaved reps. {BEST_CAP} is filled from the sweep's results.json at run time; if the sweep
+    found no passing cap the script prints a skip and exits 0. skip_if_short=True so a slow upstream
+    block drops THIS block (logged 'skipped: time'), never a previously failed one."""
+    return Block(
+        "t2d-combined",
+        "Combined: best passing cap + vLLM prefix caching ON vs stock 700 W + prefix OFF, "
+        "interleaved (MEASURED J/request, J/correct, quality + p99 gates, combined saving %)",
+        _m(RETEST_HOURS_MIN["t2d-combined"]),
+        [sys.executable, "scripts/prefix_cache_ab.py", "--fake", "--combined",
+         "--cap-on", "325", "--cap-off", "700", "--reps", "2",
+         "--out", str(out / "runs" / "t2d-combined")],
+        live=["python", "scripts/prefix_cache_ab.py", "--combined", "--cap-on", "{BEST_CAP}",
+              "--cap-off", str(int(H100_STOCK_W)), "--reps", "2",
+              "--out", f"{REMOTE_RESULTS}/t2d-combined"],
+        host=True, depends_on=("t1-sweep",), skip_if_short=True)
 
 
 def plan_glimmer_retest(out: Path) -> list[Block]:
-    """Retest plan (``--plan retest``): only setup, probe, the sweep and the RUN3 failures, sized to
-    fit a 2 h VM. Reuses plan_glimmer_test's real commands; the sweep is re-tuned to a tighter
-    budget (1 round, 2-request warm-up) so it still measures >=3 caps inside a 16 min block."""
+    """Retest plan (``--plan retest``): only setup, probe, the sweep, the RUN3 failures, the combined
+    block (item 12) and the copy, sized to fit a 2 h VM. Reuses plan_glimmer_test's real commands;
+    the sweep is re-tuned to a tighter budget (1 round, 2-request warm-up) so it still measures the
+    four grid caps inside a 16 min block, and t2c-prefix drops to 2 reps for its trimmed budget."""
     full = {b.id: b for b in plan_glimmer_test(out)}
     live_file = out / "live.jsonl"
     guard_cfg = str(Path(__file__).resolve().parents[3] / "examples/longrun/guardrails-wonder.json")
     retune = {"t1-sweep": sweep_live_argv(out, live_file, guard_cfg, sweep_budget_s=840, reps=1,
-                                          warmup=2, warmup_s=0, grid="375,350,325,300")}
+                                          warmup=2, warmup_s=0, grid="375,350,325,300"),
+              # the trimmed t2c-prefix budget (7 min) fits 2 reps, not the full-test 3
+              "t2c-prefix": ["python", "scripts/prefix_cache_ab.py", "--out",
+                             f"{REMOTE_RESULTS}/t2c-prefix", "--reps", "2"]}
     blocks = []
     for bid in RETEST_BLOCKS:
         b = full[bid]
+        if bid == "t3-copy":
+            blocks.append(_combined_block(out))   # item 12 runs just before the copy
         kw = {}
         if bid in RETEST_HOURS_MIN:
             kw["hours"] = _m(RETEST_HOURS_MIN[bid])
@@ -686,8 +729,15 @@ class Driver:
                 b = replace(b, title=b.title + " (trimmed)", hours=b.min_hours, dry=b.trim,
                             live=b.trim_live if b.trim_live is not None else b.live)
             if b.hours > left:
-                self.state["blocks"][b.id] = {"status": "dropped",
-                                              "why": f"needs {b.hours} h, {left:.2f} h left"}
+                if b.skip_if_short:
+                    # the combined block is the designated give-way: when a slow upstream block ate
+                    # the budget, skip it (logged) rather than drop a previously failed block
+                    why = f"skipped: time (needs {b.hours * 60:.0f} min, {left * 60:.0f} min left)"
+                    self._note(kind="skipped-time", block=b.id, why=why)
+                    self.state["blocks"][b.id] = {"status": "skipped", "why": why}
+                else:
+                    self.state["blocks"][b.id] = {"status": "dropped",
+                                                  "why": f"needs {b.hours} h, {left:.2f} h left"}
                 self._save()
                 continue
             for attempt in (1, 2):
@@ -832,7 +882,15 @@ def _live_runner(out: Path, host: str, key: str, vm: RemoteVm, log=print):
     env = dict(os.environ)
 
     def fill(argv: list[str]) -> list[str]:
-        return [a.replace("{HOST}", host).replace("{KEY}", key) for a in argv]
+        best = None
+        if any("{BEST_CAP}" in a for a in argv):
+            # resolve the best passing cap from the sweep results on the control box; "NONE" makes
+            # the combined block skip cleanly when the sweep found no passing cap
+            bc = best_cap_from_sweep(out)
+            best = str(bc) if bc else "NONE"
+        return [a.replace("{HOST}", host).replace("{KEY}", key)
+                 .replace("{BEST_CAP}", best) if best is not None
+                else a.replace("{HOST}", host).replace("{KEY}", key) for a in argv]
 
     def run(b: Block, budget_s: float) -> int:
         if b.infra == "setup":

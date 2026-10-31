@@ -311,14 +311,50 @@ def test_retest_plan_fits_two_hours_and_reruns_the_failures(tmp_path):
     assert ids[0] == "t0-setup" and ids[1] == "t0-probe" and ids[-1] == "t3-copy"
     for failed in ("t1-sweep", "t1-resume", "t1-eye", "t1-spoken", "t2-fp8", "t2-eye",
                    "t2-spoken", "t2b-batch", "t2c-prefix"):
-        assert failed in ids
+        assert failed in ids                               # every previously failed block is kept
     assert "t1-wonder" not in ids and "t1-eu" not in ids   # these passed in RUN3
     total_min = sum(b.hours for b in p) * 60
     usable = 2.0 * 60 - WATCHDOG_MARGIN_H * 60
-    assert total_min <= usable, (total_min, usable)
+    assert total_min <= usable, (total_min, usable)        # fits 2 h minus the watchdog margin
     sweep = next(b for b in p if b.id == "t1-sweep")
     assert sweep.live[sweep.live.index("--sweep-budget-s") + 1] == "840"   # tighter than full test
     assert sweep.live[sweep.live.index("--reps") + 1] == "1"
+
+
+def test_combined_block_follows_the_sweep_and_is_the_give_way(tmp_path):
+    from wattnot.longrun.driver import plan_glimmer_retest
+    p = plan_glimmer_retest(tmp_path)
+    ids = [b.id for b in p]
+    # item 12: after the sweep (and the other failures), just before the copy
+    assert ids.index("t2c-prefix") < ids.index("t2d-combined") < ids.index("t3-copy")
+    c = next(b for b in p if b.id == "t2d-combined")
+    assert c.depends_on == ("t1-sweep",) and c.host and c.skip_if_short
+    live = c.live
+    assert "--combined" in live and "{BEST_CAP}" in live   # best cap filled from the sweep at run
+    assert live[live.index("--cap-off") + 1] == "700"      # stock baseline, prefix off
+    assert "--fake" in c.dry                               # the dry run is mock, never measured
+
+
+def test_combined_block_is_skipped_for_time_not_dropped(tmp_path):
+    # a slow run that leaves <8 min when the combined block is reached: it skips (logged
+    # "skipped: time") rather than displacing a previously failed block
+    st = dry_run(tmp_path, model="glimmer-test", plan_name="retest", runner=ok, max_hours=1.85)
+    c = st["blocks"]["t2d-combined"]
+    assert c["status"] == "skipped" and "skipped: time" in c["why"]
+    assert st["sim"]["vm_deleted"]                         # teardown still runs after the skip
+
+
+def test_best_cap_from_sweep_reads_results_json(tmp_path):
+    import json
+
+    from wattnot.longrun.driver import best_cap_from_sweep
+    assert best_cap_from_sweep(tmp_path) is None            # no sweep results yet
+    d = tmp_path / "runs" / "t1-sweep" / "vm"
+    d.mkdir(parents=True)
+    (d / "results.json").write_text(json.dumps({"best_cap_w": 325}))
+    assert best_cap_from_sweep(tmp_path) == 325
+    (d / "results.json").write_text(json.dumps({"best_cap_w": None}))  # no passing cap
+    assert best_cap_from_sweep(tmp_path) is None
 
 
 def test_retest_dry_run_finishes_and_deletes(tmp_path):
