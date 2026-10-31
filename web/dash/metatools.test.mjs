@@ -135,3 +135,18 @@ test("compareRows formats comparative data across multiple receipts", () => {
   assert.equal(sparkRow.values[0].text, "spark-9a8b7c6d5e4f3210");
   assert.equal(sparkRow.values[1].text, "spark-different1234");
 });
+
+test("a missing spark trace id shows nothing, never a made-up placeholder", () => {
+  const noTrace = {
+    ...sampleReceipt,
+    measurement: { ...sampleReceipt.measurement, spark_trace_id: undefined }
+  };
+  const d = extractMetaToolsData(noTrace);
+  assert.equal(d.sparkTraceId, "");
+
+  const sparkRow = compareRows([noTrace]).find((r) => r.metric === "Spark Trace ID");
+  assert.equal(sparkRow.values[0].text, "not recorded");
+  assert.doesNotMatch(sparkRow.values[0].text, /^spark-[0-9a-f]/);  // no fake-looking id
+
+  assert.match(renderMetaToolsHTML(noTrace), /not recorded/);
+});

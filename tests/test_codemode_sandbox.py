@@ -54,6 +54,21 @@ def test_socket_creation_audit_hook_refuses():
     assert not r.ok
 
 
+def test_generated_code_cannot_enable_network_via_ctypes():
+    # The socket.* audit hook is not enough on its own: libc's socket() reached through ctypes
+    # never raises a socket.* event. The program tries exactly that bypass; FFI loading must be
+    # refused outside the generated code so the no-network boundary holds no matter what it does.
+    prog = ('import ctypes\n'
+            'libc = ctypes.CDLL("libc.so.6", use_errno=True)\n'
+            'answer = libc.socket(2, 1, 0)\n')  # AF_INET, SOCK_STREAM
+    r = run_code(prog, STUB, {}, Limits(wall_s=10))
+    assert not r.ok
+    assert r.answer is None
+    # With unshare -n the netns alone would block it; without it, the FFI guard must refuse.
+    if r.net_isolation == "audit-hook":
+        assert "native FFI blocked" in r.stderr
+
+
 def test_write_outside_tmp_is_blocked(tmp_path):
     target = tmp_path / "escape.txt"
     src = f'open({str(target)!r}, "w").write("x"); answer=1'

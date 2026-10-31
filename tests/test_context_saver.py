@@ -70,6 +70,39 @@ def test_memory_compression_noop_when_few_turns():
     assert st["applied"] is False and out == msgs
 
 
+def test_memory_compression_never_orphans_a_tool_reply():
+    # The kept window would start on a `tool` reply whose assistant `tool_calls` message sits in
+    # the summarised-away half. Dropping the call but keeping the reply orphans it (HTTP 400). The
+    # split must move back so the whole call/reply pair is kept together.
+    mw = MemoryCompressionMiddleware(summarize=MockSummarizer(), keep_last=3, min_old=2,
+                                     store=ChunkStore())
+    msgs = [
+        {"role": "system", "content": "system prompt"},
+        {"role": "user", "content": "first question about the energy cap"},
+        {"role": "assistant", "content": "", "tool_calls": [
+            {"id": "call_a", "function": {"name": "read", "arguments": '{"p":"a"}'}}]},
+        {"role": "tool", "tool_call_id": "call_a", "content": "early file a"},
+        {"role": "assistant", "content": "", "tool_calls": [
+            {"id": "call_b", "function": {"name": "read", "arguments": '{"p":"b"}'}}]},
+        {"role": "tool", "tool_call_id": "call_b", "content": "recent file b"},
+        {"role": "assistant", "content": "an answer about energy"},
+        {"role": "user", "content": "latest question about the energy cap"},
+    ]
+    out, st = mw.apply(msgs)
+    assert st["applied"]
+    # Every kept tool reply is answered by an assistant tool_call that is also kept (no orphan).
+    seen_call_ids: set[str] = set()
+    for m in out:
+        if m.get("role") == "assistant":
+            for c in m.get("tool_calls") or []:
+                seen_call_ids.add(str(c.get("id")))
+        if m.get("role") == "tool":
+            assert str(m.get("tool_call_id")) in seen_call_ids, "orphaned tool reply would 400"
+    # call_b's pair was kept together; call_a's pair was summarised away as a unit.
+    assert any(m.get("role") == "tool" and m.get("tool_call_id") == "call_b" for m in out)
+    assert not any(m.get("role") == "tool" and m.get("tool_call_id") == "call_a" for m in out)
+
+
 def test_context_saver_chain_accounts_for_tokens():
     big = "File contents. " * 100
     msgs = [{"role": "system", "content": "sys"}]

@@ -61,8 +61,8 @@ export function extractMetaToolsData(receipt, validation) {
   const judgeModel = m.judge_model || "not recorded";
   const judgeLabel = m.label || "MOCK";
 
-  // Spark Trace ID
-  const sparkTraceId = m.spark_trace_id || "spark-none";
+  // Spark Trace ID — the real one from the receipt, or empty (never a made-up placeholder).
+  const sparkTraceId = m.spark_trace_id || "";
 
   // Wonder Supervisor
   const wonderTrials = wonder.trials != null ? wonder.trials : 5;
@@ -209,7 +209,7 @@ export function renderMetaToolsHTML(receipt, validation) {
           <div class="metatools-tile">
             <div class="metatools-label">Spark Planner Trace ID</div>
             <div style="margin: 6px 0;">
-              <span class="metatools-trace-id">${escapeHtml(d.sparkTraceId)}</span>
+              <span class="metatools-trace-id">${d.sparkTraceId ? escapeHtml(d.sparkTraceId) : "not recorded"}</span>
             </div>
             <div style="font-size: 0.78rem; color: var(--lavender-300); margin-top: 6px;">
               Single-call deterministic trace anchor covered by signed integrity block.
@@ -375,7 +375,7 @@ export function compareRows(receipts) {
       metric: "Spark Trace ID",
       values: receipts.map((r) => {
         const d = extractMetaToolsData(r);
-        return { text: d.sparkTraceId, tag: "REPLAY" };
+        return { text: d.sparkTraceId || "not recorded", tag: d.sparkTraceId ? "REPLAY" : "MOCK" };
       })
     },
     {
