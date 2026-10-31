@@ -5,7 +5,9 @@ The lock-down, in layers (defence in depth -- a weakness in one layer is covered
 1. **No network.** ``unshare -n`` drops the child into an empty network namespace when the
    kernel allows it (unprivileged user namespaces). Where it does not (most CI, this sandbox),
    the child still installs a Python **audit hook** that refuses every ``socket.*`` event, so a
-   connect attempt raises instead of leaving the box. Which layer applied is recorded, honestly.
+   connect attempt raises instead of leaving the box. The hook also refuses native FFI
+   (``ctypes``/``cffi`` loading), so the program cannot sidestep the socket block by calling the
+   raw syscall through libc. Which layer applied is recorded, honestly.
 2. **Resource limits.** ``RLIMIT_CPU`` (SIGXCPU on overrun) and ``RLIMIT_AS`` (address-space
    cap -> ``MemoryError``) are set in a ``preexec_fn`` before ``exec``. A **wall-clock timeout**
    in the parent kills the whole process group if the child wedges without burning CPU.
@@ -48,6 +50,13 @@ def _guard(event, args):
     # Refuse all networking outright.
     if event.startswith("socket.") or event in ("urllib.Request",):
         raise PermissionError("network blocked in sandbox: " + event)
+    # Refuse native FFI. Without this, the program can load libc through ctypes/cffi and call the
+    # raw socket() syscall directly, which never raises a socket.* audit event -- so the network
+    # block above would be bypassable from inside the generated code. The no-network boundary has
+    # to hold regardless of what the program does, so FFI loading is refused here, outside it.
+    if event in ("ctypes.dlopen", "ctypes.dlsym", "ctypes.dlsym/handle",
+                 "ctypes.call_function", "ctypes.cdata", "cffi.FFI.dlopen"):
+        raise PermissionError("native FFI blocked in sandbox: " + event)
     # Refuse spawning other processes.
     if event in ("os.system", "os.exec", "subprocess.Popen"):
         raise PermissionError("process spawn blocked in sandbox: " + event)
