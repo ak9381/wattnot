@@ -205,6 +205,22 @@ receipt hash, a QR code and a permanent MOCK / NOT TRADABLE / NOT A CARBON CREDI
 NOISE and unverifiable receipts are refused, and a receipt can be certified once. It is a
 mock for a roadmap slide, not a product. See [docs/CERTIFICATE.md](docs/CERTIFICATE.md).
 
+## Public benchmark check
+
+`scripts/public_bench_ab.py` repeats the stock vs best-cap comparison on small slices of two
+public sets, so the saving is not only measured on our own prompts. Same server, same prompts,
+same seed; only the power cap changes. Rounds alternate, energy comes from the GPU's own NVML
+counter (MEASURED), and the result is the paired change in energy per correct answer with its
+95% interval and p-value.
+
+| Set | Slice | Grader | Source (pinned) | Licence |
+|---|---|---|---|---|
+| GSM8K test | first 60 items | final number vs the `####` gold answer | [openai/grade-school-math](https://github.com/openai/grade-school-math) @ `3101c7d` | [MIT](data/public_bench/LICENSE.gsm8k) |
+| HumanEval | first 40 items | the item's own tests, run in a sandboxed subprocess | [openai/human-eval](https://github.com/openai/human-eval) @ `b9453e8` | [MIT](data/public_bench/LICENSE.humaneval) |
+
+The slices live in `data/public_bench/` with their licences, and the script checks their sha256
+before it runs.
+
 ## Status
 
 Built during the Meta Global AI Developer Hackathon, Oct 26 – Nov 4 2026. Before Oct 26 we had only planning docs, no code.
