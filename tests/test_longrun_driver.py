@@ -314,11 +314,14 @@ def test_retest_plan_fits_two_hours_and_reruns_the_failures(tmp_path):
         assert failed in ids                               # every previously failed block is kept
     assert "t1-wonder" not in ids and "t1-eu" not in ids   # these passed in RUN3
     total_min = sum(b.hours for b in p) * 60
-    usable = 2.0 * 60 - WATCHDOG_MARGIN_H * 60
-    assert total_min <= usable, (total_min, usable)        # fits 2 h minus the watchdog margin
+    usable = 3.5 * 60 - WATCHDOG_MARGIN_H * 60
+    assert total_min <= usable, (total_min, usable)        # 31 Oct: 4 caps x 2 rounds needs ~3.5 h
     sweep = next(b for b in p if b.id == "t1-sweep")
-    assert sweep.live[sweep.live.index("--sweep-budget-s") + 1] == "840"   # tighter than full test
-    assert sweep.live[sweep.live.index("--reps") + 1] == "1"
+    assert sweep.live[sweep.live.index("--sweep-budget-s") + 1] == "600"   # Wonder's extra picks only
+    # one paired round gives a NaN 95% interval, so no cap can ever pass the energy gate
+    assert int(sweep.live[sweep.live.index("--reps") + 1]) >= 2
+    assert sweep.live[sweep.live.index("--grid") + 1] == "375,350,325,300"
+    assert sweep.hours * 60 >= 80                          # room for all four grid caps
 
 
 def test_combined_block_follows_the_sweep_and_is_the_give_way(tmp_path):
@@ -338,7 +341,11 @@ def test_combined_block_follows_the_sweep_and_is_the_give_way(tmp_path):
 def test_combined_block_is_skipped_for_time_not_dropped(tmp_path):
     # a slow run that leaves <8 min when the combined block is reached: it skips (logged
     # "skipped: time") rather than displacing a previously failed block
-    st = dry_run(tmp_path, model="glimmer-test", plan_name="retest", runner=ok, max_hours=1.85)
+    from wattnot.longrun.driver import WATCHDOG_MARGIN_H, plan_glimmer_retest
+    p = plan_glimmer_retest(tmp_path)
+    before = sum(b.hours for b in p[:[b.id for b in p].index("t2d-combined")])
+    st = dry_run(tmp_path, model="glimmer-test", plan_name="retest", runner=ok,
+                 max_hours=before + WATCHDOG_MARGIN_H + 4 / 60)
     c = st["blocks"]["t2d-combined"]
     assert c["status"] == "skipped" and "skipped: time" in c["why"]
     assert st["sim"]["vm_deleted"]                         # teardown still runs after the skip
@@ -358,7 +365,7 @@ def test_best_cap_from_sweep_reads_results_json(tmp_path):
 
 
 def test_retest_dry_run_finishes_and_deletes(tmp_path):
-    st = dry_run(tmp_path, model="glimmer-test", plan_name="retest", runner=ok, max_hours=2.0)
+    st = dry_run(tmp_path, model="glimmer-test", plan_name="retest", runner=ok, max_hours=3.5)
     assert all(v["status"] == "done" for v in st["blocks"].values()), st["blocks"]
     assert st["stopped"] == "finished" and st["sim"]["vm_deleted"]
 

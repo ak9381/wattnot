@@ -269,6 +269,31 @@ def verify_copy(root: Path, remote_sums: dict) -> list:
     return bad
 
 
+def split_growing(root: Path, bad: list, run_remote) -> tuple[list, list]:
+    """Split checksum mismatches into real ones and files still being appended on the VM.
+
+    A live log (gpu_trace.csv, the vLLM log) keeps growing between the VM's sha256 listing and
+    the copy, so its sha never matches (retest 31 Oct). If the VM's first <local size> bytes hash
+    to the local copy, the copy is a true prefix snapshot: reported as "growing", not a failure."""
+    import hashlib
+    import shlex
+    real, growing = [], []
+    for rel in bad:
+        p = root / rel
+        if not p.is_file():
+            real.append(rel)
+            continue
+        data = p.read_bytes()
+        mine = hashlib.sha256(data).hexdigest()
+        try:
+            out = run_remote(f"cd {REMOTE_LOG} && head -c {len(data)} {shlex.quote(rel)} | sha256sum")
+            theirs = (out or "").split()[0] if (out or "").split() else ""
+        except Exception:  # noqa: BLE001 - unreachable: keep it flagged
+            theirs = ""
+        (growing if theirs == mine and data else real).append(rel)
+    return real, growing
+
+
 def cmd_pull(a) -> int:
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -337,13 +362,17 @@ def cmd_pull(a) -> int:
         except OSError:
             pass
     bad = verify_copy(out / "run2", remote_sums)
+    bad, growing = split_growing(out / "run2", bad, lambda cmd: sh(c, cmd, timeout=120)[1])
     (out / "run2" / "pull-verify.json").write_text(json.dumps(
-        {"checked": len(remote_sums), "mismatched": bad,
+        {"checked": len(remote_sums), "mismatched": bad, "growing": growing,
          "note": "sha256 on the VM vs sha256 of the copy; a log still being written can differ"},
         indent=1))
     if bad:
         print(f"[pull] {len(bad)} file(s) differ from the VM's sha256 after a retry: "
               f"{bad[:5]}", file=sys.stderr)
+    if growing:
+        print(f"[pull] {len(growing)} live file(s) still growing on the VM; the copy is a verified "
+              f"prefix snapshot: {growing[:5]}", file=sys.stderr)
     sftp.close()
     c.close()
     print(f"[run2_remote] pulled {n} files to {out}")
