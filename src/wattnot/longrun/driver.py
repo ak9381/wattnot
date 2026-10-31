@@ -19,10 +19,12 @@ not finish is skipped. A restarted driver (--resume via the saved state) skips b
 from __future__ import annotations
 
 import argparse
+import contextlib
 import inspect
 import json
 import os
 import shlex
+import signal
 import subprocess
 import sys
 import time
@@ -40,9 +42,55 @@ BALANCE_FLOOR_INR = 1500.0  # the balance watchdog floor in long-run-plan.md
 LINK_LOST_RCS = (4, 5)     # run2_remote: 4 = link lost mid-setup, 5 = unreachable
 WATCHDOG_MARGIN_H = 8 / 60.0  # ctl.py deletes the VM at deadline minus 8 min: stop before then
 OVERRUN_FACTOR = 1.5       # a block may run up to 1.5x its budget before it is killed
+PULL_TIMEOUT_S = 600.0     # a copy-back must not hang forever (RUN3: a pull wedged 14+ min)
+
+
+# Process groups of control-machine children (run2_remote setup / pull) the driver started. Each
+# child runs in its OWN session, so the driver can kill the WHOLE group on timeout or on stop and
+# never leave an orphaned setup dialing a deleted VM's IP (RUN3, attempt 2).
+_CHILD_PGIDS: set[int] = set()
+
+
+def kill_child_groups(sig: int = signal.SIGTERM) -> None:
+    """Signal every child process group the driver started, then forget them."""
+    for pgid in list(_CHILD_PGIDS):
+        with contextlib.suppress(OSError):
+            os.killpg(pgid, sig)
+        _CHILD_PGIDS.discard(pgid)
+
+
+def run_child(argv: list[str], *, timeout: float, env=None) -> int:
+    """Run a control-machine child in its own process group so the whole group can be killed on
+    timeout or on a driver stop. Returns the exit code, or 124 if it overran `timeout`."""
+    p = subprocess.Popen(argv, env=env, start_new_session=True)
+    try:
+        pgid = os.getpgid(p.pid)
+    except OSError:
+        pgid = None
+    if pgid is not None:
+        _CHILD_PGIDS.add(pgid)
+    try:
+        return p.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        if pgid is not None:
+            with contextlib.suppress(OSError):
+                os.killpg(pgid, signal.SIGKILL)
+        else:
+            p.kill()
+        with contextlib.suppress(Exception):
+            p.wait(timeout=10)
+        return 124
+    finally:
+        if pgid is not None:
+            _CHILD_PGIDS.discard(pgid)
 
 # Remote layout a live run drives (matches scripts/run2_remote.py and h100_vm_setup.sh).
 REMOTE_REPO = "/root/wattnot"
+# h100_vm_setup.sh builds the venv at $ROOT/venv (/root/venv), NOT inside the repo. A host block
+# must activate THAT path; the old `cd /root/wattnot && . venv/bin/activate` looked for
+# /root/wattnot/venv, which does not exist, so `python` was missing and every host block failed
+# rc 127 (RUN3, Oct 31). Keep this in step with h100_vm_setup.sh's VENV=$ROOT/venv.
+REMOTE_VENV = "/root/venv"
 REMOTE_RESULTS = "/root/run2/results"
 REPO_ROOT = Path(__file__).resolve().parents[3]
 RUN2_REMOTE = REPO_ROOT / "scripts" / "run2_remote.py"
@@ -77,17 +125,34 @@ def _rpy(*args: str) -> list[str]:
     return ["python", "-m", *args]
 
 
+def host_inner(argv: list[str]) -> str:
+    """The shell line for a GPU-host block: cd into the repo, activate the venv that
+    h100_vm_setup.sh built at REMOTE_VENV, then run the command. If the venv is missing the block
+    stops loudly (rc 97 with a clear message on stderr) instead of running a `python` that is not
+    on PATH and failing rc 127 with no hint (the RUN3 venv-path mismatch). stderr is NOT swallowed,
+    so a bad activate shows up in the block log."""
+    cmd = " ".join(shlex.quote(a) for a in argv)
+    activate = f"{REMOTE_VENV}/bin/activate"
+    return (f"cd {shlex.quote(REMOTE_REPO)} || exit 96; "
+            f"if [ ! -f {shlex.quote(activate)} ]; then "
+            f"echo '[live] venv missing: {activate} (setup builds it)' >&2; exit 97; fi; "
+            f". {shlex.quote(activate)} || {{ echo '[live] cannot activate {activate}' >&2; "
+            f"exit 97; }}; " + cmd)
+
+
 def _m(minutes: float) -> float:
     return minutes / 60.0
 
 
-def plan(out: Path, model: str = "llama") -> list[Block]:  # see plan_glimmer for the primary
+def plan(out: Path, model: str = "llama", plan_name: str = "full") -> list[Block]:
     """The block list. model="llama" is plan A (Llama 8B main, Glimmer optional);
-    model="glimmer" is plan B (Glimmer 30B main; Llama RUN2 stays as prior evidence)."""
+    model="glimmer" is plan B (Glimmer 30B main; Llama RUN2 stays as prior evidence).
+    plan_name="retest" (glimmer-test only) re-runs just setup, probe, the sweep and the RUN3
+    failures, sized to a 2 h VM."""
     if model == "glimmer":
         return plan_glimmer(out)
     if model == "glimmer-test":
-        return plan_glimmer_test(out)
+        return plan_glimmer_retest(out) if plan_name == "retest" else plan_glimmer_test(out)
     live = out / "live.jsonl"
     reh = lambda tag, *extra: _py("wattnot.proof.orchestrate", "--mode", "rehearsal",  # noqa: E731
                                   "--out", str(out / "runs" / tag), "--profile", "quick",
@@ -179,6 +244,29 @@ SPOKEN_TEST_BUDGET_S = 90.0
 HOST_BASE_URL = "http://127.0.0.1:8000/v1"
 
 
+def sweep_live_argv(out: Path, live_file: Path, guard_cfg: str, *, sweep_budget_s: int,
+                    reps: int, warmup: int, warmup_s: int, grid: str) -> list[str]:
+    """The live BF16 power-cap sweep command. The planner is the REAL Wonder (``--wonder-live``),
+    never the deterministic "muse-wonder-mock" (RUN3 shipped the mock because this flag was missing;
+    nomock.audit_plan now fails a live wonder sweep without it). The budget/warm-up/rounds are tuned
+    by the caller so at least 3 caps are measured inside the block: RUN3 fit only one cap because a
+    16-request warm-up took ~169 s per arm on a reasoning model. The numbers stay MEASURED, just
+    with a shorter warm-up; a small grid guarantees >=3 caps even if the planner stops early."""
+    return _py("wattnot.proof.orchestrate", "--mode", "live", "--host", "{HOST}",
+               "--key", "{KEY}", "--model", GLIMMER_MODEL, "--out", str(out / "runs" / "t1-sweep"),
+               "--profile", "quick", "--planner", "wonder", "--wonder-live", "--no-adaptive",
+               "--fresh", "--sweep-budget-s", str(sweep_budget_s), "--warmup", str(warmup),
+               "--reps", str(reps), "--grid", grid,
+               "--sign-key", "receipt-offline-key.pem",
+               "--sam", "live", "--warmup-s", str(warmup_s), "--burn-in", "1", "--counterbalance",
+               "--approval-policy", APPROVAL_POLICY, "--policy-hold-s", "20",
+               # muse-wonder must be a standard tier, or a 300-375 W cap (high risk) goes
+               # PENDING_STRICT, the operator policy is never consulted, and the sweep waits
+               # 600 s then rolls the measured cap back as "no approval"
+               "--guardrail-config", guard_cfg,
+               "--live-file", str(live_file))
+
+
 def plan_glimmer_test(out: Path) -> list[Block]:
     """The 3.5 h Glimmer test VM, GPU-first so the core proof is saved before anything optional.
 
@@ -228,17 +316,8 @@ def plan_glimmer_test(out: Path) -> list[Block]:
                     "--warmup-s", "10", "--burn-in", "1", "--counterbalance",
                     "--approval-policy", str(out / DRY_POLICY_NAME), "--policy-hold-s", "2",
                     "--guardrail-config", guard_cfg, "--live-file", str(live_file))
-    sweep_live = _py("wattnot.proof.orchestrate", "--mode", "live", "--host", "{HOST}",
-                     "--key", "{KEY}", "--model", GLIMMER_MODEL, "--out", str(out / "runs" / "t1-sweep"),
-                     "--profile", "quick", "--planner", "wonder", "--no-adaptive", "--fresh",
-                     "--sweep-budget-s", "1900", "--sign-key", "receipt-offline-key.pem",
-                     "--sam", "live", "--warmup-s", "10", "--burn-in", "1", "--counterbalance",
-                     "--approval-policy", APPROVAL_POLICY, "--policy-hold-s", "20",
-                     # muse-wonder must be a standard tier, or a 300-375 W cap (high risk) goes
-                     # PENDING_STRICT, the operator policy is never consulted, and the sweep waits
-                     # 600 s then rolls the measured cap back as "no approval"
-                     "--guardrail-config", guard_cfg,
-                     "--live-file", str(live_file))
+    sweep_live = sweep_live_argv(out, live_file, guard_cfg, sweep_budget_s=1500, reps=2,
+                                 warmup=4, warmup_s=5, grid="350,325,375")
     sweep_dir = out / "runs" / "t1-sweep"
     py = shlex.quote(sys.executable)
     wonder_live = ["bash", "-c",
@@ -294,7 +373,7 @@ def plan_glimmer_test(out: Path) -> list[Block]:
         # Extra-hour blocks (3.5 h booking): after every core block, so the driver drops them
         # first if Glimmer runs slow. Each restarts the server itself.
         Block("t2b-batch", "Batch-size / KV-cache sweep: restart Glimmer per "
-              "(max-num-seqs, kv-dtype) combo and measure", _m(15),
+              "(max-num-seqs, kv-dtype) combo and measure (2 combos, ~450 s each)", _m(20),
               _py("wattnot.longrun.harness", "--cap", "350", "--out", str(out / "runs" / "t2b-batch"),
                   "--fake", "--model-config", "muse-glimmer-30b", "--per-tier", "2"),
               live=["bash", "scripts/batch_kv_sweep.sh", "bf16"], host=True),
@@ -307,6 +386,39 @@ def plan_glimmer_test(out: Path) -> list[Block]:
         Block("t3-copy", "Copy results back to the control box", _m(5), None, live=None,
               infra="pull"),
     ]
+
+
+# The blocks a retest re-runs: setup, probe, the sweep, and the blocks that failed in RUN3
+# (t1-resume, t1-eye, t1-spoken, t2-fp8 and its FP8 eye/spoken gates, t2b-batch, t2c-prefix),
+# then the copy. t1-wonder / t1-eu passed and are dropped.
+RETEST_BLOCKS = ("t0-setup", "t0-probe", "t1-sweep", "t1-resume", "t1-eye", "t1-spoken",
+                 "t2-fp8", "t2-eye", "t2-spoken", "t2b-batch", "t2c-prefix", "t3-copy")
+# Trimmed per-block budgets (minutes) so the retest fits a 2 h VM (112 min usable after the 8 min
+# watchdog margin). Setup (weight load) and the gates are fixed; the sweep, FP8 and the two extras
+# are trimmed. Unlisted blocks keep their plan_glimmer_test budget.
+RETEST_HOURS_MIN = {"t0-probe": 6, "t1-sweep": 16, "t1-resume": 4, "t2-fp8": 16,
+                    "t2b-batch": 8, "t2c-prefix": 10}
+
+
+def plan_glimmer_retest(out: Path) -> list[Block]:
+    """Retest plan (``--plan retest``): only setup, probe, the sweep and the RUN3 failures, sized to
+    fit a 2 h VM. Reuses plan_glimmer_test's real commands; the sweep is re-tuned to a tighter
+    budget (1 round, 2-request warm-up) so it still measures >=3 caps inside a 16 min block."""
+    full = {b.id: b for b in plan_glimmer_test(out)}
+    live_file = out / "live.jsonl"
+    guard_cfg = str(Path(__file__).resolve().parents[3] / "examples/longrun/guardrails-wonder.json")
+    retune = {"t1-sweep": sweep_live_argv(out, live_file, guard_cfg, sweep_budget_s=840, reps=1,
+                                          warmup=2, warmup_s=0, grid="350,325,375")}
+    blocks = []
+    for bid in RETEST_BLOCKS:
+        b = full[bid]
+        kw = {}
+        if bid in RETEST_HOURS_MIN:
+            kw["hours"] = _m(RETEST_HOURS_MIN[bid])
+        if bid in retune:
+            kw["live"] = retune[bid]
+        blocks.append(replace(b, **kw) if kw else b)
+    return blocks
 
 
 class VmControl(Protocol):
@@ -378,8 +490,11 @@ class RemoteVm:
         return "deleted" if self._deleted else "running"
 
     def pull(self) -> bool:
-        rc = subprocess.run([sys.executable, str(RUN2_REMOTE), "pull", "--host", self.host,
-                             "--key", self.key, "--out", str(self.out_dir)]).returncode
+        # bounded and in its own process group: a hung sftp.get is killed, not left to wedge
+        # teardown (RUN3: a pull hung 14+ min). run2_remote enforces its own inner budget too.
+        rc = run_child([sys.executable, str(RUN2_REMOTE), "pull", "--host", self.host,
+                        "--key", self.key, "--out", str(self.out_dir),
+                        "--timeout", str(PULL_TIMEOUT_S)], timeout=PULL_TIMEOUT_S + 120)
         if rc == 0:
             # a copy whose sha256 differs from the VM's is still a copy (the VM must still be
             # deleted), but the run is flagged: see Driver._copy_verify
@@ -663,10 +778,10 @@ def write_dry_policy(out: Path) -> Path:
 
 def dry_run(out: Path, *, drop: dict | None = None, dead_after: str | None = None,
             include_optional=(), runner=None, timeout_s: float = 900, model: str = "llama",
-            max_hours: float = 18.0) -> dict:  # the plan's watchdog hard cap
+            max_hours: float = 18.0, plan_name: str = "full") -> dict:  # watchdog hard cap
     out.mkdir(parents=True, exist_ok=True)
     write_dry_policy(out)
-    blocks = plan(out, model)
+    blocks = plan(out, model, plan_name)
     sim = {"h": 0.0}
     env = dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[2]))
     env.pop("WATTNOT_META_KEY", None)
@@ -716,9 +831,11 @@ def _live_runner(out: Path, host: str, key: str, vm: RemoteVm, log=print):
 
     def run(b: Block, budget_s: float) -> int:
         if b.infra == "setup":
-            return subprocess.run([sys.executable, str(RUN2_REMOTE), "setup", "--host", host,
-                                   "--key", key, "--model", GLIMMER_MODEL, "--moe", "none"],
-                                  timeout=budget_s).returncode
+            # own process group so a driver stop kills setup too (RUN3: an orphaned setup kept
+            # dialing a deleted VM's IP). run_child returns 124 if it overruns the block budget.
+            return run_child([sys.executable, str(RUN2_REMOTE), "setup", "--host", host,
+                              "--key", key, "--model", GLIMMER_MODEL, "--moe", "none"],
+                             timeout=budget_s)
         if b.infra == "pull":
             if not vm.pull():
                 return 1
@@ -730,8 +847,7 @@ def _live_runner(out: Path, host: str, key: str, vm: RemoteVm, log=print):
         logf.parent.mkdir(parents=True, exist_ok=True)
         if b.host:
             from wattnot.proof import sshutil
-            inner = (f"cd {REMOTE_REPO} && . venv/bin/activate 2>/dev/null; "
-                     + " ".join(shlex.quote(a) for a in argv))
+            inner = host_inner(argv)
             try:
                 c = sshutil.connect(host, key)
             except Exception as e:  # noqa: BLE001
@@ -776,13 +892,13 @@ def _live_publisher(env=None):
 
 
 def live_run(out: Path, *, host: str, key: str = "~/.ssh/e2e_h100", model: str = "glimmer-test",
-             max_hours: float | None = None, include_optional=()) -> dict:
+             max_hours: float | None = None, include_optional=(), plan_name: str = "full") -> dict:
     """Drive a REAL VM (already launched by scripts/e2e/ctl.py). Runs the no-mock preflight first
     and refuses to start if any live input or step is a mock/placeholder/stub/replay. Never
     launches a VM; teardown goes through ctl.py."""
     out.mkdir(parents=True, exist_ok=True)
     from wattnot.longrun import nomock
-    report = nomock.audit_plan(model)
+    report = nomock.audit_plan(model, plan_name=plan_name)
     nomock.write_report(report, out / "nomock-preflight.json")
     if not report["ok"]:
         print("NO-MOCK preflight FAILED; refusing to start the live run:", file=sys.stderr)
@@ -799,9 +915,10 @@ def live_run(out: Path, *, host: str, key: str = "~/.ssh/e2e_h100", model: str =
             return {"stopped": "approval policy missing", "blocks": {}}
         for w in approval_policy_warnings(Path(APPROVAL_POLICY)):
             print(f"APPROVAL POLICY WARNING: {w}", file=sys.stderr)
-    blocks = plan(out, model)
+    blocks = plan(out, model, plan_name)
     vm = RemoteVm(host=host, key=key, out_dir=out / "pulled")
-    hours = max_hours if max_hours is not None else (3.5 if model == "glimmer-test" else 18.0)
+    default_h = (2.0 if plan_name == "retest" else 3.5) if model == "glimmer-test" else 18.0
+    hours = max_hours if max_hours is not None else default_h
     run = _live_runner(out, host, key, vm)
 
     last = {"inr": None}
@@ -824,13 +941,30 @@ def live_run(out: Path, *, host: str, key: str = "~/.ssh/e2e_h100", model: str =
     # anchor the clock to the VM's real launch (ctl.py's vm.json), so the driver's deadline is never
     # later than the off-box watchdog's; only ever moves it earlier
     d._launch_wall = min(d._launch_wall, vm_launch_wall(VM_RECORD) or d._launch_wall)
+
+    # a SIGTERM/SIGINT (ctl stop, a kill) must kill any child we spawned (setup / pull) and run
+    # teardown, not leave an orphan. Raise KeyboardInterrupt so the handler below runs.
+    def _on_signal(signum, _frame):
+        kill_child_groups()
+        raise KeyboardInterrupt(f"signal {signum}")
+
+    prev = {}
+    for s in (signal.SIGTERM, signal.SIGINT):
+        with contextlib.suppress(ValueError, OSError):
+            prev[s] = signal.signal(s, _on_signal)
     try:
         return d.go()
     except BaseException:
-        # a driver crash or Ctrl-C must not leave a billing VM: copy what we can, then delete
+        # a driver crash, Ctrl-C or a stop signal must not leave a billing VM or an orphaned child:
+        # kill child groups, copy what we can, then delete
+        kill_child_groups()
         if not vm.deleted:
             d._teardown(why="driver crashed", finished=True)
         raise
+    finally:
+        for s, h in prev.items():
+            with contextlib.suppress(ValueError, OSError):
+                signal.signal(s, h)
 
 
 VM_RECORD = Path("/workspace/hackathon/e2e-glimmer-test/vm.json")   # written by scripts/e2e/ctl.py
@@ -913,6 +1047,9 @@ def main(argv=None) -> int:
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--model", choices=["glimmer", "llama", "glimmer-test"], default="glimmer",
                     help="glimmer = primary plan; llama = fallback; glimmer-test = the 2 h test VM")
+    ap.add_argument("--plan", choices=["full", "retest"], default="full",
+                    help="retest (glimmer-test only): re-run setup, probe, the sweep and the RUN3 "
+                         "failures only, sized to a 2 h VM")
     ap.add_argument("--host", help="live: the GPU host's IP (default: read scripts/e2e ip file)")
     ap.add_argument("--key", default="~/.ssh/e2e_h100", help="live: SSH key for the GPU host")
     ap.add_argument("--max-hours", type=float, default=None)
@@ -930,7 +1067,8 @@ def main(argv=None) -> int:
             print("--live needs --host IP (or an ip file written by scripts/e2e/ctl.py status)",
                   file=sys.stderr)
             return 2
-        st = live_run(a.out, host=host, key=a.key, model=a.model, max_hours=a.max_hours)
+        st = live_run(a.out, host=host, key=a.key, model=a.model, max_hours=a.max_hours,
+                      plan_name=a.plan)
         for k, v in st.get("blocks", {}).items():
             print(f"{k:18} {v.get('status', '?'):8} rc={v.get('rc', '-')} "
                   f"{v.get('wall_s', '')}s {v.get('why', v.get('teardown', ''))}")
@@ -949,8 +1087,9 @@ def main(argv=None) -> int:
         drop[k] = int(n)
     if a.model != "llama" and a.drop_link == "b2-wonder-sweep:3":
         drop = {"g2-wonder-sweep": 3} if a.model == "glimmer" else {"t1-resume": 2}
-    hours = a.max_hours or (3.5 if a.model == "glimmer-test" else 18.0)
-    st = dry_run(a.out, drop=drop, model=a.model, max_hours=hours)
+    default_h = (2.0 if a.plan == "retest" else 3.5) if a.model == "glimmer-test" else 18.0
+    hours = a.max_hours or default_h
+    st = dry_run(a.out, drop=drop, model=a.model, max_hours=hours, plan_name=a.plan)
     for k, v in st["blocks"].items():
         print(f"{k:18} {v['status']:8} rc={v.get('rc', '-')} {v.get('wall_s', '')}s "
               f"{v.get('why', v.get('teardown', ''))}")

@@ -278,3 +278,67 @@ def test_prefix_change_pct_tolerates_one_missing_arm():
     m = ('vllm:time_to_first_token_seconds_sum 1.0\nvllm:time_to_first_token_seconds_count 10\n')
     m2 = ('vllm:time_to_first_token_seconds_sum 1.0\nvllm:time_to_first_token_seconds_count 20\n')
     assert ttft_ms_from_metrics(m, m2) is None
+
+
+# --- RUN3 retest fixes --------------------------------------------------------------------
+
+
+def test_host_block_activates_the_setup_venv_and_fails_loudly():
+    # the venv h100_vm_setup.sh builds is /root/venv, NOT /root/wattnot/venv; a host block must
+    # activate that path and must not swallow a missing-venv error (RUN3 rc 127).
+    from wattnot.longrun.driver import host_inner
+    s = host_inner(["python", "-m", "wattnot.vision.run"])
+    assert "/root/venv/bin/activate" in s
+    assert "2>/dev/null" not in s          # the error is no longer hidden
+    assert "exit 97" in s                  # and a missing venv fails loudly
+
+
+def test_live_sweep_uses_real_wonder_and_covers_three_caps(tmp_path):
+    from wattnot.longrun.driver import plan_glimmer_test
+    sweep = {b.id: b for b in plan_glimmer_test(tmp_path)}["t1-sweep"].live
+    assert "--wonder-live" in sweep                       # real planner, not muse-wonder-mock
+    assert "--grid" in sweep and len(sweep[sweep.index("--grid") + 1].split(",")) >= 3
+    for flag in ("--warmup", "--reps", "--sweep-budget-s"):
+        assert flag in sweep                              # tuned so >=3 caps fit the budget
+
+
+def test_retest_plan_fits_two_hours_and_reruns_the_failures(tmp_path):
+    from wattnot.longrun.driver import WATCHDOG_MARGIN_H, plan_glimmer_retest
+    p = plan_glimmer_retest(tmp_path)
+    ids = [b.id for b in p]
+    assert ids[0] == "t0-setup" and ids[1] == "t0-probe" and ids[-1] == "t3-copy"
+    for failed in ("t1-sweep", "t1-resume", "t1-eye", "t1-spoken", "t2-fp8", "t2-eye",
+                   "t2-spoken", "t2b-batch", "t2c-prefix"):
+        assert failed in ids
+    assert "t1-wonder" not in ids and "t1-eu" not in ids   # these passed in RUN3
+    total_min = sum(b.hours for b in p) * 60
+    usable = 2.0 * 60 - WATCHDOG_MARGIN_H * 60
+    assert total_min <= usable, (total_min, usable)
+    sweep = next(b for b in p if b.id == "t1-sweep")
+    assert sweep.live[sweep.live.index("--sweep-budget-s") + 1] == "840"   # tighter than full test
+    assert sweep.live[sweep.live.index("--reps") + 1] == "1"
+
+
+def test_retest_dry_run_finishes_and_deletes(tmp_path):
+    st = dry_run(tmp_path, model="glimmer-test", plan_name="retest", runner=ok, max_hours=2.0)
+    assert all(v["status"] == "done" for v in st["blocks"].values()), st["blocks"]
+    assert st["stopped"] == "finished" and st["sim"]["vm_deleted"]
+
+
+def test_t2b_batch_block_has_a_realistic_budget(tmp_path):
+    from wattnot.longrun.driver import plan_glimmer_test
+    b = {x.id: x for x in plan_glimmer_test(tmp_path)}["t2b-batch"]
+    assert b.hours * 60 >= 18   # RUN3 overran the 15 min (1350 s hard) limit twice
+
+
+def test_run_child_kills_the_group_on_timeout():
+    # a control-machine child that overruns is killed (whole process group) and reported 124,
+    # not left to wedge teardown (RUN3: a pull hung 14+ min).
+    import sys
+    import time
+
+    from wattnot.longrun import driver
+    t0 = time.monotonic()
+    rc = driver.run_child([sys.executable, "-c", "import time; time.sleep(30)"], timeout=1.0)
+    assert rc == 124 and time.monotonic() - t0 < 15
+    assert not driver._CHILD_PGIDS   # registry cleaned up
