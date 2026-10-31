@@ -141,7 +141,8 @@ def verify_document(receipt, bundle: dict | None, *, trusted: set[str] | None = 
     return Report(path, steps, g, claimed, derived)
 
 
-KNOWN_LABELS = {"MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "REPLAY", "ADVICE", "SAMPLE"}
+KNOWN_LABELS = {"MEASURED", "ESTIMATE", "SIMULATED", "SYNTHETIC", "MOCK", "REPLAY", "ADVICE",
+                "SAMPLE"}
 WEAK = {"SIMULATED", "MOCK"}
 
 

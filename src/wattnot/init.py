@@ -11,7 +11,13 @@ from wattnot import preflight
 def init(path: Path, *, act: bool = False, force: bool = False) -> dict:
     report = preflight.run()
     if path.exists() and not force:
-        cfg = json.loads(path.read_text())
+        try:
+            cfg = json.loads(path.read_text())
+        except ValueError as e:
+            raise SystemExit(f"{path} is not valid JSON ({e}); fix it or rerun with --force")
+        if not isinstance(cfg, dict):
+            raise SystemExit(f"{path} is not a JSON object; fix it or rerun with --force")
+        cfg.setdefault("mode", "watch")
         if act:
             cfg["mode"] = "act"
     else:

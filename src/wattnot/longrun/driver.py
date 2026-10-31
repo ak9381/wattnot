@@ -501,6 +501,14 @@ LONG_HOURS_MIN = {"t1-sweep": 95, "t1-wonder": LONG_WONDER_CHART_MIN, "t2c-prefi
 LONG_BOOKING_H = 5.0       # ESTIMATE: one H100 for 5 h
 
 
+def _default_hours(model: str, plan_name: str) -> float:
+    """VM hours when --max-hours is not given. The long plan is booked for LONG_BOOKING_H; the
+    old 3.5 h test default dropped batching, prefix, public benchmarks and the copy block."""
+    if model == "glimmer-test":
+        return LONG_BOOKING_H if plan_name == "long" else 3.5
+    return 18.0
+
+
 def plan_glimmer_long(out: Path) -> list[Block]:
     """The long-run plan: the full Glimmer test plus a bigger Wonder budget, the public GSM8K /
     HumanEval block, and every block the rerun skipped. Nothing here launches a VM."""
@@ -1042,7 +1050,7 @@ def live_run(out: Path, *, host: str, key: str = "~/.ssh/e2e_h100", model: str =
             print(f"APPROVAL POLICY WARNING: {w}", file=sys.stderr)
     blocks = plan(out, model, plan_name)
     vm = RemoteVm(host=host, key=key, out_dir=out / "pulled")
-    default_h = 3.5 if model == "glimmer-test" else 18.0
+    default_h = _default_hours(model, plan_name)
     hours = max_hours if max_hours is not None else default_h
     run = _live_runner(out, host, key, vm)
 
@@ -1181,6 +1189,10 @@ def main(argv=None) -> int:
     ap.add_argument("--drop-link", default="b2-wonder-sweep:3",
                     help="dry: simulate an SSH drop: block:probes ('' for none)")
     a = ap.parse_args(argv)
+    if a.plan in ("retest", "long") and a.model != "glimmer-test":
+        # plan() only honours retest/long for glimmer-test; anything else would silently run
+        # the old full plan on a paid VM
+        ap.error(f"--plan {a.plan} needs --model glimmer-test")
 
     if a.live:
         host = a.host
@@ -1212,7 +1224,7 @@ def main(argv=None) -> int:
         drop[k] = int(n)
     if a.model != "llama" and a.drop_link == "b2-wonder-sweep:3":
         drop = {"g2-wonder-sweep": 3} if a.model == "glimmer" else {"t1-resume": 2}
-    default_h = 3.5 if a.model == "glimmer-test" else 18.0
+    default_h = _default_hours(a.model, a.plan)
     hours = a.max_hours or default_h
     st = dry_run(a.out, drop=drop, model=a.model, max_hours=hours, plan_name=a.plan)
     for k, v in st["blocks"].items():
