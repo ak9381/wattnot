@@ -1,17 +1,16 @@
 {
   "label": "MEASURED",
-  "when": "2026-11-01T02:44:16+0530",
+  "when": "2026-11-01T03:03:08+0530",
   "frameworks_client": "langchain-openai ChatOpenAI + langchain.agents.create_agent",
   "upstream_models_called": [
     "muse-spark-1.3-contributor",
     "muse-spark-1.3-contributor",
     "muse-spark-1.3-contributor",
     "muse-spark-1.3-contributor",
-    "muse-spark-1.3",
     "muse-spark-1.3-contributor",
     "muse-spark-1.3-contributor",
     "muse-spark-1.3-contributor",
-    "muse-spark-1.3",
+    "muse-spark-1.3-contributor",
     "muse-spark-1.3-contributor"
   ],
   "results": [
@@ -19,37 +18,43 @@
       "prompt": "What is 17 * 23? Reply with just the number.",
       "answer": "391",
       "correct": true,
-      "latency_s": 3.98
+      "latency_s": 3.76
     },
     {
       "prompt": "What is the capital of Japan? One word.",
       "answer": "Tokyo",
       "correct": true,
-      "latency_s": 3.97
+      "latency_s": 3.25
     },
     {
       "prompt": "How many sides does a hexagon have? Reply with just the number.",
       "answer": "6",
       "correct": true,
-      "latency_s": 3.96
+      "latency_s": 3.83
     },
     {
       "prompt": "Spell the word 'watt' backwards. Reply with just the word.",
       "answer": "ttaw",
       "correct": true,
-      "latency_s": 5.9
+      "latency_s": 3.12
     },
     {
       "prompt": "Which planet is known as the Red Planet? One word.",
       "answer": "Mars",
       "correct": true,
-      "latency_s": 3.0
+      "latency_s": 4.12
     },
     {
       "prompt": "What is the chemical symbol for gold? Reply with just the symbol.",
       "answer": "Au",
       "correct": true,
-      "latency_s": 2.57
+      "latency_s": 5.15
+    },
+    {
+      "prompt": "stream: largest ocean",
+      "answer": "Pacific",
+      "correct": true,
+      "chunks": 4
     },
     {
       "prompt": "agent: 12345 * 6789 via multiply tool",
@@ -65,15 +70,14 @@
       "langchain"
     ],
     "framework": "langchain",
-    "calls": 8,
+    "calls": 9,
     "routing": {
       "enabled": true,
-      "routed_calls": 8,
-      "escalation_rate": 0.25,
-      "small_model_pass_rate": 0.75,
+      "routed_calls": 9,
+      "escalation_rate": 0.0,
+      "small_model_pass_rate": 1.0,
       "answered_by": {
-        "spark-1.3": 2,
-        "spark-contributor": 6
+        "spark-contributor": 9
       }
     },
     "gate": {
@@ -81,26 +85,29 @@
     },
     "context_saver": {
       "enabled": true,
-      "tokens_before": 141,
-      "tokens_after": 141,
+      "tokens_before": 151,
+      "tokens_after": 151,
       "tokens_saved": 0,
       "label": "ESTIMATE"
     },
     "agent_waste": {
-      "upstream_calls": 8,
-      "prompt_tokens": 1474,
-      "completion_tokens": 2314,
-      "reasoning_tokens": 2147,
+      "upstream_calls": 9,
+      "prompt_tokens": 1492,
+      "completion_tokens": 3321,
+      "reasoning_tokens": 3144,
       "nudges": 0,
-      "runs": 7,
+      "runs": 8,
       "runs_stopped_early": 0
-    }
+    },
+    "billed_upstream_calls": 9,
+    "streamed_calls": 1,
+    "dropped_fields": []
   },
   "stats_total": {
-    "upstream_calls": 8,
-    "prompt_tokens": 1474,
-    "completion_tokens": 2314,
-    "reasoning_tokens": 2147,
+    "upstream_calls": 9,
+    "prompt_tokens": 1492,
+    "completion_tokens": 3321,
+    "reasoning_tokens": 3144,
     "nudges": 0,
     "flags": {
       "repeat": 0,
@@ -116,164 +123,148 @@
     "price_source": "https://dev.meta.ai/docs/pricing-rate-limits (Standard mode, read 2026-10-27)",
     "entries": [
       {
-        "id": "9fb629e9cc7b",
-        "ts": "2026-10-31T21:13:42+00:00",
+        "id": "ac7a09a79273",
+        "ts": "2026-10-31T21:32:32+00:00",
         "model": "muse-spark-1.3-contributor",
         "purpose": "langchain-live-test",
         "status": "ok",
         "input_tokens": 22,
-        "output_tokens": 281,
+        "output_tokens": 284,
         "cached_tokens": 0,
-        "usd": 5.84e-05,
+        "usd": 5.9e-05,
         "estimated": false,
         "price_assumed": false,
         "http_status": 200,
-        "latency_s": 3.632,
-        "reasoning_tokens": 271
+        "latency_s": 3.426,
+        "reasoning_tokens": 274
       },
       {
-        "id": "04f8ecbf19a5",
-        "ts": "2026-10-31T21:13:46+00:00",
+        "id": "676cd1f8602d",
+        "ts": "2026-10-31T21:32:36+00:00",
         "model": "muse-spark-1.3-contributor",
         "purpose": "langchain-live-test",
         "status": "ok",
         "input_tokens": 18,
-        "output_tokens": 296,
+        "output_tokens": 248,
         "cached_tokens": 0,
-        "usd": 6.1e-05,
+        "usd": 5.14e-05,
         "estimated": false,
         "price_assumed": false,
         "http_status": 200,
-        "latency_s": 3.965,
-        "reasoning_tokens": 286
+        "latency_s": 3.244,
+        "reasoning_tokens": 238
       },
       {
-        "id": "8aa109c1a458",
-        "ts": "2026-10-31T21:13:50+00:00",
+        "id": "fcbb992b9b32",
+        "ts": "2026-10-31T21:32:39+00:00",
         "model": "muse-spark-1.3-contributor",
         "purpose": "langchain-live-test",
         "status": "ok",
         "input_tokens": 22,
-        "output_tokens": 339,
+        "output_tokens": 345,
         "cached_tokens": 0,
-        "usd": 7e-05,
+        "usd": 7.12e-05,
         "estimated": false,
         "price_assumed": false,
         "http_status": 200,
-        "latency_s": 3.954,
-        "reasoning_tokens": 329
+        "latency_s": 3.83,
+        "reasoning_tokens": 335
       },
       {
-        "id": "1d92b0026c38",
-        "ts": "2026-10-31T21:13:54+00:00",
+        "id": "5a7ca2320268",
+        "ts": "2026-10-31T21:32:43+00:00",
         "model": "muse-spark-1.3-contributor",
         "purpose": "langchain-live-test",
         "status": "ok",
         "input_tokens": 23,
-        "output_tokens": 400,
+        "output_tokens": 316,
         "cached_tokens": 0,
-        "usd": 8.23e-05,
+        "usd": 6.55e-05,
         "estimated": false,
         "price_assumed": false,
         "http_status": 200,
-        "latency_s": 4.232,
-        "reasoning_tokens": 392
+        "latency_s": 3.119,
+        "reasoning_tokens": 305
       },
       {
-        "id": "453a18b3f4c3",
-        "ts": "2026-10-31T21:13:58+00:00",
-        "model": "muse-spark-1.3",
-        "purpose": "langchain-live-test",
-        "status": "ok",
-        "input_tokens": 23,
-        "output_tokens": 304,
-        "cached_tokens": 0,
-        "usd": 0.00132075,
-        "estimated": false,
-        "price_assumed": false,
-        "http_status": 200,
-        "latency_s": 1.656,
-        "reasoning_tokens": 293
-      },
-      {
-        "id": "88810adf2f31",
-        "ts": "2026-10-31T21:14:00+00:00",
+        "id": "124b97f9a6e9",
+        "ts": "2026-10-31T21:32:46+00:00",
         "model": "muse-spark-1.3-contributor",
         "purpose": "langchain-live-test",
         "status": "ok",
         "input_tokens": 20,
-        "output_tokens": 253,
+        "output_tokens": 392,
         "cached_tokens": 0,
-        "usd": 5.26e-05,
+        "usd": 8.04e-05,
         "estimated": false,
         "price_assumed": false,
         "http_status": 200,
-        "latency_s": 2.991,
-        "reasoning_tokens": 243
+        "latency_s": 4.111,
+        "reasoning_tokens": 382
       },
       {
-        "id": "b93277beb6bb",
-        "ts": "2026-10-31T21:14:03+00:00",
+        "id": "2ce676c663c4",
+        "ts": "2026-10-31T21:32:50+00:00",
         "model": "muse-spark-1.3-contributor",
         "purpose": "langchain-live-test",
         "status": "ok",
         "input_tokens": 22,
-        "output_tokens": 218,
+        "output_tokens": 538,
         "cached_tokens": 0,
-        "usd": 4.58e-05,
+        "usd": 0.0001098,
         "estimated": false,
         "price_assumed": false,
         "http_status": 200,
-        "latency_s": 2.565,
-        "reasoning_tokens": 208
+        "latency_s": 5.146,
+        "reasoning_tokens": 528
       },
       {
-        "id": "eb279aed4e8d",
-        "ts": "2026-10-31T21:14:05+00:00",
+        "id": "a25811d7dc4a",
+        "ts": "2026-10-31T21:32:55+00:00",
+        "model": "muse-spark-1.3-contributor",
+        "purpose": "langchain-live-test",
+        "status": "ok",
+        "input_tokens": 18,
+        "output_tokens": 332,
+        "cached_tokens": 0,
+        "usd": 6.82e-05,
+        "estimated": false,
+        "price_assumed": false,
+        "http_status": 200,
+        "latency_s": 4.345,
+        "reasoning_tokens": 322
+      },
+      {
+        "id": "5f61f0e41357",
+        "ts": "2026-10-31T21:32:59+00:00",
         "model": "muse-spark-1.3-contributor",
         "purpose": "langchain-live-test",
         "status": "ok",
         "input_tokens": 621,
-        "output_tokens": 400,
+        "output_tokens": 282,
         "cached_tokens": 0,
-        "usd": 0.0001421,
+        "usd": 0.0001185,
         "estimated": false,
         "price_assumed": false,
         "http_status": 200,
-        "latency_s": 3.431,
-        "reasoning_tokens": 342
+        "latency_s": 3.016,
+        "reasoning_tokens": 196
       },
       {
-        "id": "e362b4fd6be8",
-        "ts": "2026-10-31T21:14:09+00:00",
-        "model": "muse-spark-1.3",
-        "purpose": "langchain-live-test",
-        "status": "ok",
-        "input_tokens": 621,
-        "output_tokens": 309,
-        "cached_tokens": 497,
-        "usd": 0.0015428,
-        "estimated": false,
-        "price_assumed": false,
-        "http_status": 200,
-        "latency_s": 2.119,
-        "reasoning_tokens": 223
-      },
-      {
-        "id": "9a9370431808",
-        "ts": "2026-10-31T21:14:11+00:00",
+        "id": "b5f15734e05a",
+        "ts": "2026-10-31T21:33:03+00:00",
         "model": "muse-spark-1.3-contributor",
         "purpose": "langchain-live-test",
         "status": "ok",
         "input_tokens": 726,
-        "output_tokens": 314,
-        "cached_tokens": 625,
-        "usd": 7.415e-05,
+        "output_tokens": 584,
+        "cached_tokens": 497,
+        "usd": 0.00014069,
         "estimated": false,
         "price_assumed": false,
         "http_status": 200,
-        "latency_s": 4.78,
-        "reasoning_tokens": 294
+        "latency_s": 5.968,
+        "reasoning_tokens": 564
       }
     ]
   }

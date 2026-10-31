@@ -46,11 +46,20 @@ The loop test (openai-python) repeats one file read 12 times. The waste saver st
 
 ## Live LangChain run (MEASURED, 2026-11-01)
 
-`tests/integration/test_langchain_real.py` drives real `langchain-openai` `ChatOpenAI` and a `langchain.agents.create_agent` tool agent through the proxy to the live Meta Muse API (tiers: `muse-spark-1.3-contributor` first, then `muse-spark-1.3`). It is skipped unless `WATTNOT_LIVE=1` and a Meta key are set:
+`tests/integration/test_langchain_real.py` drives real `langchain-openai` `ChatOpenAI` (including `.stream()`) and a `langchain.agents.create_agent` tool agent through the proxy to the live Meta Muse API (tiers: `muse-spark-1.3-contributor` first, then `muse-spark-1.3`, both marked `reasoning`). It is skipped unless `WATTNOT_LIVE=1` and a Meta key are set:
 
 ```bash
 pip install -e '.[frameworks,dev]' langchain
-WATTNOT_LIVE=1 pytest tests/integration/test_langchain_real.py -s
+WATTNOT_LIVE=1 python -m pytest tests/integration/test_langchain_real.py -s
 ```
 
-First run (MEASURED): 7/7 correct (6 Q&A plus a multiply-tool agent), 8 proxied calls, receipt framework `langchain`, small-tier pass rate 0.75, escalation rate 0.25, gate pass 100%, 10 upstream Muse calls for about $0.0034 (ESTIMATE from the spend ledger at list prices). A replayed tool loop was stopped early by the waste guard. Output: `receipts/frameworks/langchain-live.json`.
+Latest run (MEASURED, after the proxy fixes below): 8/8 correct (6 Q&A, 1 streamed answer in 4 chunks, 1 multiply-tool agent), 9 proxied calls, receipt framework `langchain`, small-tier pass rate 1.0, escalation rate 0.0, gate pass 100%, 9 billed upstream calls, about $0.0008 (ESTIMATE, spend ledger at list prices). A replayed tool loop was stopped early by the waste guard. Output: `receipts/frameworks/langchain-live.json`.
+
+The first run (before the fixes) escalated 2 of 8 calls only because reasoning used up a 400-token output cap, and its waste stats showed 8 calls when 10 were billed.
+
+## Proxy behaviour for frameworks
+
+- **Reasoning tiers:** a tier with `"reasoning": True` gets `max_completion_tokens` of at least `max_output` (default 2000). A `finish_reason: length` with a visible answer, where reasoning used at least half the output, is gated as a normal answer. Only an empty or failing answer escalates.
+- **Billed calls:** every upstream attempt, including escalated ones the caller never sees, is counted in the waste stats. The receipt shows `billed_upstream_calls`.
+- **Streaming:** `stream: true` is served as OpenAI SSE chunks (with a usage chunk when `stream_options.include_usage` is set). The proxy buffers the upstream answer first, because the quality gate and routing need the full answer, so the first token arrives when the answer is done.
+- **Fields:** only standard chat fields are forwarded (`model`, `messages`, `tools`, `tool_choice`, `temperature`, `top_p`, `max_tokens`, `max_completion_tokens`, `stop`, `response_format`, `seed`, penalties, `reasoning_effort`, `user`, `metadata`). Others are dropped and listed in the receipt's `dropped_fields`. `n > 1` returns 400.

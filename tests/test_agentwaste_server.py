@@ -96,13 +96,15 @@ def test_default_run_id_groups_same_opener() -> None:
     assert len(fake.calls) == 2
 
 
-def test_streaming_rejected() -> None:
-    client, _ = make_client()
+def test_streaming_served_as_sse() -> None:
+    client, fake = make_client()
     body = {"model": "m", "messages": [{"role": "user", "content": "hi"}],
             "stream": True}
     resp = client.post("/v1/chat/completions", json=body)
-    assert resp.status_code == 400
-    assert "stream" in resp.json()["detail"].lower()
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/event-stream")
+    assert resp.text.rstrip().endswith("data: [DONE]")
+    assert "stream" not in fake.calls[0][0]
 
 
 def test_upstream_error_is_502_without_echo() -> None:

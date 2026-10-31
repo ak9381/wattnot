@@ -44,11 +44,11 @@ from wattnot.meta.ledger import SpendLedger  # noqa: E402
 ROOT = Path(__file__).resolve().parents[2]
 OUT = Path(os.environ.get("WATTNOT_LC_OUT", ROOT / "receipts" / "frameworks" / "langchain-live.json"))
 TIERS = (
-    {"name": "spark-contributor", "model": "muse-spark-1.3-contributor", "where": "hosted"},
-    {"name": "spark-1.3", "model": "muse-spark-1.3", "where": "hosted"},
+    {"name": "spark-contributor", "model": "muse-spark-1.3-contributor", "where": "hosted",
+     "reasoning": True, "max_output": 1500},
+    {"name": "spark-1.3", "model": "muse-spark-1.3", "where": "hosted",
+     "reasoning": True, "max_output": 1500},
 )
-# Keys LangChain may send that the Meta API does not need.
-_DROP = ("stream", "n", "stream_options", "parallel_tool_calls")
 
 QA = [  # (prompt, regex the answer must match)
     ("What is 17 * 23? Reply with just the number.", r"\b391\b"),
@@ -77,8 +77,6 @@ def proxy(tmp_path_factory):
     seen: list[str] = []
 
     def upstream(body: dict, headers: dict) -> dict:
-        body = {k: v for k, v in body.items() if k not in _DROP}
-        body.setdefault("max_completion_tokens", 400)
         seen.append(str(body.get("model")))
         return client(body, purpose="langchain-live-test")
 
@@ -124,6 +122,13 @@ def test_langchain_live_through_wattnot(proxy):
         results.append({"prompt": q, "answer": str(ans)[:200], "correct": ok,
                         "latency_s": round(time.monotonic() - t0, 2)})
 
+    # One streamed call: LangChain .stream() over the proxy's SSE.
+    parts = [str(c.content) for c in _llm(base, "stream-0").stream(
+        [("user", "Name the largest ocean on Earth. One word.")])]
+    streamed = "".join(parts)
+    results.append({"prompt": "stream: largest ocean", "answer": streamed[:200],
+                    "correct": bool(re.search(r"pacific", streamed, re.I)), "chunks": len(parts)})
+
     # One real LangChain agent with a tool. The model must call multiply and use its result.
     agent = create_agent(_llm(base, "agent-0"), tools=[multiply],
                          system_prompt="Use the multiply tool for any multiplication.")
@@ -150,7 +155,9 @@ def test_langchain_live_through_wattnot(proxy):
     assert all(r["correct"] for r in results), results
     assert receipt["label"] == "MEASURED"
     assert receipt["frameworks"] == ["langchain"]
-    assert receipt["calls"] >= len(QA) + 2          # agent makes >= 2 model calls
+    assert receipt["calls"] >= len(QA) + 3
+    assert receipt["streamed_calls"] == 1
+    assert receipt["billed_upstream_calls"] == len(proxy["seen"])          # agent makes >= 2 model calls
     assert receipt["routing"]["enabled"] and receipt["routing"]["routed_calls"] == receipt["calls"]
     assert receipt["context_saver"]["tokens_before"] > 0
     assert stats["total"]["upstream_calls"] >= receipt["calls"]
