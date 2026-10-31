@@ -20,6 +20,7 @@ import json
 import os
 import shlex
 import subprocess
+import sys
 import time
 from collections.abc import Callable
 
@@ -35,7 +36,7 @@ def resolve_cmd(layer: int, env: dict | None = None) -> str | None:
 
 def build_check_command(
     *, heartbeat_path, budget_cap_inr, max_hours, max_stale_s, dry_run: bool,
-    python: str = "python",
+    python: str = sys.executable or "python3",
 ) -> list[str]:
     """The exact shared command the agent must run (`watchdog check ...`)."""
     cmd = [python, "-m", "wattnot.longrun.watchdog", "check", "--heartbeat", str(heartbeat_path)]

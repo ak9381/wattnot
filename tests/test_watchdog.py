@@ -252,7 +252,11 @@ def test_agent_dry_run_stops_without_deleting(tmp_path, monkeypatch):
 def test_agent_prompt_and_command_are_neutral_and_reference_the_shared_check(tmp_path):
     check_cmd = build_check_command(heartbeat_path=tmp_path / "hb.json", budget_cap_inr=5000,
                                     max_hours=5, max_stale_s=STALE, dry_run=False)
-    assert check_cmd[:4] == ["python", "-m", "wattnot.longrun.watchdog", "check"]
+    import sys
+    # The interpreter is this very Python (sys.executable), never a bare "python" that may be
+    # missing or point at Python 2 on the VM.
+    assert check_cmd[0] == (sys.executable or "python3") and check_cmd[0] != "python"
+    assert check_cmd[1:4] == ["-m", "wattnot.longrun.watchdog", "check"]
     prompt = build_prompt(check_cmd)
     assert "wattnot.longrun.watchdog" in prompt
     # No vendor names baked into the prompt or command (list supplied via env, kept out of the repo).
