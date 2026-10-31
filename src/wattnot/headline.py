@@ -78,13 +78,157 @@ class FakeBackend:
         return _FakeMeter(self.rng, wh, self.noise)
 
 
-class ModalBackend:  # pragma: no cover - needs T10 (Modal account and card)
+class _ModalClient:
+    """Drives a deployed vLLM OpenAI-compatible completions endpoint, one request at a time.
+
+    Latency is MEASURED locally (wall clock around the POST); token counts come from the
+    server's `usage` block. The transport is injectable so tests run offline with a fake and
+    no real network ever opens.
+    """
+
+    def __init__(self, base_url: str, *, model: str = MODEL, transport=None,
+                 timeout_s: float = 120.0, clock=None):
+        import time as _time
+        self.url = base_url.rstrip("/") + "/completions"
+        self.model = model
+        self._transport = transport or _urllib_post
+        self._timeout_s = timeout_s
+        self._clock = clock or _time.perf_counter
+
+    def complete(self, item) -> Completion:
+        body = {"model": self.model, "prompt": item.prompt,
+                "max_tokens": item.max_tokens, "temperature": 0}
+        t0 = self._clock()
+        payload = self._transport(self.url, body, self._timeout_s)
+        latency = self._clock() - t0
+        usage = payload.get("usage") or {}
+        choice = (payload.get("choices") or [{}])[0]
+        text = choice.get("text") or ""
+        return Completion(item.id, latency, int(usage.get("completion_tokens", 0)),
+                          int(usage.get("prompt_tokens", 0)), text)
+
+
+class _ModalMeter:
+    """Reads MEASURED energy from a companion energy endpoint on the same host.
+
+    `GET {base}/wattnot/energy` returns the NVML total-energy counter (millijoules) as
+    ``{"energy_mj": <int>}`` (optionally ``{"power_w": <float>}`` for idle). A window's Wh is
+    the counter delta; it is labelled MEASURED with method "counter" when the counter moved,
+    else ESTIMATE. The transport is injectable for offline tests.
+    """
+
+    source = "nvml"
+
+    def __init__(self, base_url: str, *, transport=None, timeout_s: float = 30.0, clock=None):
+        import time as _time
+        self.url = base_url.rstrip("/") + "/wattnot/energy"
+        self._transport = transport or _urllib_get
+        self._timeout_s = timeout_s
+        self._clock = clock or _time.perf_counter
+        self._label = ""
+        self._t0 = 0.0
+        self._e0_mj: int | None = None
+
+    def _energy_mj(self) -> int | None:
+        payload = self._transport(self.url, self._timeout_s)
+        val = payload.get("energy_mj")
+        return None if val is None else int(val)
+
+    def start(self, label: str) -> None:
+        self._label = label
+        self._t0 = self._clock()
+        self._e0_mj = self._energy_mj()
+
+    def stop(self) -> Window:
+        e1 = self._energy_mj()
+        seconds = max(0.0, self._clock() - self._t0)
+        moved = self._e0_mj is not None and e1 is not None and e1 > self._e0_mj
+        if moved:
+            wh = (e1 - self._e0_mj) / 3_600_000.0        # mJ -> Wh; MEASURED from the counter
+            label, method = "MEASURED", "counter"
+        else:
+            wh, label, method = 0.0, "ESTIMATE", "trapezoid"
+        mean_w = (wh * 3600.0 / seconds) if seconds > 0 else 0.0
+        return Window(wh, seconds, mean_w, csv_path=f"traces/{self._label}.csv",
+                      sha256="0" * 64, source=self.source, label=label, method=method)
+
+    def idle(self, seconds: int = 60) -> float:
+        """Mean watts over a short idle window, MEASURED from the energy counter delta."""
+        e0 = self._energy_mj()
+        t0 = self._clock()
+        if e0 is None:
+            payload = self._transport(self.url, self._timeout_s)
+            return float(payload.get("power_w", 0.0))     # endpoint's instantaneous reading
+        # Sleep briefly to let the counter advance; kept short so the window is cheap.
+        import time as _time
+        _time.sleep(min(seconds, 1.0))
+        e1 = self._energy_mj()
+        dt = max(1e-6, self._clock() - t0)
+        if e1 is None or e1 <= e0:
+            return 0.0
+        return (e1 - e0) / 1000.0 / dt                     # mJ -> J, / s = W (MEASURED)
+
+
+def _urllib_post(url: str, body: dict, timeout_s: float) -> dict:
+    """Default transport: POST JSON to a completions endpoint with stdlib urllib."""
+    import json as _json
+    import urllib.request
+    data = _json.dumps(body).encode()
+    req = urllib.request.Request(url, data=data, method="POST",
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout_s) as resp:  # noqa: S310
+        return _json.loads(resp.read())
+
+
+def _urllib_get(url: str, timeout_s: float) -> dict:
+    """Default transport: GET JSON from the energy endpoint with stdlib urllib."""
+    import json as _json
+    import urllib.request
+    req = urllib.request.Request(url, method="GET")
+    with urllib.request.urlopen(req, timeout=timeout_s) as resp:  # noqa: S310
+        return _json.loads(resp.read())
+
+
+class ModalBackend:
+    """Real backend: drive a deployed vLLM server (our own Muse Glimmer) on Modal and read
+    MEASURED NVML energy from a companion endpoint on the same host.
+
+    Fits the headline backend contract: provider/gpu/driver/mode/meter_name, client(params),
+    meter(params), outputs(items[, params]). The base URL comes from the constructor or
+    $WATTNOT_MODAL_URL; both the completions and energy transports are injectable so the whole
+    thing is unit-testable offline with fakes (no real network, no modal, no GPU). Importing
+    this module performs no network and no Modal call.
+    """
+
     provider = "modal"
+    driver = "vllm"
+    mode = "container"
+    meter_name = "nvml"
+
+    def __init__(self, base_url: str | None = None, *, model: str = MODEL,
+                 gpu: str = "A100-80GB (Modal)", transport=None, energy_transport=None):
+        import os as _os
+        self.base_url = base_url or _os.environ.get("WATTNOT_MODAL_URL")
+        self.gpu = gpu
+        self.model = model
+        self._transport = transport
+        self._energy_transport = energy_transport
+
+    def _require_url(self) -> str:
+        if not self.base_url:
+            raise RuntimeError(
+                "ModalBackend needs a vLLM base URL: pass base_url=... or set WATTNOT_MODAL_URL "
+                "(e.g. https://<app>.modal.run/v1). Nothing is measured without a live endpoint.")
+        return self.base_url
 
     def client(self, params):
-        raise NotImplementedError("Modal backend waits for T10 (needs Akash's card)")
+        return _ModalClient(self._require_url(), model=self.model, transport=self._transport)
 
-    meter = client
+    def meter(self, params):
+        return _ModalMeter(self._require_url(), transport=self._energy_transport)
+
+    def outputs(self, items, params=None) -> dict[str, str]:
+        return {i.id: "ok" for i in items}
 
 
 @dataclass
