@@ -1,0 +1,43 @@
+{
+ "dedup_vs_harness_clean_pairs": 12,
+ "prompt": {
+  "harness": 339391,
+  "dedup": 319040,
+  "change_pct": -6.0
+ },
+ "uncached_prompt": {
+  "harness": 102801,
+  "dedup": 97938,
+  "change_pct": -4.7
+ },
+ "completion": {
+  "harness": 18565,
+  "dedup": 19323,
+  "change_pct": 4.1
+ },
+ "calls": {
+  "harness": 158,
+  "dedup": 157,
+  "change_pct": -0.6
+ },
+ "passed": {
+  "harness": 12,
+  "dedup": 12
+ },
+ "memcomp": {
+  "runs": 16,
+  "http400_orphan_tool": 9,
+  "network_errors": 5,
+  "clean_runs": [
+   [
+    "retry-2-write-503",
+    true
+   ],
+   [
+    "noprog-3-file-poll",
+    true
+   ]
+  ]
+ },
+ "label": "MEASURED"
+}
