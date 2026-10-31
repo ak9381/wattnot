@@ -1,0 +1,207 @@
+{
+ "spec": "wattnot.gap-1031.regrade-sweep/1",
+ "source": "/workspace/hackathon/e2e-glimmer-test/live-1031d/runs/t1-sweep/vm/raw",
+ "parser": "own final-answer parser (fix branch had none yet)",
+ "blocks": {
+  "baseline-stock": {
+   "all_items": 222,
+   "cut_all": 127,
+   "cut_by_kind": {
+    "math": 40,
+    "qa": 64,
+    "code": 23
+   },
+   "math_items": 100,
+   "math_finished": 60,
+   "math_correct": 60,
+   "math_pass_pct_all": 60.0,
+   "math_pass_pct_finished": 100.0,
+   "label": "MEASURED (re-grade of MEASURED H100 outputs)"
+  },
+  "cap375-cap-r0": {
+   "all_items": 222,
+   "cut_all": 127,
+   "cut_by_kind": {
+    "math": 41,
+    "qa": 64,
+    "code": 22
+   },
+   "math_items": 100,
+   "math_finished": 59,
+   "math_correct": 59,
+   "math_pass_pct_all": 59.0,
+   "math_pass_pct_finished": 100.0,
+   "label": "MEASURED (re-grade of MEASURED H100 outputs)"
+  },
+  "cap375-cap-r1": {
+   "all_items": 222,
+   "cut_all": 124,
+   "cut_by_kind": {
+    "math": 36,
+    "qa": 64,
+    "code": 24
+   },
+   "math_items": 100,
+   "math_finished": 64,
+   "math_correct": 64,
+   "math_pass_pct_all": 64.0,
+   "math_pass_pct_finished": 100.0,
+   "label": "MEASURED (re-grade of MEASURED H100 outputs)"
+  },
+  "cap375-cap-r2": {
+   "all_items": 222,
+   "cut_all": 129,
+   "cut_by_kind": {
+    "math": 41,
+    "qa": 64,
+    "code": 24
+   },
+   "math_items": 100,
+   "math_finished": 59,
+   "math_correct": 59,
+   "math_pass_pct_all": 59.0,
+   "math_pass_pct_finished": 100.0,
+   "label": "MEASURED (re-grade of MEASURED H100 outputs)"
+  },
+  "cap375-stock-r0": {
+   "all_items": 222,
+   "cut_all": 130,
+   "cut_by_kind": {
+    "math": 41,
+    "qa": 64,
+    "code": 25
+   },
+   "math_items": 100,
+   "math_finished": 59,
+   "math_correct": 59,
+   "math_pass_pct_all": 59.0,
+   "math_pass_pct_finished": 100.0,
+   "label": "MEASURED (re-grade of MEASURED H100 outputs)"
+  },
+  "cap375-stock-r1": {
+   "all_items": 222,
+   "cut_all": 127,
+   "cut_by_kind": {
+    "math": 42,
+    "qa": 64,
+    "code": 21
+   },
+   "math_items": 100,
+   "math_finished": 58,
+   "math_correct": 58,
+   "math_pass_pct_all": 58.0,
+   "math_pass_pct_finished": 100.0,
+   "label": "MEASURED (re-grade of MEASURED H100 outputs)"
+  },
+  "cap375-stock-r2": {
+   "all_items": 222,
+   "cut_all": 129,
+   "cut_by_kind": {
+    "math": 41,
+    "qa": 64,
+    "code": 24
+   },
+   "math_items": 100,
+   "math_finished": 59,
+   "math_correct": 59,
+   "math_pass_pct_all": 59.0,
+   "math_pass_pct_finished": 100.0,
+   "label": "MEASURED (re-grade of MEASURED H100 outputs)"
+  },
+  "control-stock": {
+   "all_items": 222,
+   "cut_all": 124,
+   "cut_by_kind": {
+    "math": 39,
+    "qa": 64,
+    "code": 21
+   },
+   "math_items": 100,
+   "math_finished": 61,
+   "math_correct": 61,
+   "math_pass_pct_all": 61.0,
+   "math_pass_pct_finished": 100.0,
+   "label": "MEASURED (re-grade of MEASURED H100 outputs)"
+  },
+  "control-stock2": {
+   "all_items": 222,
+   "cut_all": 125,
+   "cut_by_kind": {
+    "math": 39,
+    "qa": 64,
+    "code": 22
+   },
+   "math_items": 100,
+   "math_finished": 61,
+   "math_correct": 61,
+   "math_pass_pct_all": 61.0,
+   "math_pass_pct_finished": 100.0,
+   "label": "MEASURED (re-grade of MEASURED H100 outputs)"
+  },
+  "control-stock3": {
+   "all_items": 222,
+   "cut_all": 128,
+   "cut_by_kind": {
+    "math": 40,
+    "qa": 64,
+    "code": 24
+   },
+   "math_items": 100,
+   "math_finished": 60,
+   "math_correct": 60,
+   "math_pass_pct_all": 60.0,
+   "math_pass_pct_finished": 100.0,
+   "label": "MEASURED (re-grade of MEASURED H100 outputs)"
+  },
+  "control-stock4": {
+   "all_items": 222,
+   "cut_all": 122,
+   "cut_by_kind": {
+    "math": 36,
+    "qa": 64,
+    "code": 22
+   },
+   "math_items": 100,
+   "math_finished": 64,
+   "math_correct": 64,
+   "math_pass_pct_all": 64.0,
+   "math_pass_pct_finished": 100.0,
+   "label": "MEASURED (re-grade of MEASURED H100 outputs)"
+  },
+  "control-truncated": {
+   "all_items": 222,
+   "cut_all": 222,
+   "cut_by_kind": {
+    "math": 100,
+    "qa": 64,
+    "code": 58
+   },
+   "math_items": 100,
+   "math_finished": 0,
+   "math_correct": 0,
+   "math_pass_pct_all": 0.0,
+   "math_pass_pct_finished": null,
+   "label": "MEASURED (re-grade of MEASURED H100 outputs)"
+  }
+ },
+ "pooled": {
+  "stock_375_pairs": {
+   "blocks": 3,
+   "math_pass_pct_all": 58.7,
+   "math_pass_pct_finished": 100.0,
+   "finished_share_pct": 58.7
+  },
+  "cap_375": {
+   "blocks": 3,
+   "math_pass_pct_all": 60.7,
+   "math_pass_pct_finished": 100.0,
+   "finished_share_pct": 60.7
+  },
+  "control_stock": {
+   "blocks": 4,
+   "math_pass_pct_all": 61.5,
+   "math_pass_pct_finished": 100.0,
+   "finished_share_pct": 61.5
+  }
+ }
+}
