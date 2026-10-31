@@ -1,0 +1,75 @@
+{
+ "spec": "wattnot.modal-live-1031.preflight/1",
+ "generated": "2026-10-31",
+ "task": "Task 1 - Modal live vLLM backend for Muse Glimmer 30B",
+ "outcome": "STOPPED before any spend - model not servable by vLLM",
+ "model": "meta-models/Muse-Glimmer-30B",
+ "weights": {
+  "accessible": true,
+  "gated": false,
+  "private": false,
+  "total_bytes": 59553253376,
+  "approx_gib": 55.5,
+  "shards": 2,
+  "dtype": "bfloat16",
+  "label": "MEASURED (HF API)"
+ },
+ "architecture": {
+  "architectures": [
+   "MuseGlimmerForConditionalGeneration"
+  ],
+  "model_type": "muse_glimmer",
+  "text_model_type": "muse_glimmer_text",
+  "vision_model_type": "muse_glimmer_vision",
+  "multimodal": true,
+  "transformers_version": "5.15.0.dev0",
+  "text_num_hidden_layers": 52,
+  "text_hidden_size": 6656,
+  "features": [
+   "vision tower + projector",
+   "per-layer rope theta",
+   "sliding/full layer mix",
+   "final_logit_softcapping",
+   "qk_scale_factor",
+   "post_feedforward_layernorm"
+  ]
+ },
+ "preflight": {
+  "ok": false,
+  "reason": "architecture 'MuseGlimmerForConditionalGeneration' / model_type 'muse_glimmer' is a custom multimodal (vision-language) model. vLLM does not register this architecture and released transformers has no muse_glimmer modeling code (config pins transformers 5.15.0.dev0, which does not exist). The weights download but cannot be loaded by vLLM.",
+  "label": "MEASURED (config.json inspected)"
+ },
+ "would_have_cost_estimate": {
+  "label": "ESTIMATE (list price x wall minutes; not a bill)",
+  "model": "meta-models/Muse-Glimmer-30B",
+  "gpu": "A100-80GB",
+  "n_requests": 24,
+  "prefetch": {
+   "usd_per_hr": 0.5,
+   "minutes": 25.0,
+   "usd": 0.2083
+  },
+  "bench": {
+   "gpu_usd_per_hr": 2.75,
+   "minutes": 20.0,
+   "usd": 0.9167
+  },
+  "total_usd": 1.125,
+  "hard_usd": 5.0,
+  "within_budget": true,
+  "max_model_len": 4096,
+  "gpu_memory_utilization": 0.9
+ },
+ "spend": {
+  "modal_usd": 0.0,
+  "label": "MEASURED (nothing launched)",
+  "note": "No Modal app/function was ever started. `modal app list` and `modal container list` show nothing."
+ },
+ "decision": "Per task rule 'if weights are inaccessible, stop and report why rather than substituting a non-Meta model': refused to run. Did NOT substitute Llama/Spark-Open to manufacture J/req numbers. Code (ModalBackend + modal/glimmer_live.py) is complete and unit-tested; a local preflight now refuses this architecture before any download/GPU.",
+ "measured_fields_if_it_had_run": {
+  "mean_j_per_request": null,
+  "tokens_per_s": null,
+  "idle_w": null,
+  "label": "N/A - not run (model unservable)"
+ }
+}
