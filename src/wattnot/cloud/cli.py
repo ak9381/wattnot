@@ -41,7 +41,8 @@ def add_parser(sub) -> None:
     t.add_argument("--efforts", help="comma list of levels to try (xhigh always runs as reference)")
     t.add_argument("--repeats", type=int, default=2)
     t.add_argument("--max-drop-pts", type=float, default=1.0)
-    t.add_argument("--p99-slack", type=float, default=0.10)
+    t.add_argument("--p99-slack", type=float, default=None,
+                   help="alias for max_p99_increase for this run (fraction, e.g. 0.10); default from settings")
     t.add_argument("--budget-usd", type=float, help="stop starting new levels near this spend")
     t.add_argument("--no-planner", action="store_true", help="skip the model-proposed order")
     t.add_argument("--judge", action="store_true", help="add the model judge as a third gate")

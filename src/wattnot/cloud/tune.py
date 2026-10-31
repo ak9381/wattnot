@@ -301,7 +301,7 @@ def _effective_latency(cand: Sequence[Call], ref: Sequence[Call], items: Sequenc
 
 
 def tune_class(name: str, items: Sequence[WorkloadItem], runner: Runner, order: Sequence[str], *,
-               repeats: int = 2, max_drop_pts: float = 1.0, p99_slack: float = 0.10,
+               repeats: int = 2, max_drop_pts: float = 1.0, p99_slack: float | None = None,
                judge: Callable | None = None) -> dict:
     witems = _expand(items, repeats)
     try:
@@ -373,7 +373,7 @@ def tune_class(name: str, items: Sequence[WorkloadItem], runner: Runner, order: 
 
 def tune(items: Sequence[WorkloadItem], runner: Runner, *, proposal: Mapping | None = None,
          classes: Sequence[str] | None = None, repeats: int = 2, max_drop_pts: float = 1.0,
-         p99_slack: float = 0.10, judge: Callable | None = None) -> dict:
+         p99_slack: float | None = None, judge: Callable | None = None) -> dict:
     by_class: dict[str, list[WorkloadItem]] = defaultdict(list)
     for i in items:
         by_class[i.meta.get("class", "default")].append(i)

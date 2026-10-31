@@ -444,20 +444,48 @@
             "null"
           ],
           "properties": {
-            "label": { "type": "string" },
-            "detector": { "type": "string" },
-            "passed": { "type": "boolean" },
-            "checked": { "type": "integer" },
-            "passed_count": { "type": "integer" },
-            "missed": { "type": "array", "items": { "type": "string" } },
-            "faults": { "type": "array", "items": { "type": "string" } },
-            "iou_pass": { "type": "number" },
-            "reason": { "type": "string" },
+            "label": {
+              "type": "string"
+            },
+            "detector": {
+              "type": "string"
+            },
+            "passed": {
+              "type": "boolean"
+            },
+            "checked": {
+              "type": "integer"
+            },
+            "passed_count": {
+              "type": "integer"
+            },
+            "missed": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "faults": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "iou_pass": {
+              "type": "number"
+            },
+            "reason": {
+              "type": "string"
+            },
             "est_wh_per_image": {
               "type": "object",
               "properties": {
-                "value": { "type": "number" },
-                "label": { "type": "string" }
+                "value": {
+                  "type": "number"
+                },
+                "label": {
+                  "type": "string"
+                }
               }
             },
             "scenes": {
@@ -465,15 +493,39 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "id": { "type": "string" },
-                  "fault": { "type": "string" },
-                  "slot": { "type": "integer" },
-                  "expected_bbox": { "type": "array", "items": { "type": "number" } },
-                  "got_bbox": { "type": "array", "items": { "type": "number" } },
-                  "iou": { "type": "number" },
-                  "ok": { "type": "boolean" },
-                  "mask_label": { "type": "string" },
-                  "label": { "type": "string" }
+                  "id": {
+                    "type": "string"
+                  },
+                  "fault": {
+                    "type": "string"
+                  },
+                  "slot": {
+                    "type": "integer"
+                  },
+                  "expected_bbox": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  },
+                  "got_bbox": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  },
+                  "iou": {
+                    "type": "number"
+                  },
+                  "ok": {
+                    "type": "boolean"
+                  },
+                  "mask_label": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -485,25 +537,78 @@
             "null"
           ],
           "properties": {
-            "label": { "type": "string" },
-            "transcriber": { "type": "string" },
-            "passed": { "type": "boolean" },
-            "checked": { "type": "integer" },
-            "passed_count": { "type": "integer" },
-            "missed": { "type": "array", "items": { "type": "string" } },
-            "missed_noisy": { "type": "array", "items": { "type": "string" } },
-            "reason": { "type": "string" },
-            "model": { "type": "string" },
+            "label": {
+              "type": "string"
+            },
+            "transcriber": {
+              "type": "string"
+            },
+            "passed": {
+              "type": "boolean"
+            },
+            "checked": {
+              "type": "integer"
+            },
+            "passed_count": {
+              "type": "integer"
+            },
+            "missed": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "missed_noisy": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "reason": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            },
             "energy": {
               "type": "object",
               "properties": {
-                "label": { "type": "string" },
-                "meter": { "type": "string" },
-                "wh_per_answer": { "type": ["number", "null"] },
-                "j_per_spoken_answer": { "type": ["number", "null"] },
-                "j_per_correct_spoken": { "type": ["number", "null"] },
-                "j_per_token": { "type": ["number", "null"] },
-                "j_per_correct_answer": { "type": ["number", "null"] }
+                "label": {
+                  "type": "string"
+                },
+                "meter": {
+                  "type": "string"
+                },
+                "wh_per_answer": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "j_per_spoken_answer": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "j_per_correct_spoken": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "j_per_token": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "j_per_correct_answer": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
               }
             },
             "items": {
@@ -511,13 +616,27 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "id": { "type": "string" },
-                  "kind": { "type": "string" },
-                  "noise": { "type": "string" },
-                  "expected": { "type": "string" },
-                  "got": { "type": "string" },
-                  "ok": { "type": "boolean" },
-                  "label": { "type": "string" }
+                  "id": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "noise": {
+                    "type": "string"
+                  },
+                  "expected": {
+                    "type": "string"
+                  },
+                  "got": {
+                    "type": "string"
+                  },
+                  "ok": {
+                    "type": "boolean"
+                  },
+                  "label": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -529,26 +648,56 @@
             "null"
           ],
           "properties": {
-            "label": { "type": "string" },
-            "chart_sha256": { "type": "string" },
-            "source": { "type": "string" },
-            "offline_fallback": { "type": "boolean" },
-            "model": { "type": "string" },
+            "label": {
+              "type": "string"
+            },
+            "chart_sha256": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
+            },
+            "offline_fallback": {
+              "type": "boolean"
+            },
+            "model": {
+              "type": "string"
+            },
             "suggestion": {
               "type": "object",
               "properties": {
-                "action": { "type": "string" },
-                "cap_w": { "type": ["integer", "null"] },
-                "clock_profile": { "type": ["string", "null"] }
+                "action": {
+                  "type": "string"
+                },
+                "cap_w": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "clock_profile": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
               }
             },
-            "reason": { "type": "string" },
-            "trace_id": { "type": "string" },
+            "reason": {
+              "type": "string"
+            },
+            "trace_id": {
+              "type": "string"
+            },
             "est_wh": {
               "type": "object",
               "properties": {
-                "value": { "type": "number" },
-                "label": { "type": "string" }
+                "value": {
+                  "type": "number"
+                },
+                "label": {
+                  "type": "string"
+                }
               }
             },
             "points": {
@@ -556,13 +705,27 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "setting": { "type": "string" },
-                  "cap_w": { "type": "integer" },
-                  "clock_profile": { "type": "string" },
-                  "joules_per_correct": { "type": "number" },
-                  "quality": { "type": "number" },
-                  "kept": { "type": "boolean" },
-                  "label": { "type": "string" }
+                  "setting": {
+                    "type": "string"
+                  },
+                  "cap_w": {
+                    "type": "integer"
+                  },
+                  "clock_profile": {
+                    "type": "string"
+                  },
+                  "joules_per_correct": {
+                    "type": "number"
+                  },
+                  "quality": {
+                    "type": "number"
+                  },
+                  "kept": {
+                    "type": "boolean"
+                  },
+                  "label": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -684,6 +847,23 @@
       ],
       "pattern": "^run_[0-9]{8}_[0-9]{6}_[0-9a-f]{6}$",
       "description": "Optional. run_id of the baseline run, so the UI can load the real before canvas. If absent, UI rebuilds the before canvas from the receipt baseline."
+    },
+    "limits": {
+      "type": "object",
+      "description": "User limits the result was judged against. Optional so older receipts still validate.",
+      "properties": {
+        "max_p99_increase": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "max_p99_increase_pct": {
+          "type": "number"
+        },
+        "source": {
+          "type": "string"
+        }
+      }
     }
   },
   "not": {

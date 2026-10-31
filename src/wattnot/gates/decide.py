@@ -32,7 +32,7 @@ class Decision:
 
 def decide(base: TrialResult, cand: TrialResult, base_outputs: Mapping[str, str],
            cand_outputs: Mapping[str, str], items: list[WorkloadItem], *,
-           slack: float = 0.10, sla_s: float | None = None, max_drop_pts: float = 1.0,
+           slack: float | None = None, sla_s: float | None = None, max_drop_pts: float = 1.0,
            base_wh: list[float] | None = None, cand_wh: list[float] | None = None,
            vision: GateResult | None = None, hotspot: GateResult | None = None,
            spoken: GateResult | None = None, emit=None) -> Decision:

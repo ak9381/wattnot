@@ -298,6 +298,12 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
         receipt["compare_to"] = run["compare_to"]
     attach_per_model(receipt, events=events, roles=run.get("models") or ())
 
+    # The user limits this result was judged against (one p99 setting for every layer).
+    from wattnot.settings import receipt_block
+    lim = dict(run.get("limits") or {})
+    lim.update(receipt_block(p99=run.get("max_p99_increase")))
+    receipt["limits"] = lim
+
     # Attach judge fields, wonder trace IDs, per-model spend, and musecode PR/patch hash
     m = receipt["measurement"]
     j_verdict = judge_verdict or run.get("judge_verdict")

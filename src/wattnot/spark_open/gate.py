@@ -20,7 +20,8 @@ from dataclasses import dataclass
 from wattnot.spark_open.hostpower import GPU_ONLY
 
 QUALITY_DROP_PTS = 1.0
-P99_SLACK = 0.10
+P99_SLACK = 0.10  # default only; the live value comes from wattnot.settings
+from wattnot.settings import max_p99_increase  # noqa: E402
 SHIFT_TOLERANCE = 0.25  # host rise >= 75% of the GPU drop counts as a shift
 
 
@@ -120,7 +121,7 @@ def quality_verdict(ref_out: Mapping[str, str], ref_lat: Sequence[float],
     agree = agreement_pct(ref_out, cand_out)
     drop = round(ref_agreement - agree, 3)
     rp, cp = p99(ref_lat), p99(cand_lat)
-    p99_ok = rp <= 0 or cp <= rp * (1 + P99_SLACK)
+    p99_ok = rp <= 0 or cp <= rp * (1 + max_p99_increase())
     return {"agreement_pct": round(agree, 3), "drop_pts": drop,
             "quality_ok": drop <= QUALITY_DROP_PTS, "p99_s": round(cp, 4),
             "ref_p99_s": round(rp, 4), "p99_ok": p99_ok,

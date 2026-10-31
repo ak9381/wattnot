@@ -184,6 +184,11 @@
       "source": "1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"
     }
   },
+  "limits": {
+    "max_p99_increase": 0.1,
+    "max_p99_increase_pct": 10.0,
+    "source": "default"
+  },
   "joules": {
     "unit": "J",
     "label": "MEASURED",
@@ -206,7 +211,7 @@
   "grade": "VALID",
   "integrity": {
     "canonicalization": "JCS RFC 8785",
-    "sha256": "f1e46fb91054b54b3c2cfedba3b66120d6b8657e5524e09dddc25296685605b4",
+    "sha256": "a78f5986f2cc69e07d10a3ca2c5833afd650e8d9032c7f2797ee98c195391ca3",
     "prev_sha256": null,
     "signer": null,
     "rekor": null

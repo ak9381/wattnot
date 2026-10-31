@@ -409,14 +409,11 @@ def _load_signed_receipts(root_dir: Path) -> list[dict[str, Any]]:
 
 
 def _p99_limit_pct() -> str:
-    """The p99 gate's allowed slack, read from the gate code so the limit is not
+    """The p99 gate's allowed slack, read from the one user setting (wattnot.settings) so the limit is not
     restated as a literal here (default 10%)."""
-    import inspect
+    from wattnot.settings import max_p99_increase
 
-    from wattnot.gates.latency import p99_gate
-
-    slack = inspect.signature(p99_gate).parameters["slack"].default
-    return f"{float(slack) * 100:.0f}%"
+    return f"{max_p99_increase() * 100:.0f}%"
 
 
 def _wonder_trials(receipts: list[dict[str, Any]], receipt_id: str) -> list[dict[str, Any]]:
