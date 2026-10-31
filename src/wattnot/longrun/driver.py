@@ -405,6 +405,9 @@ def plan_glimmer_test(out: Path) -> list[Block]:
                str(out / "runs" / "t2c-prefix")],
               live=["python", "scripts/prefix_cache_ab.py", "--out", f"{REMOTE_RESULTS}/t2c-prefix",
                     "--reps", "3"], host=True),
+        # The headline WattNot-vs-stock number (best cap + prefix ON vs stock 700 W + prefix OFF).
+        # The retest had it; the long run must too, with the full 3 reps.
+        _combined_block(out, minutes=15, reps=3),
         Block("t3-copy", "Copy results back to the control box", _m(5), None, live=None,
               infra="pull"),
     ]
@@ -424,7 +427,7 @@ RETEST_HOURS_MIN = {"t0-probe": 5, "t1-sweep": 16, "t1-resume": 3, "t2-fp8": 13,
                     "t2b-batch": 8, "t2c-prefix": 7, "t2d-combined": 8}
 
 
-def _combined_block(out: Path) -> Block:
+def _combined_block(out: Path, minutes: float | None = None, reps: int = 2) -> Block:
     """Item 12: best passing cap + prefix caching ON vs the stock baseline (700 W, prefix OFF),
     interleaved reps. {BEST_CAP} is filled from the sweep's results.json at run time; if the sweep
     found no passing cap the script prints a skip and exits 0. skip_if_short=True so a slow upstream
@@ -433,12 +436,12 @@ def _combined_block(out: Path) -> Block:
         "t2d-combined",
         "Combined: best passing cap + vLLM prefix caching ON vs stock 700 W + prefix OFF, "
         "interleaved (MEASURED J/request, J/correct, quality + p99 gates, combined saving %)",
-        _m(RETEST_HOURS_MIN["t2d-combined"]),
+        _m(RETEST_HOURS_MIN["t2d-combined"] if minutes is None else minutes),
         [sys.executable, "scripts/prefix_cache_ab.py", "--fake", "--combined",
-         "--cap-on", "325", "--cap-off", "700", "--reps", "2",
+         "--cap-on", "325", "--cap-off", "700", "--reps", str(reps),
          "--out", str(out / "runs" / "t2d-combined")],
         live=["python", "scripts/prefix_cache_ab.py", "--combined", "--cap-on", "{BEST_CAP}",
-              "--cap-off", str(int(H100_STOCK_W)), "--reps", "2",
+              "--cap-off", str(int(H100_STOCK_W)), "--reps", str(reps),
               "--out", f"{REMOTE_RESULTS}/t2d-combined"],
         host=True, depends_on=("t1-sweep",), skip_if_short=True)
 
@@ -459,7 +462,7 @@ def plan_glimmer_retest(out: Path) -> list[Block]:
     blocks = []
     for bid in RETEST_BLOCKS:
         b = full[bid]
-        if bid == "t3-copy":
+        if bid == "t3-copy":   # the retest's own trimmed combined block (2 reps, 8 min)
             blocks.append(_combined_block(out))   # item 12 runs just before the copy
         kw = {}
         if bid in RETEST_HOURS_MIN:

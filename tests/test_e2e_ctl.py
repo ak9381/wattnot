@@ -118,3 +118,98 @@ def test_booking_is_3h30_and_watchdog_hard_deletes_at_cap_minus_8_min(monkeypatc
     m.main(["watchdog"])
     assert calls == ["delete"]           # a hard DELETE (not a stop) once 3 h 22 min passed
     assert Clock.t - launch <= dt.timedelta(hours=3, minutes=26)
+
+
+def _wd_setup(monkeypatch, tmp_path, *, bal=9000.0, start_h=0.0):
+    import datetime as dt
+    m = _load()
+    monkeypatch.setattr(m, "D", str(tmp_path))
+    launch = dt.datetime(2026, 11, 1, 10, 0, 0)
+    deadline = launch + dt.timedelta(hours=3.5)
+    monkeypatch.setattr(m, "vm", lambda: {"id": 7, "launch_ts": launch.isoformat(),
+                                         "deadline": deadline.isoformat()})
+    monkeypatch.setattr(m, "balance", lambda: bal)
+    monkeypatch.setattr(m.time, "sleep", lambda s: None)
+
+    class Clock(dt.datetime):
+        t = launch + dt.timedelta(hours=start_h)
+
+        @classmethod
+        def now(cls, tz=None):
+            cls.t += dt.timedelta(minutes=2)
+            return cls.t
+
+    monkeypatch.setattr(m.dt, "datetime", Clock)
+    return m, launch, Clock
+
+
+def test_watchdog_spend_cap_trips_and_deletes(monkeypatch, tmp_path):
+    m, launch, clock = _wd_setup(monkeypatch, tmp_path)
+    monkeypatch.setattr(m, "BUDGET_CAP_INR", 500.0)          # ~66 min at Rs451.2/h
+    calls = []
+    monkeypatch.setattr(m, "delete", lambda: calls.append("delete"))
+    m.main(["watchdog"])
+    assert calls == ["delete"]
+    log = (tmp_path / "ctl.log").read_text()
+    assert "SPEND WATCHDOG" in log
+    assert clock.t - launch < __import__("datetime").timedelta(hours=1, minutes=15)
+
+
+def test_watchdog_low_balance_trips_and_deletes(monkeypatch, tmp_path):
+    m, _, _ = _wd_setup(monkeypatch, tmp_path, bal=1200.0)
+    calls = []
+    monkeypatch.setattr(m, "delete", lambda: calls.append("delete"))
+    m.main(["watchdog"])
+    assert calls == ["delete"]
+    assert "BALANCE WATCHDOG" in (tmp_path / "ctl.log").read_text()
+
+
+def test_watchdog_retries_a_failed_delete_until_it_succeeds(monkeypatch, tmp_path):
+    m, _, _ = _wd_setup(monkeypatch, tmp_path, bal=1200.0)
+    tries = []
+
+    def flaky():
+        tries.append(1)
+        if len(tries) == 1:
+            raise SystemExit(2)                               # NOT CONFIRMED
+        if len(tries) == 2:
+            raise ConnectionError("net")                      # network blip
+    monkeypatch.setattr(m, "delete", flaky)
+    m.main(["watchdog"])
+    assert len(tries) == 3
+    log = (tmp_path / "ctl.log").read_text()
+    assert "WATCHDOG delete retry 1" in log and "delete err ConnectionError" in log
+
+
+def test_delete_verifies_404_and_list_before_marking_deleted(monkeypatch, tmp_path):
+    import json
+    m = _load()
+    monkeypatch.setattr(m, "D", str(tmp_path))
+    (tmp_path / "vm.json").write_text(json.dumps({"id": 7}))
+    monkeypatch.setattr(m.time, "sleep", lambda s: None)
+    seen = []
+
+    def fake_call(method, path, **kw):
+        seen.append((method, path))
+        if method == "DELETE":
+            return 200, {}
+        if path.endswith("/7/"):
+            return 404, {}
+        return 200, {"data": [{"id": 8}]}
+    monkeypatch.setattr(m, "call", fake_call)
+    m.delete()
+    assert (tmp_path / "DELETED").exists() and (tmp_path / "vm.7.deleted.json").exists()
+    assert seen[0][0] == "DELETE"
+
+
+def test_delete_not_confirmed_when_vm_still_listed(monkeypatch, tmp_path):
+    import json
+    m = _load()
+    monkeypatch.setattr(m, "D", str(tmp_path))
+    (tmp_path / "vm.json").write_text(json.dumps({"id": 7}))
+    monkeypatch.setattr(m.time, "sleep", lambda s: None)
+    monkeypatch.setattr(m, "call", lambda meth, path, **kw:
+                        (200, {"data": [{"id": 7}]}) if path == "gpu/notebooks/" else (404, {}))
+    with pytest.raises(SystemExit):
+        m.delete()
+    assert not (tmp_path / "DELETED").exists() and (tmp_path / "vm.json").exists()
