@@ -312,6 +312,19 @@ class WasteGuard:
 
         return Verdict("go", out if out is not None else body, None, flags)
 
+    def charge(self, response: dict) -> None:
+        """Count one billed upstream call (an escalated attempt the caller never sees)."""
+        usage = response.get("usage") or {}
+        prompt = int(usage.get("prompt_tokens") or 0)
+        completion = int(usage.get("completion_tokens") or 0)
+        reasoning = int((usage.get("completion_tokens_details") or {}).get("reasoning_tokens") or 0)
+        self._prompt_tokens += prompt
+        self._completion_tokens += completion
+        self._reasoning_tokens += reasoning
+        self._upstream_calls += 1
+        if self._shared is not None:
+            self._shared.charge(prompt + completion)
+
     def after(self, response: dict) -> dict:
         """Record usage for one upstream call. Maps a done call to a stop."""
         cfg = self._config

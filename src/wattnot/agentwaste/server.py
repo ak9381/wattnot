@@ -7,7 +7,7 @@ from collections import OrderedDict
 from collections.abc import Callable, Mapping, Sequence
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from wattnot.agentwaste.config import WasteConfig
 from wattnot.agentwaste.guard import WasteGuard
@@ -52,6 +52,79 @@ def _answer(response: dict) -> tuple[str | None, str | None, bool]:
         return None, None, False
     msg = choice.get("message") or {}
     return msg.get("content"), choice.get("finish_reason"), bool(msg.get("tool_calls"))
+
+
+# OpenAI chat fields the proxy forwards upstream. Anything else is dropped (and listed in the
+# receipt) so a framework's extras never turn into an upstream 400.
+ALLOWED_FIELDS = frozenset({
+    "model", "messages", "tools", "tool_choice", "temperature", "top_p", "max_tokens",
+    "max_completion_tokens", "stop", "response_format", "seed", "frequency_penalty",
+    "presence_penalty", "reasoning_effort", "user", "metadata",
+})
+# Handled by the proxy itself, never forwarded.
+PROXY_FIELDS = frozenset({"stream", "stream_options", "n"})
+REASONING_BUDGET = 2000  # default output budget for a tier marked reasoning=True
+
+
+def sanitize(body: dict) -> tuple[dict, list[str], str | None]:
+    """(clean body, dropped field names, error). n > 1 is an error, not silently dropped."""
+    n = body.get("n")
+    if n not in (None, 1):
+        return body, [], "n > 1 is not supported"
+    clean = {k: v for k, v in body.items() if k in ALLOWED_FIELDS}
+    dropped = sorted(k for k in body if k not in ALLOWED_FIELDS and k not in PROXY_FIELDS)
+    return clean, dropped, None
+
+
+def tier_body(body: dict, tier: Mapping | None) -> dict:
+    """Body for one tier: its model, and for reasoning tiers a larger output budget."""
+    if tier is None:
+        return body
+    out = {**body, "model": tier["model"]}
+    if tier.get("reasoning"):
+        budget = int(tier.get("max_output") or REASONING_BUDGET)
+        asked = out.pop("max_tokens", None) or out.get("max_completion_tokens") or 0
+        out["max_completion_tokens"] = max(int(asked), budget)
+    return out
+
+
+def reasoning_cutoff(response: dict, text: str | None, finish: str | None) -> bool:
+    """True when finish=length but a visible answer exists and reasoning used most of the
+    output budget: the cut-off came from thinking, not from a truncated answer."""
+    if finish != "length" or not (text or "").strip():
+        return False
+    usage = response.get("usage") or {}
+    comp = int(usage.get("completion_tokens") or 0)
+    reas = int((usage.get("completion_tokens_details") or {}).get("reasoning_tokens") or 0)
+    return comp > 0 and reas >= 0.5 * comp
+
+
+def sse_chunks(response: dict, include_usage: bool):
+    """Replay one buffered completion as OpenAI SSE chunks."""
+    cid = response.get("id", "wattnot")
+    model = response.get("model", "")
+    created = response.get("created", 0)
+    choice = (response.get("choices") or [{}])[0]
+    msg = choice.get("message") or {}
+
+    def chunk(delta, finish=None, usage=None):
+        c = {"id": cid, "object": "chat.completion.chunk", "created": created, "model": model,
+             "choices": [{"index": 0, "delta": delta, "finish_reason": finish}]}
+        if usage is not None:
+            c = {**c, "choices": [], "usage": usage}
+        return "data: " + json.dumps(c) + "\n\n"
+
+    yield chunk({"role": "assistant", "content": ""})
+    content = msg.get("content") or ""
+    for i in range(0, len(content), 64):
+        yield chunk({"content": content[i:i + 64]})
+    tcs = msg.get("tool_calls") or []
+    if tcs:
+        yield chunk({"tool_calls": [{**tc, "index": i} for i, tc in enumerate(tcs)]})
+    yield chunk({}, choice.get("finish_reason") or "stop")
+    if include_usage and response.get("usage"):
+        yield chunk({}, usage=response["usage"])
+    yield "data: [DONE]\n\n"
 
 
 def create_app(
@@ -102,23 +175,30 @@ def create_app(
             return JSONResponse(
                 status_code=400, content={"detail": "invalid JSON body"}
             )
-        if body.get("stream"):
-            return JSONResponse(
-                status_code=400,
-                content={"detail": "streaming is not supported yet"},
-            )
+        stream = bool(body.get("stream"))
+        include_usage = bool((body.get("stream_options") or {}).get("include_usage"))
+        body, dropped, err = sanitize(body)
+        if err:
+            return JSONResponse(status_code=400, content={"detail": err})
+
+        def reply(payload: dict):
+            if stream:
+                return StreamingResponse(sse_chunks(payload, include_usage),
+                                         media_type="text/event-stream")
+            return JSONResponse(payload)
         run = request.headers.get("x-wattnot-run") or _run_id(body)
         guard = guard_for(run)
         verdict = guard.before(body)
         if verdict.action == "stop":
             assert verdict.reason is not None
-            return JSONResponse(
+            return reply(
                 guard.stop_response(verdict.reason, model=str(body.get("model", "")))
             )
         headers = dict(request.headers)
         out_body = verdict.body
         rec: dict = {"run": run[:16], "framework": detect_framework(request.headers),
-                     "tokens_before": None, "tokens_after": None}
+                     "tokens_before": None, "tokens_after": None,
+               "dropped_fields": dropped, "stream": stream}
         if context_saver is not None and isinstance(out_body, dict) and out_body.get("messages"):
             saved, acct = context_saver.transform(list(out_body["messages"]))
             out_body = {**out_body, "messages": saved}
@@ -129,14 +209,21 @@ def create_app(
         response: dict = {}
         try:
             for i, tier in enumerate(chain):
-                body_t = out_body if tier is None else {**out_body, "model": tier["model"]}
+                body_t = tier_body(out_body, tier)
                 response = upstream(body_t, headers)
                 text, finish, tool = _answer(response)
-                ok, why = (True, "tool call") if tool else answer_gate(kind, text, finish)
+                if tool:
+                    ok, why = True, "tool call"
+                elif reasoning_cutoff(response, text, finish):
+                    ok, why = answer_gate(kind, text, None)
+                    why = f"{why} (length cut-off from reasoning ignored)"
+                else:
+                    ok, why = answer_gate(kind, text, finish)
                 attempts.append({"tier": None if tier is None else tier["name"],
                                  "passed": ok, "reason": why})
                 if ok or i == len(chain) - 1:
                     break
+                guard.charge(response)  # escalated attempt: billed, never shown to the caller
         except Exception:
             return JSONResponse(
                 status_code=502, content={"detail": "upstream error"}
@@ -145,7 +232,7 @@ def create_app(
         rec["answered_by"] = attempts[-1]["tier"] if attempts else None
         rec["gate_passed"] = bool(attempts and attempts[-1]["passed"])
         calls.append(rec)
-        return JSONResponse(guard.after(response))
+        return reply(guard.after(response))
 
     @app.get("/v1/wattnot/stats")
     async def wattnot_stats() -> JSONResponse:
@@ -190,6 +277,9 @@ def create_app(
             "context_saver": {"enabled": context_saver is not None, "tokens_before": tb,
                               "tokens_after": ta, "tokens_saved": tb - ta, "label": "ESTIMATE"},
             "agent_waste": {**waste, "runs": len(guards), "runs_stopped_early": stops},
+            "billed_upstream_calls": waste["upstream_calls"],
+            "streamed_calls": sum(1 for c in calls if c.get("stream")),
+            "dropped_fields": sorted({f for c in calls for f in c.get("dropped_fields", [])}),
         })
 
     return app
