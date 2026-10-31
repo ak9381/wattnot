@@ -60,12 +60,17 @@ class ServedSpokenAnswerer:
                  client: Callable[..., Mapping] | None = None,
                  base_url: str | None = None, timeout_s: float = 60,
                  context: str | None = None,
-                 max_completion_tokens: int = REASONING_MAX_COMPLETION_TOKENS) -> None:
+                 max_completion_tokens: int = REASONING_MAX_COMPLETION_TOKENS,
+                 reasoning_apply: dict | None = None) -> None:
         self.transcripts = dict(transcripts)
         self.model = model
         self.client = client
         self.base_url = (base_url or "").rstrip("/")
         self.timeout_s = timeout_s
+        # Grades only message.content, so ask for the least reasoning the live server will give
+        # (reasoning_effort low, plus enable_thinking:false when the t0-probe verdict allows it).
+        from wattnot import reasoning
+        self.reasoning_apply = reasoning.load_apply() if reasoning_apply is None else reasoning_apply
         # The spoken questions ("How many GPUs are in the rack?") ask about a fixed rack scene; the
         # answer is only knowable from that scene's telemetry. Without it the model has nothing to
         # go on and answers '0' (RUN3: 0/20). The context IS the telemetry the real assistant has,
@@ -83,13 +88,15 @@ class ServedSpokenAnswerer:
             messages.append({"role": "system", "content": self.context})
         messages.append({"role": "user",
                          "content": f"{self._question(item)} {_INSTRUCTION}"})
-        return {
+        from wattnot import reasoning
+        body = {
             "model": self.model,
             # Glimmer reasons first; a small cap leaves content empty (see vision.client note)
             "max_completion_tokens": self.max_completion_tokens,
             "temperature": 0,
             "messages": messages,
         }
+        return reasoning.apply_to_body(body, self.reasoning_apply)
 
     def _call(self, body: dict) -> Mapping:
         if self.client is not None:

@@ -32,6 +32,23 @@ def test_vision_answerer_token_cap_is_configurable():
     assert a._body(eye.items[0])["max_completion_tokens"] == 2048
 
 
+def test_checks_ask_for_low_reasoning_by_default():
+    # the checks grade only message.content, so by default they send reasoning_effort low and no
+    # enable_thinking (that is only added when the t0-probe verdict says the server honours it).
+    eye = load_eye_test()
+    vb = ServedVisionAnswerer(eye.base_dir)._body(eye.items[0])
+    assert vb["reasoning_effort"] == "low" and "chat_template_kwargs" not in vb
+    sb = ServedSpokenAnswerer({}, context="x")._body(next(iter(load_spoken_set().items)))
+    assert sb["reasoning_effort"] == "low"
+
+
+def test_checks_apply_enable_thinking_when_the_probe_verdict_allows_it():
+    apply = {"reasoning_effort": "low", "chat_template_kwargs": {"enable_thinking": False}}
+    eye = load_eye_test()
+    vb = ServedVisionAnswerer(eye.base_dir, reasoning_apply=apply)._body(eye.items[0])
+    assert vb["chat_template_kwargs"] == {"enable_thinking": False}
+
+
 def test_concurrent_answering_still_respects_the_budget():
     # a slow reasoning answer that cannot finish inside a tiny budget: the gate marks budget_hit
     # and leaves the unanswered items out (counted as misses), never blocking past the budget.

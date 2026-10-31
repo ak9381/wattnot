@@ -81,7 +81,8 @@ def _data_uri(png: bytes) -> str:
 
 
 def _body(model: str, data_uri: str, max_completion_tokens: int) -> dict:
-    return {
+    from wattnot import reasoning
+    body = {
         "model": model,
         "max_completion_tokens": max_completion_tokens,  # reasoning: a small cap empties content
         "temperature": 0,
@@ -90,6 +91,26 @@ def _body(model: str, data_uri: str, max_completion_tokens: int) -> dict:
             {"type": "image_url", "image_url": {"url": data_uri}},
         ]}],
     }
+    # the acceptance check reads only content; ask for low reasoning (the caps file may not exist
+    # yet — this probe writes it — so this falls back to the reasoning_effort-low default)
+    return reasoning.apply_to_body(body, reasoning.load_apply())
+
+
+def _chat_sender(base_url: str, timeout_s: float):
+    """A ``send(body) -> (ok, data, detail)`` for the reasoning capability probe. ok False means
+    the server rejected the request (an unknown field gives HTTP 400)."""
+    def send(body: dict):
+        req = urllib.request.Request(
+            f"{base_url.rstrip('/')}/chat/completions", data=json.dumps(body).encode(),
+            headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout_s) as r:  # noqa: S310
+                return True, json.loads(r.read() or b"{}"), "ok"
+        except urllib.error.HTTPError as e:
+            return False, None, f"HTTP {e.code}"
+        except Exception as e:  # noqa: BLE001 - any transport failure is a clear reject
+            return False, None, type(e).__name__
+    return send
 
 
 def probe(base_url: str, model: str, *, timeout_s: float = 60.0,
@@ -124,6 +145,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--timeout-s", type=float, default=60.0)
     ap.add_argument("--max-completion-tokens", type=int, default=REASONING_MAX_COMPLETION_TOKENS,
                     help="completion-token cap (reasoning models need room for thinking + answer)")
+    ap.add_argument("--caps-out", default=None,
+                    help="write the reasoning-capability verdict here (default: the on-VM path the "
+                         "check clients read); the probe sends one tiny request each way")
     a = ap.parse_args(argv)
 
     if a.fake:
@@ -141,7 +165,20 @@ def main(argv: list[str] | None = None) -> int:
         print("  the served model did not accept the image. Start it with multimodal enabled: "
               "glimmer_serve.sh sets --limit-mm-per-prompt.image 1 (LIMIT_MM_IMAGE).",
               file=sys.stderr)
-    return 0 if ok else 2
+        return 2
+    # Image accepted: probe the reasoning knobs once and write the verdict the later check blocks
+    # read (which reasoning_effort/enable_thinking the live server honours + its reasoning counts).
+    # A probe hiccup never fails the go/no-go — the checks fall back to the reasoning_effort-low
+    # default when the file is absent.
+    from wattnot import reasoning
+    try:
+        verdict = reasoning.probe_reasoning(_chat_sender(a.base_url, a.timeout_s), a.model)
+        p = reasoning.write_caps(verdict, a.caps_out)
+        print(f"reasoning caps: apply={verdict['apply']} -> {p}")
+    except Exception as e:  # noqa: BLE001 - capability probe is best-effort
+        print(f"reasoning caps: probe skipped ({type(e).__name__}); checks use the low default",
+              file=sys.stderr)
+    return 0
 
 
 if __name__ == "__main__":

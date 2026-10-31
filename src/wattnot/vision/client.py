@@ -72,16 +72,23 @@ class ServedVisionAnswerer:
     def __init__(self, base_dir: Path, *, model: str = DEFAULT_VISION_MODEL,
                  client: Callable[..., Mapping] | None = None,
                  base_url: str | None = None, timeout_s: float = 60,
-                 max_completion_tokens: int = REASONING_MAX_COMPLETION_TOKENS) -> None:
+                 max_completion_tokens: int = REASONING_MAX_COMPLETION_TOKENS,
+                 reasoning_apply: dict | None = None) -> None:
         self.base_dir = Path(base_dir)
         self.model = model
         self.client = client
         self.base_url = (base_url or "").rstrip("/")
         self.timeout_s = timeout_s
         self.max_completion_tokens = max_completion_tokens
+        # The eye test reads only message.content, so ask the server for the least reasoning it
+        # will give (reasoning_effort low, plus enable_thinking:false if the t0-probe verdict on
+        # disk says the live server honours it). Read once; the probe writes the file first.
+        from wattnot import reasoning
+        self.reasoning_apply = reasoning.load_apply() if reasoning_apply is None else reasoning_apply
 
     def _body(self, item: EyeTestItem) -> dict:
-        return {
+        from wattnot import reasoning
+        body = {
             "model": self.model,
             # Glimmer reasons first; a small cap leaves content empty (see the module note)
             "max_completion_tokens": self.max_completion_tokens,
@@ -92,6 +99,7 @@ class ServedVisionAnswerer:
                  "image_url": {"url": _data_uri(item.path(self.base_dir))}},
             ]}],
         }
+        return reasoning.apply_to_body(body, self.reasoning_apply)
 
     def _call(self, body: dict) -> Mapping:
         if self.client is not None:
