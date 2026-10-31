@@ -25,6 +25,7 @@ import urllib.request
 from collections.abc import Callable, Mapping
 
 from wattnot.spokenanswer.assets import SpokenItem, SpokenSet, ground_truth
+from wattnot.vision.client import REASONING_MAX_COMPLETION_TOKENS, _answer_set
 
 Answerer = Callable[[SpokenItem], str]
 
@@ -57,23 +58,37 @@ class ServedSpokenAnswerer:
 
     def __init__(self, transcripts: Mapping[str, str], *, model: str = DEFAULT_MODEL,
                  client: Callable[..., Mapping] | None = None,
-                 base_url: str | None = None, timeout_s: float = 60) -> None:
+                 base_url: str | None = None, timeout_s: float = 60,
+                 context: str | None = None,
+                 max_completion_tokens: int = REASONING_MAX_COMPLETION_TOKENS) -> None:
         self.transcripts = dict(transcripts)
         self.model = model
         self.client = client
         self.base_url = (base_url or "").rstrip("/")
         self.timeout_s = timeout_s
+        # The spoken questions ("How many GPUs are in the rack?") ask about a fixed rack scene; the
+        # answer is only knowable from that scene's telemetry. Without it the model has nothing to
+        # go on and answers '0' (RUN3: 0/20). The context IS the telemetry the real assistant has,
+        # given as a system message; the gate still tests that the transcribed question is heard
+        # and the right field is read. It is not a mock answer.
+        self.context = context
+        self.max_completion_tokens = max_completion_tokens
 
     def _question(self, item: SpokenItem) -> str:
         return self.transcripts.get(item.id) or item.question
 
     def _body(self, item: SpokenItem) -> dict:
+        messages = []
+        if self.context:
+            messages.append({"role": "system", "content": self.context})
+        messages.append({"role": "user",
+                         "content": f"{self._question(item)} {_INSTRUCTION}"})
         return {
             "model": self.model,
-            "max_completion_tokens": 1024,  # Glimmer reasons first; 32 left content empty
+            # Glimmer reasons first; a small cap leaves content empty (see vision.client note)
+            "max_completion_tokens": self.max_completion_tokens,
             "temperature": 0,
-            "messages": [{"role": "user",
-                          "content": f"{self._question(item)} {_INSTRUCTION}"}],
+            "messages": messages,
         }
 
     def _call(self, body: dict) -> Mapping:
@@ -97,29 +112,29 @@ class ServedSpokenAnswerer:
 
 
 def answer_spoken_set(spoken: SpokenSet, answerer: Answerer, *, budget_s: float | None = None,
-                      clock: Callable[[], float] = time.monotonic) -> tuple[dict[str, str], dict]:
+                      clock: Callable[[], float] = time.monotonic,
+                      concurrency: int = 1) -> tuple[dict[str, str], dict]:
     """Run ``answerer`` over the set, stopping early if ``budget_s`` is spent.
 
     Returns ``(answers, meta)``. ``meta`` records how many questions were
     answered, whether the budget was hit, and the seconds spent — recordings
     left unanswered by a budget cut are simply absent, which the gate scores as
     a miss.
+
+    ``concurrency`` > 1 answers the questions in parallel so a reasoning model
+    fits the wall-clock budget (20 sequential reasoning calls overran 90 s in
+    RUN3).
     """
 
-    answers: dict[str, str] = {}
-    t0 = clock()
-    budget_hit = False
-    for item in spoken.items:
-        if budget_s is not None and clock() - t0 >= budget_s:
-            budget_hit = True
-            break
-        answers[item.id] = answerer(item)
+    answers, budget_hit, elapsed = _answer_set(
+        list(spoken.items), answerer, budget_s, clock, concurrency)
     meta = {
         "answered": len(answers),
         "total": len(spoken),
         "budget_s": budget_s,
         "budget_hit": budget_hit,
-        "elapsed_s": round(clock() - t0, 6),
+        "concurrency": concurrency,
+        "elapsed_s": round(elapsed, 6),
     }
     return answers, meta
 

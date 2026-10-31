@@ -19,9 +19,11 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 import time
 import urllib.request
 from collections.abc import Callable, Mapping
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from wattnot.vision.assets import EyeTest, EyeTestItem, ground_truth
@@ -32,6 +34,12 @@ Answerer = Callable[[EyeTestItem], str]
 # eye test can also route to Spark vision through the Meta Model API.
 DEFAULT_VISION_MODEL = "meta-models/Muse-Glimmer-30B"
 _INSTRUCTION = "Answer with only the value, no explanation."
+
+# Glimmer is a reasoning model: it spends tokens thinking before the final answer lands in
+# `content`, so a small completion cap (16-32 in RUN3) left `content` empty and every image scored
+# a miss. Give it real room, and let it be tuned per model without a code change (a bigger reasoner
+# may need more). Override with WATTNOT_REASONING_MAX_TOKENS.
+REASONING_MAX_COMPLETION_TOKENS = int(os.environ.get("WATTNOT_REASONING_MAX_TOKENS", "1024"))
 
 
 class OfflineAnswerer:
@@ -63,17 +71,20 @@ class ServedVisionAnswerer:
 
     def __init__(self, base_dir: Path, *, model: str = DEFAULT_VISION_MODEL,
                  client: Callable[..., Mapping] | None = None,
-                 base_url: str | None = None, timeout_s: float = 60) -> None:
+                 base_url: str | None = None, timeout_s: float = 60,
+                 max_completion_tokens: int = REASONING_MAX_COMPLETION_TOKENS) -> None:
         self.base_dir = Path(base_dir)
         self.model = model
         self.client = client
         self.base_url = (base_url or "").rstrip("/")
         self.timeout_s = timeout_s
+        self.max_completion_tokens = max_completion_tokens
 
     def _body(self, item: EyeTestItem) -> dict:
         return {
             "model": self.model,
-            "max_completion_tokens": 1024,  # Glimmer reasons first; 32 left content empty
+            # Glimmer reasons first; a small cap leaves content empty (see the module note)
+            "max_completion_tokens": self.max_completion_tokens,
             "temperature": 0,
             "messages": [{"role": "user", "content": [
                 {"type": "text", "text": f"{item.question} {_INSTRUCTION}"},
@@ -103,30 +114,65 @@ class ServedVisionAnswerer:
 
 
 def answer_eye_test(eye_test: EyeTest, answerer: Answerer, *, budget_s: float | None = None,
-                    clock: Callable[[], float] = time.monotonic) -> tuple[dict[str, str], dict]:
+                    clock: Callable[[], float] = time.monotonic,
+                    concurrency: int = 1) -> tuple[dict[str, str], dict]:
     """Run ``answerer`` over the set, stopping early if ``budget_s`` is spent.
 
     Returns ``(answers, meta)``. ``meta`` records how many images were answered,
     whether the budget was hit, and the seconds spent — images left unanswered
     by a budget cut are simply absent, which the gate scores as a miss.
+
+    ``concurrency`` > 1 answers the images in parallel so a reasoning model fits
+    the wall-clock budget (20 sequential reasoning calls overran 90 s in RUN3).
     """
 
-    answers: dict[str, str] = {}
-    t0 = clock()
-    budget_hit = False
-    for item in eye_test.items:
-        if budget_s is not None and clock() - t0 >= budget_s:
-            budget_hit = True
-            break
-        answers[item.id] = answerer(item)
+    answers, budget_hit, elapsed = _answer_set(
+        list(eye_test.items), answerer, budget_s, clock, concurrency)
     meta = {
         "answered": len(answers),
         "total": len(eye_test),
         "budget_s": budget_s,
         "budget_hit": budget_hit,
-        "elapsed_s": round(clock() - t0, 6),
+        "concurrency": concurrency,
+        "elapsed_s": round(elapsed, 6),
     }
     return answers, meta
+
+
+def _answer_set(items, answerer, budget_s, clock, concurrency):
+    """Answer each item, bounded by ``budget_s``. Shared by the eye and spoken runners.
+
+    Sequential by default (deterministic, used by --fake and tests). With ``concurrency`` > 1 the
+    answers run in a thread pool against a real wall-clock deadline; items not finished by the
+    budget are left out (the gate scores them as misses), and pending work is cancelled so the run
+    never blocks past the budget.
+    """
+    answers: dict[str, str] = {}
+    t0 = clock()
+    if concurrency and concurrency > 1 and len(items) > 1:
+        from concurrent.futures import TimeoutError as FTimeout
+        deadline = time.monotonic() + budget_s if budget_s is not None else None
+        ex = ThreadPoolExecutor(max_workers=min(concurrency, len(items)))
+        futs = {it.id: ex.submit(answerer, it) for it in items}
+        budget_hit = False
+        try:
+            for it in items:
+                remaining = None if deadline is None else max(0.0, deadline - time.monotonic())
+                try:
+                    answers[it.id] = futs[it.id].result(timeout=remaining)
+                except FTimeout:
+                    budget_hit = True
+                    break
+        finally:
+            ex.shutdown(wait=False, cancel_futures=True)
+        return answers, budget_hit, clock() - t0
+    budget_hit = False
+    for item in items:
+        if budget_s is not None and clock() - t0 >= budget_s:
+            budget_hit = True
+            break
+        answers[item.id] = answerer(item)
+    return answers, budget_hit, clock() - t0
 
 
 __all__ = [

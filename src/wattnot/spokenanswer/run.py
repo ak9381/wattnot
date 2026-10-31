@@ -26,9 +26,10 @@ import argparse
 import json
 from pathlib import Path
 
-from wattnot.spokenanswer.assets import load_spoken_set, load_transcripts
+from wattnot.spokenanswer.assets import load_context, load_spoken_set, load_transcripts
 from wattnot.spokenanswer.client import (
     DEFAULT_MODEL,
+    REASONING_MAX_COMPLETION_TOKENS,
     OfflineAnswerer,
     ServedSpokenAnswerer,
     answer_spoken_set,
@@ -57,6 +58,10 @@ def main(argv: list[str] | None = None) -> int:
                     help="tokens per spoken answer, for joules per token")
     ap.add_argument("--j-per-correct-answer", type=float, default=None,
                     help="the run's joules per correct (text) answer, carried through unchanged")
+    ap.add_argument("--concurrency", type=int, default=8,
+                    help="answer the recordings in parallel (live): fit the budget on a reasoner")
+    ap.add_argument("--max-completion-tokens", type=int, default=REASONING_MAX_COMPLETION_TOKENS,
+                    help="completion-token cap per answer (reasoning models need room)")
     args = ap.parse_args(argv)
 
     spoken = load_spoken_set(args.assets, require_files=not args.fake)
@@ -65,10 +70,14 @@ def main(argv: list[str] | None = None) -> int:
         mode = "fake"
     else:
         transcripts = load_transcripts(args.assets)
-        answerer = ServedSpokenAnswerer(transcripts, model=args.model, base_url=args.base_url)
+        # the rack-scene telemetry the questions ask about, given to the model as a system message
+        answerer = ServedSpokenAnswerer(transcripts, model=args.model, base_url=args.base_url,
+                                        context=load_context(args.assets),
+                                        max_completion_tokens=args.max_completion_tokens)
         mode = "live"
 
-    answers, run_meta = answer_spoken_set(spoken, answerer, budget_s=args.budget_s)
+    answers, run_meta = answer_spoken_set(spoken, answerer, budget_s=args.budget_s,
+                                          concurrency=args.concurrency)
 
     rows = spoken_answer_gate(answers, spoken.items).detail["items"]
     pass_rate = (sum(1 for r in rows if r["ok"]) / len(rows)) if rows else 0.0

@@ -22,6 +22,7 @@ import argparse
 import base64
 import io
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
@@ -31,17 +32,45 @@ import urllib.request
 # does not fail the probe here — the eye test is the quality gate.
 PROBE_DIGIT = "7"
 _INSTRUCTION = "Answer with only the digit, no explanation."
+# Glimmer reasons before answering; a small cap left content empty. Configurable so a bigger
+# reasoner can be given more room without a code change. See wattnot.vision.client.
+REASONING_MAX_COMPLETION_TOKENS = int(os.environ.get("WATTNOT_REASONING_MAX_TOKENS", "1024"))
+
+
+def _digit_font(px: int):
+    """A large font for the probe digit: a bundled TrueType face if available, else the default.
+
+    The old probe used PIL's tiny default bitmap font (~11 px) on a 96 px canvas; the digit was
+    too small to read and the model answered 'None' (RUN3). Draw it big and bold instead."""
+    from PIL import ImageFont
+
+    for name in ("DejaVuSans-Bold.ttf", "DejaVuSans.ttf"):
+        try:
+            return ImageFont.truetype(name, px)
+        except OSError:
+            continue
+    try:
+        return ImageFont.load_default(size=px)  # Pillow >= 10.1 can size the default font
+    except TypeError:
+        return ImageFont.load_default()
 
 
 def _small_image_png() -> bytes:
-    """A small real PNG with a single large digit on white (drawn with PIL)."""
+    """A real PNG with one big, clearly legible digit on white (drawn with PIL)."""
     from PIL import Image, ImageDraw
 
-    img = Image.new("RGB", (96, 96), (255, 255, 255))
+    size = 220
+    img = Image.new("RGB", (size, size), (255, 255, 255))
     d = ImageDraw.Draw(img)
-    # Draw the digit large and centred; the default bitmap font is enough to read.
-    d.text((34, 28), PROBE_DIGIT, fill=(0, 0, 0))
-    d.rectangle([2, 2, 93, 93], outline=(0, 0, 0), width=2)
+    font = _digit_font(150)
+    # centre the glyph using its bounding box, so it fills the frame and is easy to read
+    try:
+        x0, y0, x1, y1 = d.textbbox((0, 0), PROBE_DIGIT, font=font)
+    except (AttributeError, TypeError):
+        x0, y0, x1, y1 = 0, 0, 90, 150
+    d.text(((size - (x1 - x0)) / 2 - x0, (size - (y1 - y0)) / 2 - y0), PROBE_DIGIT,
+           fill=(0, 0, 0), font=font)
+    d.rectangle([3, 3, size - 4, size - 4], outline=(0, 0, 0), width=3)
     buf = io.BytesIO()
     img.save(buf, "PNG", optimize=True)
     return buf.getvalue()
@@ -51,10 +80,10 @@ def _data_uri(png: bytes) -> str:
     return "data:image/png;base64," + base64.b64encode(png).decode("ascii")
 
 
-def _body(model: str, data_uri: str) -> dict:
+def _body(model: str, data_uri: str, max_completion_tokens: int) -> dict:
     return {
         "model": model,
-        "max_completion_tokens": 1024,  # Glimmer reasons first; 16 left content empty
+        "max_completion_tokens": max_completion_tokens,  # reasoning: a small cap empties content
         "temperature": 0,
         "messages": [{"role": "user", "content": [
             {"type": "text", "text": f"What digit is shown in the image? {_INSTRUCTION}"},
@@ -63,9 +92,10 @@ def _body(model: str, data_uri: str) -> dict:
     }
 
 
-def probe(base_url: str, model: str, *, timeout_s: float = 60.0) -> tuple[bool, str]:
+def probe(base_url: str, model: str, *, timeout_s: float = 60.0,
+          max_completion_tokens: int = REASONING_MAX_COMPLETION_TOKENS) -> tuple[bool, str]:
     """Send one real image to the served model. Returns (accepted, detail)."""
-    body = _body(model, _data_uri(_small_image_png()))
+    body = _body(model, _data_uri(_small_image_png()), max_completion_tokens)
     req = urllib.request.Request(
         f"{base_url.rstrip('/')}/chat/completions", data=json.dumps(body).encode(),
         headers={"Content-Type": "application/json"})
@@ -92,6 +122,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--model", default="meta-models/Muse-Glimmer-30B")
     ap.add_argument("--fake", action="store_true", help="dry-run: draw the image, make no call")
     ap.add_argument("--timeout-s", type=float, default=60.0)
+    ap.add_argument("--max-completion-tokens", type=int, default=REASONING_MAX_COMPLETION_TOKENS,
+                    help="completion-token cap (reasoning models need room for thinking + answer)")
     a = ap.parse_args(argv)
 
     if a.fake:
@@ -102,7 +134,8 @@ def main(argv: list[str] | None = None) -> int:
         print("image probe: --base-url is required for a live probe (or pass --fake)",
               file=sys.stderr)
         return 3
-    ok, detail = probe(a.base_url, a.model, timeout_s=a.timeout_s)
+    ok, detail = probe(a.base_url, a.model, timeout_s=a.timeout_s,
+                       max_completion_tokens=a.max_completion_tokens)
     print(f"image probe [{'OK' if ok else 'FAIL'}]: {detail}", file=sys.stderr if not ok else sys.stdout)
     if not ok:
         print("  the served model did not accept the image. Start it with multimodal enabled: "
