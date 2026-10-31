@@ -28,6 +28,14 @@ from wattnot.approvals import model as m
 from wattnot.approvals.store import Store
 
 
+def _require_act(what: str) -> None:
+    from wattnot.settings import WatchOnlyError, require_act
+    try:
+        require_act(what)
+    except WatchOnlyError as e:
+        raise ApplyError(str(e)) from e
+
+
 class ApplyError(RuntimeError):
     """The change could not be applied (or could not be confirmed)."""
 
@@ -74,6 +82,7 @@ class PowerCapApplier:
         return PowerCapApplier(lambda i: g(i).cap_w(), lambda i, w: g(i).set_cap_w(w))
 
     def apply(self, proposal: Mapping) -> dict:
+        _require_act('a power cap')
         ch = proposal["change"]
         gpu = int(ch.get("gpu", 0))
         want = ch["after"].get("power_cap_w")
@@ -113,6 +122,7 @@ class ConfigFileApplier:
             return None
 
     def apply(self, proposal: Mapping) -> dict:
+        _require_act('a serving config change')
         before = self._current()
         doc = {"format": f"wattnot.active-{self.kind}/1", "proposal_id": proposal["id"],
                "content_sha256": proposal["content_sha256"], "label": proposal["label"],
@@ -204,6 +214,7 @@ class NvidiaSmiApplier:
             raise ApplyError(f"could not set the power limit on GPU {gpu}: {e}") from e
 
     def apply(self, proposal: Mapping) -> dict:
+        _require_act('a power cap')
         ch = proposal["change"]
         gpu = int(ch.get("gpu", 0))
         want = ch["after"].get("power_cap_w")

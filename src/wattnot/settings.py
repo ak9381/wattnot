@@ -26,6 +26,10 @@ DEFAULTS: dict[str, Any] = {
     "auto_approve_max_cap_drop_pct": 58.0,
     # The set savings are measured on: auto | humaneval | gsm8k | mixed | custom (see datasets.py)
     "dataset": "mixed",
+    # "watch": read telemetry and show would-be savings and receipts, change nothing.
+    # "act": apply approved changes (power caps, serving config). `wattnot init` writes "watch";
+    # only `wattnot init --act` or an edit to the config turns acting on.
+    "mode": "act",
 }
 
 
@@ -52,8 +56,29 @@ def load() -> dict[str, Any]:
     env = os.environ.get("WATTNOT_MAX_P99_INCREASE")
     if env:
         out["max_p99_increase"] = env
+    if os.environ.get("WATTNOT_MODE"):
+        out["mode"] = os.environ["WATTNOT_MODE"]
+    if out.get("mode") not in ("watch", "act"):
+        raise ValueError(f"mode must be 'watch' or 'act' (got {out.get('mode')!r})")
     out["max_p99_increase"] = check_p99(out["max_p99_increase"])
     return out
+
+
+def watch_only() -> bool:
+    return load()["mode"] == "watch"
+
+
+class WatchOnlyError(RuntimeError):
+    pass
+
+
+def require_act(what: str) -> None:
+    """Refuse a change while WattNot is in watch-only mode."""
+    if watch_only():
+        raise WatchOnlyError(
+            f"watch-only mode: not applying {what}. WattNot shows the would-be saving and a "
+            "receipt but changes nothing. Turn acting on with `wattnot init --act` "
+            "(or set \"mode\": \"act\" in your config).")
 
 
 def check_p99(v: Any) -> float:
