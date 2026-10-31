@@ -366,7 +366,8 @@ def verify_document(receipt, bundle=None, trusted=None, path="<receipt>"):
             "joules": derived}
 
 
-KNOWN_LABELS = {"MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "REPLAY", "ADVICE", "SAMPLE"}
+KNOWN_LABELS = {"MEASURED", "ESTIMATE", "SIMULATED", "SYNTHETIC", "MOCK", "REPLAY", "ADVICE",
+                "SAMPLE"}
 
 
 def _labels(obj, path="$"):

@@ -60,7 +60,11 @@ def _pool(blocks: list[dict], repeat: int) -> tuple[dict, dict]:
 
 
 def summarize(cap_w: int, stock: list[dict], capped: list[dict], workload: Workload, repeat: int,
-              *, max_drop_pts: float = MAX_DROP_PTS, p99_slack_pct: float = P99_SLACK_PCT) -> dict:
+              *, max_drop_pts: float = MAX_DROP_PTS, p99_slack_pct: float | None = None) -> dict:
+    if p99_slack_pct is None:
+        # the user's p99 setting (wattnot config / WATTNOT_MAX_P99_INCREASE); 10% by default
+        from wattnot.settings import max_p99_increase_pct
+        p99_slack_pct = max_p99_increase_pct()
     n = len(stock)
     pairs = list(zip(stock, capped, strict=True))
 
