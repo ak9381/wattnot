@@ -145,7 +145,18 @@ class MemoryCompressionMiddleware:
             return messages, {"name": self.name, "applied": False, "tokens_before": before,
                               "tokens_after": before, "chunks_made": 0, "chunks_retrieved": 0,
                               "summarize_calls": 0, "model": model}
-        old, recent = rest[: len(rest) - self.keep_last], rest[len(rest) - self.keep_last:]
+        # Split old (summarised away) from recent (kept verbatim). Never cut a tool-call/tool-reply
+        # pair: a kept `tool` reply whose assistant `tool_calls` message was summarised away is an
+        # orphan the server rejects (HTTP 400). If the boundary lands on a tool reply, move it back
+        # so the assistant that made the call stays with its reply -- the whole pair in `recent`.
+        split = len(rest) - self.keep_last
+        while split > 0 and str(rest[split].get("role")) == "tool":
+            split -= 1
+        if split <= 0:
+            return messages, {"name": self.name, "applied": False, "tokens_before": before,
+                              "tokens_after": before, "chunks_made": 0, "chunks_retrieved": 0,
+                              "summarize_calls": 0, "model": model}
+        old, recent = rest[:split], rest[split:]
         calls0 = getattr(self.summarize, "calls", 0)
         for m in old:
             text = _text(m.get("content")) or _text(m.get("tool_calls") or [{}])
