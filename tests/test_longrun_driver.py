@@ -293,13 +293,15 @@ def test_host_block_activates_the_setup_venv_and_fails_loudly():
     assert "exit 97" in s                  # and a missing venv fails loudly
 
 
-def test_live_sweep_uses_real_wonder_and_covers_three_caps(tmp_path):
+def test_live_sweep_uses_real_wonder_and_covers_the_grid(tmp_path):
     from wattnot.longrun.driver import plan_glimmer_test
     sweep = {b.id: b for b in plan_glimmer_test(tmp_path)}["t1-sweep"].live
     assert "--wonder-live" in sweep                       # real planner, not muse-wonder-mock
-    assert "--grid" in sweep and len(sweep[sweep.index("--grid") + 1].split(",")) >= 3
+    caps = [int(x) for x in sweep[sweep.index("--grid") + 1].split(",")]
+    assert caps == [375, 350, 325, 300]                   # the four-cap retest grid
+    assert min(caps) >= 294                               # never below the 58% max_cap_drop floor
     for flag in ("--warmup", "--reps", "--sweep-budget-s"):
-        assert flag in sweep                              # tuned so >=3 caps fit the budget
+        assert flag in sweep                              # tuned so the grid fits the budget
 
 
 def test_retest_plan_fits_two_hours_and_reruns_the_failures(tmp_path):

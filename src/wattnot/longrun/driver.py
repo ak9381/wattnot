@@ -249,9 +249,11 @@ def sweep_live_argv(out: Path, live_file: Path, guard_cfg: str, *, sweep_budget_
     """The live BF16 power-cap sweep command. The planner is the REAL Wonder (``--wonder-live``),
     never the deterministic "muse-wonder-mock" (RUN3 shipped the mock because this flag was missing;
     nomock.audit_plan now fails a live wonder sweep without it). The budget/warm-up/rounds are tuned
-    by the caller so at least 3 caps are measured inside the block: RUN3 fit only one cap because a
-    16-request warm-up took ~169 s per arm on a reasoning model. The numbers stay MEASURED, just
-    with a shorter warm-up; a small grid guarantees >=3 caps even if the planner stops early."""
+    by the caller so the four grid caps are measured inside the block: RUN3 fit only one cap because
+    a 16-request warm-up took ~169 s per arm on a reasoning model. The numbers stay MEASURED, just
+    with a shorter warm-up; the 375/350/325/300 W grid fills every cap even if the planner stops
+    early. 300 W is the floor: it is the deepest Wonder candidate and stays above the ~294 W that
+    the operator policy's 58% max_cap_drop_pct allows from 700 W stock (nothing proposes below it)."""
     return _py("wattnot.proof.orchestrate", "--mode", "live", "--host", "{HOST}",
                "--key", "{KEY}", "--model", GLIMMER_MODEL, "--out", str(out / "runs" / "t1-sweep"),
                "--profile", "quick", "--planner", "wonder", "--wonder-live", "--no-adaptive",
@@ -317,7 +319,7 @@ def plan_glimmer_test(out: Path) -> list[Block]:
                     "--approval-policy", str(out / DRY_POLICY_NAME), "--policy-hold-s", "2",
                     "--guardrail-config", guard_cfg, "--live-file", str(live_file))
     sweep_live = sweep_live_argv(out, live_file, guard_cfg, sweep_budget_s=1500, reps=2,
-                                 warmup=4, warmup_s=5, grid="350,325,375")
+                                 warmup=4, warmup_s=5, grid="375,350,325,300")
     sweep_dir = out / "runs" / "t1-sweep"
     py = shlex.quote(sys.executable)
     wonder_live = ["bash", "-c",
@@ -408,7 +410,7 @@ def plan_glimmer_retest(out: Path) -> list[Block]:
     live_file = out / "live.jsonl"
     guard_cfg = str(Path(__file__).resolve().parents[3] / "examples/longrun/guardrails-wonder.json")
     retune = {"t1-sweep": sweep_live_argv(out, live_file, guard_cfg, sweep_budget_s=840, reps=1,
-                                          warmup=2, warmup_s=0, grid="350,325,375")}
+                                          warmup=2, warmup_s=0, grid="375,350,325,300")}
     blocks = []
     for bid in RETEST_BLOCKS:
         b = full[bid]
