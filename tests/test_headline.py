@@ -41,6 +41,7 @@ def test_noisy_fake_is_not_billed(tmp_path):
     assert "action.rolled_back" in types
 
 
-def test_modal_backend_is_stubbed(tmp_path):
-    with pytest.raises(NotImplementedError, match="T10"):
+def test_modal_backend_needs_a_live_url(tmp_path, monkeypatch):
+    monkeypatch.delenv("WATTNOT_MODAL_URL", raising=False)
+    with pytest.raises(RuntimeError, match="vLLM base URL"):
         ModalBackend().client(None)

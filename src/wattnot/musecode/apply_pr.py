@@ -153,7 +153,7 @@ def apply_pr(
     receipt_sha256: str,
     out_dir: str | Path,
     labels: Mapping[str, str] | None = None,
-    mock: bool = True,
+    mock: bool | None = None,
     open_pr: bool = False,
     model: str = DEFAULT_MODEL,
     provider: str | None = None,
@@ -190,7 +190,9 @@ def apply_pr(
     pending_writes: list[tuple[Path, str]] = []
     trace: dict[str, Any] = {}
 
-    # In mock/dry-run mode (DEFAULT), do NOT call muse at all
+    # Live Muse Code is the default; the deterministic edit is the labelled test mock.
+    if mock is None:
+        mock = os.environ.get("WATTNOT_META_MOCK", "").strip() == "1"
     if mock:
         launch_path = repo / "launch.sh"
         if launch_path.exists():

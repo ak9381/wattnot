@@ -257,8 +257,9 @@ def main(argv: list[str] | None = None) -> int:
     if out.get("cost_note"):
         print(f"  note: {out['cost_note']}")
     if out["verdict"] == "admit":
+        greenest = "uncapped" if out["greenest"] is None else f"{out['greenest']:g} W"
         print(f"  config to serve: {where}   greenest available: "
-              f"{'uncapped' if out['greenest'] is None else f'{out['greenest']:g} W'}   "
+              f"{greenest}   "
               f"floor: {out['floor_j_per_correct']} J/correct")
         if out["cost_floor_usd_per_1k_correct"] is not None:
             print(f"  cheapest available: ${out['cost_floor_usd_per_1k_correct']}/1k correct "

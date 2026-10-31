@@ -56,8 +56,9 @@ def add_parser(sub) -> None:
     wo.add_argument("--model", default="muse-wonder-1.0", help="Wonder model id")
     wo.add_argument("--threshold", type=float, default=0.01, help="Pareto improvement threshold")
     wo.add_argument("--patience", type=int, default=3, help="Pareto patience in trials")
-    wo.add_argument("--mock", dest="mock", action="store_true", default=True, help="mock mode (default)")
-    wo.add_argument("--live", dest="mock", action="store_false", help="live calls (requires key)")
+    wo.add_argument("--mock", dest="mock", action="store_true", default=False,
+                    help="labelled MOCK decisions (tests only)")
+    wo.add_argument("--live", dest="mock", action="store_false", help="live calls (the default)")
     wo.add_argument("--ledger")
 
 

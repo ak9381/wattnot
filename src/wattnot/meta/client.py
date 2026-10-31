@@ -31,6 +31,26 @@ class MetaError(RuntimeError):
         self.status = status
 
 
+def meta_mock_on() -> bool:
+    """True only when WATTNOT_META_MOCK=1. Mocks are for tests; every default is live."""
+    return os.environ.get("WATTNOT_META_MOCK", "").strip() == "1"
+
+
+class MetaKeyMissing(RuntimeError):
+    """No Meta API key: callers show this, never a fake answer."""
+
+    def __init__(self) -> None:
+        super().__init__("Live Meta models need META_API_KEY (or run `muse login`). "
+                         "Set WATTNOT_META_MOCK=1 only for tests.")
+
+
+def require_key() -> str:
+    key = load_key()
+    if not key:
+        raise MetaKeyMissing()
+    return key
+
+
 def load_key(auth_file: str | Path | None = None) -> str:
     """META_API_KEY if set, else the Muse login file. Returns '' when neither has one."""
 

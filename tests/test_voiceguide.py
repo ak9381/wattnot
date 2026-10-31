@@ -398,9 +398,18 @@ def test_api_voice_live_failure_degrades(monkeypatch):
     from wattnot.api.app import create_app
     monkeypatch.setenv("WATTNOT_VOICE_LIVE", "1")
     monkeypatch.delenv("WATTNOT_META_MOCK", raising=False)
+    monkeypatch.setenv("META_API_KEY", "test-not-a-key")
     def boom(*a, **k):
         raise OSError("net down")
     monkeypatch.setattr(vg, "transcribe_audio", boom)
     c = TestClient(create_app("."))
     r = c.post("/api/voiceguide", json={"audio_b64": base64.b64encode(b"RIFF\xff\xfe").decode()})
     assert r.status_code == 502 and "Type your question" in r.json()["text"]
+
+
+def test_live_default_without_key_is_a_clear_error_not_an_answer(monkeypatch):
+    import wattnot.meta.voiceguide as vg
+    monkeypatch.delenv("WATTNOT_META_MOCK", raising=False)
+    out = vg.process_voice_query(query_text="which cap won?")
+    assert out["label"] == "ERROR" and out["code"] == "key_missing"
+    assert "META_API_KEY" in out["text"]

@@ -51,7 +51,7 @@ class WonderPlanner:
     partner = "meta"
 
     def __init__(self, supervisor: WonderSupervisor | None = None, *, lo: int = LO_W,
-                 hi: int = HI_W, clocks: Sequence[str] = CLOCKS, mock: bool = True) -> None:
+                 hi: int = HI_W, clocks: Sequence[str] = CLOCKS, mock: bool | None = None) -> None:
         self.sup = supervisor or WonderSupervisor(mock=mock, candidates=candidates(lo, hi, clocks),
                                                   threshold=0.01, patience=3)
         if supervisor is not None:

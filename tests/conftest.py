@@ -9,6 +9,15 @@ def _proposals_in_tmp(tmp_path_factory, monkeypatch):
     monkeypatch.setenv("WATTNOT_PROPOSALS_DIR", str(tmp_path_factory.mktemp("proposals")))
 
 
+@pytest.fixture(autouse=True)
+def _meta_mock_in_tests(monkeypatch):
+    """Live Meta models are the default in the product. Tests never make paid calls:
+    they run with the explicit, labelled MOCK switch and no key."""
+    monkeypatch.setenv("WATTNOT_META_MOCK", "1")
+    monkeypatch.delenv("META_API_KEY", raising=False)
+    monkeypatch.setenv("WATTNOT_MUSE_AUTH", "/nonexistent/muse-auth.json")
+
+
 # Slow tests (~20 s each). Quick feature check: python -m pytest -q -m "not slow" <files>.
 # The full suite (including these) runs at integration and final review. See docs/TESTING.md.
 import pytest as _pytest_slow

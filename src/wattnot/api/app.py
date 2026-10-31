@@ -433,17 +433,16 @@ def create_app(root: str | os.PathLike[str] = ".") -> FastAPI:
                         audio_bytes = _b64.b64decode(b64, validate=True)
                     except Exception:
                         audio_bytes = None
-        # Live Muse Voice Transcribe only when explicitly switched on (paid call).
-        live = bool(audio_bytes) and os.environ.get("WATTNOT_VOICE_LIVE") == "1" \
-            and os.environ.get("WATTNOT_META_MOCK") != "1"
+        # Live by default (Muse Voice Transcribe + Muse Spark); WATTNOT_META_MOCK=1 is the test mock.
+        live = os.environ.get("WATTNOT_META_MOCK") != "1"
         try:
             out = process_voice_query(query_text=query_text, audio_data=audio_bytes, root_dir=base,
-                                      live=live, mock=not live)
+                                      live=live, mock=not live, spark_live=live)
         except Exception as exc:  # noqa: BLE001 - never leak a stack trace to the page
-            return JSONResponse({"intent": "answer", "label": "MOCK", "code": "transcribe_failed",
+            return JSONResponse({"intent": "answer", "label": "ERROR", "code": "transcribe_failed",
                                  "text": f"Voice transcription failed ({type(exc).__name__}). "
                                          "Type your question instead."}, status_code=502)
-        if live and isinstance(out, dict):
+        if live and audio_bytes and isinstance(out, dict):
             out.setdefault("transcript_source", "LIVE: Muse Voice Transcribe")
         return out
 

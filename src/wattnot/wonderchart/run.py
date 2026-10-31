@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -51,8 +52,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Wonder reads the sweep chart")
     ap.add_argument("--sweep", default=None, help="JSON file: a trials list or {trials:[...]}")
     ap.add_argument("--out", default=None, help="write wonder_chart.png and wonder_chart.json here")
-    ap.add_argument("--live", action="store_true", help="route the chart through Muse Wonder (paid)")
-    ap.add_argument("--fake", action="store_true", help="offline deterministic fallback (default)")
+    ap.add_argument("--live", action="store_true", help="route the chart through Muse Wonder (the default)")
+    ap.add_argument("--fake", action="store_true", help="labelled offline fallback (tests only)")
     args = ap.parse_args(argv)
 
     try:
@@ -64,7 +65,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     points = build_points(trials)
 
     client = None
-    if args.live and not args.fake:
+    if not args.fake and os.environ.get("WATTNOT_META_MOCK") != "1":
         from wattnot.meta.client import GuardedClient
         client = GuardedClient()
 

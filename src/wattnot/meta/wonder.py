@@ -215,13 +215,11 @@ class WonderSupervisor:
         self.patience = int(patience)
         self.trace_ids: list[str] = []
 
-        if mock is None:
-            # Mock is the default. Live mode needs an explicit mock=False (CLI --live);
-            # an ambient environment variable must never switch a library caller to paid calls.
-            self.mock = True
-        else:
-            # WATTNOT_META_MOCK=1 can only force mock, never force live.
-            self.mock = bool(mock) or os.environ.get("WATTNOT_META_MOCK", "").strip() == "1"
+        # Live is the default. Mock only when asked (tests) or WATTNOT_META_MOCK=1.
+        self.mock = bool(mock) or os.environ.get("WATTNOT_META_MOCK", "").strip() == "1"
+        if not self.mock and client is None:
+            from wattnot.meta.client import require_key
+            require_key()
 
         self.client = client or (GuardedClient() if not self.mock else None)
 

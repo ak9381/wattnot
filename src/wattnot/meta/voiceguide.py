@@ -82,16 +82,19 @@ def transcribe_audio(
     audio_data: bytes | None,
     *,
     fallback_text: str = "",
-    live: bool = False,
-    mock: bool = True,
+    live: bool = True,
+    mock: bool | None = None,
     ledger: Any = None,
 ) -> str:
     """Transcribe audio to text via Muse Voice Transcribe (or deterministic mock)."""
     if fallback_text and fallback_text.strip():
         return fallback_text.strip()
 
-    is_mock = mock or (not live) or (os.environ.get("WATTNOT_META_MOCK") == "1")
+    from wattnot.meta.client import meta_mock_on, require_key
+
+    is_mock = bool(mock) or meta_mock_on() or not live
     if not is_mock:
+        require_key()
         # Live path: Muse Voice Transcribe file endpoint (POST /v1/asr/transcribe, multipart
         # 'request' JSON + 'audio' file). Verified live 2026-10-29, see receipts/run2/voice_transcribe_live.json.
         import urllib.request
@@ -460,12 +463,24 @@ def process_voice_query(
     audio_data: bytes | None = None,
     *,
     root_dir: str | Path | None = None,
-    live: bool = False,
-    mock: bool = True,
+    live: bool = True,
+    mock: bool | None = None,
     ledger: Any = None,
-    spark_live: bool = False,
+    spark_live: bool | None = None,
 ) -> dict[str, Any]:
-    """Execute voice guide workflow: Audio/Text -> Spark intent -> Guarded Read-Only Action."""
+    """Execute voice guide workflow: Audio/Text -> Spark intent -> Guarded Read-Only Action.
+
+    Live by default. Keyword intent is the labelled MOCK, used only with WATTNOT_META_MOCK=1
+    (or mock=True in tests). With no key it returns a clear error, never a guessed answer."""
+    from wattnot.meta.client import load_key, meta_mock_on
+
+    if mock is None:
+        mock = meta_mock_on()
+    if spark_live is None:
+        spark_live = not mock
+    if not mock and not load_key():
+        return {"intent": "answer", "action": "none", "label": "ERROR", "code": "key_missing",
+                "text": "Live Ask needs META_API_KEY (or run `muse login`). No answer was made up."}
     root = Path(root_dir) if root_dir else Path(__file__).resolve().parents[3]
     text = transcribe_audio(audio_data, fallback_text=query_text or "", live=live, mock=mock, ledger=ledger)
     if audio_data and not (query_text or "").strip() and not text:
@@ -485,8 +500,9 @@ def process_voice_query(
             intent = spark_classify_intent(text, ledger=ledger)
             intent_source = "Muse Spark (LIVE)"
         except Exception as exc:  # noqa: BLE001 - say it failed, never pretend
-            intent = classify_intent(text)
-            intent_source = f"keywords, Spark failed ({type(exc).__name__})"
+            return {"intent": "answer", "action": "none", "label": "ERROR", "code": "spark_failed",
+                    "transcript": text,
+                    "text": f"Muse Spark could not read that request ({type(exc).__name__}). Try again."}
     else:
         intent = classify_intent(text)
     quick = get_quick_ack(intent, text)

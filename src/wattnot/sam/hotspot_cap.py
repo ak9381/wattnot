@@ -54,13 +54,13 @@ def detect_hotspot_mask(
     photo_path: str | Path | None = None,
     *,
     target_gpu: int = 1,
-    mock: bool = True,
-    live: bool = False,
+    mock: bool | None = None,
+    live: bool = True,
     ledger: Any = None,
     prompt: str = "thermal hotspot rack slot",
 ) -> dict[str, Any]:
     """Segment the hotspot rack/GPU region using SAM 3.1 (or deterministic mock)."""
-    is_mock = mock or (not live) or (os.environ.get("WATTNOT_META_MOCK") == "1")
+    is_mock = bool(mock) or (not live) or (os.environ.get("WATTNOT_META_MOCK") == "1")
 
     live_poly: list[list[int]] | None = None
     if not is_mock:
@@ -111,15 +111,15 @@ def plan_hotspot_cap(
     target_gpu: int | str = 1,
     step_w: int = DEFAULT_STEP_W,
     min_cap_w: int = DEFAULT_MIN_CAP_W,
-    mock: bool = True,
-    live: bool = False,
+    mock: bool | None = None,
+    live: bool = True,
     ledger: Any = None,
 ) -> dict[str, Any]:
     """Identify the hotspot GPU, lower its cap by bounded step (>= min_cap_w), keep others unchanged.
 
     Returns the mask details, cap decision, updated cap map, and technical reason.
     """
-    is_mock = mock or (not live) or (os.environ.get("WATTNOT_META_MOCK") == "1")
+    is_mock = bool(mock) or (not live) or (os.environ.get("WATTNOT_META_MOCK") == "1")
 
     # Normalise GPU caps dictionary
     current_caps: dict[int, int] = {}

@@ -1305,7 +1305,9 @@ def main(argv=None) -> int:
     ap.add_argument("--grid", default="", help="comma list of caps to fill in after Muse's picks")
     ap.add_argument("--sweep-budget-s", type=float, default=0)
     ap.add_argument("--wonder-live", action="store_true",
-                    help="planner wonder: make real Wonder calls (default: mock decisions)")
+                    help="planner wonder: real Wonder calls (now the default; kept for old scripts)")
+    ap.add_argument("--wonder-mock", action="store_true",
+                    help="planner wonder: labelled MOCK decisions (tests only)")
     ap.add_argument("--wonder-lo", type=int, default=300)
     ap.add_argument("--wonder-hi", type=int, default=375)
     ap.add_argument("--planner", choices=["muse", "bisect", "fake", "baseten-open", "modal-open",
@@ -1416,7 +1418,7 @@ def main(argv=None) -> int:
             from wattnot.meta.wonder import WonderSupervisor
             from wattnot.proof.wonder_planner import WonderPlanner, candidates
 
-            sup = WonderSupervisor(mock=not a.wonder_live,
+            sup = WonderSupervisor(mock=a.wonder_mock,
                                    candidates=candidates(a.wonder_lo, a.wonder_hi),
                                    threshold=0.01, patience=3)
             planner = WonderPlanner(sup, lo=a.wonder_lo, hi=a.wonder_hi)
