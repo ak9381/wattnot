@@ -27,6 +27,19 @@ def _metrics(url: str) -> str:  # pragma: no cover - GPU host only
         return ""
 
 
+def save_arm_raw(out: Path, on: bool, rep: int, block: dict) -> Path:
+    """Write one arm/rep's raw answer texts to out/raw/prefix-<arm>-r<rep>.jsonl (item G).
+
+    The grader scores pooled copies; keeping the raw per-request answers next to the summary makes a
+    wrong pass rate auditable (which answers were cut, which were wrong) for both the prefix A/B and
+    the combined block, which share this trial path.
+    """
+    from wattnot.proof.session import save_raw
+    tag = f"prefix-{'on' if on else 'off'}-r{rep}"
+    save_raw(out, tag, block)
+    return out / "raw" / f"{tag}.jsonl"
+
+
 def _fake(out: Path, reps: int) -> dict:
     summ = PC.mock_ab(reps)
     summ["label"] = "MOCK"
@@ -73,6 +86,7 @@ def _real(out: Path, o) -> dict:  # pragma: no cover - needs a GPU and vLLM
                 b = rig.block(700)
             finally:
                 guard.__exit__(None, None, None)
+            save_arm_raw(out, on, rep, b)   # keep this arm/rep's raw answer texts
             m1 = _metrics(url)
             rtok, ctok = b.get("reasoning_tokens") or 0, b.get("tokens") or 0
             return {"j_per_req": b.get("j_per_req"), "pass_pct": b.get("pass_pct"),
