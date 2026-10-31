@@ -118,19 +118,19 @@ def estimate_hard_stop(gpu: str = DEFAULT_GPU, **kw) -> dict:
 
 # --- preflight: is this model servable by vLLM? (free, local; gates all spend) ---------------
 
-# vLLM serves models by matching the HF config `architectures`/`model_type` to a registered
-# implementation. A model whose architecture vLLM does not register cannot be loaded -- the GPU
-# would download tens of GiB and then fail at engine init. This conservative allowlist of common
-# vLLM-supported text model_types lets run() refuse BEFORE spending a cent. (Extend as needed.)
-VLLM_SUPPORTED_MODEL_TYPES = frozenset({
-    "llama", "mistral", "mixtral", "qwen2", "qwen2_moe", "qwen3", "qwen3_moe",
-    "gemma", "gemma2", "gemma3_text", "phi3", "phimoe", "gpt_neox", "falcon",
-    "stablelm", "starcoder2", "dbrx", "cohere", "deepseek_v2", "deepseek_v3",
-})
+# vLLM serves models by matching the HF config `architectures` to a registered implementation.
+# An architecture vLLM does not register cannot be loaded -- the GPU would download tens of GiB
+# and then fail at engine init. A structural heuristic lets run() refuse BEFORE spending a cent:
+# the generation path vLLM serves is single-stream causal LM (architecture name ends in
+# "ForCausalLM") with no extra encoder towers; a "...ForConditionalGeneration" name and/or a
+# vision/image config mean a multimodal or seq2seq model outside that path. The GPU container
+# also does a real registry check as a backstop, but the cheap gate here avoids paying to learn it.
+_CAUSAL_LM_SUFFIX = "ForCausalLM"
 
 
 def preflight_servable(config: dict) -> dict:
-    """Decide -- from a model's HF config dict -- whether vLLM can serve it. Pure, no network.
+    """Decide -- from a model's HF config dict -- whether vLLM's causal-LM path can serve it. Pure,
+    no network, no vendor names.
 
     Returns ``{"ok": bool, "architecture", "model_type", "reason", "multimodal"}``. Used by run()
     to refuse an unservable model before any paid download/GPU, so we never pay to discover the
@@ -139,12 +139,12 @@ def preflight_servable(config: dict) -> dict:
     arch = (config.get("architectures") or [None])[0]
     mtype = config.get("model_type")
     multimodal = bool(config.get("vision_config") or config.get("image_token_id") is not None)
-    ok = mtype in VLLM_SUPPORTED_MODEL_TYPES and not str(arch or "").endswith("ForConditionalGeneration")
+    ok = str(arch or "").endswith(_CAUSAL_LM_SUFFIX) and not multimodal
     if ok:
-        reason = f"model_type {mtype!r} is a vLLM-supported text architecture"
+        reason = f"architecture {arch!r} is a single-stream causal-LM vLLM can serve"
     else:
-        reason = (f"architecture {arch!r} / model_type {mtype!r} is not a vLLM-registered text model"
-                  + (" (multimodal/conditional-generation)" if multimodal else "")
+        reason = (f"architecture {arch!r} / model_type {mtype!r} is not a plain causal-LM"
+                  + (" (has a vision/image config -> multimodal)" if multimodal else "")
                   + "; vLLM cannot load it. Refusing to spend on an unservable model.")
     return {"ok": ok, "architecture": arch, "model_type": mtype,
             "multimodal": multimodal, "reason": reason}
