@@ -10,8 +10,11 @@ from wattnot.gates.result import GateResult
 from wattnot.runner.trial import TrialResult
 
 
-def p99_gate(base: TrialResult, cand: TrialResult, *, slack: float = 0.10,
+def p99_gate(base: TrialResult, cand: TrialResult, *, slack: float | None = None,
              sla_s: float | None = None) -> GateResult:
+    from wattnot.settings import max_p99_increase
+    if slack is None:
+        slack = max_p99_increase()
     if slack < 0:
         raise ValueError("slack must be >= 0")
     budget = sla_s if sla_s is not None else base.p99_s * (1 + slack)

@@ -28,7 +28,9 @@ def options(cfg: dict) -> dict:
     models = [_c(m["id"], f"{m['name']} ({'one H100' if m.get('place') == 'h100' else 'Baseten'})")
               for m in cfg.get("models", [])]
     lim = cfg.get("limits", {})
-    p99 = lim.get("p99_slack_pct", {}).get("default", 10)
+    from wattnot import settings as _st
+    _cfg = _st.load()
+    p99 = lim.get("p99_slack_pct", {}).get("default", round(_cfg["max_p99_increase"] * 100))
     q = lim.get("min_quality_pct", {}).get("default", 95)
     rooms = [_c(r["id"], r["title"]) for r in cfg.get("rooms", [])]
     o = [
@@ -97,10 +99,16 @@ def options(cfg: dict) -> dict:
            why="Lower mass skips more experts and saves more energy, but answers can drift. The quality gate decides.",
            example="At 0.95, a token whose top 2 experts already carry 95% of the weight skips the other 6."),
         _o("p99_slack_pct", "Slowest 1% may get slower by", [_c(v, f"{v}%") for v in (0, 5, 10, 15, 25)], p99,
-           group="gates", applies="replay", flag="--p99-budget-s",
+           group="gates", applies="replay", flag="max_p99_increase (wattnot.json) / --p99-slack",
            what="p99 is the response time that 99 of 100 requests beat. This is how much worse it may get.",
            why="Users feel the slow requests, not the average. A change that saves power but makes the worst requests crawl is rejected.",
            example="Stock p99 3.66 s with 10% slack: anything over 4.02 s fails."),
+        _o("auto_approve_max_cap_drop_pct", "Auto-approve only if the power cap drops at most",
+           [_c(v, f"{v:g}%") for v in (25, 40, 58)], _cfg["auto_approve_max_cap_drop_pct"],
+           group="gates", applies="live", flag="wattnot approvals policy --max-cap-drop-pct",
+           what="Shown next to the p99 limit. A proposal is approved without a person only if it passes the p99 limit, the quality check, and the cap drops no more than this.",
+           why="Both numbers together decide what WattNot may apply on its own. Everything else waits for a person.",
+           example="58% is the default rule; with a 10% p99 limit, a cap that saves power but slows p99 by 12% still waits for you."),
         _o("min_quality_pct", "Answers must agree at least",
            [_c(v, f"{v}%") for v in (90, 94, 95, 97, 99)], q, group="gates", applies="replay", flag="min_quality_pct",
            what="The share of answers that must match the stock model's answers on a fixed test set.",

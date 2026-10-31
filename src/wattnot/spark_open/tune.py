@@ -36,6 +36,7 @@ from wattnot.gates.fixed import pass_rate
 from wattnot.receipt.canon import canonical_sha256
 from wattnot.spark_open.gate import (
     P99_SLACK,
+    max_p99_increase,
     QUALITY_DROP_PTS,
     Energy,
     agreement_pct,
@@ -296,7 +297,7 @@ def quality_gate(items, base: dict, r: dict) -> dict:
     bp, n = pass_rate(base["outputs"], items, truncated=base.get("truncated"))
     cp, _ = pass_rate(r["outputs"], items, truncated=r.get("truncated"))
     rp, c99 = p99(base["latencies"]), p99(r["latencies"])
-    p99_ok = rp <= 0 or c99 <= rp * (1 + P99_SLACK)
+    p99_ok = rp <= 0 or c99 <= rp * (1 + max_p99_increase())
     drop = round(bp - cp, 3)
     return {
         "gate": "fixed answer checks",

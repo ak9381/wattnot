@@ -33,7 +33,12 @@ from pathlib import Path
 from wattnot.receipt.canon import canonical_sha256
 
 QUALITY_SLACK_PTS = 1.0
-P99_TIE_PCT = 10.0
+P99_TIE_PCT = 10.0  # default only; live value is settings.max_p99_increase
+
+
+def _tie_pct() -> float:
+    from wattnot.settings import max_p99_increase_pct
+    return max_p99_increase_pct()
 COST_TIE_PCT = 3.0
 DEFAULT_P99_BUDGET_S = 20.0
 
@@ -119,7 +124,7 @@ def route(profile: WorkloadProfile, legs: Mapping[str, Mapping]) -> dict:
         if not fit:
             flags.append(f"p99 budget of {budget:g} s missed by every candidate")
         best = min(r["p99_s"] for r in pool)
-        band = [r for r in pool if r["p99_s"] <= best * (1 + P99_TIE_PCT / 100)]
+        band = [r for r in pool if r["p99_s"] <= best * (1 + _tie_pct() / 100)]
         band.sort(
             key=lambda r: (
                 r["usd_per_1k"] if r["usd_per_1k"] is not None else float("inf"),
@@ -134,7 +139,7 @@ def route(profile: WorkloadProfile, legs: Mapping[str, Mapping]) -> dict:
         )
         if len(band) > 1:
             reason += (
-                f"; {len(band)} were within {P99_TIE_PCT:g}% on p99, "
+                f"; {len(band)} were within {_tie_pct():g}% on p99, "
                 "so the cheaper per 1k answers won"
             )
     else:

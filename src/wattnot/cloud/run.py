@@ -45,7 +45,7 @@ class Options:
     repeats: int = 2
     efforts: Sequence[str] | None = None  # restrict the levels tried (reference is always run)
     max_drop_pts: float = 1.0
-    p99_slack: float = 0.10
+    p99_slack: float | None = None  # None: use settings.max_p99_increase
     budget_usd: float | None = None
     planner: bool = True
     judge: bool = False
@@ -135,7 +135,7 @@ def run(opts: Options, transport: Transport, mode: str, *, out_dir: str | Path,
     workload = {"name": wl.name, "items": len(items), "classes": sorted(by_class),
                 "sha256": hashlib.sha256(text).hexdigest()}
     settings = {"repeats": opts.repeats, "max_drop_pts": opts.max_drop_pts,
-                "p99_slack": opts.p99_slack, "budget_usd": opts.budget_usd,
+                "p99_slack": opts.p99_slack, "max_p99_increase": _p99(opts.p99_slack), "budget_usd": opts.budget_usd,
                 "planner": opts.planner, "judge": opts.judge, "affinity": opts.affinity,
                 "efforts_tried": list(opts.efforts) if opts.efforts else None,
                 "temperature": 0}
@@ -154,3 +154,8 @@ def run(opts: Options, transport: Transport, mode: str, *, out_dir: str | Path,
 
     sign_run_receipt(path, key_path=sign_key)
     return path, json.loads(path.read_text())
+
+
+def _p99(v):
+    from wattnot.settings import max_p99_increase
+    return max_p99_increase(v)

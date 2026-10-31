@@ -240,6 +240,11 @@ export interface Receipt {
     rekor?: Record<string, unknown> | null;
   };
   compare_to?: string | null;
+  limits?: {
+    max_p99_increase?: number;
+    max_p99_increase_pct?: number;
+    source?: string;
+  };
 }
 
 // ---- ui-view (https://wattnot.dev/schemas/ui-view.schema.json) ----
