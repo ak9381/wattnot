@@ -43,3 +43,14 @@ All numbers here are **MOCK**: the upstream is a scripted stand-in, not a real m
 | Gate pass % | 100 | 100 | 100 |
 
 The loop test (openai-python) repeats one file read 12 times. The waste saver stops the run early, and the context saver cuts the repeated output (tokens are an ESTIMATE, about 4 characters per token). Real numbers on Muse need a live run and will be labelled MEASURED when we have them.
+
+## Live LangChain run (MEASURED, 2026-11-01)
+
+`tests/integration/test_langchain_real.py` drives real `langchain-openai` `ChatOpenAI` and a `langchain.agents.create_agent` tool agent through the proxy to the live Meta Muse API (tiers: `muse-spark-1.3-contributor` first, then `muse-spark-1.3`). It is skipped unless `WATTNOT_LIVE=1` and a Meta key are set:
+
+```bash
+pip install -e '.[frameworks,dev]' langchain
+WATTNOT_LIVE=1 pytest tests/integration/test_langchain_real.py -s
+```
+
+First run (MEASURED): 7/7 correct (6 Q&A plus a multiply-tool agent), 8 proxied calls, receipt framework `langchain`, small-tier pass rate 0.75, escalation rate 0.25, gate pass 100%, 10 upstream Muse calls for about $0.0034 (ESTIMATE from the spend ledger at list prices). A replayed tool loop was stopped early by the waste guard. Output: `receipts/frameworks/langchain-live.json`.

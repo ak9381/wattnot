@@ -1,0 +1,280 @@
+{
+  "label": "MEASURED",
+  "when": "2026-11-01T02:44:16+0530",
+  "frameworks_client": "langchain-openai ChatOpenAI + langchain.agents.create_agent",
+  "upstream_models_called": [
+    "muse-spark-1.3-contributor",
+    "muse-spark-1.3-contributor",
+    "muse-spark-1.3-contributor",
+    "muse-spark-1.3-contributor",
+    "muse-spark-1.3",
+    "muse-spark-1.3-contributor",
+    "muse-spark-1.3-contributor",
+    "muse-spark-1.3-contributor",
+    "muse-spark-1.3",
+    "muse-spark-1.3-contributor"
+  ],
+  "results": [
+    {
+      "prompt": "What is 17 * 23? Reply with just the number.",
+      "answer": "391",
+      "correct": true,
+      "latency_s": 3.98
+    },
+    {
+      "prompt": "What is the capital of Japan? One word.",
+      "answer": "Tokyo",
+      "correct": true,
+      "latency_s": 3.97
+    },
+    {
+      "prompt": "How many sides does a hexagon have? Reply with just the number.",
+      "answer": "6",
+      "correct": true,
+      "latency_s": 3.96
+    },
+    {
+      "prompt": "Spell the word 'watt' backwards. Reply with just the word.",
+      "answer": "ttaw",
+      "correct": true,
+      "latency_s": 5.9
+    },
+    {
+      "prompt": "Which planet is known as the Red Planet? One word.",
+      "answer": "Mars",
+      "correct": true,
+      "latency_s": 3.0
+    },
+    {
+      "prompt": "What is the chemical symbol for gold? Reply with just the symbol.",
+      "answer": "Au",
+      "correct": true,
+      "latency_s": 2.57
+    },
+    {
+      "prompt": "agent: 12345 * 6789 via multiply tool",
+      "answer": "12345 * 6789 = 83810205",
+      "correct": true,
+      "tool_used": true
+    }
+  ],
+  "receipt": {
+    "spec": "wattnot.proxy-receipt/1",
+    "label": "MEASURED",
+    "frameworks": [
+      "langchain"
+    ],
+    "framework": "langchain",
+    "calls": 8,
+    "routing": {
+      "enabled": true,
+      "routed_calls": 8,
+      "escalation_rate": 0.25,
+      "small_model_pass_rate": 0.75,
+      "answered_by": {
+        "spark-1.3": 2,
+        "spark-contributor": 6
+      }
+    },
+    "gate": {
+      "pass_pct": 100.0
+    },
+    "context_saver": {
+      "enabled": true,
+      "tokens_before": 141,
+      "tokens_after": 141,
+      "tokens_saved": 0,
+      "label": "ESTIMATE"
+    },
+    "agent_waste": {
+      "upstream_calls": 8,
+      "prompt_tokens": 1474,
+      "completion_tokens": 2314,
+      "reasoning_tokens": 2147,
+      "nudges": 0,
+      "runs": 7,
+      "runs_stopped_early": 0
+    }
+  },
+  "stats_total": {
+    "upstream_calls": 8,
+    "prompt_tokens": 1474,
+    "completion_tokens": 2314,
+    "reasoning_tokens": 2147,
+    "nudges": 0,
+    "flags": {
+      "repeat": 0,
+      "no_op": 0,
+      "cycle": 0,
+      "reasoning": 0
+    }
+  },
+  "ledger": {
+    "version": 1,
+    "cap_usd": 100.0,
+    "soft_usd": 80.0,
+    "price_source": "https://dev.meta.ai/docs/pricing-rate-limits (Standard mode, read 2026-10-27)",
+    "entries": [
+      {
+        "id": "9fb629e9cc7b",
+        "ts": "2026-10-31T21:13:42+00:00",
+        "model": "muse-spark-1.3-contributor",
+        "purpose": "langchain-live-test",
+        "status": "ok",
+        "input_tokens": 22,
+        "output_tokens": 281,
+        "cached_tokens": 0,
+        "usd": 5.84e-05,
+        "estimated": false,
+        "price_assumed": false,
+        "http_status": 200,
+        "latency_s": 3.632,
+        "reasoning_tokens": 271
+      },
+      {
+        "id": "04f8ecbf19a5",
+        "ts": "2026-10-31T21:13:46+00:00",
+        "model": "muse-spark-1.3-contributor",
+        "purpose": "langchain-live-test",
+        "status": "ok",
+        "input_tokens": 18,
+        "output_tokens": 296,
+        "cached_tokens": 0,
+        "usd": 6.1e-05,
+        "estimated": false,
+        "price_assumed": false,
+        "http_status": 200,
+        "latency_s": 3.965,
+        "reasoning_tokens": 286
+      },
+      {
+        "id": "8aa109c1a458",
+        "ts": "2026-10-31T21:13:50+00:00",
+        "model": "muse-spark-1.3-contributor",
+        "purpose": "langchain-live-test",
+        "status": "ok",
+        "input_tokens": 22,
+        "output_tokens": 339,
+        "cached_tokens": 0,
+        "usd": 7e-05,
+        "estimated": false,
+        "price_assumed": false,
+        "http_status": 200,
+        "latency_s": 3.954,
+        "reasoning_tokens": 329
+      },
+      {
+        "id": "1d92b0026c38",
+        "ts": "2026-10-31T21:13:54+00:00",
+        "model": "muse-spark-1.3-contributor",
+        "purpose": "langchain-live-test",
+        "status": "ok",
+        "input_tokens": 23,
+        "output_tokens": 400,
+        "cached_tokens": 0,
+        "usd": 8.23e-05,
+        "estimated": false,
+        "price_assumed": false,
+        "http_status": 200,
+        "latency_s": 4.232,
+        "reasoning_tokens": 392
+      },
+      {
+        "id": "453a18b3f4c3",
+        "ts": "2026-10-31T21:13:58+00:00",
+        "model": "muse-spark-1.3",
+        "purpose": "langchain-live-test",
+        "status": "ok",
+        "input_tokens": 23,
+        "output_tokens": 304,
+        "cached_tokens": 0,
+        "usd": 0.00132075,
+        "estimated": false,
+        "price_assumed": false,
+        "http_status": 200,
+        "latency_s": 1.656,
+        "reasoning_tokens": 293
+      },
+      {
+        "id": "88810adf2f31",
+        "ts": "2026-10-31T21:14:00+00:00",
+        "model": "muse-spark-1.3-contributor",
+        "purpose": "langchain-live-test",
+        "status": "ok",
+        "input_tokens": 20,
+        "output_tokens": 253,
+        "cached_tokens": 0,
+        "usd": 5.26e-05,
+        "estimated": false,
+        "price_assumed": false,
+        "http_status": 200,
+        "latency_s": 2.991,
+        "reasoning_tokens": 243
+      },
+      {
+        "id": "b93277beb6bb",
+        "ts": "2026-10-31T21:14:03+00:00",
+        "model": "muse-spark-1.3-contributor",
+        "purpose": "langchain-live-test",
+        "status": "ok",
+        "input_tokens": 22,
+        "output_tokens": 218,
+        "cached_tokens": 0,
+        "usd": 4.58e-05,
+        "estimated": false,
+        "price_assumed": false,
+        "http_status": 200,
+        "latency_s": 2.565,
+        "reasoning_tokens": 208
+      },
+      {
+        "id": "eb279aed4e8d",
+        "ts": "2026-10-31T21:14:05+00:00",
+        "model": "muse-spark-1.3-contributor",
+        "purpose": "langchain-live-test",
+        "status": "ok",
+        "input_tokens": 621,
+        "output_tokens": 400,
+        "cached_tokens": 0,
+        "usd": 0.0001421,
+        "estimated": false,
+        "price_assumed": false,
+        "http_status": 200,
+        "latency_s": 3.431,
+        "reasoning_tokens": 342
+      },
+      {
+        "id": "e362b4fd6be8",
+        "ts": "2026-10-31T21:14:09+00:00",
+        "model": "muse-spark-1.3",
+        "purpose": "langchain-live-test",
+        "status": "ok",
+        "input_tokens": 621,
+        "output_tokens": 309,
+        "cached_tokens": 497,
+        "usd": 0.0015428,
+        "estimated": false,
+        "price_assumed": false,
+        "http_status": 200,
+        "latency_s": 2.119,
+        "reasoning_tokens": 223
+      },
+      {
+        "id": "9a9370431808",
+        "ts": "2026-10-31T21:14:11+00:00",
+        "model": "muse-spark-1.3-contributor",
+        "purpose": "langchain-live-test",
+        "status": "ok",
+        "input_tokens": 726,
+        "output_tokens": 314,
+        "cached_tokens": 625,
+        "usd": 7.415e-05,
+        "estimated": false,
+        "price_assumed": false,
+        "http_status": 200,
+        "latency_s": 4.78,
+        "reasoning_tokens": 294
+      }
+    ]
+  }
+}
