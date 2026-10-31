@@ -63,6 +63,14 @@ def _banned_tokens(argv: list[str]) -> list[str]:
         # an approval must come from a person or an operator-set policy, never a bare flag
         if "--auto-approve" in argv:
             hits.append("--auto-approve (use --approval-policy: an operator-set policy)")
+        # a live wonder sweep must make REAL Wonder calls: without --wonder-live the planner is the
+        # deterministic mock "muse-wonder-mock" (RUN3: the cap choice was mocked while the driver
+        # thought the whole live path was real). The measurements stay real; the planner must not
+        # be mocked, so fail the preflight here.
+        if "--planner" in argv \
+                and argv[argv.index("--planner") + 1:argv.index("--planner") + 2] == ["wonder"] \
+                and "--wonder-live" not in argv:
+            hits.append("--planner wonder without --wonder-live (planner would be muse-wonder-mock)")
     for i, tok in enumerate(argv):
         low = tok.lower()
         if low in BANNED_FLAGS or any(low.startswith(f + "=") for f in BANNED_FLAGS):
@@ -138,11 +146,12 @@ def _check_spoken_assets(findings: list[dict]) -> None:
                 "fix": "synthesize the real audio from the question text (gen_spoken_assets.py)"})
 
 
-def audit_plan(model: str = "glimmer-test", out: Path | None = None) -> dict:
+def audit_plan(model: str = "glimmer-test", out: Path | None = None,
+               plan_name: str = "full") -> dict:
     """Audit the LIVE path of a plan. Returns {ok, model, findings[], checked[]}."""
     from wattnot.longrun.driver import plan
 
-    blocks = plan(out or Path("."), model)
+    blocks = plan(out or Path("."), model, plan_name)
     findings: list[dict] = []
     checked: list[str] = []
     uses_eye = uses_spoken = False
@@ -173,9 +182,10 @@ def write_report(report: dict, path: Path) -> None:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="WattNot no-mock preflight")
     ap.add_argument("--model", choices=["glimmer", "llama", "glimmer-test"], default="glimmer-test")
+    ap.add_argument("--plan", choices=["full", "retest"], default="full")
     ap.add_argument("--out", type=Path, default=None, help="write nomock-preflight.json here")
     a = ap.parse_args(argv)
-    report = audit_plan(a.model, a.out)
+    report = audit_plan(a.model, a.out, plan_name=a.plan)
     if a.out:
         write_report(report, a.out / "nomock-preflight.json")
     if report["ok"]:

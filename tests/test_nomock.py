@@ -74,3 +74,20 @@ def test_cli_exit_codes(tmp_path, monkeypatch):
     monkeypatch.setattr("wattnot.spokenanswer.assets.DEFAULT_ASSETS_DIR", spk)
     assert nomock.main(["--model", "glimmer-test", "--out", str(tmp_path / "o")]) == 0
     assert (tmp_path / "o" / "nomock-preflight.json").exists()
+
+
+def test_live_wonder_sweep_without_wonder_live_is_flagged():
+    # a live orchestrate sweep with --planner wonder but no --wonder-live would run the mock
+    # planner "muse-wonder-mock"; nomock must catch it.
+    argv = ["python", "-m", "wattnot.proof.orchestrate", "--mode", "live", "--sam", "live",
+            "--planner", "wonder"]
+    hits = nomock._banned_tokens(argv)
+    assert any("wonder-live" in h for h in hits), hits
+    # adding --wonder-live clears it (the --sam live is already present)
+    assert not any("wonder-live" in h for h in nomock._banned_tokens(argv + ["--wonder-live"]))
+
+
+def test_real_glimmer_test_plan_has_a_live_wonder_planner(tmp_path):
+    # the committed glimmer-test plan's live sweep is now real-planner: no mock-planner finding.
+    r = nomock.audit_plan("glimmer-test", tmp_path)
+    assert not any("muse-wonder-mock" in f["what"] for f in r["findings"])
