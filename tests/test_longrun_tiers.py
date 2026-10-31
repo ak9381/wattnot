@@ -92,8 +92,15 @@ def test_ui_samples_have_no_answers():
 
 def test_model_config_scales_budget_not_the_set():
     cfg = harness.model_config("muse-glimmer-30b")
-    t = harness.apply_model(build(), cfg)
-    assert t[0].max_tokens == build()[0].max_tokens * 8 and t[0].prompt == build()[0].prompt
+    base = build()
+    t = harness.apply_model(base, cfg)
+    # the prompt/set never changes; the token budget scales by 8 but is floored so a reasoning
+    # model always has room to think before the answer (RUN3: 16x8=128 truncated every answer).
+    assert t[0].prompt == base[0].prompt
+    floor = cfg["reasoning_floor"]
+    for b, scaled in zip(base, t):
+        assert scaled.max_tokens == max(b.max_tokens * 8, floor)
+    assert t[0].max_tokens == floor   # easy task (16x8=128) is lifted to the floor
     assert harness.model_config("muse-glimmer-30b-fp8")["serve_args"] == ["--quantization", "fp8"]
 
 

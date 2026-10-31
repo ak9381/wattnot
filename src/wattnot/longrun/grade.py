@@ -161,6 +161,7 @@ class Graded:
     tokens: int
     latency_s: float           # end-to-end for the item (sum of turns for agents)
     detail: dict = field(default_factory=dict)
+    truncated: bool = False    # the model hit the token cap (finish=length / context-limit)
 
 
 def grade_one(task: Task, chat) -> Graded:
@@ -174,7 +175,8 @@ def grade_one(task: Task, chat) -> Graded:
         return Graded(task.id, task.tier, ok, tr.tokens, sum(tr.latencies),
                       {"final": got, "tools": sorted(used), "turns": tr.turns,
                        "retries": tr.retries, "tool_errors": tr.errors,
-                       "subagents": tr.subagents, "stopped": tr.stopped})
+                       "subagents": tr.subagents, "stopped": tr.stopped},
+                      truncated=tr.stopped == "context-limit")
     r = chat([{"role": "user", "content": task.prompt}], task.max_tokens)
     if r.finish == "error":
         return Graded(task.id, task.tier, False, 0, r.latency_s, {"error": True})
@@ -183,4 +185,7 @@ def grade_one(task: Task, chat) -> Graded:
     else:
         ok = same_number(last_number(r.text, "ANSWER:" if task.tier == "medium" else None),
                          task.answer)
-    return Graded(task.id, task.tier, ok, r.tokens, r.latency_s, {"finish": r.finish})
+    # finish == "length": the answer was cut off by the token cap, not necessarily wrong. Flag it
+    # so the summary can report the truncation rate instead of silently counting it as a miss.
+    return Graded(task.id, task.tier, ok, r.tokens, r.latency_s, {"finish": r.finish},
+                  truncated=r.finish == "length")
