@@ -21,6 +21,7 @@ from pathlib import Path
 from wattnot.vision.assets import load_eye_test
 from wattnot.vision.client import (
     DEFAULT_VISION_MODEL,
+    REASONING_MAX_COMPLETION_TOKENS,
     OfflineAnswerer,
     ServedVisionAnswerer,
     answer_eye_test,
@@ -36,6 +37,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--fake", action="store_true", help="offline answerer (no network, not measured)")
     ap.add_argument("--base-url", default=None, help="served vision model base URL (live only)")
     ap.add_argument("--model", default=DEFAULT_VISION_MODEL)
+    ap.add_argument("--concurrency", type=int, default=8,
+                    help="answer the images in parallel (live): fit the budget on a reasoner")
+    ap.add_argument("--max-completion-tokens", type=int, default=REASONING_MAX_COMPLETION_TOKENS,
+                    help="completion-token cap per answer (reasoning models need room)")
     args = ap.parse_args(argv)
 
     eye = load_eye_test(args.assets, require_files=not args.fake)
@@ -43,10 +48,12 @@ def main(argv: list[str] | None = None) -> int:
         answerer = OfflineAnswerer(eye)
         mode = "fake"
     else:
-        answerer = ServedVisionAnswerer(eye.base_dir, model=args.model, base_url=args.base_url)
+        answerer = ServedVisionAnswerer(eye.base_dir, model=args.model, base_url=args.base_url,
+                                        max_completion_tokens=args.max_completion_tokens)
         mode = "live"
 
-    answers, run_meta = answer_eye_test(eye, answerer, budget_s=args.budget_s)
+    answers, run_meta = answer_eye_test(eye, answerer, budget_s=args.budget_s,
+                                        concurrency=args.concurrency)
     result = vision_gate(answers, eye.items, wh_per_image=eye.wh_per_image)
 
     summary = {

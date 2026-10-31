@@ -65,6 +65,49 @@ def make_rig(**kw):
     return rig
 
 
+def test_request_tokens_floors_reasoning_models_but_not_the_bad_control():
+    from wattnot.proof.rig import request_tokens
+    # a proof-v1 QA item: 32-token cap. On the normal path a reasoning model is floored to 1024
+    # (the gap test cut 64/64 QA answers off at 32); a non-reasoning model is left at 32.
+    assert request_tokens(32, 1.0, reasoning_floor=1024) == 1024
+    assert request_tokens(32, 1.0, reasoning_floor=0) == 32
+    # the deliberately-short control (token_scale < 1) stays truncated even with a floor, or the
+    # gate self-check could never reject a bad setting
+    assert request_tokens(32, 0.1, reasoning_floor=1024) == 8   # max(8, 3), not floored
+    assert request_tokens(900, 0.25, reasoning_floor=1024) == 225
+
+
+class _RecordingClient:
+    """Captures the max_tokens each request was sent, so a test can see the floor applied."""
+
+    def __init__(self, nvml):
+        self.nvml = nvml
+        self.seen: list[int] = []
+
+    def ask(self, prompt, max_tokens):
+        self.seen.append(max_tokens)
+        with self.nvml.lock:
+            self.nvml.energy_mj += 1000   # advance the energy counter so the block records
+        return Reply(0.01, 10, GOLD[BY_PROMPT[prompt]], "stop")
+
+
+def test_rig_floors_qa_items_on_a_reasoning_model(tmp_path):
+    # proof-v1's QA items carry a 32-token cap; with a reasoning floor the rig must send >= 1024
+    # for them on the metered pass (token_scale 1.0), so Glimmer's answers are not cut off.
+    nvml = FakeNvml()
+    client = _RecordingClient(nvml)
+    rig = Rig(nvml, object(), client, WL, concurrency=4, repeat=1, settle_s=0, warmup=0,
+              reasoning_floor=1024, sleep=lambda s: None)
+    rig.block(500)
+    qa_caps = [it.max_tokens for it in WL if it.id.startswith("qa")]
+    assert qa_caps and min(qa_caps) < 1024                  # the raw QA caps really are small
+    assert client.seen and min(client.seen) >= 1024         # every request got the floor
+
+    client.seen.clear()
+    rig.block(500, token_scale=0.1)                         # the bad control: not floored
+    assert min(client.seen) < 1024
+
+
 def test_step_accepts_a_good_cap(tmp_path):
     rig = make_rig()
     s = run_step(rig, 500, 3, tmp_path, workload=WL)

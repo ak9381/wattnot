@@ -45,10 +45,9 @@ RUN2_ID = "run2-llama-350w"
 RUN2_NAME = "H100 RUN2 · Llama 3.1 8B @ 350 W"
 RUN2_DATE = "2026-10-27"
 
-#: Saved API-reply fixtures that also ship as one-phase run records. They hold
-#: baseline replies only; no capped arm was recorded for them, which the
-#: record says plainly instead of inventing a second phase.
-FIXTURE_RUNS = ("recorded-run1", "recorded-run2", "recorded-smoke")
+#: A file in data/cloud counts as a run fixture only if it declares this format, so a stray
+#: JSON (a meter sample, notes) is not mistaken for a run.
+FIXTURE_FORMAT = "wattnot.cloud-fixture/1"
 
 
 def _mean(xs: list[float]) -> float | None:
@@ -184,13 +183,31 @@ def _fixture_record(root: Path, stem: str) -> dict | None:
     }
 
 
+def discover_fixtures(root: Path) -> list[str]:
+    """Stems of every cloud run fixture under data/cloud, newest first.
+
+    Discovered from disk, not a hard-coded list, so a run saved later (e.g. an Oct 31 run) shows
+    up without editing this file. A file is a run fixture only if it declares ``FIXTURE_FORMAT``.
+    """
+    found: list[tuple[str, str]] = []  # (recorded_at, stem)
+    for p in sorted((Path(root) / "data" / "cloud").glob("*.json")):
+        try:
+            d = json.loads(p.read_text())
+        except (OSError, ValueError):
+            continue
+        if isinstance(d, dict) and d.get("format") == FIXTURE_FORMAT:
+            found.append((str(d.get("recorded_at") or ""), p.stem))
+    found.sort(key=lambda t: (t[0], t[1]), reverse=True)  # newest recorded run first
+    return [stem for _, stem in found]
+
+
 def list_runs(root: Path | str | None = None) -> list[dict]:
-    """Run summaries by run name: id, name, model, date."""
+    """Run summaries by run name: id, name, model, date. RUN2 first, then cloud runs."""
     root = Path(root) if root is not None else Path(__file__).resolve().parents[3]
     rec = build_record(root)
     out = [{"id": rec["id"], "name": rec["run_name"],
             "model": rec["model"], "date": rec["date"]}]
-    for stem in FIXTURE_RUNS:
+    for stem in discover_fixtures(root):
         f = _fixture_record(root, stem)
         if f is not None:
             out.append({"id": f["id"], "name": f["run_name"],

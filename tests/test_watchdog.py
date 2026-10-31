@@ -177,6 +177,27 @@ def test_layer1_local_keeps_polling_until_a_cap_trips(tmp_path):
     assert res["teardown"] and "time cap" in res["reasons"] and not vm.present
 
 
+@pytest.mark.parametrize("trip", ["time", "stale"])
+def test_layer1_local_uses_wall_clock_by_default(tmp_path, trip):
+    # With the real default clock, a heartbeat/deadline written in epoch seconds must still trip.
+    # A monotonic "now" (seconds since boot) is tiny next to an epoch timestamp, so the stale and
+    # deadline comparisons would never fire -- this exercises the default, passing no `now`.
+    import time
+    now = time.time()
+    p = tmp_path / "hb.json"
+    if trip == "time":
+        write_heartbeat(p, Heartbeat(ts=now, launch_ts=now - 10.0, deadline_ts=now - 1.0))
+    else:  # stale: heartbeat older than the stale window, no deadline/budget
+        write_heartbeat(p, Heartbeat(ts=now - (STALE + 60.0), launch_ts=None, deadline_ts=None))
+    vm = FakeVm()
+    res = run_local_watchdog(
+        heartbeat_path=p, client=FakeE2EClient(vm), budget_cap_inr=None,
+        max_hours=None, max_stale_s=STALE, sleep=lambda s: None, max_ticks=1, log=lambda m: None,
+    )
+    expected = "time cap" if trip == "time" else "stale heartbeat"
+    assert res["teardown"] and expected in res["reasons"] and not vm.present
+
+
 # --------------------------------------------------------------------------- layers 2 & 3: agents
 
 def _agent_runner_over(vm, *, heartbeat_path, budget_cap_inr, max_hours, max_stale_s, now):
@@ -231,7 +252,11 @@ def test_agent_dry_run_stops_without_deleting(tmp_path, monkeypatch):
 def test_agent_prompt_and_command_are_neutral_and_reference_the_shared_check(tmp_path):
     check_cmd = build_check_command(heartbeat_path=tmp_path / "hb.json", budget_cap_inr=5000,
                                     max_hours=5, max_stale_s=STALE, dry_run=False)
-    assert check_cmd[:4] == ["python", "-m", "wattnot.longrun.watchdog", "check"]
+    import sys
+    # The interpreter is this very Python (sys.executable), never a bare "python" that may be
+    # missing or point at Python 2 on the VM.
+    assert check_cmd[0] == (sys.executable or "python3") and check_cmd[0] != "python"
+    assert check_cmd[1:4] == ["-m", "wattnot.longrun.watchdog", "check"]
     prompt = build_prompt(check_cmd)
     assert "wattnot.longrun.watchdog" in prompt
     # No vendor names baked into the prompt or command (list supplied via env, kept out of the repo).

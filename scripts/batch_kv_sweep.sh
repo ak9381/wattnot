@@ -7,7 +7,11 @@
 # opt-in block, and only when time allows (it costs one server restart per combo).
 set -euo pipefail
 PREC="${1:-bf16}"; OUT="${2:-/root/run2/results/batch-kv-sweep}"
-SEQS="${SEQS:-32 64 128}"
+# Default to TWO combos (64 and 128 seqs at the default KV dtype). RUN3 ran three combos
+# (32 64 128) and each server restart + measurement took ~450 s, so the block overran its 1350 s
+# limit twice (rc 124). Two combos finish inside the block budget; override SEQS/KV for a wider
+# sweep in the long run when there is time.
+SEQS="${SEQS:-64 128}"
 KV="${KV:-auto}"
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 PY="${PYTHON:-${VIRTUAL_ENV:-/root/venv}/bin/python}"

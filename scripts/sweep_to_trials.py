@@ -25,9 +25,14 @@ def trials_from(results: dict) -> list[dict]:
                   "left off the chart, see the sweep receipt", file=sys.stderr)
             continue
         mean_j = sum(j) / len(j)
+        rc = s.get("reasoning") or {}
         out.append({"cap_w": s["cap_w"], "clock_profile": s.get("clock_profile") or "base",
                     "joules_per_correct": round(mean_j / (q / 100.0), 6),
                     "quality": round(q / 100.0, 4), "kept": bool(s.get("accepted")),
+                    # reasoning tokens / completion tokens at this cap (item E); label MEASURED when
+                    # from server usage, ESTIMATE when sized from the reasoning text
+                    "reasoning_token_share": rc.get("share"),
+                    "reasoning_token_label": rc.get("label"),
                     "label": s.get("label", "MEASURED")})
     return out
 

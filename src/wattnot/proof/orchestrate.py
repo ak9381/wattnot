@@ -200,6 +200,7 @@ def fingerprint(a) -> dict:
     keys = (
         "mode", "model", "port", "concurrency", "settle_s", "load_s", "max_proposals", "planner",
         "sam", "room", "adaptive", "adaptive_model", "adaptive_mass", "remote_out", "profile",
+        "reasoning_floor",
         *PROFILE_FIELDS,
     )
     fp = {k: getattr(a, k, None) for k in keys}
@@ -256,6 +257,8 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
         "--counterbalance" if a.counterbalance else "--no-counterbalance",
         "--control-blocks",
         str(a.control_blocks),
+        "--reasoning-floor",
+        str(getattr(a, "reasoning_floor", 0)),
         "--emit",
     ]
     if mock:
@@ -1254,6 +1257,9 @@ def drive_with_retries(a, *, transport: Transport, planner, out: Path, wait_s: f
             time.sleep(wait_s)
 
 
+CAP_FLOOR_W = 294  # 700 W stock with the 58% max cap drop
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--mode", choices=["live", "rehearsal"], default="rehearsal")
@@ -1273,6 +1279,9 @@ def main(argv=None) -> int:
     ap.add_argument("--port", type=int, default=8000)
     add_profile_args(ap)
     ap.add_argument("--concurrency", type=int, default=32)
+    ap.add_argument("--reasoning-floor", type=int, default=0,
+                    help="min completion tokens per request for a reasoning model (forwarded to "
+                         "each VM step), so proof-v1's small QA/math caps are not cut off")
     ap.add_argument("--settle-s", type=float, default=4.0)
     ap.add_argument(
         "--load-s", type=float, default=30.0, help="room scan: seconds of load at stock"
@@ -1341,6 +1350,8 @@ def main(argv=None) -> int:
     ap.add_argument("--ssh-stall-s", type=float, default=240.0)
     a = ap.parse_args(argv)
     a.grid = tuple(int(x) for x in a.grid.split(",") if x)
+    if a.mode == "live" and ((a.grid and min(a.grid) < CAP_FLOOR_W) or a.wonder_lo < CAP_FLOOR_W):
+        ap.error(f"live caps must stay >= {CAP_FLOOR_W} W (58% max drop from 700 W stock)")
     apply_profile(a)
     a.out.mkdir(parents=True, exist_ok=True)
     a.runs_root = a.runs_root or a.out

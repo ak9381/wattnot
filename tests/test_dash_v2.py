@@ -246,6 +246,33 @@ def test_runs_endpoints_list_by_name_and_return_records():
     assert c.get("/api/dash/v2/runs/no-such-run").status_code == 404
 
 
+def test_runs_discovered_from_disk_so_a_new_run_appears(tmp_path):
+    import json
+
+    cloud = tmp_path / "data" / "cloud"
+    cloud.mkdir(parents=True)
+    # A run saved on Oct 31 (newer than the bundled Oct 27 fixtures) and a non-run JSON that
+    # must be ignored because it does not declare the fixture format.
+    (cloud / "gap-1031-run.json").write_text(json.dumps({
+        "format": run2.FIXTURE_FORMAT, "model": "meta-models/muse-spark-open-1026",
+        "recorded_at": "2026-10-31T01:53:41Z",
+        "replies": {"q1": {"latency_s": 1.2, "status": 200}}}))
+    (cloud / "demo-meter.json").write_text(json.dumps({"watts": 42}))
+    (cloud / "recorded-old.json").write_text(json.dumps({
+        "format": run2.FIXTURE_FORMAT, "model": "m", "recorded_at": "2026-10-27T00:00:00Z",
+        "replies": {}}))
+
+    ids = [r["id"] for r in run2.list_runs(tmp_path)]
+    assert ids[0] == run2.RUN2_ID                      # RUN2 stays first
+    assert "cloud-gap-1031-run" in ids                 # the Oct 31 run is now selectable
+    assert "cloud-demo-meter" not in ids               # the non-run JSON is ignored
+    # Newest cloud run is listed ahead of the older one.
+    assert ids.index("cloud-gap-1031-run") < ids.index("cloud-recorded-old")
+
+    rec = run2.get_run(tmp_path, "cloud-gap-1031-run")
+    assert rec is not None and rec["date"] == "2026-10-31"
+
+
 def test_replay_plays_baseline_then_wattnot():
     import json
     import pathlib

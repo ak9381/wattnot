@@ -18,6 +18,7 @@ Needs `paramiko`. Reads HF_TOKEN from the environment.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import io
 import os
 import json
@@ -65,6 +66,10 @@ def sh(c, cmd: str, timeout: float = 60) -> tuple[int, str]:
 RECONNECT_BUDGET_S = 900.0  # RUN3 died after ~2 min of lost SSH; a VM reboot or a long
 #                            network blip can take longer than that, so wait up to 15 min
 BACKOFF_MAX_S = 60.0
+# A pull must not hang forever. RUN3's final pull wedged for 14+ min inside one sftp.get with no
+# timeout. Bound each file transfer (so one stuck file is skipped, not fatal) and the whole pull.
+PULL_FILE_TIMEOUT_S = 120.0
+PULL_TIMEOUT_S = 600.0
 
 
 class LinkLost(ConnectionError):
@@ -174,17 +179,28 @@ def cmd_setup(a) -> int:
     if rc != 0:
         print("unpack failed:", out, file=sys.stderr)
         return 2
+    # A retried setup block must not start a SECOND setup while the first still runs (RUN3, Oct
+    # 31: a link drop made the driver retry, and two setups downloaded and restarted docker at
+    # once). The running setup's process group id is in setup.pgid: if it is alive and has not
+    # written setup.rc, adopt it (just tail its log) instead of launching another.
+    pg = f"{ROOT}/setup.pgid"
+    rc, out = sh(c, f"p=$(cat {pg} 2>/dev/null); if [ -n \"$p\" ] && kill -0 -- -$p 2>/dev/null "
+                    f"&& [ ! -s {REMOTE_LOG}/setup.rc ]; then echo ADOPT; fi")
+    adopt = "ADOPT" in out
     inner = (
-        f"cd {REMOTE_REPO} && export HF_TOKEN=$(cat {ROOT}/.hf_token) && "
+        f"echo $$ > {pg}; cd {REMOTE_REPO} && export HF_TOKEN=$(cat {ROOT}/.hf_token) && "
         f"bash scripts/h100_vm_setup.sh {shlex.quote(a.model)} {shlex.quote(a.moe)}; "
         f"echo $? > {REMOTE_LOG}/setup.rc"
     )
-    rc, out = sh(
-        c,
-        f"rm -f {REMOTE_LOG}/setup.rc; cd {ROOT} && (setsid nohup bash -c {shlex.quote(inner)} "
-        f"> {SETUP_LOG} 2>&1 < /dev/null &); echo started",
-    )
-    assert "started" in out, out
+    if adopt:
+        print("[run2_remote] a setup is already running on the host: adopting it", flush=True)
+    else:
+        rc, out = sh(
+            c,
+            f"rm -f {REMOTE_LOG}/setup.rc; cd {ROOT} && (setsid nohup bash -c {shlex.quote(inner)} "
+            f"> {SETUP_LOG} 2>&1 < /dev/null &); echo started",
+        )
+        assert "started" in out, out
     c.close()
     run = reconnecting(a.host, a.key, budget_s=getattr(a, "reconnect_budget_s", RECONNECT_BUDGET_S),
                        log=lambda m: print(m, file=sys.stderr, flush=True))
@@ -283,6 +299,13 @@ def cmd_pull(a) -> int:
         if len(parts) == 2 and len(parts[0]) == 64:
             remote_sums[parts[1].removeprefix("./")] = parts[0]
     sftp = c.open_sftp()
+    # Bound each transfer so one stuck file (or a dead link mid-copy) raises instead of wedging the
+    # pull, and bound the whole pull with a deadline. Over budget -> stop copying and verify what
+    # came over; the caller (the driver) still deletes the VM so billing stops.
+    timeout = float(getattr(a, "timeout", PULL_TIMEOUT_S) or PULL_TIMEOUT_S)
+    with contextlib.suppress(Exception):
+        sftp.get_channel().settimeout(min(timeout, PULL_FILE_TIMEOUT_S))
+    deadline = time.monotonic() + timeout
     n = 0
 
     def walk(r: str, loc: Path) -> None:
@@ -293,6 +316,10 @@ def cmd_pull(a) -> int:
         except OSError:
             return
         for e in entries:
+            if time.monotonic() > deadline:
+                print(f"[pull] timeout ({timeout:.0f}s) reached; stopping copy early",
+                      file=sys.stderr)
+                return
             if stat.S_ISDIR(e.st_mode):
                 walk(f"{r}/{e.filename}", loc / e.filename)
             else:
@@ -340,6 +367,8 @@ def main(argv=None) -> int:
             p.add_argument("--reconnect-budget-s", type=float, default=RECONNECT_BUDGET_S)
         if name == "pull":
             p.add_argument("--out", default="run2-pulled")
+            p.add_argument("--timeout", type=float, default=PULL_TIMEOUT_S,
+                           help="overall pull budget in seconds (each file is bounded too)")
     a = ap.parse_args(argv)
     return {"wait": cmd_wait, "setup": cmd_setup, "status": cmd_status, "pull": cmd_pull,
             "alive": cmd_alive}[a.cmd](a)

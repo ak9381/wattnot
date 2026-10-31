@@ -39,15 +39,22 @@ from .tasks import TIERS, Task, build
 # Reasoning models (Glimmer, served with --reasoning-parser) spend tokens thinking before the
 # answer, so they need a bigger token budget; vLLM returns the thinking separately, and only
 # `content` is graded. Concurrency is scaled down for bigger models so p99 stays comparable.
+# `reasoning_floor` is the minimum completion budget per request for a reasoning model: Glimmer
+# spends tokens thinking before the answer, so scaling a 16-token easy task by 8 (= 128) still
+# truncated most answers (RUN3: 129/222 cut short, finish=length). The floor gives every request
+# real room for thinking + answer; raise it per model if a bigger reasoner needs more.
+# `chat_template_kwargs` (optional) is passed straight to the vLLM request to limit reasoning when
+# the served model's chat template supports it (off by default — Glimmer's template may not).
 MODELS = {
     "llama-3.1-8b": {"model": "meta-llama/Llama-3.1-8B-Instruct", "max_tokens_scale": 1.0,
                      "concurrency_scale": 1.0, "reasoning": False},
     # Muse Glimmer 30B is Meta's own open-weights model (dense, BF16, reasoning).
     "muse-glimmer-30b": {"model": "meta-models/Muse-Glimmer-30B", "origin": "Meta", "max_tokens_scale": 8.0,
-                         "concurrency_scale": 0.5, "reasoning": True, "max_model_len": 8192},
+                         "concurrency_scale": 0.5, "reasoning": True, "max_model_len": 8192,
+                         "reasoning_floor": 1024},
     "muse-glimmer-30b-fp8": {"model": "meta-models/Muse-Glimmer-30B", "origin": "Meta", "max_tokens_scale": 8.0,
                              "concurrency_scale": 0.5, "reasoning": True, "max_model_len": 8192,
-                             "serve_args": ["--quantization", "fp8"]},
+                             "reasoning_floor": 1024, "serve_args": ["--quantization", "fp8"]},
 }
 
 
@@ -82,9 +89,14 @@ def reasoning_check(vllm_log: str, replies: int, with_reasoning: int,
 
 
 def apply_model(tasks: list[Task], cfg: dict) -> list[Task]:
-    """Scale each task's token budget for this model (a copy; the set itself never changes)."""
+    """Scale each task's token budget for this model (a copy; the set itself never changes).
+
+    For a reasoning model the scaled budget is floored at ``reasoning_floor`` so even a small task
+    has room to think before the answer, instead of truncating (RUN3's 129/222 cut short)."""
     from dataclasses import replace
-    return [replace(t, max_tokens=int(t.max_tokens * cfg["max_tokens_scale"])) for t in tasks]
+    scale = cfg["max_tokens_scale"]
+    floor = int(cfg.get("reasoning_floor", 0)) if cfg.get("reasoning") else 0
+    return [replace(t, max_tokens=max(int(t.max_tokens * scale), floor)) for t in tasks]
 
 
 GPU_USD_PER_H = 5.13  # E2E H100 SXM incl. GST + disk at 88 INR/USD (ESTIMATE)
@@ -94,15 +106,22 @@ CONCURRENCY = {"easy": 16, "medium": 16, "hard": 8, "complex": 4}
 class Chat:
     """Multi-turn OpenAI-compatible chat (vLLM), temperature 0."""
 
-    def __init__(self, url: str, model: str, timeout_s: float = 120) -> None:
+    def __init__(self, url: str, model: str, timeout_s: float = 120,
+                 chat_template_kwargs: dict | None = None) -> None:
         self.url, self.model, self.timeout_s = url, model, timeout_s
         self.replies = self.reasoning_seen = 0   # for the shakedown reasoning check
         self.context_limit: int | None = None     # set from the model's max_model_len
+        # optional per-model request field to limit reasoning (e.g. a reasoning-effort knob the
+        # served chat template understands); passed straight through when set, ignored otherwise.
+        self.chat_template_kwargs = chat_template_kwargs
 
     def __call__(self, messages: list[dict], max_tokens: int) -> Reply:
         # greedy; seed and top_k too, so results stay repeatable if temperature is ever raised
-        body = json.dumps({"model": self.model, "temperature": 0, "seed": 0, "top_k": -1,
-                           "max_tokens": max_tokens, "messages": messages}).encode()
+        payload = {"model": self.model, "temperature": 0, "seed": 0, "top_k": -1,
+                   "max_tokens": max_tokens, "messages": messages}
+        if self.chat_template_kwargs:
+            payload["chat_template_kwargs"] = self.chat_template_kwargs
+        body = json.dumps(payload).encode()
         req = urllib.request.Request(self.url, data=body, method="POST",
                                      headers={"Content-Type": "application/json"})
         t0 = time.perf_counter()
@@ -116,9 +135,11 @@ class Chat:
             self.replies += 1
             # grade the answer, never the reasoning (pattern set in proof/client.py)
             text = strip_reasoning(msg.get("content") or "")
+            from wattnot.reasoning import reasoning_tokens
+            rt, measured = reasoning_tokens(d)
             return Reply(time.perf_counter() - t0, int(d.get("usage", {}).get(
                 "completion_tokens", 0)), text,
-                ch.get("finish_reason") or "stop")
+                ch.get("finish_reason") or "stop", rt or 0, measured)
         except Exception:  # noqa: BLE001
             return Reply(time.perf_counter() - t0, 0, "", "error")
 
@@ -272,6 +293,10 @@ def measure_arm(nvml, h, chat, tasks: list[Task], arm: str, limit_w: int,
         out["tiers"][tier] = {"n": len(g), "pass": sum(x.ok for x in g), "joules": (e1 - e0) / 1000,
                               "wall_s": wall, "p99_s": p99([x.latency_s for x in g]),
                               "tokens": sum(x.tokens for x in g),
+                              "reasoning_tokens": sum(x.reasoning_tokens for x in g),
+                              "reasoning_measured": bool(g)
+                              and all(x.reasoning_measured for x in g),
+                              "truncated": sum(x.truncated for x in g),
                               "fails": [x.id for x in g if not x.ok][:20],
                               "agent": [x.detail for x in g][:3] if tier == "complex" else None}
     return out
@@ -317,19 +342,47 @@ def summarize(block: dict, *, gpu_usd_per_h: float = GPU_USD_PER_H, mock: bool =
         s, c = agg["stock"], agg["cap"]
         drop = s["pass_pct"] - c["pass_pct"]
         slow = 100 * (c["p99_s"] / s["p99_s"] - 1) if s["p99_s"] else 0.0
+        # how many answers the token cap cut off (finish=length), across both arms of this tier
+        tier_dicts = [a["tiers"][tier] for a in block["arms"]]
+        trunc = sum(x.get("truncated", 0) for x in tier_dicts)
+        n_all = sum(x["n"] for x in tier_dicts)
+        trunc_pct = round(100 * trunc / n_all, 1) if n_all else 0.0
         why = ([f"pass rate fell {drop:.1f} pts (> {MAX_DROP_PTS:g})"] if drop > MAX_DROP_PTS
                else []) + ([f"p99 +{slow:.0f}% (> {P99_SLACK_PCT:g}%)"] if slow > P99_SLACK_PCT
                            else [])
+        # a blocked tier with many cut-short answers is a token-budget problem, not a quality one:
+        # say so, so the drop is never silently read as the cap hurting accuracy.
+        if why and trunc_pct >= 5:
+            why = why + [f"{trunc}/{n_all} cut short (finish=length, {trunc_pct:g}%): raise "
+                         f"reasoning_floor/max_tokens_scale before reading this as a quality loss"]
+        # reasoning-token share for this tier, across both arms (reasoning / completion tokens)
+        from wattnot.reasoning import token_share
+        r_tok = sum(x.get("reasoning_tokens", 0) for x in tier_dicts)
+        c_tok = sum(x.get("tokens", 0) for x in tier_dicts)
+        r_meas = bool(tier_dicts) and all(x.get("reasoning_measured", False) for x in tier_dicts)
         rows.append({"tier": tier, "label": label, "stock": s, "cap": c,
                      "energy_change_pct": 100 * (c["wh_per_task"] / s["wh_per_task"] - 1)
                      if s["wh_per_task"] else 0.0,
                      "pass_drop_pts": drop, "p99_change_pct": slow,
+                     "truncated": trunc, "truncation_pct": trunc_pct,
+                     "reasoning": token_share(r_tok, c_tok, r_meas),
                      "gate": "pass" if not why else "blocked", "why_not": why})
+    total_trunc = sum(r["truncated"] for r in rows)
+    total_n = sum(r["stock"]["n"] + r["cap"]["n"] for r in rows)
+    from wattnot.reasoning import token_share
+    all_rtok = sum(r["reasoning"]["reasoning_tokens"] for r in rows)
+    all_ctok = sum(r["reasoning"]["completion_tokens"] for r in rows)
+    all_meas = bool(rows) and all(r["reasoning"]["label"] == "MEASURED" for r in rows)
     return {"cap_w": block["cap_w"], "label": label,
+            "reasoning": token_share(all_rtok, all_ctok, all_meas),
             "assumptions": {"wue_l_per_kwh": WUE_L_PER_KWH,
                             "tariff_usd_per_kwh": TARIFF_USD_PER_KWH,
                             "gpu_usd_per_h": gpu_usd_per_h,
                             "note": "Wh is GPU-only NVML energy; mL and $ are ESTIMATES"},
+            "truncation": {"items": total_trunc, "checked": total_n,
+                           "pct": round(100 * total_trunc / total_n, 1) if total_n else 0.0,
+                           "note": "answers cut off by the token cap (finish=length); reported, "
+                                   "not silently counted as quality misses"},
             "tiers": rows}
 
 
@@ -360,14 +413,22 @@ def table(summary: dict) -> str:
     lab = summary["label"]
     lines = [f"tiers-v1 at {summary['cap_w']} W vs stock ({lab}; mL and $ are ESTIMATES)",
              f"{'tier':8} {'Wh/task':>9} {'change':>7} {'mL/task':>8} {'$en/1k':>7} "
-             f"{'$gpu/1k':>8} {'pass s->c':>12} {'p99':>6}  gate"]
+             f"{'$gpu/1k':>8} {'pass s->c':>12} {'p99':>6} {'cut':>5}  gate"]
     for r in summary["tiers"]:
         c, s = r["cap"], r["stock"]
         lines.append(f"{r['tier']:8} {c['wh_per_task']:9.4f} {r['energy_change_pct']:+6.1f}% "
                      f"{c['ml_per_task']:8.3f} {c['usd_energy_per_1k']:7.3f} "
                      f"{c['usd_gpu_time_per_1k']:8.3f} {s['pass_pct']:5.1f}->{c['pass_pct']:5.1f} "
-                     f"{r['p99_change_pct']:+5.0f}%  {r['gate']}"
+                     f"{r['p99_change_pct']:+5.0f}% {r.get('truncation_pct', 0):4.0f}%  {r['gate']}"
                      + (f" ({'; '.join(r['why_not'])})" if r["why_not"] else ""))
+    t = summary.get("truncation")
+    if t:
+        lines.append(f"cut short (finish=length): {t['items']}/{t['checked']} = {t['pct']:g}% "
+                     f"— reported, not counted as quality misses")
+    rs = summary.get("reasoning")
+    if rs and rs.get("share") is not None:
+        lines.append(f"reasoning-token share [{rs['label']}]: {rs['share'] * 100:.1f}% "
+                     f"({rs['reasoning_tokens']}/{rs['completion_tokens']} tokens)")
     return "\n".join(lines)
 
 
@@ -405,7 +466,7 @@ def main(argv=None) -> int:
         nvml = open_nvml()
         h = nvml.device_handle(0)
         CapGuard(nvml, h).__enter__()  # restores the saved limit on exit and on SIGTERM
-        chat = Chat(a.url, cfg["model"])
+        chat = Chat(a.url, cfg["model"], chat_template_kwargs=cfg.get("chat_template_kwargs"))
         chat.context_limit = cfg.get("max_model_len")
     clock = None
     if a.clock and a.clock != "base":

@@ -4,6 +4,8 @@
   "source": "TTS-ffmpeg-flite",
   "source_note": "Real audio synthesized from the question text with ffmpeg-flite (offline TTS). The transcript of each take is the question text.",
   "note": "Watts-per-spoken-answer assets. The 20 recordings are SYNTHETIC test questions (clean and data-center-noise takes). scripts/gen_spoken_assets.py synthesizes the real audio from the question text with an offline TTS and writes transcripts.json (the transcript of each take is the question text itself). The committed .wav files are offline STUBS so the gate and its tests read without any generation; a live run needs the real WAVs.",
+  "context_note": "The spoken questions are about ONE fixed rack scene; their answers are only knowable from that scene's telemetry. The served model is given this telemetry as a system message (the real on-site assistant has it) and must still hear the transcribed question and read the right field. This context is the source of truth for every answer below; it is not a hint or a mock answer.",
+  "context": "You are WattNot's on-site data-center assistant. Current telemetry for the rack you are standing at (answer every question using only these readings):\n- Rack id: R12\n- GPUs installed in the rack: 8\n- Servers online: 16\n- Power cap: 350 watts\n- Power meter reading: 275 watts\n- Fans spinning: 4\n- Fan speed: 80 percent\n- Coolant temperature: 29 celsius\n- Status light colour: green\n- Bay with the fault: B3",
   "transcriber": {
     "model": "muse-voice-transcribe-1.0",
     "endpoint": "{META_BASE_URL}/asr/transcribe",

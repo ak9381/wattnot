@@ -103,6 +103,17 @@ def load_transcripts(assets_dir: str | Path | None = None) -> dict[str, str]:
     return {str(k): str(v) for k, v in (raw.get("transcripts") or {}).items()}
 
 
+def load_context(assets_dir: str | Path | None = None) -> str | None:
+    """The rack-scene telemetry the questions ask about (manifest ``context``), or None.
+
+    The questions are only answerable from this fixed scene; the live answerer passes it to the
+    served model as a system message. None when the manifest has no context (older assets)."""
+    base = Path(assets_dir) if assets_dir is not None else DEFAULT_ASSETS_DIR
+    man = json.loads((base / "answers.json").read_text(encoding="utf-8"))
+    ctx = man.get("context")
+    return str(ctx) if ctx else None
+
+
 def ground_truth(items: Sequence[SpokenItem]) -> dict[str, str]:
     """{id: answer} — the offline/fallback answerer returns exactly this."""
     return {it.id: it.answer for it in items}

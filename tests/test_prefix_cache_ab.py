@@ -1,4 +1,29 @@
+import importlib.util
+import json
+from pathlib import Path
+
 from wattnot.context_saver import prefix_cache as PC
+
+
+def _load_ab():
+    spec = importlib.util.spec_from_file_location(
+        "prefix_cache_ab", Path(__file__).resolve().parents[1] / "scripts" / "prefix_cache_ab.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_save_arm_raw_writes_per_arm_rep_answer_texts(tmp_path):
+    ab = _load_ab()
+    block = {"outputs": {"q1#0": "Paris", "q2#0": "Tokyo"},
+             "cut": {"q1#0": False, "q2#0": True}}
+    p = ab.save_arm_raw(tmp_path, on=True, rep=2, block=block)
+    assert p == tmp_path / "raw" / "prefix-on-r2.jsonl" and p.exists()
+    rows = [json.loads(line) for line in p.read_text().splitlines()]
+    assert {r["id"]: r["text"] for r in rows} == {"q1#0": "Paris", "q2#0": "Tokyo"}
+    assert next(r for r in rows if r["id"] == "q2#0")["finish_cut"] is True
+    # the off arm of the same rep writes its own file
+    assert ab.save_arm_raw(tmp_path, on=False, rep=2, block=block).name == "prefix-off-r2.jsonl"
 
 
 def test_hit_rate_from_counter_delta():

@@ -19,7 +19,15 @@ KV_CACHE_DTYPE="${KV_CACHE_DTYPE:-}"       # e.g. fp8 (optional); empty = vLLM d
 # image per prompt so a malformed request cannot blow up the KV budget; configurable.
 LIMIT_MM_IMAGE="${LIMIT_MM_IMAGE:-1}"
 command -v docker >/dev/null || { echo "[glimmer] docker missing: cannot serve Glimmer"; exit 21; }
-docker image inspect "$IMAGE" >/dev/null 2>&1 || docker pull -q "$IMAGE" >/dev/null
+# Docker Hub (registry-1.docker.io) was unreachable from the E2E VM on Oct 31; mirror.gcr.io (a
+# Hub cache) worked. Try Hub with a time limit, then the mirror, and tag the result as $IMAGE.
+if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  timeout 900 docker pull -q "$IMAGE" >/dev/null 2>&1 || {
+    echo "[glimmer] pull $IMAGE failed; trying mirror.gcr.io/$IMAGE"
+    timeout 1800 docker pull -q "mirror.gcr.io/$IMAGE" >/dev/null \
+      && docker tag "mirror.gcr.io/$IMAGE" "$IMAGE"; }
+fi
+docker image inspect "$IMAGE" >/dev/null 2>&1 || { echo "[glimmer] cannot pull $IMAGE"; exit 23; }
 pkill -f "vllm serve" 2>/dev/null || true
 docker rm -f glimmer >/dev/null 2>&1 || true
 sleep 5

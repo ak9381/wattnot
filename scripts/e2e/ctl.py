@@ -243,6 +243,7 @@ def main(argv=None):
     elif c == "watchdog":
         launch_ts = dt.datetime.fromisoformat(vm()["launch_ts"])
         dl = dt.datetime.fromisoformat(vm()["deadline"]) - dt.timedelta(minutes=8)
+        open(f"{D}/ctl.log","a").write(f"{dt.datetime.now()} WATCHDOG START vm={vm().get('id')} delete_at={dl.isoformat()} cap=Rs{BUDGET_CAP_INR:.0f}\n")
         while dt.datetime.now() < dl:
             if os.path.exists(f"{D}/DELETED"): return
             # default-on spend backstop: tear down if the elapsed VM time has cost more than the cap
