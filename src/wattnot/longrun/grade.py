@@ -58,6 +58,8 @@ class Trace:
     subagents: int = 0
     turns: int = 0
     tokens: int = 0
+    reasoning_tokens: int = 0
+    reasoning_measured: bool = True
     latencies: list[float] = field(default_factory=list)
     final: float | None = None
     stopped: str = ""
@@ -115,6 +117,8 @@ def run_agent(chat, task_text: str, world: World, trace: Trace, *, max_turns: in
         r = chat(msgs, max_tokens)
         trace.turns += 1
         trace.tokens += r.tokens
+        trace.reasoning_tokens += r.reasoning_tokens
+        trace.reasoning_measured = trace.reasoning_measured and r.reasoning_measured
         trace.latencies.append(r.latency_s)
         if r.finish == "error":
             trace.stopped = "client-error"
@@ -162,6 +166,8 @@ class Graded:
     latency_s: float           # end-to-end for the item (sum of turns for agents)
     detail: dict = field(default_factory=dict)
     truncated: bool = False    # the model hit the token cap (finish=length / context-limit)
+    reasoning_tokens: int = 0  # tokens spent thinking before the answer (for the reasoning share)
+    reasoning_measured: bool = False
 
 
 def grade_one(task: Task, chat) -> Graded:
@@ -176,7 +182,9 @@ def grade_one(task: Task, chat) -> Graded:
                       {"final": got, "tools": sorted(used), "turns": tr.turns,
                        "retries": tr.retries, "tool_errors": tr.errors,
                        "subagents": tr.subagents, "stopped": tr.stopped},
-                      truncated=tr.stopped == "context-limit")
+                      truncated=tr.stopped == "context-limit",
+                      reasoning_tokens=tr.reasoning_tokens,
+                      reasoning_measured=tr.reasoning_measured)
     r = chat([{"role": "user", "content": task.prompt}], task.max_tokens)
     if r.finish == "error":
         return Graded(task.id, task.tier, False, 0, r.latency_s, {"error": True})
@@ -188,4 +196,5 @@ def grade_one(task: Task, chat) -> Graded:
     # finish == "length": the answer was cut off by the token cap, not necessarily wrong. Flag it
     # so the summary can report the truncation rate instead of silently counting it as a miss.
     return Graded(task.id, task.tier, ok, r.tokens, r.latency_s, {"finish": r.finish},
-                  truncated=r.finish == "length")
+                  truncated=r.finish == "length",
+                  reasoning_tokens=r.reasoning_tokens, reasoning_measured=r.reasoning_measured)

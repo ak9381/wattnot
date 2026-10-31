@@ -71,13 +71,19 @@ def _agg(rows: Sequence[dict], key: str) -> dict:
 
 
 def arm_summary(name: str, rows: Sequence[dict], label: str) -> dict:
-    """Aggregate per-rep rows (j_per_req, pass_pct, ttft_ms, p99_ms, cache_hit_rate) for one arm."""
+    """Aggregate per-rep rows (j_per_req, pass_pct, ttft_ms, p99_ms, cache_hit_rate, and the
+    reasoning-token share) for one arm."""
     out = {"arm": name, "reps": len(rows), "label": label}
-    for key in ("j_per_req", "pass_pct", "ttft_ms", "p99_ms", "cache_hit_rate"):
+    for key in ("j_per_req", "pass_pct", "ttft_ms", "p99_ms", "cache_hit_rate",
+                "reasoning_token_share"):
         out[key] = _agg(rows, key)
     jpr = out["j_per_req"]["mean"]
     passm = out["pass_pct"]["mean"]
     out["j_per_correct"] = round(jpr / (passm / 100), 4) if jpr and passm else None
+    # label the reasoning share: MOCK for a rehearsal, else MEASURED only when every rep's count
+    # came from server usage, otherwise ESTIMATE (sized from the reasoning text)
+    measured = all(r.get("reasoning_measured") for r in rows) if rows else False
+    out["reasoning_label"] = label if label == "MOCK" else ("MEASURED" if measured else "ESTIMATE")
     return out
 
 
@@ -111,6 +117,9 @@ def evaluate_ab(off: dict, on: dict, *, p99_limit_pct: float = P99_LIMIT_PCT,
             "p99_change_pct": p99_change,
             "cache_hit_rate": {"off": off["cache_hit_rate"]["mean"],
                                "on": on["cache_hit_rate"]["mean"]},
+            "reasoning_token_share": {"off": off["reasoning_token_share"]["mean"],
+                                      "on": on["reasoning_token_share"]["mean"],
+                                      "label": on.get("reasoning_label")},
             "label": on["label"],
         },
         "gate": {"passed": not failed, "failed": failed,
@@ -146,6 +155,9 @@ def mock_ab(reps: int = 3) -> dict:
                 "ttft_ms": round((120.0 if on else 430.0) * jitter, 2),
                 "p99_ms": round((3200.0 if on else 3350.0) * jitter, 2),
                 "cache_hit_rate": (0.82 if on else 0.0),
+                # prefix caching skips prefill, not thinking: the reasoning share barely moves
+                "reasoning_token_share": 0.58,
+                "reasoning_measured": False,
             })
         return out
     off = arm_summary("off", rows(False), "MOCK")

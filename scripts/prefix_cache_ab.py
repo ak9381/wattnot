@@ -74,9 +74,12 @@ def _real(out: Path, o) -> dict:  # pragma: no cover - needs a GPU and vLLM
             finally:
                 guard.__exit__(None, None, None)
             m1 = _metrics(url)
+            rtok, ctok = b.get("reasoning_tokens") or 0, b.get("tokens") or 0
             return {"j_per_req": b.get("j_per_req"), "pass_pct": b.get("pass_pct"),
                     "ttft_ms": PC.ttft_ms_from_metrics(m0, m1), "p99_ms": (b.get("p99_s") or 0) * 1000,
-                    "cache_hit_rate": PC.hit_rate_from_metrics(m0, m1)}
+                    "cache_hit_rate": PC.hit_rate_from_metrics(m0, m1),
+                    "reasoning_token_share": round(rtok / ctok, 4) if ctok else None,
+                    "reasoning_measured": bool(b.get("reasoning_measured"))}
         finally:
             if srv is not None:
                 srv.terminate()

@@ -151,6 +151,9 @@ class Rig:
             "cap_w": cap, "token_scale": token_scale, "label": "MEASURED",
             "requests": n, "errors": sum(r.finish == "error" for r in replies),
             "truncated": sum(cut.values()), "tokens": sum(r.tokens for r in replies),
+            # reasoning tokens spent before the answer, for the reasoning-token share (item E)
+            "reasoning_tokens": sum(r.reasoning_tokens for r in replies),
+            "reasoning_measured": bool(replies) and all(r.reasoning_measured for r in replies),
             "joules": joules, "wall_s": wall, "j_per_req": joules / n,
             "j_per_token": joules / max(1, sum(r.tokens for r in replies)),
             "p50_s": percentile(lats, 50), "p99_s": percentile(lats, 99),

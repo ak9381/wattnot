@@ -121,9 +121,19 @@ def summarize(cap_w: int, stock: list[dict], capped: list[dict], workload: Workl
         "max_temp_c_by_arm": {"stock": max(b["max_temp_c"] or 0 for b in stock),
                               "cap": max(b["max_temp_c"] or 0 for b in capped)},
         "errors": sum(b["errors"] for b in stock + capped),
+        "reasoning": _reasoning_share(stock + capped),
         "accepted": bool(q.passed and p_ok and e_ok and not n_err),
         "why_not": why,
     }
+
+
+def _reasoning_share(blocks: list[dict]) -> dict:
+    """Reasoning-token share across a step's blocks (reasoning tokens / completion tokens)."""
+    from wattnot.reasoning import token_share
+    r_tok = sum(b.get("reasoning_tokens", 0) for b in blocks)
+    c_tok = sum(b.get("tokens", 0) for b in blocks)
+    measured = bool(blocks) and all(b.get("reasoning_measured", False) for b in blocks)
+    return token_share(r_tok, c_tok, measured)
 
 
 def save_raw(out: Path, tag: str, block: dict) -> dict:

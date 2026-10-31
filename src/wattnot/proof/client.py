@@ -39,9 +39,14 @@ def strip_reasoning(text: str, pattern: re.Pattern | None = None) -> str:
 @dataclass(frozen=True)
 class Reply:
     latency_s: float
-    tokens: int
+    tokens: int             # completion tokens (reasoning + answer), from usage
     text: str
     finish: str  # "stop", "length" or "error"
+    # reasoning tokens this reply spent before the answer, for the reasoning-token share. MEASURED
+    # from usage.completion_tokens_details.reasoning_tokens; ESTIMATE (reasoning_measured False)
+    # when only the reasoning text is available to size.
+    reasoning_tokens: int = 0
+    reasoning_measured: bool = False
 
 
 class ChatClient:
@@ -68,6 +73,8 @@ class ChatClient:
         lat = time.perf_counter() - t0
         ch = (data.get("choices") or [{}])[0]
         content = (ch.get("message") or {}).get("content") or ""
+        from wattnot.reasoning import reasoning_tokens
+        rt, measured = reasoning_tokens(data)
         return Reply(lat, int((data.get("usage") or {}).get("completion_tokens", 0)),
                      strip_reasoning(content),
-                     ch.get("finish_reason") or "stop")
+                     ch.get("finish_reason") or "stop", rt or 0, measured)

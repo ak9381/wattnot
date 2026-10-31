@@ -85,6 +85,18 @@ def reasoning_tokens(data: dict) -> tuple[int | None, bool]:
     return (len(text) // 4, False) if text else (None, False)
 
 
+def token_share(reasoning_tokens: int, completion_tokens: int, measured: bool) -> dict:
+    """The reasoning-token share (reasoning tokens / completion tokens) as a reported field.
+
+    MEASURED when every reply's reasoning count came from server usage, else ESTIMATE. ``share`` is
+    None when no completion tokens were seen (never a made-up 0).
+    """
+    share = round(reasoning_tokens / completion_tokens, 4) if completion_tokens else None
+    return {"reasoning_tokens": int(reasoning_tokens),
+            "completion_tokens": int(completion_tokens), "share": share,
+            "label": "MEASURED" if measured else "ESTIMATE"}
+
+
 def decide_apply(base_rt: int | None, think_ok: bool, think_rt: int | None) -> dict:
     """reasoning_effort low by default; enable_thinking:false only if accepted AND it reduced the
     reasoning-token count against the knob-free baseline."""

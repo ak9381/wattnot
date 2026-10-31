@@ -135,9 +135,11 @@ class Chat:
             self.replies += 1
             # grade the answer, never the reasoning (pattern set in proof/client.py)
             text = strip_reasoning(msg.get("content") or "")
+            from wattnot.reasoning import reasoning_tokens
+            rt, measured = reasoning_tokens(d)
             return Reply(time.perf_counter() - t0, int(d.get("usage", {}).get(
                 "completion_tokens", 0)), text,
-                ch.get("finish_reason") or "stop")
+                ch.get("finish_reason") or "stop", rt or 0, measured)
         except Exception:  # noqa: BLE001
             return Reply(time.perf_counter() - t0, 0, "", "error")
 
@@ -291,6 +293,8 @@ def measure_arm(nvml, h, chat, tasks: list[Task], arm: str, limit_w: int,
         out["tiers"][tier] = {"n": len(g), "pass": sum(x.ok for x in g), "joules": (e1 - e0) / 1000,
                               "wall_s": wall, "p99_s": p99([x.latency_s for x in g]),
                               "tokens": sum(x.tokens for x in g),
+                              "reasoning_tokens": sum(x.reasoning_tokens for x in g),
+                              "reasoning_measured": bool(g) and all(x.reasoning_measured for x in g),
                               "truncated": sum(x.truncated for x in g),
                               "fails": [x.id for x in g if not x.ok][:20],
                               "agent": [x.detail for x in g][:3] if tier == "complex" else None}
@@ -350,15 +354,26 @@ def summarize(block: dict, *, gpu_usd_per_h: float = GPU_USD_PER_H, mock: bool =
         if why and trunc_pct >= 5:
             why = why + [f"{trunc}/{n_all} cut short (finish=length, {trunc_pct:g}%): raise "
                          f"reasoning_floor/max_tokens_scale before reading this as a quality loss"]
+        # reasoning-token share for this tier, across both arms (reasoning / completion tokens)
+        from wattnot.reasoning import token_share
+        r_tok = sum(x.get("reasoning_tokens", 0) for x in tier_dicts)
+        c_tok = sum(x.get("tokens", 0) for x in tier_dicts)
+        r_meas = bool(tier_dicts) and all(x.get("reasoning_measured", False) for x in tier_dicts)
         rows.append({"tier": tier, "label": label, "stock": s, "cap": c,
                      "energy_change_pct": 100 * (c["wh_per_task"] / s["wh_per_task"] - 1)
                      if s["wh_per_task"] else 0.0,
                      "pass_drop_pts": drop, "p99_change_pct": slow,
                      "truncated": trunc, "truncation_pct": trunc_pct,
+                     "reasoning": token_share(r_tok, c_tok, r_meas),
                      "gate": "pass" if not why else "blocked", "why_not": why})
     total_trunc = sum(r["truncated"] for r in rows)
     total_n = sum(r["stock"]["n"] + r["cap"]["n"] for r in rows)
+    from wattnot.reasoning import token_share
+    all_rtok = sum(r["reasoning"]["reasoning_tokens"] for r in rows)
+    all_ctok = sum(r["reasoning"]["completion_tokens"] for r in rows)
+    all_meas = bool(rows) and all(r["reasoning"]["label"] == "MEASURED" for r in rows)
     return {"cap_w": block["cap_w"], "label": label,
+            "reasoning": token_share(all_rtok, all_ctok, all_meas),
             "assumptions": {"wue_l_per_kwh": WUE_L_PER_KWH,
                             "tariff_usd_per_kwh": TARIFF_USD_PER_KWH,
                             "gpu_usd_per_h": gpu_usd_per_h,
@@ -409,6 +424,10 @@ def table(summary: dict) -> str:
     if t:
         lines.append(f"cut short (finish=length): {t['items']}/{t['checked']} = {t['pct']:g}% "
                      f"— reported, not counted as quality misses")
+    rs = summary.get("reasoning")
+    if rs and rs.get("share") is not None:
+        lines.append(f"reasoning-token share [{rs['label']}]: {rs['share'] * 100:.1f}% "
+                     f"({rs['reasoning_tokens']}/{rs['completion_tokens']} tokens)")
     return "\n".join(lines)
 
 
