@@ -76,7 +76,7 @@ def add_parser(sub) -> None:
     po.add_argument("--by", help="set: the operator authorising the policy (required)")
     po.add_argument("--min-saving-pct", type=float, default=3.0)
     po.add_argument("--max-p99-increase-pct", type=float, default=10.0)
-    po.add_argument("--max-cap-drop-pct", type=float, default=45.0)
+    po.add_argument("--max-cap-drop-pct", type=float, default=58.0)
     po.add_argument("--max-per-day", type=int, default=3)
     po.add_argument("--file", type=Path, default=None,
                     help="set: write here instead of <dir>/policy.json")

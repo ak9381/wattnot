@@ -380,3 +380,14 @@ def test_run_child_kills_the_group_on_timeout():
     rc = driver.run_child([sys.executable, "-c", "import time; time.sleep(30)"], timeout=1.0)
     assert rc == 124 and time.monotonic() - t0 < 15
     assert not driver._CHILD_PGIDS   # registry cleaned up
+
+
+def test_builtin_dry_policy_and_cli_default_allow_every_wonder_cap(tmp_path, monkeypatch):
+    from wattnot.longrun import driver
+    from wattnot.approvals import cli
+    monkeypatch.setattr(driver, "APPROVAL_POLICY", str(tmp_path / "missing.json"))
+    f = driver.write_dry_policy(tmp_path)
+    assert json.loads(f.read_text())["kinds"]["power_cap"]["max_cap_drop_pct"] == 58.0
+    assert driver.approval_policy_warnings(f) == []
+    import inspect
+    assert "default=58.0" in inspect.getsource(cli)
