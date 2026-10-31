@@ -1,0 +1,4 @@
+"layer": "layer2-agent" "layer": "check" "teardown": true "reasons": ["stale heartbeat"] "deleted": "WOULD_DELETE (dry-run; no API call)"  [stale]
+"layer": "layer3-agent" "layer": "check" "teardown": true "reasons": ["stale heartbeat"] "deleted": "WOULD_DELETE (dry-run; no API call)"  [stale]
+"layer": "layer2-agent" "layer": "check" "teardown": true "reasons": ["time cap"] "deleted": "WOULD_DELETE (dry-run; no API call)"  [past]
+"layer": "layer3-agent" "layer": "check" "teardown": true "reasons": ["time cap"] "deleted": "WOULD_DELETE (dry-run; no API call)"  [past]
