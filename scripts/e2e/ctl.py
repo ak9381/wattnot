@@ -29,9 +29,20 @@ try:
 except ImportError:
     call = None  # post is only present on the control host; the pure helpers stay importable for tests
 D = "/workspace/hackathon/e2e-glimmer-test"
-P = dict(project_id=18993, location="Delhi")
-SKU_ID, PRICE_ID = 525, 7087          # GDC.1xH10080-26.250GB_SXM_v3, Rs379.05/h (same as RUN1)
-SG, SSHKEY = 34486, 4364
+# Region: Delhi by default. Chennai has the same 1xH100 SKU (525) with its own hourly price id and
+# security group (checked via gpu/gpu_service/sku/ and gpu/security_groups/ on Oct 31).
+REGIONS = {"Delhi": dict(price_id=7087, sg=34486), "Chennai": dict(price_id=7077, sg=34482)}
+def _region():
+    loc = os.environ.get("E2E_LOCATION")
+    if not loc:   # a running VM keeps the region it was launched in
+        try: loc = json.load(open(f"{D}/vm.json")).get("location")
+        except Exception: loc = None
+    return loc or "Delhi"
+LOCATION = _region()
+assert LOCATION in REGIONS, f"unknown E2E region {LOCATION}"
+P = dict(project_id=18993, location=LOCATION)
+SKU_ID, PRICE_ID = 525, REGIONS[LOCATION]["price_id"]   # GDC.1xH10080-26.250GB_SXM_v3, Rs379.05/h
+SG, SSHKEY = REGIONS[LOCATION]["sg"], 4364
 MAX_H = float(os.environ.get("RUN3_MAX_H", "3.5"))   # Glimmer test VM: 3.5 h booking (Akash, Oct 30); delete as soon as the plan ends
 # Default-on spend backstop for the watchdog (INR, taxed). Sized for the 3.5 h test (3.5 h x Rs451.2 =
 # Rs1579, under this), so it is a backstop, not the primary rail; raise it for a longer run.
@@ -154,7 +165,7 @@ def main(argv=None):
     a = p.parse_args(argv)
     c = a.cmd
     if c == "images":
-        s, j = call("GET", "gpu/gpu_service/image/", category="vm", location="Delhi")
+        s, j = call("GET", "gpu/gpu_service/image/", category="vm", location=LOCATION)
         for im in (j.get("data") or []):
             print(im["image_id"], im["name"], [(x["image_version_id"], x["version"]) for x in im["versions"]][:6])
     elif c == "launch":
@@ -190,7 +201,7 @@ def main(argv=None):
                     print("adopting with no vm.intent.json: deadline counted from now")
                 json.dump(dict(id=existing["id"], launch_ts=now.isoformat(), adopted=True,
                                deadline=(now + dt.timedelta(hours=MAX_H)).isoformat(), sg=SG,
-                               ssh_key_pk=SSHKEY), open(f"{D}/vm.json", "w"))
+                               ssh_key_pk=SSHKEY, location=LOCATION), open(f"{D}/vm.json", "w"))
                 print("adopted existing", existing["id"], "(no new VM created)")
                 subprocess.Popen([sys.executable, __file__, "watchdog"], stdout=open(f"{D}/wd.out", "a"),
                                  stderr=subprocess.STDOUT, start_new_session=True)
@@ -217,7 +228,7 @@ def main(argv=None):
             s, j = call("POST", "gpu/notebooks/", body, **P)
             assert s in (200, 201), (s, str(j)[:300])
             json.dump(dict(id=j["data"]["id"], launch_ts=now.isoformat(),
-                           deadline=(now + dt.timedelta(hours=MAX_H)).isoformat(), sg=SG, ssh_key_pk=SSHKEY),
+                           deadline=(now + dt.timedelta(hours=MAX_H)).isoformat(), sg=SG, ssh_key_pk=SSHKEY, location=LOCATION),
                       open(f"{D}/vm.json", "w"))
             try: os.unlink(f"{D}/vm.intent.json")
             except OSError: pass
