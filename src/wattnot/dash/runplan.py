@@ -359,6 +359,48 @@ def _num(label, v, unit="", tag="MEASURED"):
     return {"label": label, "v": v, "unit": unit, "tag": tag if v is not None else None}
 
 
+def _apply_narration(S: "_Seq", narr: dict) -> list[str]:
+    """Insert a `step.progress` narration event after the `step.started` of each narrated step.
+
+    ``narr`` is ``{step_id: {"text","source","model","trace_id","label"}}`` from the narration
+    cache (see wattnot.dash.narrator). A matching step gets one extra ``step.progress`` carrying
+    ``data.narration`` with source "muse-spark" and label "LIVE"; the run view replaces the
+    template line with it. No new event type or schema field is added; the inserted frame reuses
+    the started event's t_ms/ts so the replay pace is unchanged. Returns the step_ids applied.
+
+    This is the only place that reads the cache, and it only adds frames for steps that are both
+    in the stream and carry a well-formed live entry, so an absent or partial cache changes
+    nothing: the template narration already emitted stays in place.
+    """
+    if not narr:
+        return []
+    applied = []
+    frames = S.frames
+    out: list[dict] = []
+    for f in frames:
+        out.append(f)
+        ev = f["event"]
+        sid = ev.get("step_id")
+        if ev.get("type") != "step.started" or sid not in narr:
+            continue
+        n = narr[sid]
+        base = {k: ev["data"].get(k) for k in ("node", "sub", "rack") if k in ev["data"]}
+        live = {"text": n["text"], "source": n.get("source", "muse-spark"),
+                "model": n.get("model"), "trace_id": n.get("trace_id"),
+                "label": n.get("label", "LIVE")}
+        prog = {"schema_version": SCHEMA, "run_id": S.run_id, "seq": None, "ts": ev["ts"],
+                "type": "step.progress", "step_id": sid, "parent_step_id": ev.get("parent_step_id"),
+                "data": {**base, "narration": live}}
+        out.append({"t_ms": f["t_ms"], "event": prog})
+        applied.append(sid)
+    if applied:
+        for i, f in enumerate(out):  # renumber seq so the stream stays dense and ordered
+            f["event"]["seq"] = i
+        S.frames = out
+        S.seq = len(out)
+    return applied
+
+
 def _setup(S, cfg, model_name, place, workload_title, ctx):
     if place == "h100":
         S.step("baseline", "setup", "Set up the H100 host", took=ctx.get("setup_s", 6.4), say="A rented H100 machine is prepared with the model server and the measuring tools.",
@@ -437,7 +479,20 @@ def _receipt_steps(S, cfg, out, scan, tgt, aft, sign_step):
     sign_step()
 
 
-def plan(bundle: dict, c: dict, *, now: datetime | None = None) -> dict:
+def plan(bundle: dict, c: dict, *, now: datetime | None = None,
+         narration: bool | str | None = None) -> dict:
+    """Build the replay event stream for a run config.
+
+    ``narration`` controls the optional Muse Spark narration overlay (recorded live text that
+    replaces the rule-based "template" lines on the pick steps). It is off by default so existing
+    behaviour and tests are unchanged:
+      * ``None`` / ``False`` -- no overlay; only template narration is emitted (offline fallback).
+      * ``True`` -- auto-detect: read ``narrator.cache_path_for(run_id)`` under the default root
+        and apply it if present.
+      * a path (str) -- read that cache file.
+    The cache is produced offline by ``scripts/mocks1031/narrate_live.py``; reading it never hits
+    a network. A missing or malformed cache leaves the template lines in place.
+    """
     cfg = bundle.get("config")
     if not cfg:
         raise ValueError("this bundle has no run configuration; rebuild it with scripts/build_dash_arch.py")
@@ -514,6 +569,16 @@ def plan(bundle: dict, c: dict, *, now: datetime | None = None) -> dict:
           dt=400)
     results.update(model=m["name"], place=place, workload=wl["title"], limits=lim, source="REPLAY",
                    water=cfg["water"], price=cfg["price"], run_id=S.run_id)
+    narrated = []
+    if narration:
+        from . import narrator
+        cache_path = (narrator.cache_path_for(S.run_id) if narration is True
+                      else narration)
+        narr = narrator.load_cache(cache_path)
+        narrated = _apply_narration(S, narr)
+        if narrated:
+            results["narration"] = {"source": narrator.SOURCE, "label": narrator.LABEL,
+                                    "steps": narrated}
     brk = _split_phases(S.frames)
     phases = {"baseline": {"title": "Without WattNot", "n_events": brk},
               "wattnot": {"title": "With WattNot", "n_events": len(S.frames) - brk}}
