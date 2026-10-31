@@ -138,8 +138,11 @@ def test_glimmer_test_plan_fits_the_time_budget(tmp_path):
     p = plan_glimmer_test(tmp_path)
     total_min = sum(b.hours for b in p) * 60
     usable = 3.5 * 60 - WATCHDOG_MARGIN_H * 60          # 202 min
-    core = sum(b.hours for b in p if b.id not in ("t2b-batch", "t2c-prefix")) * 60
-    assert core <= 125 and total_min <= usable - 30      # >= 30 min slack for a slow Glimmer
+    core = sum(b.hours for b in p if b.id not in ("t2b-batch", "t2c-prefix", "t2d-combined")) * 60
+    # t2d-combined is skip_if_short (dropped, never overrun): 30 min slack without it, 15 with it
+    no_comb = sum(b.hours for b in p if b.id != "t2d-combined") * 60
+    assert next(b for b in p if b.id == "t2d-combined").skip_if_short
+    assert core <= 125 and no_comb <= usable - 30 and total_min <= usable - 15
     # core-proof-first order: setup and probe lead, extras after every core block, copy last
     ids = [b.id for b in p]
     assert ids[0] == "t0-setup" and ids[1] == "t0-probe" and ids[-1] == "t3-copy"
@@ -398,3 +401,19 @@ def test_builtin_dry_policy_and_cli_default_allow_every_wonder_cap(tmp_path, mon
     assert driver.approval_policy_warnings(f) == []
     import inspect
     assert "default=58.0" in inspect.getsource(cli)
+
+
+def test_full_glimmer_test_plan_has_combined_block(tmp_path):
+    """The long run (glimmer-test, plan full) must carry the WattNot-vs-stock combined block."""
+    from wattnot.longrun.driver import plan
+    p = plan(tmp_path, "glimmer-test", "full")
+    ids = [b.id for b in p]
+    assert ids.count("t2d-combined") == 1
+    assert ids.index("t2c-prefix") < ids.index("t2d-combined") < ids.index("t3-copy")
+    c = next(b for b in p if b.id == "t2d-combined")
+    assert c.live[c.live.index("--reps") + 1] == "3"
+    assert "{BEST_CAP}" in c.live and "--fake" not in c.live
+    r = plan(tmp_path, "glimmer-test", "retest")
+    assert [b.id for b in r].count("t2d-combined") == 1
+    rc = next(b for b in r if b.id == "t2d-combined")
+    assert rc.live[rc.live.index("--reps") + 1] == "2"
