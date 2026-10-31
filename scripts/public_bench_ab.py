@@ -251,10 +251,20 @@ def main(argv=None) -> int:
     ap.add_argument("--concurrency", type=int, default=32)
     ap.add_argument("--req-timeout", type=float, default=600)
     ap.add_argument("--settle-s", type=float, default=5)
+    ap.add_argument("--fake", action="store_true",
+                    help="dry run for the long-run plan: count items, write a SIMULATED stub, no GPU")
     o = ap.parse_args(argv)
     if o.cap < 294:
         print("refusing a cap below the ~294 W floor", file=sys.stderr)
         return 2
+    if o.fake:
+        out = Path(o.out)
+        out.mkdir(parents=True, exist_ok=True)
+        stub = {"label": "SIMULATED", "cap": o.cap, "reps": o.reps,
+                "sets": {n: {"items": len(load(n))} for n in o.sets}}
+        (out / "public_bench_dry.json").write_text(json.dumps(stub, indent=1))
+        print(json.dumps(stub))
+        return 0
     s = run_real(o)
     print(json.dumps({n: {k: v for k, v in d.items() if k != "source"} for n, d in s["sets"].items()},
                      indent=1))
