@@ -116,6 +116,49 @@ def estimate_hard_stop(gpu: str = DEFAULT_GPU, **kw) -> dict:
     return plan
 
 
+# --- preflight: is this model servable by vLLM? (free, local; gates all spend) ---------------
+
+# vLLM serves models by matching the HF config `architectures`/`model_type` to a registered
+# implementation. A model whose architecture vLLM does not register cannot be loaded -- the GPU
+# would download tens of GiB and then fail at engine init. This conservative allowlist of common
+# vLLM-supported text model_types lets run() refuse BEFORE spending a cent. (Extend as needed.)
+VLLM_SUPPORTED_MODEL_TYPES = frozenset({
+    "llama", "mistral", "mixtral", "qwen2", "qwen2_moe", "qwen3", "qwen3_moe",
+    "gemma", "gemma2", "gemma3_text", "phi3", "phimoe", "gpt_neox", "falcon",
+    "stablelm", "starcoder2", "dbrx", "cohere", "deepseek_v2", "deepseek_v3",
+})
+
+
+def preflight_servable(config: dict) -> dict:
+    """Decide -- from a model's HF config dict -- whether vLLM can serve it. Pure, no network.
+
+    Returns ``{"ok": bool, "architecture", "model_type", "reason", "multimodal"}``. Used by run()
+    to refuse an unservable model before any paid download/GPU, so we never pay to discover the
+    engine cannot load it, and never silently substitute a different model.
+    """
+    arch = (config.get("architectures") or [None])[0]
+    mtype = config.get("model_type")
+    multimodal = bool(config.get("vision_config") or config.get("image_token_id") is not None)
+    ok = mtype in VLLM_SUPPORTED_MODEL_TYPES and not str(arch or "").endswith("ForConditionalGeneration")
+    if ok:
+        reason = f"model_type {mtype!r} is a vLLM-supported text architecture"
+    else:
+        reason = (f"architecture {arch!r} / model_type {mtype!r} is not a vLLM-registered text model"
+                  + (" (multimodal/conditional-generation)" if multimodal else "")
+                  + "; vLLM cannot load it. Refusing to spend on an unservable model.")
+    return {"ok": ok, "architecture": arch, "model_type": mtype,
+            "multimodal": multimodal, "reason": reason}
+
+
+def fetch_config(model: str = MODEL, *, timeout_s: float = 25.0) -> dict:
+    """Fetch a public HF repo's config.json over HTTP (free, no token, no GPU)."""
+    import json as _json
+    import urllib.request
+    url = f"https://huggingface.co/{model}/resolve/main/config.json"
+    with urllib.request.urlopen(url, timeout=timeout_s) as resp:  # noqa: S310
+        return _json.loads(resp.read())
+
+
 # --- the GO gate + spend guard (both local-only; the container ships no wattnot) -------------
 
 def _require_go(action: str) -> None:
@@ -356,6 +399,12 @@ try:
         hang cannot exceed the budget. Refuses up front without WATTNOT_MODAL_GO=1.
         """
         _require_go("run the GPU bench for Muse Glimmer 30B")
+        # Preflight BEFORE any spend: refuse an architecture vLLM cannot serve, rather than pay to
+        # download ~55 GiB and fail at engine init (and never substitute a different model).
+        pf = preflight_servable(fetch_config(MODEL))
+        print("PREFLIGHT:", json.dumps(pf))
+        if not pf["ok"]:
+            raise SystemExit(f"glimmer_live: {pf['reason']} Nothing downloaded, $0 spent.")
         plan = estimate_hard_stop(gpu, n_requests=n_requests)
         print("PLAN:", json.dumps(plan))
         gpu_usd_h = GPU_USD_H[gpu]
@@ -404,11 +453,14 @@ def _resolve_model_dir(root: str) -> str | None:
 if __name__ == "__main__":
     # Pure local entry for the agent/CI: --estimate prints the ESTIMATE and spends $0. The live
     # run goes through `modal run modal/glimmer_live.py::run` with WATTNOT_MODAL_GO=1.
-    if "--estimate" in sys.argv:
+    if "--preflight" in sys.argv:
+        # Free HTTP check: can vLLM serve this model? (gates all spend in run())
+        print(json.dumps(preflight_servable(fetch_config(MODEL)), indent=2))
+    elif "--estimate" in sys.argv:
         g = DEFAULT_GPU
         if "--gpu" in sys.argv:
             g = sys.argv[sys.argv.index("--gpu") + 1]
         print(json.dumps(estimate_hard_stop(g), indent=2))
     else:
-        print("usage: python modal/glimmer_live.py --estimate [--gpu A100-80GB|H100]")
+        print("usage: python modal/glimmer_live.py [--preflight | --estimate [--gpu A100-80GB|H100]]")
         print("live run: WATTNOT_MODAL_GO=1 modal run modal/glimmer_live.py::run")

@@ -179,6 +179,23 @@ def test_glimmer_estimate_hard_stop_refuses_over_budget():
         mod.estimate_hard_stop("H100", bench_min=100.0)
 
 
+def test_preflight_refuses_unservable_custom_architecture():
+    mod = _load_glimmer()
+    # The real Muse Glimmer 30B config: a custom multimodal architecture vLLM cannot load.
+    glimmer = {"architectures": ["MuseGlimmerForConditionalGeneration"],
+               "model_type": "muse_glimmer", "image_token_id": 200092,
+               "vision_config": {"model_type": "muse_glimmer_vision"}}
+    pf = mod.preflight_servable(glimmer)
+    assert pf["ok"] is False and pf["multimodal"] is True
+    assert "muse_glimmer" in pf["model_type"]
+
+
+def test_preflight_accepts_supported_text_model():
+    mod = _load_glimmer()
+    pf = mod.preflight_servable({"architectures": ["LlamaForCausalLM"], "model_type": "llama"})
+    assert pf["ok"] is True and pf["multimodal"] is False
+
+
 def test_glimmer_measure_computes_measured_joules_and_tokens_per_s():
     mod = _load_glimmer()
 

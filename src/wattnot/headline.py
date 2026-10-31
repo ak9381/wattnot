@@ -79,7 +79,7 @@ class FakeBackend:
 
 
 class _ModalClient:
-    """Drives a deployed vLLM OpenAI-compatible completions endpoint, one request at a time.
+    """Drives a deployed vLLM HTTP completions endpoint, one request at a time.
 
     Latency is MEASURED locally (wall clock around the POST); token counts come from the
     server's `usage` block. The transport is injectable so tests run offline with a fake and
