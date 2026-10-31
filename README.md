@@ -100,6 +100,39 @@ switch). The headline below is MEASURED.
 
 ## Quickstart
 
+### One command, watch-only
+
+```bash
+pip install wattnot && wattnot init
+```
+
+Until the package is on PyPI, install straight from this repo:
+`pip install "git+https://github.com/ak9381/wattnot" && wattnot init`.
+
+`wattnot init` runs a read-only preflight (NVIDIA driver, CUDA version, power-cap permission,
+vLLM version), writes `~/.wattnot/config.json`, and starts in **watch-only** mode: WattNot reads
+telemetry and shows what it would save, with a receipt, and changes nothing. Layers this machine
+can't use (for example power caps on a serverless GPU, or with no GPU at all) are switched off
+with the reason, never faked. When you trust what you see:
+
+```bash
+wattnot preflight          # re-check the machine any time (--json for scripts)
+wattnot init --act         # allow WattNot to apply approved changes
+```
+
+### Docker
+
+```bash
+docker build -f Dockerfile.agent -t wattnot-agent .
+docker run --gpus all -p 8765:8765 wattnot-agent            # preflight, then the dashboard, watch-only
+docker run --gpus all wattnot-agent preflight --json        # any wattnot command
+```
+
+The host needs only an NVIDIA driver and the NVIDIA container toolkit. Without `--gpus` (or
+with no GPU) the image still runs and preflight reports no GPU.
+
+### Developer checks
+
 ```bash
 python -m pytest -q                          # unit tests, no GPU or network
 python -m wattnot.proof.run report --out results/proof   # rebuild a report, no GPU needed

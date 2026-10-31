@@ -540,6 +540,13 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         except _ds.DatasetError as e:
             raise HTTPException(400, str(e)) from e
 
+    @app.get("/api/dash/v2/preflight")
+    def v2_preflight():
+        """Read-only machine check, so the setup screen can grey out what this host can't do."""
+        from wattnot import preflight as _pf
+        from wattnot.settings import load as _load
+        return {**_pf.run(), "mode": _load()["mode"]}
+
     @app.get("/api/dash/v2/options")
     def v2_options() -> dict:
         return configure.options(_story().get("config") or {})

@@ -105,6 +105,12 @@ def build_parser() -> argparse.ArgumentParser:
     _route.add_parser(sub)
     from wattnot.certificate import cli as _cert
     _cert.add_parser(sub)
+    ini = sub.add_parser("init", help="write a config (watch-only by default) and run preflight")
+    ini.add_argument("--config", help="config path (default ~/.wattnot/config.json)")
+    ini.add_argument("--act", action="store_true", help="allow WattNot to apply approved changes")
+    ini.add_argument("--force", action="store_true", help="overwrite an existing config")
+    pf = sub.add_parser("preflight", help="read-only check: driver, CUDA, power-cap permission, vLLM")
+    pf.add_argument("--json", action="store_true")
     hc = sub.add_parser("health", help="probe Meta API, Baseten and Modal before a run (free GET /models)")
     hc.add_argument("--json", action="store_true")
     dsh = sub.add_parser("dash", help="live dashboard: GPU power, and a view of the experts")
@@ -261,6 +267,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_recommend(args)
         except (OSError, KeyError, TypeError, ValueError) as e:
             parser.error(f"bad report: {e}")
+    if args.cmd == "init":
+        from wattnot import init as _init
+        return _init.main(args)
+    if args.cmd == "preflight":
+        from wattnot import preflight as _pf
+        r = _pf.run()
+        print(json.dumps(r, indent=2) if args.json else _pf.render(r))
+        return 0
     if args.cmd == "receipt":
         try:
             return _run_receipt(args)

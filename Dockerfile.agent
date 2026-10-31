@@ -1,0 +1,25 @@
+# WattNot agent image: `docker run --gpus all ghcr.io/<you>/wattnot-agent` (or a local build).
+# Starts in WATCH-ONLY mode: reads telemetry, shows would-be savings and receipts, changes nothing.
+# Needs only an NVIDIA driver and the NVIDIA container toolkit on the host; with no GPU it still
+# runs and preflight says so.
+FROM python:3.13-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    WATTNOT_MODE=watch
+
+WORKDIR /app
+COPY pyproject.toml README.md LICENSE ./
+COPY src/ ./src/
+COPY web/ ./web/
+COPY data/ ./data/
+COPY workloads/ ./workloads/
+COPY schemas/ ./schemas/
+COPY verifier/ ./verifier/
+RUN pip install --no-cache-dir -e . && useradd --create-home --uid 10001 wattnot
+USER wattnot
+EXPOSE 8765
+
+# Default: preflight, then the dashboard in watch-only mode. Pass any wattnot command to override,
+# e.g. `docker run --gpus all IMAGE preflight --json`.
+ENTRYPOINT ["/bin/sh", "-c", "if [ $# -gt 0 ]; then exec wattnot \"$@\"; fi; wattnot preflight && exec python -m wattnot.dash --host 0.0.0.0 --port 8765", "wattnot"]
