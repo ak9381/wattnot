@@ -52,6 +52,19 @@ class Transport:
     def close(self) -> None: ...
 
 
+def _child_env(extra: dict | None) -> dict:
+    """Env for the local GPU-host child. The child must import the same wattnot as this
+    process, so put this package's source root first on PYTHONPATH. Without it, a venv with
+    an editable install of another clone (or a relative PYTHONPATH) runs different code."""
+    import wattnot
+
+    env = {**os.environ, **(extra or {})}
+    root = str(Path(wattnot.__file__).resolve().parent.parent)
+    rest = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = root + (os.pathsep + rest if rest else "")
+    return env
+
+
 class LocalTransport(Transport):
     def __init__(self, workdir: Path | None = None, env: dict | None = None) -> None:
         self.workdir, self.env = workdir, env
@@ -75,7 +88,7 @@ class LocalTransport(Transport):
             stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
-            env={**os.environ, **(self.env or {})},
+            env=_child_env(self.env),
         )
         t0 = time.time()
         assert p.stdout is not None
