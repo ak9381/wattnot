@@ -293,6 +293,34 @@ def classify_intent(text: str) -> str:
     return "answer"
 
 
+INTENTS = ("navigate", "answer", "configure", "explain", "command")
+
+
+def spark_classify_intent(text: str, *, ledger: Any = None) -> str:
+    """Live Muse Spark intent classifier. Raises on any failure so the caller can say so."""
+    from wattnot.meta.client import DEFAULT_BASE, GuardedClient, load_key
+
+    key = load_key()
+    if not key:
+        raise RuntimeError("META_API_KEY is not set")
+    body = {"model": os.environ.get("WATTNOT_SPARK_MODEL", "muse-spark-1.3"),
+            "reasoning_effort": "minimal", "max_tokens": 600,
+            "messages": [{"role": "system", "content": (
+                "Classify a WattNot dashboard voice request. navigate = open a view or report; "
+                "answer = a question about results; configure = set up a run; explain = what a "
+                "number or element on screen means; command = a tuning command like 'try 350W with FP8'.")},
+                {"role": "user", "content": text[:500]}],
+            "response_format": {"type": "json_schema", "json_schema": {"name": "Intent", "strict": True,
+                "schema": {"type": "object", "additionalProperties": False, "required": ["intent"],
+                           "properties": {"intent": {"type": "string", "enum": list(INTENTS)}}}}}}
+    data = GuardedClient(key=key, base=os.environ.get("META_BASE_URL", DEFAULT_BASE),
+                         ledger=ledger, timeout_s=30)(body, purpose="voiceguide_intent")
+    intent = json.loads(data["choices"][0]["message"]["content"])["intent"]
+    if intent not in INTENTS:
+        raise ValueError("bad intent")
+    return intent
+
+
 def get_quick_ack(intent: str, text: str) -> dict[str, str]:
     """Return an instant (<300 ms) acknowledgment prior to full response streaming/resolution."""
     if intent == "navigate":
@@ -435,6 +463,7 @@ def process_voice_query(
     live: bool = False,
     mock: bool = True,
     ledger: Any = None,
+    spark_live: bool = False,
 ) -> dict[str, Any]:
     """Execute voice guide workflow: Audio/Text -> Spark intent -> Guarded Read-Only Action."""
     root = Path(root_dir) if root_dir else Path(__file__).resolve().parents[3]
@@ -450,10 +479,21 @@ def process_voice_query(
             "label": "MOCK" if (mock or not live) else "LIVE",
         }
 
-    intent = classify_intent(text)
+    intent_source = "keywords (MOCK)"
+    if spark_live:
+        try:
+            intent = spark_classify_intent(text, ledger=ledger)
+            intent_source = "Muse Spark (LIVE)"
+        except Exception as exc:  # noqa: BLE001 - say it failed, never pretend
+            intent = classify_intent(text)
+            intent_source = f"keywords, Spark failed ({type(exc).__name__})"
+    else:
+        intent = classify_intent(text)
     quick = get_quick_ack(intent, text)
     # Top-level label describes the voice path; numbers carry their own receipt labels.
     label = "MOCK" if (mock or not live) else "LIVE"
+    if spark_live and intent_source.startswith("Muse Spark"):
+        label = "LIVE"
 
     result: dict[str, Any]
 
@@ -645,4 +685,6 @@ def process_voice_query(
 
     if audio_data and not (query_text or "").strip():
         result.setdefault("transcript", text)
+    if isinstance(result, dict):
+        result.setdefault("intent_source", intent_source)
     return result

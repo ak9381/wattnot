@@ -316,6 +316,43 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
                 "config": guard_cfg.to_dict(), "auto_approve": auto_approve,
                 "mode": guard_mode, "now": _am.iso(time.time())}
 
+    @app.post("/api/voiceguide")
+    async def voiceguide(request: Request):
+        """Voice Ask: Muse Voice Transcribe -> Muse Spark intent -> receipt-grounded answer.
+
+        Live by default. WATTNOT_META_MOCK=1 is the explicit, labelled mock switch."""
+        import base64 as _b64
+
+        from wattnot.meta.client import load_key
+        from wattnot.meta.voiceguide import process_voice_query
+
+        try:
+            body = await request.json()
+        except Exception:  # noqa: BLE001
+            body = {}
+        body = body if isinstance(body, dict) else {}
+        query = str(body.get("query") or body.get("text") or "")
+        audio = None
+        if not query and isinstance(body.get("audio_b64"), str):
+            try:
+                audio = _b64.b64decode(body["audio_b64"], validate=True)
+            except Exception:  # noqa: BLE001
+                audio = None
+        mock = os.environ.get("WATTNOT_META_MOCK") == "1"
+        if not mock and not load_key():
+            return JSONResponse({"intent": "answer", "label": "ERROR", "code": "no_key",
+                                 "text": "Live Ask needs META_API_KEY (or ~/.config/muse/auth.json). "
+                                         "No answer was generated."}, status_code=503)
+        live = not mock
+        try:
+            out = await asyncio.to_thread(process_voice_query, query_text=query, audio_data=audio,
+                                          live=live and bool(audio), mock=not live, spark_live=live)
+        except Exception as exc:  # noqa: BLE001
+            return JSONResponse({"intent": "answer", "label": "ERROR", "code": "voice_failed",
+                                 "text": f"Voice Ask failed ({type(exc).__name__}). No answer was generated."},
+                                status_code=502)
+        return JSONResponse(out)
+
     @app.post("/api/dash/approve")
     async def approvals_approve(request: Request):
         if (refused := _need_json(request)) is not None:

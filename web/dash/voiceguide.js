@@ -240,6 +240,10 @@ export function mountVoiceGuide(customMountEl = null) {
           window.WattNotExplain.handleExplainQuery(query);
         }
         displayResponse(full);
+      } else if (res.status === 502 || res.status === 503) {
+        const err = await res.json().catch(() => ({}));
+        displayResponse({ intent: "answer", label: "ERROR", text: err.text || "Live Ask failed. No answer was generated." });
+        return;
       } else {
         const grounded = await groundedAnswer(query);
         if (grounded) { displayResponse(grounded); return; }
