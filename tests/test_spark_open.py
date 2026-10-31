@@ -178,9 +178,13 @@ def test_receipt_has_tiers_and_cpu_share(tmp_path):
     assert all(t["energy"]["cpu_share_pct"] is None for t in g["tries"])
 
 
-def test_expert_placement_is_a_stub():
+def test_expert_placement_emits_pin_flags(tmp_path):
     assert LayerPlacement().args(SparkKnobs()) == ["--cpu-moe"]
-    ep = ExpertPlacement({(0, 1): 3}, 1)
+    mp = tmp_path / "pin.json"
+    ep = ExpertPlacement({(0, 1): 3}, 1, map_path=mp)
     assert ep.granularity == "expert" and ep.plan["pinned"] == [[0, 1]]
-    with pytest.raises(NotImplementedError):
-        ep.args(SparkKnobs())
+    # args now serialize the hot/cold map and hand it to the (patched) vLLM via env.
+    args = ep.args(SparkKnobs())
+    assert args == ["--env", f"WATTNOT_EXPERT_PIN_MAP={mp}"] and mp.is_file()
+    # With no counts and no pinned_experts there is nothing to pin: no flags.
+    assert ExpertPlacement({}, 1, map_path=tmp_path / "none.json").args(SparkKnobs()) == []

@@ -1,0 +1,275 @@
+{
+ "spec": "wattnot.gap-1031.eye-wonder/1",
+ "generated": "2026-10-31T01:50:16Z",
+ "model": "muse-wonder-1.0",
+ "images_label": "SYNTHETIC (Muse Image)",
+ "answers_label": "MEASURED",
+ "passed_count": 9,
+ "total": 10,
+ "rows": [
+  {
+   "id": "plate-bus789",
+   "kind": "text",
+   "question": "What is the number-plate text?",
+   "expected": "BUS-789",
+   "got": "BUS-789",
+   "ok": true,
+   "label": "SYNTHETIC",
+   "energy_wh": {
+    "value": 0.5,
+    "label": "ESTIMATE"
+   }
+  },
+  {
+   "id": "plate-van204",
+   "kind": "text",
+   "question": "What is the number-plate text?",
+   "expected": "VAN-204",
+   "got": "VAN-204",
+   "ok": true,
+   "label": "SYNTHETIC",
+   "energy_wh": {
+    "value": 0.5,
+    "label": "ESTIMATE"
+   }
+  },
+  {
+   "id": "invoice-total",
+   "kind": "number",
+   "question": "What is the invoice total in dollars?",
+   "expected": "1284.50",
+   "got": "$1,284.50",
+   "ok": true,
+   "label": "SYNTHETIC",
+   "energy_wh": {
+    "value": 0.5,
+    "label": "ESTIMATE"
+   }
+  },
+  {
+   "id": "invoice-subtotal",
+   "kind": "number",
+   "question": "What is the subtotal in dollars?",
+   "expected": "990.00",
+   "got": "$990.00",
+   "ok": true,
+   "label": "SYNTHETIC",
+   "energy_wh": {
+    "value": 0.5,
+    "label": "ESTIMATE"
+   }
+  },
+  {
+   "id": "count-cubes",
+   "kind": "count",
+   "question": "How many cubes are in the image?",
+   "expected": "7",
+   "got": "7",
+   "ok": true,
+   "label": "SYNTHETIC",
+   "energy_wh": {
+    "value": 0.5,
+    "label": "ESTIMATE"
+   }
+  },
+  {
+   "id": "count-bottles",
+   "kind": "count",
+   "question": "How many bottles are in the image?",
+   "expected": "4",
+   "got": "4",
+   "ok": true,
+   "label": "SYNTHETIC",
+   "energy_wh": {
+    "value": 0.5,
+    "label": "ESTIMATE"
+   }
+  },
+  {
+   "id": "color-chart-top",
+   "kind": "color",
+   "question": "What colour is the top swatch?",
+   "expected": "magenta",
+   "got": "MAGENTA",
+   "ok": true,
+   "label": "SYNTHETIC",
+   "energy_wh": {
+    "value": 0.5,
+    "label": "ESTIMATE"
+   }
+  },
+  {
+   "id": "color-chart-bottom",
+   "kind": "color",
+   "question": "What colour is the bottom swatch?",
+   "expected": "teal",
+   "got": "TEAL",
+   "ok": true,
+   "label": "SYNTHETIC",
+   "energy_wh": {
+    "value": 0.5,
+    "label": "ESTIMATE"
+   }
+  },
+  {
+   "id": "gauge-reading",
+   "kind": "number",
+   "question": "What number does the gauge read?",
+   "expected": "63",
+   "got": "",
+   "ok": false,
+   "label": "SYNTHETIC",
+   "energy_wh": {
+    "value": 0.5,
+    "label": "ESTIMATE"
+   }
+  },
+  {
+   "id": "sign-exit",
+   "kind": "text",
+   "question": "What does the road sign say?",
+   "expected": "EXIT 12B",
+   "got": "ROUTE 45 WEST EXIT 12B",
+   "ok": true,
+   "label": "SYNTHETIC",
+   "energy_wh": {
+    "value": 0.5,
+    "label": "ESTIMATE"
+   }
+  }
+ ],
+ "usage": [
+  {
+   "id": "plate-bus789",
+   "latency_s": 6.75,
+   "completion_tokens": 351,
+   "prompt_tokens": 3390,
+   "total_tokens": 3741,
+   "completion_tokens_details": {
+    "reasoning_tokens": 339
+   },
+   "prompt_tokens_details": {
+    "cached_tokens": 0
+   }
+  },
+  {
+   "id": "plate-van204",
+   "latency_s": 6.64,
+   "completion_tokens": 447,
+   "prompt_tokens": 3390,
+   "total_tokens": 3837,
+   "completion_tokens_details": {
+    "reasoning_tokens": 435
+   },
+   "prompt_tokens_details": {
+    "cached_tokens": 0
+   }
+  },
+  {
+   "id": "invoice-total",
+   "latency_s": 2.67,
+   "completion_tokens": 95,
+   "prompt_tokens": 3391,
+   "total_tokens": 3486,
+   "completion_tokens_details": {
+    "reasoning_tokens": 80
+   },
+   "prompt_tokens_details": {
+    "cached_tokens": 0
+   }
+  },
+  {
+   "id": "invoice-subtotal",
+   "latency_s": 2.56,
+   "completion_tokens": 181,
+   "prompt_tokens": 3391,
+   "total_tokens": 3572,
+   "completion_tokens_details": {
+    "reasoning_tokens": 168
+   },
+   "prompt_tokens_details": {
+    "cached_tokens": 0
+   }
+  },
+  {
+   "id": "count-cubes",
+   "latency_s": 3.93,
+   "completion_tokens": 247,
+   "prompt_tokens": 3391,
+   "total_tokens": 3638,
+   "completion_tokens_details": {
+    "reasoning_tokens": 237
+   },
+   "prompt_tokens_details": {
+    "cached_tokens": 0
+   }
+  },
+  {
+   "id": "count-bottles",
+   "latency_s": 2.61,
+   "completion_tokens": 62,
+   "prompt_tokens": 3391,
+   "total_tokens": 3453,
+   "completion_tokens_details": {
+    "reasoning_tokens": 52
+   },
+   "prompt_tokens_details": {
+    "cached_tokens": 0
+   }
+  },
+  {
+   "id": "color-chart-top",
+   "latency_s": 7.9,
+   "completion_tokens": 583,
+   "prompt_tokens": 3391,
+   "total_tokens": 3974,
+   "completion_tokens_details": {
+    "reasoning_tokens": 572
+   },
+   "prompt_tokens_details": {
+    "cached_tokens": 0
+   }
+  },
+  {
+   "id": "color-chart-bottom",
+   "latency_s": 3.57,
+   "completion_tokens": 91,
+   "prompt_tokens": 3391,
+   "total_tokens": 3482,
+   "completion_tokens_details": {
+    "reasoning_tokens": 80
+   },
+   "prompt_tokens_details": {
+    "cached_tokens": 0
+   }
+  },
+  {
+   "id": "gauge-reading",
+   "latency_s": 80.92,
+   "completion_tokens": 8000,
+   "prompt_tokens": 3390,
+   "total_tokens": 11390,
+   "completion_tokens_details": {
+    "reasoning_tokens": 7998
+   },
+   "prompt_tokens_details": {
+    "cached_tokens": 0
+   }
+  },
+  {
+   "id": "sign-exit",
+   "latency_s": 3.34,
+   "completion_tokens": 208,
+   "prompt_tokens": 3390,
+   "total_tokens": 3598,
+   "completion_tokens_details": {
+    "reasoning_tokens": 190
+   },
+   "prompt_tokens_details": {
+    "cached_tokens": 0
+   }
+  }
+ ],
+ "spend_usd": 0.6729,
+ "spend_label": "MEASURED (Meta spend ledger)"
+}

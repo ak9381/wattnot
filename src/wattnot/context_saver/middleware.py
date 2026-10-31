@@ -100,7 +100,11 @@ class SparkSummarizer:
 
     model = "muse-spark-1.3"
 
-    def __init__(self, client=None, max_tokens: int = 120) -> None:
+    # muse-spark spends ~200 reasoning tokens even at reasoning_effort "minimal", so a tight
+    # max_tokens is consumed entirely by reasoning and the reply comes back empty (finish_reason
+    # "length") -- which this class would then count as a failure and fall back to the offline
+    # mock. The budget must leave room for the reasoning tokens PLUS the one/two-sentence summary.
+    def __init__(self, client=None, max_tokens: int = 512) -> None:
         if client is None:
             from wattnot.meta.client import GuardedClient
             client = GuardedClient()

@@ -1,0 +1,91 @@
+Watt
+Not
+Dashboard
+Runs
+Compare
+Reports
+Live graph
+Cost budget
+EU Compliance
+▶
+→
+What WattNot saved
+Select run…
+H100 RUN2 · Llama 3.1 8B @ 350 W
+Hosted fixture · recorded-run1
+Hosted fixture · recorded-run2
+Hosted fixture · recorded-smoke
+Bundled sample · RUN2
+H100 RUN2 · Llama 3.1 8B @ 350 W
+i
+Meta · Muse Spark
+Meta · SAM 3.1
+Meta · Llama 3.1 8B
+MEASURED
+MEASURED-derived
+ESTIMATE
+SIMULATED
+MOCK
+REPLAY
+pending
+with WattNot
+without WattNot
+← Back
+WattNot
+›
+Power
+framework: none recorded
+Where should this model run?
+Expand all
+Collapse all
+WattNot
+H100 RUN2 · Llama 3.1 8B @ 350 W · Llama 3.1 8B Instruct
+Power
+27.1% 
+i
+Cost
+27.1%
+derived from power
+i
+Water
+27.1%
+derived from power
+i
+Agent-waste saver
+›
+–
+PENDING
+Stop agent loops and wasted tokens that add no new information.
+i
+Where it runs
+›
+–
+PENDING
+Compare the three places a model can run and pick one per workload.
+i
+Quality gate
+›
+✓ pass
+Refuse any setting that drops answer quality or slows p99 past the limit.
+i
+Cooling hotspots (SAM 3.1)
+–
+PENDING
+SAM 3.1 outlines each rack; WattNot marks the rack it can cool. Heat is simulated from the measured power drop.
+i
+−
+72%
++
+Fit
+Meta Evaluation & Governance Details
+Metric	Recorded Value	Provenance
+Spark Trace ID	spark-7a1b2c3d4e5f6071	
+Close
+WattNot
+·
+Project by Akash K Raju
+·
+Meta hackathon 2026 · Indie track
+·
+2026
+GitHub

@@ -20,6 +20,16 @@ def test_spark_summarizer_uses_muse_and_returns_reply():
     assert s.calls == 1 and s.failures == 0
 
 
+def test_spark_summarizer_leaves_reasoning_headroom():
+    # Muse Spark spends ~200 reasoning tokens even at minimal effort; too tight a budget returns
+    # empty content and silently falls back to the offline mock. Lock in enough headroom.
+    c = FakeClient("ok")
+    SparkSummarizer(client=c)("A turn to summarise.")
+    body = c.bodies[0]
+    assert body["reasoning_effort"] == "minimal"
+    assert body["max_tokens"] >= 256
+
+
 def test_spark_summarizer_falls_back_on_error_or_empty():
     for c in (FakeClient(boom=True), FakeClient(reply="")):
         s = SparkSummarizer(client=c)

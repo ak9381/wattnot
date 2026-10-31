@@ -1,0 +1,41 @@
+== fresh
+-- check
+{"layer": "check", "now": 1793411677.1047852, "heartbeat": {"ts": 1793411677, "launch_ts": 1793411077, "deadline_ts": 1793415277, "spent_inr": 100, "block": "fake", "note": "gap-1031 dry-run"}, "teardown": false, "reasons": [], "detail": {"budget_spent_inr": 100, "budget_cap_inr": 2000.0, "deadline_ts": 1793415277, "seconds_to_deadline": 3599.9, "heartbeat_age_s": 0.1, "max_stale_s": 900.0}, "spent_inr_label": "MEASURED", "dry_run": true, "deleted": null}
+-- layer1
+-- layer2
+-- layer3
+-- layer4
+{"layer": "layer4-offbox", "now": 1793411737.1571705, "heartbeat": {"ts": 1793411677, "launch_ts": 1793411077, "deadline_ts": 1793415277, "spent_inr": 100, "block": "fake", "note": "gap-1031 dry-run"}, "teardown": false, "reasons": [], "detail": {"budget_spent_inr": 100, "budget_cap_inr": 2000.0, "deadline_ts": 1793415277, "seconds_to_deadline": 3539.8, "heartbeat_age_s": 60.2, "max_stale_s": 900.0}, "spent_inr_label": "MEASURED", "dry_run": true, "deleted": null, "source": "/tmp/tmp.pTb9YaaP6e/fresh.json"}
+-- layer5
+{"layer": "layer5-mac", "source": "/tmp/tmp.pTb9YaaP6e/fresh.json", "heartbeat": {"ts": 1793411677, "launch_ts": 1793411077, "deadline_ts": 1793415277, "spent_inr": 100, "block": "fake", "note": "gap-1031 dry-run"}, "teardown": false, "reasons": [], "detail": {"budget_spent_inr": 100, "budget_cap_inr": 2000.0, "deadline_ts": 1793415277, "seconds_to_deadline": 3539.8, "heartbeat_age_s": 60.2, "max_stale_s": 900.0}, "spent_inr_label": "MEASURED", "dry_run": true, "deleted": null}
+== stale
+-- check
+{"layer": "check", "now": 1793411737.240445, "heartbeat": {"ts": 1793409877, "launch_ts": 1793411077, "deadline_ts": 1793415277, "spent_inr": 100, "block": "fake", "note": "gap-1031 dry-run"}, "teardown": true, "reasons": ["stale heartbeat"], "detail": {"budget_spent_inr": 100, "budget_cap_inr": 2000.0, "deadline_ts": 1793415277, "seconds_to_deadline": 3539.8, "heartbeat_age_s": 1860.2, "max_stale_s": 900.0}, "spent_inr_label": "MEASURED", "dry_run": true, "deleted": "WOULD_DELETE (dry-run; no API call)"}
+-- layer1
+-- layer2
+-- layer3
+-- layer4
+{"layer": "layer4-offbox", "now": 1793411797.2900107, "heartbeat": {"ts": 1793409877, "launch_ts": 1793411077, "deadline_ts": 1793415277, "spent_inr": 100, "block": "fake", "note": "gap-1031 dry-run"}, "teardown": true, "reasons": ["stale heartbeat"], "detail": {"budget_spent_inr": 100, "budget_cap_inr": 2000.0, "deadline_ts": 1793415277, "seconds_to_deadline": 3479.7, "heartbeat_age_s": 1920.3, "max_stale_s": 900.0}, "spent_inr_label": "MEASURED", "dry_run": true, "deleted": "WOULD_DELETE (dry-run; no API call)", "source": "/tmp/tmp.pTb9YaaP6e/stale.json"}
+-- layer5
+{"layer": "layer5-mac", "source": "/tmp/tmp.pTb9YaaP6e/stale.json", "heartbeat": {"ts": 1793409877, "launch_ts": 1793411077, "deadline_ts": 1793415277, "spent_inr": 100, "block": "fake", "note": "gap-1031 dry-run"}, "teardown": true, "reasons": ["stale heartbeat"], "detail": {"budget_spent_inr": 100, "budget_cap_inr": 2000.0, "deadline_ts": 1793415277, "seconds_to_deadline": 3479.7, "heartbeat_age_s": 1920.3, "max_stale_s": 900.0}, "spent_inr_label": "MEASURED", "dry_run": true, "deleted": "WOULD_DELETE (dry-run; no API call)"}
+== overbudget
+-- check
+{"layer": "check", "now": 1793411797.384235, "heartbeat": {"ts": 1793411677, "launch_ts": 1793411077, "deadline_ts": 1793415277, "spent_inr": 9999, "block": "fake", "note": "gap-1031 dry-run"}, "teardown": true, "reasons": ["budget cap"], "detail": {"budget_spent_inr": 9999, "budget_cap_inr": 2000.0, "deadline_ts": 1793415277, "seconds_to_deadline": 3479.6, "heartbeat_age_s": 120.4, "max_stale_s": 900.0}, "spent_inr_label": "MEASURED", "dry_run": true, "deleted": "WOULD_DELETE (dry-run; no API call)"}
+-- layer1
+{"layer": "layer1-local", "now": 42046.388565389, "heartbeat": {"ts": 1793411677, "launch_ts": 1793411077, "deadline_ts": 1793415277, "spent_inr": 9999, "block": "fake", "note": "gap-1031 dry-run"}, "teardown": true, "reasons": ["budget cap"], "detail": {"budget_spent_inr": 9999, "budget_cap_inr": 2000.0, "deadline_ts": 1793415277, "seconds_to_deadline": 1793373230.6, "heartbeat_age_s": -1793369630.6, "max_stale_s": 900.0}, "spent_inr_label": "MEASURED", "dry_run": true, "deleted": "WOULD_DELETE (dry-run; no API call)"}
+-- layer2
+-- layer3
+-- layer4
+{"layer": "layer4-offbox", "now": 1793411837.4677382, "heartbeat": {"ts": 1793411677, "launch_ts": 1793411077, "deadline_ts": 1793415277, "spent_inr": 9999, "block": "fake", "note": "gap-1031 dry-run"}, "teardown": true, "reasons": ["budget cap"], "detail": {"budget_spent_inr": 9999, "budget_cap_inr": 2000.0, "deadline_ts": 1793415277, "seconds_to_deadline": 3439.5, "heartbeat_age_s": 160.5, "max_stale_s": 900.0}, "spent_inr_label": "MEASURED", "dry_run": true, "deleted": "WOULD_DELETE (dry-run; no API call)", "source": "/tmp/tmp.pTb9YaaP6e/overbudget.json"}
+-- layer5
+{"layer": "layer5-mac", "source": "/tmp/tmp.pTb9YaaP6e/overbudget.json", "heartbeat": {"ts": 1793411677, "launch_ts": 1793411077, "deadline_ts": 1793415277, "spent_inr": 9999, "block": "fake", "note": "gap-1031 dry-run"}, "teardown": true, "reasons": ["budget cap"], "detail": {"budget_spent_inr": 9999, "budget_cap_inr": 2000.0, "deadline_ts": 1793415277, "seconds_to_deadline": 3439.5, "heartbeat_age_s": 160.5, "max_stale_s": 900.0}, "spent_inr_label": "MEASURED", "dry_run": true, "deleted": "WOULD_DELETE (dry-run; no API call)"}
+== pastdeadline
+-- check
+{"layer": "check", "now": 1793411837.5562577, "heartbeat": {"ts": 1793411677, "launch_ts": 1793411077, "deadline_ts": 1793411617, "spent_inr": 100, "block": "fake", "note": "gap-1031 dry-run"}, "teardown": true, "reasons": ["time cap"], "detail": {"budget_spent_inr": 100, "budget_cap_inr": 2000.0, "deadline_ts": 1793411617, "seconds_to_deadline": -220.6, "heartbeat_age_s": 160.6, "max_stale_s": 900.0}, "spent_inr_label": "MEASURED", "dry_run": true, "deleted": "WOULD_DELETE (dry-run; no API call)"}
+-- layer1
+-- layer2
+-- layer3
+-- layer4
+{"layer": "layer4-offbox", "now": 1793411897.609858, "heartbeat": {"ts": 1793411677, "launch_ts": 1793411077, "deadline_ts": 1793411617, "spent_inr": 100, "block": "fake", "note": "gap-1031 dry-run"}, "teardown": true, "reasons": ["time cap"], "detail": {"budget_spent_inr": 100, "budget_cap_inr": 2000.0, "deadline_ts": 1793411617, "seconds_to_deadline": -280.6, "heartbeat_age_s": 220.6, "max_stale_s": 900.0}, "spent_inr_label": "MEASURED", "dry_run": true, "deleted": "WOULD_DELETE (dry-run; no API call)", "source": "/tmp/tmp.pTb9YaaP6e/pastdeadline.json"}
+-- layer5
+{"layer": "layer5-mac", "source": "/tmp/tmp.pTb9YaaP6e/pastdeadline.json", "heartbeat": {"ts": 1793411677, "launch_ts": 1793411077, "deadline_ts": 1793411617, "spent_inr": 100, "block": "fake", "note": "gap-1031 dry-run"}, "teardown": true, "reasons": ["time cap"], "detail": {"budget_spent_inr": 100, "budget_cap_inr": 2000.0, "deadline_ts": 1793411617, "seconds_to_deadline": -280.7, "heartbeat_age_s": 220.7, "max_stale_s": 900.0}, "spent_inr_label": "MEASURED", "dry_run": true, "deleted": "WOULD_DELETE (dry-run; no API call)"}

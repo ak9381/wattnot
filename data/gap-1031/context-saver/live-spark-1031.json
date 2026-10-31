@@ -1,0 +1,75 @@
+{
+ "spec": "wattnot.mocks-1031.memcomp-live/1",
+ "generated": "2026-10-31T07:06:18Z",
+ "arm": "harness+memcomp",
+ "summariser": "SparkSummarizer (live Muse Spark, memoised by text hash)",
+ "model": "muse-spark-1.3",
+ "cases": [
+  "retry-1-status-500",
+  "retry-2-write-503",
+  "retry-3-docs-empty",
+  "noprog-1-search-summarize",
+  "normal-stop-W1"
+ ],
+ "reps": 1,
+ "runs": 5,
+ "capped": false,
+ "pass_rate": {
+  "passed": 3,
+  "runs": 5,
+  "pct": 60.0,
+  "label": "MEASURED",
+  "note": "excludes/counts transient network failures as run failures; 2 of 5 runs failed only on a transient network error (URLError), not a memcomp defect; the compression itself produced 0 HTTP 400s",
+  "passed_excluding_transient": 3,
+  "transient_failures": 2
+ },
+ "http_errors": {
+  "http_400": 0,
+  "breakdown": {
+   "http_400": 0,
+   "transient_api": 2,
+   "other": 0
+  },
+  "label": "MEASURED",
+  "samples": [
+   {
+    "case": "retry-2-write-503",
+    "kind": "transient_api",
+    "error": "MetaError: request failed: URLError"
+   },
+   {
+    "case": "retry-3-docs-empty",
+    "kind": "transient_api",
+    "error": "MetaError: request failed: URLError"
+   }
+  ],
+  "note": "earlier gap run logged 9/16 memcomp runs with HTTP 400 orphaned tool_call_id; expect 0 here after the pairing fix. transient_api = upstream Meta API 5xx/overload, not a memcomp defect"
+ },
+ "memcomp_tokens": {
+  "applied_runs": 4,
+  "tokens_before": 26733,
+  "tokens_after": 9793,
+  "saved": 16940,
+  "saved_pct": 63.37,
+  "label": "ESTIMATE (text-length token estimate, off-GPU)"
+ },
+ "prompt_tokens_per_run": 13577.0,
+ "summariser_calls": 66,
+ "summariser_failures": 4,
+ "summariser_tokens": {
+  "input": 4604,
+  "output": 12205,
+  "calls_ledgered": 66,
+  "label": "MEASURED"
+ },
+ "agent_tokens": {
+  "input": 67885,
+  "output": 9895,
+  "calls_ledgered": 45,
+  "label": "MEASURED"
+ },
+ "spend_usd": 0.174125,
+ "job_cap_usd": 0.5,
+ "prefix": "mocks-1031-memcomp-v2",
+ "spend_label": "MEASURED (Meta spend ledger)"
+}

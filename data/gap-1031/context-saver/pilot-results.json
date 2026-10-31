@@ -1,0 +1,43 @@
+{
+ "spec": "wattnot.gap-1031.context-saver/1",
+ "generated": "2026-10-31T01:46:40Z",
+ "model": "muse-spark-1.3",
+ "cases": [
+  "retry-1-status-500"
+ ],
+ "reps": 1,
+ "arms": {
+  "harness+dedup": {
+   "runs": 1,
+   "passed": 1,
+   "errors": 0,
+   "prompt_tokens_per_run": 26520.0,
+   "uncached_prompt_tokens_per_run": 5610.0,
+   "completion_tokens_per_run": 1297.0,
+   "calls_per_run": 15.0,
+   "wall_s_per_run": 22.64,
+   "label": "MEASURED"
+  },
+  "harness+memcomp": {
+   "runs": 1,
+   "passed": 0,
+   "errors": 1,
+   "prompt_tokens_per_run": 12512.0,
+   "uncached_prompt_tokens_per_run": 6955.0,
+   "completion_tokens_per_run": 1219.0,
+   "calls_per_run": 9.0,
+   "wall_s_per_run": 68.54,
+   "label": "MEASURED"
+  }
+ },
+ "summariser": {
+  "model": "muse-spark-1.3",
+  "calls": 19,
+  "prompt_tokens": 1319,
+  "completion_tokens": 5865,
+  "label": "MEASURED",
+  "note": "Llama 3.1 8B is not served on api.meta.ai; Muse Spark used."
+ },
+ "spend_usd": 0.0707,
+ "spend_label": "MEASURED (Meta spend ledger)"
+}

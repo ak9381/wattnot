@@ -1,0 +1,120 @@
+✓ Initialized. View run at 
+https://modal.com/apps/akashkraju218/main/ap-PGymIQu9DDnzmX1vXZZtX1
+Building image im-b55URndI5N9PbhA98lAvoF
+
+=> Step 0: FROM vllm/vllm-openai:muse-glimmer
+Building image im-Fq6WyYldnVdGQvy77CS7ve
+
+=> Step 0: FROM base
+
+=> Step 1: RUN python -m pip install 'huggingface_hub[hf_transfer]'
+Getting image source signatures
+Copying blob sha256:56b366f06de48eaae3697c58cb66b7045f5305c1671df7105c0e00e3535a3330
+Copying blob sha256:cf57d2112d8994ff0bb5f867ab8e776272e1d0bcfbb6e6d7f38fd7973b7140cf
+Copying blob sha256:c567a87f21d2f8e46feb4f6c427eb5559d45a1a222f73d601352403d13af1ada
+Copying blob sha256:0b3b5bd928240da4156c41fcfb400c1f4f8674acd2faee0413ab5a032dfb5f76
+Copying blob sha256:70f87b6ed43e1cbbe67ce74c7877fb771bf352b25d602a82ee4f840f2e265155
+Copying blob sha256:526d5438c009ab7178af1646fed10ff6f47a73f5a1ae7b9f49e63e4ade7e3ae6
+Copying blob sha256:f89c9c69927d4f47953ed0114dfc1452d2881954bb0d15f2bbf251ab33ee0eea
+Copying blob sha256:50c0e8ee7bae87ed24367d7faa3e40c0570d5c97f8ccdcaca8ccd60d4a0d76d4
+Copying blob sha256:5143069b9910495a886f4a237d204b3d8cf0176108bd735f3c248a8d403c7a31
+Copying blob sha256:1c2f1ea8a2a06ab2db7f56702d1f4ceadcc1d5a6063da55e0e31d538b447393d
+Copying blob sha256:0afb5fa3955b3865c6ef166a5bdd092294160d62daf8f706427c449869795b2a
+Copying blob sha256:b64e2153f8a2fb1335a37f0a50111d213ddfeec9159fb758866149cf1f3c280a
+Copying blob sha256:06dc5b9f8ebd628ecd2e7e6fec2d94c0ac5744e9551a70246475a7a060283662
+Copying blob sha256:679bbb909c5be5cc71b72efce421889955ff25da20679f2fb72339b92b95c5e1
+Copying blob sha256:56b366f06de48eaae3697c58cb66b7045f5305c1671df7105c0e00e3535a3330
+Copying blob sha256:af12638df593c7c76090b9383a0f6fad7350a7bd597a3da03db647b973547ba0
+Copying blob sha256:b4c6c706830f38c06058b8c7e0fba7af06d226e83d9eb4a36166b7af994f24f4
+Copying blob sha256:262a8303e55578552a47759103c6b1e408874ff939554e3c48316a979990f8c9
+Copying blob sha256:5cbab962431d8932b6153c02d06a9a4f7b6b5d7d5d18b770b96f74bbc82bd8e2
+Copying blob sha256:4d2bbead24349eb7276472eba09f60eef1c7a87dc0e77ac6382b8d159aa1daff
+Copying blob sha256:e2138d2e245c02b9fcab6fcf90c00a75433ed90aece35a344f523b55a65c767a
+Copying blob sha256:c59d529d5e9c3848e788c6eea3707e483a5fb5500babdf5117fe76f454c9cd48
+Copying blob sha256:dd987912871faef80ba186bf706be76fd5aeb14cc2785a59b1bea1de5c315837
+Copying blob sha256:72aa718193a074014c0439577cb22cb7598c74ec868a12e6449fa573c1e54b76
+Copying blob sha256:9fdf7a7250d4e28652c3c87e39ef7e23110f7b94d54e64d390d2c05452518e06
+Copying blob sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1
+Copying blob sha256:6d2a1bfd4071e9ccc3414297d9ee1505eac5032063436a0cfcf7e1add7a9be6a
+Copying blob sha256:0c3d42afa4037bf300bfa7dfaf71f43c12f23c127368f6eecc276df9214b7e2f
+Copying blob sha256:9f75cb4cfbd5867053c1685cdd54a0cbaf56224fa8c8af5e80b72a4e06a654a9
+Copying blob sha256:29a9a755fd0a8eca6927c37c34c96120c9cd9832f63f6f9e092a86e9c03d611d
+Copying blob sha256:5a315e0ffde3f7dad26b46916609c8d9958e02dbc65a18ca8ee73f073d747e54
+Copying blob sha256:2913a2056caa816b228fe913d08a8f16a821cfdaea8bf4b9fff5dfaf2c3ab729
+Looking in indexes: http://pypi-mirror.modal.local:5555/simple
+Collecting huggingface_hub[hf_transfer]
+  Downloading http://pypi-mirror.modal.local:5555/simple/huggingface-hub/huggingface_hub-2.4.0-py3-none-any.whl.metadata (16 kB)
+WARNING: huggingface-hub 2.4.0 does not provide the extra 'hf-transfer'
+Collecting click<9.0.0,>=8.4.2 (from huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/click/click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+Collecting filelock>=3.10.0 (from huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/filelock/filelock-4.2.5-py3-none-any.whl.metadata (2.0 kB)
+Collecting fsspec>=2023.5.0 (from huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/fsspec/fsspec-2026.9.0-py3-none-any.whl.metadata (10 kB)
+Collecting hf-xet<2.0.0,>=1.6.0 (from huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/hf-xet/hf_xet-1.8.0-cp38-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (4.9 kB)
+Collecting httpx2<3,>=2.0.0 (from huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/httpx2/httpx2-2.16.0-py3-none-any.whl.metadata (10 kB)
+Collecting packaging>=20.9 (from huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/packaging/packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+Collecting pyyaml>=5.1 (from huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/pyyaml/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+Collecting tqdm>=4.42.1 (from huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/tqdm/tqdm-4.70.1-py3-none-any.whl.metadata (57 kB)
+Collecting typing-extensions>=4.1.0 (from huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/typing-extensions/typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+Collecting anyio>=4.10 (from httpx2<3,>=2.0.0->huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/anyio/anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+Collecting httpcore2==2.16.0 (from httpx2<3,>=2.0.0->huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/httpcore2/httpcore2-2.16.0-py3-none-any.whl.metadata (27 kB)
+Collecting idna>=3.18 (from httpx2<3,>=2.0.0->huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/idna/idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+Collecting truststore>=0.10 (from httpx2<3,>=2.0.0->huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/truststore/truststore-0.10.5-py3-none-any.whl.metadata (4.5 kB)
+Collecting h11>=0.16 (from httpcore2==2.16.0->httpx2<3,>=2.0.0->huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/h11/h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/huggingface-hub/huggingface_hub-2.4.0-py3-none-any.whl (857 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 857.0/857.0 kB 526.2 MB/s eta 0:00:00
+Downloading http://pypi-mirror.modal.local:5555/simple/click/click-8.5.0-py3-none-any.whl (125 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/hf-xet/hf_xet-1.8.0-cp38-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (4.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.3/4.3 MB 327.2 MB/s eta 0:00:00
+Downloading http://pypi-mirror.modal.local:5555/simple/httpx2/httpx2-2.16.0-py3-none-any.whl (97 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/httpcore2/httpcore2-2.16.0-py3-none-any.whl (85 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/anyio/anyio-4.15.1-py3-none-any.whl (132 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/filelock/filelock-4.2.5-py3-none-any.whl (163 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/fsspec/fsspec-2026.9.0-py3-none-any.whl (221 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/h11/h11-0.16.0-py3-none-any.whl (37 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/idna/idna-3.20-py3-none-any.whl (69 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/packaging/packaging-26.3-py3-none-any.whl (129 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/pyyaml/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (807 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 807.9/807.9 kB 474.3 MB/s eta 0:00:00
+Downloading http://pypi-mirror.modal.local:5555/simple/tqdm/tqdm-4.70.1-py3-none-any.whl (80 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/truststore/truststore-0.10.5-py3-none-any.whl (19 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/typing-extensions/typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Installing collected packages: typing-extensions, truststore, tqdm, pyyaml, packaging, idna, hf-xet, h11, fsspec, filelock, click, httpcore2, anyio, httpx2, huggingface_hub
+
+Successfully installed anyio-4.15.1 click-8.5.0 filelock-4.2.5 fsspec-2026.9.0 h11-0.16.0 hf-xet-1.8.0 httpcore2-2.16.0 httpx2-2.16.0 huggingface_hub-2.4.0 idna-3.20 packaging-26.3 pyyaml-6.0.3 tqdm-4.70.1 truststore-0.10.5 typing-extensions-4.16.0
+
+[notice] A new release of pip is available: 25.1.1 -> 26.2.2
+[notice] To update, run: pip install --upgrade pip
+Saving image...
+Image saved, took 367.88ms
+
+Built image im-Fq6WyYldnVdGQvy77CS7ve in 4.69s
+
+
+Building image im-enWROySTYewdvcVdNVRXtS
+
+=> Step 0: FROM base
+
+=> Step 1: ENV HF_HUB_ENABLE_HF_TRANSFER=1
+Saving image...
+Image saved, took 388.08ms
+
+Built image im-enWROySTYewdvcVdNVRXtS in 965.13ms
+
+
+Copying config sha256:d818a1cfdb5a9197c1132a0589d6f48b693cca459340b3a130849c4c72161043
+Writing manifest to image destination
+Unpacking OCI image
+   • unpacking rootfs ...     

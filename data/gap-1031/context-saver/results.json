@@ -1,0 +1,61 @@
+{
+ "spec": "wattnot.gap-1031.context-saver/1",
+ "generated": "2026-10-31T01:53:29Z",
+ "model": "muse-spark-1.3",
+ "cases": [
+  "retry-1-status-500",
+  "retry-2-write-503",
+  "retry-3-docs-empty",
+  "noprog-1-search-summarize",
+  "noprog-2-ticket-poll",
+  "noprog-3-file-poll",
+  "normal-react-W1",
+  "normal-stop-W1"
+ ],
+ "reps": 2,
+ "arms": {
+  "harness": {
+   "runs": 16,
+   "passed": 13,
+   "errors": 3,
+   "prompt_tokens_per_run": 27835.4,
+   "uncached_prompt_tokens_per_run": 9791.0,
+   "completion_tokens_per_run": 1683.7,
+   "calls_per_run": 11.81,
+   "wall_s_per_run": 24.48,
+   "label": "MEASURED"
+  },
+  "harness+dedup": {
+   "runs": 16,
+   "passed": 14,
+   "errors": 2,
+   "prompt_tokens_per_run": 22386.9,
+   "uncached_prompt_tokens_per_run": 7207.1,
+   "completion_tokens_per_run": 1375.8,
+   "calls_per_run": 11.19,
+   "wall_s_per_run": 22.0,
+   "label": "MEASURED"
+  },
+  "harness+memcomp": {
+   "runs": 16,
+   "passed": 2,
+   "errors": 14,
+   "prompt_tokens_per_run": 6269.2,
+   "uncached_prompt_tokens_per_run": 4137.4,
+   "completion_tokens_per_run": 649.9,
+   "calls_per_run": 4.56,
+   "wall_s_per_run": 28.48,
+   "label": "MEASURED"
+  }
+ },
+ "summariser": {
+  "model": "muse-spark-1.3",
+  "calls": 94,
+  "prompt_tokens": 6155,
+  "completion_tokens": 32470,
+  "label": "MEASURED",
+  "note": "Llama 3.1 8B is not served on api.meta.ai; Muse Spark used."
+ },
+ "spend_usd": 1.4298,
+ "spend_label": "MEASURED (Meta spend ledger)"
+}

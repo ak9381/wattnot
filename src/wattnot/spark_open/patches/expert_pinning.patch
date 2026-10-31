@@ -1,0 +1,145 @@
+# Muse Spark Open -- per-expert pinning for vLLM's fused MoE layer
+#
+# WHAT THIS CHANGES
+#   Adds an optional per-expert placement map to vLLM's fused MoE layer so that
+#   the hottest (layer, expert) pairs -- by observed router frequency -- stay
+#   resident in VRAM, while cold experts live in pinned host RAM and are copied
+#   to the GPU on demand (and evicted afterwards). This is the per-expert analog
+#   of llama.cpp's whole-layer `--n-cpu-moe`: instead of moving all 256 experts
+#   of a layer together, we move single experts.
+#
+# WHY
+#   Muse Spark Open 816B is a 62-layer MoE with 256 experts/layer, top-8. Router
+#   traffic is very skewed: a small set of experts take most of the tokens. Keeping
+#   just those hot experts in VRAM captures most of the speed of a fully-resident
+#   model at a fraction of the VRAM, which is what lets the 816B run on one H100.
+#
+# HOW IT IS CONFIGURED
+#   The map is read once, at layer construction, from the env var
+#   WATTNOT_EXPERT_PIN_MAP, which points at a JSON file written by
+#   wattnot.spark_open.expert_pin.write_placement_map(). Schema:
+#       {"version": 1, "vram_slots": <int>,
+#        "hot": [[layer, expert], ...],      # resident in VRAM
+#        "cold": [[layer, expert], ...]}     # host RAM, copied on demand
+#   Absent or empty env var -> behaviour is byte-for-byte the stock vLLM path
+#   (every expert resident), so the patch is safe to ship unconditionally.
+#
+# STATUS: SIMULATED / NOT APPLIED / NOT RUN HERE.
+#   This repo has no GPU and does not vendor vLLM, so this diff has NOT been
+#   applied or compiled against a real vLLM tree. Line numbers and surrounding
+#   context target vLLM's fused MoE layer as of the module path below and are a
+#   best-effort reconstruction; expect to re-anchor the hunks when applying
+#   against a pinned vLLM revision. The companion loader
+#   (wattnot.spark_open.expert_pin) is fully testable offline with fakes.
+#
+# APPLY (on a machine that has vLLM checked out):
+#   cd "$(python -c 'import vllm, os; print(os.path.dirname(os.path.dirname(vllm.__file__)))')"
+#   git apply --3way /path/to/expert_pinning.patch
+#
+--- a/vllm/model_executor/layers/fused_moe/layer.py
++++ b/vllm/model_executor/layers/fused_moe/layer.py
+@@ -1,6 +1,9 @@
+ # SPDX-License-Identifier: Apache-2.0
++import json
++import os
+ from abc import abstractmethod
+ from dataclasses import dataclass
++from pathlib import Path
+ from enum import Enum
+ from typing import Callable, Optional
+
+@@ -20,6 +23,69 @@ from vllm.model_executor.utils import set_weight_attrs
+ logger = init_logger(__name__)
+
+
++# --- WattNot per-expert pinning -------------------------------------------
++# Hot (layer, expert) pairs stay in VRAM; cold pairs live in pinned host RAM
++# and are staged to the GPU on demand. The map is produced offline by
++# wattnot.spark_open.expert_pin and handed in through an env var so no vLLM
++# config schema change is needed. Absent map => stock behaviour (all resident).
++_EXPERT_PIN_ENV = "WATTNOT_EXPERT_PIN_MAP"
++
++
++def _load_expert_pin_map() -> Optional[dict]:
++    """Read the per-expert placement map, or None when pinning is off.
++
++    Returns a dict keyed by layer index -> set of expert ids that must stay
++    resident in VRAM for that layer. Cold experts are everything else.
++    """
++    path = os.environ.get(_EXPERT_PIN_ENV)
++    if not path:
++        return None
++    try:
++        raw = json.loads(Path(path).read_text())
++    except (OSError, ValueError) as e:  # missing / malformed -> fall back
++        logger.warning("expert pin map %s unreadable (%s); all experts resident", path, e)
++        return None
++    hot: dict[int, set[int]] = {}
++    for layer, expert in raw.get("hot", []):
++        hot.setdefault(int(layer), set()).add(int(expert))
++    logger.info("expert pinning on: %d layers with hot experts (vram_slots=%s)",
++                len(hot), raw.get("vram_slots"))
++    return {"hot": hot, "vram_slots": raw.get("vram_slots")}
++
++
++class ExpertPlacementCache:
++    """Keeps hot experts resident and stages cold experts on demand.
++
++    This is a thin residency manager: `resident_mask(layer_id)` tells the MoE
++    kernels which experts are already on-device; cold experts selected by the
++    router for a step are copied GPU-side just-in-time and dropped afterwards.
++    """
++
++    def __init__(self, pin_map: dict, num_experts: int) -> None:
++        self._hot = pin_map["hot"]
++        self._num_experts = num_experts
++
++    def resident_mask(self, layer_id: int, device, dtype=torch.bool):
++        """Bool tensor [num_experts]: True where the expert lives in VRAM."""
++        mask = torch.zeros(self._num_experts, dtype=dtype, device=device)
++        for e in self._hot.get(layer_id, ()):  # empty => nothing pinned here
++            mask[e] = True
++        return mask
++
++    def stage_cold_experts(self, layer_id: int, selected_experts, weights_cpu,
++                           weights_gpu) -> None:
++        """Copy any router-selected cold experts for this layer to the GPU.
++
++        `selected_experts` is the unique expert ids the router picked this step.
++        Hot experts are skipped (already resident); cold ones are copied from the
++        pinned host tensor into the GPU staging slot for this step.
++        """
++        hot = self._hot.get(layer_id, set())
++        for e in selected_experts.tolist():
++            if e not in hot:
++                weights_gpu[e].copy_(weights_cpu[e], non_blocking=True)
++# --------------------------------------------------------------------------
++
++
+ @dataclass
+ class FusedMoEParallelConfig:
+     tp_size: int
+@@ -210,6 +276,13 @@ class FusedMoE(torch.nn.Module):
+         self.local_num_experts = num_experts
+         self.global_num_experts = num_experts
+
++        # WattNot: build the per-expert residency cache once, if a pin map is
++        # present. layer_index is set by the model builder (0..N_LAYERS-1).
++        self._pin_map = _load_expert_pin_map()
++        self._expert_cache = (
++            ExpertPlacementCache(self._pin_map, num_experts)
++            if self._pin_map is not None else None
++        )
+         self.quant_config = quant_config
+         self.apply_router_weight_on_input = apply_router_weight_on_input
+
+@@ -absolute,7 +absolute,7 @@ class FusedMoE(torch.nn.Module):
+     def forward(self, hidden_states: torch.Tensor,
+                 router_logits: torch.Tensor):
+         topk_weights, topk_ids = self.select_experts(hidden_states, router_logits)
++        # WattNot: stage any cold experts the router picked before the kernels run.
++        if self._expert_cache is not None:
++            layer_id = getattr(self, "layer_index", 0)
++            self._expert_cache.stage_cold_experts(
++                layer_id, torch.unique(topk_ids), self.w13_weight_cpu, self.w13_weight)
+         return self.quant_method.apply(self, hidden_states, topk_weights, topk_ids)
