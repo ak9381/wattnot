@@ -21,3 +21,10 @@ Total Meta API spend: $1.54 (MEASURED, spend ledger purposes `gap-1031*`, 677 ca
 > agreement was 94.5%, under our 95% gate, so no change was proposed. The 0.95 setting was tuned
 > on a CPU (agreement MEASURED on CPU; the -1.5% J/token saving is an ESTIMATE). It is not part
 > of the Meta-model results.
+
+## LangChain / LangGraph plug-in test: parked
+
+Parked on 2026-10-31 at 08:47 IST, on Akash's call, until the bug fixes and the H100 retest are done.
+Nothing was run and no Meta API spend went to it. A box-only venv (`/workspace/fwvenv`, with
+langgraph 1.2.19 and langchain-openai 1.7.3) exists, but no test script was written. When it
+resumes, use the context saver with dedup only, because memory compression is broken (item 1).
