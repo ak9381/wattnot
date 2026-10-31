@@ -24,6 +24,8 @@ DEFAULTS: dict[str, Any] = {
     # Auto-approve rule shown next to the p99 limit on the setup screen
     # (matches `wattnot approvals policy --max-cap-drop-pct`).
     "auto_approve_max_cap_drop_pct": 58.0,
+    # The set savings are measured on: auto | humaneval | gsm8k | mixed | custom (see datasets.py)
+    "dataset": "mixed",
 }
 
 

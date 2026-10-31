@@ -864,6 +864,46 @@
           "type": "string"
         }
       }
+    },
+    "dataset": {
+      "type": "object",
+      "description": "The prompt set the saving was measured on and how it was chosen. Optional so older receipts still validate.",
+      "required": [
+        "id",
+        "chosen_by"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "items": {
+          "type": "integer"
+        },
+        "sha256": {
+          "type": "string"
+        },
+        "checks": {
+          "type": "string"
+        },
+        "chosen_by": {
+          "type": "string"
+        },
+        "why": {
+          "type": "string"
+        },
+        "traffic_sampled": {
+          "type": "integer"
+        }
+      }
     }
   },
   "not": {

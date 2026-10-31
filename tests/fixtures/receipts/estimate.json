@@ -189,6 +189,11 @@
     "max_p99_increase_pct": 10.0,
     "source": "default"
   },
+  "dataset": {
+    "id": "not-recorded",
+    "chosen_by": "not recorded",
+    "why": "this run predates the dataset picker"
+  },
   "joules": {
     "unit": "J",
     "label": "ESTIMATE",
@@ -211,7 +216,7 @@
   "grade": "ESTIMATE",
   "integrity": {
     "canonicalization": "JCS RFC 8785",
-    "sha256": "f9750d5d0f8c4caa14bcfb9e018818d818894ac7f91ce6d07e7d0f54e2761e5b",
+    "sha256": "53bb1b57eff107389102fa374e3248415004d289b15432736b8618f2ace50c00",
     "prev_sha256": null,
     "signer": null,
     "rekor": null

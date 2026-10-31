@@ -212,6 +212,7 @@ function renderCfg() {
     <button class="info" data-info="${o.id}" aria-label="What is ${esc(o.label)}?">i</button></div>`;
   }
   $$("#pCfg select").forEach((s) => (s.onchange = () => { S.choice[s.dataset.k] = JSON.parse(s.value); sumCfg(); syncAdv(); }));
+  datasetUpload();
   $("#advDis").addEventListener("toggle", syncAdv);
   $("#stepBack").onclick = () => { if (S.step > 1) { S.step--; renderStep(); } };
   $("#stepNext").onclick = () => { if (S.step < 6) { markDone(S.step); S.step++; renderStep(); } };
@@ -1497,3 +1498,26 @@ function renderLearn() {
   setTimeout(() => window.scrollTo(0, 0), 100);
   if (new URLSearchParams(location.search).get("autorun")) { await startRun(); }
 })();
+
+
+// Dataset picker: a custom set is uploaded as JSONL (prompt + expected or tests) and checked by
+// the server before it can be used. The receipt records the set's hash.
+function datasetUpload() {
+  const sel = document.getElementById("f-dataset");
+  if (!sel || document.getElementById("dsUp")) return;
+  const box = document.createElement("div");
+  box.id = "dsUp"; box.className = "fld";
+  box.innerHTML = `<label for="dsFile">Custom dataset (JSONL)<small>each line: {"prompt": ..., "expected": ...} or {"prompt": ..., "tests": ...}</small></label>
+    <input type="file" id="dsFile" accept=".jsonl,.json,application/json"><span id="dsMsg" role="status"></span>`;
+  sel.closest(".fld").after(box);
+  const show = () => { box.hidden = JSON.parse(sel.value) !== "custom"; };
+  sel.addEventListener("change", show); show();
+  box.querySelector("#dsFile").onchange = async (ev) => {
+    const f = ev.target.files[0]; if (!f) return;
+    const msg = box.querySelector("#dsMsg");
+    const r = await fetch("/api/dash/v2/dataset/upload", { method: "POST", body: await f.text() });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) { S.choice.dataset_custom = j; msg.textContent = `Accepted: ${j.items} prompts, sha256 ${String(j.sha256).slice(0, 12)}`; }
+    else msg.textContent = `Not accepted: ${j.detail || r.status}`;
+  };
+}

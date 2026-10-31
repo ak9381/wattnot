@@ -303,6 +303,17 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
     lim = dict(run.get("limits") or {})
     lim.update(receipt_block(p99=run.get("max_p99_increase")))
     receipt["limits"] = lim
+    # The dataset the saving was measured on (wattnot.datasets). Never guessed: a run that did
+    # not record one says so.
+    ds = run.get("dataset")
+    if isinstance(ds, str):
+        from wattnot.datasets import DatasetError, describe
+        try:
+            ds = {**describe(ds), "chosen_by": "user"}
+        except (DatasetError, OSError):
+            ds = {"id": ds, "chosen_by": "user"}
+    receipt["dataset"] = dict(ds) if ds else {"id": "not-recorded", "chosen_by": "not recorded",
+                                              "why": "this run predates the dataset picker"}
 
     # Attach judge fields, wonder trace IDs, per-model spend, and musecode PR/patch hash
     m = receipt["measurement"]
