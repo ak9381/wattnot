@@ -245,6 +245,18 @@ export interface Receipt {
     max_p99_increase_pct?: number;
     source?: string;
   };
+  dataset?: {
+    id: string;
+    kind?: string;
+    title?: string;
+    file?: string;
+    items?: number;
+    sha256?: string;
+    checks?: string;
+    chosen_by: string;
+    why?: string;
+    traffic_sampled?: number;
+  };
 }
 
 // ---- ui-view (https://wattnot.dev/schemas/ui-view.schema.json) ----

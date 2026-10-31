@@ -517,6 +517,29 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
             plan_cache.update(mt=mt, b=json.loads(story_path.read_text()))
         return plan_cache["b"]
 
+    @app.post("/api/dash/v2/dataset/upload")
+    async def dataset_upload(request: Request):
+        """Validate and store a custom dataset (JSONL: prompt + expected or tests). Local only."""
+        from wattnot import datasets as _ds
+        raw = (await request.body()).decode("utf-8", errors="replace")
+        if len(raw) > 5_000_000:
+            raise HTTPException(413, "upload is over 5 MB")
+        try:
+            return _ds.save_custom(raw, Path(os.environ.get("WATTNOT_DATA_DIR", "runs")) / "datasets")
+        except _ds.DatasetError as e:
+            raise HTTPException(400, str(e)) from e
+
+    @app.post("/api/dash/v2/dataset/decide")
+    async def dataset_decide(request: Request):
+        """Let WattNot decide from a sample of real prompts: {"prompts": [...]}."""
+        from wattnot import datasets as _ds
+        body = await request.json()
+        try:
+            d = _ds.decide([str(p) for p in (body.get("prompts") or [])])
+            return {**d, "dataset": _ds.describe(d["chosen"])}
+        except _ds.DatasetError as e:
+            raise HTTPException(400, str(e)) from e
+
     @app.get("/api/dash/v2/options")
     def v2_options() -> dict:
         return configure.options(_story().get("config") or {})

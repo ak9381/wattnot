@@ -189,6 +189,11 @@
     "max_p99_increase_pct": 10.0,
     "source": "default"
   },
+  "dataset": {
+    "id": "not-recorded",
+    "chosen_by": "not recorded",
+    "why": "this run predates the dataset picker"
+  },
   "joules": {
     "unit": "J",
     "label": "MEASURED",
@@ -211,7 +216,7 @@
   "grade": "NOISE",
   "integrity": {
     "canonicalization": "JCS RFC 8785",
-    "sha256": "f018bb10562768ebc577c50b5f762d9a2246f7df0857538be6a7a95f0d118362",
+    "sha256": "23e20647a6de9521bc6914069b281b16c51419b39a7566c8927cbc38255bf551",
     "prev_sha256": null,
     "signer": null,
     "rekor": null
