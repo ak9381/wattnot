@@ -179,15 +179,31 @@ def test_glimmer_estimate_hard_stop_refuses_over_budget():
         mod.estimate_hard_stop("H100", bench_min=100.0)
 
 
-def test_preflight_refuses_unservable_custom_architecture():
+def test_preflight_accepts_glimmer_via_custom_image():
     mod = _load_glimmer()
-    # The real Muse Glimmer 30B config: a custom multimodal architecture vLLM cannot load.
+    # The real Muse Glimmer 30B config: a custom multimodal architecture that the stock vLLM path
+    # alone would reject, but the pinned custom image serves it -> preflight ACCEPTS it.
     glimmer = {"architectures": ["MuseGlimmerForConditionalGeneration"],
                "model_type": "muse_glimmer", "image_token_id": 200092,
                "vision_config": {"model_type": "muse_glimmer_vision"}}
     pf = mod.preflight_servable(glimmer)
-    assert pf["ok"] is False and pf["multimodal"] is True
-    assert "muse_glimmer" in pf["model_type"]
+    assert pf["ok"] is True
+    assert pf["multimodal"] is True          # it IS multimodal...
+    assert pf["model_type"] == "muse_glimmer"
+    # ...and the reason names the required custom image that makes it servable.
+    assert pf["image"] == "vllm/vllm-openai:muse-glimmer"
+    assert "vllm/vllm-openai:muse-glimmer" in pf["reason"]
+
+
+def test_preflight_refuses_genuinely_unknown_custom_architecture():
+    mod = _load_glimmer()
+    # A custom arch that is neither a plain causal-LM nor in the custom-image allowlist: refused.
+    weird = {"architectures": ["SomethingForConditionalGeneration"],
+             "model_type": "something_custom", "vision_config": {"x": 1}}
+    pf = mod.preflight_servable(weird)
+    assert pf["ok"] is False
+    assert pf["image"] is None
+    assert "unservable" in pf["reason"]
 
 
 def test_preflight_accepts_supported_text_model():
@@ -196,22 +212,18 @@ def test_preflight_accepts_supported_text_model():
     assert pf["ok"] is True and pf["multimodal"] is False
 
 
-def test_glimmer_measure_computes_measured_joules_and_tokens_per_s():
+def test_glimmer_measure_http_computes_measured_joules_and_tokens_per_s():
     mod = _load_glimmer()
 
-    class _Gen:
-        def __init__(self, text, n_tok):
-            self.text = text
-            self.token_ids = list(range(n_tok))
-
-    class _Out:
-        def __init__(self, n_tok, n_prompt):
-            self.outputs = [_Gen("x", n_tok)]
-            self.prompt_token_ids = list(range(n_prompt))
-
-    class _LLM:
-        def generate(self, prompts, sampling):
-            return [_Out(n_tok=10, n_prompt=5)]
+    # A canned chat-completion with usage incl. reasoning_tokens; status 200.
+    def fake_post(body):
+        assert body["temperature"] == 0 and body["seed"] == 0 and body["top_k"] == -1
+        assert body["reasoning_effort"] == "low"
+        return (200, {
+            "choices": [{"message": {"content": "an answer"}}],
+            "usage": {"prompt_tokens": 5, "completion_tokens": 10,
+                      "completion_tokens_details": {"reasoning_tokens": 3}},
+        })
 
     # energy counter advances 2000 mJ == 2.0 J per request
     energies = iter([0, 2000, 2000, 4000])
@@ -223,15 +235,47 @@ def test_glimmer_measure_computes_measured_joules_and_tokens_per_s():
     clocks = iter([0.0, 0.5, 0.5, 1.0])  # 0.5 s latency per request
     prompts = [{"id": "p0", "prompt": "a", "max_tokens": 16, "prompt_source": "SYNTHETIC"},
                {"id": "p1", "prompt": "b", "max_tokens": 16, "prompt_source": "SYNTHETIC"}]
-    res = mod.measure(_LLM(), object(), prompts, _Nvml(), handle=0,
-                      clock=lambda: next(clocks))
+    res = mod.measure_http(fake_post, _Nvml(), 0, prompts, mod.MODEL,
+                           clock=lambda: next(clocks))
     assert res["n_requests"] == 2
     assert res["mean_j_per_request"] == pytest.approx(2.0)
     # 20 completion tokens over 1.0 s total latency = 20 tok/s
     assert res["tokens_per_s"] == pytest.approx(20.0)
+    assert res["total_reasoning_tokens"] == 6
     assert res["energy_label"] == "MEASURED"
     assert res["energy_method"] == "counter"
+    assert res["thinking_mode"] == "enable_thinking:false+effort:low"
     assert all(r["j_measured"] == pytest.approx(2.0) for r in res["per_request"])
+    assert all(r["reasoning_tokens"] == 3 for r in res["per_request"])
+
+
+def test_glimmer_measure_http_thinking_field_fallback():
+    mod = _load_glimmer()
+    calls = []
+
+    def fake_post(body):
+        calls.append(dict(body))
+        # First call (with the enable_thinking field) is rejected for that field; then OK.
+        if "chat_template_kwargs" in body:
+            return (400, {"error": {"message": "unknown field enable_thinking in chat_template_kwargs"}})
+        return (200, {"choices": [{"message": {"content": "ok"}}],
+                      "usage": {"prompt_tokens": 2, "completion_tokens": 4}})
+
+    class _Nvml:
+        def total_energy_mj(self, h):
+            return 0
+
+    prompts = [{"id": "p0", "prompt": "a", "max_tokens": 16, "prompt_source": "SYNTHETIC"},
+               {"id": "p1", "prompt": "b", "max_tokens": 16, "prompt_source": "SYNTHETIC"}]
+    res = mod.measure_http(fake_post, _Nvml(), 0, prompts, mod.MODEL,
+                           clock=iter([0.0, 0.1, 0.1, 0.2, 0.2, 0.3]).__next__)
+    # The first request retried without the field, so mode is effort-only and no later request
+    # carries chat_template_kwargs.
+    assert res["thinking_mode"] == "effort:low"
+    assert "chat_template_kwargs" in calls[0]          # first attempt had it
+    assert "chat_template_kwargs" not in calls[1]       # retry dropped it
+    assert "chat_template_kwargs" not in calls[2]       # and every later request too
+    assert res["n_requests"] == 2
 
 
 def test_glimmer_build_prompts_deterministic_and_labelled():

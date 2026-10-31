@@ -1,65 +1,20 @@
-# Modal live bench — Muse Glimmer 30B (Task 1)
+# Modal live bench: Muse Glimmer 30B on our own vLLM (2026-10-31)
 
-**Outcome: STOPPED before any spend. The model is not servable by vLLM. $0 spent on Modal.**
+**Outcome: ran live.** One A100 80GB PCIe, image `vllm/vllm-openai:muse-glimmer`, thinking off (effort low), 24 requests. Modal app `ap-anTYTYureK8JDK7G0v3o56` finished at 13:21 IST. Afterwards, `modal app list` and `modal container list` showed nothing running.
 
-## What was checked (all free, read-only)
-
-| Check | Result | Label |
+| Metric | Value | Label |
 |---|---|---|
-| Weights accessible on HF | yes — public, not gated | MEASURED (HF API) |
-| Weight size | 59.55 GB (≈55.5 GiB) bf16, 2 safetensors shards | MEASURED (HF API) |
-| Architecture | `MuseGlimmerForConditionalGeneration`, `model_type: muse_glimmer` | MEASURED (config.json) |
-| Multimodal? | yes — vision tower + projector, `image_token_id`/`video_token_id` | MEASURED (config.json) |
-| transformers version pinned | `5.15.0.dev0` (does not exist) | MEASURED (config.json) |
-| **Servable by vLLM?** | **no** | MEASURED |
+| Mean energy per request | 1,397.3 J | MEASURED (NVML total-energy counter) |
+| Total energy, 24 requests | 33,535 J | MEASURED |
+| Energy per completion token | ~10.9 J | MEASURED (33,535 J / 3,072 tokens) |
+| Throughput | 27.3 tokens/s | MEASURED |
+| Idle power | 51.4 W | MEASURED |
+| Power caps | refused (no privileged power-limit control on Modal) | MEASURED |
+| Modal cost | about $1.1 for the bench, plus a few cents for 3 failed image builds and 1 orphaned image unpack | ESTIMATE (list price × minutes; not checked against the bill) |
 
-## Why it was stopped
+**Caveat:** every request produced exactly 128 tokens, so all 24 answers hit the max_tokens limit. Treat the energy per request as energy per 128-token completion. Answer quality was not graded.
 
-Muse Glimmer 30B is a **custom multimodal (vision-language) model**. Its text tower is a bespoke
-architecture (per-layer RoPE theta, mixed sliding/full attention, final-logit softcapping,
-`qk_scale_factor`, `post_feedforward_layernorm`) and the config declares
-`architectures: ["MuseGlimmerForConditionalGeneration"]` / `model_type: "muse_glimmer"` against
-`transformers_version 5.15.0.dev0`.
-
-vLLM serves a model only if it registers that architecture. `MuseGlimmerForConditionalGeneration`
-is **not** in vLLM's registry, and released `transformers` has no `muse_glimmer` modeling code, so
-neither vLLM's native path nor its transformers fallback can load it. A live run would have
-downloaded ~55 GiB to a Modal Volume and then failed at engine init — paying for nothing.
-
-The task's rule is explicit: *"If weights are inaccessible, stop and report why rather than
-substituting a non-Meta model."* The weights are downloadable but **unservable**, which is the same
-situation. We did **not** substitute Llama or Spark Open to manufacture J/request numbers.
-
-## Measured numbers
-
-None — the bench did not run because the model cannot be served. `mean_j_per_request`, `tokens_per_s`
-and `idle_w` are therefore **N/A (not run)**, not estimated or faked.
-
-## Cost
-
-- **Modal spend: $0.00 (MEASURED).** No Modal app or function was ever launched; `modal app list`
-  and `modal container list` show nothing running.
-- **Had it been servable, the ESTIMATE was ~$1.13** (A100-80GB: prefetch $0.21 + bench $0.92;
-  H100 alternative ~$1.71) — well under the $5 hard cap. See `preflight.json`.
-
-## The code is still a complete deliverable
-
-- `modal/glimmer_live.py` — Modal app that would serve our own vLLM running Glimmer 30B bf16 on the
-  smallest fitting 80 GB GPU (A100-80GB default, H100 option), sampling
-  `nvmlDeviceGetTotalEnergyConsumption` around each request for **MEASURED J/request**, recording
-  caps as **refused** (no privileged power-limit control on Modal), auto-exiting after the run.
-  GO-gated (`WATTNOT_MODAL_GO=1`), ≤25-min container timeout, local + container-side kill timers,
-  and a **preflight that refuses an unservable architecture before any download/GPU**.
-- `src/wattnot/headline.py::ModalBackend` — was `NotImplementedError`; now a real backend
-  (client → vLLM completions endpoint, meter → NVML energy counter endpoint, MEASURED/ESTIMATE
-  labelling), unit-tested offline with fakes.
-
-## How to reproduce the stop ($0)
-
-```
-python modal/glimmer_live.py --preflight     # prints {"ok": false, ...}  (HTTP GET of config.json)
-python modal/glimmer_live.py --estimate      # prints the ESTIMATE cost, deploys nothing
-```
-
-A live run (`WATTNOT_MODAL_GO=1 modal run modal/glimmer_live.py::run`) refuses at the preflight
-step for this model and spends $0.
+Three fixes were needed to get it running:
+- the image has no `python` binary, so the bench image links `python3` to `python` and clears the entrypoint;
+- the local launch needs `PYTHONPATH=src`;
+- the stale "unservable" preflight was replaced by the pinned-image check.
