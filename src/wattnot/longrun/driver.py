@@ -113,7 +113,7 @@ class Block:
     depends_on: tuple[str, ...] = ()  # skip this block unless every dep finished 'done'
     host: bool = False             # live: run `live` on the GPU host over SSH (else on control)
     infra: str = ""                # live: a driver-run infra step: "setup" | "pull"
-    skip_if_short: bool = False    # when the time left can't cover it, log "skipped: time" and go on
+    skip_if_short: bool = False    # time left can't cover it -> log "skipped: time" and move on
 
 
 def _py(*args: str) -> list[str]:
@@ -268,8 +268,8 @@ def sweep_live_argv(out: Path, live_file: Path, guard_cfg: str, *, sweep_budget_
     by the caller so the four grid caps are measured inside the block: RUN3 fit only one cap because
     a 16-request warm-up took ~169 s per arm on a reasoning model. The numbers stay MEASURED, just
     with a shorter warm-up; the 375/350/325/300 W grid fills every cap even if the planner stops
-    early. 300 W is the floor: it is the deepest Wonder candidate and stays above the ~294 W that
-    the operator policy's 58% max_cap_drop_pct allows from 700 W stock (nothing proposes below it)."""
+    early. 300 W is the floor: it is the deepest Wonder candidate and stays above the ~294 W the
+    operator policy's 58% max_cap_drop_pct allows from 700 W stock (nothing proposes below it)."""
     return _py("wattnot.proof.orchestrate", "--mode", "live", "--host", "{HOST}",
                "--key", "{KEY}", "--model", GLIMMER_MODEL, "--out", str(out / "runs" / "t1-sweep"),
                "--profile", "quick", "--planner", "wonder", "--wonder-live", "--no-adaptive",
@@ -443,8 +443,8 @@ def _combined_block(out: Path) -> Block:
 
 
 def plan_glimmer_retest(out: Path) -> list[Block]:
-    """Retest plan (``--plan retest``): only setup, probe, the sweep, the RUN3 failures, the combined
-    block (item 12) and the copy, sized to fit a 2 h VM. Reuses plan_glimmer_test's real commands;
+    """Retest plan (``--plan retest``): only setup, probe, the sweep, the RUN3 failures, the
+    combined block (item 12) and the copy, sized to fit a 2 h VM. Reuses the real test commands;
     the sweep is re-tuned to a tighter budget (1 round, 2-request warm-up) so it still measures the
     four grid caps inside a 16 min block, and t2c-prefix drops to 2 reps for its trimmed budget."""
     full = {b.id: b for b in plan_glimmer_test(out)}

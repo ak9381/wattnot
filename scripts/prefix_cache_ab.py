@@ -41,7 +41,10 @@ def save_arm_raw(out: Path, on: bool, rep: int, block: dict) -> Path:
 
 
 def parse_cap(v) -> int | None:
-    """A positive int cap, or None (so an unresolved {BEST_CAP} / 'NONE' skips the combined block)."""
+    """A positive int cap, else None.
+
+    An unresolved {BEST_CAP} or 'NONE' resolves to None, which skips the combined block.
+    """
     try:
         w = int(v)
     except (TypeError, ValueError):

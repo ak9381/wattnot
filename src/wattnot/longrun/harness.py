@@ -294,7 +294,8 @@ def measure_arm(nvml, h, chat, tasks: list[Task], arm: str, limit_w: int,
                               "wall_s": wall, "p99_s": p99([x.latency_s for x in g]),
                               "tokens": sum(x.tokens for x in g),
                               "reasoning_tokens": sum(x.reasoning_tokens for x in g),
-                              "reasoning_measured": bool(g) and all(x.reasoning_measured for x in g),
+                              "reasoning_measured": bool(g)
+                              and all(x.reasoning_measured for x in g),
                               "truncated": sum(x.truncated for x in g),
                               "fails": [x.id for x in g if not x.ok][:20],
                               "agent": [x.detail for x in g][:3] if tier == "complex" else None}

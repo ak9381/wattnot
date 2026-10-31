@@ -70,7 +70,8 @@ class ServedSpokenAnswerer:
         # Grades only message.content, so ask for the least reasoning the live server will give
         # (reasoning_effort low, plus enable_thinking:false when the t0-probe verdict allows it).
         from wattnot import reasoning
-        self.reasoning_apply = reasoning.load_apply() if reasoning_apply is None else reasoning_apply
+        self.reasoning_apply = (reasoning.load_apply() if reasoning_apply is None
+                                else reasoning_apply)
         # The spoken questions ("How many GPUs are in the rack?") ask about a fixed rack scene; the
         # answer is only knowable from that scene's telemetry. Without it the model has nothing to
         # go on and answers '0' (RUN3: 0/20). The context IS the telemetry the real assistant has,

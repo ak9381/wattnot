@@ -84,7 +84,8 @@ class ServedVisionAnswerer:
         # will give (reasoning_effort low, plus enable_thinking:false if the t0-probe verdict on
         # disk says the live server honours it). Read once; the probe writes the file first.
         from wattnot import reasoning
-        self.reasoning_apply = reasoning.load_apply() if reasoning_apply is None else reasoning_apply
+        self.reasoning_apply = (reasoning.load_apply() if reasoning_apply is None
+                                else reasoning_apply)
 
     def _body(self, item: EyeTestItem) -> dict:
         from wattnot import reasoning
