@@ -177,6 +177,27 @@ def test_layer1_local_keeps_polling_until_a_cap_trips(tmp_path):
     assert res["teardown"] and "time cap" in res["reasons"] and not vm.present
 
 
+@pytest.mark.parametrize("trip", ["time", "stale"])
+def test_layer1_local_uses_wall_clock_by_default(tmp_path, trip):
+    # With the real default clock, a heartbeat/deadline written in epoch seconds must still trip.
+    # A monotonic "now" (seconds since boot) is tiny next to an epoch timestamp, so the stale and
+    # deadline comparisons would never fire -- this exercises the default, passing no `now`.
+    import time
+    now = time.time()
+    p = tmp_path / "hb.json"
+    if trip == "time":
+        write_heartbeat(p, Heartbeat(ts=now, launch_ts=now - 10.0, deadline_ts=now - 1.0))
+    else:  # stale: heartbeat older than the stale window, no deadline/budget
+        write_heartbeat(p, Heartbeat(ts=now - (STALE + 60.0), launch_ts=None, deadline_ts=None))
+    vm = FakeVm()
+    res = run_local_watchdog(
+        heartbeat_path=p, client=FakeE2EClient(vm), budget_cap_inr=None,
+        max_hours=None, max_stale_s=STALE, sleep=lambda s: None, max_ticks=1, log=lambda m: None,
+    )
+    expected = "time cap" if trip == "time" else "stale heartbeat"
+    assert res["teardown"] and expected in res["reasons"] and not vm.present
+
+
 # --------------------------------------------------------------------------- layers 2 & 3: agents
 
 def _agent_runner_over(vm, *, heartbeat_path, budget_cap_inr, max_hours, max_stale_s, now):

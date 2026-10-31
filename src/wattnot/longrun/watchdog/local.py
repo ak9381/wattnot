@@ -24,7 +24,7 @@ def run_local_watchdog(
     inr_per_h: float = INR_PER_H,
     poll_every_s: float = 120.0,
     dry_run: bool = False,
-    now: Callable[[], float] = time.monotonic,
+    now: Callable[[], float] = time.time,
     sleep: Callable[[float], None] = time.sleep,
     max_ticks: int | None = None,
     log: Callable[[str], None] = print,
