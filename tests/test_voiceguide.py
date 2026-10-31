@@ -363,7 +363,7 @@ def test_api_voice_audio_is_mock_unless_switched_on(monkeypatch):
 def test_why_325_rejected_answered_from_receipt():
     # The headline live-replay transcript asks exactly this; it must be answered
     # from the signed Wonder addendum trials, not refused.
-    for q in ("why was 325 watts rejected", "Why was 325 watts rejected?", "why was 325 w rejected"):
+    for q in ("why was 325 watts rejected in run2", "Why was 325 watts rejected in run2?", "why was 325 w rejected in run2"):
         out = process_voice_query(query_text=q, root_dir=REPO_ROOT, mock=True)
         assert out["action"] == "answer", q
         assert not out.get("refusal"), q
@@ -378,7 +378,7 @@ def test_why_325_rejected_answered_from_receipt():
 
 
 def test_accepted_cap_question_reports_kept():
-    out = process_voice_query(query_text="why did 350 watts fail", root_dir=REPO_ROOT, mock=True)
+    out = process_voice_query(query_text="why did 350 watts fail in run2", root_dir=REPO_ROOT, mock=True)
     assert not out.get("refusal")
     assert "350 W was kept" in out["text"]
     assert "within the 10% limit" in out["text"]
@@ -413,3 +413,29 @@ def test_live_default_without_key_is_a_clear_error_not_an_answer(monkeypatch):
     out = vg.process_voice_query(query_text="which cap won?")
     assert out["label"] == "ERROR" and out["code"] == "key_missing"
     assert "META_API_KEY" in out["text"]
+
+
+def test_ask_uses_the_signed_rerun_receipt_as_latest():
+    """The Oct 31 H100 rerun receipt is newer than RUN2 and carries the rerun numbers."""
+    from pathlib import Path
+    import wattnot.meta.voiceguide as vg
+    root = Path(__file__).resolve().parents[1]
+    out = vg.process_voice_query(query_text="which power cap saved the most energy?",
+                                 root_dir=root, mock=True)
+    assert out["citations"][0] == "rcpt_20261031_rerun_cap325"
+    t = out["text"]
+    assert "325 W -34.3% energy/request" in t
+    assert "300 W -31.8%" in t and "rejected: p99 up 18.0% (limit 10%)" in t
+    assert "-44.1% energy per correct answer" in t
+    assert "p99 limit +10%" in t
+    nav = vg.process_voice_query(query_text="open the latest report", root_dir=root, mock=True)
+    assert nav.get("target_receipt_id") == "rcpt_20261031_rerun_cap325"
+
+
+def test_rerun_gate_answers_from_the_rerun_sweep():
+    from pathlib import Path
+    import wattnot.meta.voiceguide as vg
+    root = Path(__file__).resolve().parents[1]
+    out = vg.process_voice_query(query_text="why was 300 watts rejected", root_dir=root, mock=True)
+    assert "300 W was rejected: p99 latency rose 18.0% against the 10% limit" in out["text"]
+    assert out["citations"] == ["rcpt_20261031_rerun_cap325"]

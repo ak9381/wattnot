@@ -439,6 +439,16 @@ def _cap_gate_answer(matched: Mapping, receipts: list[dict[str, Any]], cap_w: in
     so the caller keeps the honest refusal.
     """
     rid = str(matched.get("receipt_id", ""))
+    rr = matched.get("rerun") if isinstance(matched.get("rerun"), Mapping) else None
+    sw = next((x for x in (rr or {}).get("sweep") or [] if x.get("cap_w") == cap_w), None)
+    if sw is not None:
+        lim = f"{float(rr.get('p99_limit_pct', 10)):g}%"
+        rise = sw["p99_change_pct"]
+        verdict = (f"kept: p99 latency rose {rise:.1f}%, within the {lim} limit" if sw.get("accepted")
+                   else f"rejected: p99 latency rose {rise:.1f}% against the {lim} limit")
+        return (f"According to signed receipt {rid} (H100 rerun sweep): {cap_w} W was {verdict}. "
+                f"Energy per request {sw['energy_per_req_change_pct']:+.1f}% vs stock, pass rate "
+                f"{sw['pass_pct']['cap']:.1f}% [{sw.get('label', 'MEASURED')}].")
     trial = next((t for t in _wonder_trials(receipts, rid) if t.get("cap_w") == cap_w), None)
     if trial is None:
         return None
@@ -638,7 +648,8 @@ def process_voice_query(
                 "intent": "answer",
                 "action": "answer",
                 "text": gate_text,
-                "citations": [matched["receipt_id"], f"{matched['receipt_id']}.wonder_live"],
+                "citations": ([matched["receipt_id"]] if matched.get("rerun")
+                              else [matched["receipt_id"], f"{matched['receipt_id']}.wonder_live"]),
                 "quick_ack": quick["ack"],
                 "label": label,
             }
@@ -669,6 +680,24 @@ def process_voice_query(
                 f"window IT energy is {kwh_val} kWh [{kwh_label}], "
                 f"water estimate is {water} mL/req [{water_label}]."
             )
+            rr = matched.get("rerun") if isinstance(matched.get("rerun"), Mapping) else None
+            if rr:
+                lim = rr.get("p99_limit_pct")
+                parts = [f"Rerun on {matched.get('subject', {}).get('model', 'the served model')}"
+                         f" (p99 limit +{lim:g}%) [{rr.get('label', 'MEASURED')}]:"]
+                for sw in rr.get("sweep") or []:
+                    verdict = "kept" if sw.get("accepted") else "rejected: " + "; ".join(sw.get("why_not") or [])
+                    parts.append(f"{sw['cap_w']} W {sw['energy_per_req_change_pct']:+.1f}% energy/request, "
+                                 f"p99 {sw['p99_change_pct']:+.1f}% ({verdict});")
+                cb = rr.get("combined_cap_plus_prefix") or {}
+                if cb:
+                    parts.append(f"{cb['cap_w']} W + prefix caching {cb['j_per_correct_change_pct']:+.1f}% "
+                                 f"energy per correct answer vs stock;")
+                for name, pb in (rr.get("public_benchmarks") or {}).items():
+                    sig = "significant" if pb.get("ci95_excludes_zero") else "inconclusive"
+                    parts.append(f"{name} {pb['j_per_correct_change_pct']:+.0f}% J/correct "
+                                 f"(p={pb['p_value']:.2g}, {sig});")
+                ans_text += " " + " ".join(parts).rstrip(";") + "."
 
             result = {
                 "intent": "answer",

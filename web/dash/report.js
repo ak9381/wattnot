@@ -38,6 +38,10 @@ const nz = (v) => v != null && !Number.isNaN(+v);
 
 // Receipts copied into the built site by scripts/build_pages.py.
 const RECEIPTS = {
+  "rerun-1031-glimmer-325w": {
+    json: "../receipts/rerun-1031/rcpt_20261031_rerun_cap325.json",
+    sig: "../receipts/rerun-1031/rcpt_20261031_rerun_cap325.sigstore.json",
+  },
   "run2-llama-350w": {
     json: "../receipts/run2/rcpt_20261027_run2_cap350.json",
     sig: "../receipts/run2/rcpt_20261027_run2_cap350.sigstore.json",

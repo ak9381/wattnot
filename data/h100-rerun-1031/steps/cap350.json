@@ -1,0 +1,191 @@
+{
+ "cap_w": 350,
+ "repeats": 2,
+ "label": "MEASURED",
+ "j_per_req_stock": [
+  171.634,
+  168.86780180180182
+ ],
+ "j_per_req_cap": [
+  119.93226126126126,
+  113.81262612612612
+ ],
+ "energy_change_pct": {
+  "per_pair": [
+   -30.12324990313034,
+   -32.60252996026639
+  ],
+  "mean": -31.362889931698362,
+  "sd": 1.7531157408614706,
+  "ci95_half": 15.75086620298531
+ },
+ "p99_change_pct": {
+  "per_pair": [
+   6.249825287605623,
+   6.17819144317502
+  ],
+  "mean": 6.214008365390322,
+  "sd": 0.05065277715934162
+ },
+ "p50_change_pct": {
+  "per_pair": [
+   1.9803704453983713,
+   6.479516552477999
+  ],
+  "mean": 4.229943498938185
+ },
+ "j_per_token_change_pct": {
+  "mean": -31.109967642598704
+ },
+ "stock_noise": {
+  "label": "MEASURED",
+  "blocks": 2,
+  "cv_pct": 1.1488911328524922
+ },
+ "welch_per_block": {
+  "t": 15.896413081737256,
+  "df": 1.3922681386412055,
+  "p_value": 0.0076227444628607505,
+  "n_stock_blocks": 2,
+  "n_cap_blocks": 2,
+  "samples": "per-block J/request (NVML counter per block, not per request)"
+ },
+ "p99_s": {
+  "stock": 23.152858700920046,
+  "cap": 24.59157999234978
+ },
+ "quality": {
+  "stock_pct": 94.369,
+  "cap_pct": 94.595,
+  "checked": 444,
+  "passed": true,
+  "reason": "pass rate 94.6% vs 94.4%"
+ },
+ "mean_w": {
+  "stock": 522.8930931539043,
+  "cap": 348.76731361629334
+ },
+ "max_temp_c": 56,
+ "max_temp_c_by_arm": {
+  "stock": 56,
+  "cap": 46
+ },
+ "errors": 0,
+ "reasoning": {
+  "reasoning_tokens": 296159,
+  "completion_tokens": 346845,
+  "share": 0.8539,
+  "label": "ESTIMATE"
+ },
+ "accepted": true,
+ "why_not": [],
+ "blocks": {
+  "stock": [
+   {
+    "cap_w": 700,
+    "token_scale": 1.0,
+    "label": "MEASURED",
+    "requests": 222,
+    "errors": 0,
+    "truncated": 13,
+    "tokens": 87349,
+    "reasoning_tokens": 74770,
+    "reasoning_measured": false,
+    "joules": 38102.748,
+    "wall_s": 72.80001975599953,
+    "j_per_req": 171.634,
+    "j_per_token": 0.43621275572702606,
+    "p50_s": 8.723946441500175,
+    "p99_s": 23.154854761770128,
+    "pass_pct": 94.14414414414415,
+    "checked": 222,
+    "sampled_mean_w": 523.2279726027397,
+    "counter_mean_w": 523.3892535703592,
+    "max_temp_c": 56,
+    "mean_sm_mhz": 1980.0,
+    "raw": "raw/cap350-stock-r0.jsonl",
+    "raw_sha256": "4c89f6bb4b08ee2874841c4b1aaa4f8589cb85798be7e04447fc4bda34f3c0c3"
+   },
+   {
+    "cap_w": 700,
+    "token_scale": 1.0,
+    "label": "MEASURED",
+    "requests": 222,
+    "errors": 0,
+    "truncated": 12,
+    "tokens": 86388,
+    "reasoning_tokens": 73910,
+    "reasoning_measured": false,
+    "joules": 37488.652,
+    "wall_s": 71.76277204300004,
+    "j_per_req": 168.86780180180182,
+    "j_per_token": 0.4339567069500394,
+    "p50_s": 8.415199924000262,
+    "p99_s": 23.150862640069963,
+    "pass_pct": 94.5945945945946,
+    "checked": 222,
+    "sampled_mean_w": 522.5541388888889,
+    "counter_mean_w": 522.3969327374493,
+    "max_temp_c": 55,
+    "mean_sm_mhz": 1980.0,
+    "raw": "raw/cap350-stock-r1.jsonl",
+    "raw_sha256": "1199e5043fe2d1db54a89a3d3e4d71509c8eefaa7a8bc2af1bb03107b4c101a1"
+   }
+  ],
+  "cap": [
+   {
+    "cap_w": 350,
+    "token_scale": 1.0,
+    "label": "MEASURED",
+    "requests": 222,
+    "errors": 0,
+    "truncated": 11,
+    "tokens": 86752,
+    "reasoning_tokens": 74016,
+    "reasoning_measured": false,
+    "joules": 26624.962,
+    "wall_s": 76.32005658200069,
+    "j_per_req": 119.93226126126126,
+    "j_per_token": 0.3069089127628181,
+    "p50_s": 8.896712898500027,
+    "p99_s": 24.601992729979592,
+    "pass_pct": 95.04504504504504,
+    "checked": 222,
+    "sampled_mean_w": 349.0357777777778,
+    "counter_mean_w": 348.859306352758,
+    "max_temp_c": 46,
+    "mean_sm_mhz": 1317.7450980392157,
+    "raw": "raw/cap350-cap-r0.jsonl",
+    "raw_sha256": "4cae0f47359af18c0d110576d0b7f2fe677fee12ed4d49b0529947e18785fd28"
+   },
+   {
+    "cap_w": 350,
+    "token_scale": 1.0,
+    "label": "MEASURED",
+    "requests": 222,
+    "errors": 0,
+    "truncated": 13,
+    "tokens": 86356,
+    "reasoning_tokens": 73463,
+    "reasoning_measured": false,
+    "joules": 25266.403,
+    "wall_s": 72.46398436300024,
+    "j_per_req": 113.81262612612612,
+    "j_per_token": 0.2925842211311316,
+    "p50_s": 8.960464195999975,
+    "p99_s": 24.58116725471997,
+    "pass_pct": 94.14414414414415,
+    "checked": 222,
+    "sampled_mean_w": 349.02858620689653,
+    "counter_mean_w": 348.67532087982875,
+    "max_temp_c": 45,
+    "mean_sm_mhz": 1314.2068965517242,
+    "raw": "raw/cap350-cap-r1.jsonl",
+    "raw_sha256": "9460095f47f86b580eae59b8e83d3ec5a6c4b79c63b084b69cfe74090bce83cb"
+   }
+  ]
+ },
+ "clock_requested": "base",
+ "clock_applied": true,
+ "clock_profile": "base"
+}

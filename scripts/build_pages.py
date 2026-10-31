@@ -117,6 +117,7 @@ def main(out: Path) -> None:
     shutil.copytree(ROOT / "verifier/samples/chain", rc)
     shutil.copy(ROOT / "verifier/wattnot_verify.py", rc / "wattnot_verify.py")
     shutil.copytree(ROOT / "receipts/run2", rc / "run2")
+    shutil.copytree(ROOT / "receipts/rerun-1031", rc / "rerun-1031")
     # The LangChain drop-in demo proxy-receipt, so the receipt view can open it on
     # Pages and show the framework badge (MOCK upstream, never a live call).
     shutil.copytree(ROOT / "receipts/frameworks", rc / "frameworks")

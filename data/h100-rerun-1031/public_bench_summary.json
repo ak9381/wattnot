@@ -1,0 +1,252 @@
+{
+ "label": "MEASURED",
+ "cap_w": 325,
+ "stock_w": 700,
+ "prefix_caching": "off (both arms)",
+ "sets": {
+  "gsm8k": {
+   "set": "gsm8k",
+   "label": "MEASURED",
+   "source": {
+    "file": "gsm8k_test_first60.jsonl",
+    "repo": "https://github.com/openai/grade-school-math",
+    "commit": "3101c7d5072418e28b9008a6636bde82a006892c",
+    "licence": "MIT",
+    "sha256": "4a665a79d70d7d83f14400fdb75f421e201ce1ae8ec94fa87157e5a3feae75aa"
+   },
+   "reps": 2,
+   "stock": {
+    "pass_pct": 99.16666666666666,
+    "j_per_correct": 425.4605984463277,
+    "j_per_req": 421.8957416666667,
+    "p50_s": 8.926320910453796,
+    "p99_s": 31.95392084121704,
+    "errors": 0,
+    "truncated": 0
+   },
+   "cap": {
+    "pass_pct": 100.0,
+    "j_per_correct": 314.857625,
+    "j_per_req": 314.857625,
+    "p50_s": 10.473567247390747,
+    "p99_s": 47.83783233165741,
+    "errors": 0,
+    "truncated": 0
+   },
+   "j_per_correct_change_pct": {
+    "mean": -25.9837,
+    "ci95_half": 28.7116,
+    "ci95_excludes_zero": false,
+    "below_zero": true,
+    "p_value": 0.055225,
+    "n": 2,
+    "per_pair": [
+     -23.724,
+     -28.2434
+    ]
+   },
+   "j_per_req_change_pct": {
+    "mean": -25.3756,
+    "ci95_half": 20.985,
+    "ci95_excludes_zero": true,
+    "below_zero": true,
+    "p_value": 0.041376,
+    "n": 2,
+    "per_pair": [
+     -23.724,
+     -27.0272
+    ]
+   },
+   "p99_change_pct": {
+    "mean": 49.593,
+    "ci95_half": 42.0029,
+    "ci95_excludes_zero": true,
+    "below_zero": false,
+    "p_value": 0.042373,
+    "n": 2,
+    "per_pair": [
+     52.8988,
+     46.2873
+    ]
+   },
+   "note": "energy is GPU-only NVML (MEASURED); with few rounds the 95% interval is wide; errors and truncations count as wrong on both arms"
+  },
+  "humaneval": {
+   "set": "humaneval",
+   "label": "MEASURED",
+   "source": {
+    "file": "humaneval_first40.jsonl",
+    "repo": "https://github.com/openai/human-eval",
+    "commit": "b9453e8f1865df0a0057a1383767caa400acfbcf",
+    "licence": "MIT",
+    "sha256": "a10bc9bd9677b438a2a31a742a22ea17a74459ecc997918dfe06e8937b695818"
+   },
+   "reps": 2,
+   "stock": {
+    "pass_pct": 92.5,
+    "j_per_correct": 982.2628513513512,
+    "j_per_req": 908.5931375,
+    "p50_s": 16.483227372169495,
+    "p99_s": 67.46690118312836,
+    "errors": 0,
+    "truncated": 2
+   },
+   "cap": {
+    "pass_pct": 92.5,
+    "j_per_correct": 705.4984999999999,
+    "j_per_req": 652.5861124999999,
+    "p50_s": 17.3154137134552,
+    "p99_s": 71.72756218910217,
+    "errors": 0,
+    "truncated": 2
+   },
+   "j_per_correct_change_pct": {
+    "mean": -28.1762,
+    "ci95_half": 0.1745,
+    "ci95_excludes_zero": true,
+    "below_zero": true,
+    "p_value": 0.00031,
+    "n": 2,
+    "per_pair": [
+     -28.1899,
+     -28.1625
+    ]
+   },
+   "j_per_req_change_pct": {
+    "mean": -28.1762,
+    "ci95_half": 0.1745,
+    "ci95_excludes_zero": true,
+    "below_zero": true,
+    "p_value": 0.00031,
+    "n": 2,
+    "per_pair": [
+     -28.1899,
+     -28.1625
+    ]
+   },
+   "p99_change_pct": {
+    "mean": 6.3152,
+    "ci95_half": 0.5234,
+    "ci95_excludes_zero": true,
+    "below_zero": false,
+    "p_value": 0.004152,
+    "n": 2,
+    "per_pair": [
+     6.274,
+     6.3564
+    ]
+   },
+   "note": "energy is GPU-only NVML (MEASURED); with few rounds the 95% interval is wide; errors and truncations count as wrong on both arms"
+  }
+ },
+ "rounds": {
+  "gsm8k": [
+   {
+    "arm": "stock",
+    "rep": 0,
+    "cap_w": 700.0,
+    "joules": 25388.303,
+    "wall_s": 51.86477494239807,
+    "n": 60,
+    "correct": 60,
+    "errors": 0,
+    "truncated": 0,
+    "p50_s": 8.841284036636353,
+    "p99_s": 33.07322931289673
+   },
+   {
+    "arm": "cap",
+    "rep": 0,
+    "cap_w": 325.0,
+    "joules": 19365.174,
+    "wall_s": 59.83164095878601,
+    "n": 60,
+    "correct": 60,
+    "errors": 0,
+    "truncated": 0,
+    "p50_s": 9.989579439163208,
+    "p99_s": 50.56855607032776
+   },
+   {
+    "arm": "cap",
+    "rep": 1,
+    "cap_w": 325.0,
+    "joules": 18417.741,
+    "wall_s": 56.87978005409241,
+    "n": 60,
+    "correct": 60,
+    "errors": 0,
+    "truncated": 0,
+    "p50_s": 10.957555055618286,
+    "p99_s": 45.10710859298706
+   },
+   {
+    "arm": "stock",
+    "rep": 1,
+    "cap_w": 700.0,
+    "joules": 25239.186,
+    "wall_s": 51.209457874298096,
+    "n": 60,
+    "correct": 59,
+    "errors": 0,
+    "truncated": 0,
+    "p50_s": 9.01135778427124,
+    "p99_s": 30.834612369537354
+   }
+  ],
+  "humaneval": [
+   {
+    "arm": "stock",
+    "rep": 0,
+    "cap_w": 700.0,
+    "joules": 36322.429,
+    "wall_s": 75.289133310318,
+    "n": 40,
+    "correct": 37,
+    "errors": 0,
+    "truncated": 1,
+    "p50_s": 17.547781229019165,
+    "p99_s": 67.46651601791382
+   },
+   {
+    "arm": "cap",
+    "rep": 0,
+    "cap_w": 325.0,
+    "joules": 26083.158,
+    "wall_s": 80.59752488136292,
+    "n": 40,
+    "correct": 37,
+    "errors": 0,
+    "truncated": 1,
+    "p50_s": 17.3295738697052,
+    "p99_s": 71.6993625164032
+   },
+   {
+    "arm": "cap",
+    "rep": 1,
+    "cap_w": 325.0,
+    "joules": 26123.731,
+    "wall_s": 80.62343239784241,
+    "n": 40,
+    "correct": 37,
+    "errors": 0,
+    "truncated": 1,
+    "p50_s": 17.3012535572052,
+    "p99_s": 71.75576186180115
+   },
+   {
+    "arm": "stock",
+    "rep": 1,
+    "cap_w": 700.0,
+    "joules": 36365.022,
+    "wall_s": 75.29889607429504,
+    "n": 40,
+    "correct": 37,
+    "errors": 0,
+    "truncated": 1,
+    "p50_s": 15.418673515319824,
+    "p99_s": 67.4672863483429
+   }
+  ]
+ }
+}

@@ -1,0 +1,318 @@
+{
+  "spec": "wattnot.receipt/1",
+  "receipt_id": "rcpt_20261031_rerun_cap325",
+  "created_at": "2026-10-31T09:48:47+00:00",
+  "run_id": "run_20261031_rerun_cap325",
+  "subject": {
+    "model": "meta-models/Muse-Glimmer-30B",
+    "host": {
+      "provider": "dedicated-gpu-rental",
+      "gpu": "H100 80GB",
+      "driver": "recorded"
+    },
+    "mode": "container",
+    "workload": {
+      "name": "proof-v1 tiers",
+      "version": "1",
+      "n_requests": 444,
+      "sha256": "10b76eec50d74a8f52e598b1d8b2b59685627921e6a96bbc70b9cdc5308da854"
+    }
+  },
+  "baseline": {
+    "params": {
+      "power_cap_w": 700
+    },
+    "reps": 2,
+    "wh_per_req": {
+      "mean": 0.046463,
+      "sd": 0.002181,
+      "samples": [
+        0.048005,
+        0.044921
+      ]
+    },
+    "usd_per_req": {
+      "mean": 5.5755e-06,
+      "sd": 2.617e-07,
+      "samples": [
+        5.7606e-06,
+        5.3905e-06
+      ]
+    },
+    "p99_ms": 23150,
+    "quality": {
+      "fixed_pass_rate": 0.94144
+    }
+  },
+  "candidate": {
+    "params": {
+      "power_cap_w": 325
+    },
+    "reps": 2,
+    "wh_per_req": {
+      "mean": 0.030548,
+      "sd": 0.002239,
+      "samples": [
+        0.032131,
+        0.028965
+      ]
+    },
+    "usd_per_req": {
+      "mean": 3.6658e-06,
+      "sd": 2.687e-07,
+      "samples": [
+        3.8558e-06,
+        3.4758e-06
+      ]
+    },
+    "p99_ms": 25406,
+    "quality": {
+      "fixed_pass_rate": 0.95045
+    }
+  },
+  "result": {
+    "saving_pct": {
+      "mean": 34.2522,
+      "ci_low": 28.4705,
+      "ci_high": 39.6624
+    },
+    "welch": {
+      "t": 7.20045,
+      "df": 1.998641,
+      "p_value": 0.009390753977237735,
+      "alpha": 0.05
+    },
+    "bootstrap": {
+      "n": 10000,
+      "seed": 7,
+      "level": 0.95
+    },
+    "billable": true,
+    "billed_saving_pct": 28.4705,
+    "fee_share": 0.2,
+    "currency": "USD",
+    "tariff_usd_per_kwh": {
+      "value": 0.12,
+      "label": "ESTIMATE"
+    }
+  },
+  "measurement": {
+    "meter": "nvml",
+    "hz": 10,
+    "label": "MEASURED",
+    "idle_w": null,
+    "csv": [
+      {
+        "path": "data/h100-rerun-1031/steps/cap325.json",
+        "sha256": "10b76eec50d74a8f52e598b1d8b2b59685627921e6a96bbc70b9cdc5308da854"
+      }
+    ],
+    "per_model_joules": [
+      {
+        "model": "meta-models/Muse-Glimmer-30B (served, model under test)",
+        "role": "served",
+        "where": "local",
+        "j_per_answer": 109.9728,
+        "j_total": 48827.9,
+        "label": "MEASURED",
+        "how": "NVML energy counter, 10 samples a second; j_total = J per answer x checked answers"
+      }
+    ]
+  },
+  "attribution": {
+    "method": "token-share-capped (after Neuralwatt)",
+    "cap": 1.0
+  },
+  "planner_trace": [],
+  "estimates": {
+    "water_ml_per_req": {
+      "value": 0.010997,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"
+    },
+    "water_ml_per_req_upper": {
+      "value": 0.054986,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"
+    },
+    "baseline_water_ml_per_req": {
+      "value": 0.016727,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"
+    },
+    "baseline_water_ml_per_req_upper": {
+      "value": 0.083633,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"
+    }
+  },
+  "joules": {
+    "unit": "J",
+    "label": "MEASURED",
+    "formula": "j_per_answer = wh_per_req x 3600; j_per_good_answer = j_per_answer / pass_rate",
+    "baseline": {
+      "j_per_answer": 167.2668,
+      "pass_rate": 0.94144,
+      "j_per_good_answer": 177.671227
+    },
+    "candidate": {
+      "j_per_answer": 109.9728,
+      "pass_rate": 0.95045,
+      "j_per_good_answer": 115.706034
+    },
+    "change_pct": {
+      "j_per_answer": -34.2531,
+      "j_per_good_answer": -34.8763
+    }
+  },
+  "grade": "ESTIMATE",
+  "integrity": {
+    "canonicalization": "JCS RFC 8785",
+    "sha256": "fee62b3db3caba55a1b57b778159389014bfd08b566cdb6fa99ae328052d5c4a",
+    "prev_sha256": null,
+    "signer": "offline:56475aa75463474c",
+    "rekor": null
+  },
+  "rerun": {
+    "label": "MEASURED",
+    "p99_limit_pct": 10.0,
+    "best_cap_w": 325,
+    "sweep": [
+      {
+        "cap_w": 300,
+        "label": "MEASURED",
+        "energy_per_req_change_pct": -31.82,
+        "p99_change_pct": 17.99,
+        "pass_pct": {
+          "stock": 94.595,
+          "cap": 94.144
+        },
+        "accepted": false,
+        "why_not": [
+          "p99 up 18.0% (limit 10%)"
+        ],
+        "source": {
+          "path": "data/h100-rerun-1031/steps/cap300.json",
+          "sha256": "b6b117641f76b58002a22450ec82c74164627178b22ee3b5c305518aae44ee3c"
+        }
+      },
+      {
+        "cap_w": 325,
+        "label": "MEASURED",
+        "energy_per_req_change_pct": -34.29,
+        "p99_change_pct": 9.75,
+        "pass_pct": {
+          "stock": 94.144,
+          "cap": 95.045
+        },
+        "accepted": true,
+        "why_not": [],
+        "source": {
+          "path": "data/h100-rerun-1031/steps/cap325.json",
+          "sha256": "10b76eec50d74a8f52e598b1d8b2b59685627921e6a96bbc70b9cdc5308da854"
+        }
+      },
+      {
+        "cap_w": 350,
+        "label": "MEASURED",
+        "energy_per_req_change_pct": -31.36,
+        "p99_change_pct": 6.21,
+        "pass_pct": {
+          "stock": 94.369,
+          "cap": 94.595
+        },
+        "accepted": true,
+        "why_not": [],
+        "source": {
+          "path": "data/h100-rerun-1031/steps/cap350.json",
+          "sha256": "4bffe5067186da24d7e7e047ea0e8dd8545dcde297fefbe1cbc032b60164f455"
+        }
+      },
+      {
+        "cap_w": 375,
+        "label": "MEASURED",
+        "energy_per_req_change_pct": -26.14,
+        "p99_change_pct": 4.61,
+        "pass_pct": {
+          "stock": 94.82,
+          "cap": 94.82
+        },
+        "accepted": true,
+        "why_not": [],
+        "source": {
+          "path": "data/h100-rerun-1031/steps/cap375.json",
+          "sha256": "5113778deb4899cc94226cd15f74c4929f6c935f1117ffdda5ef61353a814f58"
+        }
+      }
+    ],
+    "combined_cap_plus_prefix": {
+      "label": "MEASURED",
+      "cap_w": 325,
+      "baseline_w": 700,
+      "j_per_correct_change_pct": -44.14,
+      "ttft_change_pct": -84.41,
+      "p99_change_pct": -12.33,
+      "gate": {
+        "passed": true,
+        "failed": [],
+        "pass_drop_pts": 0.0,
+        "p99_change_pct": -12.33,
+        "quality_drop_limit_pts": 1.0,
+        "p99_limit_pct": 10.0
+      },
+      "source": {
+        "path": "data/h100-rerun-1031/prefix_cache_summary.json",
+        "sha256": "c95994fc5e907cf894c76ae947404bd33b55f1a8cea4274dc31c1031605c06db"
+      }
+    },
+    "public_benchmarks": {
+      "gsm8k": {
+        "label": "MEASURED",
+        "reps": 2,
+        "j_per_correct_change_pct": -25.9837,
+        "p_value": 0.055225,
+        "ci95_excludes_zero": false,
+        "p99_change_pct": 49.593,
+        "pass_pct": {
+          "stock": 99.16666666666666,
+          "cap": 100.0
+        },
+        "dataset": {
+          "file": "gsm8k_test_first60.jsonl",
+          "repo": "https://github.com/openai/grade-school-math",
+          "commit": "3101c7d5072418e28b9008a6636bde82a006892c",
+          "licence": "MIT",
+          "sha256": "4a665a79d70d7d83f14400fdb75f421e201ce1ae8ec94fa87157e5a3feae75aa"
+        }
+      },
+      "humaneval": {
+        "label": "MEASURED",
+        "reps": 2,
+        "j_per_correct_change_pct": -28.1762,
+        "p_value": 0.00031,
+        "ci95_excludes_zero": true,
+        "p99_change_pct": 6.3152,
+        "pass_pct": {
+          "stock": 92.5,
+          "cap": 92.5
+        },
+        "dataset": {
+          "file": "humaneval_first40.jsonl",
+          "repo": "https://github.com/openai/human-eval",
+          "commit": "b9453e8f1865df0a0057a1383767caa400acfbcf",
+          "licence": "MIT",
+          "sha256": "a10bc9bd9677b438a2a31a742a22ea17a74459ecc997918dfe06e8937b695818"
+        }
+      }
+    },
+    "public_benchmarks_source": {
+      "path": "data/h100-rerun-1031/public_bench_summary.json",
+      "sha256": "1f8376fcd4cf717d5bae6fc15777dc62b59f49e8181d54ef043f9c0286c071fb"
+    },
+    "note": "Signed locally with the public TEST key; not published to any transparency log."
+  }
+}
