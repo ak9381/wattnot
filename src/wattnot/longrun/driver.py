@@ -168,6 +168,8 @@ def plan(out: Path, model: str = "llama", plan_name: str = "full") -> list[Block
     if model == "glimmer":
         return plan_glimmer(out)
     if model == "glimmer-test":
+        if plan_name == "long":
+            return plan_glimmer_long(out)
         return plan_glimmer_retest(out) if plan_name == "retest" else plan_glimmer_test(out)
     live = out / "live.jsonl"
     reh = lambda tag, *extra: _py("wattnot.proof.orchestrate", "--mode", "rehearsal",  # noqa: E731
@@ -476,6 +478,55 @@ def plan_glimmer_retest(out: Path) -> list[Block]:
             kw["hours"] = _m(RETEST_HOURS_MIN[bid])
         if bid in retune:
             kw["live"] = retune[bid]
+        blocks.append(replace(b, **kw) if kw else b)
+    return blocks
+
+
+# Long-run plan (``--plan long``, glimmer-test). PLAN ONLY: building it starts nothing.
+# Fixes from the 31 Oct rerun review:
+#  * Wonder got too little time: the sweep's Wonder budget goes 1500 s -> 2400 s and the
+#    t1-wonder chart read 2 -> 6 min, so the real planner (never the mock) gets its picks in.
+#  * More GSM8K items: a public-benchmark block runs all 60 bundled GSM8K test items (was 4 in
+#    the warm-up check) at the best cap and at stock, 3 reps, plus the 40 HumanEval items.
+#  * The blocks the rerun skipped come back in full: eye + spoken (BF16 and FP8), FP8 swap,
+#    batching / KV sweep and the prefix-cache A/B, with the combined headline block.
+LONG_WONDER_SWEEP_BUDGET_S = 2400
+LONG_WONDER_CHART_MIN = 6
+LONG_GSM8K_ITEMS = 60      # every item in data/public_bench/gsm8k_test_first60.jsonl
+LONG_REQUIRED_BLOCKS = ("t1-sweep", "t1-wonder", "t1-eye", "t1-spoken", "t2-fp8", "t2-eye",
+                        "t2-spoken", "t2b-batch", "t2c-prefix", "t2d-combined", "t2e-public")
+# ESTIMATE: per-block minutes; sum + 8 min watchdog margin must fit the booking below.
+LONG_HOURS_MIN = {"t1-sweep": 95, "t1-wonder": LONG_WONDER_CHART_MIN, "t2c-prefix": 25,
+                  "t2d-combined": 15, "t2e-public": 30}
+LONG_BOOKING_H = 5.0       # ESTIMATE: one H100 for 5 h
+
+
+def plan_glimmer_long(out: Path) -> list[Block]:
+    """The long-run plan: the full Glimmer test plus a bigger Wonder budget, the public GSM8K /
+    HumanEval block, and every block the rerun skipped. Nothing here launches a VM."""
+    full = plan_glimmer_test(out)
+    live_file = out / "live.jsonl"
+    guard_cfg = str(Path(__file__).resolve().parents[3] / "examples/longrun/guardrails-wonder.json")
+    sweep_live = sweep_live_argv(out, live_file, guard_cfg,
+                                 sweep_budget_s=LONG_WONDER_SWEEP_BUDGET_S, reps=2, warmup=4,
+                                 warmup_s=5, grid="375,350,325,300")
+    public = Block(
+        "t2e-public", f"Public benchmarks at the best cap vs stock: GSM8K ({LONG_GSM8K_ITEMS} items) "
+        "+ HumanEval (40 items), 3 reps, J/correct and quality gate", _m(LONG_HOURS_MIN["t2e-public"]),
+        [sys.executable, "scripts/public_bench_ab.py", "--fake", "--cap", "325", "--reps", "3",
+         "--sets", "gsm8k", "humaneval", "--out", str(out / "runs" / "t2e-public")],
+        live=["python", "scripts/public_bench_ab.py", "--cap", "{BEST_CAP}", "--reps", "3",
+              "--sets", "gsm8k", "humaneval", "--out", f"{REMOTE_RESULTS}/t2e-public"],
+        host=True, depends_on=("t1-sweep",), skip_if_short=True)
+    blocks = []
+    for b in full:
+        kw = {}
+        if b.id in LONG_HOURS_MIN:
+            kw["hours"] = _m(LONG_HOURS_MIN[b.id])
+        if b.id == "t1-sweep":
+            kw["live"] = sweep_live
+        if b.id == "t3-copy":
+            blocks.append(public)
         blocks.append(replace(b, **kw) if kw else b)
     return blocks
 
@@ -1121,7 +1172,7 @@ def main(argv=None) -> int:
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--model", choices=["glimmer", "llama", "glimmer-test"], default="glimmer",
                     help="glimmer = primary plan; llama = fallback; glimmer-test = the 2 h test VM")
-    ap.add_argument("--plan", choices=["full", "retest"], default="full",
+    ap.add_argument("--plan", choices=["full", "retest", "long"], default="full",
                     help="retest (glimmer-test only): re-run setup, probe, the sweep and the RUN3 "
                          "failures only, sized to a 2 h VM")
     ap.add_argument("--host", help="live: the GPU host's IP (default: read scripts/e2e ip file)")
