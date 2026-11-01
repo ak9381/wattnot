@@ -232,6 +232,17 @@ def run_flow(a) -> int:
     F.run("approvals", ["Approve-before-apply", "A6/A7 approvals + undo"], "off-gpu-live",
           "SIMULATED (local store, real apply/undo)", fn=lambda: _approvals(out))
 
+    if receipt:
+            # Muse Spark is the operator: probe -> proposal -> gate -> receipt, four live calls,
+            # each a traced event (trace id, latency, $) the dashboard shows as the Spark trace.
+            ev = os.environ.get("WATTNOT_FLOW_EVENTS") or str(out / "spark/events.jsonl")
+            F.run("spark-trace", ["Muse Spark operator trace (probe, proposal, gate, receipt)",
+                                  "Muse Spark"],
+                  "off-gpu-live" if a.live_meta else "off-gpu-mock",
+                  "MEASURED" if a.live_meta else "MOCK",
+                  [PY, "-m", "wattnot.meta.spark_trace", "--flow-out", str(out), "--receipt",
+                   str(receipt), "--events", ev], artifacts=["spark/trace.json"])
+
     # 4 one signed flow receipt, verify, EU, certificate, API, events, dashboard
     F.run("flow-receipt", ["Signed receipt + canonicalization"], "off-gpu-live", "MEASURED",
           fn=lambda: _flow_receipt(F, receipt))

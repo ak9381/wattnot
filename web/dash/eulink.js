@@ -49,6 +49,12 @@ export function extractEuLinkData(receipt) {
     method: "NVML energy counter on the GPU; J per correct = Wh/req x 3600 / pass rate",
     disclaimer: "Not a compliance claim; facility-level metrics require operator metering.",
     csrdTag: "CSRD roadmap",
+    // Signed GSF SCI block (energy + carbon + water); null on older receipts without one.
+    sciPerCorrect: num(r.sci?.arms?.candidate?.gco2e_per_correct),
+    sciPerRequest: num(r.sci?.arms?.candidate?.gco2e_per_request),
+    sciGrid: num(r.sci?.I?.gco2e_per_kwh),
+    sciGridSource: r.sci?.I ? `${r.sci.I.region || ""} ${r.sci.I.year || ""}`.trim() : null,
+    sciEmbodied: r.sci?.M?.status || (r.sci?.M ? "ESTIMATE" : null),
   };
 }
 
@@ -141,6 +147,7 @@ export function renderEuLinkHTML(d) {
         <div class="eulink-metric-box"><div class="eulink-metric-label">Window IT Energy</div><div class="eulink-metric-val">${val(d.windowKwh, 4, "kWh", L)}</div></div>
         <div class="eulink-metric-box"><div class="eulink-metric-label">Joules / Correct</div><div class="eulink-metric-val">${val(d.jCand, 2, "J/ans", d.jLabel || L)}</div></div>
         <div class="eulink-metric-box"><div class="eulink-metric-label">Water Consumption</div><div class="eulink-metric-val">${val(d.waterHeadlineMl, 4, "mL/req", d.waterHeadlineMl == null ? null : "ESTIMATE")}</div><div class="eulink-metric-note">${WATER_L_PER_KWH} L/kWh on-site cooling, derived from the receipt's measured energy (ESTIMATE); up to ${d.waterUpperMl == null ? DASH : `${fix(d.waterUpperMl, 4)} mL/req`} at the ${WATER_L_PER_KWH_UPPER} L/kWh upper incl. power-plant water${d.waterUpperStored ? ", stored in the signed receipt at the 1.8 upper factor" : ""} (ESTIMATE)</div></div>
+        ${d.sciGrid == null ? "" : `<div class="eulink-metric-box"><div class="eulink-metric-label">Carbon (SCI)</div><div class="eulink-metric-val">${val(d.sciPerCorrect, 5, "gCO2e/correct", "ESTIMATE")}</div><div class="eulink-metric-note">GSF SCI, E x I per correct answer; I = ${fix(d.sciGrid, 0)} g/kWh (${esc(d.sciGridSource)}); embodied M ${esc(d.sciEmbodied)}. Signed in the receipt and re-checked by the verifier. An intensity per answer, not a claim about any total footprint.</div></div>`}
         <div class="eulink-metric-box"><div class="eulink-metric-label">Billed Saving</div><div class="eulink-metric-val">${d.billedSavingPct == null ? `${DASH}${dot(null)}` : `${fix(d.billedSavingPct, 1)}%${dot(L)}`}</div></div>
       </div>
       <div class="eulink-actions">${href ? `<a class="eulink-btn" href="${href}" target="_blank" rel="noopener"><span>View EU Report (HTML)</span></a>

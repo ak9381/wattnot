@@ -1187,6 +1187,11 @@ def finish_receipt(
                 "paths": nonfinite,
                 "why": "not computable (NaN/Infinity), written as null; usually a 95% interval "
                        "or p-value from fewer than 2 paired rounds"}
+        from wattnot.receipt.sci import sci_block
+        try:   # energy + carbon + water (GSF SCI); never crash a long run over it
+            body["sci"] = sci_block(body)
+        except (KeyError, TypeError, ValueError, ZeroDivisionError) as e:
+            body["sci_unavailable"] = str(e)[:200]
         digest = canonical_sha256(body)
         st.outputs = f"{len(body)} top-level fields" + (
             f"; {len(nonfinite)} non-finite value(s) written as null" if nonfinite else "")

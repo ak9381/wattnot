@@ -213,10 +213,69 @@
       "j_per_good_answer": -9.9958
     }
   },
+  "sci": {
+    "spec": "GSF SCI 1.0 (ISO/IEC 21031:2024): SCI = (E x I + M) per R",
+    "R": "one correct answer (passed the quality gate)",
+    "label": "ESTIMATE",
+    "why_label": "E is the receipt's measured energy; I and water are cited factors, so every carbon and water number is ESTIMATE",
+    "scope": "operational (E x I)",
+    "I": {
+      "gco2e_per_kwh": 727.0,
+      "label": "ESTIMATE",
+      "region": "IN (India national grid)",
+      "year": "FY 2023-24",
+      "source": "CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included)",
+      "url": "https://cea.nic.in/cdm-co2-baseline-database/?lang=en"
+    },
+    "M": {
+      "status": "NOT_AVAILABLE",
+      "gco2e_per_correct": null,
+      "why": "no cited embodied-emissions figure for this GPU and server; SCI shown is operational only (E x I)"
+    },
+    "water": {
+      "wue": {
+        "l_per_kwh": 0.36,
+        "label": "ESTIMATE",
+        "source": "0.36 L/kWh on-site cooling (LBNL 2024 US Data Center Energy Usage Report)"
+      },
+      "wue_upper": {
+        "l_per_kwh": 1.8,
+        "label": "ESTIMATE",
+        "source": "1.8 L/kWh including power-plant (electricity) water, upper bound"
+      }
+    },
+    "arms": {
+      "baseline": {
+        "E_kwh_per_request": 4.802e-05,
+        "E_kwh_per_correct": 5.054736842e-05,
+        "pass_rate": 0.95,
+        "E_label": "MEASURED",
+        "gco2e_per_request": 0.03491054,
+        "gco2e_per_correct": 0.03674793684,
+        "sci_gco2e_per_R": 0.03674793684,
+        "water_ml_per_request": 0.0172872,
+        "water_ml_per_correct": 0.01819705263,
+        "water_ml_per_request_upper": 0.086436
+      },
+      "candidate": {
+        "E_kwh_per_request": 4.322e-05,
+        "E_kwh_per_correct": 4.549473684e-05,
+        "pass_rate": 0.95,
+        "E_label": "MEASURED",
+        "gco2e_per_request": 0.03142094,
+        "gco2e_per_correct": 0.03307467368,
+        "sci_gco2e_per_R": 0.03307467368,
+        "water_ml_per_request": 0.0155592,
+        "water_ml_per_correct": 0.01637810526,
+        "water_ml_per_request_upper": 0.077796
+      }
+    },
+    "change_pct_sci": -9.9958
+  },
   "grade": "VALID",
   "integrity": {
     "canonicalization": "JCS RFC 8785",
-    "sha256": "67c151a68251070c39cb665e75b8aec8ff9ee76447bcd34316a9ac3eb4ac51c9",
+    "sha256": "3fc28e656f3b0765f60e7c9b4ca5ac01dac1413e2ee3eec1809c971415591b51",
     "prev_sha256": null,
     "signer": null,
     "rekor": null

@@ -1,5 +1,24 @@
 # WattNot
 
+## Meta models at work
+
+Each layer of WattNot is driven by a Meta model. In a live run every call below is a real API
+or GPU call with a trace id, latency and $ in the run's event log; the dashboard's
+**Meta models at work** strip and **Muse Spark trace** panel read that log. Anything replayed
+from an earlier run is labelled REPLAY; nothing is shown that did not happen.
+
+| Layer | Meta model | What it does in the run |
+|---|---|---|
+| Operator | Muse Spark (`muse-spark-1.3`) | four traced calls: probe (reads GPU telemetry + preflight), proposal (cap or serving change), gate (judges the quality verdict; the fixed rule still decides), receipt (explains the signed receipt) |
+| Planner | Muse Wonder (`muse-wonder-1.0`) | plans the next trial and reads the Pareto (Wonder) chart |
+| Served model | Muse Glimmer 30B | the model being tuned on the H100 under each power cap |
+| Facility | SAM 3.1 | rack hotspot audit on the room scan |
+| Voice | Muse Voice (`muse-voice-transcribe-1.0`) | spoken Ask and tune |
+| Change | Muse Code | the change as a sandboxed PR (replay in demos; no PR is opened) |
+| Routing | Muse Spark Open on Baseten | multi-provider routing pass |
+
+Full list with costs: [Meta models used](#meta-models-used).
+
 WattNot is an agent that cuts the energy and cost of each LLM inference request without making the model worse. It tries serving changes (batching, KV-cache settings, FP8, GPU power caps), keeps a change only if quality and p99 latency hold, and writes a signed receipt (Wh and $ per request) that anyone can re-check with the open verifier. It is built on Meta models: Muse Spark picks each step, and the default served model is Meta's open-weights Muse Glimmer 30B (`meta-models/Muse-Glimmer-30B`, Apache 2.0) on vLLM, with Llama 3.1 8B Instruct (`meta-llama/Llama-3.1-8B-Instruct`) as a comparison model. We also tune Muse Spark Open (NVFP4) on a large multi-GPU box, because it needs 700 GB+ of VRAM, more than one H100.
 
 Token trimmers cut your bill, but not your watts. WattNot measures the joules each request burns on the GPU, and checks quality before it keeps any change.
