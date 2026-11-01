@@ -807,6 +807,16 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         from wattnot.api.app import eu_upload_response
         return eu_upload_response(await request.body(), format)
 
+    # The receipts API's read-only routes (list, one receipt, verify, EU report) on the same port,
+    # so the dashboard's links work without a second server. Same handlers, same checks.
+    from wattnot.api.app import create_app as _api_app
+    api = _api_app(os.environ.get("WATTNOT_ROOT", str(ROOT)))
+    have = {getattr(r, "path", None) for r in app.router.routes}
+    for r in api.router.routes:
+        path = getattr(r, "path", "")
+        if path.startswith("/api/receipts") and path not in have and "GET" in (getattr(r, "methods", None) or ()):
+            app.router.routes.append(r)
+
     app.mount("/", StaticFiles(directory=str(WEB), html=True), name="web")
     return app
 
