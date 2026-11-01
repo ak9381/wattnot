@@ -1,0 +1,14 @@
+wattnot verify /tmp/wn-merge/data/modal-full-1101/smoke-smoke-ui1728/flow/sweep/rcpt_20261101_modal_full_smoke-smoke-ui1728.json
+  ok   schema    wattnot.receipt/1
+  ok   sha256    expected fa041ca75db9882637e2ed843a596e0d11cc73b5eef7d8893eb8ef583ec25db6  got fa041ca75db9882637e2ed843a596e0d11cc73b5eef7d8893eb8ef583ec25db6
+  ok   signature signer offline:56475aa75463474c
+  none rekor     no Rekor entry (offline signature): grade at most ESTIMATE
+  ok   joules    matches the receipt's numbers
+  ok   sci       E x I and water match the receipt's numbers
+  ok   labels    ESTIMATE 10, MEASURED 10, SYNTHETIC 2
+  ok   grade     NOISE
+  info           [MEASURED] candidate 3422.6 J per answer, 3422.6 J per good answer
+  info           [ESTIMATE] SCI 0.6912 gCO2e per correct answer (E 0.0009507 kWh [MEASURED] x I 727 g/kWh, IN (India national grid) FY 2023-24; M NOT_AVAILABLE); water 0.3423 mL per correct at 0.36 L/kWh
+  info           I source: CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included); operational intensity per answer only, not a total-footprint claim
+
+--- stderr ---

@@ -1,0 +1,173 @@
+{
+ "cap_w": 325,
+ "label": "MOCK",
+ "reasoning": {
+  "reasoning_tokens": 0,
+  "completion_tokens": 3672,
+  "share": 0.0,
+  "label": "ESTIMATE"
+ },
+ "assumptions": {
+  "wue_l_per_kwh": 0.36,
+  "tariff_usd_per_kwh": 0.12,
+  "gpu_usd_per_h": 5.13,
+  "note": "Wh is GPU-only NVML energy; mL and $ are ESTIMATES"
+ },
+ "truncation": {
+  "items": 0,
+  "checked": 32,
+  "pct": 0.0,
+  "note": "answers cut off by the token cap (finish=length); reported, not silently counted as quality misses"
+ },
+ "tiers": [
+  {
+   "tier": "easy",
+   "label": "MOCK",
+   "stock": {
+    "n": 4,
+    "pass_pct": 100.0,
+    "wh_per_task": 0.0011555555555555555,
+    "ml_per_task": 0.00041600000000000003,
+    "usd_energy_per_1k": 0.00013866666666666666,
+    "usd_gpu_time_per_1k": 0.0007571823045509517,
+    "p99_s": 0.008
+   },
+   "cap": {
+    "n": 4,
+    "pass_pct": 100.0,
+    "wh_per_task": 0.00078,
+    "ml_per_task": 0.0002808,
+    "usd_energy_per_1k": 9.36e-05,
+    "usd_gpu_time_per_1k": 0.0005853048551216489,
+    "p99_s": 0.009000000000000001
+   },
+   "energy_change_pct": -32.49999999999999,
+   "pass_drop_pts": 0.0,
+   "p99_change_pct": 12.5,
+   "truncated": 0,
+   "truncation_pct": 0.0,
+   "reasoning": {
+    "reasoning_tokens": 0,
+    "completion_tokens": 32,
+    "share": 0.0,
+    "label": "ESTIMATE"
+   },
+   "gate": "blocked",
+   "why_not": [
+    "p99 +12% (> 10%)"
+   ]
+  },
+  {
+   "tier": "medium",
+   "label": "MOCK",
+   "stock": {
+    "n": 4,
+    "pass_pct": 100.0,
+    "wh_per_task": 0.017333333333333333,
+    "ml_per_task": 0.00624,
+    "usd_energy_per_1k": 0.00208,
+    "usd_gpu_time_per_1k": 0.0002882764290916384,
+    "p99_s": 0.12
+   },
+   "cap": {
+    "n": 4,
+    "pass_pct": 100.0,
+    "wh_per_task": 0.011699999999999999,
+    "ml_per_task": 0.004211999999999999,
+    "usd_energy_per_1k": 0.0014039999999999999,
+    "usd_gpu_time_per_1k": 0.00039450662297895177,
+    "p99_s": 0.135
+   },
+   "energy_change_pct": -32.50000000000001,
+   "pass_drop_pts": 0.0,
+   "p99_change_pct": 12.500000000000021,
+   "truncated": 0,
+   "truncation_pct": 0.0,
+   "reasoning": {
+    "reasoning_tokens": 0,
+    "completion_tokens": 480,
+    "share": 0.0,
+    "label": "ESTIMATE"
+   },
+   "gate": "blocked",
+   "why_not": [
+    "p99 +13% (> 10%)"
+   ]
+  },
+  {
+   "tier": "hard",
+   "label": "MOCK",
+   "stock": {
+    "n": 4,
+    "pass_pct": 100.0,
+    "wh_per_task": 0.034666666666666665,
+    "ml_per_task": 0.01248,
+    "usd_energy_per_1k": 0.00416,
+    "usd_gpu_time_per_1k": 0.009228153935509908,
+    "p99_s": 0.24
+   },
+   "cap": {
+    "n": 4,
+    "pass_pct": 100.0,
+    "wh_per_task": 0.023399999999999997,
+    "ml_per_task": 0.008423999999999997,
+    "usd_energy_per_1k": 0.0028079999999999997,
+    "usd_gpu_time_per_1k": 0.007891988084156764,
+    "p99_s": 0.27
+   },
+   "energy_change_pct": -32.50000000000001,
+   "pass_drop_pts": 0.0,
+   "p99_change_pct": 12.500000000000021,
+   "truncated": 0,
+   "truncation_pct": 0.0,
+   "reasoning": {
+    "reasoning_tokens": 0,
+    "completion_tokens": 960,
+    "share": 0.0,
+    "label": "ESTIMATE"
+   },
+   "gate": "blocked",
+   "why_not": [
+    "p99 +13% (> 10%)"
+   ]
+  },
+  {
+   "tier": "complex",
+   "label": "MOCK",
+   "stock": {
+    "n": 4,
+    "pass_pct": 100.0,
+    "wh_per_task": 0.07944444444444444,
+    "ml_per_task": 0.028599999999999997,
+    "usd_energy_per_1k": 0.009533333333333333,
+    "usd_gpu_time_per_1k": 0.0005115329640830169,
+    "p99_s": 0.56
+   },
+   "cap": {
+    "n": 4,
+    "pass_pct": 100.0,
+    "wh_per_task": 0.053625000000000006,
+    "ml_per_task": 0.019305000000000003,
+    "usd_energy_per_1k": 0.006435000000000001,
+    "usd_gpu_time_per_1k": 0.0007821575585694518,
+    "p99_s": 0.63
+   },
+   "energy_change_pct": -32.49999999999999,
+   "pass_drop_pts": 0.0,
+   "p99_change_pct": 12.5,
+   "truncated": 0,
+   "truncation_pct": 0.0,
+   "reasoning": {
+    "reasoning_tokens": 0,
+    "completion_tokens": 2200,
+    "share": 0.0,
+    "label": "ESTIMATE"
+   },
+   "gate": "blocked",
+   "why_not": [
+    "p99 +12% (> 10%)"
+   ]
+  }
+ ],
+ "model": "meta-models/Muse-Glimmer-30B"
+}

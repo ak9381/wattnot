@@ -1,5 +1,5 @@
 {
- "usd": 2.9773,
+ "usd": 5.2024,
  "rounds": [
   {
    "round": "smoke-r04",
@@ -48,6 +48,30 @@
    "usd": 0.024,
    "minutes": 0,
    "at": "2026-11-01T16:34:25.365106+00:00"
+  },
+  {
+   "round": "smoke-smoke-ui1645",
+   "usd": 0.9907,
+   "minutes": 23.8,
+   "at": "2026-11-01T17:09:43.869791+00:00"
+  },
+  {
+   "round": "smoke-smoke-ui1645-metered-true-up",
+   "usd": 0.2458,
+   "minutes": 0,
+   "at": "2026-11-01T17:10:49.322071+00:00"
+  },
+  {
+   "round": "smoke-smoke-ui1728",
+   "usd": 0.8213,
+   "minutes": 19.7,
+   "at": "2026-11-01T17:48:31.360585+00:00"
+  },
+  {
+   "round": "smoke-smoke-ui1728-metered-true-up",
+   "usd": 0.1673,
+   "minutes": 0,
+   "at": "2026-11-01T17:49:36.597720+00:00"
   }
  ],
  "label": "ESTIMATE",

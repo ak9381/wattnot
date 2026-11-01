@@ -1,0 +1,43 @@
+{
+ "label": "MEASURED",
+ "model": "meta-models/Muse-Glimmer-30B",
+ "off": {
+  "joules": 25480.4,
+  "successes": 3,
+  "runs": 4,
+  "calls": 28,
+  "j_per_success": 8493.5
+ },
+ "on": {
+  "joules": 24959.3,
+  "successes": 4,
+  "runs": 4,
+  "calls": 17,
+  "j_per_success": 6239.8
+ },
+ "joules_saved": 521.1,
+ "saved_pct": 2.05,
+ "routing": "not measured (one model on the card)",
+ "rounds": [
+  {
+   "arm": "harness",
+   "rep": 0,
+   "joules": 25480.428,
+   "wall_s": 81.65505790710449,
+   "runs": 4,
+   "successes": 3,
+   "calls": 28
+  },
+  {
+   "arm": "harness+saver",
+   "rep": 0,
+   "joules": 24959.304,
+   "wall_s": 79.73169589042664,
+   "runs": 4,
+   "successes": 4,
+   "calls": 17
+  }
+ ],
+ "max_cases": 4,
+ "max_tokens": 768
+}
