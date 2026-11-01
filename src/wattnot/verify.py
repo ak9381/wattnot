@@ -21,6 +21,7 @@ from pathlib import Path
 from wattnot.receipt.canon import canonical_sha256
 from wattnot.receipt.grade import SPEC, grade
 from wattnot.receipt.joules import check_joules
+from wattnot.receipt.sci import check_sci, summary_line
 from wattnot.receipt.sign import bundle_path, verify_offline_bundle
 
 
@@ -38,11 +39,12 @@ class Report:
     grade: str
     claimed_grade: str | None
     joules: dict | None = None  # derived j_per_answer / j_per_good_answer, None if not derivable
+    sci: dict | None = None     # the receipt's sci block, when it re-derives cleanly
 
     def to_dict(self) -> dict:
         return {"path": self.path, "grade": self.grade, "claimed_grade": self.claimed_grade,
                 "steps": [{"name": s.name, "ok": s.ok, **s.detail} for s in self.steps],
-                "joules": self.joules}
+                "joules": self.joules, "sci": self.sci}
 
 
 def _schema_step(receipt) -> Step:
@@ -130,6 +132,13 @@ def verify_document(receipt, bundle: dict | None, *, trusted: set[str] | None = 
         if jd.get("present"):  # only receipts that carry the block get this step
             steps.append(Step("joules", derived_ok,
                               {"error": jd["error"]} if not derived_ok else {"matches": True}))
+    sci_out = None
+    if isinstance(receipt, dict) and "sci" in receipt:
+        sci_ok, sd = check_sci(receipt)
+        steps.append(Step("sci", sci_ok, {"error": sd["error"]} if not sci_ok
+                          else {"matches": True, "summary": summary_line(receipt["sci"])}))
+        sci_out = receipt["sci"] if sci_ok else None
+        derived_ok = derived_ok and sci_ok
     if isinstance(receipt, dict):
         steps.append(labels_step(receipt))
     sha_ok, sig_ok = steps[1].ok, steps[2].ok
@@ -143,7 +152,7 @@ def verify_document(receipt, bundle: dict | None, *, trusted: set[str] | None = 
         g = "UNVERIFIABLE" if lab.detail.get("unknown") else "SIMULATED"
     claimed = integ.get("grade") if integ else None
     steps.append(Step("grade", g != "UNVERIFIABLE", {"grade": g, "claimed": claimed}))
-    return Report(path, steps, g, claimed, derived)
+    return Report(path, steps, g, claimed, derived, sci_out)
 
 
 KNOWN_LABELS = {"MEASURED", "ESTIMATE", "SIMULATED", "SYNTHETIC", "MOCK", "REPLAY", "ADVICE",
@@ -218,6 +227,8 @@ def format_report(r: Report) -> str:
                 or "no labelled numbers"
         elif s.name == "joules":
             info = "matches the receipt's numbers" if s.ok else d.get("error", "")
+        elif s.name == "sci":
+            info = "E x I and water match the receipt's numbers" if s.ok else d.get("error", "")
         elif s.name == "grade":
             info = f"{d['grade']}" + (f"  (receipt claims {d['claimed']})"
                                       if d.get("claimed") and d["claimed"] != d["grade"] else "")
@@ -231,6 +242,10 @@ def format_report(r: Report) -> str:
         lines.append(f"  info {'':<9} [{lab}] candidate {j['j_per_answer']:.1f} J per answer, "
                      + (f"{good:.1f} J per good answer" if good is not None
                         else "no good answers (pass rate 0)"))
+    if r.sci:
+        lines.append(f"  info {'':<9} {summary_line(r.sci)}")
+        lines.append(f"  info {'':<9} I source: {r.sci['I'].get('source')}; "
+                     "operational intensity per answer only, not a total-footprint claim")
     return "\n".join(lines)
 
 

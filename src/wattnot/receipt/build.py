@@ -465,6 +465,8 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
         m["wonder_chart"] = _wonder_chart_entry(wc)
 
     with_joules(receipt)
+    from wattnot.receipt.sci import sci_block
+    receipt["sci"] = sci_block(receipt)   # energy + carbon + water, GSF SCI, inside the hash
     receipt["grade"] = claimed_grade(receipt, rekor=rekor)
     receipt["integrity"] = {"canonicalization": "JCS RFC 8785",
                             "sha256": canonical_sha256(receipt), "prev_sha256": prev_sha256,

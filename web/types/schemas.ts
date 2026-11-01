@@ -257,6 +257,9 @@ export interface Receipt {
     why?: string;
     traffic_sampled?: number;
   };
+  sci?: {
+    I: Record<string, unknown>;
+  };
 }
 
 // ---- ui-view (https://wattnot.dev/schemas/ui-view.schema.json) ----

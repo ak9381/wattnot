@@ -904,6 +904,28 @@
           "type": "integer"
         }
       }
+    },
+    "sci": {
+      "type": "object",
+      "description": "Energy + carbon + water per correct answer in GSF SCI format (SCI = (E x I + M) per R). Re-derived by the verifier; see docs/SCI.md.",
+      "required": [
+        "spec",
+        "R",
+        "I",
+        "M",
+        "water",
+        "arms"
+      ],
+      "properties": {
+        "I": {
+          "type": "object",
+          "required": [
+            "gco2e_per_kwh",
+            "label",
+            "source"
+          ]
+        }
+      }
     }
   },
   "not": {

@@ -83,3 +83,17 @@ test("upload button and upload flow", async () => {
   assert.match(bad.msg, /signature does not match/);
   assert.match((await uploadEu([])).msg, /Pick a receipt/);
 });
+
+test("SCI carbon box shows only when the receipt has a signed sci block", async () => {
+  const m = await import("./eulink.js");
+  const base = { candidate: { wh_per_req: { mean: 0.03 } }, measurement: { label: "MEASURED" } };
+  assert.equal(m.extractEuLinkData(base).sciGrid, null);
+  assert.ok(!m.renderEuLinkHTML(m.extractEuLinkData(base)).includes("Carbon (SCI)"));
+  const r = { ...base, sci: { I: { gco2e_per_kwh: 727, region: "IN", year: "FY 2023-24" },
+    M: { status: "NOT_AVAILABLE" }, arms: { candidate: { gco2e_per_correct: 0.0234, gco2e_per_request: 0.0218 } } } };
+  const d = m.extractEuLinkData(r);
+  assert.equal(d.sciPerCorrect, 0.0234);
+  const html = m.renderEuLinkHTML(d);
+  assert.ok(html.includes("Carbon (SCI)") && html.includes("727 g/kWh") && html.includes("NOT_AVAILABLE"));
+  assert.ok(!/neutral|offset/i.test(html));
+});

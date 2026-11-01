@@ -86,7 +86,7 @@ def fields_for(receipt: Mapping, *, grid_gco2_per_kwh: float | None = None,
             j_label = "ESTIMATE"
             j_src = f"{src}: candidate Wh/req x 3600; pass rate unavailable, assumed 1.0"
     out.append(_f("joules_per_correct_answer", j_per_good, "J/correct", j_label, j_src))
-    return _finish(out, wh, rid, grid_gco2_per_kwh, grid_source)
+    return _finish(out, wh, rid, grid_gco2_per_kwh, grid_source, receipt.get("sci"))
 
 
 def verify_proof_hash(receipt: Mapping) -> bool:
@@ -173,10 +173,11 @@ def proof_fields(receipt: Mapping, *, grid_gco2_per_kwh: float | None = None,
     if best and best.get("mean_w"):
         out.append(_f("mean_gpu_power_at_kept_cap", round(best["mean_w"]["cap"], 1), "W", lab,
                       f"{src}: counter energy / block time"))
-    return _finish(out, wh, rid, grid_gco2_per_kwh, grid_source)
+    return _finish(out, wh, rid, grid_gco2_per_kwh, grid_source, receipt.get("sci"))
 
 
-def _finish(out: list[dict], wh: float, rid: str, grid_gco2_per_kwh, grid_source) -> list[dict]:
+def _finish(out: list[dict], wh: float, rid: str, grid_gco2_per_kwh, grid_source,
+            sci: Mapping | None = None) -> list[dict]:
     """Shared tail: water and SCI views, facility fields, readiness, receipt id on each row."""
     # Water is a generated view, recomputed from the receipt's measured energy with the
     # current owner-standardised factors (headline on-site cooling, plus an upper bound
@@ -190,7 +191,28 @@ def _finish(out: list[dict], wh: float, rid: str, grid_gco2_per_kwh, grid_source
     out.insert(min(len(out), 6), _f("water_per_request_upper", water_upper, "mL/request",
                "ESTIMATE", f"{water_method}; up to 1.8 L/kWh including power-plant water, "
                "upper ESTIMATE; not measured"))
-    if grid_gco2_per_kwh is not None and grid_source:
+    if grid_gco2_per_kwh is None and isinstance(sci, Mapping):
+        # the receipt's own signed SCI block (GSF SCI, verified by `wattnot verify`)
+        c, I = sci["arms"]["candidate"], sci["I"]   # noqa: E741
+        src = f"signed sci block; I={I['gco2e_per_kwh']} g/kWh from {I.get('source')} ({I.get('year')})"
+        out.append(_f("grid_intensity", I["gco2e_per_kwh"], "gCO2e/kWh", "ESTIMATE", src))
+        out.append(_f("sci_per_request", c["gco2e_per_request"], "gCO2e/request", "ESTIMATE",
+                      "SCI (GSF, ISO/IEC 21031:2024) operational part E x I; " + src))
+        if c.get("gco2e_per_correct") is not None:
+            out.append(_f("energy_per_correct", c["E_kwh_per_correct"], "kWh/correct answer",
+                          c.get("E_label", "ESTIMATE"), "receipt energy / graded pass rate"))
+            out.append(_f("sci_per_correct", c["gco2e_per_correct"], "gCO2e/correct answer",
+                          "ESTIMATE", "SCI per R (R = one correct answer), E x I; " + src))
+            out.append(_f("water_per_correct", c["water_ml_per_correct"], "mL/correct answer",
+                          "ESTIMATE", f"kWh/correct x {sci['water']['wue']['l_per_kwh']} L/kWh; "
+                          f"{sci['water']['wue'].get('source')}"))
+        m = sci.get("M") or {}
+        if m.get("status") == "NOT_AVAILABLE":
+            out.append(_na("sci_embodied_m", "gCO2e/correct answer", m.get("why", "")))
+        else:
+            out.append(_f("sci_embodied_m", m.get("gco2e_per_correct"), "gCO2e/correct answer",
+                          "ESTIMATE", m.get("source", "")))
+    elif grid_gco2_per_kwh is not None and grid_source:
         out.append(_f("sci_per_request", round(wh / 1000 * grid_gco2_per_kwh, 6),
                       "gCO2e/request", "ESTIMATE",
                       f"SCI (Green Software Foundation) operational part only, E x I; "
