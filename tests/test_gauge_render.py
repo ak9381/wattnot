@@ -64,3 +64,9 @@ def test_needle_tip_reaches_the_major_tick_band():
 
 def test_gauge_is_deterministic():
     assert gva.render_gauge(60) == gva.render_gauge(60)
+
+
+def test_gauge_has_no_fine_divisions_and_value_on_labelled_tick():
+    # The live Baseten smoke read the 2-unit dial as 62: the dial must not offer a 62 reading.
+    assert gva.GAUGE_MINOR_STEP == 10 and gva.GAUGE_MAJOR_STEP == 20
+    assert 60 % gva.GAUGE_MAJOR_STEP == 0

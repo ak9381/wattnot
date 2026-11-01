@@ -152,3 +152,11 @@ def test_config_rejects_junk(tmp_path, doc):
     (tmp_path / "guardrail.json").write_text(json.dumps(doc))
     with pytest.raises(ValueError):
         load_config(tmp_path)
+
+
+def test_reasoning_effort_never_reports_unknown_kind():
+    # the smoke's gate message was "unknown kind 'reasoning_effort'; a person decides"
+    for chg in ({"kind": "reasoning_effort", "change": {"reasoning_effort": "low", "step_up": "medium"}},
+                {"kind": "reasoning_effort", "change": {"reasoning_effort": "low"}}):
+        r = classify(chg, CFG)
+        assert r.level == "low" and not any("unknown kind" in x for x in r.reasons)
