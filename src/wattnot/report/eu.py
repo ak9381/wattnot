@@ -251,27 +251,33 @@ def check_receipt_hash(receipt: Mapping) -> None:
             raise ValueError(f"receipt {rid}: SHA-256 does not match; not exporting it")
 
 
-def check_receipt_file(path: str | Path) -> tuple[dict, bool]:
-    """Load a receipt and check it before export. The SHA-256 must match (else refuse). If a
-    signature bundle sits next to it, it must verify (else refuse). Returns (receipt, signed):
-    True = offline signature verified, None = a Sigstore bundle (verified by `wattnot verify`),
-    False = no bundle."""
-    from wattnot.receipt.sign import OFFLINE_MEDIA_TYPE, bundle_path, verify_offline_bundle
+def check_receipt_doc(receipt: Mapping, bundle: Mapping | None) -> bool | None:
+    """Check a receipt (and its signature bundle, if any) before export. Raises ValueError on a
+    bad hash or a bad offline signature. Returns True = offline signature verified, None = a
+    Sigstore bundle (verified by `wattnot verify`, not downgraded), False = no bundle."""
+    from wattnot.receipt.sign import OFFLINE_MEDIA_TYPE, verify_offline_bundle
 
-    receipt = json.loads(Path(path).read_text(encoding="utf-8"))
+    rid = receipt.get("receipt_id")
     check_receipt_hash(receipt)
-    bp = bundle_path(path)
-    if not bp.is_file():
-        return receipt, False
-    bundle = json.loads(bp.read_text(encoding="utf-8"))
+    if bundle is None:
+        return False
     if bundle.get("mediaType") == OFFLINE_MEDIA_TYPE:
         ok, why = verify_offline_bundle(receipt, bundle)
         if not ok:
             raise ValueError(f"receipt {rid}: signature check failed ({why}); not exporting it")
-        return receipt, True
-    # a Sigstore/Rekor bundle: present, checked by `wattnot verify` (not here). None = not
-    # downgraded, unlike a receipt with no bundle at all (False)
-    return receipt, None
+        return True
+    return None
+
+
+def check_receipt_file(path: str | Path) -> tuple[dict, bool | None]:
+    """Load a receipt and check it before export (see check_receipt_doc). A signature bundle
+    next to it is picked up automatically."""
+    from wattnot.receipt.sign import bundle_path
+
+    receipt = json.loads(Path(path).read_text(encoding="utf-8"))
+    bp = bundle_path(path)
+    bundle = json.loads(bp.read_text(encoding="utf-8")) if bp.is_file() else None
+    return receipt, check_receipt_doc(receipt, bundle)
 
 
 def _unsigned(rows: list[dict]) -> list[dict]:

@@ -21,6 +21,7 @@ Endpoints:
 * ``POST /api/verify``                — same report for an uploaded ``{receipt, bundle?}``;
   computed in memory, nothing is stored.
 * ``GET /api/receipts/{id}/report/eu`` — EU 2024/1364 fields (``?format=json|csv|html``).
+* ``POST /api/report/eu/upload`` — the same report for an uploaded receipt + signature bundle.
 * ``GET /api/ablation``               — the cold/warm/grid planner ablation, if present.
 * ``GET /api/cloud/receipts``         — cloud-mode receipts under ``cloud-receipts/``.
 * ``GET /api/cloud/receipts/{id}``    — one cloud receipt (``?format=json|html``).
@@ -147,12 +148,68 @@ def _summary(events: list[dict]) -> dict:
 def _load_receipt(root: Path, receipt_id: str | None) -> dict | None:
     """Read ``receipts/<id>.json`` under ``root``; ``None`` if absent or unsafe."""
 
+    path = _receipt_path(root, receipt_id)
+    return None if path is None else json.loads(path.read_text(encoding="utf-8"))
+
+
+def _eu_out(receipt: dict, signed: Any, format: str) -> Any:  # noqa: A002
+    from wattnot.report import eu
+
+    try:
+        rows = eu.fields_for(receipt)
+    except (KeyError, TypeError, ValueError):
+        return JSONResponse({"code": "not_a_receipt"}, status_code=400)
+    if signed is False:   # same rule as the CLI export: unsigned MEASURED shows as ESTIMATE
+        rows = eu._unsigned(rows)
+    if format == "csv":
+        return PlainTextResponse(eu.to_csv(rows), media_type="text/csv")
+    if format == "html":
+        return HTMLResponse(eu.to_html(rows))
+    if format != "json":
+        return JSONResponse({"code": "bad_format"}, status_code=400)
+    return {"receipt_id": receipt.get("receipt_id"), "signed": signed, "fields": rows}
+
+
+
+def eu_upload_response(raw: bytes, format: str = "json") -> Any:  # noqa: A002
+    """Upload a receipt and (optionally) its signature bundle as JSON
+    ``{"receipt": {...}, "bundle": {...}}``. Checked first (409 on a bad hash or signature);
+    nothing is stored. Shared by this API and the dashboard server."""
+    from wattnot.report import eu
+
+    if len(raw) > 1_000_000:
+        return JSONResponse({"code": "too_large"}, status_code=413)
+    try:
+        body = json.loads(raw)
+    except ValueError:
+        return JSONResponse({"code": "bad_json"}, status_code=400)
+    if not isinstance(body, dict) or not isinstance(body.get("receipt"), dict):
+        return JSONResponse({"code": "need_receipt"}, status_code=400)
+    bundle = body.get("bundle")
+    if bundle is not None and not isinstance(bundle, dict):
+        return JSONResponse({"code": "bad_bundle"}, status_code=400)
+    try:
+        signed = eu.check_receipt_doc(body["receipt"], bundle)
+    except ValueError as e:
+        code = "bad_signature" if "signature" in str(e) else "hash_mismatch"
+        return JSONResponse({"code": code}, status_code=409)
+    except (KeyError, TypeError):
+        return JSONResponse({"code": "not_a_receipt"}, status_code=400)
+    return _eu_out(body["receipt"], signed, format)
+
+
+def _receipt_path(root: Path, receipt_id: str | None) -> Path | None:
+    """``receipts/<id>.json``, else the first match in a subfolder (e.g. ``receipts/rerun-1031/``).
+    The id is checked against the safe pattern first, so it can't walk out of ``receipts/``."""
+
     if not receipt_id or not _RECEIPT_ID_RE.match(receipt_id):
         return None
-    path = root / "receipts" / f"{receipt_id}.json"
-    if not path.is_file():
-        return None
-    return json.loads(path.read_text(encoding="utf-8"))
+    d = root / "receipts"
+    path = d / f"{receipt_id}.json"
+    if path.is_file():
+        return path
+    hits = sorted(p for p in d.rglob(f"{receipt_id}.json") if p.is_file()) if d.is_dir() else []
+    return hits[0] if hits else None
 
 
 def _receipt_for(root: Path, events: list[dict]) -> dict | None:
@@ -304,8 +361,10 @@ def create_app(root: str | os.PathLike[str] = ".") -> FastAPI:
     @app.get("/api/receipts")
     def list_receipts() -> list[dict]:
         out = []
-        for p in sorted((base / "receipts").glob("rcpt_*.json")):
-            if p.name.endswith(".sigstore.json"):
+        seen: set[str] = set()
+        d = base / "receipts"
+        for p in sorted(d.rglob("rcpt_*.json")) if d.is_dir() else []:
+            if p.name.endswith(".sigstore.json") or p.stem in seen:
                 continue
             try:
                 r = json.loads(p.read_text(encoding="utf-8"))
@@ -313,7 +372,9 @@ def create_app(root: str | os.PathLike[str] = ".") -> FastAPI:
                             "created_at": r.get("created_at"), "grade": r.get("grade"),
                             "label": r["measurement"]["label"],
                             "billed_saving_pct": r["result"]["billed_saving_pct"],
-                            "signed": (p.with_name(p.stem + ".sigstore.json")).is_file()})
+                            "signed": (p.with_name(p.stem + ".sigstore.json")).is_file(),
+                            "path": str(p.relative_to(base))})
+                seen.add(p.stem)
             except (ValueError, KeyError, TypeError):
                 continue
         return out
@@ -322,13 +383,11 @@ def create_app(root: str | os.PathLike[str] = ".") -> FastAPI:
     def verify_stored(receipt_id: str) -> Any:
         from wattnot.verify import load_trusted, verify_receipt
 
-        if not _RECEIPT_ID_RE.match(receipt_id):
-            return JSONResponse({"code": "receipt_not_found"}, status_code=404)
-        path = base / "receipts" / f"{receipt_id}.json"
-        if not path.is_file():
+        path = _receipt_path(base, receipt_id)
+        if path is None:
             return JSONResponse({"code": "receipt_not_found"}, status_code=404)
         rep = verify_receipt(path, trusted=load_trusted()).to_dict()
-        rep["path"] = f"receipts/{receipt_id}.json"
+        rep["path"] = str(path.relative_to(base))
         return rep
 
     @app.post("/api/verify")
@@ -351,23 +410,19 @@ def create_app(root: str | os.PathLike[str] = ".") -> FastAPI:
     def eu_report(receipt_id: str, format: str = "json") -> Any:  # noqa: A002
         from wattnot.report import eu
 
-        receipt = _load_receipt(base, receipt_id)
-        if receipt is None:
+        path = _receipt_path(base, receipt_id)
+        if path is None:
             return JSONResponse({"code": "receipt_not_found"}, status_code=404)
         try:   # fail closed: a bad hash or a bad signature bundle is never exported
-            receipt, signed = eu.check_receipt_file(base / "receipts" / f"{receipt_id}.json")
-        except ValueError:
-            return JSONResponse({"code": "hash_mismatch"}, status_code=409)
-        rows = eu.fields_for(receipt)
-        if signed is False:   # same rule as the CLI export: unsigned MEASURED shows as ESTIMATE
-            rows = eu._unsigned(rows)
-        if format == "csv":
-            return PlainTextResponse(eu.to_csv(rows), media_type="text/csv")
-        if format == "html":
-            return HTMLResponse(eu.to_html(rows))
-        if format != "json":
-            return JSONResponse({"code": "bad_format"}, status_code=400)
-        return {"receipt_id": receipt_id, "fields": rows}
+            receipt, signed = eu.check_receipt_file(path)
+        except ValueError as e:
+            code = "bad_signature" if "signature" in str(e) else "hash_mismatch"
+            return JSONResponse({"code": code}, status_code=409)
+        return _eu_out(receipt, signed, format)
+
+    @app.post("/api/report/eu/upload")
+    async def eu_upload(request: Request, format: str = "json") -> Any:  # noqa: A002
+        return eu_upload_response(await request.body(), format)
 
     @app.get("/api/cloud/receipts")
     def list_cloud_receipts() -> list[dict]:

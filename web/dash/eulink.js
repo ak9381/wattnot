@@ -6,6 +6,7 @@ import { WATER_L_PER_KWH, WATER_L_PER_KWH_UPPER } from "./r7.js";
 export const EU_DIR = "eu/";
 export const EU_RECEIPT = "eu/run2-receipt.json";
 export const reportHref = (rid, fmt = "html") => `${EU_DIR}eu_report_${rid}.${fmt}`;
+export const EU_UPLOAD_URL = "/api/report/eu/upload";
 const DASH = "–";
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 const fix = (v, d) => (v == null ? DASH : Number(v.toFixed(d)).toString());
@@ -70,7 +71,7 @@ export function renderEuCardHTML(d) {
       <span class="eucard-l">J per correct answer${d.receiptId ? ` · ${esc(d.receiptId)}${d.created ? `, ${esc(d.created)}` : ""}` : ""}</span>
       <span class="eucard-l">${val(d.jBase, 2, "", d.jLabel || d.label)} → ${val(d.jCand, 2, "J", d.jLabel || d.label)} · pass ${d.passRate == null ? `${DASH}${dot(null)}` : `${fix(d.passRate * 100, 1)}%${dot(d.label)}`}</span>
     </button>
-    <div class="eucard-acts">${open}<a class="eucard-btn eucard-btn2" href="eu.html">EU Compliance tab</a><span class="eucard-road">${d.csrdTag}</span></div>
+    <div class="eucard-acts">${open}<a class="eucard-btn eucard-btn2" href="eu.html">EU Compliance tab</a><label class="eucard-btn eucard-btn2 eucard-up" title="Pick a receipt (.json) and, if you have it, its signature (.sigstore.json). It is checked first and never stored.">Upload receipt<input type="file" accept=".json,application/json" multiple hidden></label><span class="eucard-upmsg" role="status" aria-live="polite"></span><span class="eucard-road">${d.csrdTag}</span></div>
     <dialog class="eucard-pop" aria-label="EU efficiency report: what and how">
       <button class="eucard-x" type="button" aria-label="Close">×</button>
       <h3>EU efficiency report</h3>
@@ -82,8 +83,44 @@ export function renderEuCardHTML(d) {
   </section>`;
 }
 
+// Upload: split the picked files into the receipt and its signature bundle (*.sigstore.json).
+export function pickUpload(files) {
+  const fs = Array.from(files || []);
+  const bundle = fs.find((f) => /\.sigstore\.json$/i.test(f.name)) || null;
+  const receipt = fs.find((f) => f !== bundle) || null;
+  return { receipt, bundle };
+}
+
+const UPLOAD_MSG = { hash_mismatch: "Refused: the receipt's SHA-256 does not match its content.",
+  bad_signature: "Refused: the signature does not match this receipt.", not_a_receipt: "That file is not a WattNot receipt.",
+  bad_json: "That file is not valid JSON.", need_receipt: "Pick a receipt file.", too_large: "File too large (1 MB max)." };
+
+export async function uploadEu(files, { fetchFn = globalThis.fetch, url = EU_UPLOAD_URL } = {}) {
+  const { receipt, bundle } = pickUpload(files);
+  if (!receipt) return { ok: false, msg: UPLOAD_MSG.need_receipt };
+  let body;
+  try {
+    body = { receipt: JSON.parse(await receipt.text()) };
+    if (bundle) body.bundle = JSON.parse(await bundle.text());
+  } catch { return { ok: false, msg: UPLOAD_MSG.bad_json }; }
+  const r = await fetchFn(`${url}?format=html`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  if (!r.ok) {
+    let code = ""; try { code = (await r.json()).code; } catch { /* not json */ }
+    return { ok: false, msg: UPLOAD_MSG[code] || `Upload failed (HTTP ${r.status}).` };
+  }
+  return { ok: true, html: await r.text(), msg: bundle ? "Signature checked. Report opened in a new tab." : "No signature given: MEASURED values are shown as ESTIMATE. Report opened in a new tab." };
+}
+
 export function wireEuCard(root) {
   const sec = root?.querySelector?.(".eucard"); if (!sec) return;
+  const inp = sec.querySelector(".eucard-up input"), msg = sec.querySelector(".eucard-upmsg");
+  if (inp) inp.onchange = async () => {
+    msg.textContent = "Checking…";
+    const res = await uploadEu(inp.files).catch(() => ({ ok: false, msg: "Upload failed (no connection to the API)." }));
+    msg.textContent = res.msg;
+    if (res.ok) { const u = URL.createObjectURL(new Blob([res.html], { type: "text/html" })); window.open(u, "_blank", "noopener"); }
+    inp.value = "";
+  };
   const dlg = sec.querySelector("dialog");
   sec.querySelector(".eucard-main").onclick = () => (dlg.showModal ? dlg.showModal() : dlg.setAttribute("open", ""));
   sec.querySelector(".eucard-x").onclick = () => (dlg.close ? dlg.close() : dlg.removeAttribute("open"));
