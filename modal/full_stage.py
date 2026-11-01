@@ -20,12 +20,16 @@ import tarfile
 APP_NAME = "wattnot-full-stage"
 GPU = "A100-80GB"
 GPU_USD_H = 2.50              # ESTIMATE, Modal list price for A100-80GB (not a bill)
-ROUND_CAP_S = 3 * 3600        # hard container timeout: worst case 3 h x $2.50 = $7.50 (ESTIMATE)
+ROUND_CAP_S = int(3.75 * 3600)  # hard container timeout: 225 min, worst 3.75 h x $2.50 = $9.38 (ESTIMATE)
+ROUND_HARD_USD = 10.0         # a single round's worst case must never exceed this
 SMOKE_CAP_S = 22 * 60         # smoke tests: 22 min x $2.50 = $0.92 worst case (ESTIMATE)
 VOL = "wattnot-glimmer-weights"
 GO_ENV = "WATTNOT_MODAL_GO"
-EXPECTED_MIN = {"server_starts": 5 * 4, "without": 30, "batch_kv": 12, "fp8": 6, "with": 15,
-                "blocks": 25}  # ESTIMATE minutes per round
+# ESTIMATE minutes per round, scaled from the 1 Nov A100 smoke (9 items) to 192 items
+EXPECTED_MIN = {"server_starts": 15, "without": 50, "batch_kv": 15, "with": 30, "blocks": 30, "fp8": 12}
+
+assert ROUND_CAP_S / 3600 * GPU_USD_H <= ROUND_HARD_USD, \
+    f"round worst case {ROUND_CAP_S / 3600 * GPU_USD_H:.2f} exceeds hard cap ${ROUND_HARD_USD}"
 
 
 def estimate_round(minutes: float | None = None) -> dict:
@@ -86,7 +90,7 @@ try:  # pragma: no cover - only with modal installed
     image = (modal.Image.from_registry("vllm/vllm-openai:muse-glimmer")
              .dockerfile_commands(["RUN ln -sf \"$(command -v python3)\" /usr/local/bin/python"])
              .entrypoint([])
-             .pip_install("pynvml", "jsonschema", "pyyaml", "numpy")
+             .pip_install("pynvml", "jsonschema", "pyyaml", "numpy", "langchain-core", "langchain-openai")
              .add_local_dir("src", "/app/src")
              .add_local_dir("scripts", "/app/scripts")
              .add_local_dir("workloads", "/app/workloads")

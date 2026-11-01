@@ -195,9 +195,14 @@ class Server:
             if fp8:
                 argv += ["--quantization", "fp8"]
             tag = f"{'fp8' if fp8 else 'bf16'}-{'pc' if prefix else 'nopc'}-{max_seqs}"
+            # FP8 start needs ~3 min (Marlin weight-only FP8 on A100 + ~61 s torch.compile); fail fast
+            # before Popen if the container cannot give the server at least 240 s to come up.
+            wait = min(900, left() - 180)
+            if wait < 240:
+                raise RuntimeError(f"not enough container time to start vLLM ({tag}): {wait:.0f}s left, need >=240s")
             self.proc = subprocess.Popen(argv, stdout=open(self.log_dir / f"vllm-{tag}.log", "wb"),
                                          stderr=subprocess.STDOUT)
-            deadline = time.time() + max(120, min(900, left() - 300))
+            deadline = time.time() + wait
             while time.time() < deadline:
                 if self.proc.poll() is not None:
                     raise RuntimeError(f"vllm exited rc={self.proc.returncode} ({tag})")
@@ -207,7 +212,7 @@ class Server:
                 except Exception:  # noqa: BLE001
                     time.sleep(3)
             else:
-                raise RuntimeError("vllm not ready in 15 min")
+                raise RuntimeError(f"vllm ({tag}) not ready after {wait:.0f}s; see raw/vllm-{tag}.log")
         self.cfg["start_s"] = {"value": round(time.time() - t0, 1), "label": "MEASURED"}
         return self.cfg
 
@@ -598,44 +603,16 @@ def main(argv=None) -> int:
                                                  "max_num_seqs": best["max_num_seqs"]}, "label": "MEASURED"}
         save()
         conc, seqs = best["concurrency"], best["max_num_seqs"]
-        # 3. FP8 keep/reject gate on the slice, with eye + hearing re-checked on the candidate
-        fp8 = False
-        if "fp8" not in a.skip and sweep and left() < (5 if a.limit else 40) * 60:
-            S["fp8"] = {"kept": False, "skipped": f"{left() / 60:.0f} min left (time, not a failure)"}
-        elif "fp8" not in a.skip and sweep:
-            bf = next(x for x in sweep if x["concurrency"] == conc)
-            try:
-                srv.start(fp8=True, prefix=True, max_seqs=seqs)
-                s, _ = run_arm(b, nv, "with_wattnot", sl, conc, raw, "fp8", SLICE_MAX_S)
-                if not s["answers"] or s["errors"] >= max(1, s["calls"]) * 0.5:
-                    raise RuntimeError(f"FP8 server answered badly ({s['errors']}/{s['calls']} errors)")
-                g = gate(bf, s)
-                eye = sub([sys.executable, "-m", "wattnot.vision.run", "--base-url", BASE, "--out",
-                           str(out / "fp8-eye"), "--budget-s", "90"] + (["--fake"] if a.fake else []),
-                          out / "fp8-eye", 300)
-                ear = sub([sys.executable, "-m", "wattnot.spokenanswer.run", "--base-url", BASE, "--out",
-                           str(out / "fp8-hearing"), "--budget-s", "90"] + (["--fake"] if a.fake else []),
-                          out / "fp8-hearing", 300)
-                g["eye_rc"], g["hearing_rc"] = eye["rc"], ear["rc"]
-                fp8 = g["keep"] and eye["rc"] == 0 and ear["rc"] == 0
-                EV.emit("step.finished", node="gates", sub="quality", status="ok" if fp8 else "bad",
-                        summary=f"FP8 {'kept' if fp8 else 'rejected'}: acc drop {g['acc_drop_pts']} pts")
-                S["fp8"] = {"bf16": {k: bf[k] for k in ("accuracy", "j_per_correct")}, "fp8": s, "gate": g,
-                            "kept": fp8}
-            except Exception as e:  # noqa: BLE001 - FP8 is optional; BF16 stays
-                S["fp8"] = {"kept": False, "error": f"{type(e).__name__}: {e}"[:300]}
-                fail("fp8", f"FP8 candidate failed, BF16 kept: {type(e).__name__}: {e}")
-            save()
-        # 4. with WattNot: every lever on
+        # 3. with WattNot: every lever on, BF16 + best seqs (FP8 is a next-round candidate, checked last)
         EV.emit("step.started", node="apply", sub="restart",
-                summary=f"vLLM restart: {'FP8' if fp8 else 'BF16'}, prefix cache on, --max-num-seqs {seqs}")
+                summary=f"vLLM restart: BF16, prefix cache on, --max-num-seqs {seqs}")
         try:
-            S["with_server"] = srv.start(fp8=fp8, prefix=True, max_seqs=seqs)
+            S["with_server"] = srv.start(fp8=False, prefix=True, max_seqs=seqs)
         except Exception as e:  # noqa: BLE001 - fall back to the stock-safe config once
-            fail("fp8" if fp8 else "kv_batch", f"with-arm server failed ({e}); fell back to BF16, 64 seqs")
-            fp8, seqs = False, 64
+            fail("kv_batch", f"with-arm server failed ({e}); fell back to BF16, 64 seqs")
+            seqs = 64
             S["with_server"] = srv.start(fp8=False, prefix=True, max_seqs=64)
-        for k in LEVERS.stats:   # count the with arm alone (the sweep/FP8 slices also used the levers)
+        for k in LEVERS.stats:   # count the with arm alone (the sweep slice also used the levers)
             LEVERS.stats[k] = 0
         S["with"], _ = run_arm(b, nv, "with_wattnot", its, conc, raw, "with")
         S["with"]["request_levers"] = dict(LEVERS.stats)
@@ -646,9 +623,12 @@ def main(argv=None) -> int:
                                             and wi["j_per_correct"]["value"] <= wo["j_per_correct"]["value"]),
                        "quality_gate": gate(wo, wi), "label": "MEASURED"}
         save()
-        # 5. agent saver, eye, hearing, thinking budget on the WattNot server
+        # 4. agent saver, eye, hearing, thinking budget on the WattNot server (BF16)
         fk = ["--fake"] if a.fake else []
         blocks = {
+            "think": [sys.executable, "-m", "wattnot.longrun.thinking_budget", "--per-tier",
+                      str(a.limit or 2), "--out", str(out / "think")]
+                     + (["--fake"] if a.fake else ["--url", f"{BASE}/chat/completions"]),
             "agentwaste": [sys.executable, "scripts/agentwaste_gpu_ab.py", "--base-url", BASE, "--reps", "2",
                            "--out", str(out / "agentwaste")] + fk,
             "langchain": [sys.executable, "scripts/langchain_pass.py", "--dataset", "own", "--n",
@@ -658,9 +638,6 @@ def main(argv=None) -> int:
                     "--budget-s", "90"] + fk,
             "spoken": [sys.executable, "-m", "wattnot.spokenanswer.run", "--base-url", BASE, "--out",
                         str(out / "spoken"), "--budget-s", "90"] + fk,
-            "think": [sys.executable, "-m", "wattnot.longrun.thinking_budget", "--per-tier",
-                      str(a.limit or 2), "--out", str(out / "think")]
-                     + (["--fake"] if a.fake else ["--url", f"{BASE}/chat/completions"]),
         }
         feat = {"agentwaste": "context_saver", "langchain": "waste_guard", "eye": "eye_check",
                 "spoken": "hearing_check", "think": "thinking_budget"}
@@ -685,6 +662,35 @@ def main(argv=None) -> int:
                 fail(feat[k], f"{k} GPU block exited rc={r['rc']} (see {k}/block.log)")
             r["energy_j"] = {"value": round(nv.energy_j() - e0, 1), "label": "SIMULATED" if a.fake else "MEASURED"}
             S["blocks"][k] = r
+            save()
+        # 5. FP8 keep/reject gate LAST: candidate for next round only; this round's with arm stays BF16.
+        #    Only start FP8 if the container can still give the server its ~3-min startup.
+        if "fp8" not in a.skip and sweep and left() < (8 if a.limit else 25) * 60:
+            S["fp8"] = {"kept": False, "skipped": f"{left() / 60:.0f} min left (time, not a failure)"}
+        elif "fp8" not in a.skip and sweep:
+            bf = next(x for x in sweep if x["concurrency"] == conc)
+            try:
+                srv.start(fp8=True, prefix=True, max_seqs=seqs)
+                s, _ = run_arm(b, nv, "with_wattnot", sl, conc, raw, "fp8", SLICE_MAX_S)
+                if not s["answers"] or s["errors"] >= max(1, s["calls"]) * 0.5:
+                    raise RuntimeError(f"FP8 server answered badly ({s['errors']}/{s['calls']} errors)")
+                g = gate(bf, s)
+                eye = sub([sys.executable, "-m", "wattnot.vision.run", "--base-url", BASE, "--out",
+                           str(out / "fp8-eye"), "--budget-s", "90"] + (["--fake"] if a.fake else []),
+                          out / "fp8-eye", 300)
+                ear = sub([sys.executable, "-m", "wattnot.spokenanswer.run", "--base-url", BASE, "--out",
+                           str(out / "fp8-hearing"), "--budget-s", "90"] + (["--fake"] if a.fake else []),
+                          out / "fp8-hearing", 300)
+                g["eye_rc"], g["hearing_rc"] = eye["rc"], ear["rc"]
+                cand = g["keep"] and eye["rc"] == 0 and ear["rc"] == 0
+                EV.emit("step.finished", node="gates", sub="quality", status="ok" if cand else "bad",
+                        summary=f"FP8 {'candidate kept' if cand else 'rejected'}: acc drop {g['acc_drop_pts']} pts")
+                S["fp8"] = {"bf16": {k: bf[k] for k in ("accuracy", "j_per_correct")}, "fp8": s, "gate": g,
+                            "kept": cand, "applied": False,
+                            "note": "candidate for next round; this round's with arm stays BF16"}
+            except Exception as e:  # noqa: BLE001 - FP8 is optional; BF16 stays applied
+                S["fp8"] = {"kept": False, "applied": False, "error": f"{type(e).__name__}: {e}"[:300]}
+                fail("fp8", f"FP8 candidate failed, BF16 kept: {type(e).__name__}: {e}")
             save()
     except Exception as e:  # noqa: BLE001 - record and still save what we have
         doc["fatal"] = f"{type(e).__name__}: {e}"[:500]
