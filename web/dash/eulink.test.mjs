@@ -68,3 +68,18 @@ test("label comes from the receipt", () => {
   assert.match(renderEuLinkHTML(d), /wn-dot-simulated/);
   assert.equal(reportHref("r1", "csv"), "eu/eu_report_r1.csv");
 });
+
+test("upload button and upload flow", async () => {
+  const { renderEuCardHTML, extractEuLinkData, pickUpload, uploadEu } = await import("./eulink.js");
+  assert.match(renderEuCardHTML(extractEuLinkData({})), /Upload receipt<input type="file"/);
+  const f = (name, obj) => ({ name, text: async () => JSON.stringify(obj) });
+  const rec = f("rcpt_x.json", { receipt_id: "rcpt_x" }), bun = f("rcpt_x.sigstore.json", { mediaType: "m" });
+  assert.deepEqual(pickUpload([bun, rec]), { receipt: rec, bundle: bun });
+  let sent;
+  const ok = await uploadEu([rec, bun], { fetchFn: async (u, o) => { sent = { u, o }; return { ok: true, text: async () => "<table>" }; } });
+  assert.equal(ok.ok, true); assert.match(sent.u, /\/api\/report\/eu\/upload\?format=html/);
+  assert.deepEqual(Object.keys(JSON.parse(sent.o.body)), ["receipt", "bundle"]);
+  const bad = await uploadEu([rec, bun], { fetchFn: async () => ({ ok: false, status: 409, json: async () => ({ code: "bad_signature" }) }) });
+  assert.match(bad.msg, /signature does not match/);
+  assert.match((await uploadEu([])).msg, /Pick a receipt/);
+});

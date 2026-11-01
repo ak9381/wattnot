@@ -162,3 +162,6 @@
 .eucard-x{float:right;background:none;border:0;color:inherit;font-size:1.4rem;cursor:pointer}
 .eucard-note{font-size:.8rem;opacity:.75}
 .wn-dot.wn-dot-pending,.wn-dot-pending{background:transparent!important;border:1.5px dashed #aaa!important;width:9px;height:9px;border-radius:50%;display:inline-block;margin-left:6px;vertical-align:middle}
+
+.eucard-up{cursor:pointer}
+.eucard-upmsg{font-size:.85em;opacity:.85;margin-left:6px}

@@ -761,6 +761,11 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
     room_dir = WEB.parent / "room"  # the SAM room scan module: node.js and the saved scan folders
     if room_dir.is_dir():
         app.mount("/room", StaticFiles(directory=str(room_dir), html=True), name="room")
+    @app.post("/api/report/eu/upload")
+    async def eu_upload(request: Request, format: str = "json"):  # noqa: A002
+        from wattnot.api.app import eu_upload_response
+        return eu_upload_response(await request.body(), format)
+
     app.mount("/", StaticFiles(directory=str(WEB), html=True), name="web")
     return app
 
