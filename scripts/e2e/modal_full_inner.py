@@ -523,6 +523,37 @@ def gate(base, cand):
             "acc_drop_pts": round((a0 - a1) * 100, 2), "label": "MEASURED"}
 
 
+def block_cmds(limit: int, fake: bool, out: Path) -> dict:
+    """The agent-saver / eye / hearing / thinking-budget GPU blocks. In smoke (limit > 0) the
+    agentwaste block is shortened (--reps 1 --max-cases 4 --max-tokens 768) so it fits the
+    container budget; the full round (limit == 0) keeps --reps 2 over every case."""
+    fk = ["--fake"] if fake else []
+    return {
+        "think": [sys.executable, "-m", "wattnot.longrun.thinking_budget", "--per-tier",
+                  str(limit or 2), "--out", str(out / "think")]
+                 + (["--fake"] if fake else ["--url", f"{BASE}/chat/completions"]),
+        "agentwaste": [sys.executable, "scripts/agentwaste_gpu_ab.py", "--base-url", BASE]
+                      + (["--reps", "1", "--max-cases", "4", "--max-tokens", "768"] if limit
+                         else ["--reps", "2"])
+                      + ["--out", str(out / "agentwaste")] + fk,
+        "langchain": [sys.executable, "scripts/langchain_pass.py", "--dataset", "own", "--n",
+                      str(limit or 20), "--out", str(out / "langchain")]
+                     + (["--fake"] if fake else ["--base-url", BASE]),
+        "eye": [sys.executable, "-m", "wattnot.vision.run", "--base-url", BASE, "--out", str(out / "eye"),
+                "--budget-s", "90"] + fk,
+        "spoken": [sys.executable, "-m", "wattnot.spokenanswer.run", "--base-url", BASE, "--out",
+                    str(out / "spoken"), "--budget-s", "90"] + fk,
+    }
+
+
+def block_cap(k: str, limit: int) -> int:
+    """Per-block wall cap. Smoke caps agentwaste hardest (it is the long pole), other blocks at
+    5 min; the full round keeps the 15-min cap for every block."""
+    if not limit:
+        return 900
+    return 240 if k == "agentwaste" else 300
+
+
 def sub(argv, out: Path, timeout: float) -> dict:
     t0 = time.time()
     try:
@@ -631,28 +662,14 @@ def main(argv=None) -> int:
                        "quality_gate": gate(wo, wi), "label": "MEASURED"}
         save()
         # 4. agent saver, eye, hearing, thinking budget on the WattNot server (BF16)
-        fk = ["--fake"] if a.fake else []
-        blocks = {
-            "think": [sys.executable, "-m", "wattnot.longrun.thinking_budget", "--per-tier",
-                      str(a.limit or 2), "--out", str(out / "think")]
-                     + (["--fake"] if a.fake else ["--url", f"{BASE}/chat/completions"]),
-            "agentwaste": [sys.executable, "scripts/agentwaste_gpu_ab.py", "--base-url", BASE, "--reps", "2",
-                           "--out", str(out / "agentwaste")] + fk,
-            "langchain": [sys.executable, "scripts/langchain_pass.py", "--dataset", "own", "--n",
-                          str(a.limit or 20), "--out", str(out / "langchain")]
-                         + (["--fake"] if a.fake else ["--base-url", BASE]),
-            "eye": [sys.executable, "-m", "wattnot.vision.run", "--base-url", BASE, "--out", str(out / "eye"),
-                    "--budget-s", "90"] + fk,
-            "spoken": [sys.executable, "-m", "wattnot.spokenanswer.run", "--base-url", BASE, "--out",
-                        str(out / "spoken"), "--budget-s", "90"] + fk,
-        }
+        blocks = block_cmds(a.limit, a.fake, out)
         feat = {"agentwaste": "context_saver", "langchain": "waste_guard", "eye": "eye_check",
                 "spoken": "hearing_check", "think": "thinking_budget"}
         S["blocks"] = {}
         for k, cmd in blocks.items():
             if k in a.skip:
                 continue
-            tmo = min(900, left() - 240)
+            tmo = min(block_cap(k, a.limit), left() - 240)
             if tmo < 120:
                 S["blocks"][k] = {"rc": None, "skipped": f"{left() / 60:.1f} min left"}
                 fail(feat[k], f"{k} GPU block skipped: container time ran out")
