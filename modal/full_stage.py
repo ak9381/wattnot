@@ -26,6 +26,7 @@ SMOKE_CAP_S = 32 * 60         # smoke tests: 32 min x $2.50 = $1.33 worst case (
 SMOKE_HARD_USD = 1.50
 assert SMOKE_CAP_S / 3600 * GPU_USD_H <= SMOKE_HARD_USD
 VOL = "wattnot-glimmer-weights"
+RESULTS_VOL = "wattnot-results"   # incremental/recoverable results; a crash leaves partials here
 GO_ENV = "WATTNOT_MODAL_GO"
 # ESTIMATE minutes per round, scaled from the 1 Nov A100 smoke (9 items) to 192 items
 EXPECTED_MIN = {"server_starts": 15, "without": 50, "batch_kv": 15, "with": 30, "blocks": 30, "fp8": 12}
@@ -84,11 +85,46 @@ def _import_modal():
     return real
 
 
+def sync_results(src, dst, commit=None):
+    """Copy the round's output dir to the results volume so a crash leaves partial results behind.
+    Keeps only the last 2 MB of each raw/vllm-*.log. No modal import -> unit-testable; the caller
+    wraps it in try/except so a failed sync never breaks the paid round. `commit` is results.commit."""
+    import glob as _glob
+    import shutil
+    os.makedirs(dst, exist_ok=True)
+    shutil.copytree(src, dst, dirs_exist_ok=True)
+    for lg in _glob.glob(os.path.join(dst, "raw", "vllm-*.log")):
+        try:
+            if os.path.getsize(lg) > 2_000_000:
+                with open(lg, "rb") as f:
+                    f.seek(-2_000_000, 2)
+                    keep = f.read()
+                with open(lg, "wb") as f:
+                    f.write(b"[truncated to the last 2 MB]\n" + keep)
+        except OSError:
+            pass
+    if commit is not None:
+        commit()
+    return dst
+
+
+def _write_status(out, state, round_id):
+    """Best-effort {out}/status.json; a recovered run reads `state` to label the partial."""
+    import json as _j
+    import time
+    try:
+        with open(os.path.join(out, "status.json"), "w") as f:
+            _j.dump({"state": state, "round": round_id, "at": time.time()}, f)
+    except Exception:  # noqa: BLE001 - status is advisory, never breaks the round
+        pass
+
+
 try:  # pragma: no cover - only with modal installed
     modal = _import_modal()
 
     app = modal.App(APP_NAME)
     weights = modal.Volume.from_name(VOL)
+    results = modal.Volume.from_name(RESULTS_VOL, create_if_missing=True)
     image = (modal.Image.from_registry("vllm/vllm-openai:muse-glimmer")
              .dockerfile_commands(["RUN ln -sf \"$(command -v python3)\" /usr/local/bin/python"])
              .entrypoint([])
@@ -126,7 +162,20 @@ try:  # pragma: no cover - only with modal installed
         import subprocess
         import threading
         sys.path[:0] = ["/app", "/app/src"]
-        threading.Timer(cap_s - 90, lambda: os._exit(4)).start()    # last-resort backstop
+        out = f"/tmp/results/{round_id}"
+        dst = f"/results/{round_id}"
+
+        def _sync(commit=True):   # one best-effort copy to the results volume; never breaks the round
+            try:
+                sync_results(out, dst, commit=results.commit if commit else None)
+            except Exception:  # noqa: BLE001 - a volume sync must never break the paid round
+                pass
+
+        def _backstop():   # last-resort: save whatever synced, then kill the hung container
+            _write_status(out, "inner_timeout", round_id)
+            _sync()
+            os._exit(4)
+        threading.Timer(cap_s - 90, _backstop).start()
         os.environ["HF_HUB_CACHE"] = os.environ["HF_HOME"] = "/weights"
         os.environ["HF_HUB_OFFLINE"] = "1"
         # torch.compile / AOT cache on the volume: first BF16 and first FP8 start of a round skip ~61 s compile
@@ -136,7 +185,6 @@ try:  # pragma: no cover - only with modal installed
         snaps = sorted(glob("/weights/models--meta-models--Muse-Glimmer-30B/snapshots/*"))
         if not snaps:   # offline: a repo id cannot load; stop before any server start
             raise RuntimeError("Glimmer weights not found in the wattnot-glimmer-weights volume")
-        out = f"/tmp/results/{round_id}"
         cmd = [sys.executable, "/app/scripts/e2e/modal_full_inner.py", "--out", out,
                "--model-path", snaps[-1] if snaps else "meta-models/Muse-Glimmer-30B",
                "--deadline-s", str(cap_s - (300 if limit else 900))]   # optional steps skip; results still come back
@@ -145,18 +193,33 @@ try:  # pragma: no cover - only with modal installed
         if skip:
             cmd += ["--skip", *skip]
         os.makedirs(out, exist_ok=True)
+        _write_status(out, "running", round_id)
         stop = threading.Event()
         tail = threading.Thread(target=_tail_events, args=(f"{out}/events.jsonl", q, stop), daemon=True)
         tail.start()
+
+        def _sync_loop():   # incremental: copy out -> /results every 30 s so a crash keeps progress
+            while not stop.wait(30):
+                _sync()
+        syncer = threading.Thread(target=_sync_loop, daemon=True)
+        syncer.start()
+        state = "done"
         try:
             p = subprocess.run(cmd, cwd="/app", env={**os.environ, "PYTHONPATH": "/app:/app/src"},
                                capture_output=True, text=True, timeout=cap_s - (180 if limit else 420))
             log = p.stdout + p.stderr
         except subprocess.TimeoutExpired as e:   # vLLM child dies with the container
             log = f"[inner timeout]\n{e.stdout or ''}{e.stderr or ''}"
+            state = "inner_timeout"
+            subprocess.run(["pkill", "-f", "vllm serve"], check=False)
+        except Exception as e:  # noqa: BLE001 - record the crash, still return what synced
+            log = f"[inner crashed] {type(e).__name__}: {e}"
+            state = "crashed"
             subprocess.run(["pkill", "-f", "vllm serve"], check=False)
         stop.set()
         tail.join(10)
+        syncer.join(5)
+        _write_status(out, state, round_id)
         for lg in glob(f"{out}/raw/vllm-*.log"):   # keep tar + return fast: last 2 MB of each server log
             if os.path.getsize(lg) > 2_000_000:
                 with open(lg, "rb") as f:
@@ -169,18 +232,19 @@ try:  # pragma: no cover - only with modal installed
             weights.commit()
         except Exception:  # noqa: BLE001 - cache is an optimisation, never fail the round on it
             pass
+        _sync()   # final copy + commit of the full results to the volume before the tar
         buf = io.BytesIO()
         with tarfile.open(fileobj=buf, mode="w:gz") as t:
             t.add(out, arcname=round_id)
         return buf.getvalue()
 
-    @app.function(image=image, gpu=GPU, timeout=ROUND_CAP_S, volumes={"/weights": weights},
-                  scaledown_window=10)
+    @app.function(image=image, gpu=GPU, timeout=ROUND_CAP_S,
+                  volumes={"/weights": weights, "/results": results}, scaledown_window=10)
     def gpu_round(round_id: str, limit: int = 0, skip: list[str] | None = None, q=None) -> bytes:
         return _body(round_id, limit, skip or [], ROUND_CAP_S, q)
 
-    @app.function(image=image, gpu=GPU, timeout=SMOKE_CAP_S, volumes={"/weights": weights},
-                  scaledown_window=10)
+    @app.function(image=image, gpu=GPU, timeout=SMOKE_CAP_S,
+                  volumes={"/weights": weights, "/results": results}, scaledown_window=10)
     def gpu_smoke(round_id: str, limit: int = 1, skip: list[str] | None = None, q=None) -> bytes:
         return _body(round_id, limit, skip or [], SMOKE_CAP_S, q)
 

@@ -114,6 +114,62 @@ def test_verify_change_no_spark_is_held(tmp_path, monkeypatch):
     assert d2["decision"] == "rejected" and "spark_agreement" in d2["failed_checks"]
 
 
+def test_sync_results_copies_truncates_and_commits(tmp_path):
+    """sync_results mirrors the out dir to the volume, keeps only the last 2 MB of each vLLM log,
+    and calls commit (so a 30-s snapshot persists to wattnot-results)."""
+    fs = _load(ROOT / "modal/full_stage.py")
+    src = tmp_path / "out"
+    (src / "raw").mkdir(parents=True)
+    (src / "inner.json").write_text('{"ok": 1}')
+    (src / "status.json").write_text('{"state": "running"}')
+    (src / "raw" / "with.answers.jsonl").write_text("row\n")
+    (src / "raw" / "vllm-bf16-pc-64.log").write_bytes(b"A" * 3_000_000)   # oversized server log
+    calls = []
+    dst = tmp_path / "vol" / "r1"
+    fs.sync_results(str(src), str(dst), commit=lambda: calls.append(1))
+    assert (dst / "inner.json").read_text() == '{"ok": 1}'
+    assert (dst / "status.json").read_text() == '{"state": "running"}'
+    assert (dst / "raw" / "with.answers.jsonl").read_text() == "row\n"
+    big = (dst / "raw" / "vllm-bf16-pc-64.log").read_bytes()
+    assert big.startswith(b"[truncated to the last 2 MB]\n") and len(big) < 2_100_000
+    assert calls == [1]                                               # commit was called exactly once
+
+
+def test_recover_partial_returns_path_when_inner_present(tmp_path):
+    """recover_partial returns inc/tag once the fetch has placed an inner.json, else None."""
+    m = _load(ROOT / "scripts/e2e/modal_full_round.py")
+    inc = tmp_path / "_incoming"
+    tag = "smoke-rtest"
+
+    def fake_fetch(t, dest):   # stand in for `modal volume get`: write a partial fixture
+        d = Path(dest) / t / "raw"
+        d.mkdir(parents=True)
+        (Path(dest) / t / "inner.json").write_text(json.dumps(
+            {"steps": {"without": {"accuracy": 0.9}, "batch_kv": {"kept": {}}}}))
+        (Path(dest) / t / "status.json").write_text('{"state": "inner_timeout"}')
+
+    got = m.recover_partial(tag, inc, fetch=fake_fetch)
+    assert got == inc / tag and (got / "inner.json").exists()
+    assert "with" not in json.loads((got / "inner.json").read_text())["steps"]
+    assert m.recover_partial("nope", inc, fetch=lambda t, d: None) is None   # nothing synced
+
+
+def test_write_partial_records_finished_steps(tmp_path):
+    """write_partial records the finished steps, blocks, failures and spend for a crashed round."""
+    m = _load(ROOT / "scripts/e2e/modal_full_round.py")
+    rdir = tmp_path / "r"
+    rdir.mkdir()
+    inner = {"steps": {"without": {"accuracy": 0.9}, "batch_kv": {"kept": {}}, "blocks": {"eye": {"rc": 0}}},
+             "failed": {"fp8": "boom"}, "fatal": None}
+    stage = {"limit": 1, "modal_usd": {"value": 1.0}}
+    d = json.loads(m.write_partial(rdir, inner, stage, "inner_timeout").read_text())
+    assert d["status"] == "partial" and d["label"] == "MEASURED"
+    assert d["recovered_from"] == "modal volume wattnot-results" and d["state"] == "inner_timeout"
+    assert d["finished_steps"] == ["without", "batch_kv", "blocks"]
+    assert d["blocks"] == {"eye": {"rc": 0}} and d["failed"] == {"fp8": "boom"}
+    assert d["spend"] == stage
+
+
 def test_no_metrics_key_anywhere():
     for p in ("scripts/e2e/modal_full_round.py", "scripts/e2e/modal_full_inner.py", "modal/full_stage.py"):
         assert "BASETEN_METRICS_KEY" not in (ROOT / p).read_text().replace("Never reads BASETEN_METRICS_KEY", "")
