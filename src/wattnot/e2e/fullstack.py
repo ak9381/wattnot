@@ -199,10 +199,95 @@ def gpu_feature_table(failed: dict | None = None) -> list[dict]:
     return rows
 
 
+# ---- true end-to-end: the live post-answer stages, their routes, and worst-case Meta spend ----
+# Each live feature stage records which service it ran on. In live mode a stage that falls back to a
+# mock/offline path (or errors) is marked FAILED, never a silent green; `no_mocks` is True only when
+# every one ran live.
+FEATURE_STAGE_ROUTES: dict[str, str] = {
+    "eye_check": "baseten:meta-models/muse-spark-open",
+    "hearing_check": "meta-api:muse-voice-transcribe-1.0 + baseten:meta-models/muse-spark-open",
+    "sam_hotspot": "meta-api:sam-3.1",
+    "wonder_chart": "meta-api:muse-wonder-1.0",
+    "spark_trace": "meta-api:muse-spark-1.3",
+}
+# SAM 3.1 and Muse Wonder are WattNot-only planning features: they have no plain without-WattNot arm.
+WATTNOT_ONLY_STAGES = ("sam_hotspot", "wonder_chart")
+
+# Fixed-size synthetic sets the live post-answer stages exercise, independent of the smoke item limit.
+EYE_ITEMS = 10          # eye check: Baseten muse-spark-open calls (per arm)
+HEARING_ITEMS = 20      # hearing: Meta voice transcribe + Baseten answer calls (per arm)
+SAM_SCENES = 6          # SAM 3.1 hotspot scenes (Meta, per image)
+WONDER_CALLS = 1        # Muse Wonder chart read (Meta)
+SPARK_TRACE_CALLS = 4   # Spark 4-call trace (Meta)
+GRADE_USD_PER_ANSWER = 0.0021575  # worst-case Muse Spark grade per answer
+VOICE_USD_PER_CLIP = round(10.0 / 3600 * 0.18, 6)  # 10s worst-case clip at $0.18/h
+
+
+def meta_feature_worst_case_usd(graded_answers: int = 0) -> tuple[float, str]:
+    """Worst-case Meta API spend for one round's live post-answer stages (SAM, Wonder, Spark
+    trace, voice transcribe, Spark grades). Eye and hearing answers are Baseten, not Meta, and
+    are not counted here. Returns (usd, basis). Priced from the repo's Meta price table."""
+    from wattnot.meta.ledger import PER_IMAGE_USD
+    from wattnot.meta.ledger import cost_usd as _mcost
+    sam = SAM_SCENES * PER_IMAGE_USD["sam-3.1"]
+    wonder = _mcost("muse-wonder-1.0", 2000, 1200) * WONDER_CALLS
+    trace = _mcost("muse-spark-1.3", 1200, 1500) * SPARK_TRACE_CALLS
+    voice = 2 * HEARING_ITEMS * VOICE_USD_PER_CLIP          # both arms transcribe their clips
+    grade = graded_answers * GRADE_USD_PER_ANSWER
+    total = sam + wonder + trace + voice + grade
+    basis = (f"SAM {SAM_SCENES}x${PER_IMAGE_USD['sam-3.1']:.4f}/img + Wonder {WONDER_CALLS} call + "
+             f"Spark trace {SPARK_TRACE_CALLS} calls + voice {2 * HEARING_ITEMS} clips@${VOICE_USD_PER_CLIP} + "
+             f"Spark grades {graded_answers}x${GRADE_USD_PER_ANSWER}")
+    return round(total, 4), basis
+
+
+def meta_spend_guard(worst_meta_usd: float, meta_cap_usd: float | None = None, *,
+                     ledger_total: float | None = None) -> dict:
+    """Check that the live Meta feature stages fit under the ledger soft cap and, when set, a
+    per-run Meta cap. Pure: pass `ledger_total` in tests to avoid reading the real ledger."""
+    from wattnot.meta.ledger import SOFT_USD
+    if ledger_total is None:
+        from wattnot.meta.ledger import SpendLedger
+        ledger_total = float(SpendLedger().total())
+    reasons = []
+    if ledger_total + worst_meta_usd > SOFT_USD:
+        reasons.append(f"ledger ${ledger_total:.2f} + worst ${worst_meta_usd:.2f} crosses the "
+                       f"${SOFT_USD:.0f} soft cap")
+    if meta_cap_usd and worst_meta_usd > meta_cap_usd:
+        reasons.append(f"worst Meta ${worst_meta_usd:.2f} over the per-smoke cap ${meta_cap_usd:.2f}")
+    return {"ok": not reasons, "why": "; ".join(reasons) or "within caps",
+            "ledger_total_usd": round(ledger_total, 4), "worst_meta_usd": round(worst_meta_usd, 4),
+            "soft_cap_usd": SOFT_USD, "meta_cap_usd": meta_cap_usd}
+
+
+def _live_fallback_reason(sid: str, st: dict, d: Path) -> str | None:
+    """In live mode, did this feature stage fall back to a mock/offline path or fail? The reason
+    string if so, else None. Reads the stage's own output file for the mock/offline markers."""
+    if st.get("status") in ("error", "bad"):
+        return (st.get("error") or st.get("why") or "stage errored")
+    if sid == "wonder_chart":
+        try:
+            w = json.loads((d / "wonder" / "wonder_chart.json").read_text())
+        except (OSError, ValueError):
+            return "no wonder_chart.json written (live Wonder did not run)"
+        if w.get("source") == "fallback" or w.get("mode") == "fake":
+            return f"Wonder source={w.get('source')} / mode={w.get('mode')} (offline fallback)"
+    if sid == "sam_hotspot":
+        try:
+            s = json.loads((d / "sam" / "hotspot_set.json").read_text())
+        except (OSError, ValueError):
+            return "no hotspot_set.json written (live SAM did not run)"
+        if s.get("mode") == "fake":
+            return "SAM ran offline (mode=fake)"
+    if sid == "spark_trace" and st.get("ok", 1) == 0:
+        return "0 Spark trace calls succeeded"
+    return None
+
+
 def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: bool = False,
                demo_repo: Path | None = None, log=None, cap=None, rates=None, do_pr: bool = True, table=None, change: dict | None = None,
                energy_label: str = "ESTIMATE", kind: str = "hosted-e2e", decision: dict | None = None,
-               budget_s: float | None = None, clock=None) -> dict:
+               budget_s: float | None = None, clock=None, meta_cap_usd: float | None = None) -> dict:
     """Run every post-answer feature stage; returns {stage: result} and writes features.json.
 
     `budget_s` caps the wall time the slow/risky stages (the paid Meta checks and the Muse Code
@@ -234,8 +319,24 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
             log.emit("step.finished", node=node, sub=sub, summary=summary, **kw)
     client = L.baseten_client(cap, rates, log) if (not fake and cap is not None) else None
     if client:
-        _slow_stage(res, "eye_check", lambda: L.live_eye(d / "eye", client))
-        _slow_stage(res, "hearing_check", lambda: L.live_hearing(d / "voice", client, log))
+        # Both arms run the eye and hearing checks so the report compares them: the without-WattNot
+        # arm is a plain medium-effort call, the with-WattNot arm is effort low (WattNot steps up to
+        # medium only on a failed check). SAM and Wonder are WattNot-only and stay single-arm below.
+        client_plain = L.baseten_client(cap, rates, log, effort="medium")
+
+        def eye_both():
+            w = L.live_eye(d / "eye", client)
+            o = L.live_eye(d / "eye_plain", client_plain)
+            return {**w, "arms": {"with_wattnot": {**w, "effort": "low+step-up (WattNot)"},
+                                  "without_wattnot": {**o, "effort": "medium (plain)"}}}
+
+        def hearing_both():
+            w = L.live_hearing(d / "voice", client, log)
+            o = L.live_hearing(d / "voice_plain", client_plain, log)
+            return {**w, "arms": {"with_wattnot": {**w, "effort": "low+step-up (WattNot)"},
+                                  "without_wattnot": {**o, "effort": "medium (plain)"}}}
+        _slow_stage(res, "eye_check", eye_both)
+        _slow_stage(res, "hearing_check", hearing_both)
     else:
         _slow_stage(res, "eye_check", lambda: _main("wattnot.vision.run", ["--out", str(d / "eye")] + fk))
         _slow_stage(res, "hearing_check", lambda: _main("wattnot.spokenanswer.run", ["--out", str(d / "voice")] + fk))
@@ -396,7 +497,42 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
         return {"issues": L(json.loads((d / "receipt.json").read_text()))[:10]}
     _stage(res, "label_lint", lint)
 
-    (d / "features.json").write_text(json.dumps({"table": (table or feature_table)(), "stages": res}, indent=1, default=str))
+    # ---- true end-to-end audit: in live mode every feature stage must have run live ----
+    if not fake:
+        no_mocks = True
+        audit: dict = {}
+        for sid, route in FEATURE_STAGE_ROUTES.items():
+            st = res.get(sid)
+            if not isinstance(st, dict):
+                st = res[sid] = {"status": "error", "error": "stage missing"}
+            st["route"] = route
+            if st.get("status") == "skipped":
+                st["live_label"] = "SKIPPED"
+                no_mocks = False
+            else:
+                reason = _live_fallback_reason(sid, st, d)
+                if reason:
+                    st["status"], st["live_label"], st["fell_back"] = "bad", "FAILED", reason
+                    no_mocks = False
+                else:
+                    st["live_label"] = "LIVE"
+            if sid in WATTNOT_ONLY_STAGES:
+                st["without_wattnot"] = "not applicable (WattNot feature)"
+            audit[sid] = {"route": route, "label": st["live_label"], "status": st.get("status"),
+                          "fell_back": st.get("fell_back"),
+                          "without_wattnot": ("not applicable (WattNot feature)"
+                                              if sid in WATTNOT_ONLY_STAGES else "compared in both arms")}
+        res["no_mocks"] = no_mocks
+        res["feature_audit"] = audit
+        # Meta spend guard recorded beside the receipt (the runner's pre-flight is the gate).
+        worst_meta, meta_basis = meta_feature_worst_case_usd(len(round_doc.get("answers") or []))
+        res["meta_guard"] = {**meta_spend_guard(worst_meta, meta_cap_usd), "basis": meta_basis,
+                             "label": "ESTIMATE"}
+    else:
+        res["no_mocks"] = False
+
+    (d / "features.json").write_text(json.dumps({"table": (table or feature_table)(), "stages": res,
+                                                 "no_mocks": res.get("no_mocks", False)}, indent=1, default=str))
     return res
 
 

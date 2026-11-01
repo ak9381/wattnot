@@ -46,7 +46,8 @@ JOBS_DIR = ROOT / "out" / "launch"
 REVIEWS = ROOT / "data" / "reviews"
 SECRET = secrets.token_bytes(32)
 TOKEN_TTL_S = 600
-CAPS = {"modal_smoke_usd": 1.5, "baseten_smoke_usd": 1.0, "baseten_round_usd": 8.0, "modal_round_usd": 10.0, "modal_stage_usd": 60.0, "meta_hard_usd": 120.0, "meta_soft_usd": 100.0}
+CAPS = {"modal_smoke_usd": 1.5, "baseten_smoke_usd": 1.0, "baseten_smoke_max_usd": 2.0, "meta_smoke_usd": 1.0,
+        "baseten_round_usd": 8.0, "modal_round_usd": 10.0, "modal_stage_usd": 60.0, "meta_hard_usd": 120.0, "meta_soft_usd": 100.0}
 DATASETS = ["ours", "gsm8k", "humaneval", "mixed", "custom JSONL", "let WattNot decide"]
 KEY_FILES = {"META_API_KEY": [Path.home() / ".config" / "wattnot" / "env"],
              "MODAL_PROXY_TOKEN_ID": [Path.home() / ".config" / "wattnot" / "modal.env"],
@@ -74,9 +75,18 @@ def norm_config(c: dict) -> dict:
             "p99_pct": float(c.get("p99_pct") if c.get("p99_pct") is not None else 10),
             "approvals": "hold_high_risk",  # fixed: high-risk changes are never auto-approved
             "open_pr": bool(c.get("open_pr", True)) and not c.get("smoke"), "rounds": 1 if c.get("smoke") else max(1, min(rounds, 3)),
+            # Baseten smoke is a TRUE end-to-end run: Spark grading stays ON (live). The Modal smoke
+            # keeps Spark off.
             "smoke": ({"limit": max(1, min(int((c.get("smoke") or {}).get("limit") or 2), 3)),
-                       "spark": False} if c.get("smoke") and prov in ("modal_a100", "baseten") else None),
-            "caps": {**CAPS, **{k: min(float(v), CAPS[k]) for k, v in (c.get("caps") or {}).items() if k in CAPS}}}
+                       "spark": prov == "baseten"} if c.get("smoke") and prov in ("modal_a100", "baseten") else None),
+            "caps": {**CAPS, **{k: _clamp_cap(k, v) for k, v in (c.get("caps") or {}).items() if k in CAPS}}}
+
+
+def _clamp_cap(k: str, v) -> float:
+    """Caps can only be lowered, except the Baseten smoke cap, which the true-e2e smoke may raise
+    up to baseten_smoke_max_usd ($2.00) and no higher."""
+    hi = CAPS["baseten_smoke_max_usd"] if k == "baseten_smoke_usd" else CAPS[k]
+    return min(float(v), hi)
 
 
 # A Baseten smoke round runs `limit` items of each of the 3 sets (ours, gsm8k, humaneval), once
@@ -88,24 +98,36 @@ _SMOKE_OUT_TOKENS = 768  # the largest public per-call budget (HumanEval)
 
 
 def _baseten_smoke_estimate(cfg: dict, p: dict) -> dict:
+    """True end-to-end Baseten smoke: Baseten answer calls (the two arms + the eye/hearing checks
+    run live in both arms) plus the Meta feature stages (SAM, Wonder, Spark trace, voice, Spark
+    grades). Baseten and Meta each have their own smoke cap; the total is their sum."""
     from wattnot.cloud.pricing import Rates, cost_usd
+    from wattnot.e2e.fullstack import EYE_ITEMS, HEARING_ITEMS, meta_feature_worst_case_usd
     r = Rates()
     limit = cfg["smoke"]["limit"]
     items = _SMOKE_SETS * limit
-    worst_calls = items * 3            # without: 1/item; with: up to 2/item
-    typ_calls = items + items          # without: 1/item; with: ~1/item when low usually passes
-    worst = cost_usd(r, worst_calls * _SMOKE_IN_TOKENS, 0, worst_calls * _SMOKE_OUT_TOKENS)
-    typ = cost_usd(r, typ_calls * _SMOKE_IN_TOKENS, 0, typ_calls * _SMOKE_OUT_TOKENS)
-    cap = cfg["caps"]["baseten_smoke_usd"]
-    worst, typ = round(min(worst, cap), 2), round(typ, 2)
-    basis = (f"{limit} item(s) x {_SMOKE_SETS} sets x 2 arms = {items} items, worst {worst_calls} "
-             f"Baseten calls (with-arm steps up low->medium); priced at ${r.output_per_m}/1M out, "
-             f"${r.input_per_m}/1M in ({_SMOKE_IN_TOKENS} in + {_SMOKE_OUT_TOKENS} out per call); "
-             f"hard stop at ${cap:.2f}, no Spark/Meta (smoke)")
-    return {"available": worst <= cap, "label": "ESTIMATE", "rounds": 1,
-            "per_round_usd": [typ, worst], "total_usd": [typ, worst], "hard_stop_usd": cap,
-            "meta_usd": [0, 0], "billed_to": p["spend"], "smoke": cfg["smoke"], "basis": basis,
-            **({} if worst <= cap else {"why": "worst case above the Baseten smoke cap"})}
+    worst_arm_calls = items * 3        # without: 1/item; with: up to 2/item (low -> medium step-up)
+    typ_arm_calls = items * 2          # without: 1/item; with: ~1/item when low usually passes
+    feat_calls = 2 * (EYE_ITEMS + HEARING_ITEMS)   # eye + hearing answers, both arms, live on Baseten
+    bt = lambda n: cost_usd(r, n * _SMOKE_IN_TOKENS, 0, n * _SMOKE_OUT_TOKENS)
+    worst_bt_raw, typ_bt = bt(worst_arm_calls + feat_calls), bt(typ_arm_calls + feat_calls)
+    graded = items * 2
+    worst_meta, meta_basis = meta_feature_worst_case_usd(graded)
+    typ_meta = round(worst_meta * 0.6, 4)
+    cap, meta_cap = cfg["caps"]["baseten_smoke_usd"], cfg["caps"]["meta_smoke_usd"]
+    worst_bt, typ_bt = round(min(worst_bt_raw, cap), 2), round(typ_bt, 2)
+    total = [round(typ_bt + typ_meta, 2), round(worst_bt + worst_meta, 2)]
+    available = worst_bt_raw <= cap and worst_meta <= meta_cap
+    basis = (f"{limit} item(s) x {_SMOKE_SETS} sets x 2 arms = {items} items; worst {worst_arm_calls} arm "
+             f"+ {feat_calls} eye/hearing Baseten calls (both arms) at ${r.input_per_m}/1M in, "
+             f"${r.output_per_m}/1M out ({_SMOKE_IN_TOKENS} in + {_SMOKE_OUT_TOKENS} out/call). "
+             f"Meta worst ${worst_meta:.4f}: {meta_basis}. Baseten hard stop ${cap:.2f}, "
+             f"Meta per-smoke cap ${meta_cap:.2f}, Meta soft cap ${CAPS['meta_soft_usd']:.0f}")
+    return {"available": available, "label": "ESTIMATE", "rounds": 1,
+            "per_round_usd": total, "total_usd": total, "hard_stop_usd": cap,
+            "meta_hard_stop_usd": meta_cap, "baseten_usd": [typ_bt, worst_bt],
+            "meta_usd": [typ_meta, worst_meta], "billed_to": p["spend"], "smoke": cfg["smoke"],
+            "basis": basis, **({} if available else {"why": "worst case above a smoke cap"})}
 
 
 def estimate(cfg: dict) -> dict:
@@ -420,12 +442,16 @@ def command(cfg: dict, mode: str) -> tuple[list[str], dict, str]:
         if mode == "mock":
             return ([], env, "REPLAY")
         if cfg.get("smoke"):
-            # small, no Spark, hard $1 stop enforced by the runner's SpendCap (--cap-usd); all
-            # output isolated in the job dir so a recorded round is never touched.
+            # TRUE end-to-end smoke: every feature live (--mode live), Spark grading on (no
+            # --no-spark). Baseten hard stop $1 by default (raisable to $2 via the smoke cap) and a
+            # per-smoke Meta cap, both enforced by the runner; all output isolated in the job dir so
+            # a recorded round is never touched.
             cap = cfg["caps"]["baseten_smoke_usd"]
+            meta_cap = cfg["caps"]["meta_smoke_usd"]
             return ([PY, "scripts/e2e/baseten_round.py", "--round", "r01", "--limit",
-                     str(cfg["smoke"]["limit"]), "--no-spark", "--mode", "smoke",
-                     "--cap-usd", f"{cap:.2f}", "--stage-budget-s", "900",
+                     str(cfg["smoke"]["limit"]), "--mode", "live",
+                     "--cap-usd", f"{cap:.2f}", "--meta-cap-usd", f"{meta_cap:.2f}",
+                     "--stage-budget-s", "900",
                      "--raw", "{job}", "--events-dir", "{job}"], env, "MEASURED")
         cmd = [PY, "scripts/e2e/baseten_stage.py", "--rounds", *rounds, "--pr-round", rounds[-1] if cfg["open_pr"] else "none"]
         return (cmd, env, "MEASURED")

@@ -302,6 +302,8 @@ def main(argv=None) -> int:
     ap.add_argument("--limit", type=int, default=0, help="items per set (smoke test)")
     ap.add_argument("--conc", type=int, default=4)
     ap.add_argument("--cap-usd", type=float, default=HARD_CAP_USD, help="Baseten hard stop (max $8)")
+    ap.add_argument("--meta-cap-usd", type=float, default=0.0,
+                    help="per-run Meta hard stop for the live feature stages (0 = only the soft cap)")
     ap.add_argument("--mode", choices=["live", "smoke"], default="live", help="feature stages: live Meta calls or MOCK")
     ap.add_argument("--pr", action="store_true", help="run the Muse Code PR flow in this round")
     ap.add_argument("--events-dir", type=Path, default=None, help="write live events-<arm>.jsonl here")
@@ -322,9 +324,15 @@ def main(argv=None) -> int:
     b = _bench()
     items = items_for(b, a.limit)
     m0 = meta_total()
-    worst_meta = len(items) * 2 * 0.0021575
-    if not a.no_spark and m0 + worst_meta > SOFT_META_USD:
-        print(f"[stop] Meta ${m0:.2f} + worst case ${worst_meta:.2f} would cross the ${SOFT_META_USD:.0f} soft cap")
+    # Meta spend guard, before any live feature stage: worst-case Meta for the live stages (SAM,
+    # Wonder, Spark trace, voice, and, unless --no-spark, the per-answer grades) must fit under the
+    # ledger soft cap and the per-run Meta cap. A grade-free run counts only the fixed stages.
+    from wattnot.e2e.fullstack import meta_feature_worst_case_usd, meta_spend_guard
+    worst_meta, meta_basis = meta_feature_worst_case_usd(0 if a.no_spark else len(items) * 2)
+    guard = meta_spend_guard(worst_meta, a.meta_cap_usd or None, ledger_total=m0)
+    print(f"[guard] Meta worst ${worst_meta:.4f} ({meta_basis}) -> {guard['why']}", flush=True)
+    if not guard["ok"]:
+        print(f"[stop] Meta spend guard: {guard['why']}")
         return 3
     raw = a.raw / a.round
     raw.mkdir(parents=True, exist_ok=True)
@@ -482,7 +490,8 @@ def main(argv=None) -> int:
     doc["levers_stats"] = {**BasetenChat.levers.stats, "label": "ESTIMATE"}
     doc["feature_stages"] = post_round(raw, doc, mode=("smoke" if a.limit and a.mode == "smoke" else a.mode),
                                        open_pr=a.open_pr, log=BasetenChat.log, cap=cap, rates=RATES,
-                                       do_pr=a.pr, budget_s=a.stage_budget_s or None) if not stop else {"status": "skipped", "why": stop}
+                                       do_pr=a.pr, budget_s=a.stage_budget_s or None,
+                                       meta_cap_usd=a.meta_cap_usd or None) if not stop else {"status": "skipped", "why": stop}
     doc["spend"]["baseten_usd"]["value"] = round(cap.session_usd, 6)
     BasetenChat.log.emit("run.finished", arm="with_wattnot")
     out = a.out if not a.limit else raw / "smoke-matrix"

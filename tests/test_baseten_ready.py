@@ -204,11 +204,14 @@ def test_baseten_smoke_cap_registered():
 
 def test_baseten_smoke_norm_and_estimate_under_cap():
     cfg = L.norm_config({"provider": "baseten", "smoke": {"limit": 2}})
-    assert cfg["smoke"] == {"limit": 2, "spark": False}
+    # true end-to-end: Spark grading on in smoke too
+    assert cfg["smoke"] == {"limit": 2, "spark": True}
     assert cfg["open_pr"] is False and cfg["rounds"] == 1
     e = L.estimate(cfg)
     assert e["label"] == "ESTIMATE" and e["available"] is True
-    assert e["total_usd"][1] <= 1.0 and e["hard_stop_usd"] == 1.0
+    # Baseten and Meta each stay under their own smoke cap
+    assert e["baseten_usd"][1] <= 1.0 and e["hard_stop_usd"] == 1.0
+    assert e["meta_usd"][1] <= e["meta_hard_stop_usd"] == 1.0
     assert "1M out" in e["basis"] and "item" in e["basis"]  # basis from pricing x item counts
 
 
@@ -218,14 +221,22 @@ def test_baseten_smoke_limit_is_clamped():
     assert L.norm_config({"provider": "baseten", "smoke": {"limit": 1}})["smoke"]["limit"] == 1
 
 
-def test_baseten_smoke_command_enforces_dollar_cap_and_isolation():
+def test_baseten_smoke_command_is_true_end_to_end():
     cfg = L.norm_config({"provider": "baseten", "smoke": {"limit": 1}})
     cmd, env, label = L.command(cfg, "live")
     s = " ".join(cmd)
-    assert "baseten_round.py" in s and "--cap-usd 1.00" in s and "--no-spark" in s
-    assert "--mode smoke" in s and "{job}" in s  # output isolated to the job dir
+    # true e2e: live mode, Spark on (no --no-spark), both a Baseten and a per-smoke Meta cap
+    assert "baseten_round.py" in s and "--cap-usd 1.00" in s and "--meta-cap-usd 1.00" in s
+    assert "--mode live" in s and "--no-spark" not in s
+    assert "--mode smoke" not in s and "{job}" in s  # output isolated to the job dir
     i = cmd.index("--cap-usd")
-    assert float(cmd[i + 1]) <= L.CAPS["baseten_smoke_usd"]
+    assert float(cmd[i + 1]) <= L.CAPS["baseten_smoke_max_usd"]
+
+
+def test_baseten_smoke_command_honours_raised_cap():
+    cfg = L.norm_config({"provider": "baseten", "smoke": {"limit": 1}, "caps": {"baseten_smoke_usd": 2.0}})
+    cmd, _, _ = L.command(cfg, "live")
+    assert "--cap-usd 2.00" in " ".join(cmd)
 
 
 def test_baseten_smoke_estimate_available_via_api(client):

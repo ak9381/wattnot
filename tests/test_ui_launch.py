@@ -44,6 +44,39 @@ def test_smoke_estimate_under_cap():
     assert e["available"] and e["total_usd"][1] <= 1.5
 
 
+def test_modal_smoke_keeps_spark_off():
+    # the Modal smoke is unchanged: Spark stays off
+    assert L.norm_config({"provider": "modal_a100", "smoke": {"limit": 2}})["smoke"]["spark"] is False
+
+
+def test_baseten_true_e2e_smoke_config():
+    # the Baseten smoke is a true end-to-end run: Spark grading on, every feature live
+    cfg = L.norm_config({"provider": "baseten", "smoke": {"limit": 2}})
+    assert cfg["smoke"]["spark"] is True
+
+
+def test_baseten_smoke_cap_default_and_raise_flag():
+    # default $1 hard; the true-e2e smoke may raise it up to $2, never higher
+    assert L.norm_config({"provider": "baseten", "smoke": {"limit": 1}})["caps"]["baseten_smoke_usd"] == 1.0
+    assert L.norm_config({"provider": "baseten", "smoke": {"limit": 1},
+                          "caps": {"baseten_smoke_usd": 2.0}})["caps"]["baseten_smoke_usd"] == 2.0
+    assert L.norm_config({"provider": "baseten", "smoke": {"limit": 1},
+                          "caps": {"baseten_smoke_usd": 5.0}})["caps"]["baseten_smoke_usd"] == 2.0
+    # the Baseten per-round cap is still fixed at $8 and only lowerable
+    assert L.norm_config({"provider": "baseten", "caps": {"baseten_round_usd": 50}})["caps"]["baseten_round_usd"] == 8.0
+
+
+def test_baseten_smoke_estimate_includes_meta_and_under_caps():
+    cfg = L.norm_config({"provider": "baseten", "smoke": {"limit": 2}})
+    e = L.estimate(cfg)
+    assert e["label"] == "ESTIMATE" and e["available"] is True
+    assert e["meta_usd"][1] > 0 and e["meta_usd"][1] <= e["meta_hard_stop_usd"] == 1.0
+    assert e["baseten_usd"][1] <= e["hard_stop_usd"] == 1.0
+    # total is Baseten + Meta, each under its own smoke cap
+    assert e["total_usd"][1] == round(e["baseten_usd"][1] + e["meta_usd"][1], 2)
+    assert "Meta worst" in e["basis"] and "eye/hearing" in e["basis"]
+
+
 @pytest.fixture
 def client():
     return TestClient(create_app())
