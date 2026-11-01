@@ -437,7 +437,7 @@ def command(cfg: dict, mode: str) -> tuple[list[str], dict, str]:
         if mode == "mock":
             return ([PY, "scripts/e2e/modal_full_round.py", "--round", "ui-" + rounds[0], "--fake", "--limit", "3"],
                     env, "MOCK")
-        env.update(WATTNOT_MODAL_GO="1", WN_PY="/usr/bin/python3")
+        env.update(WATTNOT_MODAL_GO="1", WN_PY="/usr/bin/python3", WN_DASH_PY=sys.executable)
         cmd = ["/usr/bin/python3", "scripts/e2e/modal_stage.py", "--rounds", *rounds]
         return (cmd + ([] if cfg["open_pr"] else ["--no-pr"]), env, "MEASURED")
     if cfg["provider"] == "baseten":
