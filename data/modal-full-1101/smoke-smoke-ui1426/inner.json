@@ -1,0 +1,392 @@
+{
+ "started_utc": "2026-11-01T14:27:12.475669+00:00",
+ "gpu": "NVIDIA A100 80GB PCIe",
+ "fake": false,
+ "idle_w": {
+  "value": 56.0,
+  "label": "MEASURED",
+  "when": "before vLLM start"
+ },
+ "cap_probe": {
+  "writable": false,
+  "reason": "NVML refused the power-limit write (NVMLError_NoPermission); Modal containers have no privileged GPU control",
+  "label": "MEASURED"
+ },
+ "items": 9,
+ "slice": 9,
+ "steps": {
+  "without_server": {
+   "fp8": false,
+   "prefix_caching": false,
+   "max_num_seqs": 64,
+   "start_s": {
+    "value": 159.1,
+    "label": "MEASURED"
+   }
+  },
+  "without": {
+   "tag": "without",
+   "arm": "without_wattnot",
+   "answers": 9,
+   "correct": 9,
+   "accuracy": 1.0,
+   "per_set": {
+    "ours": {
+     "correct": 3,
+     "answers": 3
+    },
+    "gsm8k": {
+     "correct": 3,
+     "answers": 3
+    },
+    "humaneval": {
+     "correct": 3,
+     "answers": 3
+    }
+   },
+   "calls": 9,
+   "errors": 0,
+   "truncated": 0,
+   "tokens": {
+    "prompt": 1121,
+    "cached": 0,
+    "completion": 4582,
+    "label": "MEASURED",
+    "note": null
+   },
+   "energy_j": {
+    "value": 38995.7,
+    "label": "MEASURED",
+    "method": "NVML total-energy counter across the whole arm"
+   },
+   "energy_wh": {
+    "value": 10.8322,
+    "label": "MEASURED"
+   },
+   "wall_s": {
+    "value": 130.5,
+    "label": "MEASURED"
+   },
+   "avg_w": {
+    "value": 298.8,
+    "label": "MEASURED"
+   },
+   "j_per_correct": {
+    "value": 4332.9,
+    "label": "MEASURED"
+   },
+   "item_latency_s": {
+    "p50": 11.3484,
+    "p99": 45.9434,
+    "label": "MEASURED"
+   },
+   "stepped_up": 0,
+   "concurrency": 4,
+   "partial": false,
+   "item_errors": 0,
+   "wh_per_item_samples": {
+    "values": [
+     0.124829,
+     0.469254,
+     1.911515,
+     1.367992,
+     3.084969
+    ],
+    "label": "MEASURED",
+    "method": "NVML counter per chunk of 2 items / items in chunk"
+   }
+  },
+  "batch_kv": {
+   "grid": [
+    {
+     "concurrency": 4,
+     "max_num_seqs": 64,
+     "tag": "batch-c4-s64",
+     "arm": "with_wattnot",
+     "answers": 9,
+     "correct": 9,
+     "accuracy": 1.0,
+     "per_set": {
+      "ours": {
+       "correct": 3,
+       "answers": 3
+      },
+      "gsm8k": {
+       "correct": 3,
+       "answers": 3
+      },
+      "humaneval": {
+       "correct": 3,
+       "answers": 3
+      }
+     },
+     "calls": 10,
+     "errors": 0,
+     "truncated": 0,
+     "tokens": {
+      "prompt": 123,
+      "cached": 0,
+      "completion": 3869,
+      "label": "MEASURED",
+      "note": "prompt/cached tokens are not returned on the two-phase thinking-budget path; those calls count 0 here"
+     },
+     "energy_j": {
+      "value": 31717.8,
+      "label": "MEASURED",
+      "method": "NVML total-energy counter across the whole arm"
+     },
+     "energy_wh": {
+      "value": 8.8105,
+      "label": "MEASURED"
+     },
+     "wall_s": {
+      "value": 106.4,
+      "label": "MEASURED"
+     },
+     "avg_w": {
+      "value": 298.2,
+      "label": "MEASURED"
+     },
+     "j_per_correct": {
+      "value": 3524.2,
+      "label": "MEASURED"
+     },
+     "item_latency_s": {
+      "p50": 10.1541,
+      "p99": 54.0435,
+      "label": "MEASURED"
+     },
+     "stepped_up": 1,
+     "partial": false,
+     "item_errors": 0,
+     "wh_per_item_samples": {
+      "values": [
+       0.105053,
+       0.42225,
+       2.242735,
+       0.920979,
+       1.428472
+      ],
+      "label": "MEASURED",
+      "method": "NVML counter per chunk of 2 items / items in chunk"
+     }
+    },
+    {
+     "concurrency": 16,
+     "max_num_seqs": 64,
+     "tag": "batch-c16-s64",
+     "arm": "with_wattnot",
+     "answers": 9,
+     "correct": 9,
+     "accuracy": 1.0,
+     "per_set": {
+      "ours": {
+       "correct": 3,
+       "answers": 3
+      },
+      "gsm8k": {
+       "correct": 3,
+       "answers": 3
+      },
+      "humaneval": {
+       "correct": 3,
+       "answers": 3
+      }
+     },
+     "calls": 9,
+     "errors": 0,
+     "truncated": 0,
+     "tokens": {
+      "prompt": 0,
+      "cached": 0,
+      "completion": 2762,
+      "label": "MEASURED",
+      "note": "prompt/cached tokens are not returned on the two-phase thinking-budget path; those calls count 0 here"
+     },
+     "energy_j": {
+      "value": 19626.1,
+      "label": "MEASURED",
+      "method": "NVML total-energy counter across the whole arm"
+     },
+     "energy_wh": {
+      "value": 5.4517,
+      "label": "MEASURED"
+     },
+     "wall_s": {
+      "value": 65.8,
+      "label": "MEASURED"
+     },
+     "avg_w": {
+      "value": 298.4,
+      "label": "MEASURED"
+     },
+     "j_per_correct": {
+      "value": 2180.7,
+      "label": "MEASURED"
+     },
+     "item_latency_s": {
+      "p50": 10.1538,
+      "p99": 23.1815,
+      "label": "MEASURED"
+     },
+     "stepped_up": 0,
+     "partial": false,
+     "item_errors": 0,
+     "wh_per_item_samples": {
+      "values": [
+       0.098808,
+       0.422678,
+       0.527157,
+       0.96629,
+       1.421817
+      ],
+      "label": "MEASURED",
+      "method": "NVML counter per chunk of 2 items / items in chunk"
+     }
+    }
+   ],
+   "errors": [],
+   "kept": {
+    "concurrency": 16,
+    "max_num_seqs": 64
+   },
+   "label": "MEASURED"
+  },
+  "fp8": {
+   "kept": false,
+   "error": "RuntimeError: vllm not ready in 15 min"
+  },
+  "with_server": {
+   "fp8": false,
+   "prefix_caching": true,
+   "max_num_seqs": 64,
+   "start_s": {
+    "value": 60.0,
+    "label": "MEASURED"
+   }
+  },
+  "with": {
+   "tag": "with",
+   "arm": "with_wattnot",
+   "answers": 9,
+   "correct": 9,
+   "accuracy": 1.0,
+   "per_set": {
+    "ours": {
+     "correct": 3,
+     "answers": 3
+    },
+    "gsm8k": {
+     "correct": 3,
+     "answers": 3
+    },
+    "humaneval": {
+     "correct": 3,
+     "answers": 3
+    }
+   },
+   "calls": 10,
+   "errors": 0,
+   "truncated": 0,
+   "tokens": {
+    "prompt": 123,
+    "cached": 0,
+    "completion": 3772,
+    "label": "MEASURED",
+    "note": "prompt/cached tokens are not returned on the two-phase thinking-budget path; those calls count 0 here"
+   },
+   "energy_j": {
+    "value": 30538.4,
+    "label": "MEASURED",
+    "method": "NVML total-energy counter across the whole arm"
+   },
+   "energy_wh": {
+    "value": 8.4829,
+    "label": "MEASURED"
+   },
+   "wall_s": {
+    "value": 102.2,
+    "label": "MEASURED"
+   },
+   "avg_w": {
+    "value": 298.8,
+    "label": "MEASURED"
+   },
+   "j_per_correct": {
+    "value": 3393.2,
+    "label": "MEASURED"
+   },
+   "item_latency_s": {
+    "p50": 10.1356,
+    "p99": 49.1998,
+    "label": "MEASURED"
+   },
+   "stepped_up": 1,
+   "concurrency": 16,
+   "partial": false,
+   "item_errors": 0,
+   "wh_per_item_samples": {
+    "values": [
+     0.097461,
+     0.422161,
+     2.045115,
+     0.96294,
+     1.427528
+    ],
+    "label": "MEASURED",
+    "method": "NVML counter per chunk of 2 items / items in chunk"
+   },
+   "request_levers": {
+    "calls": 10,
+    "tokens_saved_est": 0,
+    "guard_stops": 0,
+    "guard_flags": 0
+   }
+  },
+  "limits": {
+   "p99_limit": "+10%",
+   "p99_ok": true,
+   "joule_slo_ok": true,
+   "quality_gate": {
+    "keep": true,
+    "accuracy_ok": true,
+    "energy_ok": true,
+    "acc_drop_pts": 0.0,
+    "label": "MEASURED"
+   },
+   "label": "MEASURED"
+  },
+  "blocks": {
+   "agentwaste": {
+    "rc": null,
+    "skipped": "2.2 min left"
+   },
+   "langchain": {
+    "rc": null,
+    "skipped": "2.2 min left"
+   },
+   "eye": {
+    "rc": null,
+    "skipped": "2.2 min left"
+   },
+   "spoken": {
+    "rc": null,
+    "skipped": "2.2 min left"
+   },
+   "think": {
+    "rc": null,
+    "skipped": "2.2 min left"
+   }
+  }
+ },
+ "failed": {
+  "fp8": "FP8 candidate failed, BF16 kept: RuntimeError: vllm not ready in 15 min",
+  "context_saver": "agentwaste GPU block skipped: container time ran out",
+  "waste_guard": "langchain GPU block skipped: container time ran out",
+  "eye_check": "eye GPU block skipped: container time ran out",
+  "hearing_check": "spoken GPU block skipped: container time ran out",
+  "thinking_budget": "think GPU block skipped: container time ran out"
+ },
+ "deadline_s": 1020.0,
+ "ended_utc": "2026-11-01T14:42:05.183578+00:00"
+}

@@ -1,0 +1,20 @@
+route replay [ESTIMATE] 6 recorded requests, no API call made
+source cloud_20261027_041453_318fad (MEASURED), home region us-east, grid SIMULATED (static fixture)
+
+class     baseline        effort only     effort+region               
+extract   xhigh @us-east  low             low @eu-north               
+arith     xhigh @us-east  low             low @eu-north               
+
+always xhigh               USD 0.0134 [MEASURED]   3277 J [ESTIMATE]   CO2 0.35 g [SIMULATED]
+router, effort only        USD 0.0069 [MEASURED]   1923 J [ESTIMATE]   CO2 0.20 g [SIMULATED]
+router + region what-if    USD 0.0069 [MEASURED]   1923 J [ESTIMATE]   CO2 0.02 g [SIMULATED]
+
+effort only:  USD -48.63%, joules -41.33%
++ region:     USD -48.63%, joules -41.33%, CO2 -94.59%
+
+note: Region is a what-if: Baseten and Meta's APIs do not let us choose one.
+note: Latency and data-residency differences between regions are not modelled.
+note: Carbon uses average grid intensity, not marginal, and is only a tie-breaker in the router.
+note: Energy is a FLOP-model range, not a measurement. None of this is a carbon claim.
+
+--- stderr ---

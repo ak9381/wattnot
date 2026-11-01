@@ -1,0 +1,18 @@
+ESTIMATE energy saved: 1,202.0 kWh per 30 days (1 GPUs)
+ESTIMATE cost saved: $144.24
+ESTIMATE water saved: 433 L (0.36 L/kWh, on-site cooling); up to 2,164 L including power-plant water (1.8 L/kWh)
+ESTIMATE note: scaled from one measured Wh/request delta; tariff, WUE, PUE and traffic are assumptions
+
+What this means for your data centre
+Verdict: change recommended
+Where this applies:
+  - always-on inference serving (chat, search, agents) where every request pays the energy cost
+  - overnight batch or eval jobs, where a lower cap rarely hurts deadlines
+  - water-stressed sites that use evaporative cooling
+  - EU efficiency reporting (Energy Efficiency Directive): the signed receipt documents the Wh/request change
+Recommended actions:
+  - ESTIMATE saves about $144.24 per 30 days across 1 GPU(s) (1,202.0 kWh)
+  - ESTIMATE saves about 433 L of cooling water per 30 days
+  - ADVICE re-run WattNot after any model, quantization, driver or traffic change; the cap is only proven for this workload
+
+--- stderr ---

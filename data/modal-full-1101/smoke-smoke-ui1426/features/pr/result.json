@@ -1,0 +1,19 @@
+{
+  "patch_sha256": "a2cb2754499f3be8f1d030db21a35798b96c9ca31e0956865ac2a533fe5b3462",
+  "receipt_sha256": "5836767a0cf55856af426e49c6b7ac9d2f1c815fc2c0f6864f64fb099d747766",
+  "receipt_uri": "wattnot://5836767a0cf55856af426e49c6b7ac9d2f1c815fc2c0f6864f64fb099d747766",
+  "session_id": null,
+  "trace_id": null,
+  "usage": {
+    "input_tokens": null,
+    "output_tokens": null,
+    "total_tokens": null
+  },
+  "input_tokens": null,
+  "output_tokens": null,
+  "total_tokens": null,
+  "model": "muse-spark-1.3-contributor",
+  "mock": true,
+  "open_pr": false,
+  "files_modified": []
+}

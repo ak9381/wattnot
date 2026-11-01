@@ -1,5 +1,5 @@
 {
- "usd": 0.6739,
+ "usd": 1.5614,
  "rounds": [
   {
    "round": "smoke-r04",
@@ -12,8 +12,32 @@
    "usd": 0.2965,
    "minutes": 7.1,
    "at": "2026-11-01T11:41:45.828792+00:00"
+  },
+  {
+   "round": "smoke-smoke-ui1426",
+   "usd": 0.6478,
+   "minutes": 15.5,
+   "at": "2026-11-01T14:42:22.535936+00:00"
+  },
+  {
+   "round": "smoke-smoke-ui1426-metered-true-up",
+   "usd": 0.2397,
+   "minutes": 0,
+   "at": "2026-11-01T14:43:27.642979+00:00"
   }
  ],
  "label": "ESTIMATE",
- "method": "container wall minutes x A100-80GB list price"
+ "method": "container wall minutes x A100-80GB list price",
+ "reserved": {},
+ "measured": [
+  {
+   "round": "smoke-smoke-ui1426",
+   "app_id": "ap-GveXLmrZ2DjcDyeUnexex2",
+   "usd": 0.6437,
+   "label": "MEASURED",
+   "source": "modal billing report 2026-11-01 (hourly, app wattnot-full-stage)",
+   "run_name": "A100 smoke: FP8 + batch sweep + thinking budget",
+   "job": "20261101-142644-9a5d"
+  }
+ ]
 }
