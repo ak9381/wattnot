@@ -105,10 +105,10 @@ def teardown() -> dict:
             break
         for i in ids or []:
             if i == "UNKNOWN-ID":
-                subprocess.run(["modal", "app", "stop", full_stage.APP_NAME], capture_output=True, timeout=120)
+                subprocess.run(["modal", "app", "stop", "-y", full_stage.APP_NAME], capture_output=True, timeout=120)
                 continue
             try:
-                subprocess.run(["modal", "app", "stop", i], capture_output=True, timeout=120)
+                subprocess.run(["modal", "app", "stop", "-y", i], capture_output=True, timeout=120)
                 stopped.append(i)
             except Exception:  # noqa: BLE001 - keep trying the others, re-checked below
                 pass

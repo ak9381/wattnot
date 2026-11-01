@@ -29,11 +29,14 @@ CLIPS = DATA / "clips"
 PORT = 8772
 CHROME = "/opt/google/chrome/chrome"
 PY = os.environ.get("WN_PY", sys.executable)
+# The recorder dashboard needs uvicorn/fastapi, which live in the dashboard venv, not in the
+# system python that runs Modal + Playwright.
+DASH_PY = os.environ.get("WN_DASH_PY", PY)
 PR_REPO = "ak9381/wattnot-demo-deploy"
 
 
 def server(events: Path):
-    p = subprocess.Popen([PY, "-m", "wattnot.dash", "--port", str(PORT), "--events", str(events)], cwd=ROOT,
+    p = subprocess.Popen([DASH_PY, "-m", "wattnot.dash", "--port", str(PORT), "--events", str(events)], cwd=ROOT,
                          env={**os.environ, "PYTHONPATH": f"{ROOT}:{ROOT / 'src'}"},
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     for _ in range(80):
@@ -184,20 +187,44 @@ def main():
         runner = subprocess.Popen(cmd, cwd=ROOT, env={**os.environ, "PYTHONPATH": f"{ROOT}:{ROOT / 'src'}"},
                                   stdout=logf, stderr=subprocess.STDOUT)
         clips = []
-        srv = server(evw)
         try:
-            record(f"http://127.0.0.1:{PORT}/graph.html?live=1", CLIPS / f"modal-{tag}-graph-without.mp4",
-                   until=lambda: has(evi, '"run.started"') or runner.poll() is not None, max_s=4 * 3600)
-        finally:
-            stop(srv)
-        clips.append(CLIPS / f"modal-{tag}-graph-without.mp4")
-        srv = server(evi)
-        try:
-            record(f"http://127.0.0.1:{PORT}/graph.html?live=1", CLIPS / f"modal-{tag}-graph-with.mp4",
-                   until=lambda: has(evi, '"run.finished"') or runner.poll() is not None, max_s=4 * 3600,
-                   tail_s=8)
-        finally:
-            stop(srv)
+            srv = server(evw)
+            try:
+                record(f"http://127.0.0.1:{PORT}/graph.html?live=1", CLIPS / f"modal-{tag}-graph-without.mp4",
+                       until=lambda: has(evi, '"run.started"') or runner.poll() is not None, max_s=4 * 3600)
+            finally:
+                stop(srv)
+            clips.append(CLIPS / f"modal-{tag}-graph-without.mp4")
+            srv = server(evi)
+            try:
+                record(f"http://127.0.0.1:{PORT}/graph.html?live=1", CLIPS / f"modal-{tag}-graph-with.mp4",
+                       until=lambda: has(evi, '"run.finished"') or runner.poll() is not None, max_s=4 * 3600,
+                       tail_s=8)
+            finally:
+                stop(srv)
+        except BaseException:
+            # never leave a paid runner going without its recorder: stop it (its own exit path
+            # stops the Modal app) and re-raise
+            runner.terminate()
+            try:
+                runner.wait(timeout=180)
+            except subprocess.TimeoutExpired:
+                runner.kill()
+            for _ in range(3):
+                try:
+                    apps = json.loads(subprocess.run(["modal", "app", "list", "--json"], capture_output=True,
+                                                     text=True, timeout=120).stdout or "[]")
+                except Exception:  # noqa: BLE001
+                    apps = []
+                live = [a for a in apps if "wattnot-full-stage" in json.dumps(a)
+                        and "stopped" not in json.dumps(a).lower()]
+                if not live:
+                    break
+                for a in live:
+                    aid = a.get("App ID") or a.get("app_id") or a.get("id")
+                    if aid:
+                        subprocess.run(["modal", "app", "stop", "-y", aid], capture_output=True, timeout=120)
+            raise
         clips.append(CLIPS / f"modal-{tag}-graph-with.mp4")
         rc = runner.wait()
         logf.close()
