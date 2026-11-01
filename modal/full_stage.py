@@ -20,7 +20,7 @@ import tarfile
 APP_NAME = "wattnot-full-stage"
 GPU = "A100-80GB"
 GPU_USD_H = 2.50              # ESTIMATE, Modal list price for A100-80GB (not a bill)
-ROUND_CAP_S = 3 * 3600        # hard container timeout: worst case 3 h x $2.50 = $7.50 (ESTIMATE)
+ROUND_CAP_S = 4 * 3600        # hard container timeout: worst case 4 h x $2.50 = $10 per round (ESTIMATE; raised from $7.50, approved 1 Nov)
 SMOKE_CAP_S = 22 * 60         # smoke tests: 22 min x $2.50 = $0.92 worst case (ESTIMATE)
 VOL = "wattnot-glimmer-weights"
 GO_ENV = "WATTNOT_MODAL_GO"

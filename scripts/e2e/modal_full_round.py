@@ -5,7 +5,7 @@ flow: Wonder, Spark 4-call trace, approvals, EU report, label lint, Muse Code pa
     python scripts/e2e/modal_full_round.py --round r04 [--limit 1] [--live-meta] [--live-pr]
     python scripts/e2e/modal_full_round.py --round r04 --fake      # MOCK, no Modal, $0
 
-Guards: WATTNOT_MODAL_GO=1 for any GPU call; the $40 stage cap in data/modal-full-1101/stage_spend.json
+Guards: WATTNOT_MODAL_GO=1 for any GPU call; the $60 stage cap in data/modal-full-1101/stage_spend.json
 (refuses when spent + this round's worst case > cap); Meta soft cap $100 before Spark grades;
 `modal app list` checked after, and any wattnot-full-stage app is stopped.
 Muse Code writes the patch every round; --live-pr also opens the PR, only on
@@ -40,7 +40,7 @@ def _load_stage():
 full_stage = _load_stage()
 
 DATA = ROOT / "data" / "modal-full-1101"
-STAGE_CAP_USD = 40.0
+STAGE_CAP_USD = 60.0   # raised from $40 with Akash's yes (1 Nov, 5:39 PM IST); covers the later combined stage too
 SOFT_META_USD = 100.0
 SPEND = DATA / "stage_spend.json"
 KEY = ROOT / "verifier" / "samples" / "test-key.pem"

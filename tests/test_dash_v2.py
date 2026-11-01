@@ -172,11 +172,12 @@ def test_stepper_answers_map_onto_existing_options():
 def test_configure_is_a_guided_stepper_with_connected_panel():
     import pathlib
     js = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash/v2.js").read_text()
-    for q in ("What do you want to save on?", "Which AI are you running?",
-              "What kind of traffic?", "Your stack", "How careful should we be?", "How do you want to run it?"):
+    for q in ("Name this run", "What do you want to save on?", "Where does it run?", "Which AI are you running?",
+              "What traffic, which datasets?", "Your stack", "Limits and spend caps", "Approvals and the code PR",
+              "What works on this setup", "Pre-launch checks", "Confirm and run"):
         assert q in js
     assert "A model is the AI program that answers your users' prompts." in js
-    assert "Step ${n} of 6" in js or "Step ${n} of 5" in js or "of 6" in js or "of 5" in js
+    assert "Step ${n} of ${NSTEP}" in js and "stepOk()" in js  # run name is required on step 1
     assert "stepBack" in js and "stepNext" in js and 'role="radiogroup"' in js
     assert 'type="radio"' in js  # cards are radio inputs, not dropdowns
     assert "<svg" in js and "emoji" not in js.lower()

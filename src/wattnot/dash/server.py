@@ -792,6 +792,9 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         return StreamingResponse(gen(), media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache"})
 
+    from wattnot.dash.launch import router as _launch_router
+    app.include_router(_launch_router())
+
     @app.get("/")
     def index():
         return FileResponse(WEB / "index.html")

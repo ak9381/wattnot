@@ -916,7 +916,8 @@
     3.0,
     3.6
    ],
-   "hard_cap_usd": 40.0,
+   "hard_cap_usd": 60.0,
+   "round_cap_usd": 10.0,
    "spend": "Modal hackathon credits",
    "energy_label": "MEASURED"
   },

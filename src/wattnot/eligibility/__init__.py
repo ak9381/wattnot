@@ -32,7 +32,7 @@ PROVIDERS: dict[str, dict] = {
     "modal_a100": {
         "label": "Modal A100 (our own vLLM, Glimmer 30B)", "runner": "modal",
         "caps": {"meta_api", "own_vllm", "nvml_read", "serverless_gpu", "local"},
-        "default_model": "glimmer-30b", "cost_round_usd": [3.0, 3.6], "hard_cap_usd": 40.0,
+        "default_model": "glimmer-30b", "cost_round_usd": [3.0, 3.6], "hard_cap_usd": 60.0, "round_cap_usd": 10.0,
         "spend": "Modal hackathon credits", "energy_label": "MEASURED",
     },
     "e2e_h100": {
@@ -173,10 +173,22 @@ def check(config: dict) -> dict:
         models.append({**m, "eligible": ok, "reason": why, "label": m.get("label")})
     runner = [{"id": k, "req": r, "rows": rows, "eligible": _verdict(r, prov)[0], "reason": _verdict(r, prov)[1]}
               for k, (r, rows) in RUNNER.items()]
+    off_nodes = {}
+    try:
+        from wattnot.e2e.fullstack import FEATURE_NODES
+        names = {k: k.replace("_", " ") for k in RUNNER}
+        by: dict[str, list] = {}
+        for r in runner:
+            for n in FEATURE_NODES.get(r["id"], []):
+                by.setdefault(n, []).append(r)
+        off_nodes = {n: "; ".join(sorted({f"{names[r['id']]}: {r['reason']}" for r in rs}))
+                     for n, rs in by.items() if not any(r["eligible"] for r in rs)}
+    except ImportError:
+        pass
     n_ok = sum(f["eligible"] for f in feats)
     return {"provider": prov, "provider_label": PROVIDERS[prov]["label"], "model": model,
             "energy_label": PROVIDERS[prov]["energy_label"], "features": feats, "models": models,
-            "runner": runner, "counts": {"eligible": n_ok, "ineligible": len(feats) - n_ok, "total": len(feats)},
+            "runner": runner, "off_nodes": off_nodes, "counts": {"eligible": n_ok, "ineligible": len(feats) - n_ok, "total": len(feats)},
             "problems": problems}
 
 
@@ -205,3 +217,23 @@ if __name__ == "__main__":
     root = Path(__file__).resolve().parents[3]
     d = build(root / "docs" / "WALKTHROUGH.md")
     print(f"{d['count']} features written to {FEATURES_JSON}", file=sys.stderr)
+
+
+def normalize_stage_features(doc: dict, provider: str | None = None) -> dict:
+    """Map a runner's stage feature file (Modal features/stage_features.json, a Baseten round's
+    "features" list, or a stage.features event) to the Baseten table shape {id, name, status, reason}
+    and compare it with the eligibility verdicts. FAILED = eligible and ON, but broke in the round."""
+    prov = provider or {"modal": "modal_a100", "baseten": "baseten"}.get(doc.get("stage") or "", "baseten")
+    rows = doc.get("features") or doc.get("table") or []
+    verdict = {r["id"]: r for r in check({"provider": prov})["runner"]}
+    table, drift = [], []
+    for r in rows:
+        st = str(r.get("status", "")).upper()
+        v = verdict.get(r.get("id"))
+        row = {"id": r.get("id"), "name": r.get("name") or r.get("id"), "status": st, "reason": r.get("reason", "")}
+        if v is not None:
+            row["eligible"] = v["eligible"]
+            if (st in ("ON", "FAILED")) != v["eligible"]:
+                drift.append({"id": row["id"], "runner": st, "eligibility": "Eligible" if v["eligible"] else "Ineligible"})
+        table.append(row)
+    return {"provider": prov, "table": table, "drift": drift, "off_nodes": doc.get("off_nodes") or {}}

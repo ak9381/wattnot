@@ -108,6 +108,9 @@ export class ArchPage {
     { const _le = this.view.layoutEdges.bind(this.view); this.view.layoutEdges = () => { _le(); this.pan?.refreshMinimap(); }; }
     this._fitted = false;
     this.wire(); this.mode = "all"; this.liveW = null; this.renderMeter(0);
+    // Configure-screen eligibility greys nodes before any event arrives; a live stage.features event wins.
+    const _el = (e) => { if (!this._liveOff && e && e.off_nodes) this.view.setOff(e.off_nodes); };
+    _el(window.__wnElig); window.addEventListener("wn:eligibility", (ev) => _el(ev.detail));
     // The live expert card nested in the Adaptive top-k block follows the same
     // replay clock (progress 0..1 across both phases) as the map animation.
     this._expertProgress = 0;
@@ -338,7 +341,7 @@ export class ArchPage {
       const sc = sparkCallFrom(ev); if (sc) this.sparkTrace(sc);
       if (d.model) this.metaStrip(ev);                                   // any Meta model call: tally it in the strip         // Muse Spark operator call: show it in the trace panel
       if (ev.type === "telemetry.sample" && d.power_w != null) { this.liveW = d.power_w; this.renderMeter(0); }
-      { const off = stageOff(ev); if (off) { this.view.setOff(off); return; } }
+      { const off = stageOff(ev); if (off) { this._liveOff = true; this.view.setOff(off); return; } }
       if (ev.type === "run.started") { const ap = armPhase(ev); this.liveBadge(ev); if (ap) { this.view.setPhase(ap[0], ap[1]); const ph = $("#aphase", H); if (ph) ph.textContent = ap[0] === 1 ? "Without WattNot (live)" : "With WattNot (live)"; } }
       if (ev.type === "run.finished") { this.view.finish(this.view.cur); this.view.cur = null; return; }
       const r = this.route(ev); if (!r) return;
