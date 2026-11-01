@@ -8,7 +8,7 @@ WattNot is an agent that makes LLM inference use less energy without making it w
 ## 2. Users
 | User | What they want | Where they touch WattNot |
 |---|---|---|
-| Small self-hosting team (1–50 GPUs, vLLM on Modal/Baseten or own boxes) | Lower Wh and $ per request, no quality loss | `wattnot run`, receipts, Pareto screen |
+| Small self-hosting team (1–50 GPUs, vLLM on Modal/Baseten or own boxes) | Lower Wh and $ per request, no quality loss | `wattnot init` + the sweep (`python -m wattnot.proof.orchestrate`), receipts, Pareto screen |
 | Their finance / sustainability lead | A number they can trust and report | Receipt + verifier, EU report export |
 | A hackathon judge (and any sceptic) | Check the claim without trusting us | Public WASM verifier URL, Rekor entry, published 10 Hz CSVs |
 

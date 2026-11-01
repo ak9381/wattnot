@@ -68,7 +68,7 @@ export function renderEuCardHTML(d) {
       <span class="eucard-k">EU efficiency report</span>
       <span class="eucard-big">${big}</span>
       <span class="eucard-l">J per correct answer${d.receiptId ? ` · ${esc(d.receiptId)}${d.created ? `, ${esc(d.created)}` : ""}` : ""}</span>
-      <span class="eucard-l">${val(d.jBase, 2, "", d.jLabel || d.label)} → ${val(d.jCand, 2, "J", d.jLabel || d.label)} · pass ${d.passRate == null ? `${DASH}${dot(null)}` : `${fix(d.passRate * 100, 1)}%`}</span>
+      <span class="eucard-l">${val(d.jBase, 2, "", d.jLabel || d.label)} → ${val(d.jCand, 2, "J", d.jLabel || d.label)} · pass ${d.passRate == null ? `${DASH}${dot(null)}` : `${fix(d.passRate * 100, 1)}%${dot(d.label)}`}</span>
     </button>
     <div class="eucard-acts">${open}<a class="eucard-btn eucard-btn2" href="eu.html">EU Compliance tab</a><span class="eucard-road">${d.csrdTag}</span></div>
     <dialog class="eucard-pop" aria-label="EU efficiency report: what and how">

@@ -158,7 +158,7 @@ def _run_receipt(a: argparse.Namespace) -> int:
             print(f"[{block['label']}] candidate {c['j_per_answer']} J per answer, "
                   f"{c['j_per_good_answer']} J per good answer")
             ch = block["change_pct"]["j_per_good_answer"]
-            print(f"change per good answer: {ch}%"
+            print(f"[{block['label']}] change per good answer: {ch}%"
                   + ("" if ok else "  (stored joules block does NOT match)"))
         return 0 if ok else 1
     if a.receipt_cmd == "from-cloud":

@@ -228,7 +228,8 @@ def format_report(r: Report) -> str:
     j = (r.joules or {}).get("candidate")
     if j and j.get("j_per_answer") is not None:
         good = j.get("j_per_good_answer")
-        lines.append(f"  info {'':<9} candidate {j['j_per_answer']:.1f} J per answer, "
+        lab = j.get("label") or (r.joules or {}).get("label") or "ESTIMATE"
+        lines.append(f"  info {'':<9} [{lab}] candidate {j['j_per_answer']:.1f} J per answer, "
                      + (f"{good:.1f} J per good answer" if good is not None
                         else "no good answers (pass rate 0)"))
     return "\n".join(lines)
