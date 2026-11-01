@@ -894,7 +894,11 @@ async function renderReport() {
   const runs = S.runs?.runs || [];
   const selId = S.selRunId || (runs[0] && runs[0].id) || "default";
   const hubTitle = S.selRun?.run_name || `${r2.model || "Llama 3.1 8B Instruct"} · ${r2.cap_w || 350} W cap`;
-  const hubDetail = r2.j_per_req_stock != null
+  const mx = S.selRun?.kind === "matrix" ? S.selRun : null;
+  const mb = mx?.phases?.baseline?.metrics, mw = mx?.phases?.wattnot?.metrics;
+  const hubDetail = mx && mb && mw
+    ? `<p>Real ${esc(mx.leg)} round on ${esc(mx.model || "")}: the same prompts without WattNot (effort medium) and with it (effort low, step up only when the answer check fails). Accuracy went from <b>${num(mb.quality_pct, 1)}%</b> to <b>${num(mw.quality_pct, 1)}%</b> ${badge("MEASURED")}, energy per answer changed by <b>${num(mw.saved_pct, 1)}%</b> ${badge("ESTIMATE")} (hosted API, no power meter), the slowest 1% changed by <b>${num(mw.p99_change_pct, 1)}%</b> ${badge("MEASURED")}, and cost went from <b>$${num(mb.usd, 4)}</b> to <b>$${num(mw.usd, 4)}</b> ${badge("MEASURED")}. Muse Spark agreed with the answer checks on <b>${num(100 * (mx.matrix?.spark?.agreement ?? 0), 1)}%</b> of ${esc(mx.matrix?.spark?.spark_graded ?? 0)} answers ${badge("MEASURED")}.</p>`
+    : r2.j_per_req_stock != null
     ? `<p>We capped an H100 at <b>${r2.cap_w} W</b> instead of ${r2.stock_w} W on ${esc(r2.model)} and measured energy per request, the slowest 1% of requests, and answer quality. Energy fell <b>${num(r2.saved_pct, 1)}%</b> ${badge("MEASURED")}, the slowest 1% changed by <b>${num(r2.p99_change_pct, 1)}%</b> ${badge("MEASURED")}, and quality went from <b>${num(r2.quality_stock_pct, 1)}%</b> to <b>${num(r2.quality_cap_pct, 1)}%</b> ${badge("MEASURED")}.</p>`
     : `<p>${esc(S.selRun?.phases?.wattnot?.note || "This run has no measured headline numbers.")}</p>`;
   const topicHtml = (t) => `<div class="topic" data-topic="${t.id}" data-open="0">

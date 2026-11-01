@@ -1,0 +1,329 @@
+{
+ "round": "r01",
+ "leg": "baseten",
+ "status": "done",
+ "label": "MEASURED",
+ "model": "meta-models/muse-spark-open",
+ "where": "Baseten Model API (Muse Spark Open)",
+ "started_utc": "2026-11-01T09:04:49.713239+00:00",
+ "ended_utc": "2026-11-01T09:05:07.163012+00:00",
+ "stop_reason": null,
+ "smoke": true,
+ "note": "accuracy, tokens, USD and latency MEASURED; energy ESTIMATE from tokens (hosted API, no GPU meter); deterministic checks decide, Muse Spark grades beside them",
+ "levers": {
+  "without_wattnot": "effort medium for every request",
+  "with_wattnot": "effort low first, step up to medium only when the fixed check fails"
+ },
+ "results": {
+  "accuracy_without": 1.0,
+  "accuracy_with": 1.0,
+  "j_per_correct_without": 479.28,
+  "j_per_correct_with": 324.6,
+  "energy_saved_pct": {
+   "value": 32.27,
+   "label": "ESTIMATE"
+  },
+  "usd_saved_pct": {
+   "value": 38.24,
+   "label": "MEASURED"
+  },
+  "per_arm": {
+   "without_wattnot": {
+    "answers": 6,
+    "correct": 6,
+    "accuracy": 1.0,
+    "per_set": {
+     "ours": {
+      "correct": 2,
+      "answers": 2,
+      "accuracy": 1.0
+     },
+     "gsm8k": {
+      "correct": 2,
+      "answers": 2,
+      "accuracy": 1.0
+     },
+     "humaneval": {
+      "correct": 2,
+      "answers": 2,
+      "accuracy": 1.0
+     }
+    },
+    "calls": 6,
+    "errors": 0,
+    "tokens": {
+     "prompt": 1302,
+     "cached": 512,
+     "completion": 2668,
+     "label": "MEASURED"
+    },
+    "usd": {
+     "value": 0.012403,
+     "label": "MEASURED",
+     "method": "tokens x Baseten list price"
+    },
+    "energy_wh": {
+     "value": 0.7988,
+     "low": 0.1452,
+     "high": 1.4524,
+     "label": "ESTIMATE",
+     "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+    },
+    "j_per_correct": {
+     "value": 479.28,
+     "label": "ESTIMATE"
+    },
+    "item_latency_s": {
+     "p50": 3.0095,
+     "p99": 4.4808,
+     "label": "MEASURED"
+    },
+    "call_latency_s": {
+     "p50": 3.0083,
+     "p99": 4.4799,
+     "mean": 3.2814,
+     "label": "MEASURED"
+    },
+    "stepped_up": 0
+   },
+   "with_wattnot": {
+    "answers": 6,
+    "correct": 6,
+    "accuracy": 1.0,
+    "per_set": {
+     "ours": {
+      "correct": 2,
+      "answers": 2,
+      "accuracy": 1.0
+     },
+     "gsm8k": {
+      "correct": 2,
+      "answers": 2,
+      "accuracy": 1.0
+     },
+     "humaneval": {
+      "correct": 2,
+      "answers": 2,
+      "accuracy": 1.0
+     }
+    },
+    "calls": 6,
+    "errors": 0,
+    "tokens": {
+     "prompt": 1302,
+     "cached": 512,
+     "completion": 1552,
+     "label": "MEASURED"
+    },
+    "usd": {
+     "value": 0.00766,
+     "label": "MEASURED",
+     "method": "tokens x Baseten list price"
+    },
+    "energy_wh": {
+     "value": 0.541,
+     "low": 0.0984,
+     "high": 0.9836,
+     "label": "ESTIMATE",
+     "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+    },
+    "j_per_correct": {
+     "value": 324.6,
+     "label": "ESTIMATE"
+    },
+    "item_latency_s": {
+     "p50": 2.6273,
+     "p99": 4.0596,
+     "label": "MEASURED"
+    },
+    "call_latency_s": {
+     "p50": 2.6076,
+     "p99": 4.0587,
+     "mean": 2.6359,
+     "label": "MEASURED"
+    },
+    "stepped_up": 0
+   }
+  }
+ },
+ "spend": {
+  "baseten_usd": {
+   "value": 0.020064,
+   "label": "MEASURED",
+   "method": "tokens x list price (not yet checked against the invoice)"
+  },
+  "meta_usd": {
+   "value": 0.010925,
+   "label": "MEASURED",
+   "source": "Meta spend ledger"
+  },
+  "meta_ledger_after_usd": 26.8277
+ },
+ "spark_summary": {
+  "label": "LIVE",
+  "answers": 12,
+  "spark_graded": 12,
+  "agreement": 1.0,
+  "disagreements": 0,
+  "stopped": null
+ },
+ "answers": [
+  {
+   "id": "easy-00",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "80+31 equals 111 as answered.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.041
+  },
+  {
+   "id": "easy-01",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "40 times 9 equals 360.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.0095
+  },
+  {
+   "id": "Janet\u2019s ducks lay 16 eggs per day. She e",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 16-3-4=9 eggs at $2 gives $18 correctly.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 2.6157
+  },
+  {
+   "id": "A robe takes 2 bolts of blue fiber and h",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Answer correctly calculates 3 total bolts.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.4808
+  },
+  {
+   "id": "HumanEval/0",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Double loop correctly detects any pair with difference below threshold.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 2.5664
+  },
+  {
+   "id": "HumanEval/1",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly splits balanced groups ignoring spaces using depth counter.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.0249
+  },
+  {
+   "id": "easy-00",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "80+31 equals 111 so answer is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.9499
+  },
+  {
+   "id": "easy-01",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "360 is the correct product of 40 and 9.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.6528
+  },
+  {
+   "id": "Janet\u2019s ducks lay 16 eggs per day. She e",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 16-3-4=9 eggs at $2 equals $18 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.6827
+  },
+  {
+   "id": "A robe takes 2 bolts of blue fiber and h",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 3 bolts total.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.0596
+  },
+  {
+   "id": "HumanEval/0",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly checks all pairs for difference less than threshold.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.6273
+  },
+  {
+   "id": "HumanEval/1",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly splits balanced groups ignoring spaces.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.8882
+  }
+ ],
+ "raw_dir": "data/baseten-1101/r01"
+}

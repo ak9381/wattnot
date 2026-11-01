@@ -2,7 +2,7 @@
 
 `BasetenClient` is a `client(body, purpose=...) -> dict` callable with the same
 shape `MusePlanner` already reads (`usage_of` / `_json`): it POSTs to
-`{base_url}/chat/completions` with the key from `BASETEN_METRICS_KEY` (fallback `BASETEN_API_KEY`), priced from
+`{base_url}/chat/completions` with the key from `BASETEN_API_KEY` only (the hackathon key), priced from
 the reply's usage at the published rates. `OpenWeightsPlanner` is a
 `MusePlanner` that talks through it under the name `muse-spark-open`.
 
