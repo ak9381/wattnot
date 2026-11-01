@@ -19,7 +19,7 @@ _COUNTER_KEYS = (
     "reasoning_tokens",
     "nudges",
 )
-_FLAG_KINDS = ("repeat", "no_op", "cycle", "reasoning")
+_FLAG_KINDS = ("repeat", "no_op", "cycle", "reasoning", "error_storm", "low_gain", "paraphrase")
 
 
 def _run_id(body: dict) -> str:
@@ -240,6 +240,12 @@ def create_app(
                 u = response.get("usage") or {}
                 esc_tokens += int(u.get("prompt_tokens") or 0) + int(u.get("completion_tokens") or 0)
         except Exception:
+            # keep a record: tokens already charged for escalated attempts stay visible in
+            # /stats and the receipt, and the call counts as an upstream error, not a pass
+            rec.update({"attempts": attempts, "answered_by": "wattnot:upstream_error",
+                        "gate_passed": False, "error": "upstream error",
+                        "escalated_tokens": esc_tokens})
+            calls.append(rec)
             return JSONResponse(
                 status_code=502, content={"detail": "upstream error"}
             )
@@ -272,7 +278,7 @@ def create_app(
     @app.get("/v1/wattnot/receipt")
     async def wattnot_receipt() -> JSONResponse:
         n = len(calls)
-        answered = [c for c in calls if not c.get("stopped")]
+        answered = [c for c in calls if not c.get("stopped") and not c.get("error")]
         routed = [c for c in calls if c["attempts"] and c["attempts"][0]["tier"] is not None]
         small_pass = sum(1 for c in routed if c["attempts"][0]["passed"])
         escalated = sum(1 for c in routed if len(c["attempts"]) > 1)
@@ -299,7 +305,8 @@ def create_app(
                                         for t in {c["answered_by"] for c in calls}}},
             "gate": {"pass_pct": round(100 * sum(c["gate_passed"] for c in answered) / len(answered), 2)
                      if answered else None, "answered_calls": len(answered),
-                     "stopped_by_guard": n - len(answered)},
+                     "stopped_by_guard": sum(1 for c in calls if c.get("stopped")),
+                     "upstream_errors": sum(1 for c in calls if c.get("error"))},
             "escalated_attempt_tokens": sum(c.get("escalated_tokens", 0) for c in calls),
             "context_saver": {"enabled": context_saver is not None, "tokens_before": tb,
                               "tokens_after": ta, "tokens_saved": tb - ta, "label": "ESTIMATE"},

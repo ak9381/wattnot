@@ -555,7 +555,10 @@ MAX_PUBLIC_REPS = 5
 MAX_TIERS_PER_TIER = 25
 MAX_HOURS_MIN = {"t1-sweep": 95, **{t: 95 for t in MAX_SWEEP_REPEATS}, "t1-tiers": 60,
                  "t2c-prefix": 40, "t2d-combined": 25, "t2e-public": 230, "t2g-serverless": 45}
-MAX_REQUIRED_BLOCKS = LONG_REQUIRED_BLOCKS + MAX_SWEEP_REPEATS + ("t1-tiers", "t2g-serverless")
+# must run; the repeat sweeps, tiers, public and serverless blocks are skip_if_short (dropped,
+# logged "skipped: time", if the run runs late) so they can never push the copy block out
+MAX_REQUIRED_BLOCKS = tuple(b for b in LONG_REQUIRED_BLOCKS if b != "t2e-public")
+MAX_EXTRA_BLOCKS = MAX_SWEEP_REPEATS + ("t1-tiers", "t2e-public", "t2g-serverless")
 
 
 def plan_glimmer_max(out: Path) -> list[Block]:
@@ -598,7 +601,13 @@ def plan_glimmer_max(out: Path) -> list[Block]:
         dry=[sys.executable, "scripts/public_bench_ab.py", "--fake", "--cap", "325", "--reps",
              str(MAX_PUBLIC_REPS), "--sets", *sets, "--out", str(out / "runs" / "t2e-public")],
         live=["python", "scripts/public_bench_ab.py", "--cap", "{BEST_CAP}", "--reps",
-              str(MAX_PUBLIC_REPS), "--sets", *sets, "--out", f"{REMOTE_RESULTS}/t2e-public"])
+              str(MAX_PUBLIC_REPS), "--sets", *sets, "--out", f"{REMOTE_RESULTS}/t2e-public"],
+        # running late: keep the GSM8K significance test (300 items, 3 reps) and drop HumanEval
+        min_hours=_m(100),
+        trim=[sys.executable, "scripts/public_bench_ab.py", "--fake", "--cap", "325", "--reps", "3",
+              "--sets", "gsm8k300", "--out", str(out / "runs" / "t2e-public")],
+        trim_live=["python", "scripts/public_bench_ab.py", "--cap", "{BEST_CAP}", "--reps", "3",
+                   "--sets", "gsm8k300", "--out", f"{REMOTE_RESULTS}/t2e-public"])
     prefix = replace(long_blocks["t2c-prefix"], hours=_m(MAX_HOURS_MIN["t2c-prefix"]),
                      live=["python", "scripts/prefix_cache_ab.py", "--out",
                            f"{REMOTE_RESULTS}/t2c-prefix", "--reps", "5"])
@@ -616,8 +625,8 @@ def plan_glimmer_max(out: Path) -> list[Block]:
     for b in long_blocks.values():
         if b.id == "t1-sweep":
             b = replace(b, hours=_m(MAX_HOURS_MIN["t1-sweep"]))
-        if b.id == "t3-copy":
-            blocks.append(serverless)
+        if b.id == "t2-fp8":
+            blocks.append(serverless)   # BF16 cold start + idle, before the FP8 swap
         blocks.append(swap.get(b.id, b))
         if b.id == "t1-eu":
             blocks.extend(repeat(t) for t in MAX_SWEEP_REPEATS)
@@ -1061,6 +1070,12 @@ def _live_runner(out: Path, host: str, key: str, vm: RemoteVm, log=print):
                 return 1
             return 7 if vm.copy_mismatched else 0   # copied, but sha256 mismatch: block fails
         if b.live is None:
+            return 0
+        if any("{BEST_CAP}" in a for a in b.live) and not best_cap_from_sweep(out) \
+                and not any("prefix_cache_ab.py" in a for a in b.live):
+            # only prefix_cache_ab.py understands "NONE"; the harness and public_bench_ab.py take
+            # an int cap, so with no passing cap these blocks have nothing to compare: skip
+            log(f"[live] {b.id}: skipped, the sweep found no passing cap")
             return 0
         argv = fill(b.live)
         logf = out / "logs" / f"{b.id}.log"

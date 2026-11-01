@@ -127,7 +127,8 @@ class SparkSummarizer:
         except Exception:  # noqa: BLE001 - never break the agent call over a summary
             pass
         self.failures += 1
-        return MockSummarizer.__call__(MockSummarizer(), text)
+        # no mock text in a live context: on a failed summary keep the original (no compression)
+        return text
 
 
 def default_summarizer() -> Callable[[str], str]:

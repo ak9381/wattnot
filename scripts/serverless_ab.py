@@ -29,7 +29,7 @@ MODEL = "meta-models/Muse-Glimmer-30B"
 
 
 def _ask(base_url: str, timeout: float) -> bool:
-    body = json.dumps({"model": MODEL, "max_tokens": 64,
+    body = json.dumps({"model": MODEL, "max_tokens": 1024,   # Glimmer reasons first; 64 would end in thinking
                        "messages": [{"role": "user", "content": "Say ok."}]}).encode()
     req = urllib.request.Request(f"{base_url}/chat/completions", data=body,
                                  headers={"Content-Type": "application/json"})

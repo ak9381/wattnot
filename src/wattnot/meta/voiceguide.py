@@ -34,7 +34,16 @@ from pathlib import Path
 from typing import Any
 
 from wattnot.receipt.build import verify_hash
-from wattnot.report.eu import fields_for
+from wattnot.report.eu import check_receipt_hash, fields_for
+
+
+def _hash_ok(receipt) -> bool:
+    """Never cite a receipt whose SHA-256 does not match (fail closed)."""
+    try:
+        check_receipt_hash(receipt)
+        return True
+    except ValueError:
+        return False
 
 ALLOWED_ACTIONS = frozenset({"navigate", "answer", "prefill", "explain", "tune"})
 ALLOWED_INTENTS = frozenset({"navigate", "answer", "configure", "explain", "command"})
@@ -650,7 +659,7 @@ def process_voice_query(
                 "quick_ack": quick["ack"],
                 "label": label,
             }
-        elif matched is not None and is_answerable:
+        elif matched is not None and is_answerable and _hash_ok(matched):
             rid = matched["receipt_id"]
             res = matched.get("result", {})
             saving = res.get("billed_saving_pct", res.get("saving_pct", {}).get("mean", 0.0))

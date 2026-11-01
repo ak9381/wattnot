@@ -191,7 +191,9 @@ def _run_recommend(a: argparse.Namespace) -> int:
         r = json.load(f)
     keys = ("start_cap_w", "final_cap_w", "gate_passed", "base_wh_per_req",
             "final_wh_per_req", "base_p99_ms", "final_p99_ms", "knob")
+    # only a MEASURED report may say MEASURED; EXAMPLE / SIMULATED / missing labels are downgraded
     rec = _rec.with_summary(_rec.for_run(**{k: r[k] for k in keys if k in r},
+                                         simulated=r.get("label") != "MEASURED",
                                          **r.get("assumptions", {})), None)
     if a.json:
         print(json.dumps(rec.to_dict(), indent=2))

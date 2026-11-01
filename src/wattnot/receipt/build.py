@@ -162,7 +162,7 @@ def _spoken_test_entry(st: Mapping) -> dict:
     energy = st.get("energy")
     if energy:
         entry["energy"] = {
-            "label": str(energy.get("label", "MEASURED"))[:16],
+            "label": str(energy.get("label", "ESTIMATE"))[:16],   # unlabelled is never MEASURED
             "meter": str(energy.get("meter", ""))[:64],
             "wh_per_answer": _rf(energy.get("wh_per_answer")),
             "j_per_spoken_answer": _rf(energy.get("j_per_spoken_answer")),
@@ -331,7 +331,8 @@ def build_receipt(run: Mapping, *, events: Sequence[Mapping] = (), prev_sha256: 
 
     if j_verdict is None or j_score is None:
         for ev in events:
-            if ev.get("type") == "gate.result" and (ev.get("data") or {}).get("check") == "judge":
+            if ev.get("type") == "gate.result" and ((ev.get("data") or {}).get("gate")
+                                                 or (ev.get("data") or {}).get("check")) == "judge":
                 ed = ev["data"]
                 if j_verdict is None:
                     j_verdict = "pass" if ed.get("passed") else "fail"

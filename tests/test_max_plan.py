@@ -23,10 +23,12 @@ def test_max_plan_fits_booking_with_margin(tmp_path):
     total_h = sum(b.hours for b in blocks)
     assert total_h + 8 / 60 <= driver.MAX_BOOKING_H
     ids = [b.id for b in blocks]
-    for req in driver.MAX_REQUIRED_BLOCKS:
+    for req in driver.MAX_REQUIRED_BLOCKS + driver.MAX_EXTRA_BLOCKS:
         assert req in ids
+    by = {b.id: b for b in blocks}
+    assert all(by[x].skip_if_short for x in driver.MAX_EXTRA_BLOCKS)
     # BF16-only blocks run before the FP8 swap
-    for b in ("t1-sweep-r2", "t1-sweep-r4", "t1-tiers"):
+    for b in ("t1-sweep-r2", "t1-sweep-r4", "t1-tiers", "t2g-serverless"):
         assert ids.index(b) < ids.index("t2-fp8")
     assert ids[-1] == "t3-copy"
 

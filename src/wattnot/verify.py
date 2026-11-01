@@ -140,8 +140,7 @@ def verify_document(receipt, bundle: dict | None, *, trusted: set[str] | None = 
     if lab is not None and not lab.ok and g != "UNVERIFIABLE":
         # weak labels lower the grade: a SIMULATED/MOCK headline grades SIMULATED, an unknown
         # label means we can't say what the number is
-        g = "UNVERIFIABLE" if lab.detail.get("unknown") and "headline" not in \
-            lab.detail.get("error", "") else "SIMULATED"
+        g = "UNVERIFIABLE" if lab.detail.get("unknown") else "SIMULATED"
     claimed = integ.get("grade") if integ else None
     steps.append(Step("grade", g != "UNVERIFIABLE", {"grade": g, "claimed": claimed}))
     return Report(path, steps, g, claimed, derived)

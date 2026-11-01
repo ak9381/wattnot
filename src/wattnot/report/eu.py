@@ -14,6 +14,7 @@ import io
 import json
 from collections.abc import Mapping, Sequence
 from pathlib import Path
+from typing import Any
 
 LABELS = ("MEASURED", "ESTIMATE", "SIMULATED", "NOT_AVAILABLE")
 BANNED = ("neutral", "offset", "carbon-free", "carbon free", "net zero", "net-zero")
@@ -139,7 +140,8 @@ def proof_fields(receipt: Mapping, *, grid_gco2_per_kwh: float | None = None,
     stock_j, cap_j = ref["j_per_req_stock"], ref["j_per_req_cap"]
     wh_stock = sum(stock_j) / len(stock_j) / 3600
     wh = (sum(cap_j) / len(cap_j) / 3600) if best else wh_stock
-    which = f"kept cap {best_w} W" if best else "stock (no cap was kept)"
+    # the best PASSING cap; in watch-only mode or without approval it was measured, not kept
+    which = f"best passing cap {best_w} W (measured)" if best else "stock (no cap passed)"
     out += [_f("energy_per_request", float(f"{wh:.6g}"), "Wh/request", lab, f"{src}: {which}"),
             _f("energy_per_request_baseline", float(f"{wh_stock:.6g}"), "Wh/request", lab,
                f"{src}: stock {hw.get('default_cap_w')} W, interleaved blocks")]
@@ -237,12 +239,8 @@ def check_wording(text: str) -> list[str]:
     return [w for w in BANNED if w in low]
 
 
-def check_receipt_file(path: str | Path) -> tuple[dict, bool]:
-    """Load a receipt and check it before export. The SHA-256 must match (else refuse). If a
-    signature bundle sits next to it, it must verify (else refuse). Returns (receipt, signed)."""
-    from wattnot.receipt.sign import OFFLINE_MEDIA_TYPE, bundle_path, verify_offline_bundle
-
-    receipt = json.loads(Path(path).read_text(encoding="utf-8"))
+def check_receipt_hash(receipt: Mapping) -> None:
+    """Refuse a receipt whose SHA-256 does not match its body (proof or standard receipt)."""
     rid = receipt.get("receipt_id")
     if receipt.get("spec") == PROOF_SPEC:
         if not verify_proof_hash(receipt):
@@ -251,6 +249,17 @@ def check_receipt_file(path: str | Path) -> tuple[dict, bool]:
         from wattnot.receipt.build import verify_hash
         if not verify_hash(receipt)[0]:
             raise ValueError(f"receipt {rid}: SHA-256 does not match; not exporting it")
+
+
+def check_receipt_file(path: str | Path) -> tuple[dict, bool]:
+    """Load a receipt and check it before export. The SHA-256 must match (else refuse). If a
+    signature bundle sits next to it, it must verify (else refuse). Returns (receipt, signed):
+    True = offline signature verified, None = a Sigstore bundle (verified by `wattnot verify`),
+    False = no bundle."""
+    from wattnot.receipt.sign import OFFLINE_MEDIA_TYPE, bundle_path, verify_offline_bundle
+
+    receipt = json.loads(Path(path).read_text(encoding="utf-8"))
+    check_receipt_hash(receipt)
     bp = bundle_path(path)
     if not bp.is_file():
         return receipt, False
@@ -260,7 +269,9 @@ def check_receipt_file(path: str | Path) -> tuple[dict, bool]:
         if not ok:
             raise ValueError(f"receipt {rid}: signature check failed ({why}); not exporting it")
         return receipt, True
-    return receipt, False  # a Sigstore/Rekor bundle: checked by `wattnot verify`
+    # a Sigstore/Rekor bundle: present, checked by `wattnot verify` (not here). None = not
+    # downgraded, unlike a receipt with no bundle at all (False)
+    return receipt, None
 
 
 def _unsigned(rows: list[dict]) -> list[dict]:
@@ -277,7 +288,7 @@ def export(receipt_paths: Sequence[str | Path], out: str | Path, **kw) -> tuple[
     for p in receipt_paths:
         receipt, signed = check_receipt_file(p)
         got = fields_for(receipt, **kw)
-        rows += got if signed else _unsigned(got)
+        rows += got if signed is not False else _unsigned(got)
     out = Path(out)
     out.parent.mkdir(parents=True, exist_ok=True)
     csv_text, html_text = to_csv(rows), to_html(rows)
@@ -299,12 +310,11 @@ def generate_report(receipt_or_path: Mapping | str | Path, out_dir: str | Path |
         receipt = dict(receipt_or_path)
 
     # Verify receipt integrity hash
-    if "integrity" in receipt and receipt.get("spec") != PROOF_SPEC:
-        from wattnot.receipt.build import verify_hash
-
-        ok, _, _ = verify_hash(receipt)
-        if not ok:
-            raise ValueError(f"receipt {receipt.get('receipt_id')} integrity hash verification failed")
+    # proof receipts too: a SHA-256 mismatch on either kind refuses the export
+    try:
+        check_receipt_hash(receipt)
+    except ValueError:
+        raise ValueError(f"receipt {receipt.get('receipt_id')} integrity hash verification failed") from None
 
     rows = fields_for(receipt, **kw)
     if out_dir is not None:

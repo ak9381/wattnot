@@ -354,7 +354,13 @@ def create_app(root: str | os.PathLike[str] = ".") -> FastAPI:
         receipt = _load_receipt(base, receipt_id)
         if receipt is None:
             return JSONResponse({"code": "receipt_not_found"}, status_code=404)
+        try:   # fail closed: a bad hash or a bad signature bundle is never exported
+            receipt, signed = eu.check_receipt_file(base / "receipts" / f"{receipt_id}.json")
+        except ValueError:
+            return JSONResponse({"code": "hash_mismatch"}, status_code=409)
         rows = eu.fields_for(receipt)
+        if signed is False:   # same rule as the CLI export: unsigned MEASURED shows as ESTIMATE
+            rows = eu._unsigned(rows)
         if format == "csv":
             return PlainTextResponse(eu.to_csv(rows), media_type="text/csv")
         if format == "html":
