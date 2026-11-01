@@ -205,17 +205,24 @@
     `;
 
     document.body.appendChild(footer);
-    // Keep page content clear of the fixed footer: bottom padding = footer height + its offset + a gap.
-    const padForFooter = () => {
-      const need = footer.offsetHeight + 14 + 16;
-      document.documentElement.style.setProperty("--wn-foot", need + "px");
-      document.body.style.paddingBottom = "";
-      const base = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
-      if (base < need) document.body.style.paddingBottom = need + "px";
+    // The footer is a static full-width black bar at the end of the page, so it needs
+    // no content clearance. Keep --wn-foot at 0 for layouts that still read it.
+    document.documentElement.style.setProperty("--wn-foot", "0px");
+    // Break the bar out of the body box (margin/border/padding — the left column reserves
+    // padding-left for the fixed sidebar) so it reaches both viewport edges, edge to edge.
+    const fitFooter = () => {
+      const cs = getComputedStyle(document.body);
+      const br = document.body.getBoundingClientRect();
+      const pl = parseFloat(cs.paddingLeft) || 0, pr = parseFloat(cs.paddingRight) || 0;
+      const bl = parseFloat(cs.borderLeftWidth) || 0, brw = parseFloat(cs.borderRightWidth) || 0;
+      const leftGap = br.left + bl + pl;                         // footer content-box left vs viewport
+      const rightGap = (window.innerWidth - br.right) + brw + pr; // and the matching right gap
+      footer.style.marginLeft = -leftGap + "px";
+      footer.style.marginRight = -rightGap + "px";
     };
-    padForFooter();
-    if (window.ResizeObserver) new ResizeObserver(padForFooter).observe(footer);
-    window.addEventListener("resize", padForFooter);
+    fitFooter();
+    window.addEventListener("resize", fitFooter);
+    if (window.ResizeObserver) new ResizeObserver(fitFooter).observe(document.body);
   }
 
   if (document.readyState === "loading") {
@@ -225,19 +232,28 @@
   }
 })();
 
-// Side drawers start below the floating header and end above the footer, on every page and width.
+// Side drawers (left sidebar + right info drawers) start exactly below the header bar and end
+// above the footer whenever it is on-screen. Recomputed on resize, scroll, and whenever a drawer
+// opens — so the bounds are right no matter the page or width.
 (function wnDrawerBounds() {
   const set = () => {
     const nav = document.querySelector("nav.wn-nav");
     const foot = document.querySelector(".wn-footer");
-    const top = nav ? Math.ceil(nav.getBoundingClientRect().bottom) + 10 : 16;
+    const top = nav ? Math.max(0, Math.ceil(nav.getBoundingClientRect().bottom)) + 10 : 16;
     const ft = foot ? foot.getBoundingClientRect().top : innerHeight;
-    const bottom = ft > top + 200 && ft < innerHeight ? Math.ceil(innerHeight - ft) + 10 : 12;
+    // When the footer is visible in the viewport, stop the drawers above it; otherwise a small gap.
+    const bottom = ft < innerHeight - 1 ? Math.ceil(innerHeight - ft) + 10 : 12;
     document.documentElement.style.setProperty("--wn-drawer-top", top + "px");
     document.documentElement.style.setProperty("--wn-drawer-bottom", bottom + "px");
   };
-  addEventListener("resize", set);
-  addEventListener("load", set);
+  let raf = 0;
+  const schedule = () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; set(); }); };
+  addEventListener("resize", schedule);
+  addEventListener("scroll", schedule, { passive: true });
+  addEventListener("load", () => { set(); setTimeout(set, 600); });
   document.addEventListener("DOMContentLoaded", () => { set(); setTimeout(set, 600); });
-  new MutationObserver(set).observe(document.documentElement, { childList: true, subtree: false });
+  // Catch drawer open/close (body.drawer-open, body.wn-side-open, aside.*.on) and layout changes.
+  new MutationObserver(schedule).observe(document.documentElement, { attributes: true, attributeFilter: ["class"], subtree: true, childList: true });
+  set();
+  window.__wnDrawerBounds = set;
 })();
