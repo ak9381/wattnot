@@ -185,6 +185,12 @@
    "name": "Rekor publish",
    "status": "OFF",
    "reason": "only after the long run, with Akash's yes"
+  },
+  {
+   "id": "own_gpu_serving",
+   "name": "Own-GPU vLLM serving + E2E rig",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
   }
  ],
  "stages": {
@@ -231,7 +237,24 @@
   "approvals": {
    "status": "ok",
    "risk": "high",
-   "decision": "recorded (no apply in smoke)"
+   "reasons": [
+    "unknown kind 'reasoning_effort'; a person decides"
+   ],
+   "evidence": {
+    "accuracy_without": 1.0,
+    "accuracy_with": 1.0,
+    "p99_without": 3.5018,
+    "p99_with": 4.2526,
+    "spark_agreement": 1.0,
+    "j_per_correct_without": 533.61,
+    "j_per_correct_with": 429.38,
+    "eye_check": null,
+    "hearing_check": null
+   },
+   "review": {
+    "decision": "recorded (no apply in smoke)",
+    "auto_approve": false
+   }
   },
   "musecode_pr": {
    "status": "ok",
@@ -255,7 +278,9 @@
   },
   "label_lint": {
    "status": "ok",
-   "issues": []
+   "issues": [
+    "$.musecode_pr.result: string of 300 chars (max 200)"
+   ]
   }
  }
 }

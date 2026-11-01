@@ -50,9 +50,16 @@ from wattnot.longrun.spark_grade import SparkGrader, load_config  # noqa: E402
 from wattnot.longrun.tasks import build  # noqa: E402
 from wattnot.proof.client import Reply  # noqa: E402
 from wattnot.spark_open.h2h import BudgetStop, SpendCap, worst_case_usd  # noqa: E402
+from wattnot.e2e.live import BASELINE_LIVE_NODES, EventLog  # noqa: E402
+from wattnot.e2e.fullstack import stage_graph  # noqa: E402
 from wattnot.e2e.fullstack import RequestLevers, feature_table, post_round, provider_usage  # noqa: E402
 
 ARMS = ("without_wattnot", "with_wattnot")
+REFUSAL_WORDS = ("deactivat", "unpaid", "billing", "suspend", "limit")
+
+
+class Refused(BudgetStop):
+    """Baseten refused (401/402/403/final 429 or a deactivated/unpaid/limit message): stop at once."""
 PUB_BUDGET = {"gsm8k": 512, "humaneval": 768}
 RATES = Rates()
 SOFT_META_USD = 100.0
@@ -118,6 +125,7 @@ class BasetenChat:
     """longrun Chat interface (messages, max_tokens) -> Reply, over Baseten at one effort."""
 
     levers = None  # set to a RequestLevers for the with-WattNot arm
+    log = None     # EventLog for the arm being run (graph page follows it live)
 
     def __init__(self, tr, effort, cap, calls, arm, item_ctx):
         self.tr, self.effort, self.cap, self.calls, self.arm = tr, effort, cap, calls, arm
@@ -137,6 +145,18 @@ class BasetenChat:
             body = body2
         r = self.tr(Request(f"{self.item}|{self.effort}", body))
         d = r.body or {}
+        if r.status in (401, 402, 403, 429) or (r.status != 200 and any(
+                w in json.dumps(d).lower() for w in REFUSAL_WORDS)):
+            self.calls.add({"item": self.item, "arm": self.arm, "effort": self.effort, "status": r.status,
+                            "refusal": json.dumps(d)[:300], "latency_s": round(r.latency_s, 4),
+                            "prompt_tokens": 0, "cached_tokens": 0, "completion_tokens": 0,
+                            "reasoning_tokens": None, "usd": 0.0, "finish": "refused", "retries": r.retries,
+                            "sent_at": r.sent_at})
+            raise Refused(f"Baseten refused: HTTP {r.status} {json.dumps(d)[:200]}")
+        if BasetenChat.log is not None:
+            BasetenChat.log.emit("step.started", node="effort_router" if self.arm == "with_wattnot" else "workload",
+                                 sub="route" if self.arm == "with_wattnot" else "send",
+                                 label=f"{self.item} effort {self.effort}")
         u = d.get("usage") or {}
         pt, ct = int(u.get("prompt_tokens", 0)), int(u.get("completion_tokens", 0))
         cached = int((u.get("prompt_tokens_details") or {}).get("cached_tokens", 0) or 0)
@@ -151,6 +171,11 @@ class BasetenChat:
                         "latency_s": round(r.latency_s, 4), "prompt_tokens": pt, "cached_tokens": cached,
                         "completion_tokens": ct, "reasoning_tokens": rt, "usd": round(usd, 8),
                         "finish": fin, "retries": r.retries, "sent_at": r.sent_at})
+        if BasetenChat.log is not None:
+            BasetenChat.log.emit("step.finished", node="baseten_model", sub="call", model=MODEL, status="ok" if r.status == 200 else "bad",
+                                 latency_s=round(r.latency_s, 3), usd=round(usd, 6), usd_label="MEASURED",
+                                 label="MEASURED", cached_tokens=cached, effort=self.effort, completion_tokens=ct,
+                                 summary=f"{self.arm}: {ct} tokens at {self.effort}" + (f", {cached} cached" if cached else ""))
         return Reply(r.latency_s, ct, text, fin, int(rt or 0), rt is not None)
 
 
@@ -213,6 +238,11 @@ def run_item(b, tr, cap, calls, arm, it):
         r2["wall_s"] = round(r2["wall_s"] + r["wall_s"], 4)
         r, tries = r2, ["low", "medium"]
     r["tries"] = tries
+    if BasetenChat.log is not None:
+        BasetenChat.log.emit("step.finished", node="effort_router", sub="route", status="ok", label="MEASURED",
+                             effort=tries[-1], step_up={"from": "low", "to": "medium"} if len(tries) > 1 else None,
+                             passed=bool(r["deterministic"]),
+                             summary=f"{iid}: " + ("low failed the fixed check, stepped up to medium" if len(tries) > 1 else "answered at low"))
     return r
 
 
@@ -265,6 +295,8 @@ def main(argv=None) -> int:
     ap.add_argument("--conc", type=int, default=4)
     ap.add_argument("--cap-usd", type=float, default=HARD_CAP_USD, help="Baseten hard stop (max $8)")
     ap.add_argument("--mode", choices=["live", "smoke"], default="live", help="feature stages: live Meta calls or MOCK")
+    ap.add_argument("--pr", action="store_true", help="run the Muse Code PR flow in this round")
+    ap.add_argument("--events-dir", type=Path, default=None, help="write live events-<arm>.jsonl here")
     ap.add_argument("--open-pr", action="store_true", help="let Muse Code open the PR on ak9381/wattnot-demo-deploy")
     ap.add_argument("--no-spark", action="store_true")
     ap.add_argument("--out", type=Path, default=ROOT / "out" / "matrix")
@@ -296,7 +328,21 @@ def main(argv=None) -> int:
     print(f"[{a.round}] {len(items)} items x 2 arms, Meta ledger ${m0:.4f} (MEASURED)", flush=True)
     answers = {}
     stop = None
+    evd = a.events_dir or raw
+    doc_checks = []
     for arm in ARMS:
+        go = evd / f"go-{arm}"
+        BasetenChat.log = EventLog(evd / f"events-{arm}.jsonl", f"baseten-{a.round}-{arm}")
+        # the platform is known up front: grey the GPU-side nodes before the first call
+        BasetenChat.log.emit("stage.features", **stage_graph(stage="baseten"), arm=arm)
+        if a.events_dir:  # recorder hand-shake: wait until the clip has started (max 120 s)
+            for _ in range(240):
+                if go.exists():
+                    break
+                time.sleep(0.5)
+        BasetenChat.log.emit("run.started", arm=arm, run=f"baseten {a.round} {arm.replace('_', ' ')}",
+                             model=MODEL, mode="live", label="MEASURED",
+                             baseline_nodes=BASELINE_LIVE_NODES if arm == "without_wattnot" else None)
         t0 = time.time()
         res = []
         with ThreadPoolExecutor(a.conc) as ex:
@@ -304,6 +350,11 @@ def main(argv=None) -> int:
             for i, f in enumerate(futs):
                 try:
                     r = f.result()
+                except Refused as e:
+                    stop = str(e)
+                    for g in futs:
+                        g.cancel()
+                    break
                 except BudgetStop as e:
                     stop = f"Baseten hard stop: {e}"
                     continue
@@ -323,10 +374,32 @@ def main(argv=None) -> int:
                         g.cancel()
                     break
         answers[arm] = res
+        if arm == "without_wattnot":
+            BasetenChat.log.emit("run.finished", arm=arm)
         print(f"[{a.round}] {arm} done in {time.time()-t0:.0f}s: "
               f"{sum(x['deterministic'] for x in res)}/{len(res)} correct", flush=True)
+        # refusal watch after every arm batch: re-read the free billing endpoint (no inference spend)
+        try:
+            from wattnot.e2e.live import billing_check
+            bc = billing_check()
+            doc_checks.append({"after": arm, **bc})
+            print(f"[watch] billing after {arm}: {bc}", flush=True)
+            if bc.get("refusal"):
+                stop = stop or f"billing endpoint refused: {bc}"
+        except Exception as e:  # noqa: BLE001
+            doc_checks.append({"after": arm, "error": str(e)[:200]})
         if stop:
             break
+
+    # keep what we have before anything else can fail (refusal watch: never lose recorded data)
+    with open(raw / (("smoke-" if a.limit else "") + "calls.partial.jsonl"), "w") as f:
+        for r in calls.rows:
+            f.write(json.dumps(r) + "\n")
+    if stop:
+        (raw / "STOPPED.json").write_text(json.dumps({"stop": stop, "watch": doc_checks,
+                                                      "answers": {k: len(v) for k, v in answers.items()}}, indent=1))
+        print(f"[stop] {stop}", flush=True)
+        return 2
 
     # Spark grades every final answer (second opinion; deterministic decides)
     spark = None
@@ -343,6 +416,10 @@ def main(argv=None) -> int:
                 for rec, out in zip(answers.get(arm, []), ex.map(lambda r: spark_one(spark, r), answers.get(arm, []))):
                     rec.update(spark=out["spark"], spark_reason=out["spark_reason"], spark_label=out["spark_label"],
                                disagree=out["disagree"])
+                    if arm == "with_wattnot" and BasetenChat.log is not None:
+                        BasetenChat.log.emit("step.finished", node="gates", sub="judge", model=spark.model,
+                                             status="ok", label="MEASURED",
+                                             grade=('pass' if out['spark'] else 'fail'), summary=f"Spark grade {rec['id']}: {'pass' if out['spark'] else 'fail'}")
     m1 = meta_total()
 
     rows = {arm: [r for r in calls.rows if r["arm"] == arm] for arm in ARMS}
@@ -382,12 +459,16 @@ def main(argv=None) -> int:
     own = {"requests": len(allr), "input_tokens": sum(r["prompt_tokens"] for r in allr),
            "cached_input_tokens": sum(r["cached_tokens"] for r in allr),
            "output_tokens": sum(r["completion_tokens"] for r in allr), "usd": round(cap.session_usd, 6)}
+    doc["refusal_watch"] = doc_checks
     doc["provider_usage"] = provider_usage(started, datetime.now(UTC).isoformat(), own)
     print("[usage] " + json.dumps({k: doc["provider_usage"].get(k) for k in ("status", "worst_diff_pct", "match")}))
     doc["features"] = feature_table()
     doc["levers_stats"] = {**BasetenChat.levers.stats, "label": "ESTIMATE"}
     doc["feature_stages"] = post_round(raw, doc, mode=("smoke" if a.limit and a.mode == "smoke" else a.mode),
-                                       open_pr=a.open_pr)
+                                       open_pr=a.open_pr, log=BasetenChat.log, cap=cap, rates=RATES,
+                                       do_pr=a.pr) if not stop else {"status": "skipped", "why": stop}
+    doc["spend"]["baseten_usd"]["value"] = round(cap.session_usd, 6)
+    BasetenChat.log.emit("run.finished", arm="with_wattnot")
     out = a.out if not a.limit else raw / "smoke-matrix"
     out.mkdir(parents=True, exist_ok=True)
     (out / f"{a.round}.json").write_text(json.dumps(doc, indent=1))

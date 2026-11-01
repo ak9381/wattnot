@@ -314,3 +314,8 @@ body.solo #stage{position:fixed;inset:0;padding:20px 24px;overflow:auto}
 #solo-canvas{display:block;width:100%;height:62vh;background:#080C11;border:1px solid var(--hair);border-radius:8px}
 .solo-step{font-size:14px;color:var(--ink2)}
 @media (prefers-reduced-motion:reduce){.pc-view .pc-inner{transition:none!important}}
+
+/* inline step block (live): opens in the active node, folds when the next step lights */
+.avn .sblk{max-height:0;overflow:hidden;opacity:0;transition:max-height .35s ease,opacity .25s;font-size:.85em;line-height:1.5}
+.avn .sblk.open{max-height:220px;opacity:1;margin-top:6px;padding:6px 8px;border:1px solid var(--cy);border-radius:6px;background:rgba(0,200,255,.06)}
+.avn .sblk a{color:var(--cy)}

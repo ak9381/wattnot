@@ -5,8 +5,8 @@
  "label": "MEASURED",
  "model": "meta-models/muse-spark-open",
  "where": "Baseten Model API (Muse Spark Open)",
- "started_utc": "2026-11-01T11:26:17.009277+00:00",
- "ended_utc": "2026-11-01T11:26:27.779185+00:00",
+ "started_utc": "2026-11-01T11:54:56.260519+00:00",
+ "ended_utc": "2026-11-01T11:55:24.916329+00:00",
  "stop_reason": null,
  "smoke": true,
  "note": "accuracy, tokens, USD and latency MEASURED; energy ESTIMATE from tokens (hosted API, no GPU meter); deterministic checks decide, Muse Spark grades beside them",
@@ -17,14 +17,14 @@
  "results": {
   "accuracy_without": 1.0,
   "accuracy_with": 1.0,
-  "j_per_correct_without": 506.72,
-  "j_per_correct_with": 278.59,
+  "j_per_correct_without": 533.61,
+  "j_per_correct_with": 429.38,
   "energy_saved_pct": {
-   "value": 45.02,
+   "value": 19.54,
    "label": "ESTIMATE"
   },
   "usd_saved_pct": {
-   "value": 47.19,
+   "value": 24.34,
    "label": "MEASURED"
   },
   "per_arm": {
@@ -53,35 +53,35 @@
     "errors": 0,
     "tokens": {
      "prompt": 673,
-     "cached": 256,
-     "completion": 1411,
+     "cached": 128,
+     "completion": 1380,
      "label": "MEASURED"
     },
     "usd": {
-     "value": 0.006556,
+     "value": 0.006565,
      "label": "MEASURED",
      "method": "tokens x Baseten list price"
     },
     "energy_wh": {
-     "value": 0.4223,
-     "low": 0.0768,
-     "high": 0.7678,
+     "value": 0.4447,
+     "low": 0.0809,
+     "high": 0.8085,
      "label": "ESTIMATE",
      "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
     },
     "j_per_correct": {
-     "value": 506.72,
+     "value": 533.61,
      "label": "ESTIMATE"
     },
     "item_latency_s": {
-     "p50": 3.6477,
-     "p99": 5.9743,
+     "p50": 3.2639,
+     "p99": 3.5018,
      "label": "MEASURED"
     },
     "call_latency_s": {
-     "p50": 3.6455,
-     "p99": 5.9541,
-     "mean": 3.6788,
+     "p50": 3.2462,
+     "p99": 3.5009,
+     "mean": 2.8324,
      "label": "MEASURED"
     },
     "stepped_up": 0
@@ -111,35 +111,35 @@
     "errors": 0,
     "tokens": {
      "prompt": 673,
-     "cached": 384,
-     "completion": 716,
+     "cached": 128,
+     "completion": 1004,
      "label": "MEASURED"
     },
     "usd": {
-     "value": 0.003462,
+     "value": 0.004967,
      "label": "MEASURED",
      "method": "tokens x Baseten list price"
     },
     "energy_wh": {
-     "value": 0.2322,
-     "low": 0.0422,
-     "high": 0.4221,
+     "value": 0.3578,
+     "low": 0.0651,
+     "high": 0.6506,
      "label": "ESTIMATE",
      "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
     },
     "j_per_correct": {
-     "value": 278.59,
+     "value": 429.38,
      "label": "ESTIMATE"
     },
     "item_latency_s": {
-     "p50": 2.5264,
-     "p99": 2.6649,
+     "p50": 3.3033,
+     "p99": 4.2526,
      "label": "MEASURED"
     },
     "call_latency_s": {
-     "p50": 2.3517,
-     "p99": 2.5086,
-     "mean": 2.0957,
+     "p50": 3.1459,
+     "p99": 4.0949,
+     "mean": 3.2946,
      "label": "MEASURED"
     },
     "stepped_up": 0
@@ -148,16 +148,16 @@
  },
  "spend": {
   "baseten_usd": {
-   "value": 0.010018,
+   "value": 0.011533,
    "label": "MEASURED",
    "method": "tokens x list price (not yet checked against the invoice)"
   },
   "meta_usd": {
-   "value": 0.005857,
+   "value": 0.005297,
    "label": "MEASURED",
    "source": "Meta spend ledger"
   },
-  "meta_ledger_after_usd": 27.3005
+  "meta_ledger_after_usd": 27.3225
  },
  "spark_summary": {
   "label": "LIVE",
@@ -175,11 +175,11 @@
    "arm": "without_wattnot",
    "deterministic": true,
    "spark": true,
-   "spark_reason": "80+31 equals 111 as answered.",
+   "spark_reason": "80 + 31 equals 111.",
    "tries": [
     "medium"
    ],
-   "wall_s": 1.4381
+   "wall_s": 1.7509
   },
   {
    "id": "Janet\u2019s ducks lay 16 eggs per day. She e",
@@ -188,11 +188,11 @@
    "arm": "without_wattnot",
    "deterministic": true,
    "spark": true,
-   "spark_reason": "Remainder 9 eggs at $2 correctly gives $18.",
+   "spark_reason": "Calculation 16-3-4=9 eggs at $2 gives $18 correctly.",
    "tries": [
     "medium"
    ],
-   "wall_s": 3.6477
+   "wall_s": 3.5018
   },
   {
    "id": "HumanEval/0",
@@ -201,11 +201,11 @@
    "arm": "without_wattnot",
    "deterministic": true,
    "spark": true,
-   "spark_reason": "Function correctly checks all pairs for distance less than threshold.",
+   "spark_reason": "Double loop correctly detects any pair with difference below threshold.",
    "tries": [
     "medium"
    ],
-   "wall_s": 5.9743
+   "wall_s": 3.2639
   },
   {
    "id": "easy-00",
@@ -214,11 +214,11 @@
    "arm": "with_wattnot",
    "deterministic": true,
    "spark": true,
-   "spark_reason": "80+31 equals 111 as given.",
+   "spark_reason": "80+31 equals 111 as answered.",
    "tries": [
     "low"
    ],
-   "wall_s": 1.583
+   "wall_s": 4.2526
   },
   {
    "id": "Janet\u2019s ducks lay 16 eggs per day. She e",
@@ -227,11 +227,11 @@
    "arm": "with_wattnot",
    "deterministic": true,
    "spark": true,
-   "spark_reason": "Calculation 16-7=9 eggs at $2 equals $18 is correct.",
+   "spark_reason": "Calculation 16-7=9 times $2 equals $18 is correct.",
    "tries": [
     "low"
    ],
-   "wall_s": 2.6649
+   "wall_s": 3.3033
   },
   {
    "id": "HumanEval/0",
@@ -240,14 +240,83 @@
    "arm": "with_wattnot",
    "deterministic": true,
    "spark": true,
-   "spark_reason": "Sorted adjacent check correctly detects close pairs.",
+   "spark_reason": "Sorted adjacent-difference check correctly detects any pair closer than threshold.",
    "tries": [
     "low"
    ],
-   "wall_s": 2.5264
+   "wall_s": 2.8163
   }
  ],
  "raw_dir": "data/baseten-1101/r01",
+ "refusal_watch": [
+  {
+   "after": "without_wattnot",
+   "at": "2026-11-01T11:55:14.270205+00:00",
+   "endpoint": "/v1/billing/model_apis",
+   "status": 200,
+   "refusal": false,
+   "words": [],
+   "day": "2026-11-01",
+   "day_subtotal_usd": 2.7642133,
+   "label": "MEASURED"
+  },
+  {
+   "after": "with_wattnot",
+   "at": "2026-11-01T11:55:21.008548+00:00",
+   "endpoint": "/v1/billing/model_apis",
+   "status": 200,
+   "refusal": false,
+   "words": [],
+   "day": "2026-11-01",
+   "day_subtotal_usd": 2.7642133,
+   "label": "MEASURED"
+  }
+ ],
+ "provider_usage": {
+  "status": "ok",
+  "label": "MEASURED",
+  "source": "Baseten GET /v1/model_apis/usage + /v1/billing/model_apis",
+  "window_utc": [
+   "2026-11-01T11:54:00Z",
+   "2026-11-01T11:57:00Z"
+  ],
+  "baseten": {
+   "requests": 6,
+   "input_tokens": 1346,
+   "cached_input_tokens": 256,
+   "output_tokens": 2384
+  },
+  "billing": {
+   "date_utc": "2026-11-01",
+   "subtotal_usd": 2.7757462,
+   "note": "whole-day workspace subtotal, includes any other use that day"
+  },
+  "crosscheck": {
+   "requests": {
+    "baseten": 6,
+    "ours": 6,
+    "diff_pct": 0.0
+   },
+   "input_tokens": {
+    "baseten": 1346,
+    "ours": 1346,
+    "diff_pct": 0.0
+   },
+   "cached_input_tokens": {
+    "baseten": 256,
+    "ours": 256,
+    "diff_pct": 0.0
+   },
+   "output_tokens": {
+    "baseten": 2384,
+    "ours": 2384,
+    "diff_pct": 0.0
+   }
+  },
+  "worst_diff_pct": 0.0,
+  "match": true,
+  "note": "window is workspace-wide for this model: other use of the same key in the window shows up here; energy is not exposed for Model APIs and stays ESTIMATE"
+ },
  "features": [
   {
    "id": "effort_routing",
@@ -434,6 +503,12 @@
    "name": "Rekor publish",
    "status": "OFF",
    "reason": "only after the long run, with Akash's yes"
+  },
+  {
+   "id": "own_gpu_serving",
+   "name": "Own-GPU vLLM serving + E2E rig",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
   }
  ],
  "levers_stats": {
@@ -487,7 +562,24 @@
   "approvals": {
    "status": "ok",
    "risk": "high",
-   "decision": "recorded (no apply in smoke)"
+   "reasons": [
+    "unknown kind 'reasoning_effort'; a person decides"
+   ],
+   "evidence": {
+    "accuracy_without": 1.0,
+    "accuracy_with": 1.0,
+    "p99_without": 3.5018,
+    "p99_with": 4.2526,
+    "spark_agreement": 1.0,
+    "j_per_correct_without": 533.61,
+    "j_per_correct_with": 429.38,
+    "eye_check": null,
+    "hearing_check": null
+   },
+   "review": {
+    "decision": "recorded (no apply in smoke)",
+    "auto_approve": false
+   }
   },
   "musecode_pr": {
    "status": "ok",
@@ -511,7 +603,9 @@
   },
   "label_lint": {
    "status": "ok",
-   "issues": []
+   "issues": [
+    "$.musecode_pr.result: string of 300 chars (max 200)"
+   ]
   }
  }
 }

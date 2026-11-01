@@ -1,5 +1,42 @@
 {
   "kind": "hosted-e2e",
+  "approvals": {
+    "status": "ok",
+    "risk": "high",
+    "reasons": [
+      "unknown kind 'reasoning_effort'; a person decides"
+    ],
+    "evidence": {
+      "accuracy_without": 1.0,
+      "accuracy_with": 1.0,
+      "p99_without": 3.5018,
+      "p99_with": 4.2526,
+      "spark_agreement": 1.0,
+      "j_per_correct_without": 533.61,
+      "j_per_correct_with": 429.38,
+      "eye_check": null,
+      "hearing_check": null
+    },
+    "review": {
+      "decision": "recorded (no apply in smoke)",
+      "auto_approve": false
+    }
+  },
+  "musecode_pr": {
+    "status": "ok",
+    "result": "ApplyPRResult(patch_diff='--- a/launch.sh\\n+++ b/launch.sh\\n@@ -10,5 +10,5 @@\\n exec vllm serve meta-llama/Llama-3.1-8B-Instruct \\\\\\n     --host 0.0.0.0 \\\\\\n     --port 8000 \\\\\\n-    --max-num-seqs 256 \\\\\\n+    --max-num-seqs 16 \\\\\\n     --gpu-memory-utilization 0.90\\n--- a/values.yaml\\n+++ b/values",
+    "pr_opened": false
+  },
+  "feature_stages": {
+    "eye_check": "ok",
+    "hearing_check": "ok",
+    "sam_hotspot": "ok",
+    "wonder_chart": "ok",
+    "spark_trace": "ok",
+    "approvals": "ok",
+    "musecode_pr": "ok",
+    "code_mode": "ok"
+  },
   "round": "r01",
   "model": "meta-models/muse-spark-open",
   "features": [
@@ -188,19 +225,25 @@
       "name": "Rekor publish",
       "status": "OFF",
       "reason": "only after the long run, with Akash's yes"
+    },
+    {
+      "id": "own_gpu_serving",
+      "name": "Own-GPU vLLM serving + E2E rig",
+      "status": "OFF",
+      "reason": "needs our own GPU / our own vLLM server"
     }
   ],
   "results": {
     "accuracy_without": 1.0,
     "accuracy_with": 1.0,
-    "j_per_correct_without": 506.72,
-    "j_per_correct_with": 278.59,
+    "j_per_correct_without": 533.61,
+    "j_per_correct_with": 429.38,
     "energy_saved_pct": {
-      "value": 45.02,
+      "value": 19.54,
       "label": "ESTIMATE"
     },
     "usd_saved_pct": {
-      "value": 47.19,
+      "value": 24.34,
       "label": "MEASURED"
     },
     "per_arm": {
@@ -229,35 +272,35 @@
         "errors": 0,
         "tokens": {
           "prompt": 673,
-          "cached": 256,
-          "completion": 1411,
+          "cached": 128,
+          "completion": 1380,
           "label": "MEASURED"
         },
         "usd": {
-          "value": 0.006556,
+          "value": 0.006565,
           "label": "MEASURED",
           "method": "tokens x Baseten list price"
         },
         "energy_wh": {
-          "value": 0.4223,
-          "low": 0.0768,
-          "high": 0.7678,
+          "value": 0.4447,
+          "low": 0.0809,
+          "high": 0.8085,
           "label": "ESTIMATE",
           "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
         },
         "j_per_correct": {
-          "value": 506.72,
+          "value": 533.61,
           "label": "ESTIMATE"
         },
         "item_latency_s": {
-          "p50": 3.6477,
-          "p99": 5.9743,
+          "p50": 3.2639,
+          "p99": 3.5018,
           "label": "MEASURED"
         },
         "call_latency_s": {
-          "p50": 3.6455,
-          "p99": 5.9541,
-          "mean": 3.6788,
+          "p50": 3.2462,
+          "p99": 3.5009,
+          "mean": 2.8324,
           "label": "MEASURED"
         },
         "stepped_up": 0
@@ -287,35 +330,35 @@
         "errors": 0,
         "tokens": {
           "prompt": 673,
-          "cached": 384,
-          "completion": 716,
+          "cached": 128,
+          "completion": 1004,
           "label": "MEASURED"
         },
         "usd": {
-          "value": 0.003462,
+          "value": 0.004967,
           "label": "MEASURED",
           "method": "tokens x Baseten list price"
         },
         "energy_wh": {
-          "value": 0.2322,
-          "low": 0.0422,
-          "high": 0.4221,
+          "value": 0.3578,
+          "low": 0.0651,
+          "high": 0.6506,
           "label": "ESTIMATE",
           "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
         },
         "j_per_correct": {
-          "value": 278.59,
+          "value": 429.38,
           "label": "ESTIMATE"
         },
         "item_latency_s": {
-          "p50": 2.5264,
-          "p99": 2.6649,
+          "p50": 3.3033,
+          "p99": 4.2526,
           "label": "MEASURED"
         },
         "call_latency_s": {
-          "p50": 2.3517,
-          "p99": 2.5086,
-          "mean": 2.0957,
+          "p50": 3.1459,
+          "p99": 4.0949,
+          "mean": 3.2946,
           "label": "MEASURED"
         },
         "stepped_up": 0
@@ -324,16 +367,61 @@
   },
   "spend": {
     "baseten_usd": {
-      "value": 0.010018,
+      "value": 0.011533,
       "label": "MEASURED",
       "method": "tokens x list price (not yet checked against the invoice)"
     },
     "meta_usd": {
-      "value": 0.005857,
+      "value": 0.005297,
       "label": "MEASURED",
       "source": "Meta spend ledger"
     },
-    "meta_ledger_after_usd": 27.3005
+    "meta_ledger_after_usd": 27.3225
+  },
+  "provider_usage": {
+    "status": "ok",
+    "label": "MEASURED",
+    "source": "Baseten GET /v1/model_apis/usage + /v1/billing/model_apis",
+    "window_utc": [
+      "2026-11-01T11:54:00Z",
+      "2026-11-01T11:57:00Z"
+    ],
+    "baseten": {
+      "requests": 6,
+      "input_tokens": 1346,
+      "cached_input_tokens": 256,
+      "output_tokens": 2384
+    },
+    "billing": {
+      "date_utc": "2026-11-01",
+      "subtotal_usd": 2.7757462,
+      "note": "whole-day workspace subtotal, includes any other use that day"
+    },
+    "crosscheck": {
+      "requests": {
+        "baseten": 6,
+        "ours": 6,
+        "diff_pct": 0.0
+      },
+      "input_tokens": {
+        "baseten": 1346,
+        "ours": 1346,
+        "diff_pct": 0.0
+      },
+      "cached_input_tokens": {
+        "baseten": 256,
+        "ours": 256,
+        "diff_pct": 0.0
+      },
+      "output_tokens": {
+        "baseten": 2384,
+        "ours": 2384,
+        "diff_pct": 0.0
+      }
+    },
+    "worst_diff_pct": 0.0,
+    "match": true,
+    "note": "window is workspace-wide for this model: other use of the same key in the window shows up here; energy is not exposed for Model APIs and stays ESTIMATE"
   },
   "labels": {
     "energy": "ESTIMATE",
@@ -341,10 +429,10 @@
   },
   "integrity": {
     "signer": "offline:cc61d7cb91526c69",
-    "sha256": "54656d1c751840d7421082164149bd0361a472e57f0f0dc3dd8b4c90da351da1",
+    "sha256": "132a6337387bc664c716555a52b0f344f3588e7e085b0c84dd6adf004c532e8b",
     "rekor": null
   },
-  "sha256": "c8035523a771bc96cc5204ed4be356555fcc67c804a21a976466891afaaeb4d2",
+  "sha256": "21874560da8bc520f685db0c470bbbc325603a1d3bc532b5fb1de50b4a52e31e",
   "sci": {
     "grid": {
       "gco2e_per_kwh": 727.0,

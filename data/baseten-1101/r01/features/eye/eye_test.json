@@ -12,7 +12,7 @@
     "budget_s": null,
     "budget_hit": false,
     "concurrency": 8,
-    "elapsed_s": 0.001106
+    "elapsed_s": 0.004084
   },
   "detail": {
     "checked": 10,

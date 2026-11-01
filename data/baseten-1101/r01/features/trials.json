@@ -4,14 +4,14 @@
    "name": "without_wattnot",
    "effort": "medium",
    "accuracy": 1.0,
-   "energy_wh": 0.4223,
+   "energy_wh": 0.4447,
    "label": "ESTIMATE"
   },
   {
    "name": "with_wattnot",
    "effort": "low+step-up",
    "accuracy": 1.0,
-   "energy_wh": 0.2322,
+   "energy_wh": 0.3578,
    "label": "ESTIMATE"
   }
  ]

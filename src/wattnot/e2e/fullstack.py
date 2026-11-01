@@ -60,7 +60,32 @@ FEATURES: list[tuple[str, str, str, str]] = [
     ("measured_energy", "MEASURED GPU energy (NVML)", "OFF", "hosted API exposes no power meter; energy is ESTIMATE"),
     ("flex", "Flex grid-event load shedding", "OFF", "simulator only"),
     ("rekor", "Rekor publish", "OFF", "only after the long run, with Akash's yes"),
+    ("own_gpu_serving", "Own-GPU vLLM serving + E2E rig", "OFF", GPU),
 ]
+
+# Which live-graph nodes each feature drives. A node is greyed before the run when every feature mapped
+# to it is OFF on the stage. The Modal stage reuses this with its own FEATURES statuses.
+FEATURE_NODES: dict[str, list[str]] = {
+    "effort_routing": ["effort_router"], "router": ["route"], "context_saver": ["context"],
+    "prefix_cache_provider": ["cache"], "gates": ["gates"], "spark_trace": ["agent"],
+    "wonder_planner": ["agent"], "sam_hotspot": ["sam"], "approvals": ["proposals"],
+    "receipt": ["receipts", "certificate"], "eu_report": ["eu", "report"],
+    "power_caps": ["apply", "optimizer"], "kv_batch": ["optimizer"], "clock_sidecar": ["apply"],
+    "moe": ["adaptive"], "measured_energy": ["telemetry", "meters_roadmap"], "flex": ["flex"],
+    "own_gpu_serving": ["e2e_rig"],
+}
+
+
+def stage_graph(features: list[tuple[str, str, str, str]] | None = None, stage: str = "baseten") -> dict:
+    """{stage, off_nodes: {node: reason}} for the live graph, from the stage feature table."""
+    feats = features or FEATURES
+    by_node: dict[str, list[tuple[str, str, str]]] = {}
+    for fid, name, status, why in feats:
+        for n in FEATURE_NODES.get(fid, []):
+            by_node.setdefault(n, []).append((name, status, why))
+    off = {n: "; ".join(sorted({f"{nm}: {w}" for nm, st, w in rows}))
+           for n, rows in by_node.items() if all(st == "OFF" for _, st, _ in rows)}
+    return {"stage": stage, "off_nodes": off}
 
 
 def feature_table() -> list[dict]:
@@ -113,7 +138,7 @@ def _main(mod: str, argv: list[str]) -> dict:
 
 
 def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: bool = False,
-               demo_repo: Path | None = None) -> dict:
+               demo_repo: Path | None = None, log=None, cap=None, rates=None, do_pr: bool = True) -> dict:
     """Run every post-answer feature stage; returns {stage: result} and writes features.json."""
     fake = mode != "live"
     lab = "MOCK" if fake else "MEASURED"
@@ -122,8 +147,24 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
     res: dict = {"mode": mode, "label": lab}
     fk = ["--fake"] if fake else []
 
-    _stage(res, "eye_check", lambda: _main("wattnot.vision.run", ["--out", str(d / "eye")] + fk))
-    _stage(res, "hearing_check", lambda: _main("wattnot.spokenanswer.run", ["--out", str(d / "voice")] + fk))
+    from wattnot.e2e import live as L
+
+    def emit(node, sub, summary, **kw):
+        if log:
+            log.emit("step.finished", node=node, sub=sub, summary=summary, **kw)
+    client = L.baseten_client(cap, rates, log) if (not fake and cap is not None) else None
+    if client:
+        _stage(res, "eye_check", lambda: L.live_eye(d / "eye", client))
+        _stage(res, "hearing_check", lambda: L.live_hearing(d / "voice", client, log))
+    else:
+        _stage(res, "eye_check", lambda: _main("wattnot.vision.run", ["--out", str(d / "eye")] + fk))
+        _stage(res, "hearing_check", lambda: _main("wattnot.spokenanswer.run", ["--out", str(d / "voice")] + fk))
+    emit("gates", "vision", f"eye check: {res['eye_check'].get('reason', res['eye_check']['status'])}",
+         status="ok" if res["eye_check"].get("passed", res["eye_check"]["status"] == "ok") else "bad", label=lab,
+         passed=bool(res["eye_check"].get("passed", res["eye_check"]["status"] == "ok")), model="muse-image eye check")
+    emit("gates", "voice", f"hearing check: {res['hearing_check'].get('reason', res['hearing_check']['status'])}",
+         status="ok" if res["hearing_check"].get("passed", res["hearing_check"]["status"] == "ok") else "bad", label=lab,
+         passed=bool(res["hearing_check"].get("passed", res["hearing_check"]["status"] == "ok")), model="muse-voice-transcribe-1.0")
     def sam():
         import os
         old = os.environ.get("WATTNOT_META_MOCK")
@@ -137,6 +178,8 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
             else:
                 os.environ["WATTNOT_META_MOCK"] = old
     _stage(res, "sam_hotspot", sam)
+    emit("sam", "audit", f"SAM 3.1 hotspot audit: {res['sam_hotspot']['status']}", model="sam-3.1",
+         status=res["sam_hotspot"]["status"], label=lab)
 
     per = (round_doc.get("results") or {}).get("per_arm") or {}
     trials = []
@@ -148,6 +191,8 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
     _stage(res, "wonder_chart", lambda: _main("wattnot.wonderchart.run",
                                               ["--sweep", str(d / "trials.json"), "--out", str(d / "wonder")]
                                               + (fk or ["--live"])))
+    emit("agent", "study", f"Muse Wonder chart: {res['wonder_chart']['status']}", model="muse-wonder-1.0",
+         status=res["wonder_chart"]["status"], label=lab)
 
     def trace():
         from wattnot.planner.trace import build
@@ -158,16 +203,36 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
         t = build(ev)
         (d / "spark_trace.json").write_text(json.dumps(t, indent=1, default=str))
         return {"steps": 4}
-    _stage(res, "spark_trace", trace)
+    r_ = round_doc.get("results") or {}
+    pa = r_.get("per_arm") or {}
+    evidence = {"accuracy_without": r_.get("accuracy_without"), "accuracy_with": r_.get("accuracy_with"),
+                "p99_without": ((pa.get("without_wattnot") or {}).get("item_latency_s") or {}).get("p99"),
+                "p99_with": ((pa.get("with_wattnot") or {}).get("item_latency_s") or {}).get("p99"),
+                "spark_agreement": (round_doc.get("spark_summary") or {}).get("agreement"),
+                "j_per_correct_without": r_.get("j_per_correct_without"),
+                "j_per_correct_with": r_.get("j_per_correct_with"),
+                "eye_check": res["eye_check"].get("passed", None if fake else False),
+                "hearing_check": res["hearing_check"].get("passed", None if fake else False)}
+    if fake:
+        _stage(res, "spark_trace", trace)
+    else:
+        _stage(res, "spark_trace", lambda: L.spark_trace(d, evidence, log))
 
     change = {"kind": "reasoning_effort", "change": {"reasoning_effort": "low", "step_up": "medium"}}
 
     def approvals():
         from wattnot.approvals.risk import classify
         r = classify(change)
-        out = {"risk": getattr(r, "tier", None) or getattr(r, "level", None) or str(r)[:120],
-               "decision": "held for Akash" if open_pr else "recorded (no apply in smoke)"}
+        risk = getattr(r, "tier", None) or getattr(r, "level", None) or str(r)[:120]
+        out = {"risk": risk, "reasons": getattr(r, "reasons", None), "evidence": evidence}
+        if fake:
+            out["review"] = {"decision": "recorded (no apply in smoke)", "auto_approve": False}
+        else:
+            out["review"] = L.review_change(change["change"], risk, evidence)
         (d / "approval.json").write_text(json.dumps(out, indent=1, default=str))
+        emit("proposals", "review", f"change {out['review']['decision']} after review (risk {risk})",
+             status="ok" if out["review"]["decision"] == "approved" else "bad", label="MEASURED",
+             verdict=out["review"]["decision"], result=f"risk {risk}")
         return out
     _stage(res, "approvals", approvals)
 
@@ -181,7 +246,14 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
         r = apply_pr({"max_num_seqs": 16}, repo, receipt_sha256=sha, out_dir=d / "pr",
                      mock=fake, open_pr=bool(open_pr and not fake))
         return {"result": str(r)[:300], "pr_opened": bool(open_pr and not fake)}
-    _stage(res, "musecode_pr", musecode)
+    if fake:
+        _stage(res, "musecode_pr", musecode)
+    elif do_pr:
+        sha = hashlib.sha256(json.dumps(round_doc, sort_keys=True, default=str).encode()).hexdigest()
+        _stage(res, "musecode_pr", lambda: L.musecode_pr(d / "pr", change["change"], sha, log=log, open_pr=open_pr,
+                                                         review=(res.get("approvals") or {}).get("review") or {}))
+    else:
+        res["musecode_pr"] = {"status": "skipped", "why": "one PR per stage, opened after the last round"}
 
     def codemode():
         from wattnot.agentwaste.codemode import analyze
@@ -194,7 +266,9 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
 
     def receipt():
         from wattnot.receipt.sign import sign_run_receipt
-        rec = {"kind": "hosted-e2e", "round": round_doc.get("round"), "model": round_doc.get("model"),
+        rec = {"kind": "hosted-e2e", "approvals": (res.get("approvals") or {}),
+               "musecode_pr": res.get("musecode_pr"), "feature_stages": {k: v.get("status") for k, v in res.items()
+                                                                          if isinstance(v, dict)}, "round": round_doc.get("round"), "model": round_doc.get("model"),
                "features": feature_table(), "results": round_doc.get("results"),
                "spend": round_doc.get("spend"), "provider_usage": round_doc.get("provider_usage"), "labels": {"energy": "ESTIMATE", "tokens": "MEASURED"},
                "integrity": {"signer": None}}
@@ -217,6 +291,7 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
         p = d / "receipt.json"
         p.write_text(json.dumps(rec, indent=2))
         b, signer = sign_run_receipt(p)
+        emit("receipts", "sign", f"receipt signed ({signer})", status="ok", label="MEASURED")
         return {"path": str(p), "signer": str(signer), "bundle": str(b) if b else None}
     _stage(res, "receipt", receipt)
 
@@ -227,6 +302,7 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
                 json.dumps({"round": rec.get("round"), "results": rec.get("results"), "sci": rec.get("sci")},
                            indent=1, default=str) + "</pre>")
         (d / "eu_report.html").write_text(html)
+        emit("eu", "fields", "EU report written", status="ok", label="MEASURED")
         return {"wording_issues": check_wording(html)}
     _stage(res, "eu_report", eu)
 

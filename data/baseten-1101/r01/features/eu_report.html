@@ -3,14 +3,14 @@
  "results": {
   "accuracy_without": 1.0,
   "accuracy_with": 1.0,
-  "j_per_correct_without": 506.72,
-  "j_per_correct_with": 278.59,
+  "j_per_correct_without": 533.61,
+  "j_per_correct_with": 429.38,
   "energy_saved_pct": {
-   "value": 45.02,
+   "value": 19.54,
    "label": "ESTIMATE"
   },
   "usd_saved_pct": {
-   "value": 47.19,
+   "value": 24.34,
    "label": "MEASURED"
   },
   "per_arm": {
@@ -39,35 +39,35 @@
     "errors": 0,
     "tokens": {
      "prompt": 673,
-     "cached": 256,
-     "completion": 1411,
+     "cached": 128,
+     "completion": 1380,
      "label": "MEASURED"
     },
     "usd": {
-     "value": 0.006556,
+     "value": 0.006565,
      "label": "MEASURED",
      "method": "tokens x Baseten list price"
     },
     "energy_wh": {
-     "value": 0.4223,
-     "low": 0.0768,
-     "high": 0.7678,
+     "value": 0.4447,
+     "low": 0.0809,
+     "high": 0.8085,
      "label": "ESTIMATE",
      "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
     },
     "j_per_correct": {
-     "value": 506.72,
+     "value": 533.61,
      "label": "ESTIMATE"
     },
     "item_latency_s": {
-     "p50": 3.6477,
-     "p99": 5.9743,
+     "p50": 3.2639,
+     "p99": 3.5018,
      "label": "MEASURED"
     },
     "call_latency_s": {
-     "p50": 3.6455,
-     "p99": 5.9541,
-     "mean": 3.6788,
+     "p50": 3.2462,
+     "p99": 3.5009,
+     "mean": 2.8324,
      "label": "MEASURED"
     },
     "stepped_up": 0
@@ -97,35 +97,35 @@
     "errors": 0,
     "tokens": {
      "prompt": 673,
-     "cached": 384,
-     "completion": 716,
+     "cached": 128,
+     "completion": 1004,
      "label": "MEASURED"
     },
     "usd": {
-     "value": 0.003462,
+     "value": 0.004967,
      "label": "MEASURED",
      "method": "tokens x Baseten list price"
     },
     "energy_wh": {
-     "value": 0.2322,
-     "low": 0.0422,
-     "high": 0.4221,
+     "value": 0.3578,
+     "low": 0.0651,
+     "high": 0.6506,
      "label": "ESTIMATE",
      "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
     },
     "j_per_correct": {
-     "value": 278.59,
+     "value": 429.38,
      "label": "ESTIMATE"
     },
     "item_latency_s": {
-     "p50": 2.5264,
-     "p99": 2.6649,
+     "p50": 3.3033,
+     "p99": 4.2526,
      "label": "MEASURED"
     },
     "call_latency_s": {
-     "p50": 2.3517,
-     "p99": 2.5086,
-     "mean": 2.0957,
+     "p50": 3.1459,
+     "p99": 4.0949,
+     "mean": 3.2946,
      "label": "MEASURED"
     },
     "stepped_up": 0
