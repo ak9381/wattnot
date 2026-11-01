@@ -14,4 +14,6 @@ test("strip fills only from events, keeps labels, and says when a model made no 
   assert.ok(html.includes("resp_9") && html.includes("700 ms") && html.includes("ESTIMATE"));
   assert.ok(html.includes("REPLAY") && html.includes("2000 ms"));
   assert.equal((html.match(/no call in this run/g) || []).length, 5);
+  assert.ok(html.includes("Muse Image") && html.includes("SYNTHETIC") && html.includes("blocked in India"));
+  assert.equal(modelOf({ data: { model: "muse-image-1" } }), null);   // never counted as a live call
 });

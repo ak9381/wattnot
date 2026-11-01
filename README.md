@@ -16,6 +16,7 @@ from an earlier run is labelled REPLAY; nothing is shown that did not happen.
 | Voice | Muse Voice (`muse-voice-transcribe-1.0`) | spoken Ask and tune |
 | Change | Muse Code | the change as a sandboxed PR (replay in demos; no PR is opened) |
 | Routing | Muse Spark Open on Baseten | multi-provider routing pass |
+| Test data | Muse Image | made the test images for the vision quality gate (any miss rejects a change) and the SAM hotspot test set. Muse Image is blocked in India, so these are pre-generated sets labelled SYNTHETIC, never a live call |
 
 Full list with costs: [Meta models used](#meta-models-used).
 
@@ -25,7 +26,7 @@ Token trimmers cut your bill, but not your watts. WattNot measures the joules ea
 
 H100 run: `bash scripts/h100_run.sh --dry-run` first, then see [docs/runbooks/H100.md](docs/runbooks/H100.md). Adaptive top-k ([docs/ADAPTIVE-TOPK.md](docs/ADAPTIVE-TOPK.md)) is not in the H100 run; it is planned on Muse Spark Open via Modal. Earlier top-k tests used non-Meta models and are kept only as dated history.
 
-**Every model WattNot runs is a Meta model (Glimmer, Llama, Spark, Spark Open, Wonder, SAM 3.1, Voice). See [Meta models used](#meta-models-used).**
+**Every model WattNot runs is a Meta model (Glimmer, Llama, Spark, Spark Open, Wonder, SAM 3.1, Voice, Code, plus Muse Image for pre-generated SYNTHETIC test sets). See [Meta models used](#meta-models-used).**
 
 ## For judges
 
@@ -117,7 +118,7 @@ Every Meta model WattNot uses, and what we built on top of each:
 | Muse Glimmer 30B (`meta-models/Muse-Glimmer-30B`, open weights) | the served model we tune on the H100 (power cap, thinking budget, tiers, LangChain agent, agent-waste saver) | own H100, cost is GPU hours |
 | Llama 3.1 8B Instruct (open weights) | the served model in RUN2; small model in small-first; judge fallback | own H100, cost is GPU hours |
 | Muse Spark Open (Baseten, Modal) | big model when the small one fails a check; hosted planner; the multi-provider routing arm | $0.004, 1 call (MEASURED) |
-| Muse Image (`muse-image-1.0`) | planned; access blocked, so not used in any result | none |
+| Muse Image (`muse-image-1.0`) | the pre-generated test images for the vision quality gate and the SAM hotspot test set, labelled SYNTHETIC; blocked in India, so no live call in any run | none in our runs |
 
 - **Endpoint health:** `wattnot health` probes each hosted endpoint and writes a FALLBACK ledger (`data/judge/health-*.json`).
 - **Labels:** every number is MEASURED, ESTIMATE, SIMULATED, MOCK, REPLAY or ADVICE. SIMULATED and MOCK content is hidden by default; the "Illustrations" switch shows it.
