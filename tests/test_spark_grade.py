@@ -90,3 +90,24 @@ def test_estimate_under_cap():
     from wattnot.longrun import matrix_round as mr
     e = mr.estimate()
     assert e["label"] == "ESTIMATE" and e["worst_case_usd_total"] < e["cap_usd"]
+
+
+def test_recorder_makes_no_call_and_offbox_grade(tmp_path, monkeypatch):
+    from wattnot.longrun import matrix_round as mr
+    monkeypatch.setenv(sg.ROUND_ENV, "r07")
+    monkeypatch.setenv(sg.RECORD_ENV, "1")
+    rec = sg.grader_from_env()
+    assert isinstance(rec, sg.AnswerRecorder)
+    rec.arm = "without_wattnot"
+    rec("1", "gsm8k", "q", "#### 4", True)
+    rec.arm = "with_wattnot"
+    rec("1", "gsm8k", "q", "#### 5", False)
+    d = tmp_path / "pulled" / "r07" / "public"
+    d.mkdir(parents=True)
+    (d / "spark_grades.json").write_text(json.dumps({"summary": rec.summary(), "answers": rec.records}))
+    led = SpendLedger(tmp_path / "l.json", cap_usd=120.0, soft_usd=100.0)
+    client = GuardedClient(opener=_opener(True), key="k", ledger=led)
+    doc = mr.grade_pulled("r07", tmp_path / "pulled", tmp_path / "out", client=client, mock=False)
+    assert doc["results"]["accuracy_without"] == 1.0 and doc["results"]["accuracy_with"] == 0.0
+    assert doc["spark_summary"]["spark_graded"] == 2 and doc["spark_summary"]["disagreements"] == 1
+    assert (tmp_path / "out" / "r07.json").exists()

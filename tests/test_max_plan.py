@@ -145,3 +145,34 @@ def test_phase_clock_creates_missing_out_dir(tmp_path):
                            "--log", str(d / "log.jsonl")])
     assert not rc
     assert (d / "log.jsonl").exists()
+
+
+def test_matrix_legs_3_4_inside_booking(tmp_path):
+    blocks = driver.plan(tmp_path, "glimmer-test", "max")
+    by = {b.id: b for b in blocks}
+    for bid, _t, rounds in driver.MAX_MATRIX_LEGS:
+        b = by[bid]
+        assert b.host and b.skip_if_short and b.trim and b.trim_live
+        live = " ".join(b.live)
+        for r in rounds:
+            assert f"WATTNOT_MATRIX_ROUND={r} WATTNOT_MATRIX_RECORD=1" in live
+        assert "--fake" not in live and "MOCK" not in live
+    assert [r for _b, _t, rs in driver.MAX_MATRIX_LEGS for r in rs] == \
+        ["r07", "r08", "r09", "r10", "r11", "r12"]
+    total_h = sum(b.hours for b in blocks)
+    assert total_h + 8 / 60 <= driver.MAX_BOOKING_H
+    assert total_h * driver.INR_PER_H <= driver.MAX_BUDGET_CAP_INR
+
+
+def test_model_glimmer_maps_to_the_h100_setting(tmp_path, monkeypatch):
+    seen = {}
+
+    def fake_dry(out, **kw):
+        seen.update(kw)
+        return {"blocks": {}, "stopped": "finished", "sim": {}}
+    monkeypatch.setattr(driver, "dry_run", fake_dry)
+    try:
+        driver.main(["--dry-run", "--plan", "max", "--model", "glimmer", "--out", str(tmp_path)])
+    except SystemExit as e:
+        assert e.code in (0, None)
+    assert seen.get("model") == "glimmer-test" and seen.get("plan_name") == "max"

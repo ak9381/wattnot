@@ -566,7 +566,18 @@ MAX_LANGCHAIN_ITEMS = 40
 MAX_PUBLIC_SETS = ("gsm8k300", "humaneval164")   # 300 GSM8K + all 164 HumanEval
 MAX_PUBLIC_REPS = 3
 MAX_TIERS_PER_TIER = 10
-MAX_HOURS_MIN = {"t2g-serverless": 30, "t2c-prefix": 40, "t2d-combined": 25, "t2e-public": 120}
+# t2e-public 120 -> 80 min (its old trim floor) to make room for matrix legs 3-4 in the booking.
+MAX_HOURS_MIN = {"t2g-serverless": 30, "t2c-prefix": 40, "t2d-combined": 25, "t2e-public": 80}
+# Run matrix legs 3 (H100) and 4 (combined) run inside this booking, after the public block.
+# Each round: our set (92) + GSM8K (60) + HumanEval (40), without (stock) and with WattNot (best
+# cap), 1 rep. ESTIMATE ~16 min a round on Glimmer 30B. The host only RECORDS answers
+# (WATTNOT_MATRIX_RECORD=1, no Meta key on the GPU); Spark grades them off-box after copy-back
+# (post_run_offgpu -> matrix_round --grade), through the guarded client and the $120 cap.
+# Leg 4's Baseten / Modal share is paid outside this booking and is NOT run by the driver; it
+# needs Akash's go (scripts/multiprovider_route.py prints those commands).
+MAX_MATRIX_LEGS = (("m3-h100", "Run matrix leg 3: H100", ("r07", "r08", "r09")),
+                   ("m4-combined", "Run matrix leg 4: combined, H100 share", ("r10", "r11", "r12")))
+MAX_MATRIX_ROUND_MIN = 16
 MAX_DEDICATED = ("t2g-serverless", "t2-fp8", "t2-eye", "t2-spoken", "t2b-batch", "t2c-prefix",
                  "t2d-combined", "t2e-public")
 MAX_REQUIRED_BLOCKS = ("t1-sweep", "p1-think", "p1-tiers", "p1-eye", "p1-spoken", "p1-phase",
@@ -641,6 +652,34 @@ def pass_blocks(out: Path, pas: str, sweep_tag: str, grid: str, dataset: str,
     return bl
 
 
+def _matrix_round_sh(rid: str, cap: str) -> str:
+    R = f"{REMOTE_RESULTS}/matrix/{rid}"
+    env = f"WATTNOT_MATRIX_ROUND={rid} WATTNOT_MATRIX_RECORD=1"
+    return (f"{env} python scripts/public_bench_ab.py --cap {cap} --reps 1 --sets gsm8k humaneval "
+            f"--out {R}/public && {env} python -m wattnot.longrun.harness --cap {cap} --reps 1 "
+            f"--model-config muse-glimmer-30b --url {HOST_BASE_URL}/chat/completions --out {R}/ours")
+
+
+def matrix_leg_blocks(out: Path) -> list[Block]:
+    """Matrix legs 3-4 as host blocks. Trimmed to the first round of the leg when time is short;
+    skipped entirely if even that does not fit."""
+    bl = []
+    for bid, title, rounds in MAX_MATRIX_LEGS:
+        dry = _py("wattnot.longrun.matrix_round", "--dry-run", "--round", *rounds,
+                  "--out", str(out / "runs" / bid))
+        bl.append(Block(
+            bid, f"{title}, rounds {rounds[0]}-{rounds[-1]}: our set + GSM8K 60 + HumanEval 40, "
+            "without vs with WattNot; answers recorded for the off-box Spark grade",
+            _m(MAX_MATRIX_ROUND_MIN * len(rounds)), dry,
+            live=["bash", "-c", " && ".join(_matrix_round_sh(r, "{BEST_CAP}") for r in rounds)],
+            min_hours=_m(MAX_MATRIX_ROUND_MIN),
+            trim=_py("wattnot.longrun.matrix_round", "--dry-run", "--round", rounds[0],
+                     "--out", str(out / "runs" / bid)),
+            trim_live=["bash", "-c", _matrix_round_sh(rounds[0], "{BEST_CAP}")],
+            host=True, depends_on=("t1-sweep",), skip_if_short=True))
+    return bl
+
+
 def plan_glimmer_max(out: Path) -> list[Block]:
     """The max plan: setup once, then three full E2E passes (own set, GSM8K, HumanEval), then the
     dedicated blocks that need a serving restart or many reps (serverless idle, FP8 + its gates,
@@ -678,7 +717,8 @@ def plan_glimmer_max(out: Path) -> list[Block]:
         live=["python", "scripts/serverless_ab.py", "--reps", "3", "--out",
               f"{REMOTE_RESULTS}/t2g-serverless"], host=True, skip_if_short=True)
     blocks += [serverless, long_blocks["t2-fp8"], long_blocks["t2-eye"], long_blocks["t2-spoken"],
-               long_blocks["t2b-batch"], prefix, combined, public, long_blocks["t3-copy"]]
+               long_blocks["t2b-batch"], prefix, combined, public, *matrix_leg_blocks(out),
+               long_blocks["t3-copy"]]
     return blocks
 
 
@@ -1328,7 +1368,11 @@ def main(argv=None) -> int:
                         "runs the no-mock preflight and refuses any mock input")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--model", choices=["glimmer", "llama", "glimmer-test"], default="glimmer",
-                    help="glimmer = primary plan; llama = fallback; glimmer-test = the 2 h test VM")
+                    help="glimmer-test = Muse Glimmer 30B on the one E2E H100 (the launch setting "
+                         "for --plan long/max/retest; the name is historical, the weights are the "
+                         "real Glimmer 30B). glimmer = the older 18 h plan-B block list (--plan "
+                         "full only); with --plan long/max/retest it is read as glimmer-test. "
+                         "llama = fallback")
     ap.add_argument("--plan", choices=["full", "retest", "long", "max"], default="full",
                     help="retest (glimmer-test only): re-run setup, probe, the sweep and the RUN3 "
                          "failures only, sized to a 2 h VM")
@@ -1338,6 +1382,12 @@ def main(argv=None) -> int:
     ap.add_argument("--drop-link", default="b2-wonder-sweep:3",
                     help="dry: simulate an SSH drop: block:probes ('' for none)")
     a = ap.parse_args(argv)
+    if a.plan in ("retest", "long", "max") and a.model == "glimmer":
+        # same weights (GLIMMER_MODEL) and the same one-H100 VM: the plan-B list only exists for
+        # --plan full, so the real-model launch of these plans IS the glimmer-test setting
+        print(f"[driver] --model glimmer --plan {a.plan}: using glimmer-test (Muse Glimmer 30B "
+              "on the E2E H100; same weights)", file=sys.stderr)
+        a.model = "glimmer-test"
     if a.plan in ("retest", "long", "max") and a.model != "glimmer-test":
         # plan() only honours retest/long for glimmer-test; anything else would silently run
         # the old full plan on a paid VM

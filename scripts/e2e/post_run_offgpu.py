@@ -42,6 +42,14 @@ def steps(out: Path) -> list[list[str]]:
         if rc:
             cmds.append([py, "-m", "wattnot.cli", "report", "eu", "--receipts", *rc,
                          "--out", str(sweep / "eu" / "eu-2024-1364")])
+    # Run matrix legs 3-4: Spark grades the answers the GPU host recorded (guarded, $120 cap)
+    pulled = out / "pulled" / "run2" / "results" / "matrix"
+    if pulled.is_dir():
+        sys.path.insert(0, str(ROOT / "src"))
+        from wattnot.longrun.driver import MAX_MATRIX_LEGS
+        rounds = [r for _b, _t, rs in MAX_MATRIX_LEGS for r in rs]
+        cmds.append([py, "-m", "wattnot.longrun.matrix_round", "--grade", str(pulled),
+                     "--round", *rounds, "--out", str(ROOT / "out" / "matrix")])
     return cmds
 
 
