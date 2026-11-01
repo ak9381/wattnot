@@ -38,6 +38,15 @@ SOURCES = {
     "humaneval": {"file": "humaneval_first40.jsonl", "repo": "https://github.com/openai/human-eval",
                   "commit": "b9453e8f1865df0a0057a1383767caa400acfbcf", "licence": "MIT",
                   "sha256": "a10bc9bd9677b438a2a31a742a22ea17a74459ecc997918dfe06e8937b695818"},
+    # bigger slices for the max plan: 300 GSM8K items (the first 300 of test.jsonl, so the 60-item
+    # slice is a prefix of it) and all 164 HumanEval problems. Same repos, commits and graders.
+    "gsm8k300": {"file": "gsm8k_test_first300.jsonl", "repo": "https://github.com/openai/grade-school-math",
+                 "commit": "3101c7d5072418e28b9008a6636bde82a006892c", "licence": "MIT", "grader": "gsm8k",
+                 "sha256": "23334809255204935ff6b5d6de36a29312ed2b1e9baae0629299699361dbc055"},
+    "humaneval164": {"file": "humaneval_full164.jsonl", "repo": "https://github.com/openai/human-eval",
+                     "commit": "b9453e8f1865df0a0057a1383767caa400acfbcf", "licence": "MIT",
+                     "grader": "humaneval",
+                     "sha256": "1d49078ba3e2b196b9344535bef34a43021f038fad9561d6ee7c53450609a6a2"},
 }
 NUM = re.compile(r"-?\d[\d,]*(?:\.\d+)?")
 
@@ -123,6 +132,11 @@ def he_ok(item: dict, text: str, timeout: float = 15.0) -> bool:
 
 
 GRADERS = {"gsm8k": (gsm8k_prompt, gsm8k_ok), "humaneval": (he_prompt, he_ok)}
+
+
+def grader(name: str):
+    """(prompt fn, grade fn) for a set; the bigger slices reuse their base set's grader."""
+    return GRADERS[SOURCES[name].get("grader", name)]
 
 
 def summarize(name: str, rounds: list[dict]) -> dict:
@@ -212,7 +226,7 @@ def run_real(o) -> dict:  # pragma: no cover - needs the GPU host
         got = setcap(cap)
         time.sleep(o.settle_s)
         for n, items in sets.items():
-            pf, gf = GRADERS[n]
+            pf, gf = grader(n)
             e0 = pynvml.nvmlDeviceGetTotalEnergyConsumption(h)
             t0 = time.time()
             with ThreadPoolExecutor(o.concurrency) as ex:

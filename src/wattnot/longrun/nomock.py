@@ -182,7 +182,7 @@ def write_report(report: dict, path: Path) -> None:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="WattNot no-mock preflight")
     ap.add_argument("--model", choices=["glimmer", "llama", "glimmer-test"], default="glimmer-test")
-    ap.add_argument("--plan", choices=["full", "retest", "long"], default="full")
+    ap.add_argument("--plan", choices=["full", "retest", "long", "max"], default="full")
     ap.add_argument("--out", type=Path, default=None, help="write nomock-preflight.json here")
     a = ap.parse_args(argv)
     report = audit_plan(a.model, a.out, plan_name=a.plan)
