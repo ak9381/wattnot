@@ -1,0 +1,2 @@
+Update launch.sh and values.yaml with the following verified inference configuration. Edit only those two files. Do not commit, push or run any other command.
+- max_num_seqs: 64

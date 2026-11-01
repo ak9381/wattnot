@@ -1,0 +1,3 @@
+{"spec": "wattnot.langchain-pass/1", "label": "MOCK", "dataset": "own", "start": 0, "n": 5, "framework": "langchain", "routing": "effort routing on one served model (thinking off -> on); model routing needs a second model and is in the multi-provider block", "quality_held": true, "saver_off": {"correct": 0, "n": 5, "gpu_j": null, "steps": 5}, "saver_on": {"correct": 0, "n": 5, "gpu_j": null, "steps": 5}}
+
+--- stderr ---

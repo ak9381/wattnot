@@ -1,0 +1,172 @@
+{
+  "spec": "wattnot.langchain-pass/1",
+  "label": "MOCK",
+  "dataset": "own",
+  "start": 0,
+  "n": 5,
+  "framework": "langchain",
+  "routing": "effort routing on one served model (thinking off -> on); model routing needs a second model and is in the multi-provider block",
+  "arms": {
+    "saver_off": {
+      "correct": 0,
+      "n": 5,
+      "wall_s": 0.96,
+      "gpu_j": null,
+      "gpu_j_label": "not measured",
+      "j_per_correct": null,
+      "steps": 5,
+      "proxy_receipt": {
+        "spec": "wattnot.proxy-receipt/1",
+        "label": "MOCK",
+        "frameworks": [
+          "langchain"
+        ],
+        "framework": "langchain",
+        "calls": 5,
+        "routing": {
+          "enabled": false,
+          "routed_calls": 0,
+          "escalation_rate": null,
+          "small_model_pass_rate": null,
+          "answered_by": {
+            "null": 5
+          }
+        },
+        "gate": {
+          "pass_pct": 100.0,
+          "answered_calls": 5,
+          "stopped_by_guard": 0,
+          "upstream_errors": 0
+        },
+        "escalated_attempt_tokens": 0,
+        "context_saver": {
+          "enabled": false,
+          "tokens_before": 0,
+          "tokens_after": 0,
+          "tokens_saved": 0,
+          "label": "ESTIMATE"
+        },
+        "agent_waste": {
+          "upstream_calls": 5,
+          "prompt_tokens": 633,
+          "completion_tokens": 75,
+          "reasoning_tokens": 0,
+          "nudges": 0,
+          "runs": 1,
+          "runs_stopped_early": 0
+        },
+        "billed_upstream_calls": 5,
+        "streamed_calls": 0,
+        "dropped_fields": []
+      },
+      "per_item": [
+        {
+          "i": 0,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 1,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 2,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 3,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 4,
+          "steps": 1,
+          "correct": false
+        }
+      ]
+    },
+    "saver_on": {
+      "correct": 0,
+      "n": 5,
+      "wall_s": 0.03,
+      "gpu_j": null,
+      "gpu_j_label": "not measured",
+      "j_per_correct": null,
+      "steps": 5,
+      "proxy_receipt": {
+        "spec": "wattnot.proxy-receipt/1",
+        "label": "MOCK",
+        "frameworks": [
+          "langchain"
+        ],
+        "framework": "langchain",
+        "calls": 5,
+        "routing": {
+          "enabled": true,
+          "routed_calls": 5,
+          "escalation_rate": 0.0,
+          "small_model_pass_rate": 1.0,
+          "answered_by": {
+            "glimmer-think-off": 5
+          }
+        },
+        "gate": {
+          "pass_pct": 100.0,
+          "answered_calls": 5,
+          "stopped_by_guard": 0,
+          "upstream_errors": 0
+        },
+        "escalated_attempt_tokens": 0,
+        "context_saver": {
+          "enabled": true,
+          "tokens_before": 633,
+          "tokens_after": 633,
+          "tokens_saved": 0,
+          "label": "ESTIMATE"
+        },
+        "agent_waste": {
+          "upstream_calls": 5,
+          "prompt_tokens": 633,
+          "completion_tokens": 75,
+          "reasoning_tokens": 0,
+          "nudges": 0,
+          "runs": 1,
+          "runs_stopped_early": 0
+        },
+        "billed_upstream_calls": 5,
+        "streamed_calls": 0,
+        "dropped_fields": []
+      },
+      "per_item": [
+        {
+          "i": 0,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 1,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 2,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 3,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 4,
+          "steps": 1,
+          "correct": false
+        }
+      ]
+    }
+  },
+  "quality_held": true
+}
