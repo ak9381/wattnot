@@ -183,6 +183,7 @@ def attempt(b, tr, cap, calls, arm, effort, ds, iid, obj):
         g = grade_one(obj, chat, cap_)
         ok, tier = g.ok, g.tier
         rec = cap_.last or {"id": iid, "dataset": obj.tier, "prompt": obj.prompt, "answer": "", "deterministic": ok}
+        finish = "length" if g.truncated else str(g.detail.get("finish") or "stop")
     else:
         pf, gf = b.grader(ds)
         prompt = pf(obj)
@@ -190,8 +191,24 @@ def attempt(b, tr, cap, calls, arm, effort, ds, iid, obj):
         ok = r.finish != "error" and r.finish != "length" and bool(gf(obj, r.text))
         tier = ds
         rec = {"id": iid, "dataset": ds, "prompt": prompt, "answer": r.text, "deterministic": ok}
-    rec.update(set=ds, tier=tier, effort=effort, wall_s=round(time.perf_counter() - t0, 4))
+        finish = r.finish
+    rec.update(set=ds, tier=tier, effort=effort, finish=finish, wall_s=round(time.perf_counter() - t0, 4))
     return rec
+
+
+def step_up_reason(rec) -> str:
+    """Why a low answer was not usable, so a step-up to medium is recorded with its cause.
+
+    length: the low call ran out of tokens (finish=length / context-limit) - a runaway cut by the
+            low cap, not a real low-confidence miss.
+    format: the call stopped but produced no parseable answer at all.
+    wrong:  a complete answer that failed the deterministic check.
+    """
+    if rec.get("finish") in ("length", "context-limit"):
+        return "length"
+    if not str(rec.get("answer") or "").strip():
+        return "format"
+    return "wrong"
 
 
 def run_item(b, tr, cap, calls, arm, it):
@@ -202,11 +219,17 @@ def run_item(b, tr, cap, calls, arm, it):
         return r
     r = attempt(b, tr, cap, calls, arm, "low", ds, iid, obj)
     tries = ["low"]
+    reason = None
+    # Keep the low answer when it is usable; only step up when it is not, and record WHY
+    # (length/format/wrong) - same rule as scripts/e2e/baseten_round.py.
     if not r["deterministic"]:
+        reason = step_up_reason(r)
         r2 = attempt(b, tr, cap, calls, arm, "medium", ds, iid, obj)
         r2["wall_s"] = round(r2["wall_s"] + r["wall_s"], 4)
         r, tries = r2, ["low", "medium"]
     r["tries"] = tries
+    if reason:
+        r["step_up_reason"] = reason
     return r
 
 
@@ -363,7 +386,7 @@ def main(argv=None) -> int:
                           "agreement": round(1 - len(dis) / len(graded), 4) if graded else None,
                           "disagreements": len(dis), "stopped": spark.stopped if spark else "not run"},
         "answers": [{k: x.get(k) for k in ("id", "dataset", "set", "arm", "deterministic", "spark", "spark_reason",
-                                            "tries", "wall_s")} for x in all_ans],
+                                            "tries", "step_up_reason", "wall_s")} for x in all_ans],
         "raw_dir": str(raw.relative_to(ROOT)) if raw.is_relative_to(ROOT) else str(raw),
     }
     out = a.out if not a.limit else raw / "smoke-matrix"

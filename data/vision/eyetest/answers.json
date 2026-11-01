@@ -89,8 +89,8 @@
       "answer": "60",
       "watermark": "SYNTHETIC",
       "source": "RENDERED-PIL",
-      "source_note": "Rendered deterministically by scripts/gen_vision_assets.py --gauge with PIL (not a photo, not the image model); needle on the labelled 60 tick.",
-      "sha256": "e8c5b3a4017604ed4c67fe6d8714b40b9ee93441cf2fdf1abb28a69077f852bf"
+      "source_note": "Rendered deterministically by scripts/gen_vision_assets.py --gauge with PIL (not a photo, not the image model); needle on the labelled 60 tick. The answer (60) was already correct; this only improved the dial's readability - a pointed needle running across the tick band to the outer edge of the 60 tick, so it is not misread as 62. Not re-verified live.",
+      "sha256": "6f8f1596fa91fa5403a6caea0b347bcf33f0d09b378c79fd041f7ccca4fb500f"
     },
     {
       "id": "sign-exit",

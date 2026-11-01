@@ -69,6 +69,9 @@ def norm_config(c: dict) -> dict:
     if prov not in E.PROVIDERS:
         raise ValueError(f"unknown provider {prov!r}")
     rounds = int(c.get("rounds") or 3)
+    # Baseten smoke runs through a per-token API with no container-lifetime cap, so a bigger smoke is
+    # safe under the $ caps; Modal smoke stays clamped at 3 because of its 32-min container cap.
+    smoke_max = 10 if prov == "baseten" else 3
     return {"name": str(c.get("name") or "").strip()[:80], "description": str(c.get("description") or "").strip()[:300],
             "provider": prov, "model": c.get("model") or E.PROVIDERS[prov]["default_model"],
             "datasets": list(c.get("datasets") or ["ours", "gsm8k", "humaneval"]),
@@ -77,7 +80,7 @@ def norm_config(c: dict) -> dict:
             "open_pr": bool(c.get("open_pr", True)) and not c.get("smoke"), "rounds": 1 if c.get("smoke") else max(1, min(rounds, 3)),
             # Baseten smoke is a TRUE end-to-end run: Spark grading stays ON (live). The Modal smoke
             # keeps Spark off.
-            "smoke": ({"limit": max(1, min(int((c.get("smoke") or {}).get("limit") or 2), 3)),
+            "smoke": ({"limit": max(1, min(int((c.get("smoke") or {}).get("limit") or 2), smoke_max)),
                        "spark": prov == "baseten"} if c.get("smoke") and prov in ("modal_a100", "baseten") else None),
             "caps": {**CAPS, **{k: _clamp_cap(k, v) for k, v in (c.get("caps") or {}).items() if k in CAPS}}}
 

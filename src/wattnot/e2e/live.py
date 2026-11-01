@@ -93,12 +93,23 @@ def live_eye(out: Path, client) -> dict:
 
 
 def _transcribe(path: Path) -> tuple[str, float]:
+    import io
     import uuid
+    import wave
     from wattnot.meta.client import DEFAULT_BASE, load_key
     from wattnot.meta.ledger import SpendLedger
     audio = path.read_bytes()
+    # Read the real sample rate and length from the WAV header instead of assuming 16 kHz / 32 kB/s:
+    # the regenerated edge-tts clips carry their own rate, and the duration must match it.
+    try:
+        with wave.open(io.BytesIO(audio), "rb") as w:
+            sample_rate, n_frames = w.getframerate(), w.getnframes()
+    except (wave.Error, EOFError):
+        sample_rate, n_frames = 16000, max(0, (len(audio) - 44) // 2)
+    dur = (n_frames / sample_rate) if sample_rate else 0.0
     b = uuid.uuid4().hex
-    reqj = json.dumps({"model": "muse-voice-transcribe-1.0", "audioEncoding": "WAV", "sampleRateHertz": 16000})
+    reqj = json.dumps({"model": "muse-voice-transcribe-1.0", "audioEncoding": "WAV",
+                       "sampleRateHertz": sample_rate})
     body = b"".join([
         f'--{b}\r\nContent-Disposition: form-data; name="request"\r\nContent-Type: application/json\r\n\r\n{reqj}\r\n'.encode(),
         f'--{b}\r\nContent-Disposition: form-data; name="audio"; filename="q.wav"\r\nContent-Type: audio/wav\r\n\r\n'.encode()
@@ -107,7 +118,6 @@ def _transcribe(path: Path) -> tuple[str, float]:
         "Authorization": f"Bearer {load_key()}", "Content-Type": f"multipart/form-data; boundary={b}"})
     with urllib.request.urlopen(req, timeout=120) as r:  # noqa: S310
         d = json.loads(r.read())
-    dur = (len(audio) - 44) / 32000
     usd = round(dur / 3600 * 0.18, 6)
     led = SpendLedger()
     eid, _ = led.reserve({"model": "muse-spark-1.3-contributor", "max_tokens": 1, "messages": []},

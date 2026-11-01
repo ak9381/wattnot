@@ -55,6 +55,16 @@ def test_baseten_true_e2e_smoke_config():
     assert cfg["smoke"]["spark"] is True
 
 
+def test_smoke_limit_clamp_is_higher_for_baseten_than_modal():
+    # Baseten smoke clamps to 10 (per-token API, no container cap); Modal stays at 3.
+    assert L.norm_config({"provider": "baseten", "smoke": {"limit": 50}})["smoke"]["limit"] == 10
+    assert L.norm_config({"provider": "baseten", "smoke": {"limit": 7}})["smoke"]["limit"] == 7
+    assert L.norm_config({"provider": "modal_a100", "smoke": {"limit": 50}})["smoke"]["limit"] == 3
+    # default stays 2 for both when a (truthy) smoke config omits the limit
+    assert L.norm_config({"provider": "baseten", "smoke": {"on": True}})["smoke"]["limit"] == 2
+    assert L.norm_config({"provider": "modal_a100", "smoke": {"on": True}})["smoke"]["limit"] == 2
+
+
 def test_baseten_smoke_cap_default_and_raise_flag():
     # default $1 hard; the true-e2e smoke may raise it up to $2, never higher
     assert L.norm_config({"provider": "baseten", "smoke": {"limit": 1}})["caps"]["baseten_smoke_usd"] == 1.0
