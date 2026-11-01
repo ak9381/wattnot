@@ -64,6 +64,57 @@ GATE_DROP_PTS = 2.0                     # quality gate: accuracy may drop at mos
 P99_LIMIT = 1.10                        # user-set p99 limit: +10% (receipt `limits` default)
 BATCH_GRID = ((4, 64), (16, 64), (32, 128))   # (client concurrency, --max-num-seqs)
 SLICE_N = 24
+SMOKE_GRID = ((4, 64), (16, 64))
+# graph nodes greyed from the start on Modal (feature OFF -> node), with the reason
+OFF_NODES = {"adaptive": "MoE top-k needs Spark Open self-served (8x B200)",
+             "flex": "grid flex is simulator only",
+             "spark_open": "816B side stage not run (about 700 GB GPU memory)",
+             "baseten_model": "not used on this stage (our own vLLM on Modal)",
+             "meters_roadmap": "Zeus/DCGM meters not bound; NVML is the meter",
+             "certificate": "mock certificate format, not minted",
+             "e2e_rig": "the H100 rig is not used; this stage runs on a Modal A100-80GB"}
+SLICE_MAX_S = 15 * 60                   # a sweep/FP8 slice arm never runs longer than this
+BUDGET_FAIL_MAX = 5                     # BudgetChat errors before the enforcer is switched off
+
+T_START = time.time()
+DEADLINE = [None]                       # absolute time; optional steps are skipped past it
+FAILED: dict[str, str] = {}             # feature id -> why it failed (marks FAILED in the table)
+BUDGET_ERR = [0]
+INJECT = set(filter(None, os.environ.get("WATTNOT_FAKE_FAIL", "").split(",")))   # --fake tests only
+
+
+# the plain path the without-WattNot arm lights on /graph.html; every other node stays grey
+BASELINE_NODES = ["workload", "models", "telemetry", "gates"]
+
+
+class Events:
+    """events.jsonl for the graph page (same shape the dashboard follows with --events)."""
+
+    def __init__(self, path: Path | None = None, run: str = "", label: str = "MEASURED"):
+        self.path, self.run, self.label, self.n, self.lock = path, run, label, 0, threading.Lock()
+
+    def emit(self, type_: str, **data):
+        if self.path is None:
+            return
+        data.setdefault("label", self.label)
+        with self.lock:
+            self.n += 1
+            ev = {"type": type_, "ts": datetime.now(UTC).isoformat(), "run": self.run,
+                  "step_id": f"m{self.n}", "data": data}
+            with self.path.open("a") as f:
+                f.write(json.dumps(ev, default=str) + "\n")
+
+
+EV = Events()
+NV = [None]
+
+
+def left() -> float:
+    return (DEADLINE[0] - time.time()) if DEADLINE[0] else 1e9
+
+
+def fail(feature: str, why: str):
+    FAILED.setdefault(feature, why[:300])
 
 
 # ---------- meter ------------------------------------------------------------------------------
@@ -71,6 +122,7 @@ SLICE_N = 24
 class Nvml:
     def __init__(self, fake=False):
         self.fake = fake
+        self.lock = threading.Lock()   # sampler thread + main thread share one handle
         self._e = 0.0
         self._t = time.time()
         if not fake:
@@ -85,10 +137,20 @@ class Nvml:
             self._e += (now - self._t) * 300.0
             self._t = now
             return self._e
-        return self.p.nvmlDeviceGetTotalEnergyConsumption(self.h) / 1000.0
+        with self.lock:
+            return self.p.nvmlDeviceGetTotalEnergyConsumption(self.h) / 1000.0
 
     def power_w(self) -> float:
-        return 300.0 if self.fake else self.p.nvmlDeviceGetPowerUsage(self.h) / 1000.0
+        if self.fake:
+            return 300.0
+        with self.lock:
+            return self.p.nvmlDeviceGetPowerUsage(self.h) / 1000.0
+
+    def mem_used_gb(self) -> float:
+        if self.fake:
+            return 0.0
+        with self.lock:
+            return self.p.nvmlDeviceGetMemoryInfo(self.h).used / 1e9
 
     def name(self) -> str:
         if self.fake:
@@ -119,6 +181,8 @@ class Server:
         self.stop()
         self.cfg = {"fp8": fp8, "prefix_caching": prefix, "max_num_seqs": max_seqs}
         t0 = time.time()
+        if self.fake and fp8 and "fp8" in INJECT:
+            raise RuntimeError("injected: fp8 server failed to start")
         if self.fake:
             from tests.fakes_vllm import start_fake  # noqa: PLC0415
             self.fake_srv = start_fake(PORT)
@@ -133,7 +197,7 @@ class Server:
             tag = f"{'fp8' if fp8 else 'bf16'}-{'pc' if prefix else 'nopc'}-{max_seqs}"
             self.proc = subprocess.Popen(argv, stdout=open(self.log_dir / f"vllm-{tag}.log", "wb"),
                                          stderr=subprocess.STDOUT)
-            deadline = time.time() + 900
+            deadline = time.time() + max(120, min(900, left() - 300))
             while time.time() < deadline:
                 if self.proc.poll() is not None:
                     raise RuntimeError(f"vllm exited rc={self.proc.returncode} ({tag})")
@@ -158,7 +222,17 @@ class Server:
             except subprocess.TimeoutExpired:
                 self.proc.kill()
         self.proc = None
-        time.sleep(0 if self.fake else 5)
+        if not self.fake:   # wait until the GPU memory is really free before the next start (max 120 s)
+            subprocess.run(["pkill", "-f", "vllm serve"], check=False)
+            t = time.time()
+            while time.time() - t < 120:
+                try:
+                    if NV[0] is None or NV[0].mem_used_gb() < 3:
+                        break
+                except Exception:  # noqa: BLE001
+                    break
+                time.sleep(3)
+            time.sleep(3)
 
 
 # ---------- chat -------------------------------------------------------------------------------
@@ -202,12 +276,27 @@ class Chat:
                                 "completion_tokens": 0, "reasoning_tokens": 0, "label": "MEASURED"})
                 return Reply(0.0, 0, "", "error", 0, False)
             body = nb
-        if not self.think and self.budget:
+        if not self.think and self.budget and BUDGET_ERR[0] < BUDGET_FAIL_MAX:
             # thinking-budget enforcer: think within B tokens, force the close, then answer
             # (Glimmer ignores enable_thinking=false and reasoning_effort=low; smoke-r04/r05)
             from wattnot.longrun.thinking_budget import BudgetChat
             bc = BudgetChat(f"{BASE}/chat/completions", MODEL, self.budget)
-            r = bc(body["messages"], max_tokens)
+            try:
+                if "budget" in INJECT:
+                    raise RuntimeError("injected BudgetChat failure")
+                r = bc(body["messages"], max_tokens)
+                if r.finish == "error":
+                    raise RuntimeError("BudgetChat returned an error reply")
+            except Exception as e:  # noqa: BLE001 - fail soft: plain call below, counted
+                BUDGET_ERR[0] += 1
+                self.calls.add({"item": self.item, "arm": self.arm, "think": "budget", "status": 599,
+                                "finish": "error", "latency_s": 0.0, "prompt_tokens": 0, "cached_tokens": 0,
+                                "completion_tokens": 0, "reasoning_tokens": None, "label": "MEASURED",
+                                "error": f"{type(e).__name__}: {e}"[:200]})
+                if BUDGET_ERR[0] >= BUDGET_FAIL_MAX:
+                    fail("thinking_budget", f"BudgetChat failed {BUDGET_ERR[0]}x ({type(e).__name__}); "
+                         "rest of the round used the plain max_tokens budget")
+                return self._plain(body, mt, lev)
             self.calls.add({"item": self.item, "arm": self.arm, "think": "budget", "max_tokens": self.budget,
                             "status": 200 if r.finish != "error" else 599, "latency_s": round(r.latency_s, 4),
                             "prompt_tokens": 0, "cached_tokens": 0, "completion_tokens": r.tokens,
@@ -215,7 +304,11 @@ class Chat:
                             "answer_cut": sum(bc.cut.values()), "finish": r.finish,
                             "levers": lev.get("guard"), "label": "MEASURED",
                             "note": "prompt tokens not returned on the two-phase path"})
+            self._ev(200, r.tokens, 0, r.latency_s, f"thinking budget {self.budget}")
             return Reply(r.latency_s, r.tokens, strip_leak(r.text), r.finish, 0, False)
+        return self._plain(body, mt, lev)
+
+    def _plain(self, body, mt, lev):
         t0 = time.perf_counter()
         status, d = 599, {}
         try:
@@ -242,8 +335,19 @@ class Chat:
                         "prompt_tokens": int(u.get("prompt_tokens", 0)), "cached_tokens": cached,
                         "completion_tokens": ct, "reasoning_tokens": rt,
                         "reasoning_chars": len(rs), "finish": fin, "levers": lev.get("guard"), "label": "MEASURED"})
+        self._ev(status, ct, cached, lat)
         rtok = int(rt) if rt is not None else len(rs) // 4
         return Reply(lat, ct, text, fin, rtok, rt is not None)
+
+    def _ev(self, status, ct, cached, lat, how=""):
+        w = self.arm == "with_wattnot"
+        EV.emit("step.started", node="effort_router" if w else "workload", sub="route" if w else "send",
+                summary=f"{self.item}" + (f" {how}" if how else ""))
+        EV.emit("step.finished", node="models", sub="call", status="ok" if status == 200 else "bad",
+                latency_s=round(lat, 3), summary=f"{self.arm}: {ct} tokens" + (f", {cached} cached" if cached else ""))
+        if w and cached:
+            EV.emit("step.finished", node="cache", sub="hit", status="ok",
+                    summary=f"vLLM prefix cache reused {cached} prompt tokens")
 
 
 def _bench():
@@ -256,8 +360,8 @@ def _bench():
 def items(b, limit=0):
     out = [("ours", t.id, t) for t in build()]
     for name, n in PUB_N.items():
-        for x in b.load(name)[:n]:
-            out.append((name, str(x.get("task_id", x.get("question", "")[:40])), x))
+        for i, x in enumerate(b.load(name)[:n]):
+            out.append((name, str(x.get("task_id") or f"{name}-{i:03d}"), x))
     if limit:
         by = {}
         for it in out:
@@ -290,6 +394,16 @@ def attempt(b, calls, arm, ds, iid, obj, think, budget):
 
 
 def run_item(b, calls, arm, it):
+    try:
+        return _run_item(b, calls, arm, it)
+    except Exception as e:  # noqa: BLE001 - one bad item is a wrong answer, never a crashed round
+        ds, iid, obj = it
+        return {"id": iid, "set": ds, "dataset": getattr(obj, "tier", ds), "prompt": "", "answer": "",
+                "deterministic": False, "wall_s": 0.0, "tries": ["error"],
+                "error": f"{type(e).__name__}: {e}"[:300]}
+
+
+def _run_item(b, calls, arm, it):
     ds, iid, obj = it
     if arm == "without_wattnot":
         r = attempt(b, calls, arm, ds, iid, obj, True, FULL_THINK)
@@ -315,14 +429,19 @@ def pctl(xs, q):
     return round(s[min(len(s) - 1, int(round(q * (len(s) - 1))))], 4)
 
 
-def run_arm(b, nv, arm, its, conc, raw: Path, tag: str):
+def run_arm(b, nv, arm, its, conc, raw: Path, tag: str, max_s: float | None = None):
     calls = Calls()
     e0, t0 = nv.energy_j(), time.time()
     samples, stop = [], threading.Event()
 
     def sampler():
+        k = 0
         while not stop.is_set():
-            samples.append((round(time.time() - t0, 2), round(nv.power_w(), 1)))
+            w = round(nv.power_w(), 1)
+            samples.append((round(time.time() - t0, 2), w))
+            if k % 5 == 0:
+                EV.emit("telemetry.sample", node="telemetry", sub="sample", power_w=w, arm=arm)
+            k += 1
             stop.wait(1.0)
     th = threading.Thread(target=sampler, daemon=True)
     th.start()
@@ -330,6 +449,8 @@ def run_arm(b, nv, arm, its, conc, raw: Path, tag: str):
     step = max(1, min(max(conc * 2, 8), len(its) // 4))
     with ThreadPoolExecutor(conc) as ex:
         for i in range(0, len(its), step):
+            if max_s is not None and time.time() - t0 > max_s:
+                break                      # time cap: stop at a chunk boundary, record as partial
             c0 = nv.energy_j()
             got = list(ex.map(lambda it: run_item(b, calls, arm, it), its[i:i + step]))
             chunks.append({"n": len(got), "j": round(nv.energy_j() - c0, 2)})
@@ -354,7 +475,9 @@ def run_arm(b, nv, arm, its, conc, raw: Path, tag: str):
             "truncated": sum(r["finish"] == "length" for r in rows),
             "tokens": {"prompt": sum(r["prompt_tokens"] for r in rows),
                        "cached": sum(r["cached_tokens"] for r in rows),
-                       "completion": sum(r["completion_tokens"] for r in rows), "label": "MEASURED"},
+                       "completion": sum(r["completion_tokens"] for r in rows), "label": "MEASURED",
+                       "note": ("prompt/cached tokens are not returned on the two-phase thinking-budget path; "
+                                "those calls count 0 here") if any(r.get("think") == "budget" for r in rows) else None},
             "energy_j": {"value": round(j, 1), "label": "SIMULATED" if nv.fake else "MEASURED",
                          "method": "NVML total-energy counter across the whole arm"},
             "energy_wh": {"value": round(j / 3600, 4), "label": "SIMULATED" if nv.fake else "MEASURED"},
@@ -364,6 +487,7 @@ def run_arm(b, nv, arm, its, conc, raw: Path, tag: str):
                               "label": "SIMULATED" if nv.fake else "MEASURED"},
             "item_latency_s": {"p50": pctl(walls, 0.5), "p99": pctl(walls, 0.99), "label": "MEASURED"},
             "stepped_up": sum(len(a["tries"]) > 1 for a in ans), "concurrency": conc,
+            "partial": len(ans) < len(its), "item_errors": sum("error" in a for a in ans),
             "wh_per_item_samples": {"values": [round(c["j"] / c["n"] / 3600, 6) for c in chunks if c["n"]],
                                     "label": "SIMULATED" if nv.fake else "MEASURED",
                                     "method": f"NVML counter per chunk of {step} items / items in chunk"}}
@@ -407,18 +531,25 @@ def main(argv=None) -> int:
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--fake", action="store_true")
     ap.add_argument("--skip", nargs="*", default=[], help="steps to skip (smoke tests)")
+    ap.add_argument("--deadline-s", type=float, default=0, help="seconds from start; optional steps skip past it")
     a = ap.parse_args(argv)
+    DEADLINE[0] = T_START + a.deadline_s if a.deadline_s else None
     out, raw = a.out, a.out / "raw"
     raw.mkdir(parents=True, exist_ok=True)
     nv = Nvml(a.fake)
+    NV[0] = nv
     srv = Server(a.model_path, raw, a.fake)
     b = _bench()
     its = items(b, a.limit)
     sl = its[:: max(1, len(its) // SLICE_N)][:SLICE_N] if not a.limit else its
     doc = {"started_utc": datetime.now(UTC).isoformat(), "gpu": nv.name(), "fake": a.fake,
            "idle_w": {"value": round(nv.power_w(), 1), "label": "MEASURED", "when": "before vLLM start"},
-           "cap_probe": nv.cap_probe(), "items": len(its), "slice": len(sl), "steps": {}}
+           "cap_probe": nv.cap_probe(), "items": len(its), "slice": len(sl), "steps": {}, "failed": FAILED,
+           "deadline_s": a.deadline_s or None}
     S = doc["steps"]
+    from wattnot.e2e.fullstack import gpu_feature_table  # noqa: PLC0415
+    EV.path, EV.run, EV.label = out / "events.jsonl", f"modal {out.name}", "MOCK" if a.fake else "MEASURED"
+    EV.emit("stage.features", stage="modal", features=gpu_feature_table(), off_nodes=OFF_NODES)
     (out / "probe").mkdir(exist_ok=True)
     (out / "probe" / "probe.json").write_text(json.dumps({"power_cap": doc["cap_probe"], "gpu": doc["gpu"],
                                                           "idle_w": doc["idle_w"]}, indent=1))
@@ -431,32 +562,53 @@ def main(argv=None) -> int:
 
     try:
         # 1. without WattNot: stock serving
+        EV.emit("run.started", arm="without_wattnot", run=f"modal {out.name} without WattNot", model=MODEL,
+                mode="mock" if a.fake else "live", baseline_nodes=BASELINE_NODES)
         S["without_server"] = srv.start(fp8=False, prefix=False, max_seqs=64)
         S["without"], _ = run_arm(b, nv, "without_wattnot", its, 4, raw, "without")
         save()
+        EV.emit("run.finished", arm="without_wattnot")
+        EV.emit("run.started", arm="with_wattnot", run=f"modal {out.name} with WattNot", model=MODEL,
+                mode="mock" if a.fake else "live")
         # 2. batch / KV sweep (WattNot lever) on the slice, BF16 + prefix cache
-        sweep = []
-        for conc, seqs in BATCH_GRID:
+        sweep, sweep_err = [], []
+        for conc, seqs in (SMOKE_GRID if a.limit else BATCH_GRID):
             if "batch" in a.skip:
                 break
-            srv.start(fp8=False, prefix=True, max_seqs=seqs)
-            s, _ = run_arm(b, nv, "with_wattnot", sl, conc, raw, f"batch-c{conc}-s{seqs}")
-            sweep.append({"concurrency": conc, "max_num_seqs": seqs, **s})
+            if left() < (6 if a.limit else 45) * 60:   # keep time for the with arm + blocks
+                sweep_err.append(f"c{conc}-s{seqs}: skipped, {left() / 60:.0f} min left")
+                continue
+            try:
+                EV.emit("step.started", node="optimizer", sub="sweep", summary=f"batch/KV: concurrency {conc}, "
+                        f"--max-num-seqs {seqs}")
+                srv.start(fp8=False, prefix=True, max_seqs=seqs)
+                s, _ = run_arm(b, nv, "with_wattnot", sl, conc, raw, f"batch-c{conc}-s{seqs}", SLICE_MAX_S)
+                EV.emit("step.finished", node="optimizer", sub="sweep", status="ok",
+                        summary=f"c{conc}/s{seqs}: J/correct {s['j_per_correct']['value']}")
+                sweep.append({"concurrency": conc, "max_num_seqs": seqs, **s})
+            except Exception as e:  # noqa: BLE001
+                sweep_err.append(f"c{conc}-s{seqs}: {type(e).__name__}: {e}"[:200])
+        if "batch" not in a.skip and not sweep and any("skipped" not in e for e in sweep_err):
+            fail("kv_batch", "no sweep config finished: " + "; ".join(sweep_err))
         ok = [x for x in sweep if x["j_per_correct"]["value"]]
         base_acc = max((x["accuracy"] for x in ok), default=0)
         ok = [x for x in ok if (base_acc - x["accuracy"]) * 100 <= GATE_DROP_PTS]
         best = min(ok, key=lambda x: x["j_per_correct"]["value"]) if ok else {"concurrency": 4, "max_num_seqs": 64}
-        S["batch_kv"] = {"grid": sweep, "kept": {"concurrency": best["concurrency"],
+        S["batch_kv"] = {"grid": sweep, "errors": sweep_err, "kept": {"concurrency": best["concurrency"],
                                                  "max_num_seqs": best["max_num_seqs"]}, "label": "MEASURED"}
         save()
         conc, seqs = best["concurrency"], best["max_num_seqs"]
         # 3. FP8 keep/reject gate on the slice, with eye + hearing re-checked on the candidate
         fp8 = False
-        if "fp8" not in a.skip and sweep:
+        if "fp8" not in a.skip and sweep and left() < (5 if a.limit else 40) * 60:
+            S["fp8"] = {"kept": False, "skipped": f"{left() / 60:.0f} min left (time, not a failure)"}
+        elif "fp8" not in a.skip and sweep:
             bf = next(x for x in sweep if x["concurrency"] == conc)
             try:
                 srv.start(fp8=True, prefix=True, max_seqs=seqs)
-                s, _ = run_arm(b, nv, "with_wattnot", sl, conc, raw, "fp8")
+                s, _ = run_arm(b, nv, "with_wattnot", sl, conc, raw, "fp8", SLICE_MAX_S)
+                if not s["answers"] or s["errors"] >= max(1, s["calls"]) * 0.5:
+                    raise RuntimeError(f"FP8 server answered badly ({s['errors']}/{s['calls']} errors)")
                 g = gate(bf, s)
                 eye = sub([sys.executable, "-m", "wattnot.vision.run", "--base-url", BASE, "--out",
                            str(out / "fp8-eye"), "--budget-s", "90"] + (["--fake"] if a.fake else []),
@@ -466,13 +618,25 @@ def main(argv=None) -> int:
                           out / "fp8-hearing", 300)
                 g["eye_rc"], g["hearing_rc"] = eye["rc"], ear["rc"]
                 fp8 = g["keep"] and eye["rc"] == 0 and ear["rc"] == 0
+                EV.emit("step.finished", node="gates", sub="quality", status="ok" if fp8 else "bad",
+                        summary=f"FP8 {'kept' if fp8 else 'rejected'}: acc drop {g['acc_drop_pts']} pts")
                 S["fp8"] = {"bf16": {k: bf[k] for k in ("accuracy", "j_per_correct")}, "fp8": s, "gate": g,
                             "kept": fp8}
-            except RuntimeError as e:
-                S["fp8"] = {"kept": False, "error": str(e)[:300]}
+            except Exception as e:  # noqa: BLE001 - FP8 is optional; BF16 stays
+                S["fp8"] = {"kept": False, "error": f"{type(e).__name__}: {e}"[:300]}
+                fail("fp8", f"FP8 candidate failed, BF16 kept: {type(e).__name__}: {e}")
             save()
         # 4. with WattNot: every lever on
-        S["with_server"] = srv.start(fp8=fp8, prefix=True, max_seqs=seqs)
+        EV.emit("step.started", node="apply", sub="restart",
+                summary=f"vLLM restart: {'FP8' if fp8 else 'BF16'}, prefix cache on, --max-num-seqs {seqs}")
+        try:
+            S["with_server"] = srv.start(fp8=fp8, prefix=True, max_seqs=seqs)
+        except Exception as e:  # noqa: BLE001 - fall back to the stock-safe config once
+            fail("fp8" if fp8 else "kv_batch", f"with-arm server failed ({e}); fell back to BF16, 64 seqs")
+            fp8, seqs = False, 64
+            S["with_server"] = srv.start(fp8=False, prefix=True, max_seqs=64)
+        for k in LEVERS.stats:   # count the with arm alone (the sweep/FP8 slices also used the levers)
+            LEVERS.stats[k] = 0
         S["with"], _ = run_arm(b, nv, "with_wattnot", its, conc, raw, "with")
         S["with"]["request_levers"] = dict(LEVERS.stats)
         wo, wi = S["without"], S["with"]
@@ -498,17 +662,35 @@ def main(argv=None) -> int:
                       str(a.limit or 2), "--out", str(out / "think")]
                      + (["--fake"] if a.fake else ["--url", f"{BASE}/chat/completions"]),
         }
+        feat = {"agentwaste": "context_saver", "langchain": "waste_guard", "eye": "eye_check",
+                "spoken": "hearing_check", "think": "thinking_budget"}
         S["blocks"] = {}
         for k, cmd in blocks.items():
             if k in a.skip:
                 continue
+            tmo = min(900, left() - 240)
+            if tmo < 120:
+                S["blocks"][k] = {"rc": None, "skipped": f"{left() / 60:.1f} min left"}
+                fail(feat[k], f"{k} GPU block skipped: container time ran out")
+                continue
+            if a.fake and k in INJECT:
+                cmd = [sys.executable, "-c", "raise SystemExit(3)"]
             e0 = nv.energy_j()
-            r = sub(cmd, out / k, 1500)
+            bnode = "gates" if k in ("eye", "spoken") else "effort_router"
+            EV.emit("step.started", node=bnode, sub=k, summary=f"{k} block on the WattNot server")
+            r = sub(cmd, out / k, tmo)
+            EV.emit("step.finished", node=bnode, sub=k, status="ok" if r["rc"] == 0 else "bad",
+                    summary=f"{k}: rc {r['rc']} in {r['wall_s']} s")
+            if r["rc"] != 0:
+                fail(feat[k], f"{k} GPU block exited rc={r['rc']} (see {k}/block.log)")
             r["energy_j"] = {"value": round(nv.energy_j() - e0, 1), "label": "SIMULATED" if a.fake else "MEASURED"}
             S["blocks"][k] = r
             save()
+    except Exception as e:  # noqa: BLE001 - record and still save what we have
+        doc["fatal"] = f"{type(e).__name__}: {e}"[:500]
     finally:
         srv.stop()
+        EV.emit("gpu.done", fatal=doc.get("fatal"))
         doc["ended_utc"] = datetime.now(UTC).isoformat()
         save()
     return 0
