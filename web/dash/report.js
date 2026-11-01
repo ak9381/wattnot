@@ -383,11 +383,17 @@ function render() {
     if (STATE.metaIsSample) $("#metatools-mount").insertAdjacentHTML("afterbegin",
       `<p class="metatools-sample-note" style="margin:0 0 8px;color:var(--v-mut,#B2A6C3)">Sample data (MOCK): this card shows the full layout with sample values. This run's real live calls (Wonder, Muse Code PR, SAM, Voice) are in the “Live Meta calls” card.</p>`);
   }
+  if ($("#srcLinks")) {
+    const R = RECEIPTS[RUN_ID];
+    $("#srcLinks").innerHTML = R ? `<a href="/api/launch/file?path=${encodeURIComponent(R.json.replace(/^\.\.\//, ""))}">Receipt for this run (JSON)</a> · <a href="/api/launch/file?path=${encodeURIComponent(R.sig.replace(/^\.\.\//, ""))}">Signature (Sigstore bundle)</a>`
+      : "This run has no saved receipt yet, so its numbers cannot be checked here.";
+  }
   if ($("#hotspot-mount")) {
-    mountHotspotCard($("#hotspot-mount"), STATE.receipt || {});
+    // Shown only when this run has a live SAM 3.1 addendum; the built-in layout sample is not shown on a report.
     // A live SAM 3.1 call is saved as a signed addendum next to the RUN2 receipt; prefer it when present.
     if (RECEIPTS[RUN_ID]) fetch(RECEIPTS[RUN_ID].json.replace(/\.json$/, ".sam_hotspot.json")).then((r) => (r.ok ? r.json() : null)).then((a) => {
       const d = a?.data; if (!d) return;
+      $("#hotspot-mount").hidden = false;
       mountHotspotCard($("#hotspot-mount"), { hotspot_cap: { live: true, mask: d.mask, decision: d.decision, heat_label: d.labels?.heat_attribution,
         response_id: d.sam?.response_id,
         photo: { url: "media/rack.jpg", w: 960, h: 720, credit: "Photo: Compaq server rack, Wikimedia Commons, CC BY 2.0 (not thermal)." },

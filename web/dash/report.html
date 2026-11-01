@@ -275,7 +275,7 @@
 
   <!-- 5. Cooling Hotspots Card (SAM 3.1) -->
   <div id="live-mount" style="margin-top:28px"></div>
-  <div id="hotspot-mount" style="margin-top:28px"></div>
+  <div id="hotspot-mount" style="margin-top:28px" hidden></div>
 
   <!-- 5a. Eye test: served vision model reads SYNTHETIC known-answer images -->
   <div id="eyetest-mount" style="margin-top:28px" hidden></div>
@@ -293,8 +293,21 @@
   <div id="codemode-mount" style="margin-top:28px"></div>
   <div id="codemode-sandbox-mount" style="margin-top:28px"></div>
 
-  <p class="wn-foot-note">Sample Meta Tools cards (not from any run) now live on the <a href="metatools.html">Meta tools</a> page. The full EU report is on the <a href="eu.html">EU Compliance</a> tab.</p>
-  <div id="wn-real-runs"></div>
+  <section class="wn-sources" id="wn-sources" aria-labelledby="srcH">
+    <h2 id="srcH">Where these numbers come from</h2>
+    <p>Every number above is read from this run's receipt, a JSON file written when the run finished. The signature file next to it proves the receipt has not been edited since. Open either to check any figure yourself.</p>
+    <p id="srcLinks" class="wn-src-links"></p>
+    <p>Each number carries a tag that says how it was obtained:</p>
+    <ul class="wn-src-tags">
+      <li><span class="wn-lab MEASURED"></span><b>Measured:</b> read from the GPU power meter or counted directly in the run.</li>
+      <li><span class="wn-lab ESTIMATE"></span><b>Estimate:</b> worked out from measured numbers plus one stated assumption, such as a price per token.</li>
+      <li><span class="wn-lab SIMULATED"></span><b>Simulated:</b> produced by a model of the hardware, not measured.</li>
+      <li><span class="wn-lab SYNTHETIC"></span><b>Synthetic:</b> test inputs made up on purpose so the right answer is known.</li>
+      <li><span class="wn-lab MOCK"></span><b>Mock:</b> placeholder values that only show the layout.</li>
+      <li><span class="wn-lab REPLAY"></span><b>Replay:</b> played back from saved records; nothing new was run.</li>
+    </ul>
+    <div id="wn-real-runs"></div>
+  </section>
 </main>
 
 <div class="scrim" id="scrim" hidden></div>

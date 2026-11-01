@@ -23,3 +23,6 @@
 .wn-rtab a { color: inherit; text-decoration: underline dotted; }
 .wn-foot-note{margin:28px 0 8px;font-size:13px;opacity:.8}
 #codemode-mount:has(.cm-card > .hnt:only-child), #codemode-sandbox-mount:has(.cm-card > .hnt:only-child){display:none}
+.wn-sources { margin: 36px 0 24px; } .wn-sources h2 { font-size: 20px; margin: 0 0 8px; }
+.wn-sources p { max-width: 75ch; line-height: 1.55; } .wn-src-links a { color: inherit; text-decoration: underline; }
+.wn-src-tags { list-style: none; padding: 0; margin: 6px 0 16px; display: grid; gap: 6px; } .wn-src-tags .wn-lab { margin-right: 8px; }

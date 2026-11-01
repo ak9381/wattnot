@@ -682,10 +682,10 @@ def router() -> APIRouter:
     @r.get("/file")
     def file(path: str):
         """Read-only view of a run artefact so every number can link to its source.
-        Only data/, out/ and docs/ files; never env or key files."""
+        Only data/, out/, docs/ and receipts/ files; never env or key files."""
         from fastapi.responses import FileResponse, PlainTextResponse
         f = (ROOT / path).resolve()
-        ok = any(f.is_relative_to(ROOT / d) for d in ("data", "out", "docs")) and f.is_file() \
+        ok = any(f.is_relative_to(ROOT / d) for d in ("data", "out", "docs", "receipts")) and f.is_file() \
             and f.suffix in (".json", ".jsonl", ".html", ".md", ".csv", ".log", ".txt", ".mp4", ".png") \
             and not re.search(r"(env|key|secret|token)", f.name, re.I)
         if not ok:
