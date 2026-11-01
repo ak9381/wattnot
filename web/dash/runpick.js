@@ -51,13 +51,14 @@ export function setRun(id, { reload = true } = {}) {
 }
 
 export async function mountPicker() {
-  const wrap = document.querySelector("nav.wn-nav .wn-nav-inner");
+  const wrap = document.getElementById("wnSideRun") || document.querySelector("nav.wn-nav .wn-nav-inner");
   if (!wrap || document.getElementById("wnRunPick")) return;
   const box = document.createElement("label");
   box.className = "wn-runpick"; box.id = "wnRunPickBox";
   box.innerHTML = `<span>Run</span><select id="wnRunPick" aria-label="Pick the run every page shows"><option>Loading…</option></select>`;
   wrap.insertBefore(box, wrap.querySelector(".wn-links"));
-  const hideOnCfg = () => { box.hidden = /configure\.html$/.test(location.pathname) || location.hash === "#pCfg"; };
+  box.querySelector("span").textContent = "Showing run";
+  const hideOnCfg = () => { const c = document.getElementById("pCfg"); box.hidden = /configure\.html$/.test(location.pathname) || location.hash === "#pCfg" || !!(c && c.offsetParent); };
   hideOnCfg(); addEventListener("hashchange", hideOnCfg);
   const { runs, latest } = await list();
   let id = getRun();
@@ -67,7 +68,8 @@ export async function mountPicker() {
   window.__wnRuns = runs;
   if (id) setRun(id, { reload: false });
   sel.addEventListener("change", () => setRun(sel.value));
-  new MutationObserver(() => rewriteLinks(document, getRun())).observe(document.body, { childList: true, subtree: true });
+  hideOnCfg(); addEventListener("popstate", hideOnCfg);
+  new MutationObserver(() => { rewriteLinks(document, getRun()); hideOnCfg(); }).observe(document.body, { childList: true, subtree: true });
 }
 
 if (!globalThis.__WN_TEST__) {

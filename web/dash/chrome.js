@@ -32,23 +32,47 @@
     nav.innerHTML = `
       <div class="wn-nav-inner">
         <a class="wn-brand" href="${prefix}index.html">Watt<i>Not</i></a>
+        <button class="wn-menu" id="wnMenu" aria-controls="wnSide" aria-expanded="false" aria-label="Open the page menu">Menu</button>
         <div class="wn-links" style="margin-left:auto">
-          <a class="wn-link" data-nav="dashboard" href="${prefix}v2.html#pHome">Dashboard</a>
-          <a class="wn-link" data-nav="configure" href="${prefix}v2.html#pCfg">Configure &amp; run</a>
-          <a class="wn-link" data-nav="runs" href="${prefix}runs.html">Runs</a>
-          <a class="wn-link" data-nav="compare" href="${prefix}v2.html#pReport">Compare</a>
-          <a class="wn-link" data-nav="reports" href="${prefix}report.html">Reports</a>
-          <a class="wn-link" data-nav="graph" href="${prefix}graph.html">Live graph</a>
-          <a class="wn-link" data-nav="costbudget" href="${prefix}costbudget.html">Cost budget</a>
-          <a class="wn-link" data-nav="matrix" href="${prefix}matrix.html">Run matrix</a>
-          <a class="wn-link" data-nav="eu" href="${prefix}eu.html">EU Compliance</a>
-          <a class="wn-link" data-nav="approvals" href="${prefix}approvals.html">Approvals</a>
+          <a class="wn-link" data-top="configure" href="${prefix}v2.html#pCfg">Set up a run</a>
+          <a class="wn-link" data-top="run" href="${prefix}graph.html">Watch it run</a>
+          <a class="wn-link" data-top="results" href="${prefix}report.html">Results</a>
+          <a class="wn-link" data-top="proof" href="${prefix}approvals.html">Proof</a>
+          <a class="wn-link" data-top="costs" href="${prefix}costbudget.html">Costs</a>
+          <a class="wn-link" data-top="connected" href="${prefix}metatools.html">Connected tools</a>
         </div>
         <div class="wn-slot-wrap" id="wn-slot-wrap"></div>
       </div>
     `;
 
     document.body.prepend(nav);
+    // Left sidebar: every route, grouped. The current group is open; its page sections are filled in by sidenav.js.
+    const side = document.createElement("aside");
+    side.className = "wn-side"; side.id = "wnSide"; side.setAttribute("aria-label", "All pages");
+    const G = [
+      ["overview", "Start here", [["dashboard", "v2.html#pHome", "Home"], ["learn", "v2.html#pLearn", "How it works"]]],
+      ["configure", "Set up a run", [["configure", "v2.html#pCfg", "Set up a run"]]],
+      ["run", "Watch it run", [["graph", "graph.html", "Live view"], ["runs", "runs.html", "Past runs"], ["matrix", "matrix.html", "All test rounds"], ["replay", "v2.html#pRun", "Replay a run"]]],
+      ["results", "Results", [["reports", "report.html", "Report"], ["compare", "v2.html#pReport", "With vs without"]]],
+      ["proof", "Proof", [["approvals", "approvals.html", "Approvals"], ["proofs", "v2.html#pProof", "Signed receipts"]]],
+      ["costs", "Costs", [["costbudget", "costbudget.html", "Cost budget"], ["eu", "eu.html", "EU energy report"]]],
+      ["connected", "Connected tools", [["metatools", "metatools.html", "Connected tools"]]],
+    ];
+    const LBL = {};
+    side.innerHTML = `<div class="wn-side-run" id="wnSideRun"></div>` + G.map(([g, name, items]) => `<details class="wn-grp" data-group="${g}"><summary>${name}</summary><ul>${items.map(([k, h, t]) =>
+      `<li><a class="wn-link" data-nav="${k}" href="${prefix}${h}">${LBL[k] || t}</a><ul class="wn-secs" data-secs-for="${k}"></ul></li>`).join("")}</ul></details>`).join("");
+    document.body.insertBefore(side, nav.nextSibling);
+    document.body.classList.add("wn-has-side");
+    const scrim = document.createElement("div"); scrim.className = "wn-side-scrim"; scrim.hidden = true; document.body.appendChild(scrim);
+    const menu = nav.querySelector("#wnMenu");
+    const setMenu = (on) => { document.body.classList.toggle("wn-side-open", on); menu.setAttribute("aria-expanded", String(on)); scrim.hidden = !on; };
+    menu.addEventListener("click", () => setMenu(!document.body.classList.contains("wn-side-open")));
+    scrim.addEventListener("click", () => setMenu(false));
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") setMenu(false); });
+    side.addEventListener("click", (e) => { if (e.target.closest("a")) setMenu(false); });
+    if (!document.querySelector('script[src$="sidenav.js"]')) {
+      const sn = document.createElement("script"); sn.type = "module"; sn.src = prefix + "sidenav.js"; document.head.appendChild(sn);
+    }
     // Shared eligibility bar + greying (configuration from the Configure screen).
     if (!document.querySelector('link[href$="elig.css"]')) {
       const l = document.createElement("link"); l.rel = "stylesheet"; l.href = prefix + "elig.css"; document.head.appendChild(l);
@@ -116,7 +140,7 @@
     function updateActive() {
       const path = window.location.pathname || "";
       const hash = window.location.hash || "";
-      nav.querySelectorAll(".wn-link").forEach((link) => {
+      side.querySelectorAll(".wn-link").forEach((link) => {
         link.classList.remove("on");
         link.removeAttribute("aria-current");
       });
@@ -136,14 +160,19 @@
         targetNav = "costbudget";
       } else if (path.includes("eu.html")) {
         targetNav = "eu";
+      } else if (path.includes("metatools.html")) {
+        targetNav = "metatools";
       } else if (path.includes("report.html")) {
         targetNav = "reports";
       } else if (path.includes("v2.html") || isV2Page) {
-        targetNav = hash === "#pReport" ? "compare" : "dashboard";
+        targetNav = { "#pReport": "compare", "#pLearn": "learn", "#pRun": "replay", "#pProof": "proofs" }[hash] || "dashboard";
       }
 
       if (targetNav) {
-        const activeLink = nav.querySelector(`[data-nav="${targetNav}"]`);
+        const activeLink = side.querySelector(`[data-nav="${targetNav}"]`);
+        const grp = activeLink && activeLink.closest(".wn-grp");
+        side.querySelectorAll(".wn-grp").forEach((d) => { d.open = d === grp; d.classList.toggle("on", d === grp); });
+        nav.querySelectorAll("[data-top]").forEach((l) => { const on = grp && l.dataset.top === grp.dataset.group; l.classList.toggle("on", !!on); if (on) l.setAttribute("aria-current", "page"); else l.removeAttribute("aria-current"); });
         if (activeLink) {
           activeLink.classList.add("on");
           activeLink.setAttribute("aria-current", "page");

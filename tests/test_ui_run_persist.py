@@ -26,7 +26,7 @@ def test_selected_run_persists_across_every_nav_page():
     with pw.sync_playwright() as p:
         b = p.chromium.launch(executable_path=CHROME, args=["--no-sandbox"])
         pg = b.new_page(viewport={"width": 1440, "height": 900})
-        pg.goto(BASE + "/index.html", wait_until="networkidle")
+        pg.goto(BASE + "/runs.html", wait_until="networkidle")
         pg.wait_for_selector("#wnRunPick option[value]", state="attached", timeout=20000)
         opts = pg.eval_on_selector_all("#wnRunPick option", "o => o.map(x => x.value)")
         default = pg.eval_on_selector("#wnRunPick", "s => s.value")
@@ -34,11 +34,16 @@ def test_selected_run_persists_across_every_nav_page():
         with pg.expect_navigation():
             pg.select_option("#wnRunPick", pick)
         pg.wait_for_selector("#wnRunPick option[value]", state="attached")
-        links = pg.eval_on_selector_all("nav.wn-nav a.wn-link", "a => a.map(x => [x.dataset.nav, x.getAttribute('href')])")
+        links = pg.eval_on_selector_all("#wnSide a.wn-link[data-nav]", "a => a.map(x => [x.dataset.nav, x.getAttribute('href')])")
         assert links
         for nav, href in links:
             assert f"run={pick}".replace(":", "%3A") in href or f"run={pick}" in href, (nav, href)
-            pg.click(f'nav.wn-nav a.wn-link[data-nav="{nav}"]')
+            pg.eval_on_selector_all("#wnSide details", "ds => ds.forEach(d => d.open = true)")
+            loc = pg.locator(f'#wnSide a.wn-link[data-nav="{nav}"]')
+            try:
+                loc.click(timeout=8000)
+            except Exception:  # same-document hash pages: fall back to a DOM click on the same link
+                loc.evaluate("a => a.click()")
             pg.wait_for_load_state("networkidle")
             assert "run=" in pg.url, (nav, pg.url)
             if nav == "configure":
@@ -55,4 +60,23 @@ def test_selected_run_persists_across_every_nav_page():
         # localStorage fallback: a bare URL still shows the picked run
         pg.goto(BASE + "/matrix.html", wait_until="networkidle")
         pg.wait_for_function("v => document.querySelector('#wnRunPick')?.value === v", arg=pick, timeout=20000)
+        b.close()
+
+
+@pytest.mark.skipif(not _up() or not os.path.exists(CHROME), reason="dashboard or Chrome not available")
+def test_run_picker_stays_pinned_while_sidebar_scrolls():
+    with pw.sync_playwright() as p:
+        b = p.chromium.launch(executable_path=CHROME, args=["--no-sandbox"])
+        pg = b.new_page(viewport={"width": 1280, "height": 600})
+        pg.goto(BASE + "/matrix.html", wait_until="networkidle")
+        pg.wait_for_selector("#wnSideRun #wnRunPick", state="attached", timeout=20000)
+        pg.eval_on_selector_all("#wnSide details", "ds => ds.forEach(d => d.open = true)")
+        side = pg.eval_on_selector("#wnSide", "s => [s.scrollHeight, s.clientHeight]")
+        assert side[0] > side[1], "expanded nav should overflow the sidebar"
+        pg.eval_on_selector("#wnSide", "s => s.scrollTop = s.scrollHeight")
+        top = pg.eval_on_selector("#wnSide", "s => s.getBoundingClientRect().top")
+        pick = pg.eval_on_selector("#wnSideRun", "e => e.getBoundingClientRect().top")
+        nav = pg.eval_on_selector("nav.wn-nav", "n => n.getBoundingClientRect().bottom")
+        assert abs(pick - top) <= 2, (pick, top)
+        assert top >= nav, (top, nav)
         b.close()

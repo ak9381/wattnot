@@ -111,20 +111,13 @@ test("root redirect page has description and OG tags", () => {
   }
 });
 
-test("shared chrome header has updated nav links and Live graph", () => {
+test("shared chrome header has plain top routes and a sidebar with every page", () => {
   const chromeJs = fs.readFileSync(path.join(dashDir, "chrome.js"), "utf8");
-  assert.match(chromeJs, /href="\${prefix}v2\.html#pHome">Dashboard<\/a>/);
-  assert.match(chromeJs, /href="\${prefix}runs\.html">Runs<\/a>/);
-  assert.match(chromeJs, /href="\${prefix}v2\.html#pReport">Compare<\/a>/);
-  // The run comes from the header picker (runpick.js adds ?run= to every link).
-  assert.match(chromeJs, /href="\${prefix}report\.html">Reports<\/a>/);
+  for (const t of ["Set up a run", "Watch it run", "Results", "Proof", "Costs", "Connected tools"]) assert.ok(chromeJs.includes(`>${t}</a>`), t);
+  for (const h of ["v2.html#pHome", "runs.html", "v2.html#pReport", "report.html", "graph.html", "approvals.html", "matrix.html", "eu.html", "metatools.html"]) assert.ok(chromeJs.includes(`"${h}"`), h);
   assert.match(chromeJs, /runpick\.js/);
-  assert.match(chromeJs, /href="\${prefix}graph\.html">Live graph<\/a>/);
+  assert.match(chromeJs, /sidenav\.js/);
   assert.doesNotMatch(chromeJs, />Architecture<\/a>/);
-
-  const graphHtml = fs.readFileSync(path.join(dashDir, "graph.html"), "utf8");
-  assert.match(graphHtml, /<title>WattNot: Live graph<\/title>/);
-  assert.doesNotMatch(graphHtml, /<header class="top">/);
 });
 
 test("shared chrome footer has credits, track, github, and year", () => {
