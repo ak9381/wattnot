@@ -305,7 +305,7 @@ def main(argv=None) -> int:
             return 4
         meas0 = modal_metered()
         if a.limit > 3:
-            print("[stop] smoke rounds take --limit 1..3 (35-min container cap, $1.46 worst)")
+            print("[stop] smoke rounds take --limit 1..3 (32-min container cap, $1.33 worst)")
             return 4
         if stage_committed() + worst > STAGE_CAP_USD:
             print(f"[stop] stage ${stage_committed():.2f} + worst ${worst:.2f} > ${STAGE_CAP_USD:.0f} cap")
