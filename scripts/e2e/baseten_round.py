@@ -50,7 +50,7 @@ from wattnot.longrun.spark_grade import SparkGrader, load_config  # noqa: E402
 from wattnot.longrun.tasks import build  # noqa: E402
 from wattnot.proof.client import Reply  # noqa: E402
 from wattnot.spark_open.h2h import BudgetStop, SpendCap, worst_case_usd  # noqa: E402
-from wattnot.e2e.fullstack import RequestLevers, feature_table, post_round  # noqa: E402
+from wattnot.e2e.fullstack import RequestLevers, feature_table, post_round, provider_usage  # noqa: E402
 
 ARMS = ("without_wattnot", "with_wattnot")
 PUB_BUDGET = {"gsm8k": 512, "humaneval": 768}
@@ -378,6 +378,12 @@ def main(argv=None) -> int:
                                             "tries", "wall_s")} for x in all_ans],
         "raw_dir": str(raw.relative_to(ROOT)) if raw.is_relative_to(ROOT) else str(raw),
     }
+    allr = calls.rows
+    own = {"requests": len(allr), "input_tokens": sum(r["prompt_tokens"] for r in allr),
+           "cached_input_tokens": sum(r["cached_tokens"] for r in allr),
+           "output_tokens": sum(r["completion_tokens"] for r in allr), "usd": round(cap.session_usd, 6)}
+    doc["provider_usage"] = provider_usage(started, datetime.now(UTC).isoformat(), own)
+    print("[usage] " + json.dumps({k: doc["provider_usage"].get(k) for k in ("status", "worst_diff_pct", "match")}))
     doc["features"] = feature_table()
     doc["levers_stats"] = {**BasetenChat.levers.stats, "label": "ESTIMATE"}
     doc["feature_stages"] = post_round(raw, doc, mode=("smoke" if a.limit and a.mode == "smoke" else a.mode),

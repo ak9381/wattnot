@@ -196,7 +196,7 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
         from wattnot.receipt.sign import sign_run_receipt
         rec = {"kind": "hosted-e2e", "round": round_doc.get("round"), "model": round_doc.get("model"),
                "features": feature_table(), "results": round_doc.get("results"),
-               "spend": round_doc.get("spend"), "labels": {"energy": "ESTIMATE", "tokens": "MEASURED"},
+               "spend": round_doc.get("spend"), "provider_usage": round_doc.get("provider_usage"), "labels": {"energy": "ESTIMATE", "tokens": "MEASURED"},
                "integrity": {"signer": None}}
         body = {k: v for k, v in rec.items() if k != "integrity"}
         rec["sha256"] = hashlib.sha256(json.dumps(body, sort_keys=True, default=str).encode()).hexdigest()
@@ -237,3 +237,74 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
 
     (d / "features.json").write_text(json.dumps({"table": feature_table(), "stages": res}, indent=1, default=str))
     return res
+
+
+def provider_usage(start_utc: str, end_utc: str, own: dict, *, model: str = "meta-models/muse-spark-open",
+                   env_name: str = "BASETEN_METRICS_KEY", tries: int = 4, wait_s: float = 45.0,
+                   opener=None) -> dict:
+    """Baseten's own usage (tokens, cached, requests) for the round window and today's billing
+    subtotal, read with free management calls, cross-checked against our per-call counts.
+
+    `own` = {"requests", "input_tokens", "cached_input_tokens", "output_tokens", "usd"}.
+    Usage arrives with a lag, so we retry until the request count stops being short.
+    Never logs or returns the key. Energy is not available here (Model APIs expose no power).
+    """
+    import os
+    import time
+    import urllib.parse
+    import urllib.request
+    key = os.environ.get(env_name, "")
+    if not key:
+        return {"status": "skipped", "why": f"{env_name} not set"}
+    op = opener or urllib.request.urlopen
+
+    def get(path, params):
+        u = "https://api.baseten.co" + path + "?" + urllib.parse.urlencode(params)
+        req = urllib.request.Request(u, headers={"Authorization": f"Api-Key {key}"})
+        with op(req, timeout=60) as r:  # noqa: S310
+            return json.loads(r.read())
+
+    # minute buckets must cover whole minutes
+    st = start_utc[:16] + ":00Z" if not start_utc.endswith("Z") or len(start_utc) > 17 else start_utc
+    en_dt = datetime.fromisoformat(end_utc.replace("Z", "+00:00"))
+    en = (en_dt.replace(second=0, microsecond=0)).strftime("%Y-%m-%dT%H:%M:00Z")
+    en = datetime.fromtimestamp(datetime.fromisoformat(en.replace("Z", "+00:00")).timestamp() + 120, UTC
+                                ).strftime("%Y-%m-%dT%H:%M:00Z")
+    tot = {}
+    for i in range(tries):
+        try:
+            doc = get("/v1/model_apis/usage", [("start_time", st), ("end_time", en), ("bucket_width", "1m"),
+                                                ("limit", "1440"), ("group_by", "model")])
+        except Exception as e:  # noqa: BLE001
+            return {"status": "error", "error": f"usage: {type(e).__name__}"}
+        tot = {"requests": 0, "input_tokens": 0, "cached_input_tokens": 0, "output_tokens": 0}
+        for b in doc.get("items") or []:
+            for r in b.get("results") or []:
+                if r.get("model") == model:
+                    tot["requests"] += int(r.get("request_count") or 0)
+                    tot["input_tokens"] += int(r.get("input_tokens") or 0)
+                    tot["cached_input_tokens"] += int(r.get("cached_input_tokens") or 0)
+                    tot["output_tokens"] += int(r.get("output_tokens") or 0)
+        if tot["requests"] >= int(own.get("requests") or 0) or i == tries - 1:
+            break
+        time.sleep(wait_s)
+    bill = None
+    try:
+        day = en_dt.strftime("%Y-%m-%d")
+        bd = get("/v1/billing/model_apis", [])
+        bill = {"date_utc": day, "subtotal_usd": sum(float(r.get("subtotal") or 0) for it in bd.get("items") or []
+                                                     if it.get("date") == day for r in it.get("results") or []),
+                "note": "whole-day workspace subtotal, includes any other use that day"}
+    except Exception as e:  # noqa: BLE001
+        bill = {"error": f"billing: {type(e).__name__}"}
+
+    def diff(k):
+        a, b = tot.get(k), own.get(k)
+        return {"baseten": a, "ours": b, "diff_pct": round(100 * (a - b) / b, 2) if b else None}
+    checks = {k: diff(k) for k in ("requests", "input_tokens", "cached_input_tokens", "output_tokens")}
+    worst = max((abs(v["diff_pct"]) for v in checks.values() if v["diff_pct"] is not None), default=None)
+    return {"status": "ok", "label": "MEASURED", "source": "Baseten GET /v1/model_apis/usage + /v1/billing/model_apis",
+            "window_utc": [st, en], "baseten": tot, "billing": bill, "crosscheck": checks,
+            "worst_diff_pct": worst, "match": worst is not None and worst <= 2.0,
+            "note": ("window is workspace-wide for this model: other use of the same key in the window "
+                     "shows up here; energy is not exposed for Model APIs and stays ESTIMATE")}
