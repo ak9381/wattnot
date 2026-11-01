@@ -27,10 +27,24 @@ def test_max_plan_fits_booking_with_margin(tmp_path):
         assert req in ids
     by = {b.id: b for b in blocks}
     assert all(by[x].skip_if_short for x in driver.MAX_EXTRA_BLOCKS)
-    # BF16-only blocks run before the FP8 swap
-    for b in ("t1-sweep-r2", "t1-sweep-r4", "t1-tiers", "t2g-serverless"):
+    # BF16-only blocks (every pass) run before the FP8 swap
+    for b in ("p2-sweep", "p3-agentwaste", "p1-langchain", "t2g-serverless"):
         assert ids.index(b) < ids.index("t2-fp8")
     assert ids[-1] == "t3-copy"
+    # off-GPU work is not on the VM
+    assert "t1-wonder" not in ids and "t1-eu" not in ids
+
+
+def test_each_pass_has_every_gpu_layer_and_own_dataset(tmp_path):
+    ids = [b.id for b in driver.plan(tmp_path, "glimmer-test", "max")]
+    seen = set()
+    for pas, sweep, grid, ds in driver.MAX_PASSES:
+        assert sweep in ids
+        for layer in driver.MAX_PASS_LAYERS_MIN:
+            if layer != "sweep":
+                assert f"{pas}-{layer}" in ids
+        seen.add(ds)
+    assert seen == {"own", "gsm8k300", "humaneval164"}
 
 
 def test_max_plan_cost_under_cap_and_floor():
@@ -76,3 +90,58 @@ def test_serverless_break_even(tmp_path):
     assert sl.main(["--fake", "--out", str(tmp_path)]) == 0
     s = json.loads((tmp_path / "serverless_summary.json").read_text())
     assert s["label"] == "SIMULATED"
+
+
+def test_flow_runs_off_gpu_and_signs(tmp_path):
+    from wattnot import flow
+    from wattnot.receipt.sign import bundle_path, verify_offline_bundle
+    assert flow.main(["--out", str(tmp_path / "f"), "--dataset", "own"]) == 0
+    fr = tmp_path / "f" / "flow-receipt.json"
+    r = json.loads(fr.read_text())
+    ok, _ = verify_offline_bundle(r, json.loads(bundle_path(fr).read_text()))
+    assert ok and r["gpu"] == "replay"
+    labels = {x["id"]: x["label"] for x in r["layers"]}
+    assert labels["gpu-sweep"] == "REPLAY" and labels["langchain"] == "MOCK"
+    assert all(x["status"] == "ok" for x in r["layers"])
+
+
+def test_flow_reads_a_gpu_pass_folder(tmp_path):
+    import shutil
+    from wattnot import flow
+    g = tmp_path / "pass"
+    (g / "sweep").mkdir(parents=True)
+    for p in (ROOT / "receipts/rerun-1031").iterdir():
+        shutil.copy2(p, g / "sweep" / p.name)
+    (g / "langchain").mkdir()
+    (g / "langchain" / "langchain_pass.json").write_text("{}")
+    assert flow.main(["--out", str(tmp_path / "f"), "--gpu-dir", str(g)]) == 0
+    r = json.loads((tmp_path / "f" / "flow-receipt.json").read_text())
+    modes = {x["id"]: (x["mode"], x["label"]) for x in r["layers"]}
+    assert modes["gpu-sweep"] == ("gpu-live", "MEASURED")
+    assert modes["langchain"] == ("gpu-live", "MEASURED")
+    assert modes["eye-gate"][0] == "off-gpu-fake"   # missing in the pass: faked, not passed off
+
+
+def test_langchain_pass_mock_and_multiprovider_plan(tmp_path):
+    import subprocess
+    r = subprocess.run([sys.executable, "scripts/langchain_pass.py", "--fake", "--n", "2",
+                        "--dataset", "humaneval164", "--out", str(tmp_path / "lc")], cwd=ROOT)
+    assert r.returncode == 0
+    lc = json.loads((tmp_path / "lc" / "langchain_pass.json").read_text())
+    assert lc["label"] == "MOCK" and set(lc["arms"]) == {"saver_off", "saver_on"}
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import multiprovider_route as mp
+    plan = mp.plan(20, 2)
+    assert plan["needs_go"] and plan["label"] == "ESTIMATE"
+    d = mp.decide({"a": {"own": {"n": 10, "correct": 10, "j": 100, "usd": 1}},
+                   "b": {"own": {"n": 10, "correct": 5, "j": 10, "usd": 0.1}}})
+    assert d["own"]["route_to"] == "a"   # b is cheaper but fails the quality gate
+
+
+def test_phase_clock_creates_missing_out_dir(tmp_path):
+    from wattnot.control import phase_clock
+    d = tmp_path / "p1-phase"
+    rc = phase_clock.main(["--mock", "--duration-s", "0.3", "--summary", str(d / "summary.json"),
+                           "--log", str(d / "log.jsonl")])
+    assert not rc
+    assert (d / "log.jsonl").exists()

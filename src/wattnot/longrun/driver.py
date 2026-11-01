@@ -549,61 +549,118 @@ def plan_glimmer_long(out: Path) -> list[Block]:
 # (ESTIMATE) so a slow block still finishes inside the 16 h booking minus the 8 min margin.
 MAX_BOOKING_H = 16.0
 MAX_BUDGET_CAP_INR = 7300
-MAX_SWEEP_REPEATS = ("t1-sweep-r2", "t1-sweep-r3", "t1-sweep-r4")
+# Repeated full E2E passes. Each pass runs every GPU-live layer of the flow (sweep + gates +
+# signed receipt, thinking budget, tiers at the best cap, eye, spoken, phase clock, LangChain
+# through the waste proxy, agent-waste A/B) on a different dataset and cap order. The off-GPU
+# layers and the per-pass signed flow receipt run after the VM is gone
+# (scripts/e2e/post_run_offgpu.py -> python -m wattnot.flow --gpu-dir ...).
+MAX_PASSES = (
+    # (pass, sweep tag, cap order, dataset)
+    ("p1", "t1-sweep", "375,350,325,300", "own"),
+    ("p2", "p2-sweep", "300,325,350,375", "gsm8k300"),
+    ("p3", "p3-sweep", "360,340,320,300", "humaneval164"),
+)
+MAX_PASS_LAYERS_MIN = {"sweep": 95, "think": 15, "tiers": 25, "eye": 3, "spoken": 3,
+                       "phase": 5, "langchain": 25, "agentwaste": 20}   # ESTIMATE, 191 min
+MAX_LANGCHAIN_ITEMS = 40
 MAX_PUBLIC_SETS = ("gsm8k300", "humaneval164")   # 300 GSM8K + all 164 HumanEval
-MAX_PUBLIC_REPS = 5
-MAX_TIERS_PER_TIER = 25
-MAX_HOURS_MIN = {"t1-sweep": 95, **{t: 95 for t in MAX_SWEEP_REPEATS}, "t1-tiers": 60,
-                 "t2c-prefix": 40, "t2d-combined": 25, "t2e-public": 230, "t2g-serverless": 45}
-# must run; the repeat sweeps, tiers, public and serverless blocks are skip_if_short (dropped,
-# logged "skipped: time", if the run runs late) so they can never push the copy block out
-MAX_REQUIRED_BLOCKS = tuple(b for b in LONG_REQUIRED_BLOCKS if b != "t2e-public")
-MAX_EXTRA_BLOCKS = MAX_SWEEP_REPEATS + ("t1-tiers", "t2e-public", "t2g-serverless")
+MAX_PUBLIC_REPS = 3
+MAX_TIERS_PER_TIER = 10
+MAX_HOURS_MIN = {"t2g-serverless": 30, "t2c-prefix": 40, "t2d-combined": 25, "t2e-public": 120}
+MAX_DEDICATED = ("t2g-serverless", "t2-fp8", "t2-eye", "t2-spoken", "t2b-batch", "t2c-prefix",
+                 "t2d-combined", "t2e-public")
+MAX_REQUIRED_BLOCKS = ("t1-sweep", "p1-think", "p1-tiers", "p1-eye", "p1-spoken", "p1-phase",
+                       "p1-langchain", "p1-agentwaste", "t2-fp8", "t2-eye", "t2-spoken",
+                       "t2b-batch", "t2c-prefix")
+MAX_EXTRA_BLOCKS = tuple(f"{p}-{l}" for p, *_ in MAX_PASSES[1:] for l in MAX_PASS_LAYERS_MIN
+                         if l != "sweep") + ("p2-sweep", "p3-sweep", "t2g-serverless",
+                                             "t2d-combined", "t2e-public")
+
+
+def pass_blocks(out: Path, pas: str, sweep_tag: str, grid: str, dataset: str,
+                optional: bool, sweep_dry: list[str]) -> list[Block]:
+    """One full E2E pass: every GPU-live layer, results under <pass>-<layer>."""
+    live_file = out / "live.jsonl"
+    guard_cfg = str(Path(__file__).resolve().parents[3] / "examples/longrun/guardrails-wonder.json")
+    M = MAX_PASS_LAYERS_MIN
+    R = lambda layer: f"{REMOTE_RESULTS}/{pas}-{layer}"  # noqa: E731
+    D = lambda layer: str(out / "runs" / f"{pas}-{layer}")  # noqa: E731
+    start = 0
+    sweep = Block(
+        sweep_tag, f"Pass {pas}: BF16 power-cap sweep ({grid}), Wonder planner, gates, approvals, "
+        "SAM, signed receipt", _m(M["sweep"]),
+        [x.replace(str(out / "runs" / "t1-sweep"), str(out / "runs" / sweep_tag)) for x in sweep_dry],
+        live=sweep_live_argv(out, live_file, guard_cfg, sweep_budget_s=LONG_WONDER_SWEEP_BUDGET_S,
+                             reps=2, warmup=4, warmup_s=5, grid=grid, tag=sweep_tag),
+        depends_on=("t0-probe",), skip_if_short=optional)
+    url = f"{HOST_BASE_URL}/chat/completions"
+    bl = [
+        sweep,
+        Block(f"{pas}-think", f"Pass {pas}: thinking budget per tier", _m(M["think"]),
+              _py("wattnot.longrun.thinking_budget", "--fake", "--per-tier", "2", "--out", D("think")),
+              live=_rpy("wattnot.longrun.thinking_budget", "--url", url, "--per-tier", "4",
+                        "--out", R("think")), host=True, skip_if_short=optional),
+        Block(f"{pas}-tiers", f"Pass {pas}: tiers at the best cap vs stock", _m(M["tiers"]),
+              _py("wattnot.longrun.harness", "--cap", "325", "--fake", "--model-config",
+                  "muse-glimmer-30b", "--per-tier", "2", "--out", D("tiers")),
+              live=_rpy("wattnot.longrun.harness", "--cap", "{BEST_CAP}", "--out", R("tiers"),
+                        "--model-config", "muse-glimmer-30b", "--per-tier",
+                        str(MAX_TIERS_PER_TIER), "--reps", "2", "--url", url),
+              host=True, depends_on=("t1-sweep",), skip_if_short=optional),
+        Block(f"{pas}-eye", f"Pass {pas}: eye test gate", _m(M["eye"]),
+              _py("wattnot.vision.run", "--fake", "--out", D("eye"), "--budget-s",
+                  str(EYE_TEST_BUDGET_S)),
+              live=_rpy("wattnot.vision.run", "--base-url", HOST_BASE_URL, "--out", R("eye"),
+                        "--budget-s", str(EYE_TEST_BUDGET_S)), host=True, skip_if_short=optional),
+        Block(f"{pas}-spoken", f"Pass {pas}: spoken answers gate", _m(M["spoken"]),
+              _py("wattnot.spokenanswer.run", "--fake", "--out", D("spoken"), "--budget-s",
+                  str(SPOKEN_TEST_BUDGET_S)),
+              live=_rpy("wattnot.spokenanswer.run", "--base-url", HOST_BASE_URL, "--out",
+                        R("spoken"), "--budget-s", str(SPOKEN_TEST_BUDGET_S)),
+              host=True, skip_if_short=optional),
+        Block(f"{pas}-phase", f"Pass {pas}: phase-aware clock sidecar, 3 min", _m(M["phase"]),
+              _py("wattnot.control.phase_clock", "--mock", "--duration-s", "2", "--summary",
+                  D("phase") + "/summary.json", "--log", D("phase") + "/log.jsonl"),
+              live=_rpy("wattnot.control.phase_clock", "--url", HOST_BASE_URL, "--duration-s",
+                        "180", "--summary", R("phase") + "/summary.json", "--log",
+                        R("phase") + "/log.jsonl"), host=True, skip_if_short=optional),
+        Block(f"{pas}-langchain", f"Pass {pas}: LangChain agent through the waste proxy to "
+              f"Glimmer, saver OFF vs ON, {dataset}", _m(M["langchain"]),
+              [sys.executable, "scripts/langchain_pass.py", "--fake", "--dataset", dataset,
+               "--n", "3", "--out", D("langchain")],
+              live=["python", "scripts/langchain_pass.py", "--base-url", HOST_BASE_URL,
+                    "--dataset", dataset, "--start", str(start), "--n",
+                    str(MAX_LANGCHAIN_ITEMS), "--out", R("langchain")],
+              host=True, skip_if_short=optional),
+        Block(f"{pas}-agentwaste", f"Pass {pas}: agent-waste saver on the GPU, OFF vs ON",
+              _m(M["agentwaste"]),
+              [sys.executable, "scripts/agentwaste_gpu_ab.py", "--fake", "--out", D("agentwaste")],
+              live=["python", "scripts/agentwaste_gpu_ab.py", "--base-url", HOST_BASE_URL,
+                    "--out", R("agentwaste")], host=True, skip_if_short=optional),
+    ]
+    return bl
 
 
 def plan_glimmer_max(out: Path) -> list[Block]:
-    """The max plan: the long plan, plus three repeat sweeps (does the best cap hold across
-    runs?), Easy/Medium/Hard/Complex tiers at the best cap vs stock, 300 GSM8K + 164 HumanEval
-    items x 5 reps (enough items for p<0.05 on a ~25% J/correct change), 5-rep prefix and
-    combined A/Bs, and a serverless-style warm-vs-scale-to-zero block. BF16-only blocks run
-    before the FP8 swap. Agent-waste and Code Mode need no GPU and run on the control box."""
+    """The max plan: setup once, then three full E2E passes (own set, GSM8K, HumanEval), then the
+    dedicated blocks that need a serving restart or many reps (serverless idle, FP8 + its gates,
+    batching, prefix cache, combined, public benchmarks), then copy back. Off-GPU work (Wonder
+    chart, EU, flow receipts, Code Mode, replay pack) runs after teardown."""
     long_blocks = {b.id: b for b in plan_glimmer_long(out)}
-    live_file = out / "live.jsonl"
-    guard_cfg = str(Path(__file__).resolve().parents[3] / "examples/longrun/guardrails-wonder.json")
-    sweep = long_blocks["t1-sweep"]
-
-    def repeat(tag: str) -> Block:
-        dry = [a.replace(str(out / "runs" / "t1-sweep"), str(out / "runs" / tag)) for a in sweep.dry]
-        live = sweep_live_argv(out, live_file, guard_cfg,
-                               sweep_budget_s=LONG_WONDER_SWEEP_BUDGET_S, reps=2, warmup=4,
-                               warmup_s=5, grid="375,350,325,300", tag=tag)
-        return replace(sweep, id=tag, title=f"Repeat BF16 power-cap sweep ({tag}): same grid, "
-                       "fresh receipt, checks the best cap holds", hours=_m(MAX_HOURS_MIN[tag]),
-                       dry=dry, live=live, depends_on=("t0-probe",), skip_if_short=True)
-
-    tiers = Block(
-        "t1-tiers", f"Easy/Medium/Hard/Complex tiers at the best cap vs stock, "
-        f"{MAX_TIERS_PER_TIER} prompts per tier, 2 reps, per-tier gate", _m(MAX_HOURS_MIN["t1-tiers"]),
-        _py("wattnot.longrun.harness", "--cap", "325", "--out", str(out / "runs" / "t1-tiers"),
-            "--fake", "--model-config", "muse-glimmer-30b", "--per-tier", str(MAX_TIERS_PER_TIER),
-            "--reps", "2"),
-        live=_rpy("wattnot.longrun.harness", "--cap", "{BEST_CAP}", "--out",
-                  f"{REMOTE_RESULTS}/t1-tiers", "--model-config", "muse-glimmer-30b",
-                  "--per-tier", str(MAX_TIERS_PER_TIER), "--reps", "2",
-                  "--url", f"{HOST_BASE_URL}/chat/completions"),
-        host=True, depends_on=("t1-sweep",), skip_if_short=True)
+    blocks = [long_blocks["t0-setup"], long_blocks["t0-probe"]]
+    for i, (pas, tag, grid, ds) in enumerate(MAX_PASSES):
+        blocks += pass_blocks(out, pas, tag, grid, ds, optional=i > 0,
+                              sweep_dry=long_blocks["t1-sweep"].dry)
     sets = list(MAX_PUBLIC_SETS)
     public = replace(
         long_blocks["t2e-public"],
-        title=f"Public benchmarks at the best cap vs stock: GSM8K (300 items) + HumanEval (164), "
-              f"{MAX_PUBLIC_REPS} reps, J/correct and quality gate",
-        hours=_m(MAX_HOURS_MIN["t2e-public"]),
+        title=f"Public benchmarks at the best cap vs stock: GSM8K (300) + HumanEval (164), "
+              f"{MAX_PUBLIC_REPS} reps", hours=_m(MAX_HOURS_MIN["t2e-public"]),
         dry=[sys.executable, "scripts/public_bench_ab.py", "--fake", "--cap", "325", "--reps",
              str(MAX_PUBLIC_REPS), "--sets", *sets, "--out", str(out / "runs" / "t2e-public")],
         live=["python", "scripts/public_bench_ab.py", "--cap", "{BEST_CAP}", "--reps",
               str(MAX_PUBLIC_REPS), "--sets", *sets, "--out", f"{REMOTE_RESULTS}/t2e-public"],
-        # running late: keep the GSM8K significance test (300 items, 3 reps) and drop HumanEval
-        min_hours=_m(100),
+        min_hours=_m(80),
         trim=[sys.executable, "scripts/public_bench_ab.py", "--fake", "--cap", "325", "--reps", "3",
               "--sets", "gsm8k300", "--out", str(out / "runs" / "t2e-public")],
         trim_live=["python", "scripts/public_bench_ab.py", "--cap", "{BEST_CAP}", "--reps", "3",
@@ -620,18 +677,8 @@ def plan_glimmer_max(out: Path) -> list[Block]:
          str(out / "runs" / "t2g-serverless")],
         live=["python", "scripts/serverless_ab.py", "--reps", "3", "--out",
               f"{REMOTE_RESULTS}/t2g-serverless"], host=True, skip_if_short=True)
-    swap = {"t2c-prefix": prefix, "t2d-combined": combined, "t2e-public": public}
-    blocks: list[Block] = []
-    for b in long_blocks.values():
-        if b.id == "t1-sweep":
-            b = replace(b, hours=_m(MAX_HOURS_MIN["t1-sweep"]))
-        if b.id == "t2-fp8":
-            blocks.append(serverless)   # BF16 cold start + idle, before the FP8 swap
-        blocks.append(swap.get(b.id, b))
-        if b.id == "t1-eu":
-            blocks.extend(repeat(t) for t in MAX_SWEEP_REPEATS)
-        if b.id == "t1-spoken":
-            blocks.append(tiers)
+    blocks += [serverless, long_blocks["t2-fp8"], long_blocks["t2-eye"], long_blocks["t2-spoken"],
+               long_blocks["t2b-batch"], prefix, combined, public, long_blocks["t3-copy"]]
     return blocks
 
 

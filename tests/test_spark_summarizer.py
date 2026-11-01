@@ -33,7 +33,8 @@ def test_spark_summarizer_leaves_reasoning_headroom():
 def test_spark_summarizer_falls_back_on_error_or_empty():
     for c in (FakeClient(boom=True), FakeClient(reply="")):
         s = SparkSummarizer(client=c)
-        assert s("First sentence. Second.") == "First sentence."
+        # a failed summary keeps the original text (no mock summary in a live context)
+        assert s("First sentence. Second.") == "First sentence. Second."
         assert s.failures == 1
 
 

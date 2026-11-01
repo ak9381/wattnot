@@ -81,6 +81,8 @@ def tier_body(body: dict, tier: Mapping | None) -> dict:
     if tier is None:
         return body
     out = {**body, "model": tier["model"]}
+    if tier.get("body_extra"):   # e.g. one served model with thinking off vs on
+        out.update(tier["body_extra"])
     if tier.get("reasoning"):
         budget = int(tier.get("max_output") or REASONING_BUDGET)
         asked = out.pop("max_tokens", None) or out.get("max_completion_tokens") or 0
