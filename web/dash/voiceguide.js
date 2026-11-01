@@ -1,5 +1,6 @@
 import { answerFromReceipts, loadReceiptDocs } from "./receiptanswers.js";
-import { isTuneResponse, renderTunePlanHTML, speakSummary, stopSpeaking } from "./tunervoice.js";
+import { isTuneResponse, renderTunePlanHTML, stopSpeaking } from "./tunervoice.js";
+import { startAskCards, askByName, stopGlow } from "./askcards.js";
 // Voice Guide Self-Mounting Component - Meta Tools v5
 
 // A spoken tuning command ("try 350W with FP8") is planned by Spark and run through the
@@ -81,7 +82,7 @@ export function buildVoiceGuideDOM() {
         </svg>
       </button>
       <button class="vg-mic-btn vg-live-btn" id="vg-live-btn" title="Replay the real Muse Voice Transcribe result (synthetic TTS clip)" aria-label="Replay live transcript">&#9654;</button>
-      <input type="text" class="vg-input" id="vg-text-input" placeholder="Ask Voice Guide (type, or press ▶ for the live clip)..." />
+      <input type="text" class="vg-input" id="vg-text-input" placeholder="Ask (type, speak, or press → empty to pick a card)..." />
       <button class="vg-submit-btn" id="vg-submit-btn" title="Submit query">&rarr;</button>
       <span class="vg-status-bubble" id="vg-status-bubble">Thinking…</span>
     </div>
@@ -168,17 +169,14 @@ export function mountVoiceGuide(customMountEl = null) {
     panelIntent.textContent = data.intent || "ANSWER";
     panelTag.textContent = data.label || "SIMULATED";
 
-    // A spoken tuning command: show Spark's dry-run plan and read the summary aloud with
-    // the browser voice. The plan HTML is built from our own structured data and escaped
-    // in tunervoice.js, so innerHTML is safe here.
+    // A spoken tuning command: show Spark's dry-run plan as text (no spoken output: there is
+    // no Meta text-to-speech, and no other voice is used). The plan HTML is built from our own
+    // structured data and escaped in tunervoice.js, so innerHTML is safe here.
     if (isTuneResponse(data)) {
       panelBody.innerHTML = renderTunePlanHTML(data);
       panelRoute.style.display = "none";
       panel.classList.add("active");
-      const speakBtn = panelBody.querySelector(".vg-speak-btn");
-      const speak = () => speakSummary(data);
-      if (speakBtn) speakBtn.addEventListener("click", speak);
-      speak(); // auto-read once; the button replays it
+      panelBody.querySelector(".vg-speak-btn")?.remove();
       return;
     }
 
@@ -205,6 +203,8 @@ export function mountVoiceGuide(customMountEl = null) {
 
   async function handleQuery(query) {
     if (!query || !query.trim()) return;
+    // A question that names a card on this page: Spark explains that card, highlighted.
+    if (askByName(query, displayResponse)) return;
 
     // Fast quick ack within <300ms
     const quick = quickAckForQuery(query);
@@ -270,7 +270,8 @@ export function mountVoiceGuide(customMountEl = null) {
 
   panelClose.addEventListener("click", () => {
     panel.classList.remove("active");
-    stopSpeaking(); // silence the browser voice if it is mid-summary
+    stopSpeaking(); // defensive: nothing here speaks any more
+    stopGlow();
   });
 
   // Replay of one real Muse Voice Transcribe call (LIVE transcript of a synthetic TTS clip),
@@ -282,7 +283,6 @@ export function mountVoiceGuide(customMountEl = null) {
       const url = new URL("../receipts/run2/rcpt_20261027_run2_cap350.voice_transcribe.json", import.meta.url);
       const doc = await (await fetch(url)).json();
       const v = doc.data || {};
-      try { new Audio(new URL("media/tts-question.wav", import.meta.url)).play(); } catch { /* autoplay blocked */ }
       displayResponse({ intent: "TRANSCRIPT", label: "LIVE",
         text: `Muse Voice Transcribe heard: “${v.transcript}” (synthetic text-to-speech clip, ${v.audio?.duration_s}s; session ${v.session_id}).` });
       inputEl.value = v.transcript || "";
@@ -297,6 +297,8 @@ export function mountVoiceGuide(customMountEl = null) {
   submitBtn.addEventListener("click", () => {
     const val = inputEl.value;
     inputEl.value = "";
+    // Ask with an empty box: the cards glow; pick one to have it explained.
+    if (!val.trim()) { startAskCards(displayResponse); return; }
     handleQuery(val);
   });
 

@@ -353,6 +353,34 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
                                 status_code=502)
         return JSONResponse(out)
 
+    @app.get("/api/dash/matrix")
+    def dash_matrix():
+        """Run matrix: 12 rounds (PLANNED until a result file exists), Spark-vs-deterministic
+        grades, Meta spend by model, provider credits. Read-only; no model call."""
+        from wattnot.dash import matrix
+        return matrix.build(root=Path(os.environ.get("WATTNOT_MATRIX_ROOT", str(ROOT))))
+
+    @app.post("/api/dash/ask/card")
+    async def ask_card(request: Request):
+        """Ask about one dashboard card: Muse Spark explains it as text (no speech).
+        Live by default; WATTNOT_META_MOCK=1 gives a labelled MOCK."""
+        if (refused := _need_json(request)) is not None:
+            return refused
+        from wattnot.meta.askcard import explain_card
+        try:
+            body = await request.json()
+        except Exception:  # noqa: BLE001
+            body = {}
+        body = body if isinstance(body, dict) else {}
+        try:
+            out = await asyncio.to_thread(explain_card, body.get("card_id", ""), body.get("title", ""),
+                                          body.get("text", ""))
+        except Exception as exc:  # noqa: BLE001
+            return JSONResponse({"label": "ERROR", "code": "ask_failed", "focus": "",
+                                 "explanation": f"Ask failed ({type(exc).__name__}). No explanation was generated."},
+                                status_code=502)
+        return JSONResponse(out, status_code=503 if out.get("code") == "no_key" else 200)
+
     @app.post("/api/dash/approve")
     async def approvals_approve(request: Request):
         if (refused := _need_json(request)) is not None:

@@ -1,7 +1,7 @@
-# Meta API usage and the $100 spend cap
+# Meta API usage and the $120 spend cap
 
 WattNot's agent decisions run on Muse Spark through the Meta Model API. Every call goes through a
-spend guard, and total spend is capped at **$100 USD** (raised from $20 on 2026-10-28, then to $100), with a warning at $80.
+spend guard, and total spend is capped at **$120 USD** (raised from $20 on 2026-10-28, then to $100, then to $120 on 2026-11-01; $150 Meta credits in total), with a warning at $100.
 
 ## Price used
 
@@ -16,7 +16,7 @@ The ledger is one JSON file outside the repo: `~/.wattnot/meta_spend.json` (over
 `WATTNOT_META_LEDGER`). Per call:
 
 1. estimate the worst case: request size at 3 chars/token, no cache discount, plus the full output cap;
-2. under a file lock, **refuse** if recorded total + estimate > $100, **warn** above $80;
+2. under a file lock, **refuse** if recorded total + estimate > $120, **warn** above $100;
 3. write a `pending` entry at the worst-case cost *before* sending, so a crash or timeout never hides spend;
 4. settle it with the real usage from the response (time, model, input/output/cached/reasoning tokens,
    USD, purpose, latency). A rejected request is settled at $0; an unknown outcome (timeout) keeps the worst case.
@@ -32,7 +32,7 @@ as `earlier:*`. Spend made by other tools on the same account (Muse Code, a dash
 ## Commands
 
 ```bash
-wattnot meta spend                 # total, per-purpose breakdown, remaining of $100 (--json for machines)
+wattnot meta spend                 # total, per-purpose breakdown, remaining of $120 (--json for machines)
 wattnot meta check                 # one tiny call to confirm muse-spark-1.3 answers
 wattnot meta session --full-ladder --repeats 5 --cache-dir ~/.wattnot/meta_sessions/cache \
     --out session.json             # the real session below

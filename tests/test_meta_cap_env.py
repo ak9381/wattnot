@@ -6,17 +6,17 @@ from wattnot.meta.ledger import CAP_USD, SOFT_USD, SpendLedger, caps_from_env
 def test_defaults_are_approved_100_80(monkeypatch, tmp_path):
     monkeypatch.delenv("WATTNOT_META_CAP_USD", raising=False)
     monkeypatch.delenv("WATTNOT_META_SOFT_USD", raising=False)
-    assert (CAP_USD, SOFT_USD) == (100.0, 80.0)
+    assert (CAP_USD, SOFT_USD) == (120.0, 100.0)
     lg = SpendLedger(tmp_path / "l.json")
-    assert (lg.cap_usd, lg.soft_usd) == (100.0, 80.0)
+    assert (lg.cap_usd, lg.soft_usd) == (120.0, 100.0)
 
 
 def test_env_can_tighten(monkeypatch, tmp_path):
     monkeypatch.setenv("WATTNOT_META_CAP_USD", "30")
     monkeypatch.delenv("WATTNOT_META_SOFT_USD", raising=False)
-    assert caps_from_env() == (30.0, 24.0)
+    assert caps_from_env() == (30.0, 25.0)
     lg = SpendLedger(tmp_path / "l.json")
-    assert (lg.cap_usd, lg.soft_usd) == (30.0, 24.0)
+    assert (lg.cap_usd, lg.soft_usd) == (30.0, 25.0)
 
 
 def test_env_cannot_loosen(monkeypatch):

@@ -82,32 +82,32 @@ def test_pareto_flattened_stops_when_improvement_below_threshold():
     assert "Pareto front flattened" in reason
 
 
-def test_budget_hard_cap_at_100_and_soft_warning_at_80(tmp_path):
+def test_budget_hard_cap_at_120_and_soft_warning_at_100(tmp_path):
     led = SpendLedger(tmp_path / "spend.json")
-    assert led.cap_usd == 100.0
-    assert led.soft_usd == 80.0
+    assert led.cap_usd == 120.0
+    assert led.soft_usd == 100.0
 
-    # Seed spend to $79.90
-    tokens_to_reach_79_90 = int(79.90 / 4.25 * 1e6)
+    # Seed spend to $99.90
+    tokens_to_reach_79_90 = int(99.90 / 4.25 * 1e6)
     led.seed([{"key": "seed1", "model": "muse-spark-1.3", "purpose": "seed",
                "input_tokens": 0, "output_tokens": tokens_to_reach_79_90}])
-    assert led.total() == pytest.approx(79.90, abs=0.02)
+    assert led.total() == pytest.approx(99.90, abs=0.02)
 
-    # Next reserve with 100_000 max tokens ($0.425 worst-case) pushes total over 80.0
+    # Next reserve with 100_000 max tokens ($0.425 worst-case) pushes total over 100.0
     body = {"model": "muse-spark-1.3", "max_tokens": 100_000, "messages": [{"role": "user", "content": "hi"}]}
     _, soft = led.reserve(body, "check-warning")
     assert soft is True
 
-    # Fresh ledger to test exact hard cap at 100.0
+    # Fresh ledger to test exact hard cap at 120.0
     led2 = SpendLedger(tmp_path / "spend2.json")
-    tokens_to_reach_99_90 = int(99.90 / 4.25 * 1e6)
+    tokens_to_reach_99_90 = int(119.90 / 4.25 * 1e6)
     led2.seed([{"key": "seed2", "model": "muse-spark-1.3", "purpose": "seed2",
                 "input_tokens": 0, "output_tokens": tokens_to_reach_99_90}])
-    assert led2.total() == pytest.approx(99.90, abs=0.05)
+    assert led2.total() == pytest.approx(119.90, abs=0.05)
 
-    # A call that exceeds $100 hard cap is refused
+    # A call that exceeds $120 hard cap is refused
     huge_call = {"model": "muse-spark-1.3", "max_tokens": 100_000, "messages": [{"role": "user", "content": "x" * 1000}]}
-    with pytest.raises(BudgetExceeded, match="100.00 cap"):
+    with pytest.raises(BudgetExceeded, match="120.00 cap"):
         led2.reserve(huge_call, "overflow")
 
 

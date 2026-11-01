@@ -28,8 +28,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-CAP_USD = 100.0  # Akash's approved hard cap for all Meta API spend
-SOFT_USD = 80.0
+CAP_USD = 120.0  # Akash's approved hard cap for all Meta API spend ($150 credits, 1 Nov)
+SOFT_USD = 100.0
 CAP_ENV = "WATTNOT_META_CAP_USD"      # a run may set a LOWER hard cap, never a higher one
 SOFT_ENV = "WATTNOT_META_SOFT_USD"
 

@@ -1,0 +1,5 @@
+{"section":"askcard_voice_transcribe_live","label":"LIVE","model":"muse-voice-transcribe-1.0","date":"2026-11-01",
+ "audio":{"duration_s":1.625,"source":"SYNTHETIC: ffmpeg flite TTS (voice slt), not a human recording; input only, never played in the UI","script":"Explain the run matrix"},
+ "transcript":"Explain the run run Matrix.","latency_ms":1027,
+ "cost_usd":"not returned by the API and not in the token ledger; ESTIMATE well under $0.05 for 1.6 s of audio",
+ "next":"askByName() matches the 'Run matrix' card; Spark explanation shown as text (MOCK in the screenshots)"}
