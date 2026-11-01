@@ -462,3 +462,9 @@ h1,h2,h3,h4,.brand,nav.tabs button,.kpi .c,.lvl{font-family:"Montserrat",system-
 .lact{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}.lwhy{font-size:13px;opacity:.85}
 .llog{max-height:340px;overflow:auto;background:rgba(0,0,0,.35);border-radius:10px;padding:10px;font-size:12px;white-space:pre-wrap}
 .namerow .info,.lfs .info,h2 .info,.fld .info{margin-left:6px}
+/* Narrow screens: the drawer always has a visible, tappable backdrop. */
+@media (max-width: 720px) {
+  aside.side { width: 86vw; right: 0; border-radius: 18px 0 0 18px; }
+  .drawer-open .scrim { pointer-events: auto; background: rgba(0,0,0,.5); }
+  .scrim { background: rgba(0,0,0,.5); }
+}

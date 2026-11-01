@@ -80,3 +80,10 @@ def test_normalize_modal_stage_features():
         pytest.skip("no recorded Modal stage_features.json")
     out = E.normalize_stage_features(json.loads(f.read_text()), "modal_a100")
     assert out["table"] and all({"id", "status", "reason"} <= set(r) for r in out["table"])
+
+
+def test_checklist_names_the_real_runner():
+    smoke = L.check_runner(L.norm_config({"provider": "modal_a100", "smoke": {"limit": 2}}))
+    assert smoke["reason"].endswith("modal_full_round.py")
+    assert L.check_runner(L.norm_config({"provider": "modal_a100"}))["reason"].endswith("modal_stage.py")
+    assert L.check_runner(L.norm_config({"provider": "baseten"}))["reason"].endswith("baseten_stage.py")

@@ -332,7 +332,8 @@ def check_eligibility(cfg):
 def check_runner(cfg):
     ok = E.PROVIDERS[cfg["provider"]]["runner"] is not None
     return _item("runner", "A runner exists for this configuration", "pass" if ok else "fail",
-                 "scripts/e2e/" + ("baseten_stage.py" if cfg["provider"] == "baseten" else "modal_stage.py")
+                 next((Path(a).relative_to(ROOT).as_posix() if Path(a).is_absolute() else a)
+                      for a in command(cfg, "live")[0] if str(a).endswith(".py"))
                  if ok else "E2E H100 and combined stages are not wired to the UI yet",
                  "" if ok else "pick Baseten or Modal A100")
 
