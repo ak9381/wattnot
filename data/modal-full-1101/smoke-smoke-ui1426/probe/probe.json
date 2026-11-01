@@ -1,0 +1,13 @@
+{
+ "power_cap": {
+  "writable": false,
+  "reason": "NVML refused the power-limit write (NVMLError_NoPermission); Modal containers have no privileged GPU control",
+  "label": "MEASURED"
+ },
+ "gpu": "NVIDIA A100 80GB PCIe",
+ "idle_w": {
+  "value": 56.0,
+  "label": "MEASURED",
+  "when": "before vLLM start"
+ }
+}

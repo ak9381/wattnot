@@ -1,0 +1,23 @@
+{
+  "recommended": null,
+  "knee_cap": null,
+  "p99_wall": null,
+  "reason": "need at least two sweep points",
+  "steps": [],
+  "points": [
+    {
+      "cap_w": null,
+      "j_per_good_answer": 5010.1632,
+      "p99_delta_pct": 0.0,
+      "gate_pass": true,
+      "label": "MEASURED"
+    }
+  ],
+  "label": "MEASURED",
+  "params": {
+    "knee_frac": 0.5,
+    "p99_ceiling": 0.1
+  }
+}
+
+--- stderr ---

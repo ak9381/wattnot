@@ -1,0 +1,81 @@
+{
+  "run_id": "run_20261101_211952_42a0ce",
+  "model": "muse-spark-1.3",
+  "label": "MEASURED",
+  "calls": [
+    {
+      "step": "probe",
+      "model": "muse-spark-1.3",
+      "label": "MEASURED",
+      "status": "ok",
+      "latency_ms": 1609.8,
+      "trace_id": "chatcmpl-01a198fb-afb8-75ca-8e49-f9c7867204d6",
+      "answer": {},
+      "tokens": {
+        "in": 649,
+        "out": 400,
+        "label": "MEASURED"
+      },
+      "usd": 0.00251125,
+      "latency_label": "MEASURED",
+      "usd_label": "ESTIMATE"
+    },
+    {
+      "step": "proposal",
+      "model": "muse-spark-1.3",
+      "label": "MEASURED",
+      "status": "ok",
+      "latency_ms": 2753.5,
+      "trace_id": "chatcmpl-01a198fb-ba75-7301-bcfc-80357f7edd99",
+      "answer": {},
+      "tokens": {
+        "in": 181,
+        "out": 400,
+        "label": "MEASURED"
+      },
+      "usd": 0.00192625,
+      "latency_label": "MEASURED",
+      "usd_label": "ESTIMATE"
+    },
+    {
+      "step": "gate",
+      "model": "muse-spark-1.3",
+      "label": "MEASURED",
+      "status": "ok",
+      "latency_ms": 1696.5,
+      "trace_id": "chatcmpl-01a198fb-c136-76d9-9d03-100d30255a0b",
+      "answer": {},
+      "tokens": {
+        "in": 188,
+        "out": 400,
+        "label": "MEASURED"
+      },
+      "usd": 0.001935,
+      "latency_label": "MEASURED",
+      "usd_label": "ESTIMATE",
+      "fixed_gate": "PASS",
+      "agrees_with_fixed_gate": null
+    },
+    {
+      "step": "receipt",
+      "model": "muse-spark-1.3",
+      "label": "MEASURED",
+      "status": "ok",
+      "latency_ms": 1280.1,
+      "trace_id": "chatcmpl-01a198fb-c64a-704c-ae77-125e802f6aad",
+      "answer": {},
+      "tokens": {
+        "in": 1089,
+        "out": 400,
+        "label": "MEASURED"
+      },
+      "usd": 0.00306125,
+      "latency_label": "MEASURED",
+      "usd_label": "ESTIMATE"
+    }
+  ],
+  "ok": true,
+  "total_usd": 0.009434,
+  "total_usd_label": "ESTIMATE",
+  "events": "/tmp/wn-merge/data/modal-full-1101/r04/flow/spark/events.jsonl"
+}

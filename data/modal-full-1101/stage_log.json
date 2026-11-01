@@ -1,0 +1,31 @@
+[
+ {
+  "round": "r04",
+  "rc": 0,
+  "pr": null,
+  "pr_review": null,
+  "clips": [
+   {
+    "file": "data/modal-full-1101/clips/modal-r04-graph-without.mp4",
+    "duration_s": 1393.6,
+    "frames": 13936,
+    "plays": true,
+    "bytes": 25278095
+   },
+   {
+    "file": "data/modal-full-1101/clips/modal-r04-graph-with.mp4",
+    "duration_s": 4578.8,
+    "frames": 45788,
+    "plays": true,
+    "bytes": 42144793
+   },
+   {
+    "file": "data/modal-full-1101/clips/modal-r04-matrix.mp4",
+    "duration_s": 19.9,
+    "frames": 199,
+    "plays": true,
+    "bytes": 256711
+   }
+  ]
+ }
+]

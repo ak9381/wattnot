@@ -1,0 +1,9 @@
+baseten_caps    stop=soft  items=1052  ledger=$90.0775 why=baseten: committed $90.0775 >= soft $90.0
+baseten_402     stop=hard  items=39    ledger=$3.477875 why=baseten: out of credit (402)
+baseten_429     stop=soft  items=0     ledger=$0.554 why=baseten: provider error 429
+modal_caps      stop=soft  items=5     ledger=$95.999988 why=modal: committed $94.1463 >= soft $90.0
+modal_preempt   stop=soft  items=2     ledger=$39.390106 why=modal: provider error 503
+resume          stop=soft  items=990   ledger=$90.04475 why=baseten: committed $90.0447 >= soft $90.0
+DRYRUN PASS
+
+--- stderr ---

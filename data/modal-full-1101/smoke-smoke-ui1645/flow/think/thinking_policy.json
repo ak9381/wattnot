@@ -1,0 +1,235 @@
+{
+ "format": "wattnot.thinking-policy/1",
+ "label": "MEASURED",
+ "forced_close_check": {
+  "first_n": 8,
+  "forced_close_rate": 0.0,
+  "threshold": 0.8,
+  "suspect": false
+ },
+ "model": "meta-models/Muse-Glimmer-30B",
+ "mechanism": "stop-and-force-answer",
+ "think_markers": [
+  "<think>",
+  "</think>"
+ ],
+ "think_transport": {
+  "mode": "parser-split",
+  "confident": true,
+  "saw_reasoning_field": true,
+  "saw_markers": false,
+  "note": "reasoning delta field present; close marker hidden by the parser",
+  "enforcer": "stream-reasoning-budget",
+  "chars_per_token": 4
+ },
+ "transport_modes": [
+  "parser-split",
+  "raw-marker",
+  "no-think"
+ ],
+ "grid": {
+  "easy": [
+   0.25,
+   0.5,
+   1.0
+  ],
+  "medium": [
+   0.5,
+   1.0,
+   1.5
+  ],
+  "hard": [
+   0.5,
+   1.0,
+   2.0
+  ],
+  "complex": [
+   1.0,
+   1.5
+  ]
+ },
+ "gate": {
+  "max_drop_pts": 1.0,
+  "max_regressed": 0,
+  "cut_off_counts_as_fail": true,
+  "metric": "J per correct answer"
+ },
+ "router": {
+  "model": "meta-llama/Llama-3.2-1B-Instruct",
+  "unsure": "round up a tier"
+ },
+ "prior_art": [
+  "s1 (budget forcing)",
+  "TALE",
+  "L1",
+  "ThinkPrune"
+ ],
+ "tiers": {
+  "easy": {
+   "budget_x": 0.25,
+   "J_per_correct": 389.181,
+   "pass_pct": 100.0,
+   "delta_pts": 0.0,
+   "saving_pct_vs_1x": 56.9,
+   "n": 1,
+   "decision": "0.25x",
+   "cells": [
+    {
+     "budget_x": 0.25,
+     "n": 1,
+     "pass_pct": 100.0,
+     "delta_pts": 0.0,
+     "regressed": 0,
+     "cut_off": 0,
+     "forced_close_rate": 0.0,
+     "J_per_correct": 389.181,
+     "gate": "pass"
+    },
+    {
+     "budget_x": 0.5,
+     "n": 1,
+     "pass_pct": 100.0,
+     "delta_pts": 0.0,
+     "regressed": 0,
+     "cut_off": 0,
+     "forced_close_rate": 0.0,
+     "J_per_correct": 721.443,
+     "gate": "pass"
+    },
+    {
+     "budget_x": 1.0,
+     "n": 1,
+     "pass_pct": 100.0,
+     "delta_pts": 0.0,
+     "regressed": 0,
+     "cut_off": 0,
+     "forced_close_rate": 0.0,
+     "J_per_correct": 903.947,
+     "gate": "pass"
+    }
+   ]
+  },
+  "medium": {
+   "budget_x": 1.5,
+   "J_per_correct": 3192.259,
+   "pass_pct": 100.0,
+   "delta_pts": 0.0,
+   "saving_pct_vs_1x": 1.0,
+   "n": 1,
+   "decision": "1.5x",
+   "cells": [
+    {
+     "budget_x": 0.5,
+     "n": 1,
+     "pass_pct": 100.0,
+     "delta_pts": 0.0,
+     "regressed": 0,
+     "cut_off": 0,
+     "forced_close_rate": 0.0,
+     "J_per_correct": 3222.829,
+     "gate": "pass"
+    },
+    {
+     "budget_x": 1.0,
+     "n": 1,
+     "pass_pct": 100.0,
+     "delta_pts": 0.0,
+     "regressed": 0,
+     "cut_off": 0,
+     "forced_close_rate": 0.0,
+     "J_per_correct": 3225.13,
+     "gate": "pass"
+    },
+    {
+     "budget_x": 1.5,
+     "n": 1,
+     "pass_pct": 100.0,
+     "delta_pts": 0.0,
+     "regressed": 0,
+     "cut_off": 0,
+     "forced_close_rate": 0.0,
+     "J_per_correct": 3192.259,
+     "gate": "pass"
+    }
+   ]
+  },
+  "hard": {
+   "budget_x": 1.0,
+   "J_per_correct": 3122.053,
+   "pass_pct": 100.0,
+   "delta_pts": 0.0,
+   "saving_pct_vs_1x": null,
+   "n": 1,
+   "decision": "no change",
+   "cells": [
+    {
+     "budget_x": 0.5,
+     "n": 1,
+     "pass_pct": 100.0,
+     "delta_pts": 0.0,
+     "regressed": 0,
+     "cut_off": 0,
+     "forced_close_rate": 0.0,
+     "J_per_correct": 3129.335,
+     "gate": "pass"
+    },
+    {
+     "budget_x": 1.0,
+     "n": 1,
+     "pass_pct": 100.0,
+     "delta_pts": 0.0,
+     "regressed": 0,
+     "cut_off": 0,
+     "forced_close_rate": 0.0,
+     "J_per_correct": 3122.053,
+     "gate": "pass"
+    },
+    {
+     "budget_x": 2.0,
+     "n": 1,
+     "pass_pct": 100.0,
+     "delta_pts": 0.0,
+     "regressed": 0,
+     "cut_off": 0,
+     "forced_close_rate": 0.0,
+     "J_per_correct": 3122.377,
+     "gate": "pass"
+    }
+   ]
+  },
+  "complex": {
+   "budget_x": 1.0,
+   "J_per_correct": 18729.065,
+   "pass_pct": 100.0,
+   "delta_pts": 0.0,
+   "saving_pct_vs_1x": null,
+   "n": 1,
+   "decision": "no change",
+   "cells": [
+    {
+     "budget_x": 1.0,
+     "n": 1,
+     "pass_pct": 100.0,
+     "delta_pts": 0.0,
+     "regressed": 0,
+     "cut_off": 0,
+     "forced_close_rate": 0.0,
+     "J_per_correct": 18729.065,
+     "gate": "pass"
+    },
+    {
+     "budget_x": 1.5,
+     "n": 1,
+     "pass_pct": 100.0,
+     "delta_pts": 0.0,
+     "regressed": 0,
+     "cut_off": 0,
+     "forced_close_rate": 0.0,
+     "J_per_correct": 27403.292,
+     "gate": "pass"
+    }
+   ]
+  }
+ },
+ "sha256": "993d4985cbb4d28dc10a124b645683cdff35021265674feb15996fa5e8f92dc8"
+}

@@ -1,0 +1,180 @@
+{
+  "format": "wattnot.route-replay/1",
+  "label": "ESTIMATE",
+  "labels": {
+    "usd": "MEASURED",
+    "joules": "ESTIMATE",
+    "gco2": "SIMULATED",
+    "region": "SIMULATED"
+  },
+  "source_receipt": {
+    "schema": "wattnot.cloud-receipt/1",
+    "receipt_id": "cloud_20261027_041453_318fad",
+    "sha256": "15d296e721a992a3e17ef3c64129d358fe191b056d4237dc599de2611240badd",
+    "mode": "live",
+    "label": "MEASURED"
+  },
+  "backend": "baseten/muse-spark-open-1026",
+  "home_region": "us-east",
+  "regions": [
+    "ap-south",
+    "ap-southeast",
+    "eu-central",
+    "eu-north",
+    "eu-west",
+    "gb",
+    "us-east",
+    "us-west"
+  ],
+  "grid": {
+    "label": "SIMULATED",
+    "source": "static fixture (rounded illustrative values)",
+    "as_of": "static fixture",
+    "kind": "average, not marginal"
+  },
+  "tie_pct": 3.0,
+  "requests": 6,
+  "classes": [
+    {
+      "class": "extract",
+      "requests": 3,
+      "baseline": {
+        "class": "extract",
+        "requests": 3,
+        "candidate": "extract:xhigh@us-east",
+        "effort": "xhigh",
+        "region": "us-east",
+        "usd": 0.00741275,
+        "wh_low": 0.092022,
+        "wh_high": 0.92022,
+        "j_mid": 1822.036,
+        "gco2_mid": 0.192326,
+        "gco2_per_kwh": 380.0,
+        "pass_rate": 1.0
+      },
+      "effort_only": {
+        "class": "extract",
+        "requests": 3,
+        "candidate": "extract:low@us-east",
+        "effort": "low",
+        "region": "us-east",
+        "usd": 0.0036977,
+        "wh_low": 0.051324,
+        "wh_high": 0.51324,
+        "j_mid": 1016.215,
+        "gco2_mid": 0.107267,
+        "gco2_per_kwh": 380.0,
+        "pass_rate": 1.0,
+        "reason": "low in us-east: passes the gate, 338.7 J per good answer, lowest of 2 that passed; next is 607.3 J"
+      },
+      "effort_and_region": {
+        "class": "extract",
+        "requests": 3,
+        "candidate": "extract:low@eu-north",
+        "effort": "low",
+        "region": "eu-north",
+        "usd": 0.0036977,
+        "wh_low": 0.051324,
+        "wh_high": 0.51324,
+        "j_mid": 1016.215,
+        "gco2_mid": 0.00988,
+        "gco2_per_kwh": 35.0,
+        "pass_rate": 1.0,
+        "reason": "low in eu-north: passes the gate, 338.7 J per good answer; 7 other option(s) are within 3% on joules, so the cleaner grid decided (35 gCO2/kWh vs up to 680)",
+        "tie_broken_by_grid": true
+      },
+      "excluded": []
+    },
+    {
+      "class": "arith",
+      "requests": 3,
+      "baseline": {
+        "class": "arith",
+        "requests": 3,
+        "candidate": "arith:xhigh@us-east",
+        "effort": "xhigh",
+        "region": "us-east",
+        "usd": 0.0059957,
+        "wh_low": 0.0735,
+        "wh_high": 0.735,
+        "j_mid": 1455.3,
+        "gco2_mid": 0.153615,
+        "gco2_per_kwh": 380.0,
+        "pass_rate": 1.0
+      },
+      "effort_only": {
+        "class": "arith",
+        "requests": 3,
+        "candidate": "arith:low@us-east",
+        "effort": "low",
+        "region": "us-east",
+        "usd": 0.0031907,
+        "wh_low": 0.04578,
+        "wh_high": 0.4578,
+        "j_mid": 906.444,
+        "gco2_mid": 0.09568,
+        "gco2_per_kwh": 380.0,
+        "pass_rate": 1.0,
+        "reason": "low in us-east: passes the gate, 302.1 J per good answer, lowest of 2 that passed; next is 485.1 J"
+      },
+      "effort_and_region": {
+        "class": "arith",
+        "requests": 3,
+        "candidate": "arith:low@eu-north",
+        "effort": "low",
+        "region": "eu-north",
+        "usd": 0.0031907,
+        "wh_low": 0.04578,
+        "wh_high": 0.4578,
+        "j_mid": 906.444,
+        "gco2_mid": 0.008813,
+        "gco2_per_kwh": 35.0,
+        "pass_rate": 1.0,
+        "reason": "low in eu-north: passes the gate, 302.1 J per good answer; 7 other option(s) are within 3% on joules, so the cleaner grid decided (35 gCO2/kWh vs up to 680)",
+        "tie_broken_by_grid": true
+      },
+      "excluded": []
+    }
+  ],
+  "totals": {
+    "baseline": {
+      "usd": 0.013408,
+      "wh_low": 0.165522,
+      "wh_high": 1.65522,
+      "j_mid": 3277.336,
+      "gco2_mid": 0.3459
+    },
+    "effort_only": {
+      "usd": 0.006888,
+      "wh_low": 0.097104,
+      "wh_high": 0.97104,
+      "j_mid": 1922.659,
+      "gco2_mid": 0.2029
+    },
+    "effort_and_region": {
+      "usd": 0.006888,
+      "wh_low": 0.097104,
+      "wh_high": 0.97104,
+      "j_mid": 1922.659,
+      "gco2_mid": 0.0187
+    },
+    "change_pct": {
+      "effort_only": {
+        "usd": -48.63,
+        "j_mid": -41.33,
+        "gco2_mid": -41.34
+      },
+      "effort_and_region": {
+        "usd": -48.63,
+        "j_mid": -41.33,
+        "gco2_mid": -94.59
+      }
+    }
+  },
+  "notes": [
+    "Region is a what-if: Baseten and Meta's APIs do not let us choose one.",
+    "Latency and data-residency differences between regions are not modelled.",
+    "Carbon uses average grid intensity, not marginal, and is only a tie-breaker in the router.",
+    "Energy is a FLOP-model range, not a measurement. None of this is a carbon claim."
+  ]
+}

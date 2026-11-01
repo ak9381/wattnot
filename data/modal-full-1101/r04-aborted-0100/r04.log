@@ -1,0 +1,51 @@
+✓ Initialized. View run at 
+https://modal.com/apps/akashkraju218/main/ap-Lilpl3E1XVTuFhHWSfIvd0
+✓ Created objects.
+├── ✓ Uploaded /tmp/wn-merge/modal/full_stage.py
+├── ✓ Uploaded pyproject.toml
+├── ✓ Uploaded /tmp/wn-merge/data/public_bench
+├── ✓ Uploaded /tmp/wn-merge/workloads
+├── ✓ Uploaded /tmp/wn-merge/data/voice
+├── ✓ Uploaded /tmp/wn-merge/examples
+├── ✓ Uploaded /tmp/wn-merge/data/vision
+├── ✓ Uploaded /tmp/wn-merge/scripts
+├── ✓ Uploaded /tmp/wn-merge/src
+├── ✓ Created Function gpu_round.
+└── ✓ Created Function gpu_smoke.
+Stopping app - user stopped from CLI.
+[modal-client] 2026-11-01T19:33:30+0000 Detected 1 background thread(s) [Thread-2] still running after container exit. This will prevent runner shutdown for up to 30 seconds.
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /tmp/wn-merge/modal/full_stage.py:268 in round_                              │
+│                                                                              │
+│   267 │   │   │   │   try:                                                   │
+│ ❱ 268 │   │   │   │   │   data = call.get(timeout=0)                         │
+│   269 │   │   │   │   │   net_errs = 0                                       │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/modal/_object.py:49 in wrapped │
+│                                                                              │
+│    48 │   │   await self.hydrate()                                           │
+│ ❱  49 │   │   return await method(self, *args, **kwargs)                     │
+│    50                                                                        │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/modal/_functions.py:2424 in    │
+│ get                                                                          │
+│                                                                              │
+│   2423 │   │   """                                                           │
+│ ❱ 2424 │   │   return await self._invocation().poll_function(timeout=timeout │
+│   2425                                                                       │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/modal/_functions.py:350 in     │
+│ poll_function                                                                │
+│                                                                              │
+│    349 │   │                                                                 │
+│ ❱  350 │   │   return await _process_result(                                 │
+│    351 │   │   │   response.outputs[0].result, response.outputs[0].data_form │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/modal/_utils/function_utils.py │
+│ :574 in _process_result                                                      │
+│                                                                              │
+│   573 │   │                                                                  │
+│ ❱ 574 │   │   raise RemoteError(result.exception)                            │
+│   575                                                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+RemoteError

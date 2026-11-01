@@ -1,0 +1,324 @@
+{
+  "spec": "wattnot.langchain-pass/1",
+  "label": "MEASURED",
+  "dataset": "own",
+  "start": 0,
+  "n": 20,
+  "framework": "langchain",
+  "routing": "effort routing on one served model (thinking off -> on); model routing needs a second model and is in the multi-provider block",
+  "arms": {
+    "saver_off": {
+      "correct": 19,
+      "n": 20,
+      "wall_s": 786.69,
+      "gpu_j": 253297.433,
+      "gpu_j_label": "MEASURED",
+      "j_per_correct": 13331.443842105262,
+      "steps": 63,
+      "proxy_receipt": {
+        "spec": "wattnot.proxy-receipt/1",
+        "label": "MEASURED",
+        "frameworks": [
+          "langchain"
+        ],
+        "framework": "langchain",
+        "calls": 63,
+        "routing": {
+          "enabled": false,
+          "routed_calls": 0,
+          "escalation_rate": null,
+          "small_model_pass_rate": null,
+          "answered_by": {
+            "null": 63
+          }
+        },
+        "gate": {
+          "pass_pct": 98.41,
+          "answered_calls": 63,
+          "stopped_by_guard": 0,
+          "upstream_errors": 0
+        },
+        "escalated_attempt_tokens": 0,
+        "context_saver": {
+          "enabled": false,
+          "tokens_before": 0,
+          "tokens_after": 0,
+          "tokens_saved": 0,
+          "label": "ESTIMATE"
+        },
+        "agent_waste": {
+          "upstream_calls": 63,
+          "prompt_tokens": 39626,
+          "completion_tokens": 21742,
+          "reasoning_tokens": 0,
+          "nudges": 0,
+          "runs": 1,
+          "runs_stopped_early": 0
+        },
+        "billed_upstream_calls": 63,
+        "streamed_calls": 0,
+        "dropped_fields": []
+      },
+      "per_item": [
+        {
+          "i": 0,
+          "steps": 3,
+          "correct": true
+        },
+        {
+          "i": 1,
+          "steps": 3,
+          "correct": true
+        },
+        {
+          "i": 2,
+          "steps": 3,
+          "correct": true
+        },
+        {
+          "i": 3,
+          "steps": 4,
+          "correct": true
+        },
+        {
+          "i": 4,
+          "steps": 3,
+          "correct": true
+        },
+        {
+          "i": 5,
+          "steps": 3,
+          "correct": true
+        },
+        {
+          "i": 6,
+          "steps": 3,
+          "correct": true
+        },
+        {
+          "i": 7,
+          "steps": 3,
+          "correct": true
+        },
+        {
+          "i": 8,
+          "steps": 3,
+          "correct": true
+        },
+        {
+          "i": 9,
+          "steps": 3,
+          "correct": true
+        },
+        {
+          "i": 10,
+          "steps": 2,
+          "correct": false
+        },
+        {
+          "i": 11,
+          "steps": 3,
+          "correct": true
+        },
+        {
+          "i": 12,
+          "steps": 3,
+          "correct": true
+        },
+        {
+          "i": 13,
+          "steps": 3,
+          "correct": true
+        },
+        {
+          "i": 14,
+          "steps": 3,
+          "correct": true
+        },
+        {
+          "i": 15,
+          "steps": 4,
+          "correct": true
+        },
+        {
+          "i": 16,
+          "steps": 4,
+          "correct": true
+        },
+        {
+          "i": 17,
+          "steps": 3,
+          "correct": true
+        },
+        {
+          "i": 18,
+          "steps": 3,
+          "correct": true
+        },
+        {
+          "i": 19,
+          "steps": 4,
+          "correct": true
+        }
+      ]
+    },
+    "saver_on": {
+      "correct": 2,
+      "n": 20,
+      "wall_s": 111.43,
+      "gpu_j": 36007.849,
+      "gpu_j_label": "MEASURED",
+      "j_per_correct": 18003.9245,
+      "steps": 29,
+      "proxy_receipt": {
+        "spec": "wattnot.proxy-receipt/1",
+        "label": "MEASURED",
+        "frameworks": [
+          "langchain"
+        ],
+        "framework": "langchain",
+        "calls": 29,
+        "routing": {
+          "enabled": true,
+          "routed_calls": 12,
+          "escalation_rate": 0.0,
+          "small_model_pass_rate": 1.0,
+          "answered_by": {
+            "wattnot:guard": 17,
+            "glimmer-think-off": 12
+          }
+        },
+        "gate": {
+          "pass_pct": 100.0,
+          "answered_calls": 12,
+          "stopped_by_guard": 17,
+          "upstream_errors": 0
+        },
+        "escalated_attempt_tokens": 0,
+        "context_saver": {
+          "enabled": true,
+          "tokens_before": 1917,
+          "tokens_after": 1917,
+          "tokens_saved": 0,
+          "label": "ESTIMATE"
+        },
+        "agent_waste": {
+          "upstream_calls": 12,
+          "prompt_tokens": 8501,
+          "completion_tokens": 3091,
+          "reasoning_tokens": 0,
+          "nudges": 0,
+          "runs": 1,
+          "runs_stopped_early": 1
+        },
+        "billed_upstream_calls": 12,
+        "streamed_calls": 0,
+        "dropped_fields": []
+      },
+      "per_item": [
+        {
+          "i": 0,
+          "steps": 3,
+          "correct": false
+        },
+        {
+          "i": 1,
+          "steps": 4,
+          "correct": true
+        },
+        {
+          "i": 2,
+          "steps": 3,
+          "correct": true
+        },
+        {
+          "i": 3,
+          "steps": 3,
+          "correct": false
+        },
+        {
+          "i": 4,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 5,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 6,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 7,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 8,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 9,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 10,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 11,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 12,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 13,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 14,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 15,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 16,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 17,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 18,
+          "steps": 1,
+          "correct": false
+        },
+        {
+          "i": 19,
+          "steps": 1,
+          "correct": false
+        }
+      ]
+    }
+  },
+  "gpu_j_saved": 217289.58399999997,
+  "quality_held": false
+}

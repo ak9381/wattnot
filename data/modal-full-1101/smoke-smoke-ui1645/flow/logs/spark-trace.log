@@ -1,0 +1,6 @@
+[spark] probe     ok     mock-a5d4906998d2 1 ms [MOCK] $0.00042 [MOCK]
+[spark] proposal  ok     mock-e0ceea8064fa 1 ms [MOCK] $0.00042 [MOCK]
+[spark] gate      ok     mock-813f9bc68c39 0 ms [MOCK] $0.00042 [MOCK]
+[spark] receipt   ok     mock-57852e9d1494 0 ms [MOCK] $0.00042 [MOCK]
+
+--- stderr ---

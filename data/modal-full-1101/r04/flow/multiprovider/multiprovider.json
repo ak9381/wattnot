@@ -1,0 +1,72 @@
+{
+  "spec": "wattnot.multiprovider-route/1",
+  "label": "REPLAY",
+  "warning": "recorded runs, different prompts per provider; not a same-prompt result",
+  "modal": {
+    "j_per_request_measured": 1397.291,
+    "excluded": "answers were not graded on 31 Oct (all hit max_tokens), so Modal cannot pass the quality gate in this replay"
+  },
+  "baseten_usd_per_1k_measured": 1.863593,
+  "decision": {
+    "gsm8k300": {
+      "pass_pct": {
+        "h100_e2e": 100.0,
+        "baseten": 100.0
+      },
+      "gate_passed": [
+        "baseten",
+        "h100_e2e"
+      ],
+      "by": "usd_per_correct",
+      "scores": {
+        "h100_e2e": 0.0149,
+        "baseten": 0.0019
+      },
+      "route_to": "baseten"
+    },
+    "humaneval164": {
+      "pass_pct": {
+        "h100_e2e": 92.0,
+        "baseten": 100.0
+      },
+      "gate_passed": [
+        "baseten"
+      ],
+      "by": "usd_per_correct",
+      "scores": {
+        "baseten": 0.0019
+      },
+      "route_to": "baseten"
+    }
+  },
+  "inputs": {
+    "h100_e2e": {
+      "gsm8k300": {
+        "n": 100,
+        "correct": 100,
+        "j": 31485.762499999997,
+        "usd": 1.4916898806889851
+      },
+      "humaneval164": {
+        "n": 100,
+        "correct": 92,
+        "j": 65258.61124999999,
+        "usd": 2.466134680401195
+      }
+    },
+    "baseten": {
+      "gsm8k300": {
+        "n": 100,
+        "correct": 100,
+        "j": null,
+        "usd": 0.1863593
+      },
+      "humaneval164": {
+        "n": 100,
+        "correct": 100,
+        "j": null,
+        "usd": 0.1863593
+      }
+    }
+  }
+}

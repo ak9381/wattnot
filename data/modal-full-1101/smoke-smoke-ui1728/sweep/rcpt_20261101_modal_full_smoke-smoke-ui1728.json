@@ -1,0 +1,364 @@
+{
+  "spec": "wattnot.receipt/1",
+  "receipt_id": "rcpt_20261101_modal_full_smoke-smoke-ui1728",
+  "created_at": "2026-11-01T17:49:36+00:00",
+  "run_id": "run_20261101_modal_full_smoke-smoke-ui1728",
+  "subject": {
+    "model": "meta-models/Muse-Glimmer-30B",
+    "host": {
+      "provider": "modal",
+      "gpu": "NVIDIA A100-SXM4-80GB",
+      "driver": "recorded"
+    },
+    "mode": "container",
+    "workload": {
+      "name": "ours92+gsm8k60+humaneval40",
+      "version": "1",
+      "n_requests": 3
+    }
+  },
+  "baseline": {
+    "params": {
+      "power_cap_w": null,
+      "fp8": false,
+      "prefix_caching": false,
+      "max_num_seqs": 64,
+      "start_s": {
+        "value": 120.1,
+        "label": "MEASURED"
+      }
+    },
+    "reps": 3,
+    "wh_per_req": {
+      "mean": 1.055015,
+      "sd": 0.84239,
+      "samples": [
+        0.246619,
+        0.990711,
+        1.927714
+      ]
+    },
+    "usd_per_req": {
+      "mean": 0.0001266018,
+      "sd": 0.0001010868,
+      "samples": [
+        2.95943e-05,
+        0.0001188853,
+        0.0002313257
+      ]
+    },
+    "p99_ms": 21983,
+    "quality": {
+      "fixed_pass_rate": 1.0
+    }
+  },
+  "candidate": {
+    "params": {
+      "power_cap_w": null,
+      "fp8": false,
+      "prefix_caching": true,
+      "max_num_seqs": 64,
+      "start_s": {
+        "value": 57.0,
+        "label": "MEASURED"
+      },
+      "concurrency": 16,
+      "router": "no-think first, per-tier thinking budget on a failed check"
+    },
+    "reps": 3,
+    "wh_per_req": {
+      "mean": 0.950709,
+      "sd": 0.79085,
+      "samples": [
+        0.198844,
+        0.877789,
+        1.775494
+      ]
+    },
+    "usd_per_req": {
+      "mean": 0.0001140851,
+      "sd": 9.4902e-05,
+      "samples": [
+        2.38613e-05,
+        0.0001053347,
+        0.0002130593
+      ]
+    },
+    "p99_ms": 20180,
+    "quality": {
+      "fixed_pass_rate": 1.0
+    }
+  },
+  "result": {
+    "saving_pct": {
+      "mean": 9.8867,
+      "ci_low": -258.9397,
+      "ci_high": 77.9449
+    },
+    "welch": {
+      "t": 0.156357,
+      "df": 3.984161,
+      "p_value": 0.4416771878365308,
+      "alpha": 0.05
+    },
+    "bootstrap": {
+      "n": 10000,
+      "seed": 7,
+      "level": 0.95
+    },
+    "billable": false,
+    "billed_saving_pct": 0,
+    "fee_share": 0.2,
+    "currency": "USD",
+    "tariff_usd_per_kwh": {
+      "value": 0.12,
+      "label": "ESTIMATE"
+    }
+  },
+  "measurement": {
+    "meter": "nvml",
+    "hz": 1,
+    "label": "MEASURED",
+    "idle_w": 68.0,
+    "csv": [
+      {
+        "path": "data/modal-full-1101/smoke-smoke-ui1728/raw/batch-c16-s64.power.csv",
+        "sha256": "642e6729d09c181d1dea4385e05253ba8b92e79ce7f46f3a23ea75f78afcc5ff"
+      },
+      {
+        "path": "data/modal-full-1101/smoke-smoke-ui1728/raw/batch-c4-s64.power.csv",
+        "sha256": "730f1abe41fe660f0e2f56ca5ebdb1ee9e858244f72b9f7d2dcc6115ebe6abe0"
+      },
+      {
+        "path": "data/modal-full-1101/smoke-smoke-ui1728/raw/fp8.power.csv",
+        "sha256": "c2e1dadd5eb2994de989e8f8a36966a3b37e8927a5916c0034fd0d35dbd53353"
+      },
+      {
+        "path": "data/modal-full-1101/smoke-smoke-ui1728/raw/with.power.csv",
+        "sha256": "af6802c0a343e8f089d355712bd897ef59295387b6c13b10922b765eb147c031"
+      },
+      {
+        "path": "data/modal-full-1101/smoke-smoke-ui1728/raw/without.power.csv",
+        "sha256": "0222eb8bea0da961435889b5e03b0016fbd5a1a53c6eac44f156442e26a3386c"
+      },
+      {
+        "path": "data/modal-full-1101/smoke-smoke-ui1728/raw/with.answers.jsonl",
+        "sha256": "57c5fb1a697ee4375b248cb8b1e84efe857e61baaa3dd0a4818928973b80b2f3"
+      },
+      {
+        "path": "data/modal-full-1101/smoke-smoke-ui1728/raw/with.calls.jsonl",
+        "sha256": "a62cbc2aac4d1a9c27d2821bc379ae8379978da8cc74b69716e262ac33b427f9"
+      },
+      {
+        "path": "data/modal-full-1101/smoke-smoke-ui1728/raw/without.answers.jsonl",
+        "sha256": "f5f5b1f94da2441377b8dfbfef4d1c8e9499b5487ad95773e35f34c9a7ce2f3e"
+      },
+      {
+        "path": "data/modal-full-1101/smoke-smoke-ui1728/raw/without.calls.jsonl",
+        "sha256": "2de32141dbb89385eb2f835be72ed8303a600d478c821fddc3035e0f734c5746"
+      }
+    ],
+    "per_model_joules": [
+      {
+        "model": "meta-models/Muse-Glimmer-30B (served, model under test)",
+        "role": "served",
+        "where": "local",
+        "j_per_answer": 3422.5524,
+        "j_total": 10267.7,
+        "label": "MEASURED",
+        "how": "NVML energy counter, 10 samples a second; j_total = J per answer x checked answers"
+      }
+    ],
+    "eye_test": {
+      "label": "SYNTHETIC",
+      "passed": true,
+      "checked": 0,
+      "passed_count": 0,
+      "missed": [],
+      "reason": "all 10 eye-test images read correctly",
+      "model": "meta-models/Muse-Glimmer-30B",
+      "est_wh_per_image": {
+        "value": 0.5,
+        "label": "ESTIMATE"
+      },
+      "images": []
+    },
+    "spoken_test": {
+      "label": "SYNTHETIC",
+      "transcriber": "muse-voice-transcribe-1.0",
+      "passed": true,
+      "checked": 0,
+      "passed_count": 0,
+      "missed": [],
+      "missed_noisy": [],
+      "reason": "all 20 spoken answers correct",
+      "model": "meta-models/Muse-Glimmer-30B",
+      "items": []
+    }
+  },
+  "attribution": {
+    "method": "token-share-capped (after Neuralwatt)",
+    "cap": 1.0
+  },
+  "planner_trace": [],
+  "estimates": {
+    "water_ml_per_req": {
+      "value": 0.342255,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"
+    },
+    "water_ml_per_req_upper": {
+      "value": 1.711276,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"
+    },
+    "baseline_water_ml_per_req": {
+      "value": 0.379805,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"
+    },
+    "baseline_water_ml_per_req_upper": {
+      "value": 1.899027,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"
+    }
+  },
+  "limits": {
+    "max_p99_increase": 0.1,
+    "max_p99_increase_pct": 10.0,
+    "source": "default"
+  },
+  "dataset": {
+    "id": "not-recorded",
+    "chosen_by": "not recorded",
+    "why": "this run predates the dataset picker"
+  },
+  "joules": {
+    "unit": "J",
+    "label": "MEASURED",
+    "formula": "j_per_answer = wh_per_req x 3600; j_per_good_answer = j_per_answer / pass_rate",
+    "baseline": {
+      "j_per_answer": 3798.054,
+      "pass_rate": 1.0,
+      "j_per_good_answer": 3798.054
+    },
+    "candidate": {
+      "j_per_answer": 3422.5524,
+      "pass_rate": 1.0,
+      "j_per_good_answer": 3422.5524
+    },
+    "change_pct": {
+      "j_per_answer": -9.8867,
+      "j_per_good_answer": -9.8867
+    }
+  },
+  "sci": {
+    "spec": "GSF SCI 1.0 (ISO/IEC 21031:2024): SCI = (E x I + M) per R",
+    "R": "one correct answer (passed the quality gate)",
+    "label": "ESTIMATE",
+    "why_label": "E is the receipt's measured energy; I and water are cited factors, so every carbon and water number is ESTIMATE",
+    "scope": "operational (E x I)",
+    "I": {
+      "gco2e_per_kwh": 727.0,
+      "label": "ESTIMATE",
+      "region": "IN (India national grid)",
+      "year": "FY 2023-24",
+      "source": "CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included)",
+      "url": "https://cea.nic.in/cdm-co2-baseline-database/?lang=en"
+    },
+    "M": {
+      "status": "NOT_AVAILABLE",
+      "gco2e_per_correct": null,
+      "why": "no cited embodied-emissions figure for this GPU and server; SCI shown is operational only (E x I)"
+    },
+    "water": {
+      "wue": {
+        "l_per_kwh": 0.36,
+        "label": "ESTIMATE",
+        "source": "0.36 L/kWh on-site cooling (LBNL 2024 US Data Center Energy Usage Report)"
+      },
+      "wue_upper": {
+        "l_per_kwh": 1.8,
+        "label": "ESTIMATE",
+        "source": "1.8 L/kWh including power-plant (electricity) water, upper bound"
+      }
+    },
+    "arms": {
+      "baseline": {
+        "E_kwh_per_request": 0.001055015,
+        "E_kwh_per_correct": 0.001055015,
+        "pass_rate": 1.0,
+        "E_label": "MEASURED",
+        "gco2e_per_request": 0.766995905,
+        "gco2e_per_correct": 0.766995905,
+        "sci_gco2e_per_R": 0.766995905,
+        "water_ml_per_request": 0.3798054,
+        "water_ml_per_correct": 0.3798054,
+        "water_ml_per_request_upper": 1.899027
+      },
+      "candidate": {
+        "E_kwh_per_request": 0.000950709,
+        "E_kwh_per_correct": 0.000950709,
+        "pass_rate": 1.0,
+        "E_label": "MEASURED",
+        "gco2e_per_request": 0.691165443,
+        "gco2e_per_correct": 0.691165443,
+        "sci_gco2e_per_R": 0.691165443,
+        "water_ml_per_request": 0.34225524,
+        "water_ml_per_correct": 0.34225524,
+        "water_ml_per_request_upper": 1.7112762
+      }
+    },
+    "change_pct_sci": -9.8867
+  },
+  "grade": "NOISE",
+  "integrity": {
+    "canonicalization": "JCS RFC 8785",
+    "sha256": "fa041ca75db9882637e2ed843a596e0d11cc73b5eef7d8893eb8ef583ec25db6",
+    "prev_sha256": null,
+    "signer": "offline:56475aa75463474c",
+    "rekor": null
+  },
+  "modal_stage": {
+    "label": "MEASURED",
+    "cap_probe": {
+      "writable": false,
+      "reason": "NVML refused the power-limit write (NVMLError_NoPermission); Modal containers have no privileged GPU control",
+      "label": "MEASURED"
+    },
+    "batch_kv": {
+      "concurrency": 16,
+      "max_num_seqs": 64
+    },
+    "fp8": {
+      "kept": true,
+      "gate": {
+        "keep": true,
+        "accuracy_ok": true,
+        "energy_ok": true,
+        "acc_drop_pts": 0.0,
+        "label": "MEASURED",
+        "eye_rc": 0,
+        "hearing_rc": 0
+      }
+    },
+    "limits": {
+      "p99_limit": "+10%",
+      "p99_ok": true,
+      "joule_slo_ok": true,
+      "quality_gate": {
+        "keep": true,
+        "accuracy_ok": true,
+        "energy_ok": true,
+        "acc_drop_pts": 0.0,
+        "label": "MEASURED"
+      },
+      "label": "MEASURED"
+    },
+    "note": "Signed locally with the public TEST key; not published to Rekor."
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "section": "musecode_pr",
+  "label": "LIVE",
+  "pr_url": "https://github.com/ak9381/wattnot-demo-deploy/pull/1",
+  "repo": "ak9381/wattnot-demo-deploy (public demo fixture, nothing deployed)",
+  "branch": "wattnot-opt-38c3e784",
+  "change": {
+    "power_cap_w": 350,
+    "label": "MEASURED (RUN2 kept change)"
+  },
+  "patch_sha256": "38c3e784667f5ac759e34d1975668b0c51d6cdd4f140dc6289ab142ad4d34303",
+  "receipt_sha256": "1945ab485ace682f16ba71786e2ff57ee6d4a0a992bcf24685be56e41de31c29",
+  "muse_code": {
+    "cli": "muse exec --json (v1.4.14)",
+    "model": "muse-spark-1.3-contributor",
+    "session_id": "01a18519-7858-7032-88e6-4a9c5745f2fb",
+    "run_id": "01a18519-7a92-7d73-880d-91f66804dea8",
+    "usage": {
+      "input_tokens": 102946,
+      "output_tokens": 1481,
+      "total_tokens": 104427
+    },
+    "spend_usd_estimate": 0.010591,
+    "spend_note": "ESTIMATE from token counts at list price (cached tokens not discounted)"
+  }
+}

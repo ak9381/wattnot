@@ -1,0 +1,18 @@
+g6-think easy 0.25x: 100.0% pass, 77.10 J/correct
+g6-think easy 0.5x: 100.0% pass, 77.10 J/correct
+g6-think easy 1.0x: 100.0% pass, 77.10 J/correct
+g6-think medium 0.5x: 0.0% pass, 0.00 J/correct
+g6-think medium 1.0x: 100.0% pass, 1391.10 J/correct
+g6-think medium 1.5x: 100.0% pass, 1391.10 J/correct
+g6-think hard 0.5x: 0.0% pass, 0.00 J/correct
+g6-think hard 1.0x: 100.0% pass, 2599.35 J/correct
+g6-think hard 2.0x: 100.0% pass, 2907.60 J/correct
+g6-think complex 1.0x: 100.0% pass, 1224.60 J/correct
+g6-think complex 1.5x: 100.0% pass, 1243.50 J/correct
+easy     keep 1.0x  no change  J/correct 77.1  pass 100.0% (+0.0 pts)
+medium   keep 1.0x  no change  J/correct 1391.1  pass 100.0% (+0.0 pts)
+hard     keep 1.0x  no change  J/correct 2599.35  pass 100.0% (+0.0 pts)
+complex  keep 1.0x  no change  J/correct 1224.6  pass 100.0% (+0.0 pts)
+wrote /tmp/wn-merge/data/modal-full-1101/smoke-smoke-ui1426/flow/think/thinking_policy.json [MOCK]
+
+--- stderr ---

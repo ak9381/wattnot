@@ -1,0 +1,70 @@
+{
+  "format": "wattnot.proposal/1",
+  "id": "prop_20261101_174949_25057ede",
+  "kind": "vllm_config",
+  "scope": "commit",
+  "title": "flow: serving knob",
+  "summary": "flow check",
+  "created_at": "2026-11-01T17:49:49Z",
+  "expires_at": "2026-11-02T17:49:49Z",
+  "created_by": "wattnot",
+  "source": {},
+  "label": "SIMULATED",
+  "change": {
+    "target": "vllm",
+    "before": {
+      "max_num_seqs": 256
+    },
+    "after": {
+      "max_num_seqs": 512
+    },
+    "changed": [
+      "max_num_seqs"
+    ]
+  },
+  "savings": [
+    {
+      "metric": "energy per request",
+      "value": 0.0,
+      "unit": "%",
+      "label": "SIMULATED"
+    }
+  ],
+  "checks": {
+    "quality": {
+      "passed": true
+    },
+    "p99": {
+      "passed": true,
+      "increase_pct": 0.0
+    }
+  },
+  "receipt_preview": {},
+  "content_sha256": "7926a428423c50c7f499b527b05fafc81f1cabdf30e44ff06ee1bf5a47057657",
+  "status": "rolled_back",
+  "decision": {
+    "by": "user:flow-operator",
+    "at": "2026-11-01T17:49:49Z",
+    "via": "cli",
+    "note": "flow",
+    "content_sha256": "7926a428423c50c7f499b527b05fafc81f1cabdf30e44ff06ee1bf5a47057657"
+  },
+  "applied": {
+    "at": "2026-11-01T17:49:49Z",
+    "by": "user:flow-operator",
+    "via": "cli",
+    "approved_by": "user:flow-operator",
+    "token": {
+      "file": "active/vllm_config.json",
+      "before": null
+    }
+  },
+  "rolled_back": {
+    "at": "2026-11-01T17:49:49Z",
+    "by": "user:flow-operator",
+    "via": "cli",
+    "note": ""
+  },
+  "receipt": null,
+  "policy": null
+}

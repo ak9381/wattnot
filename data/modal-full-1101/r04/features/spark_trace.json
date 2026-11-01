@@ -1,0 +1,42 @@
+[
+ {
+  "kind": "spark_call",
+  "step": "probe",
+  "model": "muse-spark-1.3",
+  "status": "empty",
+  "trace_id": "chatcmpl-01a198fc-25b1-71a6-a440-2605c01516b4",
+  "latency_s": 5.73,
+  "text": "",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "proposal",
+  "model": "muse-spark-1.3",
+  "status": "empty",
+  "trace_id": "chatcmpl-01a198fc-52ef-7131-bff0-7f889c7cff21",
+  "latency_s": 11.583,
+  "text": "",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "gate",
+  "model": "muse-spark-1.3",
+  "status": "empty",
+  "trace_id": "chatcmpl-01a198fc-7192-7274-adf1-bc1d69151b08",
+  "latency_s": 7.853,
+  "text": "",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "receipt",
+  "model": "muse-spark-1.3",
+  "status": "ok",
+  "trace_id": "chatcmpl-01a198fc-9118-7130-8927-f52c5f2ba735",
+  "latency_s": 8.084,
+  "text": "Accuracy rose from 97.92% to 98.96% with the change, with 95.83% agreement to Spark. P99 latency worsened slightly from 94.4 to 100.8, while energy per correct answer improved ~3x from 2074.8 J to 657.5 J. Both eye_check and hearing_check are false.",
+  "label": "MEASURED"
+ }
+]

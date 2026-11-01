@@ -1,0 +1,4 @@
+hotspot set [fake] (SYNTHETIC tests): SAM 3.1 found all 6 SYNTHETIC hotspots
+
+--- stderr ---
+<frozen runpy>:128: RuntimeWarning: 'wattnot.sam.hotspot_set' found in sys.modules after import of package 'wattnot.sam', but prior to execution of 'wattnot.sam.hotspot_set'; this may result in unpredictable behaviour

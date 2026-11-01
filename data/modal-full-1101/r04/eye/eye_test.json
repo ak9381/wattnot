@@ -1,0 +1,159 @@
+{
+  "spec": "wattnot.eyetest/1",
+  "mode": "live",
+  "model": "meta-models/Muse-Glimmer-30B",
+  "label": "SYNTHETIC",
+  "answers_label": "MEASURED",
+  "passed": false,
+  "reason": "vision misread 1/10 image(s): gauge-reading",
+  "run": {
+    "answered": 10,
+    "total": 10,
+    "budget_s": 90.0,
+    "budget_hit": false,
+    "concurrency": 8,
+    "elapsed_s": 32.04606
+  },
+  "detail": {
+    "checked": 10,
+    "passed_count": 9,
+    "missed": [
+      "gauge-reading"
+    ],
+    "images": [
+      {
+        "id": "plate-bus789",
+        "kind": "text",
+        "question": "What is the number-plate text?",
+        "expected": "BUS-789",
+        "got": "BUS-789",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.5,
+          "label": "ESTIMATE"
+        }
+      },
+      {
+        "id": "plate-van204",
+        "kind": "text",
+        "question": "What is the number-plate text?",
+        "expected": "VAN-204",
+        "got": "VAN-204",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.5,
+          "label": "ESTIMATE"
+        }
+      },
+      {
+        "id": "invoice-total",
+        "kind": "number",
+        "question": "What is the invoice total in dollars?",
+        "expected": "1284.50",
+        "got": "$1,284.50",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.5,
+          "label": "ESTIMATE"
+        }
+      },
+      {
+        "id": "invoice-subtotal",
+        "kind": "number",
+        "question": "What is the subtotal in dollars?",
+        "expected": "990.00",
+        "got": "990.00",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.5,
+          "label": "ESTIMATE"
+        }
+      },
+      {
+        "id": "count-cubes",
+        "kind": "count",
+        "question": "How many cubes are in the image?",
+        "expected": "7",
+        "got": "7",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.5,
+          "label": "ESTIMATE"
+        }
+      },
+      {
+        "id": "count-bottles",
+        "kind": "count",
+        "question": "How many bottles are in the image?",
+        "expected": "4",
+        "got": "4",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.5,
+          "label": "ESTIMATE"
+        }
+      },
+      {
+        "id": "color-chart-top",
+        "kind": "color",
+        "question": "What colour is the top swatch?",
+        "expected": "magenta",
+        "got": "MAGENTA",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.5,
+          "label": "ESTIMATE"
+        }
+      },
+      {
+        "id": "color-chart-bottom",
+        "kind": "color",
+        "question": "What colour is the bottom swatch?",
+        "expected": "teal",
+        "got": "TEAL",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.5,
+          "label": "ESTIMATE"
+        }
+      },
+      {
+        "id": "gauge-reading",
+        "kind": "number",
+        "question": "What number does the gauge read?",
+        "expected": "60",
+        "got": "63",
+        "ok": false,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.5,
+          "label": "ESTIMATE"
+        }
+      },
+      {
+        "id": "sign-exit",
+        "kind": "text",
+        "question": "What does the road sign say?",
+        "expected": "EXIT 12B",
+        "got": "ROUTE 45 WEST EXIT 12B",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.5,
+          "label": "ESTIMATE"
+        }
+      }
+    ],
+    "label": "SYNTHETIC",
+    "est_wh_per_image": 0.5,
+    "blocks_musecode_pr": true
+  }
+}

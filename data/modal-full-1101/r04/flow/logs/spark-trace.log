@@ -1,0 +1,6 @@
+[spark] probe     ok     chatcmpl-01a198fb-afb8-75ca-8e49-f9c7867204d6 1610 ms [MEASURED] $0.00251125 [ESTIMATE]
+[spark] proposal  ok     chatcmpl-01a198fb-ba75-7301-bcfc-80357f7edd99 2754 ms [MEASURED] $0.00192625 [ESTIMATE]
+[spark] gate      ok     chatcmpl-01a198fb-c136-76d9-9d03-100d30255a0b 1696 ms [MEASURED] $0.001935 [ESTIMATE]
+[spark] receipt   ok     chatcmpl-01a198fb-c64a-704c-ae77-125e802f6aad 1280 ms [MEASURED] $0.00306125 [ESTIMATE]
+
+--- stderr ---

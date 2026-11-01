@@ -1,0 +1,655 @@
+{
+ "spec": "wattnot.codemode/1",
+ "config": {
+  "min_tools": 5,
+  "min_round_trips": 6,
+  "schema_tokens_per_tool": 120,
+  "after_round_trips": 1,
+  "model": "muse-spark-1.3"
+ },
+ "runs_examined": 144,
+ "candidates": 0,
+ "rows": [],
+ "skipped": [
+  {
+   "task": "W1",
+   "reasons": []
+  },
+  {
+   "task": "W1",
+   "reasons": []
+  },
+  {
+   "task": "W1",
+   "reasons": []
+  },
+  {
+   "task": "W2",
+   "reasons": []
+  },
+  {
+   "task": "W2",
+   "reasons": []
+  },
+  {
+   "task": "W2",
+   "reasons": []
+  },
+  {
+   "task": "W3",
+   "reasons": []
+  },
+  {
+   "task": "W3",
+   "reasons": []
+  },
+  {
+   "task": "W3",
+   "reasons": []
+  },
+  {
+   "task": "W4",
+   "reasons": []
+  },
+  {
+   "task": "W4",
+   "reasons": []
+  },
+  {
+   "task": "W4",
+   "reasons": []
+  },
+  {
+   "task": "W5",
+   "reasons": []
+  },
+  {
+   "task": "W5",
+   "reasons": []
+  },
+  {
+   "task": "W5",
+   "reasons": []
+  },
+  {
+   "task": "W6",
+   "reasons": []
+  },
+  {
+   "task": "W6",
+   "reasons": []
+  },
+  {
+   "task": "W6",
+   "reasons": []
+  },
+  {
+   "task": "W7",
+   "reasons": []
+  },
+  {
+   "task": "W7",
+   "reasons": []
+  },
+  {
+   "task": "W7",
+   "reasons": []
+  },
+  {
+   "task": "W8",
+   "reasons": []
+  },
+  {
+   "task": "W8",
+   "reasons": []
+  },
+  {
+   "task": "W8",
+   "reasons": []
+  },
+  {
+   "task": "E1",
+   "reasons": []
+  },
+  {
+   "task": "E1",
+   "reasons": []
+  },
+  {
+   "task": "E1",
+   "reasons": []
+  },
+  {
+   "task": "E2",
+   "reasons": []
+  },
+  {
+   "task": "E2",
+   "reasons": []
+  },
+  {
+   "task": "E2",
+   "reasons": []
+  },
+  {
+   "task": "E3",
+   "reasons": []
+  },
+  {
+   "task": "E3",
+   "reasons": []
+  },
+  {
+   "task": "E3",
+   "reasons": []
+  },
+  {
+   "task": "E4",
+   "reasons": []
+  },
+  {
+   "task": "E4",
+   "reasons": []
+  },
+  {
+   "task": "E4",
+   "reasons": []
+  },
+  {
+   "task": "E5",
+   "reasons": []
+  },
+  {
+   "task": "E5",
+   "reasons": []
+  },
+  {
+   "task": "E5",
+   "reasons": []
+  },
+  {
+   "task": "E6",
+   "reasons": []
+  },
+  {
+   "task": "E6",
+   "reasons": []
+  },
+  {
+   "task": "E6",
+   "reasons": []
+  },
+  {
+   "task": "E7",
+   "reasons": []
+  },
+  {
+   "task": "E7",
+   "reasons": []
+  },
+  {
+   "task": "E7",
+   "reasons": []
+  },
+  {
+   "task": "E8",
+   "reasons": []
+  },
+  {
+   "task": "E8",
+   "reasons": []
+  },
+  {
+   "task": "E8",
+   "reasons": []
+  },
+  {
+   "task": "N1",
+   "reasons": []
+  },
+  {
+   "task": "N1",
+   "reasons": []
+  },
+  {
+   "task": "N1",
+   "reasons": []
+  },
+  {
+   "task": "N2",
+   "reasons": []
+  },
+  {
+   "task": "N2",
+   "reasons": []
+  },
+  {
+   "task": "N2",
+   "reasons": []
+  },
+  {
+   "task": "N3",
+   "reasons": []
+  },
+  {
+   "task": "N3",
+   "reasons": []
+  },
+  {
+   "task": "N3",
+   "reasons": []
+  },
+  {
+   "task": "N4",
+   "reasons": []
+  },
+  {
+   "task": "N4",
+   "reasons": []
+  },
+  {
+   "task": "N4",
+   "reasons": []
+  },
+  {
+   "task": "N5",
+   "reasons": []
+  },
+  {
+   "task": "N5",
+   "reasons": []
+  },
+  {
+   "task": "N5",
+   "reasons": []
+  },
+  {
+   "task": "N6",
+   "reasons": []
+  },
+  {
+   "task": "N6",
+   "reasons": []
+  },
+  {
+   "task": "N6",
+   "reasons": []
+  },
+  {
+   "task": "N7",
+   "reasons": []
+  },
+  {
+   "task": "N7",
+   "reasons": []
+  },
+  {
+   "task": "N7",
+   "reasons": []
+  },
+  {
+   "task": "N8",
+   "reasons": []
+  },
+  {
+   "task": "N8",
+   "reasons": []
+  },
+  {
+   "task": "N8",
+   "reasons": []
+  },
+  {
+   "task": "W1",
+   "reasons": []
+  },
+  {
+   "task": "W1",
+   "reasons": []
+  },
+  {
+   "task": "W1",
+   "reasons": []
+  },
+  {
+   "task": "W2",
+   "reasons": []
+  },
+  {
+   "task": "W2",
+   "reasons": []
+  },
+  {
+   "task": "W2",
+   "reasons": []
+  },
+  {
+   "task": "W3",
+   "reasons": []
+  },
+  {
+   "task": "W3",
+   "reasons": []
+  },
+  {
+   "task": "W3",
+   "reasons": []
+  },
+  {
+   "task": "W4",
+   "reasons": []
+  },
+  {
+   "task": "W4",
+   "reasons": []
+  },
+  {
+   "task": "W4",
+   "reasons": []
+  },
+  {
+   "task": "W5",
+   "reasons": []
+  },
+  {
+   "task": "W5",
+   "reasons": []
+  },
+  {
+   "task": "W5",
+   "reasons": []
+  },
+  {
+   "task": "W6",
+   "reasons": []
+  },
+  {
+   "task": "W6",
+   "reasons": []
+  },
+  {
+   "task": "W6",
+   "reasons": []
+  },
+  {
+   "task": "W7",
+   "reasons": []
+  },
+  {
+   "task": "W7",
+   "reasons": []
+  },
+  {
+   "task": "W7",
+   "reasons": []
+  },
+  {
+   "task": "W8",
+   "reasons": []
+  },
+  {
+   "task": "W8",
+   "reasons": []
+  },
+  {
+   "task": "W8",
+   "reasons": []
+  },
+  {
+   "task": "E1",
+   "reasons": []
+  },
+  {
+   "task": "E1",
+   "reasons": []
+  },
+  {
+   "task": "E1",
+   "reasons": []
+  },
+  {
+   "task": "E2",
+   "reasons": []
+  },
+  {
+   "task": "E2",
+   "reasons": []
+  },
+  {
+   "task": "E2",
+   "reasons": []
+  },
+  {
+   "task": "E3",
+   "reasons": []
+  },
+  {
+   "task": "E3",
+   "reasons": []
+  },
+  {
+   "task": "E3",
+   "reasons": []
+  },
+  {
+   "task": "E4",
+   "reasons": []
+  },
+  {
+   "task": "E4",
+   "reasons": []
+  },
+  {
+   "task": "E4",
+   "reasons": []
+  },
+  {
+   "task": "E5",
+   "reasons": []
+  },
+  {
+   "task": "E5",
+   "reasons": []
+  },
+  {
+   "task": "E5",
+   "reasons": []
+  },
+  {
+   "task": "E6",
+   "reasons": []
+  },
+  {
+   "task": "E6",
+   "reasons": []
+  },
+  {
+   "task": "E6",
+   "reasons": []
+  },
+  {
+   "task": "E7",
+   "reasons": []
+  },
+  {
+   "task": "E7",
+   "reasons": []
+  },
+  {
+   "task": "E7",
+   "reasons": []
+  },
+  {
+   "task": "E8",
+   "reasons": []
+  },
+  {
+   "task": "E8",
+   "reasons": []
+  },
+  {
+   "task": "E8",
+   "reasons": []
+  },
+  {
+   "task": "N1",
+   "reasons": []
+  },
+  {
+   "task": "N1",
+   "reasons": []
+  },
+  {
+   "task": "N1",
+   "reasons": []
+  },
+  {
+   "task": "N2",
+   "reasons": []
+  },
+  {
+   "task": "N2",
+   "reasons": []
+  },
+  {
+   "task": "N2",
+   "reasons": []
+  },
+  {
+   "task": "N3",
+   "reasons": []
+  },
+  {
+   "task": "N3",
+   "reasons": []
+  },
+  {
+   "task": "N3",
+   "reasons": []
+  },
+  {
+   "task": "N4",
+   "reasons": []
+  },
+  {
+   "task": "N4",
+   "reasons": []
+  },
+  {
+   "task": "N4",
+   "reasons": []
+  },
+  {
+   "task": "N5",
+   "reasons": []
+  },
+  {
+   "task": "N5",
+   "reasons": []
+  },
+  {
+   "task": "N5",
+   "reasons": []
+  },
+  {
+   "task": "N6",
+   "reasons": []
+  },
+  {
+   "task": "N6",
+   "reasons": []
+  },
+  {
+   "task": "N6",
+   "reasons": []
+  },
+  {
+   "task": "N7",
+   "reasons": []
+  },
+  {
+   "task": "N7",
+   "reasons": []
+  },
+  {
+   "task": "N7",
+   "reasons": []
+  },
+  {
+   "task": "N8",
+   "reasons": []
+  },
+  {
+   "task": "N8",
+   "reasons": []
+  },
+  {
+   "task": "N8",
+   "reasons": []
+  }
+ ],
+ "totals": {
+  "round_trips": {
+   "before": {
+    "value": 0,
+    "label": "MEASURED"
+   },
+   "after": {
+    "value": 0,
+    "label": "ESTIMATE"
+   },
+   "saved": {
+    "value": 0,
+    "label": "ESTIMATE"
+   }
+  },
+  "schema_tokens_resent": {
+   "before": {
+    "value": 0,
+    "label": "ESTIMATE"
+   },
+   "after": {
+    "value": 0,
+    "label": "ESTIMATE"
+   },
+   "saved": {
+    "value": 0,
+    "label": "ESTIMATE"
+   }
+  },
+  "total_tokens": {
+   "before": {
+    "value": 0,
+    "label": "MEASURED"
+   },
+   "after": {
+    "value": 0,
+    "label": "ESTIMATE"
+   },
+   "saved": {
+    "value": 0,
+    "label": "ESTIMATE"
+   }
+  },
+  "usd": {
+   "before": {
+    "value": 0,
+    "label": "ESTIMATE"
+   },
+   "after": {
+    "value": 0,
+    "label": "ESTIMATE"
+   },
+   "saved": {
+    "value": 0,
+    "label": "ESTIMATE"
+   }
+  }
+ },
+ "notes": [
+  "Code Mode = the agent writes one program that calls the tools as an API, instead of a big tool list taken over many round trips (prior art in docs/codemode.md).",
+  "Round trips, tokens, wall time and the tools called are MEASURED from the recorded trace. The 'after' is a model (ESTIMATE): no sandbox runtime was run here.",
+  "The per-tool schema size (schema_tokens_per_tool) is an assumption. Token savings credit only the schema that stops being resent each turn; if the upstream caches the tool schemas, part of this saving is already recovered and the real gain is smaller.",
+  "Prompt-side energy has no measured joules-per-token rate here, so the energy saving is left pending, not estimated."
+ ]
+}

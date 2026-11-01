@@ -1,0 +1,17 @@
+g6-think transport: parser-split (confident=True) reasoning delta field present; close marker hidden by the parser
+g6-think easy 0.25x: 100.0% pass, 385.14 J/correct
+g6-think easy 0.5x: 100.0% pass, 742.08 J/correct
+g6-think easy 1.0x: 100.0% pass, 940.85 J/correct
+g6-think medium 0.5x: 100.0% pass, 3334.43 J/correct
+g6-think medium 1.0x: 100.0% pass, 3339.33 J/correct
+g6-think medium 1.5x: 100.0% pass, 3342.05 J/correct
+g6-think hard 0.5x: 100.0% pass, 3246.31 J/correct
+g6-think hard 1.0x: 100.0% pass, 3569.45 J/correct
+g6-think hard 2.0x: 100.0% pass, 3572.07 J/correct
+g6-think complex 1.0x: 100.0% pass, 29665.72 J/correct
+g6-think complex 1.5x: 100.0% pass, 17036.65 J/correct
+easy     keep 0.25x  0.25x      J/correct 385.136  pass 100.0% (+0.0 pts)
+medium   keep 0.5x  0.5x       J/correct 3334.433  pass 100.0% (+0.0 pts)
+hard     keep 0.5x  0.5x       J/correct 3246.307  pass 100.0% (+0.0 pts)
+complex  keep 1.5x  1.5x       J/correct 17036.65  pass 100.0% (+0.0 pts)
+wrote /tmp/results/smoke-smoke-ui1554/think/thinking_policy.json [MEASURED]
