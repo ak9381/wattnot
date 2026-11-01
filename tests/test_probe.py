@@ -380,7 +380,7 @@ def test_run_started_fields_carry_capabilities():
         ({"MODAL_ENVIRONMENT": "main"}, "workstation", "local"),
         ({"BT_MODEL_ID": "model-1"}, "workstation", "baseten"),
         ({"BT_MODEL_DEPLOYMENT_ID": "dep-1"}, "workstation", "baseten"),
-        ({"BASETEN_API_KEY": "secret"}, "workstation", "local"),
+        ({"BASETEN_METRICS_KEY": "secret"}, "workstation", "local"),
         ({}, "box.jarvislabs.ai", "jarvislabs"),
         ({}, "gpu.e2enetworks.com", "e2e"),
         ({"WATTNOT_PROVIDER": "e2e"}, "workstation", "e2e"),

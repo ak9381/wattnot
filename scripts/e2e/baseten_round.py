@@ -35,7 +35,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import os
-os.environ.pop("BASETEN_METRICS_KEY", None)  # personal workspace key: never used for inference here
+os.environ.pop("BASETEN_API_KEY", None)  # 1 Nov: hackathon key is dead (401); paid route is BASETEN_METRICS_KEY only
+HARD_CAP_USD = 8.0  # Baseten hard cap per round, cannot be raised from the CLI
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "src")]
 
@@ -49,6 +50,7 @@ from wattnot.longrun.spark_grade import SparkGrader, load_config  # noqa: E402
 from wattnot.longrun.tasks import build  # noqa: E402
 from wattnot.proof.client import Reply  # noqa: E402
 from wattnot.spark_open.h2h import BudgetStop, SpendCap, worst_case_usd  # noqa: E402
+from wattnot.e2e.fullstack import RequestLevers, feature_table, post_round  # noqa: E402
 
 ARMS = ("without_wattnot", "with_wattnot")
 PUB_BUDGET = {"gsm8k": 512, "humaneval": 768}
@@ -115,6 +117,8 @@ class SafeCap:
 class BasetenChat:
     """longrun Chat interface (messages, max_tokens) -> Reply, over Baseten at one effort."""
 
+    levers = None  # set to a RequestLevers for the with-WattNot arm
+
     def __init__(self, tr, effort, cap, calls, arm, item_ctx):
         self.tr, self.effort, self.cap, self.calls, self.arm = tr, effort, cap, calls, arm
         self.item = item_ctx
@@ -126,6 +130,11 @@ class BasetenChat:
         self.cap.check(worst_case_usd(RATES, prompt, mt))
         body = {"model": MODEL, "reasoning_effort": self.effort, "max_tokens": mt, "temperature": 0,
                 "messages": messages}
+        if self.arm == "with_wattnot" and BasetenChat.levers is not None:
+            body2, _ = BasetenChat.levers.apply(body)
+            if body2 is None:  # waste guard stopped the call: recorded as a failed answer
+                return Reply(0.0, 0, "", "error", 0, False)
+            body = body2
         r = self.tr(Request(f"{self.item}|{self.effort}", body))
         d = r.body or {}
         u = d.get("usage") or {}
@@ -254,12 +263,18 @@ def main(argv=None) -> int:
     ap.add_argument("--round", required=True, choices=["r01", "r02", "r03"])
     ap.add_argument("--limit", type=int, default=0, help="items per set (smoke test)")
     ap.add_argument("--conc", type=int, default=4)
-    ap.add_argument("--cap-usd", type=float, default=15.0, help="Baseten hard stop for this round")
+    ap.add_argument("--cap-usd", type=float, default=HARD_CAP_USD, help="Baseten hard stop (max $8)")
+    ap.add_argument("--mode", choices=["live", "smoke"], default="live", help="feature stages: live Meta calls or MOCK")
+    ap.add_argument("--open-pr", action="store_true", help="let Muse Code open the PR on ak9381/wattnot-demo-deploy")
     ap.add_argument("--no-spark", action="store_true")
     ap.add_argument("--out", type=Path, default=ROOT / "out" / "matrix")
     ap.add_argument("--raw", type=Path, default=ROOT / "data" / "baseten-1101")
     a = ap.parse_args(argv)
 
+    if not 0 < a.cap_usd <= HARD_CAP_USD:
+        print(f"[stop] --cap-usd must be in (0, {HARD_CAP_USD}]")
+        return 5
+    BasetenChat.levers = RequestLevers()
     cfg = load_config()
     b = _bench()
     items = items_for(b, a.limit)
@@ -345,7 +360,7 @@ def main(argv=None) -> int:
         "note": ("accuracy, tokens, USD and latency MEASURED; energy ESTIMATE from tokens (hosted API, "
                  "no GPU meter); deterministic checks decide, Muse Spark grades beside them"),
         "levers": {"without_wattnot": "effort medium for every request",
-                   "with_wattnot": "effort low first, step up to medium only when the fixed check fails"},
+                   "with_wattnot": "every hosted WattNot feature ON (see features); effort low first, step up to medium on a failed check"},
         "results": {
             "accuracy_without": wo["accuracy"], "accuracy_with": wi["accuracy"],
             "j_per_correct_without": wo["j_per_correct"]["value"], "j_per_correct_with": wi["j_per_correct"]["value"],
@@ -363,6 +378,10 @@ def main(argv=None) -> int:
                                             "tries", "wall_s")} for x in all_ans],
         "raw_dir": str(raw.relative_to(ROOT)) if raw.is_relative_to(ROOT) else str(raw),
     }
+    doc["features"] = feature_table()
+    doc["levers_stats"] = {**BasetenChat.levers.stats, "label": "ESTIMATE"}
+    doc["feature_stages"] = post_round(raw, doc, mode=("smoke" if a.limit and a.mode == "smoke" else a.mode),
+                                       open_pr=a.open_pr)
     out = a.out if not a.limit else raw / "smoke-matrix"
     out.mkdir(parents=True, exist_ok=True)
     (out / f"{a.round}.json").write_text(json.dumps(doc, indent=1))

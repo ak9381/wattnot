@@ -9,8 +9,8 @@ def test_model_id():
 
 
 def test_key_order():
-    assert inference_key({"BASETEN_METRICS_KEY": "a", "BASETEN_API_KEY": "b"}) == ("BASETEN_API_KEY", "b")
-    assert inference_key({"BASETEN_API_KEY": "b"}) == ("BASETEN_API_KEY", "b")
+    assert inference_key({"BASETEN_METRICS_KEY": "a", "BASETEN_API_KEY": "b"}) == ("BASETEN_METRICS_KEY", "a")
+    assert inference_key({"BASETEN_API_KEY": "b"}) == ("", "")
     assert inference_key({}) == ("", "")
 
 

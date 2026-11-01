@@ -154,7 +154,7 @@ def test_usage_endpoint_url_filters_by_key_prefix(monkeypatch):
         return R(pages.pop(0))
 
     got = au.fetch_usage("2026-10-27T06:00:00Z", "2026-10-27T06:05:00Z",
-                         env={"BASETEN_API_KEY": "abc123.SECRET"}, opener=opener)
+                         env={"BASETEN_METRICS_KEY": "abc123.SECRET"}, opener=opener)
     assert len(got) == 2 and "api_keys=abc123" in seen["urls"][0]
     assert "SECRET" not in seen["urls"][0] and "cursor=c2" in seen["urls"][1]
     assert seen["auth"] == "Bearer abc123.SECRET"
@@ -246,11 +246,11 @@ def test_cli_demo_end_to_end(tmp_path, capsys):
 
 
 def test_cli_live_without_key_fails_clearly(monkeypatch, capsys, tmp_path):
-    monkeypatch.delenv("BASETEN_API_KEY", raising=False)
+    monkeypatch.delenv("BASETEN_METRICS_KEY", raising=False)
     monkeypatch.delenv("BASETEN_METRICS_KEY", raising=False)
     assert cli.main(["cloud", "tune", "--live", "--out", str(tmp_path)]) == 2
     err = capsys.readouterr().err
-    assert "BASETEN_API_KEY is set" in err
+    assert "BASETEN_METRICS_KEY is set" in err
     assert cli.main(["cloud", "tune", "--out", str(tmp_path)]) == 2  # no source picked
 
 
@@ -262,7 +262,7 @@ def test_cli_cache_and_probe_demo_are_simulated(tmp_path, capsys):
 
 
 def test_cli_audit_without_key_says_not_available(monkeypatch, tmp_path, capsys):
-    monkeypatch.delenv("BASETEN_API_KEY", raising=False)
+    monkeypatch.delenv("BASETEN_METRICS_KEY", raising=False)
     monkeypatch.delenv("BASETEN_METRICS_KEY", raising=False)
     path, _ = demo(tmp_path)
     assert cli.main(["cloud", "audit", str(path), "--source", "meter"]) == 3
@@ -288,7 +288,7 @@ def test_no_file_reads_the_key_from_anywhere_but_the_environment():
     src = "\n".join(f.read_text() for f in (ROOT / "src/wattnot/cloud").glob("*.py"))
     assert src.count("os.environ") == 1  # one place reads the environment
     assert "--api-key" not in src and "--key " not in src
-    assert "BASETEN_API_KEY" in (ROOT / "src/wattnot/cloud/__init__.py").read_text()
+    assert "BASETEN_METRICS_KEY" in (ROOT / "src/wattnot/cloud/__init__.py").read_text()
 
 
 def test_committed_demo_fixture_is_marked_synthetic():
@@ -326,7 +326,7 @@ def test_usage_403_is_reported_with_a_hint_and_never_the_key():
         body = b'{"code": "PERMISSION_DENIED", "message": "Authorization error"}'
         raise urllib.error.HTTPError(req.full_url, 403, "no", {}, io.BytesIO(body))
 
-    env = {"BASETEN_API_KEY": "abc.SECRETSECRET"}
+    env = {"BASETEN_METRICS_KEY": "abc.SECRETSECRET"}
     with pytest.raises(CloudError) as ei:
         au.fetch_usage("2026-10-27T00:00:00Z", "2026-10-27T01:00:00Z", env=env, opener=opener)
     msg = str(ei.value)
@@ -351,7 +351,7 @@ def test_usage_403_says_when_the_metrics_key_is_the_inference_key():
     def opener(req, timeout=0):
         raise urllib.error.HTTPError(req.full_url, 403, "no", {}, io.BytesIO(b"{}"))
 
-    env = {"BASETEN_API_KEY": "abc.SECRETSECRET", "BASETEN_METRICS_KEY": "abc.SECRETSECRET"}
+    env = {"BASETEN_METRICS_KEY": "abc.SECRETSECRET", "BASETEN_METRICS_KEY": "abc.SECRETSECRET"}
     with pytest.raises(CloudError, match="same key as the inference key") as ei:
         au.fetch_usage("2026-10-27T00:00:00Z", "2026-10-27T01:00:00Z", env=env, opener=opener)
     assert "SECRETSECRET" not in str(ei.value)

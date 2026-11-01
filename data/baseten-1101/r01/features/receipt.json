@@ -1,0 +1,360 @@
+{
+  "kind": "hosted-e2e",
+  "round": "r01",
+  "model": "meta-models/muse-spark-open",
+  "features": [
+    {
+      "id": "effort_routing",
+      "name": "Reasoning-effort + cheapest-first routing (low, step up on a failed check)",
+      "status": "ON",
+      "reason": "hosted API (per-token, no GPU access)"
+    },
+    {
+      "id": "thinking_budget",
+      "name": "Thinking-budget enforcer (max_tokens per effort)",
+      "status": "ON",
+      "reason": "hosted API (per-token, no GPU access)"
+    },
+    {
+      "id": "router",
+      "name": "Backend/effort router",
+      "status": "ON",
+      "reason": "effort leg only; one hosted backend on this stage"
+    },
+    {
+      "id": "context_saver",
+      "name": "Agent saver: tool-output dedup + memory compression",
+      "status": "ON",
+      "reason": "hosted API (per-token, no GPU access)"
+    },
+    {
+      "id": "waste_guard",
+      "name": "Agent-waste proxy (repeat/no-op/cycle/overspend detectors)",
+      "status": "ON",
+      "reason": "hosted API (per-token, no GPU access)"
+    },
+    {
+      "id": "code_mode",
+      "name": "Code Mode with locked sandbox + network boundary",
+      "status": "ON",
+      "reason": "runs on the box over recorded traces"
+    },
+    {
+      "id": "prefix_cache_provider",
+      "name": "Prefix caching (provider side, reported cached tokens)",
+      "status": "ON",
+      "reason": "MEASURED cached_tokens from the API; we cannot control the cache"
+    },
+    {
+      "id": "concurrency_batching",
+      "name": "Concurrency batching (client side)",
+      "status": "ON",
+      "reason": "client concurrency only"
+    },
+    {
+      "id": "gates",
+      "name": "Noise gate, fixed answer gate, LLM judge, reasoning-leak strip",
+      "status": "ON",
+      "reason": "hosted API (per-token, no GPU access)"
+    },
+    {
+      "id": "spark_grades",
+      "name": "Muse Spark grades every answer",
+      "status": "ON",
+      "reason": "Meta API"
+    },
+    {
+      "id": "joule_slo",
+      "name": "Joule-SLO + user p99 limit",
+      "status": "ON",
+      "reason": "energy ESTIMATE from tokens"
+    },
+    {
+      "id": "eye_check",
+      "name": "Eye check: vision gate on the SYNTHETIC Muse Image set",
+      "status": "ON",
+      "reason": "Meta API"
+    },
+    {
+      "id": "sam_hotspot",
+      "name": "SAM 3.1 hotspot audit",
+      "status": "ON",
+      "reason": "Meta API"
+    },
+    {
+      "id": "hearing_check",
+      "name": "Hearing check: Muse Voice Transcribe on spoken answers",
+      "status": "ON",
+      "reason": "Meta API"
+    },
+    {
+      "id": "wonder_planner",
+      "name": "Muse Wonder planner + Wonderchart",
+      "status": "ON",
+      "reason": "Meta API"
+    },
+    {
+      "id": "spark_trace",
+      "name": "Spark 4-call trace (probe, proposal, gate, receipt)",
+      "status": "ON",
+      "reason": "Meta API"
+    },
+    {
+      "id": "approvals",
+      "name": "Approve-before-apply with risk classifier, undo",
+      "status": "ON",
+      "reason": "local"
+    },
+    {
+      "id": "musecode_pr",
+      "name": "Muse Code PR flow (ak9381/wattnot-demo-deploy only)",
+      "status": "ON",
+      "reason": "patch always built; PR opened only with --open-pr at stage time"
+    },
+    {
+      "id": "receipt",
+      "name": "Signed receipt + SCI carbon/water + joules per good answer",
+      "status": "ON",
+      "reason": "local signing key"
+    },
+    {
+      "id": "eu_report",
+      "name": "EU report",
+      "status": "ON",
+      "reason": "local"
+    },
+    {
+      "id": "label_lint",
+      "name": "Label-honesty lint",
+      "status": "ON",
+      "reason": "local"
+    },
+    {
+      "id": "spend_guard",
+      "name": "Spend guards (Baseten hard cap, Meta soft cap, ledger)",
+      "status": "ON",
+      "reason": "local"
+    },
+    {
+      "id": "power_caps",
+      "name": "Power-cap sweep + J/correct gate",
+      "status": "OFF",
+      "reason": "needs our own GPU / our own vLLM server"
+    },
+    {
+      "id": "fp8",
+      "name": "FP8 quantization keep/reject gate",
+      "status": "OFF",
+      "reason": "needs our own GPU / our own vLLM server"
+    },
+    {
+      "id": "kv_batch",
+      "name": "Batch-size + KV-cache sweep",
+      "status": "OFF",
+      "reason": "needs our own GPU / our own vLLM server"
+    },
+    {
+      "id": "vllm_prefix",
+      "name": "vLLM prefix-cache control",
+      "status": "OFF",
+      "reason": "needs our own GPU / our own vLLM server"
+    },
+    {
+      "id": "clock_sidecar",
+      "name": "Phase-aware clock sidecar, marginal-joule knee",
+      "status": "OFF",
+      "reason": "needs our own GPU / our own vLLM server"
+    },
+    {
+      "id": "moe",
+      "name": "MoE top-k / per-expert pinning",
+      "status": "OFF",
+      "reason": "needs Spark Open self-served (8x B200)"
+    },
+    {
+      "id": "measured_energy",
+      "name": "MEASURED GPU energy (NVML)",
+      "status": "OFF",
+      "reason": "hosted API exposes no power meter; energy is ESTIMATE"
+    },
+    {
+      "id": "flex",
+      "name": "Flex grid-event load shedding",
+      "status": "OFF",
+      "reason": "simulator only"
+    },
+    {
+      "id": "rekor",
+      "name": "Rekor publish",
+      "status": "OFF",
+      "reason": "only after the long run, with Akash's yes"
+    }
+  ],
+  "results": {
+    "accuracy_without": 1.0,
+    "accuracy_with": 1.0,
+    "j_per_correct_without": 506.72,
+    "j_per_correct_with": 278.59,
+    "energy_saved_pct": {
+      "value": 45.02,
+      "label": "ESTIMATE"
+    },
+    "usd_saved_pct": {
+      "value": 47.19,
+      "label": "MEASURED"
+    },
+    "per_arm": {
+      "without_wattnot": {
+        "answers": 3,
+        "correct": 3,
+        "accuracy": 1.0,
+        "per_set": {
+          "ours": {
+            "correct": 1,
+            "answers": 1,
+            "accuracy": 1.0
+          },
+          "gsm8k": {
+            "correct": 1,
+            "answers": 1,
+            "accuracy": 1.0
+          },
+          "humaneval": {
+            "correct": 1,
+            "answers": 1,
+            "accuracy": 1.0
+          }
+        },
+        "calls": 3,
+        "errors": 0,
+        "tokens": {
+          "prompt": 673,
+          "cached": 256,
+          "completion": 1411,
+          "label": "MEASURED"
+        },
+        "usd": {
+          "value": 0.006556,
+          "label": "MEASURED",
+          "method": "tokens x Baseten list price"
+        },
+        "energy_wh": {
+          "value": 0.4223,
+          "low": 0.0768,
+          "high": 0.7678,
+          "label": "ESTIMATE",
+          "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+        },
+        "j_per_correct": {
+          "value": 506.72,
+          "label": "ESTIMATE"
+        },
+        "item_latency_s": {
+          "p50": 3.6477,
+          "p99": 5.9743,
+          "label": "MEASURED"
+        },
+        "call_latency_s": {
+          "p50": 3.6455,
+          "p99": 5.9541,
+          "mean": 3.6788,
+          "label": "MEASURED"
+        },
+        "stepped_up": 0
+      },
+      "with_wattnot": {
+        "answers": 3,
+        "correct": 3,
+        "accuracy": 1.0,
+        "per_set": {
+          "ours": {
+            "correct": 1,
+            "answers": 1,
+            "accuracy": 1.0
+          },
+          "gsm8k": {
+            "correct": 1,
+            "answers": 1,
+            "accuracy": 1.0
+          },
+          "humaneval": {
+            "correct": 1,
+            "answers": 1,
+            "accuracy": 1.0
+          }
+        },
+        "calls": 3,
+        "errors": 0,
+        "tokens": {
+          "prompt": 673,
+          "cached": 384,
+          "completion": 716,
+          "label": "MEASURED"
+        },
+        "usd": {
+          "value": 0.003462,
+          "label": "MEASURED",
+          "method": "tokens x Baseten list price"
+        },
+        "energy_wh": {
+          "value": 0.2322,
+          "low": 0.0422,
+          "high": 0.4221,
+          "label": "ESTIMATE",
+          "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+        },
+        "j_per_correct": {
+          "value": 278.59,
+          "label": "ESTIMATE"
+        },
+        "item_latency_s": {
+          "p50": 2.5264,
+          "p99": 2.6649,
+          "label": "MEASURED"
+        },
+        "call_latency_s": {
+          "p50": 2.3517,
+          "p99": 2.5086,
+          "mean": 2.0957,
+          "label": "MEASURED"
+        },
+        "stepped_up": 0
+      }
+    }
+  },
+  "spend": {
+    "baseten_usd": {
+      "value": 0.010018,
+      "label": "MEASURED",
+      "method": "tokens x list price (not yet checked against the invoice)"
+    },
+    "meta_usd": {
+      "value": 0.005857,
+      "label": "MEASURED",
+      "source": "Meta spend ledger"
+    },
+    "meta_ledger_after_usd": 27.3005
+  },
+  "labels": {
+    "energy": "ESTIMATE",
+    "tokens": "MEASURED"
+  },
+  "integrity": {
+    "signer": "offline:cc61d7cb91526c69",
+    "sha256": "54656d1c751840d7421082164149bd0361a472e57f0f0dc3dd8b4c90da351da1",
+    "rekor": null
+  },
+  "sha256": "c8035523a771bc96cc5204ed4be356555fcc67c804a21a976466891afaaeb4d2",
+  "sci": {
+    "grid": {
+      "gco2e_per_kwh": 727.0,
+      "label": "ESTIMATE",
+      "region": "IN (India national grid)",
+      "year": "FY 2023-24",
+      "source": "CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included)",
+      "url": "https://cea.nic.in/cdm-co2-baseline-database/?lang=en"
+    },
+    "label": "ESTIMATE",
+    "gco2_per_arm": null
+  }
+}

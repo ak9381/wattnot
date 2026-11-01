@@ -23,7 +23,7 @@ def _reply(obj):
 
 @pytest.fixture(autouse=True)
 def _fake_key(monkeypatch):
-    monkeypatch.setenv("BASETEN_API_KEY", "test-not-a-real-key")
+    monkeypatch.setenv("BASETEN_METRICS_KEY", "test-not-a-real-key")
 
 
 def _planner(transport):

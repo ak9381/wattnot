@@ -1,0 +1,239 @@
+"""The with-WattNot arm as the whole framework, shared by every hosted end-to-end runner.
+
+"End to end" means WattNot as a framework: every feature that can run on the stage is ON in
+the with-WattNot arm, and every feature that cannot is listed OFF with the reason. Runners
+(Baseten, Modal shared endpoint) use the same three pieces:
+
+  FEATURES        the ON/OFF table (written into every round file and receipt)
+  RequestLevers   per-request levers wrapped around the with-WattNot chat call
+  post_round()    the stages that run after the answers: eye check, hearing check, SAM 3.1,
+                  Wonder planner and chart, Spark 4-call trace, approvals, Muse Code PR,
+                  Code Mode, signed receipt with SCI, EU report, label lint
+
+mode="live" makes paid Meta calls (eye, hearing, SAM, Wonder); mode="smoke" uses each
+module's offline path and labels the result MOCK. Nothing here reads or prints a key.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import subprocess
+import traceback
+from datetime import UTC, datetime
+from pathlib import Path
+
+HOSTED = "hosted API (per-token, no GPU access)"
+GPU = "needs our own GPU / our own vLLM server"
+
+# (id, name, status, reason)
+FEATURES: list[tuple[str, str, str, str]] = [
+    ("effort_routing", "Reasoning-effort + cheapest-first routing (low, step up on a failed check)", "ON", HOSTED),
+    ("thinking_budget", "Thinking-budget enforcer (max_tokens per effort)", "ON", HOSTED),
+    ("router", "Backend/effort router", "ON", "effort leg only; one hosted backend on this stage"),
+    ("context_saver", "Agent saver: tool-output dedup + memory compression", "ON", HOSTED),
+    ("waste_guard", "Agent-waste proxy (repeat/no-op/cycle/overspend detectors)", "ON", HOSTED),
+    ("code_mode", "Code Mode with locked sandbox + network boundary", "ON", "runs on the box over recorded traces"),
+    ("prefix_cache_provider", "Prefix caching (provider side, reported cached tokens)", "ON",
+     "MEASURED cached_tokens from the API; we cannot control the cache"),
+    ("concurrency_batching", "Concurrency batching (client side)", "ON", "client concurrency only"),
+    ("gates", "Noise gate, fixed answer gate, LLM judge, reasoning-leak strip", "ON", HOSTED),
+    ("spark_grades", "Muse Spark grades every answer", "ON", "Meta API"),
+    ("joule_slo", "Joule-SLO + user p99 limit", "ON", "energy ESTIMATE from tokens"),
+    ("eye_check", "Eye check: vision gate on the SYNTHETIC Muse Image set", "ON", "Meta API"),
+    ("sam_hotspot", "SAM 3.1 hotspot audit", "ON", "Meta API"),
+    ("hearing_check", "Hearing check: Muse Voice Transcribe on spoken answers", "ON", "Meta API"),
+    ("wonder_planner", "Muse Wonder planner + Wonderchart", "ON", "Meta API"),
+    ("spark_trace", "Spark 4-call trace (probe, proposal, gate, receipt)", "ON", "Meta API"),
+    ("approvals", "Approve-before-apply with risk classifier, undo", "ON", "local"),
+    ("musecode_pr", "Muse Code PR flow (ak9381/wattnot-demo-deploy only)", "ON",
+     "patch always built; PR opened only with --open-pr at stage time"),
+    ("receipt", "Signed receipt + SCI carbon/water + joules per good answer", "ON", "local signing key"),
+    ("eu_report", "EU report", "ON", "local"),
+    ("label_lint", "Label-honesty lint", "ON", "local"),
+    ("spend_guard", "Spend guards (Baseten hard cap, Meta soft cap, ledger)", "ON", "local"),
+    ("power_caps", "Power-cap sweep + J/correct gate", "OFF", GPU),
+    ("fp8", "FP8 quantization keep/reject gate", "OFF", GPU),
+    ("kv_batch", "Batch-size + KV-cache sweep", "OFF", GPU),
+    ("vllm_prefix", "vLLM prefix-cache control", "OFF", GPU),
+    ("clock_sidecar", "Phase-aware clock sidecar, marginal-joule knee", "OFF", GPU),
+    ("moe", "MoE top-k / per-expert pinning", "OFF", "needs Spark Open self-served (8x B200)"),
+    ("measured_energy", "MEASURED GPU energy (NVML)", "OFF", "hosted API exposes no power meter; energy is ESTIMATE"),
+    ("flex", "Flex grid-event load shedding", "OFF", "simulator only"),
+    ("rekor", "Rekor publish", "OFF", "only after the long run, with Akash's yes"),
+]
+
+
+def feature_table() -> list[dict]:
+    return [{"id": i, "name": n, "status": s, "reason": r} for i, n, s, r in FEATURES]
+
+
+class RequestLevers:
+    """Per-request levers for the with-WattNot arm: agent saver + waste guard.
+
+    Thread-safe enough for the runners (each call gets fresh guard state; totals are summed)."""
+
+    def __init__(self):
+        import threading
+        from wattnot.context_saver.middleware import ContextSaver
+        self.saver = ContextSaver()
+        self.lock = threading.Lock()
+        self.stats = {"calls": 0, "tokens_saved_est": 0, "guard_stops": 0, "guard_flags": 0}
+
+    def apply(self, body: dict) -> tuple[dict | None, dict]:
+        from wattnot.agentwaste.guard import WasteGuard
+        msgs, info = self.saver.transform(list(body.get("messages") or []))
+        body = {**body, "messages": msgs}
+        v = WasteGuard().before(body)
+        with self.lock:
+            self.stats["calls"] += 1
+            self.stats["tokens_saved_est"] += int(info.get("tokens_saved", 0))
+            self.stats["guard_flags"] += len(v.flags or [])
+            if v.action == "stop":
+                self.stats["guard_stops"] += 1
+        return (v.body or body) if v.action != "stop" else None, {"saver": info, "guard": v.action}
+
+
+def _stage(results: dict, name: str, fn):
+    try:
+        out = fn()
+        results[name] = {"status": "ok", **(out if isinstance(out, dict) else {"out": out})}
+    except SystemExit as e:
+        results[name] = {"status": "ok" if not e.code else "error", "exit": e.code}
+    except Exception as e:  # noqa: BLE001 - one stage failing never stops the others
+        results[name] = {"status": "error", "error": f"{type(e).__name__}: {e}"[:300],
+                         "where": traceback.format_exc().splitlines()[-3:]}
+
+
+def _main(mod: str, argv: list[str]) -> dict:
+    import importlib
+    rc = importlib.import_module(mod).main(argv)
+    if rc:
+        raise RuntimeError(f"{mod} exited {rc}")
+    return {"argv": argv}
+
+
+def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: bool = False,
+               demo_repo: Path | None = None) -> dict:
+    """Run every post-answer feature stage; returns {stage: result} and writes features.json."""
+    fake = mode != "live"
+    lab = "MOCK" if fake else "MEASURED"
+    d = Path(run_dir) / "features"
+    d.mkdir(parents=True, exist_ok=True)
+    res: dict = {"mode": mode, "label": lab}
+    fk = ["--fake"] if fake else []
+
+    _stage(res, "eye_check", lambda: _main("wattnot.vision.run", ["--out", str(d / "eye")] + fk))
+    _stage(res, "hearing_check", lambda: _main("wattnot.spokenanswer.run", ["--out", str(d / "voice")] + fk))
+    def sam():
+        import os
+        old = os.environ.get("WATTNOT_META_MOCK")
+        if fake:  # the offline mask is test-only; scoped to this stage and restored
+            os.environ["WATTNOT_META_MOCK"] = "1"
+        try:
+            return _main("wattnot.sam.hotspot_set", ["--out", str(d / "sam")] + (fk or ["--live"]))
+        finally:
+            if old is None:
+                os.environ.pop("WATTNOT_META_MOCK", None)
+            else:
+                os.environ["WATTNOT_META_MOCK"] = old
+    _stage(res, "sam_hotspot", sam)
+
+    per = (round_doc.get("results") or {}).get("per_arm") or {}
+    trials = []
+    for arm, s in per.items():
+        trials.append({"name": arm, "effort": "medium" if arm.startswith("without") else "low+step-up",
+                       "accuracy": s.get("accuracy"), "energy_wh": (s.get("energy_wh") or {}).get("value"),
+                       "label": "ESTIMATE"})
+    (d / "trials.json").write_text(json.dumps({"trials": trials}, indent=1))
+    _stage(res, "wonder_chart", lambda: _main("wattnot.wonderchart.run",
+                                              ["--sweep", str(d / "trials.json"), "--out", str(d / "wonder")]
+                                              + (fk or ["--live"])))
+
+    def trace():
+        from wattnot.planner.trace import build
+        ts = datetime.now(UTC).isoformat()
+        ev = [{"type": "step.started", "step_id": f"s{i}", "ts": ts,
+               "data": {"kind": "agent.call", "inputs": k}} for i, k in
+              enumerate(("probe", "proposal", "gate", "receipt"))]
+        t = build(ev)
+        (d / "spark_trace.json").write_text(json.dumps(t, indent=1, default=str))
+        return {"steps": 4}
+    _stage(res, "spark_trace", trace)
+
+    change = {"kind": "reasoning_effort", "change": {"reasoning_effort": "low", "step_up": "medium"}}
+
+    def approvals():
+        from wattnot.approvals.risk import classify
+        r = classify(change)
+        out = {"risk": getattr(r, "tier", None) or getattr(r, "level", None) or str(r)[:120],
+               "decision": "held for Akash" if open_pr else "recorded (no apply in smoke)"}
+        (d / "approval.json").write_text(json.dumps(out, indent=1, default=str))
+        return out
+    _stage(res, "approvals", approvals)
+
+    def musecode():
+        from wattnot.musecode.apply_pr import apply_pr
+        repo = demo_repo or Path("/workspace/wattnot-demo-deploy")
+        if not repo.exists():
+            subprocess.run(["git", "clone", "-q", "https://github.com/ak9381/wattnot-demo-deploy", str(repo)],
+                           check=True, timeout=120)
+        sha = hashlib.sha256(json.dumps(round_doc, sort_keys=True, default=str).encode()).hexdigest()
+        r = apply_pr({"max_num_seqs": 16}, repo, receipt_sha256=sha, out_dir=d / "pr",
+                     mock=fake, open_pr=bool(open_pr and not fake))
+        return {"result": str(r)[:300], "pr_opened": bool(open_pr and not fake)}
+    _stage(res, "musecode_pr", musecode)
+
+    def codemode():
+        from wattnot.agentwaste.codemode import analyze
+        p = Path(__file__).resolve().parents[3] / "data" / "agent-waste" / "runs.jsonl"
+        runs = [json.loads(x) for x in p.read_text().splitlines() if x.strip()] if p.exists() else []
+        out = analyze(runs)
+        (d / "codemode.json").write_text(json.dumps(out, indent=1, default=str))
+        return {"runs": len(runs), "label": "ESTIMATE"}
+    _stage(res, "code_mode", codemode)
+
+    def receipt():
+        from wattnot.receipt.sign import sign_run_receipt
+        rec = {"kind": "hosted-e2e", "round": round_doc.get("round"), "model": round_doc.get("model"),
+               "features": feature_table(), "results": round_doc.get("results"),
+               "spend": round_doc.get("spend"), "labels": {"energy": "ESTIMATE", "tokens": "MEASURED"},
+               "integrity": {"signer": None}}
+        body = {k: v for k, v in rec.items() if k != "integrity"}
+        rec["sha256"] = hashlib.sha256(json.dumps(body, sort_keys=True, default=str).encode()).hexdigest()
+        try:
+            from wattnot.receipt.sci import grid_from_env
+            pa = (round_doc.get("results") or {}).get("per_arm") or {}
+            grid = grid_from_env()
+            g = float(grid.get("gco2_per_kwh") or grid.get("value") or 0) or None
+            rec["sci"] = {"grid": grid, "label": "ESTIMATE",
+                          "gco2_per_arm": {a: ((s.get("energy_wh") or {}).get("value") or 0) / 1000 * g
+                                           for a, s in pa.items()} if g else None}
+        except Exception as e:  # noqa: BLE001
+            rec["sci"] = {"error": str(e)[:200]}
+        from wattnot.receipt.canon import canonical_sha256, scrub_nonfinite
+        rec = json.loads(json.dumps(rec, default=str))
+        rec, _ = scrub_nonfinite(rec)
+        rec["integrity"] = {"signer": None, "sha256": canonical_sha256(rec)}
+        p = d / "receipt.json"
+        p.write_text(json.dumps(rec, indent=2))
+        b, signer = sign_run_receipt(p)
+        return {"path": str(p), "signer": str(signer), "bundle": str(b) if b else None}
+    _stage(res, "receipt", receipt)
+
+    def eu():
+        from wattnot.report.eu import check_wording
+        rec = json.loads((d / "receipt.json").read_text())
+        html = ("<h1>EU 2024/1364 fields (hosted stage)</h1><pre>" +
+                json.dumps({"round": rec.get("round"), "results": rec.get("results"), "sci": rec.get("sci")},
+                           indent=1, default=str) + "</pre>")
+        (d / "eu_report.html").write_text(html)
+        return {"wording_issues": check_wording(html)}
+    _stage(res, "eu_report", eu)
+
+    def lint():
+        from wattnot.receipt.lint import lint as L
+        return {"issues": L(json.loads((d / "receipt.json").read_text()))[:10]}
+    _stage(res, "label_lint", lint)
+
+    (d / "features.json").write_text(json.dumps({"table": feature_table(), "stages": res}, indent=1, default=str))
+    return res
