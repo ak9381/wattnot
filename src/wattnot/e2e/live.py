@@ -248,6 +248,26 @@ def _sh(cmd, cwd=None, timeout=600):
     return r.returncode, (r.stdout or "")[-4000:], (r.stderr or "")[-2000:]
 
 
+def pr_spec(change: dict, receipt_sha: str = "") -> dict:
+    """What the Muse Code PR writes: a `hosted` block for the Baseten effort change, or a
+    `selfHosted` vLLM block for the own-GPU (Modal / H100) change, which has no reasoning effort."""
+    if "reasoning_effort" in change:
+        return {"block": "hosted", "for": "for the Baseten Model API client", "stage": "hosted e2e stage",
+                "fields": {"model": "meta-models/muse-spark-open", "reasoningEffort": change["reasoning_effort"],
+                           "stepUpEffort": change.get("step_up")},
+                "title": f"hosted: reasoning effort {change['reasoning_effort']} with step-up",
+                "body": (f"WattNot hosted e2e stage (Baseten, Muse Spark Open).\n\nChange: reasoning effort "
+                         f"`{change['reasoning_effort']}`, step up to `{change.get('step_up')}` only when the fixed "
+                         "answer check fails.")}
+    f = {"quantization": change.get("quantization", "bf16"), "maxNumSeqs": change.get("max_num_seqs"),
+         "prefixCaching": str(bool(change.get("vllm_prefix_caching"))).lower(), "router": change.get("router")}
+    return {"block": "selfHosted", "for": "for our own vLLM server", "stage": "own-GPU e2e stage", "fields": f,
+            "title": f"self-hosted vLLM: {f['quantization']}, max_num_seqs {f['maxNumSeqs']}, prefix cache {f['prefixCaching']}",
+            "body": (f"WattNot own-GPU e2e stage (our vLLM).\n\nChange: quantization `{f['quantization']}`, "
+                     f"max_num_seqs `{f['maxNumSeqs']}`, prefix caching `{f['prefixCaching']}`, router "
+                     f"`{f['router']}`; measured saving {change.get('saving_pct')}% J per correct answer.")}
+
+
 def musecode_pr(out: Path, change: dict, receipt_sha: str, *, log: EventLog | None, open_pr: bool,
                 review: dict) -> dict:
     """Muse Code edits the demo repo (values.yaml hosted block), opens a PR, we review and merge
@@ -265,12 +285,12 @@ def musecode_pr(out: Path, change: dict, receipt_sha: str, *, log: EventLog | No
     branch = f"wattnot-hosted-{receipt_sha[:8]}"
     _sh(["git", "checkout", "-q", "-B", branch], cwd=repo)
     prompt = out / "muse_prompt.txt"
+    spec = pr_spec(change, receipt_sha)
     prompt.write_text(
-        "Edit only values.yaml. Add a top-level block named `hosted` for the Baseten Model API client with:\n"
-        f"  model: meta-models/muse-spark-open\n  reasoningEffort: {change['reasoning_effort']}\n"
-        f"  stepUpEffort: {change['step_up']}   # used only when the fixed answer check fails\n"
-        f"  receiptSha256: {receipt_sha}\n"
-        "Add a one-line YAML comment above the block: 'Applied by WattNot after review (hosted e2e stage)'. "
+        f"Edit only values.yaml. Add a top-level block named `{spec['block']}` {spec['for']} with:\n"
+        + "".join(f"  {k}: {v}\n" for k, v in spec["fields"].items())
+        + f"  receiptSha256: {receipt_sha}\n"
+        f"Add a one-line YAML comment above the block: 'Applied by WattNot after review ({spec['stage']})'. "
         "Do not change anything else. Do not commit, push or run other commands.\n")
     t0 = time.time()
     rc, so, se = _sh(build_muse_command(repo, prompt, "muse-spark-1.3-contributor"), cwd=repo, timeout=900)
@@ -289,12 +309,12 @@ def musecode_pr(out: Path, change: dict, receipt_sha: str, *, log: EventLog | No
     try:
         import yaml  # type: ignore
         y = yaml.safe_load((repo / "values.yaml").read_text())
-        h = (y or {}).get("hosted") or {}
-        ok = h.get("reasoningEffort") == change["reasoning_effort"] and h.get("model") == "meta-models/muse-spark-open"
+        h = (y or {}).get(spec["block"]) or {}
+        ok = all(str(h.get(k)).lower() == str(v).lower() for k, v in spec["fields"].items())
         checks.append({"check": "values.yaml parses and hosted block matches the approved change", "ok": ok, "detail": h})
         old = subprocess.run(["git", "show", "HEAD:values.yaml"], cwd=repo, capture_output=True, text=True).stdout
         yo = yaml.safe_load(old)
-        same = {k: v for k, v in (y or {}).items() if k != "hosted"} == yo
+        same = {k: v for k, v in (y or {}).items() if k != spec["block"]} == yo
         checks.append({"check": "no other values changed", "ok": same, "detail": None})
     except Exception as e:  # noqa: BLE001
         checks.append({"check": "values.yaml parses", "ok": False, "detail": f"{type(e).__name__}"})
@@ -309,21 +329,19 @@ def musecode_pr(out: Path, change: dict, receipt_sha: str, *, log: EventLog | No
     pr_url = None
     if open_pr and files:
         _sh(["git", "add", "values.yaml"], cwd=repo)
-        _sh(["git", "commit", "-q", "-m", f"hosted: reasoning effort {change['reasoning_effort']} with step-up (receipt {receipt_sha[:8]})"], cwd=repo)
+        _sh(["git", "commit", "-q", "-m", f"{spec['title']} (receipt {receipt_sha[:8]})"], cwd=repo)
         rc, so, se = _sh(["git", "push", "-q", "-u", "origin", branch], cwd=repo)
         body = out / "pr_body.md"
-        body.write_text(f"WattNot hosted e2e stage (Baseten, Muse Spark Open).\n\nChange: reasoning effort "
-                        f"`{change['reasoning_effort']}`, step up to `{change['step_up']}` only when the fixed answer "
-                        f"check fails.\n\nReceipt sha256: `{receipt_sha}`\n\nEvidence review: {review.get('decision')} "
+        body.write_text(f"{spec['body']}\n\nReceipt sha256: `{receipt_sha}`\n\nEvidence review: {review.get('decision')} "
                         f"({review.get('why')}).\n\nEdited by Muse Code (`muse exec`).\n")
         rc, so, se = _sh(["gh", "pr", "create", "--repo", DEMO_REPO, "--head", branch, "--title",
-                          f"WattNot hosted: effort {change['reasoning_effort']} with step-up", "--body-file", str(body)])
+                          f"WattNot {spec['title']}", "--body-file", str(body)])
         pr_url = so.strip().splitlines()[-1] if rc == 0 and so.strip() else None
         rec["steps"].append({"step": "gh pr create", "rc": rc, "url": pr_url, "err": se[-300:] if rc else None})
         if pr_url:
             if clean:
                 rc2, so2, se2 = _sh(["gh", "pr", "merge", pr_url, "--merge", "--subject",
-                                     f"Merge WattNot hosted change (reviewed, receipt {receipt_sha[:8]})"])
+                                     f"Merge WattNot {spec['block']} change (reviewed, receipt {receipt_sha[:8]})"])
                 rec["steps"].append({"step": "gh pr merge", "rc": rc2, "err": se2[-300:] if rc2 else None})
                 decision = "merged" if rc2 == 0 else "approved, merge failed"
             else:

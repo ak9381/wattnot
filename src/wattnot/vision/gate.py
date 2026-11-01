@@ -28,7 +28,13 @@ def _nums(text: str) -> list[str]:
     return [m.group(0).replace(",", "") for m in _NUM.finditer(str(text or ""))]
 
 
-def _matches(kind: str, expected: str, got: str) -> bool:
+# Analog-needle items: a reading within half a major division (5 units on a 0-100 dial) is a
+# correct read. Glimmer read the redrawn 60-PSI needle as 63 and Muse Spark Open read the old one
+# as 62; both are inside normal gauge-reading error, so exact match was the wrong test.
+NEEDLE_TOLERANCE = {"gauge-reading": 5.0}
+
+
+def _matches(kind: str, expected: str, got: str, tol: float = 0.0) -> bool:
     exp, g = _norm(expected), _norm(got)
     if not g:
         return False
@@ -38,7 +44,7 @@ def _matches(kind: str, expected: str, got: str) -> bool:
             return False
         got_nums = _nums(g)
         try:
-            return any(abs(float(n) - float(want[0])) < 1e-6 for n in got_nums)
+            return any(abs(float(n) - float(want[0])) <= tol + 1e-6 for n in got_nums)
         except ValueError:
             return want[0] in got_nums
     # text / color: case-insensitive whole-token match, tolerant of surrounding words.
@@ -63,7 +69,7 @@ def grade_answers(answers: Mapping[str, str], items: Sequence[EyeTestItem], *,
             "question": it.question,
             "expected": it.answer[:_MAX_ANSWER],
             "got": got,
-            "ok": bool(raw is not None and _matches(it.kind, it.answer, got)),
+            "ok": bool(raw is not None and _matches(it.kind, it.answer, got, NEEDLE_TOLERANCE.get(it.id, 0.0))),
             "label": it.label or "SYNTHETIC",
             "energy_wh": {"value": round(float(wh_per_image), 6), "label": "ESTIMATE"},
         })

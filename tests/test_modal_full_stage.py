@@ -182,12 +182,13 @@ def test_smoke_agentwaste_block_is_shortened():
     assert all(m.block_cap(k, 4) == 300 for k in ("think", "langchain", "eye", "spoken"))
 
 
-def test_full_round_agentwaste_block_unchanged():
-    """Full round (limit == 0): reps stays 2, no case/token shortening, every block caps at 900 s."""
+def test_full_round_agentwaste_block_fits_cap():
+    """Full round (limit == 0): r04 timed out at 900 s with reps 2 over all 30 cases, so the full
+    round runs 12 cases once per arm at 768 tokens; every block still caps at 900 s."""
     m = _load(ROOT / "scripts/e2e/modal_full_inner.py")
     cmd = m.block_cmds(0, False, Path("/tmp/out"))["agentwaste"]
-    assert cmd[cmd.index("--reps") + 1] == "2"
-    assert "--max-cases" not in cmd and "--max-tokens" not in cmd
+    assert cmd[cmd.index("--reps") + 1] == "1"
+    assert cmd[cmd.index("--max-cases") + 1] == "12" and cmd[cmd.index("--max-tokens") + 1] == "768"
     assert all(m.block_cap(k, 0) == 900
                for k in ("agentwaste", "think", "langchain", "eye", "spoken"))
 
