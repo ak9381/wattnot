@@ -360,6 +360,19 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         from wattnot.dash import matrix
         return matrix.build(root=Path(os.environ.get("WATTNOT_MATRIX_ROOT", str(ROOT))))
 
+    @app.get("/api/dash/meta/spend")
+    def dash_meta_spend():
+        """Live Meta spend for the overview KPI, read from the ledger on every request (MEASURED).
+        Read-only, no model call; an unreadable ledger answers available=false, never a 500."""
+        from wattnot.meta.ledger import SpendLedger
+        try:
+            s = SpendLedger().summary()
+        except Exception:  # noqa: BLE001
+            return {"available": False, "label": "MEASURED", "source": "live Meta spend ledger"}
+        return {"available": True, "label": "MEASURED", "source": "live Meta spend ledger",
+                "total_usd": s["total_usd"], "calls": s["calls"], "cap_usd": s["cap_usd"],
+                "soft_usd": s["soft_usd"], "remaining_usd": s["remaining_usd"]}
+
     @app.post("/api/dash/ask/card")
     async def ask_card(request: Request):
         """Ask about one dashboard card: Muse Spark explains it as text (no speech).

@@ -1,4 +1,4 @@
-import { esc, badge, num, cnum, legendHtml, stageState, ledgerRows, run2Rows, verifySummary, phaseLabel, frameworkStackBadge, frameworkChip } from "./v2lib.js";
+import { esc, badge, num, cnum, metaSpend, legendHtml, stageState, ledgerRows, run2Rows, verifySummary, phaseLabel, frameworkStackBadge, frameworkChip } from "./v2lib.js";
 import { openThermal } from "./thermal.js";
 import { renderProof, wireIllus } from "./proof.js";
 import { init as initPanCanvas } from "./pancanvas.js";
@@ -89,7 +89,7 @@ function renderHomeClassic() {
     <div class="kpi glass kpi-headline" data-explain="dash.kpi.jpc" data-explain-value="−44.1%" data-explain-label="MEASURED" data-explain-source="receipts/rerun-1031/rcpt_20261031_rerun_cap325.json rerun.combined_cap_plus_prefix"><div class="v">${cnum("−44.1%", "MEASURED")}</div><div class="c"><b>energy per correct answer</b>, Muse Glimmer 30B on one H100: 325 W cap plus prefix caching vs stock (Oct 31 rerun, signed locally with the test key). The 325 W cap alone: −34.3% energy per request; 300 W rejected (p99 +18%, limit 10%). ${badge("MEASURED")}</div></div>
     <div class="kpi glass"><div class="v">${cnum("+9.7%", "MEASURED")}</div><div class="c">slowest 1% (p99) at 325 W in the Oct 31 rerun, inside the 10% limit (earlier Llama run: +7.7% at 350 W) ${badge("MEASURED")}</div></div>
     <div class="kpi glass"><div class="v">${cnum("67%", "MEASURED")}</div><div class="c">fewer agent tokens when a harness's stop rule misses ${badge("MEASURED")}</div></div>
-    <div class="kpi glass"><div class="v">${cnum(`$${num(led.total_usd)}`, "MEASURED")}</div><div class="c">Meta API spend recorded in this bundle, ${num(led.calls, 0)} calls ${badge("MEASURED")}</div></div>
+    ${(() => { const m = metaSpend(S.metaLive, led); return `<div class="kpi glass"><div class="v">${cnum(`$${num(m.usd)}`, m.label)}</div><div class="c">${m.note} ${badge(m.label)}</div></div>`; })()}
   </div>
   ${legendHtml()}
   ${ctrl()}
@@ -1490,13 +1490,13 @@ function renderLearn() {
 
 // ---------- boot ----------
 (async () => {
-  const [opts, story, partners, run2, runs, frameworks] = await Promise.all([fetch("/api/dash/v2/options").then((r) => (r.ok ? r.json() : null)).catch(() => null), fetch("/api/dash/story").then((r) => r.json()).catch(() => null), fetch("/api/dash/partners").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/run2").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/runs").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/frameworks").then((r) => (r.ok ? r.json() : null)).catch(() => null)]);
+  const [opts, story, partners, run2, runs, frameworks, metaLive] = await Promise.all([fetch("/api/dash/v2/options").then((r) => (r.ok ? r.json() : null)).catch(() => null), fetch("/api/dash/story").then((r) => r.json()).catch(() => null), fetch("/api/dash/partners").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/run2").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/runs").then((r) => r.json()).catch(() => null), fetch("/api/dash/v2/frameworks").then((r) => (r.ok ? r.json() : null)).catch(() => null), fetch("/api/dash/meta/spend").then((r) => (r.ok ? r.json() : null)).catch(() => null)]);
   if (!opts || !opts.options) {
     const host = $("#pHome") || document.body;
     host.innerHTML = '<div class="intro"><div><h1>Dashboard unavailable</h1><p>Could not load configuration options. Please reload the page to retry.</p></div></div>';
     return;
   }
-  S.opts = opts; S.story = story; S.partners = partners; S.run2 = run2; S.runs = runs; S.frameworks = frameworks; S.pipeline = story?.config?.pipeline || [];
+  S.opts = opts; S.story = story; S.partners = partners; S.run2 = run2; S.runs = runs; S.frameworks = frameworks; S.metaLive = metaLive; S.pipeline = story?.config?.pipeline || [];
   S.radRecs ??= {};
   const firstRun = runs?.runs?.[0]?.id;
   if (firstRun) S.radRecs[firstRun] = await fetch(`/api/dash/v2/runs/${encodeURIComponent(firstRun)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);

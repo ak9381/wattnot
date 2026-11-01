@@ -266,10 +266,10 @@ _REF = {
 
 # ---- measurement ------------------------------------------------------------------------------
 
-def run_tier(chat, tasks: list[Task], conc: int) -> list[Graded]:
+def run_tier(chat, tasks: list[Task], conc: int, spark=None) -> list[Graded]:
     conc = max(1, conc)
     with ThreadPoolExecutor(max_workers=conc) as ex:
-        return list(ex.map(lambda t: grade_one(t, chat), tasks))
+        return list(ex.map(lambda t: grade_one(t, chat, spark), tasks))
 
 
 def p99(xs: list[float]) -> float:
@@ -280,13 +280,15 @@ def p99(xs: list[float]) -> float:
 
 
 def measure_arm(nvml, h, chat, tasks: list[Task], arm: str, limit_w: int,
-                conc_scale: float = 1.0) -> dict:
+                conc_scale: float = 1.0, spark=None) -> dict:
     nvml.set_power_limit_mw(h, limit_w * 1000)
+    if spark is not None:
+        spark.arm = "without_wattnot" if arm == "stock" else "with_wattnot"
     out = {"arm": arm, "limit_w": limit_w, "tiers": {}}
     for tier in TIERS:
         ts = [t for t in tasks if t.tier == tier]
         e0, t0 = nvml.total_energy_mj(h), time.perf_counter()
-        g = run_tier(chat, ts, int(CONCURRENCY[tier] * conc_scale))
+        g = run_tier(chat, ts, int(CONCURRENCY[tier] * conc_scale), spark)
         e1, wall = nvml.total_energy_mj(h), time.perf_counter() - t0
         if e1 <= e0:   # counter reset (driver reset / Xid): fail, never record a bogus number
             raise RuntimeError(f"energy counter did not advance in tier {tier} ({e0} -> {e1} mJ)")
@@ -299,11 +301,13 @@ def measure_arm(nvml, h, chat, tasks: list[Task], arm: str, limit_w: int,
                               "truncated": sum(x.truncated for x in g),
                               "fails": [x.id for x in g if not x.ok][:20],
                               "agent": [x.detail for x in g][:3] if tier == "complex" else None}
+        if spark is not None:   # Spark beside the deterministic check; `pass` above is deterministic
+            out["tiers"][tier]["spark"] = [x.detail.get("spark") for x in g]
     return out
 
 
 def run_block(nvml, h, chat, tasks: list[Task], cap_w: int, *, reps: int = 1,
-              clock=None, log=print, conc_scale: float = 1.0) -> dict:
+              clock=None, log=print, conc_scale: float = 1.0, spark=None) -> dict:
     """ABBA order per rep (stock, cap, cap, stock) so drift hits both arms the same."""
     stock_w = nvml.power_default_limit_mw(h) // 1000
     arms = []
@@ -313,13 +317,16 @@ def run_block(nvml, h, chat, tasks: list[Task], cap_w: int, *, reps: int = 1,
                 if clock is not None:
                     clock.reset() if arm == "stock" else clock.apply_current()
                 arms.append(measure_arm(nvml, h, chat, tasks, arm, stock_w if arm == "stock"
-                                        else cap_w, conc_scale))
+                                        else cap_w, conc_scale, spark))
                 log(f"tiers rep {r + 1} {arm} done")
     finally:
         nvml.set_power_limit_mw(h, stock_w * 1000)
         if clock is not None:
             clock.reset()
-    return {"cap_w": cap_w, "stock_w": stock_w, "arms": arms}
+    out = {"cap_w": cap_w, "stock_w": stock_w, "arms": arms}
+    if spark is not None:
+        out["spark_grade"] = spark.summary()
+    return out
 
 
 def summarize(block: dict, *, gpu_usd_per_h: float = GPU_USD_PER_H, mock: bool = False) -> dict:
@@ -475,8 +482,15 @@ def main(argv=None) -> int:
         prof = a.clock
         clock.apply_current = lambda: clock.apply(prof)  # type: ignore[attr-defined]
     a.out.mkdir(parents=True, exist_ok=True)
+    from .spark_grade import SparkGrader, grader_from_env
+    spark = grader_from_env()
+    if spark is not None and a.fake and not spark.mock:   # a fake run never makes a paid call
+        spark = SparkGrader(mock=True, round_id=spark.round_id)
     block = run_block(nvml, h, chat, tasks, a.cap, reps=a.reps, clock=clock,
-                      conc_scale=cfg["concurrency_scale"])
+                      conc_scale=cfg["concurrency_scale"], spark=spark)
+    if spark is not None:
+        (a.out / "spark_grades.json").write_text(json.dumps(
+            {"summary": spark.summary(), "answers": spark.records}, indent=1))
     block["model"] = cfg
     if clock is not None:
         block["clock"] = {"profile": a.clock, "applied": clock.available, "reason": clock.reason}
