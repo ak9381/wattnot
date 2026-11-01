@@ -1,0 +1,108 @@
+✓ Initialized. View run at 
+https://modal.com/apps/akashkraju218/main/ap-zpfcawuCTzZhiyzf2Oxtqe
+✓ Created objects.
+├── ✓ Uploaded /tmp/wn-merge/modal/full_stage.py
+├── ✓ Uploaded pyproject.toml
+├── ✓ Uploaded /tmp/wn-merge/data/public_bench
+├── ✓ Uploaded /tmp/wn-merge/workloads
+├── ✓ Uploaded /tmp/wn-merge/examples
+├── ✓ Uploaded /tmp/wn-merge/data/voice
+├── ✓ Uploaded /tmp/wn-merge/data/vision
+├── ✓ Uploaded /tmp/wn-merge/scripts
+├── ✓ Uploaded /tmp/wn-merge/src
+├── ✓ Created Function gpu_round.
+└── ✓ Created Function gpu_smoke.
+Stopping app - uncaught exception raised locally: ConnectionError('Deadline exceeded').
+[modal-client] 2026-11-01T16:32:30+0000 Detected 1 background thread(s) [Thread-2] still running after container exit. This will prevent runner shutdown for up to 30 seconds.
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /home/box/.local/lib/python3.13/site-packages/grpclib/client.py:369 in       │
+│ recv_initial_metadata                                                        │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/grpclib/protocol.py:342 in     │
+│ recv_headers                                                                 │
+│                                                                              │
+│ /usr/lib/python3.13/asyncio/locks.py:213 in wait                             │
+│                                                                              │
+│   212 │   │   try:                                                           │
+│ ❱ 213 │   │   │   await fut                                                  │
+│   214 │   │   │   return True                                                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+CancelledError
+
+During handling of the above exception, another exception occurred:
+
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /home/box/.local/lib/python3.13/site-packages/modal/_grpc_client.py:164 in   │
+│ direct                                                                       │
+│                                                                              │
+│   163 │   │   self.wrapped_method.channel = await self.client._get_channel(s │
+│ ❱ 164 │   │   return await self.client._call_unary(self.wrapped_method, req, │
+│   165                                                                        │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/modal/client.py:563 in         │
+│ _call_unary                                                                  │
+│                                                                              │
+│   562 │   │   coro = grpclib_method(request, timeout=timeout, metadata=metad │
+│ ❱ 563 │   │   return await self._call_safely(coro, grpclib_method.name)      │
+│   564                                                                        │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/modal/client.py:519 in         │
+│ _call_safely                                                                 │
+│                                                                              │
+│   518 │   │   │   │   request_task.set_name(readable_method)                 │
+│ ❱ 519 │   │   │   │   return await request_task                              │
+│   520 │   │   │   except asyncio.CancelledError:                             │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/grpclib/client.py:913 in       │
+│ __call__                                                                     │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/grpclib/client.py:426 in       │
+│ recv_message                                                                 │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/grpclib/client.py:368 in       │
+│ recv_initial_metadata                                                        │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/grpclib/utils.py:70 in         │
+│ __exit__                                                                     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+TimeoutError: Deadline exceeded
+
+During handling of the above exception, another exception occurred:
+
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /tmp/wn-merge/modal/full_stage.py:204 in round_                              │
+│                                                                              │
+│   203 │   │   │   │   try:                                                   │
+│ ❱ 204 │   │   │   │   │   data = call.get(timeout=0)                         │
+│   205 │   │   │   │   except (TimeoutError, modal.exception.TimeoutError):   │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/modal/_object.py:49 in wrapped │
+│                                                                              │
+│    48 │   │   await self.hydrate()                                           │
+│ ❱  49 │   │   return await method(self, *args, **kwargs)                     │
+│    50                                                                        │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/modal/_functions.py:2424 in    │
+│ get                                                                          │
+│                                                                              │
+│   2423 │   │   """                                                           │
+│ ❱ 2424 │   │   return await self._invocation().poll_function(timeout=timeout │
+│   2425                                                                       │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/modal/_functions.py:339 in     │
+│ poll_function                                                                │
+│                                                                              │
+│    338 │   │   """                                                           │
+│ ❱  339 │   │   response: api_pb2.FunctionGetOutputsResponse = await self.pop │
+│    340 │   │   │   index=index,                                              │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/modal/_functions.py:265 in     │
+│ pop_function_call_outputs                                                    │
+│                                                                              │
+│    264 │   │   │   )                                                         │
+│ ❱  265 │   │   │   response: api_pb2.FunctionGetOutputsResponse = await self │
+│    266 │   │   │   │   request,                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ConnectionError: Deadline exceeded
+[teardown] {"stopped": ["ap-zpfcawuCTzZhiyzf2Oxtqe", "ap-zpfcawuCTzZhiyzf2Oxtqe", "ap-zpfcawuCTzZhiyzf2Oxtqe"], "still_running": [], "verified_empty": true, "checked_at": "2026-11-01T16:33:22.425486+00:00"}
+[fail] modal run rc=1

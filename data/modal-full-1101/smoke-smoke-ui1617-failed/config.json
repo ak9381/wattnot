@@ -1,0 +1,42 @@
+{
+ "config": {
+  "name": "A100 re-smoke 2: agent tool calling + LangChain",
+  "description": "Confirm agent-waste and LangChain fixes on GPU, hard cap $1.50",
+  "provider": "modal_a100",
+  "model": "glimmer-30b",
+  "datasets": [
+   "ours",
+   "gsm8k",
+   "humaneval"
+  ],
+  "p99_pct": 10.0,
+  "approvals": "hold_high_risk",
+  "open_pr": false,
+  "rounds": 1,
+  "smoke": {
+   "limit": 1,
+   "spark": false
+  },
+  "caps": {
+   "modal_smoke_usd": 1.5,
+   "baseten_round_usd": 8.0,
+   "modal_round_usd": 10.0,
+   "modal_stage_usd": 60.0,
+   "meta_hard_usd": 120.0,
+   "meta_soft_usd": 100.0
+  }
+ },
+ "mode": "live",
+ "label": "MEASURED",
+ "cmd": [
+  "/tmp/wn-venv/bin/python3",
+  "scripts/e2e/modal_full_round.py",
+  "--round",
+  "smoke-ui1617",
+  "--limit",
+  "1",
+  "--no-spark",
+  "--events",
+  "/tmp/wn-merge/out/launch/20261101-161738-ef32/events.jsonl"
+ ]
+}
