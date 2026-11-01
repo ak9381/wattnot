@@ -110,8 +110,8 @@ NV = [None]
 
 
 def FP8_KIND(gpu: str) -> str:
-    """A100 has no native FP8 math: vLLM falls back to Marlin weight-only FP8 (memory saving, not energy)."""
-    return ("memory-only (A100: no native FP8, Marlin weight-only; not an energy feature)"
+    """Factual note only; keep/reject is decided by the MEASURED energy + accuracy gate."""
+    return ("weight-only FP8 (A100 has no native FP8 compute; vLLM uses the Marlin kernel)"
             if "A100" in (gpu or "") else "native FP8 compute")
 
 
@@ -195,6 +195,7 @@ class Server:
         else:
             argv = ["vllm", "serve", self.model_path, "--served-model-name", MODEL,
                     "--reasoning-parser", "muse_glimmer", "--max-model-len", "8192",
+                    "--enable-auto-tool-choice", "--tool-call-parser", "muse_glimmer",   # agent blocks send tools
                     "--gpu-memory-utilization", "0.90", "--max-num-seqs", str(max_seqs),
                     "--limit-mm-per-prompt.image", "1", "--port", str(PORT),
                     "--enable-prefix-caching" if prefix else "--no-enable-prefix-caching"]
