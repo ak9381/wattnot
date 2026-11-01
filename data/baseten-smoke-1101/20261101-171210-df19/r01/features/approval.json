@@ -1,0 +1,28 @@
+{
+ "held_change": {
+  "kind": "reasoning_effort",
+  "change": {
+   "reasoning_effort": "low",
+   "step_up": "medium"
+  }
+ },
+ "risk": "high",
+ "reasons": [
+  "unknown kind 'reasoning_effort'; a person decides"
+ ],
+ "evidence": {
+  "accuracy_without": 0.6667,
+  "accuracy_with": 1.0,
+  "p99_without": 9.307,
+  "p99_with": 3.8144,
+  "spark_agreement": null,
+  "j_per_correct_without": 2312.47,
+  "j_per_correct_with": 342.06,
+  "eye_check": null,
+  "hearing_check": null
+ },
+ "review": {
+  "decision": "recorded (no apply in smoke)",
+  "auto_approve": false
+ }
+}

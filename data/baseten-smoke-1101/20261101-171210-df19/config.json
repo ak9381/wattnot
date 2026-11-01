@@ -1,0 +1,51 @@
+{
+ "config": {
+  "name": "bt-smoke-ui",
+  "description": "",
+  "provider": "baseten",
+  "model": "spark-open",
+  "datasets": [
+   "ours",
+   "gsm8k",
+   "humaneval"
+  ],
+  "p99_pct": 10.0,
+  "approvals": "hold_high_risk",
+  "open_pr": false,
+  "rounds": 1,
+  "smoke": {
+   "limit": 2,
+   "spark": false
+  },
+  "caps": {
+   "modal_smoke_usd": 1.5,
+   "baseten_smoke_usd": 1.0,
+   "baseten_round_usd": 8.0,
+   "modal_round_usd": 10.0,
+   "modal_stage_usd": 60.0,
+   "meta_hard_usd": 120.0,
+   "meta_soft_usd": 100.0
+  }
+ },
+ "mode": "live",
+ "label": "MEASURED",
+ "cmd": [
+  "/tmp/wn-venv/bin/python3",
+  "scripts/e2e/baseten_round.py",
+  "--round",
+  "r01",
+  "--limit",
+  "2",
+  "--no-spark",
+  "--mode",
+  "smoke",
+  "--cap-usd",
+  "1.00",
+  "--stage-budget-s",
+  "900",
+  "--raw",
+  "/tmp/wn-merge/out/launch/20261101-171210-df19",
+  "--events-dir",
+  "/tmp/wn-merge/out/launch/20261101-171210-df19"
+ ]
+}

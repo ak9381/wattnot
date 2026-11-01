@@ -1,0 +1,12 @@
+[r01] 6 items x 2 arms, Meta ledger $27.3225 (MEASURED)
+[r01] without_wattnot done in 9s: 4/6 correct
+[watch] billing after without_wattnot: {'at': '2026-11-01T17:14:22.864512+00:00', 'endpoint': '/v1/billing/model_apis', 'status': 200, 'refusal': False, 'words': [], 'day': '2026-11-01', 'day_subtotal_usd': 2.7757462, 'label': 'MEASURED'}
+[r01] with_wattnot done in 5s: 6/6 correct
+[watch] billing after with_wattnot: {'at': '2026-11-01T17:16:30.670461+00:00', 'endpoint': '/v1/billing/model_apis', 'status': 200, 'refusal': False, 'words': [], 'day': '2026-11-01', 'day_subtotal_usd': 2.82112895, 'label': 'MEASURED'}
+[usage] {"status": "ok", "worst_diff_pct": 0.0, "match": true}
+eye test [fake]: all 10 eye-test images read correctly
+spoken answer [fake]: all 20 spoken answers correct
+  energy [MOCK]: 1260.0 J/correct spoken, 210.0 J/token, 42.0 J/correct answer
+hotspot set [fake] (SYNTHETIC tests): SAM 3.1 found all 6 SYNTHETIC hotspots
+wonder chart [fake · fallback]: next = 375W/base — offline fallback: MOCK: selected next candidate 375W (base)
+{"round": "r01", "status": "done", "acc": [0.6667, 1.0], "wh": [2.5694, 0.5701], "p50": [3.7055, 3.1321], "baseten_usd": 0.0544, "meta_usd": 0.0, "agree": null, "errors": 0, "stop": null}
