@@ -192,7 +192,8 @@ export class ArchPage {
   }
   setFilter(f) {
     this.filter = f === "all" ? null : f; this.view.setFilter(this.filter);
-    this.host.querySelectorAll("#afil button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.f === f));
+    // #afil may be relocated into the legend drawer (graphbar.js), so query the document.
+    document.querySelectorAll("#afil button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.f === f));
     $("#mstrip", this.host).hidden = f !== "meta";
     if (f === "meta") $("#acap", this.host).innerHTML = `<b>Meta did this:</b> ${this.d.nodes.filter((n) => n.partners.includes("meta")).map((n) => `${esc(n.title)} (${esc(n.meta_product)})`).join(" · ")}`;
     else if (f && f !== "all") $("#acap", this.host).innerHTML = `Highlighting every step ${esc(this.d.partners[f].name)} did real work in.`;
@@ -337,6 +338,7 @@ export class ArchPage {
     es.addEventListener("event", (m) => {
       let ev; try { ev = JSON.parse(m.data); } catch { return; }
       const d = ev.data || {};
+      window.dispatchEvent(new CustomEvent("wn:archevent", { detail: ev })); // let the toolbar badges follow the real events
       if (d.kind === "room_scan") this.roomScan(d);                       // a room_scan payload: draw it with the room node
       const sc = sparkCallFrom(ev); if (sc) this.sparkTrace(sc);
       if (d.model) this.metaStrip(ev);                                   // any Meta model call: tally it in the strip         // Muse Spark operator call: show it in the trace panel
