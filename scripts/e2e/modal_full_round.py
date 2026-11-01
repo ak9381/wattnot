@@ -5,7 +5,7 @@ flow: Wonder, Spark 4-call trace, approvals, EU report, label lint, Muse Code pa
     python scripts/e2e/modal_full_round.py --round r04 [--limit 1] [--live-meta] [--live-pr]
     python scripts/e2e/modal_full_round.py --round r04 --fake      # MOCK, no Modal, $0
 
-Guards: WATTNOT_MODAL_GO=1 for any GPU call; the $40 stage cap in data/modal-full-1101/stage_spend.json
+Guards: WATTNOT_MODAL_GO=1 for any GPU call; the $60 stage cap in data/modal-full-1101/stage_spend.json
 (refuses when spent + this round's worst case > cap); Meta soft cap $100 before Spark grades;
 `modal app list` checked after, and any wattnot-full-stage app is stopped.
 Muse Code writes the patch every round; --live-pr also opens the PR, only on
@@ -40,7 +40,7 @@ def _load_stage():
 full_stage = _load_stage()
 
 DATA = ROOT / "data" / "modal-full-1101"
-STAGE_CAP_USD = 40.0
+STAGE_CAP_USD = 60.0
 SOFT_META_USD = 100.0
 SPEND = DATA / "stage_spend.json"
 KEY = ROOT / "verifier" / "samples" / "test-key.pem"
@@ -216,13 +216,18 @@ def fresh_demo_clone(tag: str) -> Path:
     return d
 
 
-def verify_change(inner: dict, spark: dict, receipt: Path) -> dict:
+def verify_change(inner: dict, spark: dict, receipt: Path, no_spark: bool = False) -> dict:
     """Approve-before-apply: verify the held change against every gate. No auto-approve."""
     from wattnot.receipt.build import verify_hash
     S = inner["steps"]
     lim = S.get("limits") or {}
     qg = lim.get("quality_gate") or {}
     agree = spark.get("agreement")
+    spark_off = no_spark or spark.get("stopped") == "not run"   # Spark deliberately not run this round
+    spark_chk = ({"ok": None, "skipped": "Spark grading off for this run", "value": agree,
+                  "rule": "Spark agrees with the fixed checks on >= 90% of answers"} if spark_off
+                 else {"ok": agree is not None and agree >= 0.90, "value": agree,
+                       "rule": "Spark agrees with the fixed checks on >= 90% of answers"})
     checks = {
         "accuracy_vs_baseline": {"ok": bool(qg.get("accuracy_ok")), "drop_pts": qg.get("acc_drop_pts"),
                                  "rule": "accuracy may drop at most 2 points"},
@@ -230,16 +235,22 @@ def verify_change(inner: dict, spark: dict, receipt: Path) -> dict:
                 "without_s": S["without"]["item_latency_s"]["p99"], "with_s": S["with"]["item_latency_s"]["p99"]},
         "joule_slo": {"ok": bool(lim.get("joule_slo_ok")), "rule": "J/correct with <= without",
                       "without": S["without"]["j_per_correct"]["value"], "with": S["with"]["j_per_correct"]["value"]},
-        "spark_agreement": {"ok": agree is not None and agree >= 0.90, "value": agree,
-                            "rule": "Spark agrees with the fixed checks on >= 90% of answers"},
+        "spark_agreement": spark_chk,
         "fp8_gate": {"ok": (not (S.get("fp8") or {}).get("kept")) or bool(((S.get("fp8") or {}).get("gate") or {}).get("keep")),
                      "rule": "FP8 only if its own gate kept it"},
         "receipt_hash": {"ok": bool(verify_hash(json.loads(receipt.read_text()))[0]), "rule": "receipt re-seals"},
         "no_fatal": {"ok": not inner.get("fatal"), "value": inner.get("fatal")},
     }
-    ok = all(c["ok"] for c in checks.values())
-    return {"decision": "approved" if ok else "rejected", "auto_approve": False, "checks": checks,
-            "failed_checks": [k for k, c in checks.items() if not c["ok"]],
+    failed_checks = [k for k, c in checks.items() if c["ok"] is False]
+    skipped_checks = [k for k, c in checks.items() if c["ok"] is None]
+    if failed_checks:
+        decision = "rejected"
+    elif skipped_checks:
+        decision = "held"       # a check was skipped: needs human review, not auto-approved
+    else:
+        decision = "approved"
+    return {"decision": decision, "auto_approve": False, "checks": checks,
+            "failed_checks": failed_checks, "skipped_checks": skipped_checks,
             "at": datetime.now(UTC).isoformat(), "by": "runner verification (rules above), recorded as evidence"}
 
 
@@ -286,6 +297,9 @@ def main(argv=None) -> int:
             return 3
         cap_s = full_stage.SMOKE_CAP_S if a.limit else full_stage.ROUND_CAP_S
         worst = cap_s / 3600 * full_stage.GPU_USD_H
+        if worst > full_stage.ROUND_HARD_USD:
+            print(f"[stop] round worst ${worst:.2f} > hard ${full_stage.ROUND_HARD_USD:.0f} cap")
+            return 4
         if app_running() != []:
             print("[stop] a wattnot-full-stage app is already running (or `modal app list` failed); one job at a time")
             return 4
@@ -394,9 +408,9 @@ def main(argv=None) -> int:
     # shared with-WattNot pipeline (same wiring as the Baseten stage), GPU feature table
     from wattnot.e2e.fullstack import gpu_feature_table, post_round
     failed = dict(inner.get("failed") or {})
-    if not a.no_spark and spark.get("agreement") is None:
+    if not a.no_spark and spark.get("agreement") is None and spark.get("stopped") != "not run":
         failed["spark_grades"] = f"Spark grading did not complete: {spark.get('stopped')}"
-    decision = verify_change(inner, spark, receipt) if receipt else {
+    decision = verify_change(inner, spark, receipt, a.no_spark) if receipt else {
         "decision": "rejected", "auto_approve": False, "failed_checks": ["receipt_hash"], "checks": {},
         "at": datetime.now(UTC).isoformat()}
     (rdir / "approval_evidence.json").write_text(json.dumps(decision, indent=1))
@@ -406,7 +420,7 @@ def main(argv=None) -> int:
                                                                     if decision["failed_checks"] else ""))
     S0 = inner["steps"]
     change = {"vllm_prefix_caching": True,
-              "quantization": "fp8" if (S0.get("fp8") or {}).get("kept") else "bf16",
+              "quantization": "fp8" if (S0.get("fp8") or {}).get("applied") else "bf16",
               "max_num_seqs": S0["with_server"]["max_num_seqs"], "router": "cheapest-first",
               "thinking_budget": "per-tier, two-phase enforcer",
               "saving_pct": doc["results"]["j_per_correct_saved_pct"]["value"],

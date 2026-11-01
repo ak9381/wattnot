@@ -47,8 +47,71 @@ def test_paid_round_needs_go_and_stage_cap(monkeypatch):
     monkeypatch.delenv("WATTNOT_MODAL_GO", raising=False)
     assert m.main(["--round", "rtest"]) == 3
     fs = m.full_stage
-    assert fs.ROUND_CAP_S / 3600 * fs.GPU_USD_H <= 40
+    worst = fs.ROUND_CAP_S / 3600 * fs.GPU_USD_H
+    assert fs.ROUND_HARD_USD == 10.0
+    assert worst <= fs.ROUND_HARD_USD and worst <= 10          # a single round's worst case <= $10
+    assert m.STAGE_CAP_USD == 60.0                             # stage cap raised to $60
     assert fs.SMOKE_CAP_S / 3600 * fs.GPU_USD_H < 1.0
+
+
+def test_blocks_run_before_fp8(tmp_path):
+    """New order: GPU blocks (think first) run before the FP8 gate; FP8 is a BF16-kept candidate."""
+    out = tmp_path / "r"
+    subprocess.run([sys.executable, "scripts/e2e/modal_full_inner.py", "--fake", "--limit", "1", "--out", str(out)],
+                   cwd=ROOT, check=True, timeout=600)
+    S = json.loads((out / "inner.json").read_text())["steps"]
+    keys = list(S)
+    assert keys.index("blocks") < keys.index("fp8")            # blocks step recorded before fp8
+    assert list(S["blocks"]) == ["think", "agentwaste", "langchain", "eye", "spoken"]
+    assert S["with_server"]["fp8"] is False                    # the with arm this round stays BF16
+    assert S["fp8"]["applied"] is False                        # FP8 is a candidate only, never applied
+
+
+def test_fp8_skipped_low_time_is_not_a_failure(tmp_path):
+    """A deadline that leaves < 8 min at FP8 time records a skip (time, not a failure)."""
+    out = tmp_path / "r"
+    subprocess.run([sys.executable, "scripts/e2e/modal_full_inner.py", "--fake", "--limit", "1",
+                    "--deadline-s", "470", "--out", str(out)], cwd=ROOT, check=True, timeout=600)
+    d = json.loads((out / "inner.json").read_text())
+    fp8 = d["steps"]["fp8"]
+    assert fp8["kept"] is False and "skipped" in fp8
+    assert "fp8" not in d["failed"] and not d.get("fatal")
+
+
+def test_server_start_fail_fast_message(tmp_path, monkeypatch):
+    """Too little container time -> fail fast before launching vLLM, with the time-left message."""
+    import pytest
+    m = _load(ROOT / "scripts/e2e/modal_full_inner.py")
+    monkeypatch.setattr(m, "left", lambda: 300.0)              # wait = min(900, 120) = 120 < 240
+    srv = m.Server("/no/such/model", tmp_path, fake=False)
+    with pytest.raises(RuntimeError, match=r"not enough container time to start vLLM .*120s left, need >=240s"):
+        srv.start(fp8=False, prefix=False, max_seqs=64)
+
+
+def test_verify_change_no_spark_is_held(tmp_path, monkeypatch):
+    """No-spark run: spark_agreement is skipped (not failed) and the decision is 'held', not 'rejected'."""
+    import types
+    build = types.ModuleType("wattnot.receipt.build")   # stub so the test needs no jsonschema/receipt stack
+    build.verify_hash = lambda r: (True, "")
+    rec = types.ModuleType("wattnot.receipt")
+    rec.build = build
+    monkeypatch.setitem(sys.modules, "wattnot.receipt", rec)
+    monkeypatch.setitem(sys.modules, "wattnot.receipt.build", build)
+    m = _load(ROOT / "scripts/e2e/modal_full_round.py")
+    inner = {"fatal": None, "steps": {
+        "without": {"item_latency_s": {"p99": 1.0}, "j_per_correct": {"value": 100}},
+        "with": {"item_latency_s": {"p99": 1.0}, "j_per_correct": {"value": 80}},
+        "limits": {"p99_ok": True, "joule_slo_ok": True, "quality_gate": {"accuracy_ok": True, "acc_drop_pts": 0.0}},
+        "fp8": {"kept": False}}}
+    receipt = tmp_path / "r.json"
+    receipt.write_text("{}")
+    d = m.verify_change(inner, {"label": None, "stopped": "not run"}, receipt, no_spark=True)
+    assert d["decision"] == "held"
+    assert "spark_agreement" not in d["failed_checks"]
+    assert "spark_agreement" in d["skipped_checks"]
+    # Spark meant to run but failed stays a rejection.
+    d2 = m.verify_change(inner, {"agreement": None, "stopped": "error: boom"}, receipt, no_spark=False)
+    assert d2["decision"] == "rejected" and "spark_agreement" in d2["failed_checks"]
 
 
 def test_no_metrics_key_anywhere():
