@@ -1,0 +1,42 @@
+[flow] preflight        ok     off-gpu-live   MEASURED  
+[flow] nvml-probe       ok     gpu-live       MEASURED  read /tmp/wn-merge/data/modal-full-1101/smoke-smoke-ui1554/probe
+[flow] spend-guard      ok     off-gpu-live   SIMULATED  
+[flow] gpu-sweep        ok     gpu-live       MEASURED  receipt rcpt_20261101_modal_full_smoke-smoke-ui1554.json
+[flow] thinking-budget  ok     gpu-live       MEASURED  read /tmp/wn-merge/data/modal-full-1101/smoke-smoke-ui1554/think
+[flow] tiers            ok     off-gpu-fake   SIMULATED  
+[flow] eye-gate         ok     gpu-live       MEASURED  read /tmp/wn-merge/data/modal-full-1101/smoke-smoke-ui1554/eye
+[flow] spoken-gate      ok     gpu-live       MEASURED  read /tmp/wn-merge/data/modal-full-1101/smoke-smoke-ui1554/spoken
+[flow] phase-clock      ok     off-gpu-fake   SIMULATED  
+[flow] langchain        ok     gpu-live       MEASURED  read /tmp/wn-merge/data/modal-full-1101/smoke-smoke-ui1554/langchain
+[flow] agentwaste-gpu   ok     gpu-live       MEASURED  read /tmp/wn-merge/data/modal-full-1101/smoke-smoke-ui1554/agentwaste
+[flow] points           ok     off-gpu-live   MEASURED  2 points
+[flow] knee             ok     off-gpu-live   MEASURED  
+[flow] joule-slo        ok     off-gpu-live   MEASURED  
+[flow] optuna-planner   ok     off-gpu-live   SYNTHETIC  8 trials per arm on the SYNTHETIC objective
+[flow] flex-shed        ok     off-gpu-live   SIMULATED  
+[flow] fleet-impact     ok     off-gpu-live   ESTIMATE  
+[flow] codemode         ok     off-gpu-live   MEASURED  2 candidates run in the sandbox (traces REPLAY of Muse Spark runs)
+[flow] cloud-router     ok     replay         REPLAY  
+[flow] multi-provider   ok     replay         REPLAY  
+[flow] sam-hotspot      ok     off-gpu-mock   MOCK  
+[flow] wonderchart      ok     off-gpu-mock   MOCK  
+[flow] muse-code-pr     ok     replay         REPLAY  no PR opened; replay of the 27 Oct live PR
+[flow] narrator         ok     replay         REPLAY  replay of the 31 Oct narration
+[flow] voice-tuner      ok     off-gpu-live   MEASURED  intent=answer
+approved prop_20261101_161220_30a1f337 by user:flow-operator (hash 77c8b656590f)
+nothing is applied yet. Apply with: wattnot proposals apply prop_20261101_161220_30a1f337
+applied prop_20261101_161220_30a1f337; to undo: wattnot proposals rollback prop_20261101_161220_30a1f337
+rolled back prop_20261101_161220_30a1f337
+audit trail ok: 4 entries, hash chain intact
+[flow] approvals        ok     off-gpu-live   SIMULATED  prop_20261101_161220_30a1f337: approved, applied, rolled back, audit chain verif
+[flow] spark-trace      ok     off-gpu-mock   MOCK  
+[flow] flow-receipt     ok     off-gpu-live   MEASURED  signed offline (27 layers)
+[flow] verify           ok     off-gpu-live   MEASURED  
+[flow] verify-standalone ok     off-gpu-live   MEASURED  
+[flow] label-lint       ok     off-gpu-live   MEASURED  clean
+[flow] eu-report        ok     off-gpu-live   MEASURED  
+[flow] certificate      failed off-gpu-live   MOCK  
+[flow] flow-verify      ok     off-gpu-live   MEASURED  offline:b97f6e3b44078ed9
+[flow] receipts-api     ok     off-gpu-live   MEASURED  GET /api/runs -> 200
+[flow] dashboard        ok     off-gpu-live   MEASURED  run_20261101_161221_400814
+[flow] 36 steps, 1 failed ['certificate']

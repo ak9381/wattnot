@@ -1,5 +1,5 @@
 {
- "usd": 1.5614,
+ "usd": 2.3334,
  "rounds": [
   {
    "round": "smoke-r04",
@@ -24,6 +24,18 @@
    "usd": 0.2397,
    "minutes": 0,
    "at": "2026-11-01T14:43:27.642979+00:00"
+  },
+  {
+   "round": "smoke-smoke-ui1554",
+   "usd": 0.6977,
+   "minutes": 16.7,
+   "at": "2026-11-01T16:11:01.209307+00:00"
+  },
+  {
+   "round": "smoke-smoke-ui1554-metered-true-up",
+   "usd": 0.0743,
+   "minutes": 0,
+   "at": "2026-11-01T16:12:07.328281+00:00"
   }
  ],
  "label": "ESTIMATE",

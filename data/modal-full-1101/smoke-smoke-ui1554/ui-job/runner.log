@@ -1,0 +1,136 @@
+✓ Initialized. View run at 
+https://modal.com/apps/akashkraju218/main/ap-IsjRHCp20RrAkPAIgriogy
+Building image im-mFIGi0S1sKsxo0yvJote1D
+
+=> Step 0: FROM base
+
+=> Step 1: RUN python -m pip install jsonschema langchain-core langchain-openai numpy pynvml pyyaml
+Looking in indexes: http://pypi-mirror.modal.local:5555/simple
+Requirement already satisfied: jsonschema in /usr/local/lib/python3.12/dist-packages (4.26.0)
+Collecting langchain-core
+  Downloading langchain_core-1.7.3-py3-none-any.whl.metadata (4.8 kB)
+Collecting langchain-openai
+  Downloading langchain_openai-1.7.3-py3-none-any.whl.metadata (3.6 kB)
+Requirement already satisfied: numpy in /usr/local/lib/python3.12/dist-packages (2.2.6)
+Collecting pynvml
+  Downloading pynvml-13.0.1-py3-none-any.whl.metadata (5.6 kB)
+Requirement already satisfied: pyyaml in /usr/local/lib/python3.12/dist-packages (6.0.3)
+Requirement already satisfied: attrs>=22.2.0 in /usr/local/lib/python3.12/dist-packages (from jsonschema) (26.1.0)
+Requirement already satisfied: jsonschema-specifications>=2023.03.6 in /usr/local/lib/python3.12/dist-packages (from jsonschema) (2025.9.1)
+Requirement already satisfied: referencing>=0.28.4 in /usr/local/lib/python3.12/dist-packages (from jsonschema) (0.37.0)
+Requirement already satisfied: rpds-py>=0.25.0 in /usr/local/lib/python3.12/dist-packages (from jsonschema) (2026.6.3)
+Collecting certifi>=2026.10.19 (from langchain-core)
+  Downloading certifi-2026.10.23-py3-none-any.whl.metadata (2.5 kB)
+Requirement already satisfied: httpx>=0.23.0 in /usr/local/lib/python3.12/dist-packages (from langchain-core) (0.28.1)
+Collecting jsonpatch>=1.33.0 (from langchain-core)
+  Downloading jsonpatch-1.38-py3-none-any.whl.metadata (3.7 kB)
+Collecting langchain-protocol>=0.0.20 (from langchain-core)
+  Downloading langchain_protocol-0.0.20-py3-none-any.whl.metadata (2.4 kB)
+Collecting langsmith<1.0.0,>=0.14.9 (from langchain-core)
+  Downloading langsmith-0.14.16-py3-none-any.whl.metadata (39 kB)
+Requirement already satisfied: packaging>=23.2.0 in /usr/local/lib/python3.12/dist-packages (from langchain-core) (26.3)
+Requirement already satisfied: pydantic<3.0.0,>=2.7.4 in /usr/local/lib/python3.12/dist-packages (from langchain-core) (2.13.4)
+Collecting tenacity!=8.4.0,>=8.1.0 (from langchain-core)
+  Downloading tenacity-9.2.1-py3-none-any.whl.metadata (1.4 kB)
+Requirement already satisfied: typing-extensions>=4.7.0 in /usr/local/lib/python3.12/dist-packages (from langchain-core) (4.16.0)
+Collecting uuid-utils>=0.12.0 (from langchain-core)
+  Downloading uuid_utils-1.2.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.4 kB)
+Requirement already satisfied: anyio<5,>=3.5.0 in /usr/local/lib/python3.12/dist-packages (from langsmith<1.0.0,>=0.14.9->langchain-core) (4.14.2)
+Requirement already satisfied: distro<2,>=1.7.0 in /usr/local/lib/python3.12/dist-packages (from langsmith<1.0.0,>=0.14.9->langchain-core) (1.9.0)
+Requirement already satisfied: httpx2<3,>=2 in /usr/local/lib/python3.12/dist-packages (from langsmith<1.0.0,>=0.14.9->langchain-core) (2.10.0)
+Collecting orjson>=3.9.14 (from langsmith<1.0.0,>=0.14.9->langchain-core)
+  Downloading orjson-3.13.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (42 kB)
+Collecting requests-toolbelt>=1.0.0 (from langsmith<1.0.0,>=0.14.9->langchain-core)
+  Downloading requests_toolbelt-1.0.0-py2.py3-none-any.whl.metadata (14 kB)
+Requirement already satisfied: requests>=2.0.0 in /usr/local/lib/python3.12/dist-packages (from langsmith<1.0.0,>=0.14.9->langchain-core) (2.34.2)
+Requirement already satisfied: sniffio in /usr/local/lib/python3.12/dist-packages (from langsmith<1.0.0,>=0.14.9->langchain-core) (1.3.1)
+Collecting uuid-utils>=0.12.0 (from langchain-core)
+  Downloading uuid_utils-0.19.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.4 kB)
+Requirement already satisfied: websockets>=15.0 in /usr/local/lib/python3.12/dist-packages (from langsmith<1.0.0,>=0.14.9->langchain-core) (17.0.1)
+Collecting xxhash>=3.0.0 (from langsmith<1.0.0,>=0.14.9->langchain-core)
+  Downloading xxhash-4.0.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (17 kB)
+Collecting zstandard>=0.23.0 (from langsmith<1.0.0,>=0.14.9->langchain-core)
+  Downloading zstandard-0.25.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (3.3 kB)
+Requirement already satisfied: idna>=2.8 in /usr/local/lib/python3.12/dist-packages (from anyio<5,>=3.5.0->langsmith<1.0.0,>=0.14.9->langchain-core) (3.18)
+Requirement already satisfied: httpcore2==2.10.0 in /usr/local/lib/python3.12/dist-packages (from httpx2<3,>=2->langsmith<1.0.0,>=0.14.9->langchain-core) (2.10.0)
+Requirement already satisfied: truststore>=0.10 in /usr/local/lib/python3.12/dist-packages (from httpx2<3,>=2->langsmith<1.0.0,>=0.14.9->langchain-core) (0.10.4)
+Requirement already satisfied: h11>=0.16 in /usr/local/lib/python3.12/dist-packages (from httpcore2==2.10.0->httpx2<3,>=2->langsmith<1.0.0,>=0.14.9->langchain-core) (0.16.0)
+Requirement already satisfied: annotated-types>=0.6.0 in /usr/local/lib/python3.12/dist-packages (from pydantic<3.0.0,>=2.7.4->langchain-core) (0.8.0)
+Requirement already satisfied: pydantic-core==2.46.4 in /usr/local/lib/python3.12/dist-packages (from pydantic<3.0.0,>=2.7.4->langchain-core) (2.46.4)
+Requirement already satisfied: typing-inspection>=0.4.2 in /usr/local/lib/python3.12/dist-packages (from pydantic<3.0.0,>=2.7.4->langchain-core) (0.4.3)
+Requirement already satisfied: openai>=2.45.0 in /usr/local/lib/python3.12/dist-packages (from langchain-openai) (2.53.0)
+Requirement already satisfied: tiktoken>=0.7.0 in /usr/local/lib/python3.12/dist-packages (from langchain-openai) (0.13.0)
+Requirement already satisfied: nvidia-ml-py>=12.0.0 in /usr/local/lib/python3.12/dist-packages (from pynvml) (13.610.43)
+Requirement already satisfied: httpcore==1.* in /usr/local/lib/python3.12/dist-packages (from httpx>=0.23.0->langchain-core) (1.0.9)
+Collecting jsonpointer>=3.2 (from jsonpatch>=1.33.0->langchain-core)
+  Downloading jsonpointer-3.6-py3-none-any.whl.metadata (2.6 kB)
+Requirement already satisfied: jiter<1,>=0.10.0 in /usr/local/lib/python3.12/dist-packages (from openai>=2.45.0->langchain-openai) (0.16.0)
+Requirement already satisfied: tqdm>4 in /usr/local/lib/python3.12/dist-packages (from openai>=2.45.0->langchain-openai) (4.70.0)
+Requirement already satisfied: charset_normalizer<4,>=2 in /usr/local/lib/python3.12/dist-packages (from requests>=2.0.0->langsmith<1.0.0,>=0.14.9->langchain-core) (3.4.9)
+Requirement already satisfied: urllib3<3,>=1.26 in /usr/local/lib/python3.12/dist-packages (from requests>=2.0.0->langsmith<1.0.0,>=0.14.9->langchain-core) (2.7.0)
+Requirement already satisfied: regex in /usr/local/lib/python3.12/dist-packages (from tiktoken>=0.7.0->langchain-openai) (2026.7.19)
+Downloading langchain_core-1.7.3-py3-none-any.whl (577 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 577.1/577.1 kB 2.0 MB/s  0:00:00
+Downloading langsmith-0.14.16-py3-none-any.whl (933 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 933.7/933.7 kB 4.1 MB/s  0:00:00
+Downloading uuid_utils-0.19.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (330 kB)
+Downloading langchain_openai-1.7.3-py3-none-any.whl (146 kB)
+Downloading pynvml-13.0.1-py3-none-any.whl (28 kB)
+Downloading certifi-2026.10.23-py3-none-any.whl (135 kB)
+Downloading jsonpatch-1.38-py3-none-any.whl (17 kB)
+Downloading jsonpointer-3.6-py3-none-any.whl (9.3 kB)
+Downloading langchain_protocol-0.0.20-py3-none-any.whl (7.3 kB)
+Downloading orjson-3.13.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (130 kB)
+Downloading requests_toolbelt-1.0.0-py2.py3-none-any.whl (54 kB)
+Downloading tenacity-9.2.1-py3-none-any.whl (32 kB)
+Downloading xxhash-4.0.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (261 kB)
+Downloading zstandard-0.25.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.5 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.5/5.5 MB 385.2 MB/s  0:00:00
+Installing collected packages: zstandard, xxhash, uuid-utils, tenacity, pynvml, orjson, langchain-protocol, jsonpointer, certifi, jsonpatch, requests-toolbelt, langsmith, langchain-core, langchain-openai
+  Attempting uninstall: certifi
+    Found existing installation: certifi 2026.7.22
+    Uninstalling certifi-2026.7.22:
+      Successfully uninstalled certifi-2026.7.22
+
+Successfully installed certifi-2026.10.23 jsonpatch-1.38 jsonpointer-3.6 langchain-core-1.7.3 langchain-openai-1.7.3 langchain-protocol-0.0.20 langsmith-0.14.16 orjson-3.13.0 pynvml-13.0.1 requests-toolbelt-1.0.0 tenacity-9.2.1 uuid-utils-0.19.0 xxhash-4.0.2 zstandard-0.25.0
+
+[notice] A new release of pip is available: 26.2.1 -> 26.2.2
+[notice] To update, run: python -m pip install --upgrade pip
+Saving image...
+Image saved, took 9.36s
+
+Built image im-mFIGi0S1sKsxo0yvJote1D in 21.12s
+
+
+✓ Created objects.
+├── ✓ Uploaded /tmp/wn-merge/modal/full_stage.py
+├── ✓ Uploaded pyproject.toml
+├── ✓ Uploaded /tmp/wn-merge/data/public_bench
+├── ✓ Uploaded /tmp/wn-merge/workloads
+├── ✓ Uploaded /tmp/wn-merge/examples
+├── ✓ Uploaded /tmp/wn-merge/data/voice
+├── ✓ Uploaded /tmp/wn-merge/data/vision
+├── ✓ Uploaded /tmp/wn-merge/scripts
+├── ✓ Uploaded /tmp/wn-merge/src
+├── ✓ Created Function gpu_round.
+└── ✓ Created Function gpu_smoke.
+[full_stage] smoke-smoke-ui1554: results in 
+/tmp/wn-merge/data/modal-full-1101/_incoming/smoke-smoke-ui1554
+Stopping app - local entrypoint completed.
+[modal-client] 2026-11-01T16:10:51+0000 Detected 1 background thread(s) [Thread-2] still running after container exit. This will prevent runner shutdown for up to 30 seconds.
+Exception ignored in: <module 'threading' from '/usr/lib/python3.12/threading.py'>
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/threading.py", line 1622, in _shutdown
+    lock.acquire()
+KeyboardInterrupt: 
+[modal-client] 2026-11-01T21:41:01+0530 Timed out waiting for final app logs.
+✓ App completed. View run at 
+https://modal.com/apps/akashkraju218/main/ap-IsjRHCp20RrAkPAIgriogy
+[teardown] {"stopped": [], "still_running": [], "verified_empty": true, "checked_at": "2026-11-01T16:11:03.817048+00:00"}
+[approval] held change held: failed checks []
+eye test [fake]: all 10 eye-test images read correctly
+spoken answer [fake]: all 20 spoken answers correct
+  energy [MOCK]: 1260.0 J/correct spoken, 210.0 J/token, 42.0 J/correct answer
+hotspot set [fake] (SYNTHETIC tests): SAM 3.1 found all 6 SYNTHETIC hotspots
+wonder chart [fake · fallback]: next = 375W/base — offline fallback: MOCK: selected next candidate 375W (base)
+{"round": "smoke-smoke-ui1554", "acc": [1.0, 1.0], "j_per_correct": [3852.7, 3464.0], "saved_pct": {"value": 10.09, "label": "MEASURED"}, "spark": {"label": null, "stopped": "not run"}, "flow_rc": 1, "musecode": {"status": "ok", "result": "ApplyPRResult(patch_diff='# No modifications produced\\n', patch_sha256='a2cb2754499f3be8f1d030db21a35798b96c9ca31e0956865ac2a533fe5b3462', pr_body='# Apply WattNot Efficiency Optimizations\\n\\nAutomated configuration update from verified WattNot energy run.\\n\\n**Receipt Reference**: [`wattnot://0122b", "pr_opened": false}, "modal_usd": {"value": 0.6977, "label": "ESTIMATE", "method": "wall minutes incl. image and container start x list price"}, "approval": "held", "failed": ["waste_guard"]}

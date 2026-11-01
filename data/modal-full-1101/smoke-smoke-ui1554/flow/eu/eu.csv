@@ -1,0 +1,22 @@
+receipt_id,field,value,unit,label,source
+rcpt_20261101_modal_full_smoke-smoke-ui1554,it_energy_measured_window,0.00866,kWh,MEASURED,"receipt rcpt_20261101_modal_full_smoke-smoke-ui1554, meter nvml: sum over 3 reps x 3 requests"
+rcpt_20261101_modal_full_smoke-smoke-ui1554,energy_per_request,0.96222,Wh/request,MEASURED,"receipt rcpt_20261101_modal_full_smoke-smoke-ui1554, meter nvml"
+rcpt_20261101_modal_full_smoke-smoke-ui1554,energy_per_request_baseline,1.070205,Wh/request,MEASURED,"receipt rcpt_20261101_modal_full_smoke-smoke-ui1554, meter nvml"
+rcpt_20261101_modal_full_smoke-smoke-ui1554,energy_saving_billed,0,%,ESTIMATE,"receipt rcpt_20261101_modal_full_smoke-smoke-ui1554, meter nvml: lower bound of 95% bootstrap CI, Welch p=0.441 (not significant)"
+rcpt_20261101_modal_full_smoke-smoke-ui1554,idle_power,63.2,W,MEASURED,"receipt rcpt_20261101_modal_full_smoke-smoke-ui1554, meter nvml"
+rcpt_20261101_modal_full_smoke-smoke-ui1554,water_per_request,0.346399,mL/request,ESTIMATE,"Wh/request x WUE (L/kWh); 0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"
+rcpt_20261101_modal_full_smoke-smoke-ui1554,water_per_request_upper,1.731996,mL/request,ESTIMATE,"Wh/request x WUE (L/kWh); up to 1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"
+rcpt_20261101_modal_full_smoke-smoke-ui1554,joules_per_correct_answer,3463.992,J/correct,MEASURED,"receipt rcpt_20261101_modal_full_smoke-smoke-ui1554, meter nvml: candidate Wh/req x 3600 / pass_rate"
+rcpt_20261101_modal_full_smoke-smoke-ui1554,grid_intensity,727.0,gCO2e/kWh,ESTIMATE,"signed sci block; I=727.0 g/kWh from CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included) (FY 2023-24)"
+rcpt_20261101_modal_full_smoke-smoke-ui1554,sci_per_request,0.69953394,gCO2e/request,ESTIMATE,"SCI (GSF, ISO/IEC 21031:2024) operational part E x I; signed sci block; I=727.0 g/kWh from CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included) (FY 2023-24)"
+rcpt_20261101_modal_full_smoke-smoke-ui1554,energy_per_correct,0.00096222,kWh/correct answer,MEASURED,receipt energy / graded pass rate
+rcpt_20261101_modal_full_smoke-smoke-ui1554,sci_per_correct,0.69953394,gCO2e/correct answer,ESTIMATE,"SCI per R (R = one correct answer), E x I; signed sci block; I=727.0 g/kWh from CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included) (FY 2023-24)"
+rcpt_20261101_modal_full_smoke-smoke-ui1554,water_per_correct,0.3463992,mL/correct answer,ESTIMATE,kWh/correct x 0.36 L/kWh; 0.36 L/kWh on-site cooling (LBNL 2024 US Data Center Energy Usage Report)
+rcpt_20261101_modal_full_smoke-smoke-ui1554,sci_embodied_m,,gCO2e/correct answer,NOT_AVAILABLE,no cited embodied-emissions figure for this GPU and server; SCI shown is operational only (E x I)
+rcpt_20261101_modal_full_smoke-smoke-ui1554,pue,,ratio,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
+rcpt_20261101_modal_full_smoke-smoke-ui1554,renewable_energy_share,,%,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
+rcpt_20261101_modal_full_smoke-smoke-ui1554,waste_heat_reused,,kWh,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
+rcpt_20261101_modal_full_smoke-smoke-ui1554,total_water_input,,m3,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
+rcpt_20261101_modal_full_smoke-smoke-ui1554,rated_it_power,,kW,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
+rcpt_20261101_modal_full_smoke-smoke-ui1554,heat_water_readiness,0.65,share of fields,ESTIMATE,"share of this export's fields that are filled (MEASURED or ESTIMATE); a readiness indicator, not a regulatory metric"
+,disclaimer,Not a compliance claim; facility-level metrics require operator metering.,,,supports EU Energy Efficiency Directive data-center reporting; CSRD roadmap

@@ -1,0 +1,46 @@
+_legacy_response.py", line 369, in wrapped
+    return cast(LegacyAPIResponse[R], func(*args, **kwargs))
+                                      ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/openai/_utils/_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/openai/resources/chat/completions/completions.py", line 1296, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/openai/_base_client.py", line 1375, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/openai/_base_client.py", line 1148, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.InternalServerError: Error code: 502 - {'detail': 'upstream error'}
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/app/scripts/langchain_pass.py", line 213, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/app/scripts/langchain_pass.py", line 184, in main
+    per = run_agent(base, model, rows, a.max_steps, f"lc-{arm}")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/scripts/langchain_pass.py", line 119, in run_agent
+    ai = llm.invoke(msgs, config={"metadata": {"item": i}})
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/runnables/base.py", line 6018, in invoke
+    return self.bound.invoke(
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/language_models/chat_models.py", line 529, in invoke
+    self.generate_prompt(
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/language_models/chat_models.py", line 1920, in generate_prompt
+    return self.generate(prompt_messages, stop=stop, callbacks=callbacks, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/language_models/chat_models.py", line 1727, in generate
+    self._generate_with_cache(
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/language_models/chat_models.py", line 2065, in _generate_with_cache
+    result = self._generate(
+             ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_openai/chat_models/base.py", line 1997, in _generate
+    _handle_openai_api_error(e)
+  File "/usr/local/lib/python3.12/dist-packages/langchain_openai/chat_models/base.py", line 740, in _handle_openai_api_error
+    raise OpenAIAPIError(message=e.message, response=e.response, body=e.body) from e
+langchain_openai.chat_models.base.OpenAIAPIError: Error code: 502 - {'detail': 'upstream error'}

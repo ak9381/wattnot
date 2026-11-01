@@ -1,0 +1,495 @@
+{
+  "run_id": "run_20261101_161221_400814",
+  "steps": [
+    {
+      "id": "preflight",
+      "inventory": [
+        "A21 no-mock preflight",
+        "init/preflight"
+      ],
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "rc": 0,
+      "note": "",
+      "seconds": 0.42,
+      "artifacts": {}
+    },
+    {
+      "id": "nvml-probe",
+      "inventory": [
+        "NVML capability probe"
+      ],
+      "mode": "gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "rc": 0,
+      "note": "read /tmp/wn-merge/data/modal-full-1101/smoke-smoke-ui1554/probe",
+      "seconds": 0.0,
+      "artifacts": {}
+    },
+    {
+      "id": "spend-guard",
+      "inventory": [
+        "Spend guard",
+        "Cloud timeout backstop",
+        "Meta spend ledger"
+      ],
+      "mode": "off-gpu-live",
+      "label": "SIMULATED",
+      "status": "ok",
+      "rc": 0,
+      "note": "",
+      "seconds": 7.69,
+      "artifacts": {}
+    },
+    {
+      "id": "gpu-sweep",
+      "inventory": [
+        "Power-cap sweep + J/correct gate",
+        "A4 every-cap grid",
+        "Wonder Pareto planner",
+        "Noise gate",
+        "Fixed gate",
+        "LLM judge gate",
+        "Reasoning-leak strip",
+        "Approve-before-apply (orchestrate --act)",
+        "Signed receipt",
+        "Joules per good answer",
+        "Model fit/per-model J",
+        "Muse Glimmer 30B"
+      ],
+      "mode": "gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "rc": 0,
+      "note": "receipt rcpt_20261101_modal_full_smoke-smoke-ui1554.json",
+      "seconds": 0.0,
+      "artifacts": {}
+    },
+    {
+      "id": "thinking-budget",
+      "inventory": [
+        "Thinking-budget enforcer"
+      ],
+      "mode": "gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "rc": 0,
+      "note": "read /tmp/wn-merge/data/modal-full-1101/smoke-smoke-ui1554/think",
+      "seconds": 0.0,
+      "artifacts": {}
+    },
+    {
+      "id": "tiers",
+      "inventory": [
+        "Tiers at the best cap (harness)",
+        "Dataset picker"
+      ],
+      "mode": "off-gpu-fake",
+      "label": "SIMULATED",
+      "status": "ok",
+      "rc": 0,
+      "note": "",
+      "seconds": 0.16,
+      "artifacts": {}
+    },
+    {
+      "id": "eye-gate",
+      "inventory": [
+        "A15 vision eye-test gate"
+      ],
+      "mode": "gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "rc": 0,
+      "note": "read /tmp/wn-merge/data/modal-full-1101/smoke-smoke-ui1554/eye",
+      "seconds": 0.0,
+      "artifacts": {}
+    },
+    {
+      "id": "spoken-gate",
+      "inventory": [
+        "Muse Voice Transcribe spoken answers"
+      ],
+      "mode": "gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "rc": 0,
+      "note": "read /tmp/wn-merge/data/modal-full-1101/smoke-smoke-ui1554/spoken",
+      "seconds": 0.0,
+      "artifacts": {}
+    },
+    {
+      "id": "phase-clock",
+      "inventory": [
+        "A10 phase-aware clock sidecar"
+      ],
+      "mode": "off-gpu-fake",
+      "label": "SIMULATED",
+      "status": "ok",
+      "rc": 0,
+      "note": "",
+      "seconds": 2.09,
+      "artifacts": {}
+    },
+    {
+      "id": "langchain",
+      "inventory": [
+        "A9 agent-waste proxy",
+        "LangChain app through the proxy",
+        "Tool-output dedup",
+        "Memory compression",
+        "Effort routing (thinking off -> on)"
+      ],
+      "mode": "gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "rc": 0,
+      "note": "read /tmp/wn-merge/data/modal-full-1101/smoke-smoke-ui1554/langchain",
+      "seconds": 0.0,
+      "artifacts": {}
+    },
+    {
+      "id": "agentwaste-gpu",
+      "inventory": [
+        "Agent-waste saver on the GPU (OFF vs ON)"
+      ],
+      "mode": "gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "rc": 0,
+      "note": "read /tmp/wn-merge/data/modal-full-1101/smoke-smoke-ui1554/agentwaste",
+      "seconds": 0.0,
+      "artifacts": {}
+    },
+    {
+      "id": "points",
+      "inventory": [
+        "Joules per good answer"
+      ],
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "rc": 0,
+      "note": "2 points",
+      "seconds": 0.0,
+      "artifacts": {}
+    },
+    {
+      "id": "knee",
+      "inventory": [
+        "A12 marginal-joule knee"
+      ],
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "rc": 0,
+      "note": "",
+      "seconds": 0.03,
+      "artifacts": {}
+    },
+    {
+      "id": "joule-slo",
+      "inventory": [
+        "A13 Joule-SLO"
+      ],
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "rc": 0,
+      "note": "",
+      "seconds": 0.03,
+      "artifacts": {}
+    },
+    {
+      "id": "optuna-planner",
+      "inventory": [
+        "A11 Optuna search planner + ablation"
+      ],
+      "mode": "off-gpu-live",
+      "label": "SYNTHETIC",
+      "status": "ok",
+      "rc": 0,
+      "note": "8 trials per arm on the SYNTHETIC objective",
+      "seconds": 0.22,
+      "artifacts": {
+        "analysis/ablation.json": "9f2ebcf72dbad90be459bb4c0b5d0e3e0564fe800fc11fa465c096c5fc3bbe29"
+      }
+    },
+    {
+      "id": "flex-shed",
+      "inventory": [
+        "Flex load shedding",
+        "Simulated GPU power model"
+      ],
+      "mode": "off-gpu-live",
+      "label": "SIMULATED",
+      "status": "ok",
+      "rc": 0,
+      "note": "",
+      "seconds": 0.47,
+      "artifacts": {}
+    },
+    {
+      "id": "fleet-impact",
+      "inventory": [
+        "Fleet impact estimator"
+      ],
+      "mode": "off-gpu-live",
+      "label": "ESTIMATE",
+      "status": "ok",
+      "rc": 0,
+      "note": "",
+      "seconds": 0.43,
+      "artifacts": {}
+    },
+    {
+      "id": "codemode",
+      "inventory": [
+        "Code Mode + locked sandbox",
+        "Code-sandbox network boundary"
+      ],
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "label_note": "sandbox cost",
+      "status": "ok",
+      "rc": 0,
+      "note": "2 candidates run in the sandbox (traces REPLAY of Muse Spark runs)",
+      "seconds": 0.29,
+      "artifacts": {}
+    },
+    {
+      "id": "cloud-router",
+      "inventory": [
+        "Reasoning-effort router",
+        "A14 backend/effort/region router",
+        "Cloud effort-router receipt"
+      ],
+      "mode": "replay",
+      "label": "REPLAY",
+      "status": "ok",
+      "rc": 0,
+      "note": "",
+      "seconds": 0.41,
+      "artifacts": {}
+    },
+    {
+      "id": "multi-provider",
+      "inventory": [
+        "Multi-provider routing H100/Baseten/Modal",
+        "Hosted A/B"
+      ],
+      "mode": "replay",
+      "label": "REPLAY",
+      "status": "ok",
+      "rc": 0,
+      "note": "",
+      "seconds": 0.03,
+      "artifacts": {}
+    },
+    {
+      "id": "sam-hotspot",
+      "inventory": [
+        "SAM 3.1 hotspot audit",
+        "Hotspot set"
+      ],
+      "mode": "off-gpu-mock",
+      "label": "MOCK",
+      "status": "ok",
+      "rc": 0,
+      "note": "",
+      "seconds": 0.13,
+      "artifacts": {}
+    },
+    {
+      "id": "wonderchart",
+      "inventory": [
+        "Wonderchart"
+      ],
+      "mode": "off-gpu-mock",
+      "label": "MOCK",
+      "status": "ok",
+      "rc": 0,
+      "note": "",
+      "seconds": 0.11,
+      "artifacts": {}
+    },
+    {
+      "id": "muse-code-pr",
+      "inventory": [
+        "Muse Code apply-as-PR"
+      ],
+      "mode": "replay",
+      "label": "REPLAY",
+      "status": "ok",
+      "rc": 0,
+      "note": "no PR opened; replay of the 27 Oct live PR",
+      "seconds": 0.0,
+      "artifacts": {}
+    },
+    {
+      "id": "narrator",
+      "inventory": [
+        "A19 run narrator"
+      ],
+      "mode": "replay",
+      "label": "REPLAY",
+      "status": "ok",
+      "rc": 0,
+      "note": "replay of the 31 Oct narration",
+      "seconds": 0.0,
+      "artifacts": {}
+    },
+    {
+      "id": "voice-tuner",
+      "inventory": [
+        "Voice guide (grounded intent)",
+        "Tuner (spoken -> knob plan)"
+      ],
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "label_note": "local parse",
+      "status": "ok",
+      "rc": 0,
+      "note": "intent=answer",
+      "seconds": 0.0,
+      "artifacts": {}
+    },
+    {
+      "id": "approvals",
+      "inventory": [
+        "Approve-before-apply",
+        "A6/A7 approvals + undo"
+      ],
+      "mode": "off-gpu-live",
+      "label": "SIMULATED",
+      "label_note": "local store, real apply/undo",
+      "status": "ok",
+      "rc": 0,
+      "note": "prop_20261101_161220_30a1f337: approved, applied, rolled back, audit chain verified",
+      "seconds": 0.08,
+      "artifacts": {}
+    },
+    {
+      "id": "spark-trace",
+      "inventory": [
+        "Muse Spark operator trace (probe, proposal, gate, receipt)",
+        "Muse Spark"
+      ],
+      "mode": "off-gpu-mock",
+      "label": "MOCK",
+      "status": "ok",
+      "rc": 0,
+      "note": "",
+      "seconds": 0.07,
+      "artifacts": {
+        "spark/trace.json": "ca018e280a0a173907315ef57323935d0144e42b583ab0085b1fa287826244ed"
+      }
+    },
+    {
+      "id": "flow-receipt",
+      "inventory": [
+        "Signed receipt + canonicalization"
+      ],
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "rc": 0,
+      "note": "signed offline (27 layers)",
+      "seconds": 0.0,
+      "artifacts": {}
+    },
+    {
+      "id": "verify",
+      "inventory": [
+        "Independent verifier"
+      ],
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "rc": 0,
+      "note": "",
+      "seconds": 0.52,
+      "artifacts": {}
+    },
+    {
+      "id": "verify-standalone",
+      "inventory": [
+        "Independent stdlib verifier"
+      ],
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "rc": 0,
+      "note": "",
+      "seconds": 0.04,
+      "artifacts": {}
+    },
+    {
+      "id": "label-lint",
+      "inventory": [
+        "Grading-label honesty lint"
+      ],
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "rc": 0,
+      "note": "clean",
+      "seconds": 0.0,
+      "artifacts": {}
+    },
+    {
+      "id": "eu-report",
+      "inventory": [
+        "EU efficiency report"
+      ],
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "rc": 0,
+      "note": "",
+      "seconds": 0.43,
+      "artifacts": {}
+    },
+    {
+      "id": "certificate",
+      "inventory": [
+        "Mock efficiency certificate"
+      ],
+      "mode": "off-gpu-live",
+      "label": "MOCK",
+      "status": "failed",
+      "rc": 2,
+      "note": "",
+      "seconds": 0.45,
+      "artifacts": {}
+    },
+    {
+      "id": "flow-verify",
+      "inventory": [
+        "Flow receipt offline signature"
+      ],
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "rc": 0,
+      "note": "offline:b97f6e3b44078ed9",
+      "seconds": 0.0,
+      "artifacts": {}
+    },
+    {
+      "id": "receipts-api",
+      "inventory": [
+        "A8 receipts REST API"
+      ],
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "rc": 0,
+      "note": "GET /api/runs -> 200",
+      "seconds": 0.06,
+      "artifacts": {}
+    }
+  ]
+}

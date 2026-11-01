@@ -1,0 +1,100 @@
+{
+  "run_id": "run_20261101_161220_f09b0d",
+  "model": "muse-spark-1.3",
+  "label": "MOCK",
+  "calls": [
+    {
+      "step": "probe",
+      "model": "muse-spark-1.3",
+      "label": "MOCK",
+      "status": "ok",
+      "latency_ms": 0.7,
+      "trace_id": "mock-275043b9ccc9",
+      "answer": {
+        "gpu": "mock",
+        "power_w": null,
+        "can_cap": false,
+        "blockers": [
+          "mock"
+        ],
+        "next": "run the sweep"
+      },
+      "tokens": {
+        "in": 200,
+        "out": 40,
+        "label": "MOCK"
+      },
+      "usd": 0.00042,
+      "latency_label": "MOCK",
+      "usd_label": "MOCK"
+    },
+    {
+      "step": "proposal",
+      "model": "muse-spark-1.3",
+      "label": "MOCK",
+      "status": "ok",
+      "latency_ms": 0.5,
+      "trace_id": "mock-d682beb54679",
+      "answer": {
+        "action": "set_power_cap",
+        "cap_w": 325,
+        "why": "mock",
+        "expected_saving_pct": null
+      },
+      "tokens": {
+        "in": 200,
+        "out": 40,
+        "label": "MOCK"
+      },
+      "usd": 0.00042,
+      "latency_label": "MOCK",
+      "usd_label": "MOCK"
+    },
+    {
+      "step": "gate",
+      "model": "muse-spark-1.3",
+      "label": "MOCK",
+      "status": "ok",
+      "latency_ms": 0.8,
+      "trace_id": "mock-c36d55599eea",
+      "answer": {
+        "verdict": "PASS",
+        "why": "mock"
+      },
+      "tokens": {
+        "in": 200,
+        "out": 40,
+        "label": "MOCK"
+      },
+      "usd": 0.00042,
+      "latency_label": "MOCK",
+      "usd_label": "MOCK",
+      "fixed_gate": "FAIL",
+      "agrees_with_fixed_gate": false
+    },
+    {
+      "step": "receipt",
+      "model": "muse-spark-1.3",
+      "label": "MOCK",
+      "status": "ok",
+      "latency_ms": 0.5,
+      "trace_id": "mock-a16c22dabfcd",
+      "answer": {
+        "summary": "mock",
+        "labels_ok": true
+      },
+      "tokens": {
+        "in": 200,
+        "out": 40,
+        "label": "MOCK"
+      },
+      "usd": 0.00042,
+      "latency_label": "MOCK",
+      "usd_label": "MOCK"
+    }
+  ],
+  "ok": true,
+  "total_usd": 0.00168,
+  "total_usd_label": "MOCK",
+  "events": "/tmp/wn-merge/data/modal-full-1101/smoke-smoke-ui1554/flow/spark/events.jsonl"
+}
