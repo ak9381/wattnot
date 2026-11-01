@@ -216,9 +216,11 @@ def test_baseten_smoke_norm_and_estimate_under_cap():
 
 
 def test_baseten_smoke_limit_is_clamped():
-    assert L.norm_config({"provider": "baseten", "smoke": {"limit": 99}})["smoke"]["limit"] == 3
+    # Baseten smoke clamps to 10 (per-token API, no container cap); Modal stays at 3.
+    assert L.norm_config({"provider": "baseten", "smoke": {"limit": 99}})["smoke"]["limit"] == 10
     assert L.norm_config({"provider": "baseten", "smoke": {"limit": -5}})["smoke"]["limit"] == 1
     assert L.norm_config({"provider": "baseten", "smoke": {"limit": 1}})["smoke"]["limit"] == 1
+    assert L.norm_config({"provider": "modal_a100", "smoke": {"limit": 99}})["smoke"]["limit"] == 3
 
 
 def test_baseten_smoke_command_is_true_end_to_end():
