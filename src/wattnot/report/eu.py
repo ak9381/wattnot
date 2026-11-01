@@ -237,10 +237,47 @@ def check_wording(text: str) -> list[str]:
     return [w for w in BANNED if w in low]
 
 
+def check_receipt_file(path: str | Path) -> tuple[dict, bool]:
+    """Load a receipt and check it before export. The SHA-256 must match (else refuse). If a
+    signature bundle sits next to it, it must verify (else refuse). Returns (receipt, signed)."""
+    from wattnot.receipt.sign import OFFLINE_MEDIA_TYPE, bundle_path, verify_offline_bundle
+
+    receipt = json.loads(Path(path).read_text(encoding="utf-8"))
+    rid = receipt.get("receipt_id")
+    if receipt.get("spec") == PROOF_SPEC:
+        if not verify_proof_hash(receipt):
+            raise ValueError(f"receipt {rid}: SHA-256 does not match; not exporting it")
+    elif "integrity" in receipt:
+        from wattnot.receipt.build import verify_hash
+        if not verify_hash(receipt)[0]:
+            raise ValueError(f"receipt {rid}: SHA-256 does not match; not exporting it")
+    bp = bundle_path(path)
+    if not bp.is_file():
+        return receipt, False
+    bundle = json.loads(bp.read_text(encoding="utf-8"))
+    if bundle.get("mediaType") == OFFLINE_MEDIA_TYPE:
+        ok, why = verify_offline_bundle(receipt, bundle)
+        if not ok:
+            raise ValueError(f"receipt {rid}: signature check failed ({why}); not exporting it")
+        return receipt, True
+    return receipt, False  # a Sigstore/Rekor bundle: checked by `wattnot verify`
+
+
+def _unsigned(rows: list[dict]) -> list[dict]:
+    """An unsigned receipt can't back a MEASURED claim on its own: say so."""
+    for r in rows:
+        if r.get("label") == "MEASURED":
+            r["label"] = "ESTIMATE"
+            r["source"] = f"{r.get('source', '')} (receipt not signed: MEASURED shown as ESTIMATE)"
+    return rows
+
+
 def export(receipt_paths: Sequence[str | Path], out: str | Path, **kw) -> tuple[Path, Path]:
     rows: list[dict] = []
     for p in receipt_paths:
-        rows += fields_for(json.loads(Path(p).read_text()), **kw)
+        receipt, signed = check_receipt_file(p)
+        got = fields_for(receipt, **kw)
+        rows += got if signed else _unsigned(got)
     out = Path(out)
     out.parent.mkdir(parents=True, exist_ok=True)
     csv_text, html_text = to_csv(rows), to_html(rows)

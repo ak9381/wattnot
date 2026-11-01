@@ -130,6 +130,12 @@ class SparkSummarizer:
         return MockSummarizer.__call__(MockSummarizer(), text)
 
 
+def default_summarizer() -> Callable[[str], str]:
+    """Live Muse Spark by default; the offline mock only with WATTNOT_META_MOCK=1 (tests)."""
+    from wattnot.meta.client import meta_mock_on
+    return MockSummarizer() if meta_mock_on() else SparkSummarizer()
+
+
 @dataclass
 class _Chunk:
     ref: str
@@ -169,7 +175,7 @@ class MemoryCompressionMiddleware:
     user message are stitched back as one compact recap, placed right after the system prompt.
     """
 
-    summarize: Callable[[str], str] = field(default_factory=MockSummarizer)
+    summarize: Callable[[str], str] = field(default_factory=lambda: default_summarizer())
     keep_last: int = 4
     min_old: int = 2
     retrieve_k: int = 3
