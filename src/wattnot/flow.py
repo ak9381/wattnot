@@ -360,8 +360,23 @@ def _flow_receipt(F: Flow, receipt: Path | None) -> str:
     body["integrity"] = {"sha256": canonical_sha256(body)}
     p = F.out / "flow-receipt.json"
     p.write_text(json.dumps(body, indent=2))
-    sign(p, no_rekor=True, key_path=TEST_KEY)
+    sign(p, no_rekor=True, key_path=_offline_key(F.out))
     return f"signed offline ({len(body['layers'])} layers)"
+
+
+def _offline_key(out: Path) -> Path:
+    """The local test key if present; on a fresh clone, a throwaway Ed25519 key in out/."""
+    if TEST_KEY.exists():
+        return TEST_KEY
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    k = out / "flow-offline-key.pem"
+    if not k.exists():
+        k.write_bytes(Ed25519PrivateKey.generate().private_bytes(
+            serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption()))
+        k.chmod(0o600)
+    return k
 
 
 def _flow_verify(fr: Path) -> str:

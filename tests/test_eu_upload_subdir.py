@@ -88,3 +88,23 @@ def test_dashboard_server_has_the_upload_route(tmp_path):
     r = c.post("/api/report/eu/upload", json={"receipt": rec, "bundle": good})
     assert r.status_code == 200 and r.json()["signed"] is True
     assert c.post("/api/report/eu/upload", json={"receipt": rec, "bundle": _bad_bundle()}).status_code == 409
+
+
+def test_upload_unknown_bundle_type_is_not_measured(tmp_path):
+    """A bundle the API can't verify (e.g. a fake mediaType) must not keep MEASURED labels."""
+    c = TestClient(api_app.create_app(root=tmp_path), raise_server_exceptions=False)
+    rec = json.loads((SRC / f"{RID}.json").read_text())
+    r = c.post("/api/report/eu/upload?format=html", json={"receipt": rec, "bundle": {"mediaType": "x"}})
+    assert r.status_code == 200 and r.headers["x-wattnot-signed"] == "unverified"
+    j = c.post("/api/report/eu/upload", json={"receipt": rec, "bundle": {"mediaType": "x"}}).json()
+    assert j["signed"] is None and all(f["label"] != "MEASURED" for f in j["fields"])
+    good = json.loads((SRC / f"{RID}.sigstore.json").read_text())
+    ok = c.post("/api/report/eu/upload?format=html", json={"receipt": rec, "bundle": good})
+    assert ok.headers["x-wattnot-signed"] == "verified"
+
+
+def test_generate_report_downgrades_unsigned(tmp_path):
+    from wattnot.report import eu
+    p = tmp_path / f"{RID}.json"; shutil.copy(SRC / f"{RID}.json", p)
+    j = eu.generate_report(p, format="json")
+    assert all(f["label"] != "MEASURED" for f in j["fields"])

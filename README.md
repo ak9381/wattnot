@@ -3,7 +3,8 @@
 ## Meta models at work
 
 Each layer of WattNot is driven by a Meta model. In a live run every call below is a real API
-or GPU call with a trace id, latency and $ in the run's event log; the dashboard's
+or GPU call with a trace id, latency and $ in the run's event log, except Muse Code (replayed in
+demos) and Muse Image (a pre-generated SYNTHETIC set, never a live call); the dashboard's
 **Meta models at work** strip and **Muse Spark trace** panel read that log. Anything replayed
 from an earlier run is labelled REPLAY; nothing is shown that did not happen.
 

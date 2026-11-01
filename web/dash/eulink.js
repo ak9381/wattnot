@@ -114,7 +114,7 @@ export async function uploadEu(files, { fetchFn = globalThis.fetch, url = EU_UPL
     let code = ""; try { code = (await r.json()).code; } catch { /* not json */ }
     return { ok: false, msg: UPLOAD_MSG[code] || `Upload failed (HTTP ${r.status}).` };
   }
-  return { ok: true, html: await r.text(), msg: bundle ? "Signature checked. Report opened in a new tab." : "No signature given: MEASURED values are shown as ESTIMATE. Report opened in a new tab." };
+  return { ok: true, html: await r.text(), msg: r.headers?.get?.("x-wattnot-signed") === "verified" ? "Signature verified. Report opened in a new tab." : bundle ? "Signature not verified here: MEASURED values are shown as ESTIMATE. Report opened in a new tab." : "No signature given: MEASURED values are shown as ESTIMATE. Report opened in a new tab." };
 }
 
 export function wireEuCard(root) {
