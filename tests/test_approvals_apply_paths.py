@@ -434,3 +434,9 @@ def test_headline_decision_is_exposed_for_proposals():
 def test_sim_backend_still_runs_without_a_gate():
     r = run_flex(SimBackend(seed=7), sig.load().events[0], flex_cli.FlexConfig(pre_s=6, post_s=6))
     assert r.result["status"] in ("full", "partial", "none")
+
+
+@pytest.fixture(autouse=True)
+def _act_mode(monkeypatch):
+    """These tests apply changes, so they run in act mode (the library default is watch)."""
+    monkeypatch.setenv("WATTNOT_MODE", "act")

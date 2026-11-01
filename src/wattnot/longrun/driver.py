@@ -153,7 +153,7 @@ def host_inner(argv: list[str]) -> str:
             f"if [ ! -f {shlex.quote(activate)} ]; then "
             f"echo '[live] venv missing: {activate} (setup builds it)' >&2; exit 97; fi; "
             f". {shlex.quote(activate)} || {{ echo '[live] cannot activate {activate}' >&2; "
-            f"exit 97; }}; " + cmd)
+            f"exit 97; }}; export WATTNOT_MODE=act; " + cmd)
 
 
 def _m(minutes: float) -> float:
@@ -174,7 +174,7 @@ def plan(out: Path, model: str = "llama", plan_name: str = "full") -> list[Block
     live = out / "live.jsonl"
     reh = lambda tag, *extra: _py("wattnot.proof.orchestrate", "--mode", "rehearsal",  # noqa: E731
                                   "--out", str(out / "runs" / tag), "--profile", "quick",
-                                  "--auto-approve", "--fresh", "--live-file", str(live), *extra)
+                                  "--auto-approve", "--act", "--fresh", "--live-file", str(live), *extra)
     guard = str(Path(__file__).resolve().parents[3] / "examples/longrun/guardrails-wonder.json")
     return [
         Block("b0-setup", "Launch, setup, probe, go/no-go", 1.0, None),
@@ -200,7 +200,7 @@ def plan_glimmer(out: Path) -> list[Block]:
     live = out / "live.jsonl"
     reh = lambda tag, *extra: _py("wattnot.proof.orchestrate", "--mode", "rehearsal",  # noqa: E731
                                   "--out", str(out / "runs" / tag), "--profile", "quick",
-                                  "--auto-approve", "--fresh", "--live-file", str(live), *extra)
+                                  "--auto-approve", "--act", "--fresh", "--live-file", str(live), *extra)
     guard = str(Path(__file__).resolve().parents[3] / "examples/longrun/guardrails-wonder.json")
     tiers = lambda tag, cfg, *x: _py("wattnot.longrun.harness", "--cap", "350",  # noqa: E731
                                      "--out", str(out / "runs" / tag), "--fake",
@@ -275,7 +275,7 @@ def sweep_live_argv(out: Path, live_file: Path, guard_cfg: str, *, sweep_budget_
     policy allows a 58% drop, so it approves every sweep cap that passes the gates."""
     return _py("wattnot.proof.orchestrate", "--mode", "live", "--host", "{HOST}",
                "--key", "{KEY}", "--model", GLIMMER_MODEL, "--out", str(out / "runs" / "t1-sweep"),
-               "--profile", "quick", "--planner", "wonder", "--wonder-live", "--no-adaptive",
+               "--profile", "quick", "--planner", "wonder", "--wonder-live", "--act", "--no-adaptive",
                "--fresh", "--sweep-budget-s", str(sweep_budget_s), "--warmup", str(warmup),
                "--reps", str(reps), "--grid", grid,
                # Glimmer reasons before answering: floor each request so proof-v1's small QA/math

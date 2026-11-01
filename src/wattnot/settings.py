@@ -28,8 +28,9 @@ DEFAULTS: dict[str, Any] = {
     "dataset": "mixed",
     # "watch": read telemetry and show would-be savings and receipts, change nothing.
     # "act": apply approved changes (power caps, serving config). `wattnot init` writes "watch";
-    # only `wattnot init --act` or an edit to the config turns acting on.
-    "mode": "act",
+    # only `wattnot init --act`, WATTNOT_MODE=act, an edit to the config, or a command's own
+    # --act flag (the long-run VM path passes it) turns acting on. Watch is the safe default.
+    "mode": "watch",
 }
 
 
