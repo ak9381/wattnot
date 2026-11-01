@@ -1,0 +1,219 @@
+{
+  "spec": "wattnot.flow-receipt/1",
+  "tag": "smoke-r05",
+  "dataset": "own",
+  "created_at": "2026-11-01T11:42:08Z",
+  "gpu": "live",
+  "gpu_receipt": {
+    "file": "rcpt_20261101_modal_full_smoke-r05.json",
+    "sha256": "3b936695c7b4e5a7ead074ae71f22644d60869c56c1876dfeedc20cd361bb309"
+  },
+  "limits": {
+    "max_p99_increase": 0.1,
+    "max_p99_increase_pct": 10.0,
+    "source": "default"
+  },
+  "layers": [
+    {
+      "id": "preflight",
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "nvml-probe",
+      "mode": "gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "spend-guard",
+      "mode": "off-gpu-live",
+      "label": "SIMULATED",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "gpu-sweep",
+      "mode": "gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "thinking-budget",
+      "mode": "off-gpu-fake",
+      "label": "SIMULATED",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "tiers",
+      "mode": "off-gpu-fake",
+      "label": "SIMULATED",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "eye-gate",
+      "mode": "off-gpu-fake",
+      "label": "SIMULATED",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "spoken-gate",
+      "mode": "off-gpu-fake",
+      "label": "SIMULATED",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "phase-clock",
+      "mode": "off-gpu-fake",
+      "label": "SIMULATED",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "langchain",
+      "mode": "off-gpu-fake",
+      "label": "MOCK",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "agentwaste-gpu",
+      "mode": "off-gpu-fake",
+      "label": "SIMULATED",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "points",
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "knee",
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "joule-slo",
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "optuna-planner",
+      "mode": "off-gpu-live",
+      "label": "SYNTHETIC",
+      "status": "ok",
+      "artifacts": {
+        "analysis/ablation.json": "9f2ebcf72dbad90be459bb4c0b5d0e3e0564fe800fc11fa465c096c5fc3bbe29"
+      }
+    },
+    {
+      "id": "flex-shed",
+      "mode": "off-gpu-live",
+      "label": "SIMULATED",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "fleet-impact",
+      "mode": "off-gpu-live",
+      "label": "ESTIMATE",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "codemode",
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "label_note": "sandbox cost",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "cloud-router",
+      "mode": "replay",
+      "label": "REPLAY",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "multi-provider",
+      "mode": "replay",
+      "label": "REPLAY",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "sam-hotspot",
+      "mode": "off-gpu-mock",
+      "label": "MOCK",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "wonderchart",
+      "mode": "off-gpu-mock",
+      "label": "MOCK",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "muse-code-pr",
+      "mode": "replay",
+      "label": "REPLAY",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "narrator",
+      "mode": "replay",
+      "label": "REPLAY",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "voice-tuner",
+      "mode": "off-gpu-live",
+      "label": "MEASURED",
+      "label_note": "local parse",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "approvals",
+      "mode": "off-gpu-live",
+      "label": "SIMULATED",
+      "label_note": "local store, real apply/undo",
+      "status": "ok",
+      "artifacts": {}
+    },
+    {
+      "id": "spark-trace",
+      "mode": "off-gpu-mock",
+      "label": "MOCK",
+      "status": "ok",
+      "artifacts": {
+        "spark/trace.json": "54b876e2daa82425d85bc383f75d6b00789a511538916853453dc30f31fd9106"
+      }
+    }
+  ],
+  "integrity": {
+    "sha256": "3ad58b6d665606963dc8c365539dafb406c001f712a2fe23e661c7bea4c01fbf",
+    "signer": "offline:aa51c25190efcc20",
+    "rekor": null
+  }
+}

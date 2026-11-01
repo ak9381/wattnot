@@ -1,0 +1,3 @@
+{"label": "SIMULATED", "model": "meta-models/Muse-Glimmer-30B", "off": {"joules": 180000.0, "successes": 30, "runs": 40, "calls": 400, "j_per_success": 6000.0}, "on": {"joules": 140000.0, "successes": 30, "runs": 40, "calls": 400, "j_per_success": 4666.7}, "joules_saved": 40000.0, "saved_pct": 22.22, "routing": "not measured (one model on the card)"}
+
+--- stderr ---

@@ -1,0 +1,14 @@
+tiers rep 1 stock done
+tiers rep 1 cap done
+tiers rep 1 cap done
+tiers rep 1 stock done
+tiers-v1 at 325 W vs stock (MOCK; mL and $ are ESTIMATES)
+tier       Wh/task  change  mL/task  $en/1k  $gpu/1k    pass s->c    p99   cut  gate
+easy        0.0008  -32.5%    0.000   0.000    0.000 100.0->100.0   +12%    0%  blocked (p99 +12% (> 10%))
+medium      0.0117  -32.5%    0.004   0.001    0.000 100.0->100.0   +13%    0%  blocked (p99 +13% (> 10%))
+hard        0.0234  -32.5%    0.008   0.003    0.007 100.0->100.0   +13%    0%  blocked (p99 +13% (> 10%))
+complex     0.0536  -32.5%    0.019   0.006    0.000 100.0->100.0   +12%    0%  blocked (p99 +12% (> 10%))
+cut short (finish=length): 0/32 = 0% — reported, not counted as quality misses
+reasoning-token share [ESTIMATE]: 0.0% (0/3672 tokens)
+
+--- stderr ---

@@ -1,0 +1,24 @@
+diff --git a/launch.sh b/launch.sh
+index f6163d1..6bbeb8f 100644
+--- a/launch.sh
++++ b/launch.sh
+@@ -10,5 +10,5 @@ sudo nvidia-smi -pl 350
+ exec vllm serve meta-llama/Llama-3.1-8B-Instruct \
+     --host 0.0.0.0 \
+     --port 8000 \
+-    --max-num-seqs 256 \
++    --max-num-seqs 64 \
+     --gpu-memory-utilization 0.90
+diff --git a/values.yaml b/values.yaml
+index 353b104..1971969 100644
+--- a/values.yaml
++++ b/values.yaml
+@@ -8,7 +8,7 @@ image:
+ vllm:
+   model: meta-llama/Llama-3.1-8B-Instruct
+   port: 8000
+-  maxNumSeqs: 256
++  maxNumSeqs: 64
+   gpuMemoryUtilization: 0.90
+   powerCapW: 350
+ 

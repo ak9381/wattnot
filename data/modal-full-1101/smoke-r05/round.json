@@ -1,0 +1,500 @@
+{
+ "round": "r05",
+ "tag": "smoke-r05",
+ "leg": "modal",
+ "status": "done",
+ "label": "MEASURED",
+ "model": "meta-models/Muse-Glimmer-30B",
+ "where": "Modal NVIDIA A100-SXM4-80GB, our own vLLM",
+ "billing": "Modal hackathon credits",
+ "smoke": true,
+ "fake": false,
+ "started_utc": "2026-11-01T11:35:00.165689+00:00",
+ "ended_utc": "2026-11-01T11:41:34.793517+00:00",
+ "levers": {
+  "without_wattnot": "BF16, prefix cache off, thinking on (3072-token budget), concurrency 4",
+  "with_wattnot": "every lever Modal allows; table in docs/MODAL-FULL-STAGE.md"
+ },
+ "results": {
+  "accuracy_without": 1.0,
+  "accuracy_with": 1.0,
+  "j_per_correct_without": 4552.9,
+  "j_per_correct_with": 4170.1,
+  "energy_saved_pct": {
+   "value": 8.41,
+   "label": "MEASURED"
+  },
+  "j_per_correct_saved_pct": {
+   "value": 8.41,
+   "label": "MEASURED"
+  },
+  "per_arm": {
+   "without_wattnot": {
+    "tag": "without",
+    "arm": "without_wattnot",
+    "answers": 3,
+    "correct": 3,
+    "accuracy": 1.0,
+    "per_set": {
+     "ours": {
+      "correct": 1,
+      "answers": 1
+     },
+     "gsm8k": {
+      "correct": 1,
+      "answers": 1
+     },
+     "humaneval": {
+      "correct": 1,
+      "answers": 1
+     }
+    },
+    "calls": 3,
+    "errors": 0,
+    "truncated": 0,
+    "tokens": {
+     "prompt": 406,
+     "cached": 0,
+     "completion": 1183,
+     "label": "MEASURED"
+    },
+    "energy_j": {
+     "value": 13658.7,
+     "label": "MEASURED",
+     "method": "NVML total-energy counter across the whole arm"
+    },
+    "energy_wh": {
+     "value": 3.7941,
+     "label": "MEASURED"
+    },
+    "wall_s": {
+     "value": 42.0,
+     "label": "MEASURED"
+    },
+    "avg_w": {
+     "value": 324.9,
+     "label": "MEASURED"
+    },
+    "j_per_correct": {
+     "value": 4552.9,
+     "label": "MEASURED"
+    },
+    "item_latency_s": {
+     "p50": 11.242,
+     "p99": 27.7986,
+     "label": "MEASURED"
+    },
+    "stepped_up": 0,
+    "concurrency": 4,
+    "wh_per_item_samples": {
+     "values": [
+      0.248858,
+      1.018306,
+      2.526919
+     ],
+     "label": "MEASURED",
+     "method": "NVML counter per chunk of 1 items / items in chunk"
+    }
+   },
+   "with_wattnot": {
+    "tag": "with",
+    "arm": "with_wattnot",
+    "answers": 3,
+    "correct": 3,
+    "accuracy": 1.0,
+    "per_set": {
+     "ours": {
+      "correct": 1,
+      "answers": 1
+     },
+     "gsm8k": {
+      "correct": 1,
+      "answers": 1
+     },
+     "humaneval": {
+      "correct": 1,
+      "answers": 1
+     }
+    },
+    "calls": 4,
+    "errors": 0,
+    "truncated": 1,
+    "tokens": {
+     "prompt": 477,
+     "cached": 0,
+     "completion": 1082,
+     "label": "MEASURED"
+    },
+    "energy_j": {
+     "value": 12510.2,
+     "label": "MEASURED",
+     "method": "NVML total-energy counter across the whole arm"
+    },
+    "energy_wh": {
+     "value": 3.4751,
+     "label": "MEASURED"
+    },
+    "wall_s": {
+     "value": 38.8,
+     "label": "MEASURED"
+    },
+    "avg_w": {
+     "value": 322.2,
+     "label": "MEASURED"
+    },
+    "j_per_correct": {
+     "value": 4170.1,
+     "label": "MEASURED"
+    },
+    "item_latency_s": {
+     "p50": 11.229,
+     "p99": 21.9251,
+     "label": "MEASURED"
+    },
+    "stepped_up": 1,
+    "concurrency": 4,
+    "wh_per_item_samples": {
+     "values": [
+      0.460178,
+      1.012525,
+      2.002364
+     ],
+     "label": "MEASURED",
+     "method": "NVML counter per chunk of 1 items / items in chunk"
+    },
+    "request_levers": {
+     "calls": 4,
+     "tokens_saved_est": 0,
+     "guard_stops": 0,
+     "guard_flags": 0
+    }
+   }
+  }
+ },
+ "levers_detail": {
+  "batch_kv": {
+   "grid": [],
+   "kept": {
+    "concurrency": 4,
+    "max_num_seqs": 64
+   },
+   "label": "MEASURED"
+  },
+  "fp8": null,
+  "limits": {
+   "p99_limit": "+10%",
+   "p99_ok": true,
+   "joule_slo_ok": true,
+   "quality_gate": {
+    "keep": true,
+    "accuracy_ok": true,
+    "energy_ok": true,
+    "acc_drop_pts": 0.0,
+    "label": "MEASURED"
+   },
+   "label": "MEASURED"
+  },
+  "blocks": {}
+ },
+ "cap_probe": {
+  "writable": false,
+  "reason": "NVML refused the power-limit write (NVMLError_NoPermission); Modal containers have no privileged GPU control",
+  "label": "MEASURED"
+ },
+ "spark_summary": {
+  "label": "LIVE",
+  "graded": 6,
+  "disagreements": 0,
+  "agreement": 1.0,
+  "stopped": null
+ },
+ "receipt": "data/modal-full-1101/smoke-r05/sweep/rcpt_20261101_modal_full_smoke-r05.json",
+ "raw_dir": "data/modal-full-1101/smoke-r05",
+ "spend": {
+  "limit": 1,
+  "modal_usd": {
+   "value": 0.2965,
+   "label": "ESTIMATE",
+   "method": "wall minutes incl. image and container start x list price"
+  },
+  "stage_total_usd": {
+   "value": 0.6739,
+   "label": "ESTIMATE"
+  },
+  "teardown": {
+   "stopped": [],
+   "still_running": [],
+   "checked_at": "2026-11-01T11:41:50.034027+00:00"
+  },
+  "meta_usd": {
+   "value": 0.0057,
+   "label": "MEASURED",
+   "source": "Meta spend ledger"
+  },
+  "flow_rc": 1,
+  "musecode": {
+   "status": "ok",
+   "result": "ApplyPRResult(patch_diff='--- a/launch.sh\\n+++ b/launch.sh\\n@@ -10,5 +10,5 @@\\n exec vllm serve meta-llama/Llama-3.1-8B-Instruct \\\\\\n     --host 0.0.0.0 \\\\\\n     --port 8000 \\\\\\n-    --max-num-seqs 64 \\\\\\n+    --max-num-seqs 16 \\\\\\n     --gpu-memory-utilization 0.90\\n--- a/values.yaml\\n+++ b/values.",
+   "pr_opened": false
+  }
+ },
+ "features": [
+  {
+   "id": "effort_routing",
+   "name": "Reasoning-effort + cheapest-first routing (low, step up on a failed check)",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "thinking_budget",
+   "name": "Thinking-budget enforcer (max_tokens per effort)",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "router",
+   "name": "Backend/effort router",
+   "status": "ON",
+   "reason": "thinking off first, per-tier thinking budget on a failed check; one backend"
+  },
+  {
+   "id": "context_saver",
+   "name": "Agent saver: tool-output dedup + memory compression",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "waste_guard",
+   "name": "Agent-waste proxy (repeat/no-op/cycle/overspend detectors)",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "code_mode",
+   "name": "Code Mode with locked sandbox + network boundary",
+   "status": "ON",
+   "reason": "runs on the box over recorded traces"
+  },
+  {
+   "id": "prefix_cache_provider",
+   "name": "Prefix caching (provider side, reported cached tokens)",
+   "status": "ON",
+   "reason": "our own vLLM; cached_tokens MEASURED from usage"
+  },
+  {
+   "id": "concurrency_batching",
+   "name": "Concurrency batching (client side)",
+   "status": "ON",
+   "reason": "server-side batching via the kept --max-num-seqs"
+  },
+  {
+   "id": "gates",
+   "name": "Noise gate, fixed answer gate, LLM judge, reasoning-leak strip",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "spark_grades",
+   "name": "Muse Spark grades every answer",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "joule_slo",
+   "name": "Joule-SLO + user p99 limit",
+   "status": "ON",
+   "reason": "Joule-SLO + p99 limit on MEASURED energy"
+  },
+  {
+   "id": "eye_check",
+   "name": "Eye check: vision gate on the SYNTHETIC Muse Image set",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "sam_hotspot",
+   "name": "SAM 3.1 hotspot audit",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "hearing_check",
+   "name": "Hearing check: Muse Voice Transcribe on spoken answers",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "wonder_planner",
+   "name": "Muse Wonder planner + Wonderchart",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "spark_trace",
+   "name": "Spark 4-call trace (probe, proposal, gate, receipt)",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "approvals",
+   "name": "Approve-before-apply with risk classifier, undo",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "musecode_pr",
+   "name": "Muse Code PR flow (ak9381/wattnot-demo-deploy only)",
+   "status": "ON",
+   "reason": "patch always built; PR opened only with --open-pr at stage time"
+  },
+  {
+   "id": "receipt",
+   "name": "Signed receipt + SCI carbon/water + joules per good answer",
+   "status": "ON",
+   "reason": "local signing key"
+  },
+  {
+   "id": "eu_report",
+   "name": "EU report",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "label_lint",
+   "name": "Label-honesty lint",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "spend_guard",
+   "name": "Spend guards (Baseten hard cap, Meta soft cap, ledger)",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "power_caps",
+   "name": "Power-cap sweep + J/correct gate",
+   "status": "OFF",
+   "reason": "Modal refuses NVML power-limit writes (probed each round, recorded)"
+  },
+  {
+   "id": "fp8",
+   "name": "FP8 quantization keep/reject gate",
+   "status": "ON",
+   "reason": "restart vLLM with --quantization fp8; kept only if accuracy holds (-2 pts) and J/correct drops, with the eye and hearing checks re-run on the candidate"
+  },
+  {
+   "id": "kv_batch",
+   "name": "Batch-size + KV-cache sweep",
+   "status": "ON",
+   "reason": "sweep client concurrency x --max-num-seqs on a 24-item slice, keep the lowest MEASURED J/correct inside the quality gate"
+  },
+  {
+   "id": "vllm_prefix",
+   "name": "vLLM prefix-cache control",
+   "status": "ON",
+   "reason": "--enable-prefix-caching in the with-WattNot server, off in the stock server"
+  },
+  {
+   "id": "clock_sidecar",
+   "name": "Phase-aware clock sidecar, marginal-joule knee",
+   "status": "OFF",
+   "reason": "needs GPU clock writes, which Modal also refuses"
+  },
+  {
+   "id": "moe",
+   "name": "MoE top-k / per-expert pinning",
+   "status": "OFF",
+   "reason": "Glimmer 30B is served here; MoE top-k needs Spark Open self-served (8x B200)"
+  },
+  {
+   "id": "measured_energy",
+   "name": "MEASURED GPU energy (NVML)",
+   "status": "ON",
+   "reason": "NVML total-energy counter brackets each arm and each chunk of items"
+  },
+  {
+   "id": "flex",
+   "name": "Flex grid-event load shedding",
+   "status": "OFF",
+   "reason": "simulator only"
+  },
+  {
+   "id": "rekor",
+   "name": "Rekor publish",
+   "status": "OFF",
+   "reason": "only after the long run, with Akash's yes"
+  }
+ ],
+ "feature_stages": {
+  "mode": "smoke",
+  "label": "MOCK",
+  "eye_check": {
+   "status": "ok",
+   "argv": [
+    "--out",
+    "/workspace/wn-main/data/modal-full-1101/smoke-r05/features/eye",
+    "--fake"
+   ]
+  },
+  "hearing_check": {
+   "status": "ok",
+   "argv": [
+    "--out",
+    "/workspace/wn-main/data/modal-full-1101/smoke-r05/features/voice",
+    "--fake"
+   ]
+  },
+  "sam_hotspot": {
+   "status": "ok",
+   "argv": [
+    "--out",
+    "/workspace/wn-main/data/modal-full-1101/smoke-r05/features/sam",
+    "--fake"
+   ]
+  },
+  "wonder_chart": {
+   "status": "ok",
+   "argv": [
+    "--sweep",
+    "/workspace/wn-main/data/modal-full-1101/smoke-r05/features/trials.json",
+    "--out",
+    "/workspace/wn-main/data/modal-full-1101/smoke-r05/features/wonder",
+    "--fake"
+   ]
+  },
+  "spark_trace": {
+   "status": "ok",
+   "steps": 4
+  },
+  "approvals": {
+   "status": "ok",
+   "risk": "high",
+   "decision": "recorded (no apply in smoke)"
+  },
+  "musecode_pr": {
+   "status": "ok",
+   "result": "ApplyPRResult(patch_diff='--- a/launch.sh\\n+++ b/launch.sh\\n@@ -10,5 +10,5 @@\\n exec vllm serve meta-llama/Llama-3.1-8B-Instruct \\\\\\n     --host 0.0.0.0 \\\\\\n     --port 8000 \\\\\\n-    --max-num-seqs 64 \\\\\\n+    --max-num-seqs 16 \\\\\\n     --gpu-memory-utilization 0.90\\n--- a/values.yaml\\n+++ b/values.",
+   "pr_opened": false
+  },
+  "code_mode": {
+   "status": "ok",
+   "runs": 144,
+   "label": "ESTIMATE"
+  },
+  "receipt": {
+   "status": "ok",
+   "path": "/workspace/wn-main/data/modal-full-1101/smoke-r05/features/receipt.json",
+   "signer": "offline:cc61d7cb91526c69",
+   "bundle": "/workspace/wn-main/data/modal-full-1101/smoke-r05/features/receipt.sigstore.json"
+  },
+  "eu_report": {
+   "status": "ok",
+   "wording_issues": []
+  },
+  "label_lint": {
+   "status": "ok",
+   "issues": []
+  }
+ }
+}

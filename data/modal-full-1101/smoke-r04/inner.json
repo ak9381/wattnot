@@ -1,0 +1,196 @@
+{
+ "started_utc": "2026-11-01T11:24:38.146647+00:00",
+ "gpu": "NVIDIA A100-SXM4-80GB",
+ "fake": false,
+ "idle_w": {
+  "value": 65.3,
+  "label": "MEASURED",
+  "when": "before vLLM start"
+ },
+ "cap_probe": {
+  "writable": false,
+  "reason": "NVML refused the power-limit write (NVMLError_NoPermission); Modal containers have no privileged GPU control",
+  "label": "MEASURED"
+ },
+ "items": 3,
+ "slice": 3,
+ "steps": {
+  "without_server": {
+   "fp8": false,
+   "prefix_caching": false,
+   "max_num_seqs": 64,
+   "start_s": {
+    "value": 276.2,
+    "label": "MEASURED"
+   }
+  },
+  "without": {
+   "tag": "without",
+   "arm": "without_wattnot",
+   "answers": 3,
+   "correct": 3,
+   "accuracy": 1.0,
+   "per_set": {
+    "ours": {
+     "correct": 1,
+     "answers": 1
+    },
+    "gsm8k": {
+     "correct": 1,
+     "answers": 1
+    },
+    "humaneval": {
+     "correct": 1,
+     "answers": 1
+    }
+   },
+   "calls": 3,
+   "errors": 0,
+   "truncated": 0,
+   "tokens": {
+    "prompt": 406,
+    "cached": 0,
+    "completion": 1018,
+    "label": "MEASURED"
+   },
+   "energy_j": {
+    "value": 12314.2,
+    "label": "MEASURED",
+    "method": "NVML total-energy counter across the whole arm"
+   },
+   "wall_s": {
+    "value": 36.2,
+    "label": "MEASURED"
+   },
+   "avg_w": {
+    "value": 339.9,
+    "label": "MEASURED"
+   },
+   "j_per_correct": {
+    "value": 4104.7,
+    "label": "MEASURED"
+   },
+   "item_latency_s": {
+    "p50": 11.2729,
+    "p99": 21.9993,
+    "label": "MEASURED"
+   },
+   "stepped_up": 0,
+   "concurrency": 4,
+   "wh_per_item_samples": {
+    "values": [
+     0.257806,
+     1.063239,
+     2.099569
+    ],
+    "label": "MEASURED",
+    "method": "NVML counter per chunk of 1 items / items in chunk"
+   }
+  },
+  "batch_kv": {
+   "grid": [],
+   "kept": {
+    "concurrency": 4,
+    "max_num_seqs": 64
+   },
+   "label": "MEASURED"
+  },
+  "with_server": {
+   "fp8": false,
+   "prefix_caching": true,
+   "max_num_seqs": 64,
+   "start_s": {
+    "value": 102.1,
+    "label": "MEASURED"
+   }
+  },
+  "with": {
+   "tag": "with",
+   "arm": "with_wattnot",
+   "answers": 3,
+   "correct": 3,
+   "accuracy": 1.0,
+   "per_set": {
+    "ours": {
+     "correct": 1,
+     "answers": 1
+    },
+    "gsm8k": {
+     "correct": 1,
+     "answers": 1
+    },
+    "humaneval": {
+     "correct": 1,
+     "answers": 1
+    }
+   },
+   "calls": 4,
+   "errors": 0,
+   "truncated": 1,
+   "tokens": {
+    "prompt": 477,
+    "cached": 0,
+    "completion": 1025,
+    "label": "MEASURED"
+   },
+   "energy_j": {
+    "value": 12451.6,
+    "label": "MEASURED",
+    "method": "NVML total-energy counter across the whole arm"
+   },
+   "wall_s": {
+    "value": 36.5,
+    "label": "MEASURED"
+   },
+   "avg_w": {
+    "value": 341.6,
+    "label": "MEASURED"
+   },
+   "j_per_correct": {
+    "value": 4150.5,
+    "label": "MEASURED"
+   },
+   "item_latency_s": {
+    "p50": 11.2614,
+    "p99": 21.6659,
+    "label": "MEASURED"
+   },
+   "stepped_up": 1,
+   "concurrency": 4,
+   "wh_per_item_samples": {
+    "values": [
+     0.313044,
+     1.063211,
+     2.082514
+    ],
+    "label": "MEASURED",
+    "method": "NVML counter per chunk of 1 items / items in chunk"
+   }
+  },
+  "limits": {
+   "p99_limit": "+10%",
+   "p99_ok": true,
+   "joule_slo_ok": false,
+   "quality_gate": {
+    "keep": false,
+    "accuracy_ok": true,
+    "energy_ok": false,
+    "acc_drop_pts": 0.0,
+    "label": "MEASURED"
+   },
+   "label": "MEASURED"
+  },
+  "blocks": {
+   "eye": {
+    "rc": 0,
+    "wall_s": 38.1,
+    "out": "eye",
+    "energy_j": {
+     "value": 13730.5,
+     "label": "MEASURED"
+    }
+   }
+  }
+ },
+ "ended_utc": "2026-11-01T11:33:04.190201+00:00"
+}

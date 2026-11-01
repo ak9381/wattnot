@@ -1,0 +1,252 @@
+{
+ "round": "r04",
+ "leg": "modal",
+ "status": "done",
+ "label": "MEASURED",
+ "model": "meta-models/Muse-Spark-Open-816B-A42B",
+ "where": "Modal Shared Endpoint (Muse Spark Open)",
+ "billing": "Modal hackathon credits",
+ "started_utc": "2026-11-01T10:31:28.765510+00:00",
+ "ended_utc": "2026-11-01T10:31:38.914470+00:00",
+ "stop_reason": null,
+ "smoke": true,
+ "note": "accuracy, tokens, USD and latency MEASURED; energy ESTIMATE from tokens (hosted API, no GPU meter); deterministic checks decide, Muse Spark grades beside them",
+ "levers": {
+  "without_wattnot": "effort medium for every request",
+  "with_wattnot": "effort low first, step up to medium only when the fixed check fails"
+ },
+ "results": {
+  "accuracy_without": 1.0,
+  "accuracy_with": 1.0,
+  "j_per_correct_without": 575.74,
+  "j_per_correct_with": 391.68,
+  "energy_saved_pct": {
+   "value": 31.97,
+   "label": "ESTIMATE"
+  },
+  "usd_saved_pct": {
+   "value": 41.4,
+   "label": "MEASURED"
+  },
+  "per_arm": {
+   "without_wattnot": {
+    "answers": 3,
+    "correct": 3,
+    "accuracy": 1.0,
+    "per_set": {
+     "ours": {
+      "correct": 1,
+      "answers": 1,
+      "accuracy": 1.0
+     },
+     "gsm8k": {
+      "correct": 1,
+      "answers": 1,
+      "accuracy": 1.0
+     },
+     "humaneval": {
+      "correct": 1,
+      "answers": 1,
+      "accuracy": 1.0
+     }
+    },
+    "calls": 3,
+    "errors": 0,
+    "tokens": {
+     "prompt": 670,
+     "cached": 0,
+     "completion": 1407,
+     "label": "MEASURED"
+    },
+    "usd": {
+     "value": 0.006817,
+     "label": "MEASURED",
+     "method": "tokens x Modal list price (same as Baseten)"
+    },
+    "energy_wh": {
+     "value": 0.4798,
+     "low": 0.0872,
+     "high": 0.8723,
+     "label": "ESTIMATE",
+     "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+    },
+    "j_per_correct": {
+     "value": 575.74,
+     "label": "ESTIMATE"
+    },
+    "item_latency_s": {
+     "p50": 3.3173,
+     "p99": 4.3493,
+     "label": "MEASURED"
+    },
+    "call_latency_s": {
+     "p50": 3.3166,
+     "p99": 4.3137,
+     "mean": 3.5826,
+     "label": "MEASURED"
+    },
+    "stepped_up": 0
+   },
+   "with_wattnot": {
+    "answers": 3,
+    "correct": 3,
+    "accuracy": 1.0,
+    "per_set": {
+     "ours": {
+      "correct": 1,
+      "answers": 1,
+      "accuracy": 1.0
+     },
+     "gsm8k": {
+      "correct": 1,
+      "answers": 1,
+      "accuracy": 1.0
+     },
+     "humaneval": {
+      "correct": 1,
+      "answers": 1,
+      "accuracy": 1.0
+     }
+    },
+    "calls": 3,
+    "errors": 0,
+    "tokens": {
+     "prompt": 670,
+     "cached": 0,
+     "completion": 743,
+     "label": "MEASURED"
+    },
+    "usd": {
+     "value": 0.003995,
+     "label": "MEASURED",
+     "method": "tokens x Modal list price (same as Baseten)"
+    },
+    "energy_wh": {
+     "value": 0.3264,
+     "low": 0.0593,
+     "high": 0.5935,
+     "label": "ESTIMATE",
+     "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+    },
+    "j_per_correct": {
+     "value": 391.68,
+     "label": "ESTIMATE"
+    },
+    "item_latency_s": {
+     "p50": 2.7781,
+     "p99": 2.825,
+     "label": "MEASURED"
+    },
+    "call_latency_s": {
+     "p50": 2.7511,
+     "p99": 2.8244,
+     "mean": 2.3313,
+     "label": "MEASURED"
+    },
+    "stepped_up": 0
+   }
+  }
+ },
+ "spend": {
+  "modal_usd": {
+   "value": 0.010812,
+   "label": "MEASURED",
+   "method": "tokens x list price (not yet checked against the invoice)"
+  },
+  "meta_usd": {
+   "value": 0.006072,
+   "label": "MEASURED",
+   "source": "Meta spend ledger"
+  },
+  "meta_ledger_after_usd": 26.912
+ },
+ "spark_summary": {
+  "label": "LIVE",
+  "answers": 6,
+  "spark_graded": 6,
+  "agreement": 1.0,
+  "disagreements": 0,
+  "stopped": null
+ },
+ "answers": [
+  {
+   "id": "easy-00",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "80+31 equals 111 as answered.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.1185
+  },
+  {
+   "id": "Janet\u2019s ducks lay 16 eggs per day. She e",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 16-7=9 eggs at $2 yields $18 correctly.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.3173
+  },
+  {
+   "id": "HumanEval/0",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Sorted adjacent check correctly detects close pair.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.3493
+  },
+  {
+   "id": "easy-00",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "80+31 equals 111 as answered.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.419
+  },
+  {
+   "id": "Janet\u2019s ducks lay 16 eggs per day. She e",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Arithmetic 16-3-4=9 and 9*2=18 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.825
+  },
+  {
+   "id": "HumanEval/0",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Double loop correctly returns True when any pair distance is below threshold.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.7781
+  }
+ ],
+ "raw_dir": "data/modal-1101/r04"
+}

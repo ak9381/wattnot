@@ -1,0 +1,19 @@
+{
+ "usd": 0.6739,
+ "rounds": [
+  {
+   "round": "smoke-r04",
+   "usd": 0.3774,
+   "minutes": 9.1,
+   "at": "2026-11-01T11:33:14.918525+00:00"
+  },
+  {
+   "round": "smoke-r05",
+   "usd": 0.2965,
+   "minutes": 7.1,
+   "at": "2026-11-01T11:41:45.828792+00:00"
+  }
+ ],
+ "label": "ESTIMATE",
+ "method": "container wall minutes x A100-80GB list price"
+}

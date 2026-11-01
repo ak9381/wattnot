@@ -137,8 +137,35 @@ def _main(mod: str, argv: list[str]) -> dict:
     return {"argv": argv}
 
 
+MODAL_GPU_OVERRIDES: dict[str, tuple[str, str]] = {
+    "fp8": ("ON", "restart vLLM with --quantization fp8; kept only if accuracy holds (-2 pts) and "
+            "J/correct drops, with the eye and hearing checks re-run on the candidate"),
+    "kv_batch": ("ON", "sweep client concurrency x --max-num-seqs on a 24-item slice, keep the lowest "
+                 "MEASURED J/correct inside the quality gate"),
+    "vllm_prefix": ("ON", "--enable-prefix-caching in the with-WattNot server, off in the stock server"),
+    "prefix_cache_provider": ("ON", "our own vLLM; cached_tokens MEASURED from usage"),
+    "measured_energy": ("ON", "NVML total-energy counter brackets each arm and each chunk of items"),
+    "concurrency_batching": ("ON", "server-side batching via the kept --max-num-seqs"),
+    "router": ("ON", "thinking off first, per-tier thinking budget on a failed check; one backend"),
+    "joule_slo": ("ON", "Joule-SLO + p99 limit on MEASURED energy"),
+    "power_caps": ("OFF", "Modal refuses NVML power-limit writes (probed each round, recorded)"),
+    "clock_sidecar": ("OFF", "needs GPU clock writes, which Modal also refuses"),
+    "own_gpu_serving": ("ON", "Glimmer 30B on our own vLLM, one A100 on Modal"),
+    "moe": ("OFF", "Glimmer 30B is served here; MoE top-k needs Spark Open self-served (8x B200)"),
+}
+
+
+def gpu_feature_table() -> list[dict]:
+    """FEATURES for the own-GPU Modal stage: GPU-side levers switched ON on top of the hosted set."""
+    rows = feature_table()
+    for r in rows:
+        if r["id"] in MODAL_GPU_OVERRIDES:
+            r["status"], r["reason"] = MODAL_GPU_OVERRIDES[r["id"]]
+    return rows
+
+
 def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: bool = False,
-               demo_repo: Path | None = None, log=None, cap=None, rates=None, do_pr: bool = True) -> dict:
+               demo_repo: Path | None = None, log=None, cap=None, rates=None, do_pr: bool = True, table=None) -> dict:
     """Run every post-answer feature stage; returns {stage: result} and writes features.json."""
     fake = mode != "live"
     lab = "MOCK" if fake else "MEASURED"
@@ -269,7 +296,7 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
         rec = {"kind": "hosted-e2e", "approvals": (res.get("approvals") or {}),
                "musecode_pr": res.get("musecode_pr"), "feature_stages": {k: v.get("status") for k, v in res.items()
                                                                           if isinstance(v, dict)}, "round": round_doc.get("round"), "model": round_doc.get("model"),
-               "features": feature_table(), "results": round_doc.get("results"),
+               "features": (table or feature_table)(), "results": round_doc.get("results"),
                "spend": round_doc.get("spend"), "provider_usage": round_doc.get("provider_usage"), "labels": {"energy": "ESTIMATE", "tokens": "MEASURED"},
                "integrity": {"signer": None}}
         body = {k: v for k, v in rec.items() if k != "integrity"}
@@ -311,7 +338,7 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
         return {"issues": L(json.loads((d / "receipt.json").read_text()))[:10]}
     _stage(res, "label_lint", lint)
 
-    (d / "features.json").write_text(json.dumps({"table": feature_table(), "stages": res}, indent=1, default=str))
+    (d / "features.json").write_text(json.dumps({"table": (table or feature_table)(), "stages": res}, indent=1, default=str))
     return res
 
 

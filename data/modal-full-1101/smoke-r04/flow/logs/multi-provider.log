@@ -1,0 +1,3 @@
+{"spec": "wattnot.multiprovider-route/1", "label": "REPLAY", "warning": "recorded runs, different prompts per provider; not a same-prompt result", "modal": {"j_per_request_measured": 1397.291, "excluded": "answers were not graded on 31 Oct (all hit max_tokens), so Modal cannot pass the quality gate in this replay"}, "baseten_usd_per_1k_measured": 1.863593, "decision": {"gsm8k300": {"pass_pct": {"h100_e2e": 100.0, "baseten": 100.0}, "gate_passed": ["baseten", "h100_e2e"], "by": "usd_per_correct", "scores": {"h100_e2e": 0.0149, "baseten": 0.0019}, "route_to": "baseten"}, "humaneval164": {"pass_p
+
+--- stderr ---
