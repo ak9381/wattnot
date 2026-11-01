@@ -1,0 +1,5182 @@
+{
+ "round": "r04",
+ "leg": "modal",
+ "status": "baseline",
+ "label": "MEASURED",
+ "model": "meta-models/Muse-Spark-Open-816B-A42B",
+ "where": "Modal Shared Endpoint (Muse Spark Open)",
+ "billing": "Modal hackathon credits",
+ "started_utc": "2026-11-01T10:32:04.321448+00:00",
+ "ended_utc": "2026-11-01T10:51:23.644136+00:00",
+ "stop_reason": null,
+ "smoke": false,
+ "note": "accuracy, tokens, USD and latency MEASURED; energy ESTIMATE from tokens (hosted API, no GPU meter); deterministic checks decide, Muse Spark grades beside them",
+ "levers": {
+  "without_wattnot": "effort medium for every request",
+  "with_wattnot": "effort low first, step up to medium only when the fixed check fails"
+ },
+ "results": {
+  "accuracy_without": 0.8854,
+  "accuracy_with": 0.9271,
+  "j_per_correct_without": 1346.71,
+  "j_per_correct_with": 1238.02,
+  "energy_saved_pct": {
+   "value": 3.74,
+   "label": "ESTIMATE"
+  },
+  "usd_saved_pct": {
+   "value": 25.66,
+   "label": "MEASURED"
+  },
+  "per_arm": {
+   "without_wattnot": {
+    "answers": 192,
+    "correct": 170,
+    "accuracy": 0.8854,
+    "per_set": {
+     "ours": {
+      "correct": 72,
+      "answers": 92,
+      "accuracy": 0.7826
+     },
+     "gsm8k": {
+      "correct": 59,
+      "answers": 60,
+      "accuracy": 0.9833
+     },
+     "humaneval": {
+      "correct": 39,
+      "answers": 40,
+      "accuracy": 0.975
+     }
+    },
+    "calls": 300,
+    "errors": 0,
+    "tokens": {
+     "prompt": 115209,
+     "cached": 0,
+     "completion": 160092,
+     "label": "MEASURED"
+    },
+    "usd": {
+     "value": 0.824402,
+     "label": "MEASURED",
+     "method": "tokens x Modal list price (same as Baseten)"
+    },
+    "energy_wh": {
+     "value": 63.5945,
+     "low": 11.5626,
+     "high": 115.6264,
+     "label": "ESTIMATE",
+     "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+    },
+    "j_per_correct": {
+     "value": 1346.71,
+     "label": "ESTIMATE"
+    },
+    "item_latency_s": {
+     "p50": 4.5243,
+     "p99": 36.4308,
+     "label": "MEASURED"
+    },
+    "call_latency_s": {
+     "p50": 3.6408,
+     "p99": 14.7288,
+     "mean": 4.2732,
+     "label": "MEASURED"
+    },
+    "stepped_up": 0
+   },
+   "with_wattnot": {
+    "answers": 192,
+    "correct": 178,
+    "accuracy": 0.9271,
+    "per_set": {
+     "ours": {
+      "correct": 80,
+      "answers": 92,
+      "accuracy": 0.8696
+     },
+     "gsm8k": {
+      "correct": 59,
+      "answers": 60,
+      "accuracy": 0.9833
+     },
+     "humaneval": {
+      "correct": 39,
+      "answers": 40,
+      "accuracy": 0.975
+     }
+    },
+    "calls": 400,
+    "errors": 4,
+    "tokens": {
+     "prompt": 171129,
+     "cached": 0,
+     "completion": 93864,
+     "label": "MEASURED"
+    },
+    "usd": {
+     "value": 0.612833,
+     "label": "MEASURED",
+     "method": "tokens x Modal list price (same as Baseten)"
+    },
+    "energy_wh": {
+     "value": 61.2134,
+     "low": 11.1297,
+     "high": 111.2971,
+     "label": "ESTIMATE",
+     "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+    },
+    "j_per_correct": {
+     "value": 1238.02,
+     "label": "ESTIMATE"
+    },
+    "item_latency_s": {
+     "p50": 3.3032,
+     "p99": 279.8954,
+     "label": "MEASURED"
+    },
+    "call_latency_s": {
+     "p50": 2.7118,
+     "p99": 7.2377,
+     "mean": 3.014,
+     "label": "MEASURED"
+    },
+    "stepped_up": 15
+   }
+  }
+ },
+ "spend": {
+  "modal_usd": {
+   "value": 1.437236,
+   "label": "MEASURED",
+   "method": "tokens x list price (not yet checked against the invoice)"
+  },
+  "meta_usd": {
+   "value": 0.377423,
+   "label": "MEASURED",
+   "source": "Meta spend ledger"
+  },
+  "meta_ledger_after_usd": 27.2894
+ },
+ "spark_summary": {
+  "label": "LIVE",
+  "answers": 384,
+  "spark_graded": 374,
+  "agreement": 0.9947,
+  "disagreements": 2,
+  "stopped": null
+ },
+ "answers": [
+  {
+   "id": "easy-00",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "80+31 equals 111 as given.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.1882
+  },
+  {
+   "id": "easy-01",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "40 times 9 equals 360.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.2589
+  },
+  {
+   "id": "easy-02",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "224 divided by 4 equals 56.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.0675
+  },
+  {
+   "id": "easy-03",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "7 hours equals 420 minutes, matching the answer.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 2.123
+  },
+  {
+   "id": "easy-04",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "199 minus 32 equals 167.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.0725
+  },
+  {
+   "id": "easy-05",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "No answer provided.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 14.7293
+  },
+  {
+   "id": "easy-06",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "23 times 7 equals 161.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 1.5141
+  },
+  {
+   "id": "easy-07",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "184 divided by 4 equals 46.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 2.6679
+  },
+  {
+   "id": "easy-08",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "5 hours equals 300 minutes.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 2.948
+  },
+  {
+   "id": "easy-09",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "166 minus 58 equals 108.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.4087
+  },
+  {
+   "id": "easy-10",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "96 + 17 equals 113 as answered.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 1.9963
+  },
+  {
+   "id": "easy-11",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "76 times 13 equals 988.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 2.402
+  },
+  {
+   "id": "easy-12",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is empty instead of 44.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 14.0162
+  },
+  {
+   "id": "easy-13",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "No number was provided.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 15.1428
+  },
+  {
+   "id": "easy-14",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "125 minus 52 equals 73.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 2.5392
+  },
+  {
+   "id": "easy-15",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "No number provided.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 14.3995
+  },
+  {
+   "id": "easy-16",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "52 times 9 equals 468.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.2078
+  },
+  {
+   "id": "easy-17",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is empty, expected 47.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 13.4669
+  },
+  {
+   "id": "easy-18",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Answer 180 is correct for 3 hours in minutes.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.0065
+  },
+  {
+   "id": "easy-19",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is empty and does not provide 122.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 14.0055
+  },
+  {
+   "id": "easy-20",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "78+35 equals 113.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 2.8024
+  },
+  {
+   "id": "easy-21",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "27 times 11 equals 297.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 1.834
+  },
+  {
+   "id": "easy-22",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "24 is the correct result of 96 divided by 4.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.5106
+  },
+  {
+   "id": "easy-23",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "2 hours equals 120 minutes.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 2.3057
+  },
+  {
+   "id": "easy-24",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "139 minus 44 equals 95.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.409
+  },
+  {
+   "id": "easy-25",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "No number provided instead of 95.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 17.4174
+  },
+  {
+   "id": "easy-26",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "65 times 13 equals 845.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 2.4518
+  },
+  {
+   "id": "easy-27",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "No number provided instead of 29.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 14.8568
+  },
+  {
+   "id": "easy-28",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "300 is the correct number of minutes in 5 hours.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.1112
+  },
+  {
+   "id": "easy-29",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "189 minus 31 equals 158.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.9002
+  },
+  {
+   "id": "medium-00",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "12*9=108 minus 30 equals 78 as shown.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.6996
+  },
+  {
+   "id": "medium-01",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 36 dollars change.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.8344
+  },
+  {
+   "id": "medium-02",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations 66+98=164 are correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.9278
+  },
+  {
+   "id": "medium-03",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 10*7=70 minus 13 equals 57 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 2.8375
+  },
+  {
+   "id": "medium-04",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Math is correct: 30 candles cost $120, change from $144 is $24.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.9809
+  },
+  {
+   "id": "medium-05",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 24+44=68 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.2267
+  },
+  {
+   "id": "medium-06",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 8*6-33=15 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 2.7981
+  },
+  {
+   "id": "medium-07",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 32 dollars change.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.905
+  },
+  {
+   "id": "medium-08",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations 60+91=151 are correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.4859
+  },
+  {
+   "id": "medium-09",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "3*8=24 minus 19 equals 5, so final answer is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.6655
+  },
+  {
+   "id": "medium-10",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Math is correct: 36 candles cost $252, change from $273 is $21.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.753
+  },
+  {
+   "id": "medium-11",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Total 32+55=87 is correct with required format.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.8236
+  },
+  {
+   "id": "medium-12",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 11*9-20=79 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.9648
+  },
+  {
+   "id": "medium-13",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly gives 40 dollars change.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.7072
+  },
+  {
+   "id": "medium-14",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 54+90=144 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.1744
+  },
+  {
+   "id": "medium-15",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 3*8-3=21 is correct and format matches.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.4153
+  },
+  {
+   "id": "medium-16",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations for total candles, cost, and change are all correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.1861
+  },
+  {
+   "id": "medium-17",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 30+54=84 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.8447
+  },
+  {
+   "id": "medium-18",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "4*7-11=17 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.9687
+  },
+  {
+   "id": "medium-19",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation is correct and final answer 9 matches.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.8156
+  },
+  {
+   "id": "medium-20",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 24+45=69 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.3545
+  },
+  {
+   "id": "medium-21",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "7*6=42 minus 12 equals 30 as shown.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.1532
+  },
+  {
+   "id": "medium-22",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations yield 36 candles costing $72, change $5.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.1186
+  },
+  {
+   "id": "medium-23",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 50+78=128 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.9036
+  },
+  {
+   "id": "medium-24",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 6*2-9=3 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.3694
+  },
+  {
+   "id": "medium-25",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Change correctly calculated as 92-72=20.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.1822
+  },
+  {
+   "id": "medium-26",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations 72+105=177 are correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.2426
+  },
+  {
+   "id": "medium-27",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 4*5-5=15 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.5972
+  },
+  {
+   "id": "medium-28",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations are correct and change of 20 is right.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.762
+  },
+  {
+   "id": "medium-29",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations 30+52=82 are correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.9863
+  },
+  {
+   "id": "hard-00",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly implements case-insensitive alphanumeric palindrome check.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.2879
+  },
+  {
+   "id": "hard-01",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implements Euclidean algorithm correctly for non-negative inputs.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.9182
+  },
+  {
+   "id": "hard-02",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Code correctly implements run-length encoding including empty string.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.2878
+  },
+  {
+   "id": "hard-03",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly recursively flattens arbitrarily nested lists.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.4806
+  },
+  {
+   "id": "hard-04",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly returns second largest distinct value or None.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.272
+  },
+  {
+   "id": "hard-05",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Counts lowercase letter runs correctly.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 7.802
+  },
+  {
+   "id": "hard-06",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Greedy table correctly converts 1-3999 to Roman numerals.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.9172
+  },
+  {
+   "id": "hard-07",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Merges overlapping closed intervals correctly after sorting.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.19
+  },
+  {
+   "id": "hard-08",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implementation correctly tests primality using 6k\u00b11 optimization.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.2426
+  },
+  {
+   "id": "hard-09",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implements correct binary search returning index or -1.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.7647
+  },
+  {
+   "id": "hard-10",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly ignores case and spaces and compares letter counts.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.4334
+  },
+  {
+   "id": "hard-11",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Fast-doubling implementation correctly returns fib(0)=0, fib(1)=1 and all n.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.8319
+  },
+  {
+   "id": "hard-12",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly splits list into size-n chunks.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 2.8626
+  },
+  {
+   "id": "hard-13",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly checks balanced brackets using stack.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.4836
+  },
+  {
+   "id": "hard-14",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly removes duplicates while preserving first-seen order.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 2.72
+  },
+  {
+   "id": "hard-15",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Regex inserts underscore before capitals and lowercases, producing correct snake_case.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.4759
+  },
+  {
+   "id": "hard-16",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly sums decimal digits of absolute value.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.4223
+  },
+  {
+   "id": "hard-17",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly transposes matrix and handles empty input.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.1735
+  },
+  {
+   "id": "hard-18",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly returns middle or average of two middle values.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.092
+  },
+  {
+   "id": "hard-19",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implementation correctly shifts letters with wrap, case, and non-letters preserved.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.408
+  },
+  {
+   "id": "complex-00",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None, not a numeric EUR total.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 27.1964
+  },
+  {
+   "id": "complex-01",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None, not a combined USD total.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 35.0362
+  },
+  {
+   "id": "complex-02",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer provides None instead of the required numeric cost.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 30.1187
+  },
+  {
+   "id": "complex-03",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None instead of a numeric EUR cost.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 27.3071
+  },
+  {
+   "id": "complex-04",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer gives None instead of a numeric total and shows no required tool or subagent use.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 36.4308
+  },
+  {
+   "id": "complex-05",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer gives 'None' instead of the required larger restock cost number.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 26.9837
+  },
+  {
+   "id": "complex-06",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None, not a numeric EUR total.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 27.4526
+  },
+  {
+   "id": "complex-07",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None and provides no combined USD total.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 36.7641
+  },
+  {
+   "id": "complex-08",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer 'None' provides no numeric INR cost.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 26.6134
+  },
+  {
+   "id": "complex-09",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": null,
+   "spark_reason": "unparseable Spark reply",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 25.2147
+  },
+  {
+   "id": "complex-10",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None, not a numeric total as required.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 44.8802
+  },
+  {
+   "id": "complex-11",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer 'None' provides no numeric INR cost as required.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 24.5103
+  },
+  {
+   "id": "Janet\u2019s ducks lay 16 eggs per day. She e",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Answer correctly computes 16-7=9 eggs at $2 = $18.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.2103
+  },
+  {
+   "id": "A robe takes 2 bolts of blue fiber and h",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Final total 3 matches 2 blue plus 1 white.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.2583
+  },
+  {
+   "id": "Josh decides to try flipping a house.  H",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations correctly apply 150% increase and profit as 70000.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 6.1691
+  },
+  {
+   "id": "James decides to run 3 sprints 3 times a",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 3*3*60=540 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.1699
+  },
+  {
+   "id": "Every day, Wendi feeds each of her chick",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Math is correct: 60 total minus 40 given equals 20.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 6.8377
+  },
+  {
+   "id": "Kylar went to the store to buy glasses f",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation of 8 full-price and 8 discounted glasses totaling 64 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.6536
+  },
+  {
+   "id": "Toulouse has twice as many sheep as Char",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation is correct and final format matches.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.5647
+  },
+  {
+   "id": "Carla is downloading a 200 GB file. Norm",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly totals 40+20+100=160 minutes.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 6.2203
+  },
+  {
+   "id": "John drives for 3 hours at a speed of 60",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation of 180-135=45 miles remaining is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 6.4196
+  },
+  {
+   "id": "Eliza's rate per hour for the first 40 h",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation of 400 plus 60 equals 460 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.5243
+  },
+  {
+   "id": "A new program had 60 downloads in the fi",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations match: 60+180+126=366.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.9245
+  },
+  {
+   "id": "Toula went to the bakery and bought vari",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations and total 694 are correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.0181
+  },
+  {
+   "id": "Carlos is planting a lemon tree. The tre",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": null,
+   "spark_reason": "unparseable Spark reply",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 8.2682
+  },
+  {
+   "id": "Melanie is a door-to-door saleswoman. Sh",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Starting with 18 leaves 5 after the described sales.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 6.2463
+  },
+  {
+   "id": "In a dance class of 20 students, 20% enr",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations and final 60% are correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 6.1152
+  },
+  {
+   "id": "A merchant wants to make a choice of pur",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Jewelry profit $125 exceeds electronics $96, so 125 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 6.9709
+  },
+  {
+   "id": "Two trains leave San Rafael at the same ",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Total path length 80+150=230 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 6.9535
+  },
+  {
+   "id": "Jill gets paid $20 per hour to teach and",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Weekly and annual calculations are correct with final 57500.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.9301
+  },
+  {
+   "id": "Claire makes a 3 egg omelet every mornin",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 7 dozens with proper format.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.7993
+  },
+  {
+   "id": "Marissa is hiking a 12-mile trail. She t",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly finds 6 mph and formats as #### 6.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.5975
+  },
+  {
+   "id": "I have 10 liters of orange drink that ar",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Final value 15 litres is correct (9*2/3+15*3/5=15).",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.7335
+  },
+  {
+   "id": "Raymond and Samantha are cousins. Raymon",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 14 years ago.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 6.1762
+  },
+  {
+   "id": "Billy sells DVDs. He has 8 customers on ",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Answer correctly calculates 7 DVDs total.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.6613
+  },
+  {
+   "id": "A candle melts by 2 centimeters every ho",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly computes 4 hours at 2 cm per hour equals 8 cm.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.6413
+  },
+  {
+   "id": "Kyle bought last year's best-selling boo",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 19.50/0.75=26 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.52
+  },
+  {
+   "id": "Marie ordered one chicken meal that cost",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Math is correct and final format matches.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.3913
+  },
+  {
+   "id": "Mishka bought 3 pairs of shorts, 3 pairs",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Total correctly calculated as $243.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.5411
+  },
+  {
+   "id": "Cynthia eats one serving of ice cream ev",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly finds 4 cartons costing $16 total.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.2736
+  },
+  {
+   "id": "Henry made two stops during his 60-mile ",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 60-15-20=25 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.6494
+  },
+  {
+   "id": "Gloria is shoe shopping when she comes a",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 33+66+5=104 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.1096
+  },
+  {
+   "id": "Darrell and Allen's ages are in the rati",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Ratio math is correct yielding 109.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.8583
+  },
+  {
+   "id": "Gunter is trying to count the jelly bean",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations and average of 80 are correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.3551
+  },
+  {
+   "id": "John takes care of 10 dogs.  Each dog ta",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 10*0.5*7=35 is correct with proper format.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.3873
+  },
+  {
+   "id": "Gretchen has 110 coins. There are 30 mor",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Solution correctly solves equations to get 70 gold coins.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.8737
+  },
+  {
+   "id": "Siobhan has 2 fewer jewels than Aaron. A",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 23 jewels for Siobhan.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.6587
+  },
+  {
+   "id": "Mike plays ping pong for 40 minutes.  In",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Answer correctly computes 25% increase and total 9.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.6751
+  },
+  {
+   "id": "Terry eats 2 yogurts a day.  They are cu",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly finds 60 yogurts costing $75.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.5299
+  },
+  {
+   "id": "John plans to sell all his toys and use ",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly finds 2 sets remaining.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 7.9228
+  },
+  {
+   "id": "John runs 60 miles a week. He runs 3 day",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 10 mph.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.2428
+  },
+  {
+   "id": "Dana can run at a rate of speed four tim",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations for run speed, walk speed, times, and total distance are all correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.2325
+  },
+  {
+   "id": "Brandon's iPhone is four times as old as",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Final number 8 matches expected calculation with #### format.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 7.9352
+  },
+  {
+   "id": "The great dragon, Perg, sat high atop mo",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Range 1200 minus 1000 gives 200 ft correctly.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 6.9677
+  },
+  {
+   "id": "Grandma Jones baked 5 apple pies for the",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 40-14=26 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.0894
+  },
+  {
+   "id": "According to its nutritional info, a bag",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 48g and formatting matches required.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.4955
+  },
+  {
+   "id": "Charlie wants to sell beeswax candles.  ",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Profit calculation of $40 revenue minus $20 cost equals $20 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.568
+  },
+  {
+   "id": "Meredith is a freelance blogger who writ",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": null,
+   "spark_reason": "unparseable Spark reply",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.8225
+  },
+  {
+   "id": "Candice put 80 post-it notes in her purs",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 80+P-220=23 gives P=163 correctly.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.9917
+  },
+  {
+   "id": "John buys twice as many red ties as blue",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations for tie counts and costs are correct with total $800.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.9848
+  },
+  {
+   "id": "Tracy used a piece of wire 4 feet long t",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Conversion and division are correct with proper final format.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.1588
+  },
+  {
+   "id": "Richard lives in an apartment building w",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 15*8*1/4=30 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.4653
+  },
+  {
+   "id": "Lloyd has an egg farm. His chickens prod",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Math is correct: 21 dozen/day at $2 yields $42/day, $294/week.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.2245
+  },
+  {
+   "id": "Tom's ship can travel at 10 miles per ho",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations and final answer 5 hours are correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.3002
+  },
+  {
+   "id": "Uriah's book bag is getting too heavy fo",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 15 toys.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 7.5053
+  },
+  {
+   "id": "A mechanic charges different rates to re",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations are correct and final difference is 40.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.4727
+  },
+  {
+   "id": "The Doubtfire sisters are driving home w",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 7+21+12=40 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.6994
+  },
+  {
+   "id": "Jean has 30 lollipops. Jean eats 2 of th",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Answer 14 is correct and format matches requirement.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.5596
+  },
+  {
+   "id": "Peter plans to go to the movies this wee",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 42/14=3 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.0642
+  },
+  {
+   "id": "A wooden bridge can carry no more than 5",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly gives 83 boxes within 5000-pound limit.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.1436
+  },
+  {
+   "id": "Stephen placed an online order for groce",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Total 40 + 10 + 3 + 4 = 57 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.6157
+  },
+  {
+   "id": "A raspberry bush has 6 clusters of 20 fr",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 6*20+67=187 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.3603
+  },
+  {
+   "id": "HumanEval/0",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly returns True when any pair differs by less than threshold.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.7843
+  },
+  {
+   "id": "HumanEval/1",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly splits balanced groups ignoring spaces.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 6.9651
+  },
+  {
+   "id": "HumanEval/2",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Returns fractional part correctly via number-int(number).",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.9757
+  },
+  {
+   "id": "HumanEval/3",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Balance tracking correctly detects below-zero.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.8281
+  },
+  {
+   "id": "HumanEval/4",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Computes mean then average absolute deviation correctly.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.4459
+  },
+  {
+   "id": "HumanEval/5",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implementation correctly inserts delimiter between elements.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.2199
+  },
+  {
+   "id": "HumanEval/6",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly computes max nesting depth per group.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 6.3865
+  },
+  {
+   "id": "HumanEval/7",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implementation correctly filters strings containing substring.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.2489
+  },
+  {
+   "id": "HumanEval/8",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly computes sum and product with proper empty cases.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.0238
+  },
+  {
+   "id": "HumanEval/9",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly computes rolling maximum for all cases including negatives and empty list.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.5312
+  },
+  {
+   "id": "HumanEval/10",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Finds longest palindromic suffix and appends reversed prefix correctly.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 6.0565
+  },
+  {
+   "id": "HumanEval/11",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Produces correct XOR string for example and logic.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.5308
+  },
+  {
+   "id": "HumanEval/12",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Returns None for empty and first longest via max with key=len.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.6052
+  },
+  {
+   "id": "HumanEval/13",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implements Euclidean algorithm correctly for given examples.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.3223
+  },
+  {
+   "id": "HumanEval/14",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Returns all prefixes shortest to longest correctly.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.4745
+  },
+  {
+   "id": "HumanEval/15",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Returns correct space-delimited sequence from 0 to n inclusive.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.2674
+  },
+  {
+   "id": "HumanEval/16",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Lowercasing then set correctly counts case-insensitive distinct characters.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.3
+  },
+  {
+   "id": "HumanEval/17",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly maps notes to beats and passes example.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.3685
+  },
+  {
+   "id": "HumanEval/18",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Counts overlapping occurrences correctly and handles edge cases.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.9922
+  },
+  {
+   "id": "HumanEval/19",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly sorts numeral words by numeric value.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.3605
+  },
+  {
+   "id": "HumanEval/20",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly finds closest pair via sorted adjacent differences.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 7.5835
+  },
+  {
+   "id": "HumanEval/21",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly implements min-max normalization to [0,1].",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.5445
+  },
+  {
+   "id": "HumanEval/22",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly filters ints while excluding bools, matching doctests.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.4834
+  },
+  {
+   "id": "HumanEval/23",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Returns len(string) matching expected behavior.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.0998
+  },
+  {
+   "id": "HumanEval/24",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": null,
+   "spark_reason": "unparseable Spark reply",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 10.414
+  },
+  {
+   "id": "HumanEval/25",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly returns prime factors with multiplicity in ascending order.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.5775
+  },
+  {
+   "id": "HumanEval/26",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly keeps only elements occurring once in original order.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.5174
+  },
+  {
+   "id": "HumanEval/27",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "swapcase correctly flips letter case as required.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.3822
+  },
+  {
+   "id": "HumanEval/28",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly joins strings with empty separator.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.5626
+  },
+  {
+   "id": "HumanEval/29",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly filters strings using startswith and matches doctests.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 6.4911
+  },
+  {
+   "id": "HumanEval/30",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly filters to x > 0 matching examples.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.8977
+  },
+  {
+   "id": "HumanEval/31",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly identifies primes for all given doctests.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.7361
+  },
+  {
+   "id": "HumanEval/32",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Bisection with sign-change expansion correctly finds a root for odd-degree polynomials.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 10.7588
+  },
+  {
+   "id": "HumanEval/33",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly sorts values at indices divisible by three.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 6.3785
+  },
+  {
+   "id": "HumanEval/34",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Returns sorted unique elements correctly.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.5915
+  },
+  {
+   "id": "HumanEval/35",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Returns max via built-in max matching expected outputs.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 4.2177
+  },
+  {
+   "id": "HumanEval/36",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": null,
+   "spark_reason": "unparseable Spark reply",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 7.06
+  },
+  {
+   "id": "HumanEval/37",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly sorts even indices while preserving odds.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 5.3855
+  },
+  {
+   "id": "HumanEval/38",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": true,
+   "spark_reason": "Decoding correctly reverses the left rotation with a right rotation.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 9.6472
+  },
+  {
+   "id": "HumanEval/39",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly enumerates Fibonacci numbers and returns n-th prime one.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 11.3215
+  },
+  {
+   "id": "easy-00",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "80+31 equals 111 as given.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.788
+  },
+  {
+   "id": "easy-01",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "40 times 9 equals 360.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.7599
+  },
+  {
+   "id": "easy-02",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "224 divided by 4 equals 56.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.9423
+  },
+  {
+   "id": "easy-03",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "7 hours equals 420 minutes.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.1355
+  },
+  {
+   "id": "easy-04",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "199 minus 32 equals 167.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.6762
+  },
+  {
+   "id": "easy-05",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "66 + 59 equals 125.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.7849
+  },
+  {
+   "id": "easy-06",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "23 times 7 equals 161, so the answer is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.804
+  },
+  {
+   "id": "easy-07",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "46 equals 184 divided by 4.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.0915
+  },
+  {
+   "id": "easy-08",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "300 is correct for 5 hours in minutes.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.8915
+  },
+  {
+   "id": "easy-09",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "166 minus 58 equals 108.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.59
+  },
+  {
+   "id": "easy-10",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "96+17 equals 113.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.7109
+  },
+  {
+   "id": "easy-11",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "76 times 13 equals 988.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.9489
+  },
+  {
+   "id": "easy-12",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "176 divided by 4 equals 44.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.3778
+  },
+  {
+   "id": "easy-13",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "8 hours times 60 equals 480.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.4609
+  },
+  {
+   "id": "easy-14",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "125 minus 52 equals 73.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.7054
+  },
+  {
+   "id": "easy-15",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "43+8 equals 51.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.5966
+  },
+  {
+   "id": "easy-16",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "52 times 9 equals 468.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.6627
+  },
+  {
+   "id": "easy-17",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "47 is the correct result of 188 divided by 4.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.68
+  },
+  {
+   "id": "easy-18",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "3 hours equals 180 minutes.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.8326
+  },
+  {
+   "id": "easy-19",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "137 minus 15 equals 122.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.9729
+  },
+  {
+   "id": "easy-20",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "78+35 equals 113 as answered.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.6682
+  },
+  {
+   "id": "easy-21",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "27*11 equals 297.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.1193
+  },
+  {
+   "id": "easy-22",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "96 divided by 4 equals 24.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.443
+  },
+  {
+   "id": "easy-23",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Answer 120 correctly gives minutes in 2 hours.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.5284
+  },
+  {
+   "id": "easy-24",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "139 minus 44 equals 95.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.948
+  },
+  {
+   "id": "easy-25",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "74+21 equals 95 as given.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.6897
+  },
+  {
+   "id": "easy-26",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "65*13 equals 845.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.7141
+  },
+  {
+   "id": "easy-27",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "116 divided by 4 equals 29.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.0423
+  },
+  {
+   "id": "easy-28",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "5 hours equals 300 minutes.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.8379
+  },
+  {
+   "id": "easy-29",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "189 minus 31 equals 158.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.1785
+  },
+  {
+   "id": "medium-00",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 12*9-30=78 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.9958
+  },
+  {
+   "id": "medium-01",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations yield 27 apples costing $54, change $36 correctly.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.7125
+  },
+  {
+   "id": "medium-02",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 66+98=164 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.0407
+  },
+  {
+   "id": "medium-03",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 10*7-13=57 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.7287
+  },
+  {
+   "id": "medium-04",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation of 30 candles costing $120 and $24 change is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.2907
+  },
+  {
+   "id": "medium-05",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 24+44=68 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.1906
+  },
+  {
+   "id": "medium-06",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 8*6-33=15 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.494
+  },
+  {
+   "id": "medium-07",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Math and final answer 32 are correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.9299
+  },
+  {
+   "id": "medium-08",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 60+91=151 is correct and format matches.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.053
+  },
+  {
+   "id": "medium-09",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 3*8=24 minus 19 equals 5 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.0646
+  },
+  {
+   "id": "medium-10",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 36*7=252 and 273-252=21 is correct with proper ANSWER format.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.0155
+  },
+  {
+   "id": "medium-11",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 32+55=87 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.4372
+  },
+  {
+   "id": "medium-12",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 11*9-20=79 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.8568
+  },
+  {
+   "id": "medium-13",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations for total apples, cost, and change are all correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.5625
+  },
+  {
+   "id": "medium-14",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "6*9+9*10=144 matches the given answer.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.2732
+  },
+  {
+   "id": "medium-15",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 3*8-3=21 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.5008
+  },
+  {
+   "id": "medium-16",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 11 dollars change.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.1936
+  },
+  {
+   "id": "medium-17",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 30+54=84 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.0946
+  },
+  {
+   "id": "medium-18",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 4*7-11=17 is correct and format matches.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.4915
+  },
+  {
+   "id": "medium-19",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 9 dollars change.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.3235
+  },
+  {
+   "id": "medium-20",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 24+45=69 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.2635
+  },
+  {
+   "id": "medium-21",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 7*6-12=30 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.452
+  },
+  {
+   "id": "medium-22",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 12+24=36 candles at $2 is $72, change from $77 is $5.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.0918
+  },
+  {
+   "id": "medium-23",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 50+78=128 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.9021
+  },
+  {
+   "id": "medium-24",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 6*2-9=3 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.4166
+  },
+  {
+   "id": "medium-25",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Math is correct: 24 apples cost $72, change from $92 is $20.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.9893
+  },
+  {
+   "id": "medium-26",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations 72+105=177 are correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.8498
+  },
+  {
+   "id": "medium-27",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 4*5-5=15 is correct and format matches.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.4393
+  },
+  {
+   "id": "medium-28",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Math is correct yielding 20 change.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.9426
+  },
+  {
+   "id": "medium-29",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation is correct and format ends with ANSWER: 82.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.6916
+  },
+  {
+   "id": "hard-00",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly ignores case and non-alphanumerics and checks palindrome.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.8099
+  },
+  {
+   "id": "hard-01",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implements correct Euclidean algorithm for GCD.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.4244
+  },
+  {
+   "id": "hard-02",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Code correctly implements run-length encoding for given example and edge cases.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.3517
+  },
+  {
+   "id": "hard-03",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Recursively flattens arbitrarily nested lists correctly.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.4528
+  },
+  {
+   "id": "hard-04",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Returns second largest distinct value or None correctly.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.2797
+  },
+  {
+   "id": "hard-05",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly counts lowercase letter-only words.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.4394
+  },
+  {
+   "id": "hard-06",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly converts 1-3999 to Roman numerals.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.6092
+  },
+  {
+   "id": "hard-07",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly sorts and merges overlapping closed intervals with s <= le.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.6753
+  },
+  {
+   "id": "hard-08",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly implements primality test.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.5364
+  },
+  {
+   "id": "hard-09",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Code implements correct binary search returning index or -1.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.3132
+  },
+  {
+   "id": "hard-10",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly ignores case and spaces and compares letter multisets.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 5.6063
+  },
+  {
+   "id": "hard-11",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Computes correct Fibonacci numbers iteratively.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.4614
+  },
+  {
+   "id": "hard-12",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly implements chunking with list slicing.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.4563
+  },
+  {
+   "id": "hard-13",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Stack algorithm correctly validates balanced brackets.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.9731
+  },
+  {
+   "id": "hard-14",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly removes duplicates preserving order for hashable inputs.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.5882
+  },
+  {
+   "id": "hard-15",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly converts helloWorldX to hello_world_x.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.0422
+  },
+  {
+   "id": "hard-16",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly sums decimal digits of absolute value.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.0453
+  },
+  {
+   "id": "hard-17",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly transposes matrix and handles empty input.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.027
+  },
+  {
+   "id": "hard-18",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly computes median for odd and even lengths.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.7716
+  },
+  {
+   "id": "hard-19",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly shifts letters with case preserved.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.5281
+  },
+  {
+   "id": "complex-00",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None instead of the required EUR total.",
+   "tries": [
+    "low",
+    "medium"
+   ],
+   "wall_s": 51.9488
+  },
+  {
+   "id": "complex-01",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None instead of combined USD total.",
+   "tries": [
+    "low",
+    "medium"
+   ],
+   "wall_s": 70.7167
+  },
+  {
+   "id": "complex-02",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer 'None' provides no numeric restock cost in INR.",
+   "tries": [
+    "low",
+    "medium"
+   ],
+   "wall_s": 52.5963
+  },
+  {
+   "id": "complex-03",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "No tool calls made and no numeric answer provided.",
+   "tries": [
+    "low",
+    "medium"
+   ],
+   "wall_s": 52.6069
+  },
+  {
+   "id": "complex-04",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "No FINAL number was provided.",
+   "tries": [
+    "low",
+    "medium"
+   ],
+   "wall_s": 284.6981
+  },
+  {
+   "id": "complex-05",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer provides None instead of required numeric INR cost.",
+   "tries": [
+    "low",
+    "medium"
+   ],
+   "wall_s": 279.9608
+  },
+  {
+   "id": "complex-06",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None instead of the computed EUR restock cost.",
+   "tries": [
+    "low",
+    "medium"
+   ],
+   "wall_s": 279.8954
+  },
+  {
+   "id": "complex-07",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer provides no numeric total.",
+   "tries": [
+    "low",
+    "medium"
+   ],
+   "wall_s": 264.0805
+  },
+  {
+   "id": "complex-08",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None instead of the required larger restock cost in INR.",
+   "tries": [
+    "low",
+    "medium"
+   ],
+   "wall_s": 51.3987
+  },
+  {
+   "id": "complex-09",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Placeholder before tool verification, will update after checks.",
+   "tries": [
+    "low",
+    "medium"
+   ],
+   "wall_s": 52.376
+  },
+  {
+   "id": "complex-10",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None instead of the required FINAL combined USD total.",
+   "tries": [
+    "low",
+    "medium"
+   ],
+   "wall_s": 54.9857
+  },
+  {
+   "id": "complex-11",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None instead of the required numeric INR cost.",
+   "tries": [
+    "low",
+    "medium"
+   ],
+   "wall_s": 51.4778
+  },
+  {
+   "id": "Janet\u2019s ducks lay 16 eggs per day. She e",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 16-7=9 and 9*2=18 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.4824
+  },
+  {
+   "id": "A robe takes 2 bolts of blue fiber and h",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 3 total bolts.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.7356
+  },
+  {
+   "id": "Josh decides to try flipping a house.  H",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation of $200,000 value minus $130,000 cost equals $70,000 profit is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.3178
+  },
+  {
+   "id": "James decides to run 3 sprints 3 times a",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 3*3*60=540 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.8319
+  },
+  {
+   "id": "Every day, Wendi feeds each of her chick",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Answer correctly computes 20 cups and formats final line.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.792
+  },
+  {
+   "id": "Kylar went to the store to buy glasses f",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 8 pairs at $8 each equals $64 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.3335
+  },
+  {
+   "id": "Toulouse has twice as many sheep as Char",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations and total 260 are correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.9712
+  },
+  {
+   "id": "Carla is downloading a 200 GB file. Norm",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation of 40+20+100=160 minutes is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.6308
+  },
+  {
+   "id": "John drives for 3 hours at a speed of 60",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Distance math 180-135=45 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.7534
+  },
+  {
+   "id": "Eliza's rate per hour for the first 40 h",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Total 460 matches regular plus overtime pay.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.7695
+  },
+  {
+   "id": "A new program had 60 downloads in the fi",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations and total 366 are correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.1216
+  },
+  {
+   "id": "Toula went to the bakery and bought vari",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Total 204+160+330 equals 694 as shown.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.4744
+  },
+  {
+   "id": "Carlos is planting a lemon tree. The tre",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": null,
+   "spark_reason": "unparseable Spark reply",
+   "tries": [
+    "low",
+    "medium"
+   ],
+   "wall_s": 16.0622
+  },
+  {
+   "id": "Melanie is a door-to-door saleswoman. Sh",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 18 and matches required format.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.827
+  },
+  {
+   "id": "In a dance class of 20 students, 20% enr",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 12 of 20 students or 60% in hip-hop.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.7121
+  },
+  {
+   "id": "A merchant wants to make a choice of pur",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Jewelry profit $125 exceeds gadgets $96, so 125 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.4238
+  },
+  {
+   "id": "Two trains leave San Rafael at the same ",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Total path distance 80+150=230 matches the question.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 5.2913
+  },
+  {
+   "id": "Jill gets paid $20 per hour to teach and",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation and final format are correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 5.065
+  },
+  {
+   "id": "Claire makes a 3 egg omelet every mornin",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 3*28/12=7 is correct with required format.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 5.5276
+  },
+  {
+   "id": "Marissa is hiking a 12-mile trail. She t",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly finds 6 miles left in 1 hour requiring 6 mph.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.9679
+  },
+  {
+   "id": "I have 10 liters of orange drink that ar",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly finds 6L + 9L = 15L water.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 5.2817
+  },
+  {
+   "id": "Raymond and Samantha are cousins. Raymon",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations correctly yield son born 14 years ago.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.0024
+  },
+  {
+   "id": "Billy sells DVDs. He has 8 customers on ",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Answer correctly calculates 3+4+0=7 and formats as #### 7.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.8465
+  },
+  {
+   "id": "A candle melts by 2 centimeters every ho",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "The answer correctly calculates 4 hours times 2 cm equals 8.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.2956
+  },
+  {
+   "id": "Kyle bought last year's best-selling boo",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 19.50/0.75=26 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.0951
+  },
+  {
+   "id": "Marie ordered one chicken meal that cost",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations are correct and final count 2 matches.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.8702
+  },
+  {
+   "id": "Mishka bought 3 pairs of shorts, 3 pairs",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Total 49.50+67.50+126 equals 243 as shown.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 5.0113
+  },
+  {
+   "id": "Cynthia eats one serving of ice cream ev",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Math is correct (4 cartons at $4 = $16) with proper format.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.1063
+  },
+  {
+   "id": "Henry made two stops during his 60-mile ",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Distance between stops correctly calculated as 25 miles.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.5747
+  },
+  {
+   "id": "Gloria is shoe shopping when she comes a",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 33+66+5=104 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.3839
+  },
+  {
+   "id": "Darrell and Allen's ages are in the rati",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Allen is 99 now, 109 in 10 years, calculation is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.9025
+  },
+  {
+   "id": "Gunter is trying to count the jelly bean",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "All three guesses and their average (80) are computed correctly.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.8211
+  },
+  {
+   "id": "John takes care of 10 dogs.  Each dog ta",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 35 hours per week.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.0964
+  },
+  {
+   "id": "Gretchen has 110 coins. There are 30 mor",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Solution correctly solves equations to get 70 gold coins.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.7438
+  },
+  {
+   "id": "Siobhan has 2 fewer jewels than Aaron. A",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Math is correct (25-2=23) and final line format matches.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.4852
+  },
+  {
+   "id": "Mike plays ping pong for 40 minutes.  In",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly gives 9 total points.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.4237
+  },
+  {
+   "id": "Terry eats 2 yogurts a day.  They are cu",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation of 60 yogurts costing $75 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.7014
+  },
+  {
+   "id": "John plans to sell all his toys and use ",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly finds 11 sets sold leaving 2 remaining.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.0848
+  },
+  {
+   "id": "John runs 60 miles a week. He runs 3 day",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Speed calculation 60 miles / 6 hours = 10 mph is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.3514
+  },
+  {
+   "id": "Dana can run at a rate of speed four tim",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations for speeds, times, and total distance 18 are correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 5.1409
+  },
+  {
+   "id": "Brandon's iPhone is four times as old as",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": null,
+   "spark_reason": "unparseable Spark reply",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.0531
+  },
+  {
+   "id": "The great dragon, Perg, sat high atop mo",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculates 3x400-1000=200 correctly.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.5643
+  },
+  {
+   "id": "Grandma Jones baked 5 apple pies for the",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 5*8-14=26 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.8751
+  },
+  {
+   "id": "According to its nutritional info, a bag",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Math is correct: 200 cal remaining allows 48g.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.3032
+  },
+  {
+   "id": "Charlie wants to sell beeswax candles.  ",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Profit of $20 correctly computed as $40 revenue minus $20 cost.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.722
+  },
+  {
+   "id": "Meredith is a freelance blogger who writ",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": null,
+   "spark_reason": "unparseable Spark reply",
+   "tries": [
+    "low",
+    "medium"
+   ],
+   "wall_s": 15.0524
+  },
+  {
+   "id": "Candice put 80 post-it notes in her purs",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 80+x-220=23 gives x=163 correctly.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.3219
+  },
+  {
+   "id": "John buys twice as many red ties as blue",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations correctly yield 5 blue and 10 red ties totaling $800.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.3718
+  },
+  {
+   "id": "Tracy used a piece of wire 4 feet long t",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 48/6=8 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.4696
+  },
+  {
+   "id": "Richard lives in an apartment building w",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 30 unoccupied units.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.3919
+  },
+  {
+   "id": "Lloyd has an egg farm. His chickens prod",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation and final format are correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.5865
+  },
+  {
+   "id": "Tom's ship can travel at 10 miles per ho",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Outbound 3h at 10mph is 30 miles, return at 6mph takes 5h.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.7417
+  },
+  {
+   "id": "Uriah's book bag is getting too heavy fo",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 15 toys.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.2049
+  },
+  {
+   "id": "A mechanic charges different rates to re",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations and final difference of 40 are correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.5022
+  },
+  {
+   "id": "The Doubtfire sisters are driving home w",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 7+21+12=40 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.5542
+  },
+  {
+   "id": "Jean has 30 lollipops. Jean eats 2 of th",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 28/2=14 is correct and format matches.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.266
+  },
+  {
+   "id": "Peter plans to go to the movies this wee",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 42/14=3 is correct and format matches.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.1819
+  },
+  {
+   "id": "A wooden bridge can carry no more than 5",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly gives 83 boxes and format matches.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.0189
+  },
+  {
+   "id": "Stephen placed an online order for groce",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation of 25% fee and total $57 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.6148
+  },
+  {
+   "id": "A raspberry bush has 6 clusters of 20 fr",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 6*20+67=187 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.1972
+  },
+  {
+   "id": "HumanEval/0",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly detects close pair via sorted adjacent differences.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.8935
+  },
+  {
+   "id": "HumanEval/1",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly splits balanced groups ignoring spaces.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.0543
+  },
+  {
+   "id": "HumanEval/2",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Returns fractional part correctly via number minus int.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.6462
+  },
+  {
+   "id": "HumanEval/3",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly tracks balance and returns True when below zero.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.1633
+  },
+  {
+   "id": "HumanEval/4",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly computes mean and average absolute deviation.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.7327
+  },
+  {
+   "id": "HumanEval/5",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implementation correctly inserts delimiter between consecutive elements and handles empty list.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.9739
+  },
+  {
+   "id": "HumanEval/6",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly computes maximum nesting depth for each space-separated group.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.1431
+  },
+  {
+   "id": "HumanEval/7",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "List comprehension correctly filters strings containing substring.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 1.9862
+  },
+  {
+   "id": "HumanEval/8",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly computes sum and product with proper empty cases.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.0923
+  },
+  {
+   "id": "HumanEval/9",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly computes running maximum including empty list.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.625
+  },
+  {
+   "id": "HumanEval/10",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implementation correctly builds shortest palindrome for all cases.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.6436
+  },
+  {
+   "id": "HumanEval/11",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "XOR logic correctly returns '1' when bits differ.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.3405
+  },
+  {
+   "id": "HumanEval/12",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly returns longest string, first on ties, and None for empty list.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.6513
+  },
+  {
+   "id": "HumanEval/13",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implements Euclidean algorithm correctly and passes doctests.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.9487
+  },
+  {
+   "id": "HumanEval/14",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly returns all prefixes shortest to longest.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.4019
+  },
+  {
+   "id": "HumanEval/15",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly returns space-delimited numbers 0 to n inclusive.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.3341
+  },
+  {
+   "id": "HumanEval/16",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly counts case-insensitive distinct characters for both examples.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.3538
+  },
+  {
+   "id": "HumanEval/17",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly maps notes to beats and matches expected output.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.1161
+  },
+  {
+   "id": "HumanEval/18",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly counts overlapping occurrences and handles examples.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.1048
+  },
+  {
+   "id": "HumanEval/19",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly sorts numeral words by numeric value.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.284
+  },
+  {
+   "id": "HumanEval/20",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Sorted adjacent scan correctly finds minimal-difference pair.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.9044
+  },
+  {
+   "id": "HumanEval/21",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly implements min-max scaling and passes doctest example.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.5758
+  },
+  {
+   "id": "HumanEval/22",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Returns only ints, correctly excludes bools and matches doctests.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.1816
+  },
+  {
+   "id": "HumanEval/23",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly returns len(string).",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.2302
+  },
+  {
+   "id": "HumanEval/24",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Returns n//i for smallest divisor, which is the largest proper divisor.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.9586
+  },
+  {
+   "id": "HumanEval/25",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly returns prime factors with multiplicity in order.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.3115
+  },
+  {
+   "id": "HumanEval/26",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Returns exactly elements occurring once in original order.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.822
+  },
+  {
+   "id": "HumanEval/27",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "swapcase correctly flips letter case as required.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.4692
+  },
+  {
+   "id": "HumanEval/28",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Returns ''.join(strings) which correctly concatenates all cases.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.1352
+  },
+  {
+   "id": "HumanEval/29",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implementation correctly filters strings by prefix.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.0165
+  },
+  {
+   "id": "HumanEval/30",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Returns exactly x>0 matching both doctests.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.0546
+  },
+  {
+   "id": "HumanEval/31",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly identifies all given prime test cases.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.6724
+  },
+  {
+   "id": "HumanEval/32",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": null,
+   "spark_reason": "unparseable Spark reply",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 5.99
+  },
+  {
+   "id": "HumanEval/33",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implementation correctly sorts values at indices divisible by three.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.9312
+  },
+  {
+   "id": "HumanEval/34",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Returns sorted unique elements as required.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.3995
+  },
+  {
+   "id": "HumanEval/35",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly returns maximum element.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.7654
+  },
+  {
+   "id": "HumanEval/36",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": null,
+   "spark_reason": "unparseable Spark reply",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.8968
+  },
+  {
+   "id": "HumanEval/37",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly sorts even indices while preserving odds.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.6708
+  },
+  {
+   "id": "HumanEval/38",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": true,
+   "spark_reason": "decode correctly inverts encode by right-rotating each 3-char group.",
+   "tries": [
+    "low",
+    "medium"
+   ],
+   "wall_s": 9.6982
+  },
+  {
+   "id": "HumanEval/39",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly enumerates Fibonacci numbers and returns n-th prime matching examples.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 8.3057
+  }
+ ],
+ "raw_dir": "data/modal-1101/r04",
+ "label_stage": "effort-only baseline (not the stage)"
+}
