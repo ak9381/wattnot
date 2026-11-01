@@ -1,0 +1,271 @@
+{
+  "spec": "wattnot.round-matrix/1",
+  "approved": "Akash, 2026-11-01. Not launched: every leg still needs Akash's go.",
+  "datasets": {
+    "ours": {
+      "name": "Our set",
+      "items": 92
+    },
+    "gsm8k": {
+      "name": "GSM8K (first 60)",
+      "items": 60
+    },
+    "humaneval": {
+      "name": "HumanEval (first 40)",
+      "items": 40
+    }
+  },
+  "spark_grade_all": true,
+  "spark_grade_model": "muse-spark-1.3",
+  "deterministic_decides": true,
+  "spark_grade_note": "Muse Spark grades every answer in all 12 rounds next to the deterministic checks; the deterministic check decides, disagreements are logged.",
+  "meta_budget": {
+    "credits_usd": 150,
+    "cap_usd": 120,
+    "soft_usd": 100,
+    "matrix_estimate_usd": [
+      19,
+      23
+    ],
+    "label": "ESTIMATE",
+    "per_model_estimate": {
+      "muse-spark": "18-22 (grading 4,608 answers + operator trace)",
+      "muse-wonder": "~0.5",
+      "sam-3.1": "<0.1",
+      "muse-voice": "<0.1",
+      "muse-code": "0 (REPLAY)",
+      "muse-image": "0 (pre-generated SYNTHETIC)",
+      "muse-glimmer": "0 Meta (H100 booking)",
+      "muse-spark-open": "0 Meta (Baseten / Modal credits)"
+    }
+  },
+  "providers": [
+    {
+      "id": "baseten",
+      "name": "Baseten",
+      "unit": "USD",
+      "credit": 50.0,
+      "credit_label": "ESTIMATE",
+      "credit_note": "placeholder: balance can't be read",
+      "cap": 47.5,
+      "planned": 45.0,
+      "planned_label": "ESTIMATE"
+    },
+    {
+      "id": "modal",
+      "name": "Modal",
+      "unit": "USD",
+      "credit": 100.0,
+      "credit_label": "ESTIMATE",
+      "credit_note": "assumes the $100 grant; $99.57 left",
+      "cap": 94.59,
+      "planned": 94.55,
+      "planned_label": "ESTIMATE"
+    },
+    {
+      "id": "e2e",
+      "name": "E2E (H100)",
+      "unit": "INR",
+      "credit": 8801.29,
+      "credit_label": "MEASURED",
+      "credit_note": "balance read 1 Nov (read-only); about Rs 2,100 top-up needed for the 24 h rule",
+      "cap": 7300,
+      "planned": 7219,
+      "planned_label": "ESTIMATE"
+    }
+  ],
+  "rounds": [
+    {
+      "id": "r01",
+      "leg": "baseten",
+      "leg_name": "Baseten only",
+      "round": 1,
+      "where": "Baseten (Muse Spark Open)",
+      "datasets": [
+        "ours",
+        "gsm8k",
+        "humaneval"
+      ],
+      "arms": [
+        "without_wattnot",
+        "with_wattnot"
+      ]
+    },
+    {
+      "id": "r02",
+      "leg": "baseten",
+      "leg_name": "Baseten only",
+      "round": 2,
+      "where": "Baseten (Muse Spark Open)",
+      "datasets": [
+        "ours",
+        "gsm8k",
+        "humaneval"
+      ],
+      "arms": [
+        "without_wattnot",
+        "with_wattnot"
+      ]
+    },
+    {
+      "id": "r03",
+      "leg": "baseten",
+      "leg_name": "Baseten only",
+      "round": 3,
+      "where": "Baseten (Muse Spark Open)",
+      "datasets": [
+        "ours",
+        "gsm8k",
+        "humaneval"
+      ],
+      "arms": [
+        "without_wattnot",
+        "with_wattnot"
+      ]
+    },
+    {
+      "id": "r04",
+      "leg": "modal",
+      "leg_name": "Modal only",
+      "round": 1,
+      "where": "Modal (Muse Spark Open)",
+      "datasets": [
+        "ours",
+        "gsm8k",
+        "humaneval"
+      ],
+      "arms": [
+        "without_wattnot",
+        "with_wattnot"
+      ]
+    },
+    {
+      "id": "r05",
+      "leg": "modal",
+      "leg_name": "Modal only",
+      "round": 2,
+      "where": "Modal (Muse Spark Open)",
+      "datasets": [
+        "ours",
+        "gsm8k",
+        "humaneval"
+      ],
+      "arms": [
+        "without_wattnot",
+        "with_wattnot"
+      ]
+    },
+    {
+      "id": "r06",
+      "leg": "modal",
+      "leg_name": "Modal only",
+      "round": 3,
+      "where": "Modal (Muse Spark Open)",
+      "datasets": [
+        "ours",
+        "gsm8k",
+        "humaneval"
+      ],
+      "arms": [
+        "without_wattnot",
+        "with_wattnot"
+      ]
+    },
+    {
+      "id": "r07",
+      "leg": "h100",
+      "leg_name": "H100 only",
+      "round": 1,
+      "where": "H100 booking (Muse Glimmer 30B)",
+      "datasets": [
+        "ours",
+        "gsm8k",
+        "humaneval"
+      ],
+      "arms": [
+        "without_wattnot",
+        "with_wattnot"
+      ]
+    },
+    {
+      "id": "r08",
+      "leg": "h100",
+      "leg_name": "H100 only",
+      "round": 2,
+      "where": "H100 booking (Muse Glimmer 30B)",
+      "datasets": [
+        "ours",
+        "gsm8k",
+        "humaneval"
+      ],
+      "arms": [
+        "without_wattnot",
+        "with_wattnot"
+      ]
+    },
+    {
+      "id": "r09",
+      "leg": "h100",
+      "leg_name": "H100 only",
+      "round": 3,
+      "where": "H100 booking (Muse Glimmer 30B)",
+      "datasets": [
+        "ours",
+        "gsm8k",
+        "humaneval"
+      ],
+      "arms": [
+        "without_wattnot",
+        "with_wattnot"
+      ]
+    },
+    {
+      "id": "r10",
+      "leg": "combined",
+      "leg_name": "All combined, routed",
+      "round": 1,
+      "where": "inside the same H100 booking, routing H100 + Baseten + Modal",
+      "datasets": [
+        "ours",
+        "gsm8k",
+        "humaneval"
+      ],
+      "arms": [
+        "without_wattnot",
+        "with_wattnot"
+      ]
+    },
+    {
+      "id": "r11",
+      "leg": "combined",
+      "leg_name": "All combined, routed",
+      "round": 2,
+      "where": "inside the same H100 booking, routing H100 + Baseten + Modal",
+      "datasets": [
+        "ours",
+        "gsm8k",
+        "humaneval"
+      ],
+      "arms": [
+        "without_wattnot",
+        "with_wattnot"
+      ]
+    },
+    {
+      "id": "r12",
+      "leg": "combined",
+      "leg_name": "All combined, routed",
+      "round": 3,
+      "where": "inside the same H100 booking, routing H100 + Baseten + Modal",
+      "datasets": [
+        "ours",
+        "gsm8k",
+        "humaneval"
+      ],
+      "arms": [
+        "without_wattnot",
+        "with_wattnot"
+      ]
+    }
+  ]
+}

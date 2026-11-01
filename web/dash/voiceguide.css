@@ -294,3 +294,10 @@
   color: #DCD6E4;
   margin: 4px 0;
 }
+
+/* Ask about a card */
+.wn-ask-glow{outline:2px solid #B794F6!important;box-shadow:0 0 0 4px rgba(183,148,246,.25),0 0 22px rgba(183,148,246,.55)!important;cursor:help!important;animation:wnAskPulse 1.6s ease-in-out infinite;border-radius:10px}
+@keyframes wnAskPulse{50%{box-shadow:0 0 0 6px rgba(183,148,246,.15),0 0 30px rgba(183,148,246,.75)}}
+.wn-ask-focus{outline:2px solid #2DD4A7!important;box-shadow:0 0 24px rgba(45,212,167,.45)!important;border-radius:10px}
+mark.wn-ask-mark{background:#F5C451;color:#080B10;border-radius:3px;padding:0 2px}
+@media (prefers-reduced-motion:reduce){.wn-ask-glow{animation:none}}

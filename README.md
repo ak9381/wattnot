@@ -228,11 +228,11 @@ What is and isn't checked yet is listed in [docs/runbooks/BASETEN.md](docs/runbo
 - **Modal works the same way.** `--planner modal-open` runs the same planner on Modal's Shared Endpoint for Muse Spark Open, at the same list price. Every compare (`python -m wattnot.spark_open.h2h`) lists three placements on the same prompts: our GPU, Baseten and Modal. The router picks one per workload on quality and p99 and writes the reasons into the receipt. Setup: [docs/runbooks/MODAL.md](docs/runbooks/MODAL.md).
 - The served models we tune are Meta open weights too: Muse Glimmer 30B and Llama 3.1 8B Instruct on vLLM.
 
-## Meta API usage (capped at $100)
+## Meta API usage (capped at $120)
 
-Muse Spark makes WattNot's agent decisions: the next knob to try, the order of reasoning-effort levels, the judge verdicts and plain-words receipt notes. Every call goes through a spend guard that keeps a ledger (`~/.wattnot/meta_spend.json`), refuses a call that would pass **$100**, and warns at $80. `wattnot meta spend` shows the total, a per-purpose breakdown and what is left; `wattnot meta check` confirms the model answers. Details, the price used and the recorded session: [docs/runbooks/META-USAGE.md](docs/runbooks/META-USAGE.md).
+Muse Spark makes WattNot's agent decisions: the next knob to try, the order of reasoning-effort levels, the judge verdicts and plain-words receipt notes. Every call goes through a spend guard that keeps a ledger (`~/.wattnot/meta_spend.json`), refuses a call that would pass **$120**, and warns at $100 (Meta credits: $150). `wattnot meta spend` shows the total, a per-purpose breakdown and what is left; `wattnot meta check` confirms the model answers. Details, the price used and the recorded session: [docs/runbooks/META-USAGE.md](docs/runbooks/META-USAGE.md).
 
-**Spend to date (MEASURED, 2026-10-28).** The Meta API ledger totals **$23.20** (3,506 billed calls: $23.08 for the Muse Spark planner, $0.12 for SAM), well under the **$100** cap. Hosted endpoints are billed separately and tracked in their own small ledgers: the Baseten head-to-head (one planner call plus the compare) is about **$0.005**, and the hosted A/B (Baseten + Modal arms of Muse Spark Open) totals **$0.14**. All three are MEASURED from billed token counts at list price.
+**Spend to date (MEASURED, 2026-10-28).** The Meta API ledger totals **$23.20** (3,506 billed calls: $23.08 for the Muse Spark planner, $0.12 for SAM), well under the cap (now **$120**). Hosted endpoints are billed separately and tracked in their own small ledgers: the Baseten head-to-head (one planner call plus the compare) is about **$0.005**, and the hosted A/B (Baseten + Modal arms of Muse Spark Open) totals **$0.14**. All three are MEASURED from billed token counts at list price.
 
 ## Flex mode (grid events, SIMULATED until the H100 run)
 

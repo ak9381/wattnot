@@ -39,6 +39,7 @@
           <a class="wn-link" data-nav="reports" href="${prefix}report.html?run=run2-llama-350w">Reports</a>
           <a class="wn-link" data-nav="graph" href="${prefix}graph.html">Live graph</a>
           <a class="wn-link" data-nav="costbudget" href="${prefix}costbudget.html">Cost budget</a>
+          <a class="wn-link" data-nav="matrix" href="${prefix}matrix.html">Run matrix</a>
           <a class="wn-link" data-nav="eu" href="${prefix}eu.html">EU Compliance</a>
         </div>
         <div class="wn-slot-wrap" id="wn-slot-wrap"></div>
@@ -111,6 +112,8 @@
         targetNav = "runs";
       } else if (path.includes("graph.html")) {
         targetNav = "graph";
+      } else if (path.includes("matrix.html")) {
+        targetNav = "matrix";
       } else if (path.includes("costbudget.html")) {
         targetNav = "costbudget";
       } else if (path.includes("eu.html")) {
