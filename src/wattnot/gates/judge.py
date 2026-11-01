@@ -19,7 +19,7 @@ from pathlib import Path
 from wattnot.gates.result import GateResult
 
 # The quality judge is Muse Spark (Meta), hosted on Baseten at low thinking, called through
-# proof/baseten_planner.py and behind the $98 spend guard (wattnot.spend.guard). Llama 3.1 8B
+# proof/baseten_planner.py and behind a Baseten spend guard (wattnot.spend.guard). Llama 3.1 8B
 # on our own vLLM (JUDGE_BASE_URL) is the fallback only: on 401/402, repeated 429s, a spend
 # stop or a network failure. Every verdict records which judge made it (`judge_model`,
 # `judge_path`). History: RUN2 used fixed answer checks only; Oct 27-28 builds judged with Llama.
@@ -27,6 +27,25 @@ SPARK_HOSTED_JUDGE = "meta-models/muse-spark-open"
 LLAMA_JUDGE = "meta-llama/Llama-3.1-8B-Instruct"
 MODEL = os.environ.get("JUDGE_MODEL", SPARK_HOSTED_JUDGE)
 JUDGE_EFFORT = "low"
+# The judge's own default Baseten cap. A round run sets a LOWER Baseten cap (the $8 per-round hard
+# stop, or $1 in a smoke run) via WATTNOT_BASETEN_CAP_USD; the judge must honour whichever cap is
+# lower, so judge spend counts against — and cannot slip past — the round/smoke Baseten cap. Once
+# the cap is reached the hosted judge is refused (a labelled HardStop/SoftStop) and the gate falls
+# back to the local Llama rather than overspending.
+JUDGE_BASETEN_CAP_USD = 98.0
+BASETEN_CAP_ENV = "WATTNOT_BASETEN_CAP_USD"
+
+
+def baseten_cap_usd(default: float = JUDGE_BASETEN_CAP_USD) -> float:
+    """The Baseten cap in force for judge calls: the lower of the judge's own default and any
+    round/smoke cap set in WATTNOT_BASETEN_CAP_USD. A value above the default never raises it."""
+    raw = os.environ.get(BASETEN_CAP_ENV, "").strip()
+    if not raw:
+        return default
+    v = float(raw)
+    if v <= 0:
+        raise ValueError(f"{BASETEN_CAP_ENV} must be a positive number")
+    return min(default, v)   # whichever cap is lower wins
 # One pinned answer budget for every judge call (the batch gate, hosted-Spark pricing and
 # scripts/record_judge). 512 at low effort was seen to spend the whole budget on reasoning and
 # return no verdict (a cut-off); 1500 leaves room for the JSON verdicts. Kept equal to
@@ -64,13 +83,20 @@ class HostedSparkJudge:
     wattnot.spend.guard.Guard. Provider errors become guard ProviderErrors, so 402 is a hard
     stop, 429 gets bounded retries and then a soft stop, 401 a soft stop."""
 
-    def __init__(self, client=None, guard=None) -> None:
+    def __init__(self, client=None, guard=None, *, cap_usd: float | None = None) -> None:
         from wattnot.spend.guard import Guard, Ledger, Price, TOKEN
+        # The lower of the judge's default and any round/smoke Baseten cap (whichever wins).
+        cap = baseten_cap_usd() if cap_usd is None else min(JUDGE_BASETEN_CAP_USD, cap_usd)
+        self.cap_usd = cap
         if client is None:
             from wattnot.proof.baseten_planner import BasetenClient
-            client = BasetenClient(model=SPARK_HOSTED_JUDGE, cap_usd=98.0)
+            client = BasetenClient(model=SPARK_HOSTED_JUDGE, cap_usd=cap)
         self.client = client
-        self.guard = guard or Guard("baseten", Price(TOKEN, 1.25, 4.25), Ledger(SPEND_LEDGER))
+        # hard_usd is the cap; keep a billing-lag margin but never larger than a quarter of the
+        # cap, so a small round/smoke cap still admits calls until its spend is actually used up.
+        self.guard = guard or Guard("baseten", Price(TOKEN, 1.25, 4.25), Ledger(SPEND_LEDGER),
+                                    hard_usd=cap, soft_usd=min(90.0, cap),
+                                    lag_margin_usd=min(2.0, cap / 4))
         self.model = SPARK_HOSTED_JUDGE
 
     def __call__(self, body: dict) -> dict:

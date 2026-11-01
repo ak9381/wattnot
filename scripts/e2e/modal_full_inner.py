@@ -71,7 +71,7 @@ OFF_NODES = {"adaptive": "MoE top-k needs Spark Open self-served (8x B200)",
              "spark_open": "816B side stage not run (about 700 GB GPU memory)",
              "baseten_model": "not used on this stage (our own vLLM on Modal)",
              "meters_roadmap": "Zeus/DCGM meters not bound; NVML is the meter",
-             "certificate": "mock certificate format, not minted",
+             "certificate": "efficiency certificate from the run receipt (declined, not minted, when the saving is not significant)",
              "e2e_rig": "the H100 rig is not used; this stage runs on a Modal A100-80GB"}
 SLICE_MAX_S = 15 * 60                   # a sweep/FP8 slice arm never runs longer than this
 BUDGET_FAIL_MAX = 5                     # BudgetChat errors before the enforcer is switched off

@@ -112,15 +112,62 @@ def test_qr_svg_is_a_picture_with_a_title():
 
 def test_mints_an_estimate_receipt(tmp_path, reg):
     c = mint(VEC / "real-estimate.json", reg, issued_at=T0)
-    assert c["serial"] == "WNC-MOCK-0001"
-    assert c["status"] == "MOCK" and c["receipt"]["grade"] == "ESTIMATE"
+    assert c["serial"] == "WNC-0001"
+    assert c["status"] == "ESTIMATE" and c["receipt"]["grade"] == "ESTIMATE"
+    assert c["title"] == "Verified Efficiency Statement"  # no "(MOCK)"
     assert c["watermark"] == {"lines": list(WATERMARK_LINES), "permanent": True}
+    assert "MOCK" not in json.dumps(c)
     f = c["figures"]
     assert f["wh_per_request"]["saved"] == pytest.approx(0.0048, abs=1e-9)
     assert f["j_per_good_answer"]["change_pct"] == pytest.approx(-9.9958)
     assert f["saving_pct"]["ci_low"] > 0
     assert verify_certificate(c, receipt_path=VEC / "real-estimate.json",
                               register=json.loads(reg.read_text())) == []
+
+
+def test_mints_a_valid_receipt_with_a_measured_label(reg, monkeypatch):
+    # real-measured carries measured energy (measurement label MEASURED) but is offline-signed,
+    # so it normally verifies as ESTIMATE. Force a VALID grade to exercise the VALID mint path;
+    # the certificate must be labelled by the receipt's evidence (MEASURED), never "MOCK".
+    real = rules.verify_receipt
+
+    def fake(path, bundle=None, *, trusted=None):
+        rep = real(path, bundle, trusted=trusted)
+        rep.grade = "VALID"
+        return rep
+
+    monkeypatch.setattr(rules, "verify_receipt", fake)
+    c = mint(VEC / "real-measured.json", reg, issued_at=T0)
+    assert c["receipt"]["grade"] == "VALID"
+    assert c["status"] == "MEASURED" and c["labels"]["energy"] == "MEASURED"
+    assert c["serial"] == "WNC-0001" and "MOCK" not in json.dumps(c)
+    d = json.loads(reg.read_text())
+    assert d["entries"][0]["label"] == "MEASURED" and d["entries"][0]["grade"] == "VALID"
+    assert verify_certificate(c, register=d) == []
+
+
+def test_verify_still_reads_a_legacy_mock_certificate_and_register(reg):
+    c = mint(VEC / "real-estimate.json", reg, issued_at=T0)
+    d = json.loads(reg.read_text())
+    # Re-shape into the pre-rename format: a WNC-MOCK- serial, the MOCK status and the leading
+    # MOCK watermark line. verify must still accept it.
+    old_c = copy.deepcopy(c)
+    old_c["serial"] = "WNC-MOCK-0001"
+    old_c["status"] = "MOCK"
+    old_c["watermark"]["lines"] = ["MOCK", *WATERMARK_LINES]
+    old_c["title"] = "Verified Efficiency Statement (MOCK)"
+    old_c["integrity"]["sha256"] = canonical_sha256(old_c)
+    assert verify_certificate(old_c) == []
+
+    old_reg = copy.deepcopy(d)
+    old_reg["label"] = "MOCK"
+    e = old_reg["entries"][0]
+    e["serial"] = "WNC-MOCK-0001"
+    e["label"] = "MOCK"
+    e["certificate_sha256"] = old_c["integrity"]["sha256"]
+    e["integrity"] = {"sha256": rules.entry_hash(e)}
+    assert verify_register(old_reg) == []
+    assert verify_certificate(old_c, register=old_reg) == []
 
 
 def test_certificate_is_deterministic_for_a_fixed_time(tmp_path):
@@ -134,6 +181,25 @@ def test_noise_is_refused(reg):
         mint(VEC / "real-noise.json", reg)
     assert e.value.reasons[0]["code"] == "grade" and "NOISE" in e.value.reasons[0]["detail"]
     assert not reg.exists()  # nothing written
+
+
+def test_declinable_only_for_an_intact_insignificant_receipt():
+    assert rules.declinable([{"code": "grade", "detail": "grade is NOISE; ..."}])
+    assert not rules.declinable([{"code": "not_verified", "detail": "x"}])
+    assert not rules.declinable([{"code": "duplicate", "detail": "x"}])
+    assert not rules.declinable([{"code": "simulated", "detail": "x"}])
+    assert not rules.declinable([{"code": "no_saving", "detail": "x"}])
+    # a grade reason next to a hard error is a real error, never a decline
+    assert not rules.declinable([{"code": "grade"}, {"code": "not_verified"}])
+
+
+def test_decline_doc_keeps_the_reason_and_the_measured_figures():
+    reasons = [{"code": "grade", "detail": "grade is NOISE; only VALID or ESTIMATE are minted"}]
+    doc = rules.decline_doc_for(VEC / "real-noise.json", reasons, issued_at=T0)
+    assert doc["status"] == "declined" and doc["format"] == rules.DECLINE_FORMAT
+    assert doc["receipt"]["grade"] == "NOISE" and doc["receipt"]["label"] == "MEASURED"
+    assert doc["figures"] is not None and doc["reasons"] == reasons
+    assert "no certificate was minted" in doc["note"].lower()
 
 
 @pytest.mark.parametrize("name", ["forged-edited", "forged-rehashed", "forged-otherkey",
@@ -160,7 +226,7 @@ def test_no_second_certificate_for_the_same_receipt(reg):
     with pytest.raises(MintRefused) as e:
         mint(VEC / "real-estimate.json", reg)
     assert e.value.reasons[0]["code"] == "duplicate"
-    assert "WNC-MOCK-0001" in e.value.reasons[0]["detail"]
+    assert "WNC-0001" in e.value.reasons[0]["detail"]
     assert len(json.loads(reg.read_text())["entries"]) == 1
 
 
@@ -229,8 +295,8 @@ def test_register_chain_links_entries(reg):
     d = json.loads(reg.read_text())
     e1, e2 = d["entries"]
     assert e1["prev_sha256"] is None and e2["prev_sha256"] == e1["integrity"]["sha256"]
-    assert [e["serial"] for e in d["entries"]] == ["WNC-MOCK-0001", "WNC-MOCK-0002"]
-    assert verify_register(d) == [] and d["label"] == "MOCK"
+    assert [e["serial"] for e in d["entries"]] == ["WNC-0001", "WNC-0002"]
+    assert verify_register(d) == [] and d["label"] == "NOT TRADABLE"
     assert oct(reg.stat().st_mode & 0o777) == "0o644"
 
 
@@ -278,11 +344,11 @@ def test_edited_certificate_or_removed_watermark_fails(reg):
     w = copy.deepcopy(c)
     w["watermark"]["lines"] = []
     w["integrity"]["sha256"] = canonical_sha256(w)  # even re-hashed
-    assert "the MOCK watermark is missing or changed" in verify_certificate(w)
+    assert "the honesty watermark is missing or changed" in verify_certificate(w)
     s = copy.deepcopy(c)
-    s["status"] = "FINAL"
+    s["status"] = "FINAL"  # not an honest evidence status
     s["integrity"]["sha256"] = canonical_sha256(s)
-    assert "the MOCK watermark is missing or changed" in verify_certificate(s)
+    assert "the honesty watermark is missing or changed" in verify_certificate(s)
 
 
 def test_figures_are_re_derived_from_the_receipt(reg, tmp_path):
@@ -333,8 +399,8 @@ def test_certificate_text_has_no_carbon_claim(reg):
 def test_html_is_always_watermarked_and_has_the_hash_and_qr(reg):
     c = mint(VEC / "real-estimate.json", reg, issued_at=T0)
     h = render_html(c)
-    assert h.count("NOT A CARBON CREDIT") == 2  # top and bottom band
-    assert h.count("MOCK") >= 4 and "NOT TRADABLE" in h
+    assert h.count("NOT A CARBON CREDIT") == 3  # top band, bottom band, diagonal mark
+    assert h.count("NOT TRADABLE") == 3 and "MOCK" not in h
     assert 'class="mark"' in h
     assert c["receipt"]["sha256"] in h and c["serial"] in h
     assert "<svg" in h and "ESTIMATE" in h
@@ -366,26 +432,44 @@ def test_cli_mint_verify_register_roundtrip(tmp_path, capsys):
     out = tmp_path / "certs"
     assert main(["certificate", "mint", "--receipt", str(VEC / "real-estimate.json"),
                  "--out", str(out), "--issued-at", T0]) == 0
-    assert (out / "WNC-MOCK-0001.json").exists() and (out / "WNC-MOCK-0001.html").exists()
+    assert (out / "WNC-0001.json").exists() and (out / "WNC-0001.html").exists()
     capsys.readouterr()
-    assert main(["certificate", "verify", str(out / "WNC-MOCK-0001.json"),
+    assert main(["certificate", "verify", str(out / "WNC-0001.json"),
                  "--receipt", str(VEC / "real-estimate.json"),
                  "--register", str(out / "register.json")]) == 0
-    assert "ok (still a MOCK)" in capsys.readouterr().out
+    assert "ok (not tradable" in capsys.readouterr().out
     assert main(["certificate", "register", "--register", str(out / "register.json"),
-                 "--lookup", "WNC-MOCK-0001", "--json"]) == 0
+                 "--lookup", "WNC-0001", "--json"]) == 0
     d = json.loads(capsys.readouterr().out)
     assert d["found"] and d["chain_ok"] and d["entry"]["grade"] == "ESTIMATE"
     assert main(["certificate", "register", "--register", str(out / "register.json"),
-                 "--lookup", "WNC-MOCK-0042"]) == 1
+                 "--lookup", "WNC-0042"]) == 1
 
 
-def test_cli_refusal_exit_code_and_json(tmp_path, capsys):
+def test_cli_declines_a_noise_receipt_with_exit_0(tmp_path, capsys):
+    # A NOISE grade (intact receipt, saving not statistically shown) is declined, not failed:
+    # a "not issued" statement is written and the exit code is 0 so the flow step does not fail.
     rc = main(["certificate", "mint", "--receipt", str(VEC / "real-noise.json"),
                "--out", str(tmp_path), "--json"])
     d = json.loads(capsys.readouterr().out)
-    assert rc == 2 and d["minted"] is False and d["reasons"][0]["code"] == "grade"
-    assert not list(tmp_path.glob("*.html"))
+    assert rc == 0 and d["minted"] is False and d["status"] == "declined"
+    assert d["reasons"][0]["code"] == "grade" and "NOISE" in d["reasons"][0]["detail"]
+    ni = list(tmp_path.glob("not-issued-*.json"))
+    assert len(ni) == 1 and not list(tmp_path.glob("*.html"))
+    stmt = json.loads(ni[0].read_text())
+    assert stmt["status"] == "declined" and stmt["receipt"]["grade"] == "NOISE"
+    assert stmt["figures"] is not None  # measured figures kept for the record
+    assert not (tmp_path / "register.json").exists()  # the register is never touched
+
+
+def test_cli_forged_receipt_still_fails_nonzero(tmp_path, capsys):
+    # A real error (a forged/edited receipt) must still fail, not be declined.
+    rc = main(["certificate", "mint", "--receipt", str(VEC / "forged-edited.json"),
+               "--out", str(tmp_path), "--json"])
+    d = json.loads(capsys.readouterr().out)
+    assert rc == 2 and d["minted"] is False and "status" not in d
+    assert any(r["code"] == "not_verified" for r in d["reasons"])
+    assert not list(tmp_path.glob("not-issued-*.json"))
 
 
 def test_cli_json_shape(tmp_path, capsys):
@@ -399,7 +483,7 @@ def test_cli_json_shape(tmp_path, capsys):
 def test_cli_verify_fails_on_an_edited_certificate(tmp_path, capsys):
     main(["certificate", "mint", "--receipt", str(VEC / "real-estimate.json"),
           "--out", str(tmp_path), "--issued-at", T0])
-    p = tmp_path / "WNC-MOCK-0001.json"
+    p = tmp_path / "WNC-0001.json"
     c = json.loads(p.read_text())
     c["watermark"]["permanent"] = False
     p.write_text(json.dumps(c))
@@ -412,10 +496,10 @@ def test_cli_verify_fails_on_an_edited_certificate(tmp_path, capsys):
 def test_cli_render_redraws_a_good_certificate(tmp_path):
     main(["certificate", "mint", "--receipt", str(VEC / "real-estimate.json"),
           "--out", str(tmp_path), "--issued-at", T0])
-    html = tmp_path / "WNC-MOCK-0001.html"
+    html = tmp_path / "WNC-0001.html"
     first = html.read_text()
     html.unlink()
-    assert main(["certificate", "render", str(tmp_path / "WNC-MOCK-0001.json")]) == 0
+    assert main(["certificate", "render", str(tmp_path / "WNC-0001.json")]) == 0
     assert html.read_text() == first
 
 
@@ -431,7 +515,7 @@ def test_cli_roadmap_is_labelled_advice(capsys):
 
 def test_bundled_sample_still_checks_out():
     d = ROOT / "data" / "certificate" / "sample"
-    cert = json.loads((d / "WNC-MOCK-0001.json").read_text())
+    cert = json.loads((d / "WNC-0001.json").read_text())
     reg = json.loads((d / "register.json").read_text())
     assert verify_certificate(cert, receipt_path=VEC / "real-estimate.json", register=reg) == []
-    assert (d / "WNC-MOCK-0001.html").read_text() == render_html(cert)
+    assert (d / "WNC-0001.html").read_text() == render_html(cert)

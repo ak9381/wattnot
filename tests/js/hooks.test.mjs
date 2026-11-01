@@ -133,7 +133,7 @@ test("header is fixed glass, footer is a plain bar at the page end", () => {
   const chromeCss = fs.readFileSync(path.join(dashDir, "chrome.css"), "utf8");
   assert.match(chromeCss, /nav\.wn-nav\.gl\s*\{[^}]*position:\s*fixed;/);
   // Footer is a plain full-width bar at the end of the page, never fixed over content.
-  assert.doesNotMatch(chromeCss, /footer\.wn-footer\.gl\s*\{[^}]*position:\s*fixed;/);
+  assert.doesNotMatch(chromeCss, /^footer\.wn-footer\.gl[^{]*\{[^}]*position:\s*fixed;/m);  // body.story pages pin it on purpose
   assert.match(chromeCss, /blur\(24px\)\s*saturate\(170%\)/);
   assert.match(chromeCss, /rgba\(255,\s*255,\s*255,\s*0?\.14\)/);
   assert.match(chromeCss, /inset 0 1px 0 rgba\(255,\s*255,\s*255,\s*0?\.12\)/);

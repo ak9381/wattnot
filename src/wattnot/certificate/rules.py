@@ -2,13 +2,18 @@
 
 A certificate is a human-readable statement of what one verified receipt says. Nothing on it is
 new: every figure is re-derived from the receipt, and the certificate holds the receipt's hash.
+It is not a mock: the figures are the receipt's own MEASURED (or ESTIMATE) numbers, and the
+certificate is labelled by that evidence. It is still not tradable and not a carbon credit, and
+says so on its face.
 
 Mint rules (all enforced here, not in the renderer):
 
 1. The receipt is checked again with the library verifier: schema, sha256, a signature from a
    trusted key, and the joules block. The grade comes from that check, not from the file.
-2. Grade VALID or ESTIMATE. NOISE and UNVERIFIABLE are refused. SIMULATED is refused unless the
-   caller says `allow_simulated`; then the certificate says SIMULATED on its face.
+2. Grade VALID or ESTIMATE. A NOISE or UNVERIFIABLE grade (an intact receipt whose saving is not
+   statistically shown) is not minted; the caller declines it honestly (see the CLI) rather than
+   failing. SIMULATED is refused unless the caller says `allow_simulated`; then the certificate
+   says SIMULATED on its face.
 3. The receipt must show a saving: the mean is above zero and, when the receipt carries a
    confidence interval, its lower end is above zero. The pass rate must not fall by more than
    one point.
@@ -33,18 +38,33 @@ from wattnot.receipt.joules import joules_block
 from wattnot.verify import Report, load_trusted, verify_receipt
 
 CERT_FORMAT = "wattnot.certificate/1"
+DECLINE_FORMAT = "wattnot.cert-decline/1"
 REGISTER_FORMAT = "wattnot.cert-register/1"
-WATERMARK_LINES = ("MOCK", "NOT TRADABLE", "NOT A CARBON CREDIT")
-SERIAL_PREFIX = "WNC-MOCK-"
+# The honesty watermark. It is part of the hashed document and the renderer has no switch to
+# remove it. (Certificates minted before the rename also carried a leading "MOCK" line; verify
+# still reads those — see verify_certificate / verify_register.)
+WATERMARK_LINES = ("NOT TRADABLE", "NOT A CARBON CREDIT")
+SERIAL_PREFIX = "WNC-"
+LEGACY_SERIAL_PREFIX = "WNC-MOCK-"   # certificates minted before the rename
 GRADES_OK = ("VALID", "ESTIMATE")
+# Honest top-line statuses a certificate may carry: the receipt's energy evidence (or the grade
+# for a VALID run). "MOCK" is accepted so verify still reads certificates minted before the
+# rename. Anything else means the status was tampered with.
+CERT_STATUSES = ("MEASURED", "ESTIMATE", "VALID", "SIMULATED", "MOCK")
+# An intact receipt whose saving is not statistically shown: not minted, but declined honestly
+# (exit 0) rather than treated as an error.
+DECLINE_GRADES = ("NOISE", "UNVERIFIABLE")
+# Reason codes that mean a real problem (forged receipt, broken register, duplicate, simulated
+# without the flag) rather than an honest "nothing to certify".
+HARD_REASON_CODES = ("not_verified", "register", "duplicate", "simulated")
 MAX_PASS_DROP = 0.01
 DEFAULT_VERIFY_URL = "https://github.com/ak9381/wattnot/tree/main/verifier"
 # Words a certificate must never carry. Only the watermark may say "carbon credit", and it
 # says the opposite.
 BANNED = ("neutral", "offset", "carbon-free", "carbon free", "net zero", "net-zero")
 LIMITS = (
-    "This is a mock. No registry, buyer or regulator accepts it.",
     "It restates one receipt. It does not say the saving would repeat on other workloads.",
+    "It is not tradable. No registry, buyer or regulator accepts it.",
     "Energy is GPU draw (or a model of it) for the listed requests, not a whole site.",
     "No carbon figure is given, and none should be read into it.",
 )
@@ -154,11 +174,65 @@ def check_rules(r: Mapping, report: Report, *, allow_simulated: bool = False) ->
     return bad
 
 
+# ---------------------------------------------------------------- decline
+
+def declinable(reasons: list[Mapping]) -> bool:
+    """True when a refusal is an honest "nothing to certify" (an intact receipt graded
+    NOISE / UNVERIFIABLE) rather than a real error. Such a refusal is declined with exit 0,
+    not failed: the caller writes a "not issued" statement instead of a certificate."""
+
+    codes = {r.get("code") for r in reasons}
+    return "grade" in codes and not (codes & set(HARD_REASON_CODES))
+
+
+def build_declined(r: Mapping, report: Report, reasons: list[Mapping], *, issued_at: str) -> dict:
+    """A "not issued" statement: the reason, the receipt it was built from, and the measured
+    figures (for the record). It mints nothing and is never written to the register."""
+
+    sha = (r.get("integrity") or {}).get("sha256")
+    subj = r.get("subject", {})
+    host = subj.get("host", {})
+    meas = r.get("measurement", {})
+    try:
+        fig: dict | None = figures(r)
+    except (KeyError, TypeError):
+        fig = None
+    return {
+        "format": DECLINE_FORMAT,
+        "status": "declined",
+        "issued_at": issued_at,
+        "title": "Efficiency Statement — NOT ISSUED",
+        "reasons": [dict(x) for x in reasons],
+        "receipt": {"receipt_id": r.get("receipt_id"), "sha256": sha, "spec": r.get("spec"),
+                    "grade": report.grade, "label": meas.get("label"),
+                    "created_at": r.get("created_at")},
+        "subject": {"model": subj.get("model"), "provider": host.get("provider"),
+                    "gpu": host.get("gpu"),
+                    "workload": (subj.get("workload") or {}).get("name")},
+        "figures": fig,
+        "note": f"No certificate was minted. The receipt is intact but its saving is not "
+                f"statistically shown (grade {report.grade}); a certificate is only minted for a "
+                f"VALID or ESTIMATE receipt that shows a clear saving.",
+    }
+
+
+def decline_doc_for(receipt_path: str | Path, reasons: list[Mapping], *,
+                    bundle: str | Path | None = None, trusted_path: str | Path | None = None,
+                    issued_at: str | None = None) -> dict:
+    """Build the "not issued" statement for a receipt the mint rules declined (re-reads and
+    re-verifies the receipt to re-derive the grade and the figures)."""
+
+    receipt_path = Path(receipt_path)
+    r = json.loads(receipt_path.read_text(encoding="utf-8"))
+    report = verify_receipt(receipt_path, bundle, trusted=load_trusted(trusted_path))
+    return build_declined(r, report, reasons, issued_at=issued_at or _now())
+
+
 # ---------------------------------------------------------------- register
 
 def _empty_register() -> dict:
     note = "Local file. Nothing here is public and nothing here is tradable."
-    return {"format": REGISTER_FORMAT, "label": "MOCK", "note": note, "entries": []}
+    return {"format": REGISTER_FORMAT, "label": "NOT TRADABLE", "note": note, "entries": []}
 
 
 def load_register(path: str | Path) -> dict:
@@ -199,7 +273,8 @@ def verify_register(reg: Mapping) -> list[str]:
             bad.append(f"{tag}: prev_sha256 does not match the entry before it")
         if (e.get("integrity") or {}).get("sha256") != entry_hash(e):
             bad.append(f"{tag}: entry was edited (hash mismatch)")
-        if e.get("serial") != f"{SERIAL_PREFIX}{i + 1:04d}":
+        if e.get("serial") not in (f"{SERIAL_PREFIX}{i + 1:04d}",
+                                   f"{LEGACY_SERIAL_PREFIX}{i + 1:04d}"):
             bad.append(f"{tag}: serial out of sequence")
         for k in e.get("claim_keys", []):
             if k in seen:
@@ -223,17 +298,19 @@ def _build(r: Mapping, report: Report, *, serial: str, issued_at: str, verify_ur
     url = f"{verify_url}#sha256={sha}"
     fig = figures(r)
     simulated = report.grade == "SIMULATED"
+    energy = meas.get("label")  # the evidence behind the figures: MEASURED / ESTIMATE / SIMULATED
+    status = "SIMULATED" if simulated else (energy or report.grade)
     headline = (
         f"Energy per request {fig['saving_pct']['mean']}% lower than the baseline "
         f"({fig['wh_per_request']['saved']} Wh saved per request)."
     )
     cert = {
         "format": CERT_FORMAT,
-        "status": "MOCK",
+        "status": status,
         "watermark": {"lines": list(WATERMARK_LINES), "permanent": True},
         "serial": serial,
         "issued_at": issued_at,
-        "title": "Verified Efficiency Statement (MOCK)",
+        "title": "Verified Efficiency Statement",
         "receipt": {
             "receipt_id": r.get("receipt_id"), "sha256": sha, "spec": r.get("spec"),
             "grade": report.grade, "label": meas.get("label"),
@@ -295,7 +372,7 @@ def mint(receipt_path: str | Path, register_path: str | Path, *, bundle: str | P
     entry = {"serial": serial, "minted_at": cert["issued_at"],
              "receipt_sha256": cert["receipt"]["sha256"],
              "claim_keys": _claim_keys(r, cert["receipt"]["sha256"]),
-             "grade": report.grade, "label": "MOCK",
+             "grade": report.grade, "label": cert["status"],
              "certificate_sha256": cert["integrity"]["sha256"], "prev_sha256": prev}
     entry["integrity"] = {"sha256": entry_hash(entry)}
     reg["entries"].append(entry)
@@ -314,9 +391,12 @@ def verify_certificate(cert: Mapping, *, receipt_path: str | Path | None = None,
     if (cert.get("integrity") or {}).get("sha256") != canonical_sha256(cert):
         bad.append("certificate was edited (hash mismatch)")
     wm = cert.get("watermark") or {}
-    if cert.get("status") != "MOCK" or wm.get("permanent") is not True \
-            or tuple(wm.get("lines", ())) != WATERMARK_LINES:
-        bad.append("the MOCK watermark is missing or changed")
+    lines = tuple(wm.get("lines", ()))
+    # Both disclaimer lines must be present (old "MOCK"-prefixed certificates carry them too) and
+    # the certificate must carry an honest evidence status (not tampered to something else).
+    if wm.get("permanent") is not True or any(d not in lines for d in WATERMARK_LINES) \
+            or cert.get("status") not in CERT_STATUSES:
+        bad.append("the honesty watermark is missing or changed")
     text = json.dumps({k: v for k, v in cert.items() if k != "watermark"}).lower()
     bad += [f"banned wording: {w.strip()}" for w in BANNED if w in text]
     if receipt_path is not None:

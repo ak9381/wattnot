@@ -1,6 +1,7 @@
 """Render a certificate as one self-contained HTML page (and PDF if a browser is installed).
 
-The watermark is drawn by this module every time. There is no option to leave it off.
+The honesty watermark (NOT TRADABLE / NOT A CARBON CREDIT) is drawn by this module every time.
+There is no option to leave it off.
 """
 
 from __future__ import annotations
@@ -24,9 +25,9 @@ body { font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: 
         border: 2px solid #1b1f24; overflow: hidden; min-height: 980px; }
 .band { background: #b00020; color: #fff; text-align: center; font-weight: 800; letter-spacing: .12em;
         padding: 8px 6px; margin: -28px -34px 22px; font-size: 13px; }
-.mark { position: absolute; left: 0; right: 0; top: 36%; text-align: center; transform: rotate(-24deg);
-        font-size: 150px; font-weight: 900; letter-spacing: .08em; color: rgba(176,0,32,.13);
-        pointer-events: none; user-select: none; line-height: 1; }
+.mark { position: absolute; left: 0; right: 0; top: 40%; text-align: center; transform: rotate(-24deg);
+        font-size: 66px; font-weight: 900; letter-spacing: .06em; color: rgba(176,0,32,.13);
+        pointer-events: none; user-select: none; line-height: 1.1; }
 .mark small { display: block; font-size: 30px; letter-spacing: .14em; margin-top: 10px; }
 h1 { font-size: 24px; margin: 0 0 2px; }
 .sub { color: #57606a; margin-bottom: 18px; }
@@ -94,7 +95,7 @@ def _rows(c: Mapping) -> list[tuple[str, str]]:
 
 
 def render_html(cert: Mapping) -> str:
-    """One page. Always carries the MOCK watermark, the top and bottom bands and the QR code."""
+    """One page. Always carries the honesty watermark, the top and bottom bands and the QR code."""
 
     c = cert
     rc = c["receipt"]
@@ -112,7 +113,7 @@ def render_html(cert: Mapping) -> str:
 <style>{_CSS}</style></head>
 <body><div class="page">
 <div class="band">{banner}</div>
-<div class="mark">MOCK<small>NOT TRADABLE</small></div>
+<div class="mark">NOT TRADABLE<small>NOT A CARBON CREDIT</small></div>
 <h1>{_e(c['title'])}</h1>
 <div class="sub">Serial <span class="serial">{_e(c['serial'])}</span> &middot; issued {_e(c['issued_at'])}</div>
 <div class="chips">{chips}</div>
