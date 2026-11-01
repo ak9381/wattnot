@@ -195,6 +195,7 @@ class Server:
         else:
             argv = ["vllm", "serve", self.model_path, "--served-model-name", MODEL,
                     "--reasoning-parser", "muse_glimmer", "--max-model-len", "8192",
+                    "--enable-auto-tool-choice", "--tool-call-parser", "muse_glimmer",   # agent blocks send tools
                     "--gpu-memory-utilization", "0.90", "--max-num-seqs", str(max_seqs),
                     "--limit-mm-per-prompt.image", "1", "--port", str(PORT),
                     "--enable-prefix-caching" if prefix else "--no-enable-prefix-caching"]
