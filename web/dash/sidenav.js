@@ -1,7 +1,9 @@
 // Sidebar sections for the current page, and one section at a time so no page needs long scrolling.
 // A page is cut into blocks of at most ~0.9 screen; each block gets a sidebar entry named after its
 // first heading. Tiny strips (legends, the configuration bar) stay visible above every block.
-const SKIP = /v2\.html#p(?:Cfg|Run|Report)$|graph\.html|index\.html|\/dash\/$/;
+// matrix.html and metatools.html render a single dense mount (no <main>), so the one-part-at-a-time
+// pager would hide their whole body — skip them like graph.html and show the page in full.
+const SKIP = /v2\.html#p(?:Cfg|Run|Report)$|graph\.html|matrix\.html|metatools\.html|index\.html|\/dash\/$/;
 const vis = (e) => e.offsetParent !== null && !e.matches("script, style, nav, aside, footer, .wn-side-scrim");
 const clean = (t) => (t || "").replace(/\s+/g, " ").trim().slice(0, 44);
 
