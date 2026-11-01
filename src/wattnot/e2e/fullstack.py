@@ -92,22 +92,48 @@ def feature_table() -> list[dict]:
     return [{"id": i, "name": n, "status": s, "reason": r} for i, n, s, r in FEATURES]
 
 
+def agent_blocks_status(model: str | None = None) -> dict:
+    """Can the agent blocks (context saver, agent-waste guard) really run on this stage?
+
+    They dedup tool output and guard tool-call loops, so they need a tool-calling-capable model.
+    If the chosen model does not serve tool calls, the blocks are reported skipped with the
+    reason instead of pretending to be ON (see wattnot.cloud.supports_tool_calling)."""
+    from wattnot.cloud import MODEL, supports_tool_calling
+    m = model or MODEL
+    if supports_tool_calling(m):
+        return {"status": "ON", "tool_calling": True,
+                "reason": f"{m} serves OpenAI tool calls; agent saver + waste guard active"}
+    return {"status": "skipped", "tool_calling": False,
+            "reason": f"{m} has no tool calling on this provider; agent saver + waste guard need it"}
+
+
 class RequestLevers:
     """Per-request levers for the with-WattNot arm: agent saver + waste guard.
 
-    Thread-safe enough for the runners (each call gets fresh guard state; totals are summed)."""
+    Thread-safe enough for the runners (each call gets fresh guard state; totals are summed).
+    The agent blocks need a tool-calling-capable model; when the model has none we send no
+    `tools` field (an unsupported one would be rejected) and record the blocks as skipped."""
 
-    def __init__(self):
+    def __init__(self, tools_supported: bool | None = None):
         import threading
+        from wattnot.cloud import supports_tool_calling
         from wattnot.context_saver.middleware import ContextSaver
         self.saver = ContextSaver()
         self.lock = threading.Lock()
-        self.stats = {"calls": 0, "tokens_saved_est": 0, "guard_stops": 0, "guard_flags": 0}
+        self.tools_supported = supports_tool_calling() if tools_supported is None else bool(tools_supported)
+        self.stats = {"calls": 0, "tokens_saved_est": 0, "guard_stops": 0, "guard_flags": 0,
+                      "tool_calling": self.tools_supported, "tools_skipped": 0}
 
     def apply(self, body: dict) -> tuple[dict | None, dict]:
         from wattnot.agentwaste.guard import WasteGuard
         msgs, info = self.saver.transform(list(body.get("messages") or []))
         body = {**body, "messages": msgs}
+        tools_skipped = False
+        if body.get("tools") and not self.tools_supported:
+            # Never send a tools field to a model that cannot answer it; the guard's tool-level
+            # detectors cannot run here, so drop tools and mark the agent block skipped.
+            body = {k: v for k, v in body.items() if k != "tools"}
+            tools_skipped = True
         v = WasteGuard().before(body)
         with self.lock:
             self.stats["calls"] += 1
@@ -115,7 +141,11 @@ class RequestLevers:
             self.stats["guard_flags"] += len(v.flags or [])
             if v.action == "stop":
                 self.stats["guard_stops"] += 1
-        return (v.body or body) if v.action != "stop" else None, {"saver": info, "guard": v.action}
+            if tools_skipped:
+                self.stats["tools_skipped"] += 1
+        return ((v.body or body) if v.action != "stop" else None,
+                {"saver": info, "guard": v.action,
+                 "agent_blocks": "skipped: no tool calling" if tools_skipped else "ok"})
 
 
 def _stage(results: dict, name: str, fn):
@@ -171,14 +201,31 @@ def gpu_feature_table(failed: dict | None = None) -> list[dict]:
 
 def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: bool = False,
                demo_repo: Path | None = None, log=None, cap=None, rates=None, do_pr: bool = True, table=None, change: dict | None = None,
-               energy_label: str = "ESTIMATE", kind: str = "hosted-e2e", decision: dict | None = None) -> dict:
-    """Run every post-answer feature stage; returns {stage: result} and writes features.json."""
+               energy_label: str = "ESTIMATE", kind: str = "hosted-e2e", decision: dict | None = None,
+               budget_s: float | None = None, clock=None) -> dict:
+    """Run every post-answer feature stage; returns {stage: result} and writes features.json.
+
+    `budget_s` caps the wall time the slow/risky stages (the paid Meta checks and the Muse Code
+    PR) may collectively use. Each such stage checks the remaining budget before it starts and is
+    recorded `skipped: not enough time` rather than starving the cheap local finalizers (receipt,
+    EU report, label lint), which always run so the round still produces a signed receipt."""
+    import time as _time
     fake = mode != "live"
     lab = "MOCK" if fake else "MEASURED"
     d = Path(run_dir) / "features"
     d.mkdir(parents=True, exist_ok=True)
     res: dict = {"mode": mode, "label": lab}
     fk = ["--fake"] if fake else []
+    _clock = clock or _time.monotonic
+    _t0 = _clock()
+
+    def _slow_stage(results: dict, name: str, fn):
+        """A slow/risky stage: skip (with the reason) when the time budget is already spent."""
+        if budget_s is not None and (_clock() - _t0) >= budget_s:
+            results[name] = {"status": "skipped",
+                             "why": f"not enough time: {budget_s:.0f}s budget for the slow stages is spent"}
+            return
+        _stage(results, name, fn)
 
     from wattnot.e2e import live as L
 
@@ -187,11 +234,11 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
             log.emit("step.finished", node=node, sub=sub, summary=summary, **kw)
     client = L.baseten_client(cap, rates, log) if (not fake and cap is not None) else None
     if client:
-        _stage(res, "eye_check", lambda: L.live_eye(d / "eye", client))
-        _stage(res, "hearing_check", lambda: L.live_hearing(d / "voice", client, log))
+        _slow_stage(res, "eye_check", lambda: L.live_eye(d / "eye", client))
+        _slow_stage(res, "hearing_check", lambda: L.live_hearing(d / "voice", client, log))
     else:
-        _stage(res, "eye_check", lambda: _main("wattnot.vision.run", ["--out", str(d / "eye")] + fk))
-        _stage(res, "hearing_check", lambda: _main("wattnot.spokenanswer.run", ["--out", str(d / "voice")] + fk))
+        _slow_stage(res, "eye_check", lambda: _main("wattnot.vision.run", ["--out", str(d / "eye")] + fk))
+        _slow_stage(res, "hearing_check", lambda: _main("wattnot.spokenanswer.run", ["--out", str(d / "voice")] + fk))
     emit("gates", "vision", f"eye check: {res['eye_check'].get('reason', res['eye_check']['status'])}",
          status="ok" if res["eye_check"].get("passed", res["eye_check"]["status"] == "ok") else "bad", label=lab,
          passed=bool(res["eye_check"].get("passed", res["eye_check"]["status"] == "ok")), model="muse-image eye check")
@@ -210,7 +257,7 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
                 os.environ.pop("WATTNOT_META_MOCK", None)
             else:
                 os.environ["WATTNOT_META_MOCK"] = old
-    _stage(res, "sam_hotspot", sam)
+    _slow_stage(res, "sam_hotspot", sam)
     emit("sam", "audit", f"SAM 3.1 hotspot audit: {res['sam_hotspot']['status']}", model="sam-3.1",
          status=res["sam_hotspot"]["status"], label=lab)
 
@@ -221,7 +268,7 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
                        "accuracy": s.get("accuracy"), "energy_wh": (s.get("energy_wh") or {}).get("value"),
                        "label": "ESTIMATE"})
     (d / "trials.json").write_text(json.dumps({"trials": trials}, indent=1))
-    _stage(res, "wonder_chart", lambda: _main("wattnot.wonderchart.run",
+    _slow_stage(res, "wonder_chart", lambda: _main("wattnot.wonderchart.run",
                                               ["--sweep", str(d / "trials.json"), "--out", str(d / "wonder")]
                                               + (fk or ["--live"])))
     emit("agent", "study", f"Muse Wonder chart: {res['wonder_chart']['status']}", model="muse-wonder-1.0",
@@ -249,7 +296,7 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
     if fake:
         _stage(res, "spark_trace", trace)
     else:
-        _stage(res, "spark_trace", lambda: L.spark_trace(d, evidence, log))
+        _slow_stage(res, "spark_trace", lambda: L.spark_trace(d, evidence, log))
 
     held = ({"kind": "vllm_config", "change": change} if change else
             {"kind": "reasoning_effort", "change": {"reasoning_effort": "low", "step_up": "medium"}})
@@ -285,10 +332,10 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
                      mock=fake, open_pr=bool(open_pr and not fake))
         return {"result": str(r)[:300], "pr_opened": bool(open_pr and not fake)}
     if fake:
-        _stage(res, "musecode_pr", musecode)
+        _slow_stage(res, "musecode_pr", musecode)
     elif do_pr:
         sha = hashlib.sha256(json.dumps(round_doc, sort_keys=True, default=str).encode()).hexdigest()
-        _stage(res, "musecode_pr", lambda: L.musecode_pr(d / "pr", change["change"], sha, log=log, open_pr=open_pr,
+        _slow_stage(res, "musecode_pr", lambda: L.musecode_pr(d / "pr", change["change"], sha, log=log, open_pr=open_pr,
                                                          review=(res.get("approvals") or {}).get("review") or {}))
     else:
         res["musecode_pr"] = {"status": "skipped", "why": "one PR per stage, opened after the last round"}

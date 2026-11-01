@@ -30,17 +30,25 @@ if "--smoke" in sys.argv:
 
 
 def server(events: Path):
+    health = f"http://127.0.0.1:{PORT}/api/dash/health"
     p = subprocess.Popen([os.environ.get("WN_PY", "/home/box/.local/bin/python"), "-m", "wattnot.dash", "--port", str(PORT), "--events", str(events)],
                          cwd=ROOT, env={**os.environ, "PYTHONPATH": f"{ROOT}:{ROOT/'src'}"},
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    for _ in range(60):
+    last = ""
+    for _ in range(60):  # ~30 s
+        rc = p.poll()
+        if rc is not None:  # the server exited before it was ever ready: say so, don't keep polling
+            raise RuntimeError(f"dashboard process exited (rc {rc}) before {health} answered")
         try:
-            urllib.request.urlopen(f"http://127.0.0.1:{PORT}/api/dash/health", timeout=2)
-            return p
-        except OSError:
-            time.sleep(0.5)
+            with urllib.request.urlopen(health, timeout=2) as r:
+                if r.status == 200:  # ready only on a real 200 from the real health URL
+                    return p
+                last = f"HTTP {r.status}"
+        except OSError as e:  # not up yet (connection refused) or a transient read error
+            last = f"{type(e).__name__}: {getattr(e, 'reason', e)}"
+        time.sleep(0.5)
     p.kill()
-    raise RuntimeError("dashboard did not start")
+    raise RuntimeError(f"dashboard on port {PORT} not ready after 30s polling {health}; last: {last or 'no response'}")
 
 
 def to_mp4(webm: Path, mp4: Path):
