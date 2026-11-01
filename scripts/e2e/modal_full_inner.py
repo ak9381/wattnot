@@ -526,7 +526,8 @@ def gate(base, cand):
 def block_cmds(limit: int, fake: bool, out: Path) -> dict:
     """The agent-saver / eye / hearing / thinking-budget GPU blocks. In smoke (limit > 0) the
     agentwaste block is shortened (--reps 1 --max-cases 4 --max-tokens 768) so it fits the
-    container budget; the full round (limit == 0) keeps --reps 2 over every case."""
+    container budget; the full round (limit == 0) runs 12 of the 30 cases once per arm at 768 tokens: r04 showed
+    --reps 2 over all 30 cases at 2048 tokens cannot finish inside the 15-min block cap (rc 124)."""
     fk = ["--fake"] if fake else []
     return {
         "think": [sys.executable, "-m", "wattnot.longrun.thinking_budget", "--per-tier",
@@ -534,7 +535,7 @@ def block_cmds(limit: int, fake: bool, out: Path) -> dict:
                  + (["--fake"] if fake else ["--url", f"{BASE}/chat/completions"]),
         "agentwaste": [sys.executable, "scripts/agentwaste_gpu_ab.py", "--base-url", BASE]
                       + (["--reps", "1", "--max-cases", "4", "--max-tokens", "768"] if limit
-                         else ["--reps", "2"])
+                         else ["--reps", "1", "--max-cases", "12", "--max-tokens", "768"])
                       + ["--out", str(out / "agentwaste")] + fk,
         "langchain": [sys.executable, "scripts/langchain_pass.py", "--dataset", "own", "--n",
                       str(limit or 20), "--out", str(out / "langchain")]
