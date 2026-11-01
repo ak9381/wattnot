@@ -45,8 +45,8 @@ def _env_usd(name: str) -> float | None:
 
 
 def caps_from_env() -> tuple[float, float]:
-    """(hard, soft) for this process. Defaults are the approved $100 / $80. The env vars can
-    only tighten them: a value above the approved cap is refused, not silently clamped."""
+    """(hard, soft) for this process. Defaults are the approved $120 hard / $100 soft. The env
+    vars can only tighten them: a value above the approved cap is refused, not silently clamped."""
     cap = _env_usd(CAP_ENV)
     soft = _env_usd(SOFT_ENV)
     if cap is None:

@@ -343,6 +343,10 @@ def main(argv=None) -> int:
     if not 0 < a.cap_usd <= HARD_CAP_USD:
         print(f"[stop] --cap-usd must be in (0, {HARD_CAP_USD}]")
         return 5
+    # The judge (wattnot.gates.judge) runs on the same Baseten account: tell it this round's cap
+    # ($8 hard stop, or $1 in a smoke round with --cap-usd 1) so judge spend counts against the
+    # round cap too — whichever cap is lower wins.
+    os.environ["WATTNOT_BASETEN_CAP_USD"] = repr(a.cap_usd)
     BasetenChat.levers = RequestLevers()
     cfg = load_config()
     b = _bench()

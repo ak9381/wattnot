@@ -317,8 +317,8 @@
   {
    "n": 40,
    "section": "Master feature table",
-   "name": "Mock efficiency certificate",
-   "label": "MOCK",
+   "name": "Efficiency certificate",
+   "label": "MEASURED",
    "where": "`wattnot certificate`",
    "req": "any"
   },

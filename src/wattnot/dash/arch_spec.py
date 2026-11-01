@@ -313,13 +313,15 @@ NODES = [
       {"oss": "Replay only; nothing is moved."}, lane="Report"),
 
     N("certificate", "Certificate", ["oss"],
-      "A mock certificate format. It refuses to mint without rules and a register.",
+      "An efficiency certificate from a verified receipt, labelled by its evidence (MEASURED). "
+      "It refuses to mint without rules and a register, and declines an insignificant saving.",
       "certificate/rules.py", 6, 3,
       [S("rules", "Check the rules", "Refuses on any unmet rule.", "certificate/rules.py::check_rules",
          "receipt", "ok or refusal"),
-       S("mint", "Mint (mock)", "Writes a sample certificate; always MOCK.", "certificate/rules.py::mint",
-         "receipt", "a MOCK certificate")],
-      "a receipt", "a mock certificate", {"oss": "Mock. For format only."}, status="code", lane="Report"),
+       S("mint", "Mint", "Writes the certificate, labelled by the receipt's evidence.",
+         "certificate/rules.py::mint", "receipt", "a certificate")],
+      "a receipt", "a certificate", {"oss": "Not tradable; restates the receipt's own figures."},
+      status="code", lane="Report"),
 
     N("spark_open", "Muse Spark Open, side stage", ["meta", "hf"],
       "Code to run the 816B model next to the rig. Not run: it needs about 700 GB of GPU memory.",

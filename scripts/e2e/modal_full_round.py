@@ -485,7 +485,7 @@ def main(argv=None) -> int:
         if (stages.get(st) or {}).get("status") == "error":
             failed.setdefault(fid, f"{st} stage error: {stages[st].get('error')}")
     if fr.returncode != 0:
-        doc["flow_note"] = "flow exited non-zero (see flow.log); the mock certificate refuses a NOISE grade"
+        doc["flow_note"] = "flow exited non-zero (see flow.log); the efficiency certificate now declines a NOISE grade with exit 0, so it is not the cause"
     doc["feature_stages"] = stages
     doc["failed"] = failed
     doc["features"] = gpu_feature_table(failed)
