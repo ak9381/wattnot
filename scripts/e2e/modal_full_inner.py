@@ -110,8 +110,8 @@ NV = [None]
 
 
 def FP8_KIND(gpu: str) -> str:
-    """A100 has no native FP8 math: vLLM falls back to Marlin weight-only FP8 (memory saving, not energy)."""
-    return ("memory-only (A100: no native FP8, Marlin weight-only; not an energy feature)"
+    """Factual note only; keep/reject is decided by the MEASURED energy + accuracy gate."""
+    return ("weight-only FP8 (A100 has no native FP8 compute; vLLM uses the Marlin kernel)"
             if "A100" in (gpu or "") else "native FP8 compute")
 
 
