@@ -6,7 +6,7 @@ Token trimmers cut your bill, but not your watts. WattNot measures the joules ea
 
 H100 run: `bash scripts/h100_run.sh --dry-run` first, then see [docs/runbooks/H100.md](docs/runbooks/H100.md). Adaptive top-k ([docs/ADAPTIVE-TOPK.md](docs/ADAPTIVE-TOPK.md)) is not in the H100 run; it is planned on Muse Spark Open via Modal. Earlier top-k tests used non-Meta models and are kept only as dated history.
 
-**Every model WattNot runs is a Meta model (Glimmer, Llama, Spark, SAM 3.1, Wonder).**
+**Every model WattNot runs is a Meta model (Glimmer, Llama, Spark, Spark Open, Wonder, SAM 3.1, Voice). See [Meta models used](#meta-models-used).**
 
 ## For judges
 
@@ -87,12 +87,18 @@ switch). The headline below is MEASURED.
 
 ### Meta models used
 
-| Model | Job | Measured cost |
+Every Meta model WattNot uses, and what we built on top of each:
+
+| Model | What we built on it | Measured cost |
 |---|---|---|
-| muse-spark-1.3 | planner: picks the next power cap; explains gate failures; agent-waste and coding-set runs | $23.08 over 3459 calls (MEASURED, API ledger total on 2026-10-28) |
-| sam-3.1 | segments rack photos into units (kept off the main path) | $0.12 over 47 calls (MEASURED, API ledger) |
-| Llama 3.1 8B Instruct | the served model in RUN2; small model in small-first; judge fallback | own H100, cost is GPU hours (not an API bill) |
-| Muse Spark Open (Baseten) | big model when the small one fails a check; hosted planner | $0.004, 1 call (MEASURED) |
+| Muse Spark (`muse-spark-1.3`, hosted) | the planner that picks the next power cap and explains gate failures; judge; agent-waste and coding-set runs; the voice guide's intent step; narrator notes | $23.08 over 3459 calls (MEASURED, API ledger total on 2026-10-28) |
+| Muse Wonder (`muse-wonder-1.0`, hosted) | the sweep supervisor (`--planner wonder`) and the Wonder chart that reads the sweep and plots the knee | from the API ledger (MEASURED when run) |
+| SAM 3.1 (`sam-3.1`, hosted) | hotspot finder: segments rack photos into units (kept off the main path) | $0.12 over 47 calls (MEASURED, API ledger) |
+| Muse Voice (`muse-voice-transcribe-1.0`, hosted) | Ask by voice: speech to text for the voice guide, which answers from signed receipts only | from the API ledger (MEASURED when run) |
+| Muse Glimmer 30B (`meta-models/Muse-Glimmer-30B`, open weights) | the served model we tune on the H100 (power cap, thinking budget, tiers, LangChain agent, agent-waste saver) | own H100, cost is GPU hours |
+| Llama 3.1 8B Instruct (open weights) | the served model in RUN2; small model in small-first; judge fallback | own H100, cost is GPU hours |
+| Muse Spark Open (Baseten, Modal) | big model when the small one fails a check; hosted planner; the multi-provider routing arm | $0.004, 1 call (MEASURED) |
+| Muse Image (`muse-image-1.0`) | planned; access blocked, so not used in any result | none |
 
 - **Endpoint health:** `wattnot health` probes each hosted endpoint and writes a FALLBACK ledger (`data/judge/health-*.json`).
 - **Labels:** every number is MEASURED, ESTIMATE, SIMULATED, MOCK, REPLAY or ADVICE. SIMULATED and MOCK content is hidden by default; the "Illustrations" switch shows it.
