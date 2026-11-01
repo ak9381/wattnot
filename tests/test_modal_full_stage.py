@@ -54,3 +54,24 @@ def test_paid_round_needs_go_and_stage_cap(monkeypatch):
 def test_no_metrics_key_anywhere():
     for p in ("scripts/e2e/modal_full_round.py", "scripts/e2e/modal_full_inner.py", "modal/full_stage.py"):
         assert "BASETEN_METRICS_KEY" not in (ROOT / p).read_text().replace("Never reads BASETEN_METRICS_KEY", "")
+
+
+def test_untested_paths_fail_soft(tmp_path, monkeypatch):
+    """FP8, BudgetChat and a GPU block failing are recorded as FAILED; the round still finishes."""
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    env = {**__import__("os").environ, "WATTNOT_FAKE_FAIL": "fp8,budget,eye"}
+    out = tmp_path / "r"
+    subprocess.run([sys.executable, "scripts/e2e/modal_full_inner.py", "--fake", "--out", str(out),
+                    "--limit", "1"], cwd=root, env=env, check=True, timeout=600)
+    d = json.loads((out / "inner.json").read_text())
+    assert "with" in d["steps"] and not d.get("fatal")
+    assert set(d["failed"]) >= {"fp8", "thinking_budget", "eye_check"}
+    assert d["steps"]["fp8"]["kept"] is False
+    sys.path[:0] = [str(root / "src")]
+    from wattnot.e2e.fullstack import gpu_feature_table
+    t = {r["id"]: r["status"] for r in gpu_feature_table(d["failed"])}
+    assert t["fp8"] == t["eye_check"] == "FAILED" and t["power_caps"] == "OFF"

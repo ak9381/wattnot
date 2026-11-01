@@ -87,3 +87,45 @@ the live eye/hearing/SAM/Wonder calls with `--live-meta`.
     WATTNOT_MODAL_GO=1 python scripts/e2e/modal_full_round.py --round r04 --live-meta
     # add --live-pr to open the Muse Code PR on ak9381/wattnot-demo-deploy (only that repo)
     modal app list   # teardown is checked automatically after each round
+
+## Pre-run review (Nov 1, 5:15-5:45 PM IST, no spend)
+
+Own review plus two passes of a second-opinion code review on the diff. Fixed:
+
+- Fail soft, never crash: BudgetChat (falls back to the plain budget, switched off after 5 errors),
+  FP8 (any start/answer failure keeps BF16; with-arm server falls back to BF16/64 seqs), batch sweep
+  (per config), every GPU block (agent waste, LangChain, eye, hearing, thinking), each item, Spark
+  grading, the NVML receipt. Each failure is recorded and the feature reads FAILED in the table
+  (`gpu_feature_table(failed)`); time-skips read "skipped", not FAILED. Fault-injection test:
+  `tests/test_modal_full_stage.py::test_untested_paths_fail_soft` (WATTNOT_FAKE_FAIL=fp8,budget,eye).
+- No lost results: the container runs the inner step with a deadline (optional steps skip near it)
+  and a subprocess timeout well before the container timeout, truncates vLLM logs, then tars and
+  returns; the os._exit backstop is the last resort only. Fails fast if the weights volume is empty.
+  Server start waits are bounded by time left; GPU memory is checked free between restarts; NVML
+  calls are serialised.
+- Spend: the worst case is reserved in stage_spend.json BEFORE the GPU starts and reconciled after
+  (a crash cannot hide a paid round); the cap counts spent + reservations; Modal's own metered
+  `ephemeral_apps` delta (MEASURED) is recorded and trues up the estimate if higher; smoke rounds
+  are limited to --limit 1..3; refuses to start if any wattnot-full-stage app is running or
+  `modal app list` cannot be read.
+- Teardown: retried up to 5 times, tolerant of the CLI's JSON shape, `verified_empty` recorded,
+  loud alert otherwise; runs even when `modal run` times out or the CLI is missing.
+- Known gaps closed: the post-round Muse Code change and the approval now use the real kept config
+  (precision, --max-num-seqs, router, thinking budget, saving %), not a fixed batch of 16; the hosted
+  receipt carries the stage's energy label (MEASURED on Modal); the unused musecode() helper is gone.
+- Approvals: no auto-approve. `verify_change` checks accuracy vs baseline (-2 pts), p99 (+10%),
+  Joule-SLO, Spark agreement (>= 90%), the FP8 gate, the receipt hash and no fatal error; the PR is
+  opened only if all pass (`approval_evidence.json`). `scripts/e2e/modal_stage.py` reviews the PR
+  (repo, base main, allowed files, no secrets, size, launch.sh and values.yaml parse on the PR head)
+  into `pr_review/pr_review.json`, from a fresh clone (never the local demo2 working copy).
+- Graph: the container streams events.jsonl live through a Modal Queue, split per arm
+  (`<tag>.without.events.jsonl`, `<tag>.with.events.jsonl`). The without arm names baseline_nodes
+  (workload, models, telemetry, gates) so every WattNot node is grey; a `stage.features` event and
+  `features/stage_features.json` carry the 26 ON / 5 OFF table plus `off_nodes` (adaptive, flex,
+  spark_open, baseten_model, meters_roadmap, certificate, e2e_rig) so the graph can grey them up front.
+- Clips: `scripts/e2e/modal_stage.py` records graph-without, graph-with, the matrix page and the PR
+  review per round (one dashboard server on :8772 at a time) and checks each clip plays (ffprobe).
+  Run with WN_PY=/usr/bin/python3 (has Playwright).
+
+Not run: no paid rounds and no new GPU smoke (Akash: runs will be launched from the Configure UI).
+FP8 on the A100, the batch sweep, BudgetChat and the GPU blocks remain tested only on the fake server.

@@ -155,17 +155,23 @@ MODAL_GPU_OVERRIDES: dict[str, tuple[str, str]] = {
 }
 
 
-def gpu_feature_table() -> list[dict]:
-    """FEATURES for the own-GPU Modal stage: GPU-side levers switched ON on top of the hosted set."""
+def gpu_feature_table(failed: dict | None = None) -> list[dict]:
+    """FEATURES for the own-GPU Modal stage: GPU-side levers switched ON on top of the hosted set.
+    `failed` = {feature_id: reason}: an ON feature that broke during the round reads FAILED."""
     rows = feature_table()
     for r in rows:
         if r["id"] in MODAL_GPU_OVERRIDES:
             r["status"], r["reason"] = MODAL_GPU_OVERRIDES[r["id"]]
+        if r["id"] == "spend_guard":
+            r["reason"] = "Modal $40 stage cap + container timeout, Meta soft cap, ledger"
+        if failed and r["id"] in failed and r["status"] == "ON":
+            r["status"], r["reason"] = "FAILED", str(failed[r["id"]])[:300]
     return rows
 
 
 def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: bool = False,
-               demo_repo: Path | None = None, log=None, cap=None, rates=None, do_pr: bool = True, table=None) -> dict:
+               demo_repo: Path | None = None, log=None, cap=None, rates=None, do_pr: bool = True, table=None, change: dict | None = None,
+               energy_label: str = "ESTIMATE", kind: str = "hosted-e2e", decision: dict | None = None) -> dict:
     """Run every post-answer feature stage; returns {stage: result} and writes features.json."""
     fake = mode != "live"
     lab = "MOCK" if fake else "MEASURED"
@@ -245,17 +251,22 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
     else:
         _stage(res, "spark_trace", lambda: L.spark_trace(d, evidence, log))
 
-    change = {"kind": "reasoning_effort", "change": {"reasoning_effort": "low", "step_up": "medium"}}
+    held = ({"kind": "vllm_config", "change": change} if change else
+            {"kind": "reasoning_effort", "change": {"reasoning_effort": "low", "step_up": "medium"}})
+    change = held
 
     def approvals():
         from wattnot.approvals.risk import classify
         r = classify(change)
         risk = getattr(r, "tier", None) or getattr(r, "level", None) or str(r)[:120]
-        out = {"risk": risk, "reasons": getattr(r, "reasons", None), "evidence": evidence}
+        out = {"held_change": held, "risk": risk, "reasons": getattr(r, "reasons", None), "evidence": evidence}
         if fake:
             out["review"] = {"decision": "recorded (no apply in smoke)", "auto_approve": False}
         else:
             out["review"] = L.review_change(change["change"], risk, evidence)
+        if decision is not None:   # the runner verified the held change against its gates
+            out.update(decision=decision.get("decision"))
+            out["review"] = {**decision, "auto_approve": False}
         (d / "approval.json").write_text(json.dumps(out, indent=1, default=str))
         emit("proposals", "review", f"change {out['review']['decision']} after review (risk {risk})",
              status="ok" if out["review"]["decision"] == "approved" else "bad", label="MEASURED",
@@ -270,7 +281,7 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
             subprocess.run(["git", "clone", "-q", "https://github.com/ak9381/wattnot-demo-deploy", str(repo)],
                            check=True, timeout=120)
         sha = hashlib.sha256(json.dumps(round_doc, sort_keys=True, default=str).encode()).hexdigest()
-        r = apply_pr({"max_num_seqs": 16}, repo, receipt_sha256=sha, out_dir=d / "pr",
+        r = apply_pr(held["change"] if held["kind"] == "vllm_config" else {"max_num_seqs": 16}, repo, receipt_sha256=sha, out_dir=d / "pr",
                      mock=fake, open_pr=bool(open_pr and not fake))
         return {"result": str(r)[:300], "pr_opened": bool(open_pr and not fake)}
     if fake:
@@ -293,11 +304,11 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
 
     def receipt():
         from wattnot.receipt.sign import sign_run_receipt
-        rec = {"kind": "hosted-e2e", "approvals": (res.get("approvals") or {}),
+        rec = {"kind": kind, "approvals": (res.get("approvals") or {}),
                "musecode_pr": res.get("musecode_pr"), "feature_stages": {k: v.get("status") for k, v in res.items()
                                                                           if isinstance(v, dict)}, "round": round_doc.get("round"), "model": round_doc.get("model"),
                "features": (table or feature_table)(), "results": round_doc.get("results"),
-               "spend": round_doc.get("spend"), "provider_usage": round_doc.get("provider_usage"), "labels": {"energy": "ESTIMATE", "tokens": "MEASURED"},
+               "spend": round_doc.get("spend"), "provider_usage": round_doc.get("provider_usage"), "labels": {"energy": energy_label, "tokens": "MEASURED"},
                "integrity": {"signer": None}}
         body = {k: v for k, v in rec.items() if k != "integrity"}
         rec["sha256"] = hashlib.sha256(json.dumps(body, sort_keys=True, default=str).encode()).hexdigest()
