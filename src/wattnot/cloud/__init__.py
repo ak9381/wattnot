@@ -38,3 +38,26 @@ def inference_key(env=None) -> tuple[str, str]:
 
 EFFORTS = ("low", "medium", "high", "xhigh")  # none/minimal are mapped to low by the API
 REFERENCE = "xhigh"  # the API default, so the baseline is what an untuned caller pays
+
+# Models that answer OpenAI-style tool calls on their Baseten Model API endpoint. The agent
+# blocks (context saver, agent-waste guard) need this: without tool calling there is nothing
+# to dedup or guard, so those blocks are marked skipped instead of pretending to run.
+TOOL_CALLING_MODELS = frozenset({"meta-models/muse-spark-open"})
+
+
+def supports_tool_calling(model: str = MODEL) -> bool:
+    """True if `model` serves OpenAI tool calls on Baseten (so agent blocks can run)."""
+    return model in TOOL_CALLING_MODELS
+
+
+def chat_completions_url(base: str = BASE_URL) -> str:
+    """`<base>/chat/completions` with exactly one `/v1`, whether or not `base` already ends in it.
+
+    Baseten's inference host is `https://inference.baseten.co/v1`; a base that already carries
+    `/v1` (or a trailing slash) must not become `/v1/v1/chat/completions`. Mirrors the same
+    normalisation ModalLiveTransport does for its endpoint URL.
+    """
+    base = (base or BASE_URL).rstrip("/")
+    if not base.endswith("/v1"):
+        base += "/v1"
+    return base + "/chat/completions"

@@ -246,6 +246,14 @@ def run_item(b, tr, cap, calls, arm, it):
     return r
 
 
+def arm_stop_reason(arm, arm_rows, n_items):
+    """A finished arm that made calls but landed zero HTTP 200s is a failed block, not a clean
+    arm: return the stop reason (never report a green round on an arm where every call failed)."""
+    if n_items and arm_rows and not any(r["status"] == 200 for r in arm_rows):
+        return f"{arm}: 0 of {len(arm_rows)} Baseten calls succeeded (no usable answers)"
+    return None
+
+
 def pctl(xs, q):
     if not xs:
         return None
@@ -299,6 +307,9 @@ def main(argv=None) -> int:
     ap.add_argument("--events-dir", type=Path, default=None, help="write live events-<arm>.jsonl here")
     ap.add_argument("--open-pr", action="store_true", help="let Muse Code open the PR on ak9381/wattnot-demo-deploy")
     ap.add_argument("--no-spark", action="store_true")
+    ap.add_argument("--stage-budget-s", type=float, default=0.0,
+                    help="wall-time budget for the slow post-answer stages; 0 = unlimited. Over "
+                         "budget, a slow stage is skipped (reason recorded) so the receipt still lands")
     ap.add_argument("--out", type=Path, default=ROOT / "out" / "matrix")
     ap.add_argument("--raw", type=Path, default=ROOT / "data" / "baseten-1101")
     a = ap.parse_args(argv)
@@ -374,6 +385,11 @@ def main(argv=None) -> int:
                         g.cancel()
                     break
         answers[arm] = res
+        # A block that finished with zero successful calls is a failed block, not a clean arm:
+        # if this arm made Baseten calls and none returned 200, stop and record it (never report
+        # a green round built on an arm where every call failed).
+        arm_rows = [r for r in calls.rows if r["arm"] == arm]
+        stop = stop or arm_stop_reason(arm, arm_rows, len(items))
         if arm == "without_wattnot":
             BasetenChat.log.emit("run.finished", arm=arm)
         print(f"[{a.round}] {arm} done in {time.time()-t0:.0f}s: "
@@ -466,7 +482,7 @@ def main(argv=None) -> int:
     doc["levers_stats"] = {**BasetenChat.levers.stats, "label": "ESTIMATE"}
     doc["feature_stages"] = post_round(raw, doc, mode=("smoke" if a.limit and a.mode == "smoke" else a.mode),
                                        open_pr=a.open_pr, log=BasetenChat.log, cap=cap, rates=RATES,
-                                       do_pr=a.pr) if not stop else {"status": "skipped", "why": stop}
+                                       do_pr=a.pr, budget_s=a.stage_budget_s or None) if not stop else {"status": "skipped", "why": stop}
     doc["spend"]["baseten_usd"]["value"] = round(cap.session_usd, 6)
     BasetenChat.log.emit("run.finished", arm="with_wattnot")
     out = a.out if not a.limit else raw / "smoke-matrix"

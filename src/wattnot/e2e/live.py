@@ -39,10 +39,11 @@ class EventLog:
 
 # ---- Baseten client for the eye/hearing checks (the model under test, with-WattNot setting) ----
 def baseten_client(cap, rates, log: EventLog | None, effort: str = "low"):
-    from wattnot.cloud import BASE_URL, MODEL
+    from wattnot.cloud import MODEL, chat_completions_url, inference_key
     from wattnot.cloud.pricing import cost_usd
     from wattnot.spark_open.h2h import worst_case_usd
-    key = os.environ.get("BASETEN_METRICS_KEY", "")
+    _, key = inference_key()  # same key the runner uses for inference (BASETEN_METRICS_KEY)
+    url = chat_completions_url()  # normalised: never a doubled /v1
 
     def call(body, purpose="check"):
         b = dict(body)
@@ -51,7 +52,7 @@ def baseten_client(cap, rates, log: EventLog | None, effort: str = "low"):
         mt = int(b.pop("max_completion_tokens", 0) or b.get("max_tokens") or 1024)
         b["max_tokens"] = max(mt, 1024)
         cap.check(worst_case_usd(rates, json.dumps(b.get("messages"))[:4000], b["max_tokens"]))
-        req = urllib.request.Request(f"{BASE_URL}/chat/completions", data=json.dumps(b).encode(),
+        req = urllib.request.Request(url, data=json.dumps(b).encode(),
                                      headers={"Content-Type": "application/json",
                                               "Authorization": f"Api-Key {key}"})
         t0 = time.time()
@@ -176,7 +177,14 @@ def spark_trace(out: Path, evidence: dict, log: EventLog | None) -> dict:
                      summary=f"Spark {step}")
     out.mkdir(parents=True, exist_ok=True)
     (out / "spark_trace.json").write_text(json.dumps(rows, indent=1))
-    return {"steps": len(rows), "ok": sum(r["status"] == "ok" for r in rows)}
+    ok = sum(r["status"] == "ok" for r in rows)
+    # A block that returns without raising but landed zero successful calls is a failed block,
+    # not an "ok" stage: say so, so _stage records it as an error (never a silent green).
+    result = {"steps": len(rows), "ok": ok}
+    if rows and ok == 0:
+        result["status"] = "error"
+        result["error"] = f"0 of {len(rows)} Spark calls succeeded"
+    return result
 
 
 # ---- reviewer: verify evidence, then approve or reject (never auto-approve) ----
@@ -189,23 +197,38 @@ def review_change(change: dict, risk: str, ev: dict, *, reviewer: str = "Akash K
     def ck(name, ok, detail):
         checks.append({"check": name, "ok": bool(ok) if ok is not None else None, "detail": detail})
 
+    # Missing data is a skip (ok=None), never a silent failure: a check only fails on real numbers
+    # that break the rule. This is what lets a skipped check hold the change instead of rejecting.
     aw, ai = ev.get("accuracy_without"), ev.get("accuracy_with")
-    ck("accuracy (with >= without - 1 pt)", aw is not None and ai is not None and ai >= aw - 0.01,
+    ck("accuracy (with >= without - 1 pt)", None if aw is None or ai is None else ai >= aw - 0.01,
        {"without": aw, "with": ai, "label": "MEASURED"})
     pw, pi = ev.get("p99_without"), ev.get("p99_with")
-    ck("p99 limit (with <= 1.10 x without)", pw is not None and pi is not None and pi <= 1.10 * pw,
+    ck("p99 limit (with <= 1.10 x without)", None if pw is None or pi is None else pi <= 1.10 * pw,
        {"without_s": pw, "with_s": pi, "label": "MEASURED"})
     ag = ev.get("spark_agreement")
-    ck("Spark agreement >= 0.90", ag is not None and ag >= 0.90, {"agreement": ag})
+    ck("Spark agreement >= 0.90", None if ag is None else ag >= 0.90, {"agreement": ag})
     jw, ji = ev.get("j_per_correct_without"), ev.get("j_per_correct_with")
-    ck("joule-SLO (J/correct with <= without)", jw is not None and ji is not None and ji <= jw,
+    ck("joule-SLO (J/correct with <= without)", None if jw is None or ji is None else ji <= jw,
        {"without": jw, "with": ji, "label": "ESTIMATE"})
     for g in ("eye_check", "hearing_check"):
-        ck(f"{g} gate passed", ev.get(g) is True, {"passed": ev.get(g)})
-    failed = [c["check"] for c in checks if c["ok"] is not True]
-    decision = "approved" if not failed else "rejected"
+        # None (not run, e.g. smoke) is a skip, not a failure: it holds, it does not reject.
+        passed = ev.get(g)
+        ck(f"{g} gate passed", None if passed is None else passed is True, {"passed": passed})
+    # Only a check that really failed (ok is False) rejects. A skipped check (ok is None: no data)
+    # holds the change for a human, exactly as the Modal runner's verify_change does.
+    failed = [c["check"] for c in checks if c["ok"] is False]
+    skipped = [c["check"] for c in checks if c["ok"] is None]
+    if failed:
+        decision = "rejected"
+    elif skipped:
+        decision = "held"
+    else:
+        decision = "approved"
+    why = ("every check passed" if decision == "approved" else
+           "failed: " + "; ".join(failed) if failed else
+           "held for review, no data for: " + "; ".join(skipped))
     return {"who": reviewer, "what": change, "risk": risk, "checks": checks, "decision": decision,
-            "why": "every check passed" if not failed else "failed or unknown: " + "; ".join(failed),
+            "failed_checks": failed, "skipped_checks": skipped, "why": why,
             "started_utc": t0, "decided_utc": now(), "auto_approve": False}
 
 
@@ -327,6 +350,13 @@ def billing_check() -> dict:
             status = r.status
     except urllib.error.HTTPError as e:
         body, status = e.read().decode(errors="replace")[:400], e.code
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        # A timeout or a dropped connection is not a refusal and not "good standing": say which,
+        # with the real reason, rather than crashing the refusal watch or guessing a status.
+        reason = getattr(e, "reason", e)
+        return {"at": now(), "endpoint": "/v1/billing/model_apis", "status": None,
+                "refusal": False, "words": [], "error": f"{type(e).__name__}: {reason}"[:200],
+                "note": "billing endpoint unreachable (timeout/network); standing unknown, not a refusal"}
     hit = [w for w in REFUSAL_WORDS if w in body.lower()]
     out = {"at": now(), "endpoint": "/v1/billing/model_apis", "status": status,
            "refusal": status in (401, 402, 403, 429) or bool(hit and status != 200), "words": hit}
