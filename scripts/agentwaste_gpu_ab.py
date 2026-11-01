@@ -109,6 +109,9 @@ def main(argv=None) -> int:
         s = run_real(o)
     (o.out / "agentwaste_gpu_summary.json").write_text(json.dumps(s, indent=1))
     print(json.dumps({k: v for k, v in s.items() if k != "rounds"}))
+    if not (s["off"]["calls"] and s["on"]["calls"]):   # every request errored: a failure, not a 0% result
+        print("[agentwaste-gpu] no model call succeeded; see agentwaste_gpu_raw.json", file=sys.stderr)
+        return 2
     return 0
 
 
