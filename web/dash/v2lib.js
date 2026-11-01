@@ -190,3 +190,15 @@ export function verifySummary(v) {
   });
   return r;
 }
+
+// Meta spend KPI: the live ledger (MEASURED) when the server can read it, else the bundled
+// snapshot, labelled REPLAY so a stale number never passes as current.
+export function metaSpend(live, led = {}) {
+  if (live?.available && live.total_usd != null) {
+    return { usd: live.total_usd, calls: live.calls, label: "MEASURED", live: true,
+      note: `Meta API spend so far, live from the spend ledger, ${num(live.calls, 0)} calls · cap $${num(live.cap_usd, 0)}` };
+  }
+  if (led.total_usd == null) return { usd: null, calls: null, label: "REPLAY", live: false, note: "" };
+  return { usd: led.total_usd, calls: led.calls, label: "REPLAY", live: false,
+    note: `Meta API spend in the bundled ledger snapshot, ${num(led.calls, 0)} calls (live ledger not reachable)` };
+}

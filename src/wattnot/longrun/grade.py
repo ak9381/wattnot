@@ -170,7 +170,9 @@ class Graded:
     reasoning_measured: bool = False
 
 
-def grade_one(task: Task, chat) -> Graded:
+def grade_one(task: Task, chat, spark=None) -> Graded:
+    """`spark`, if given, records Muse Spark's verdict beside the deterministic one; `ok` is
+    always the deterministic check."""
     if task.tier == "complex":
         tr = Trace()
         got = run_agent(chat, task.prompt, World(task.world or {}), tr, max_tokens=task.max_tokens,
@@ -178,8 +180,11 @@ def grade_one(task: Task, chat) -> Graded:
         used = {c[0] for c in tr.calls}
         ok = (same_number(got, task.answer) and set(task.needs_tools) <= used
               and (not task.needs_subagent or tr.subagents > 0))
+        if spark is not None:
+            sp = spark(task.id, task.tier, task.prompt, str(got), ok)
         return Graded(task.id, task.tier, ok, tr.tokens, sum(tr.latencies),
-                      {"final": got, "tools": sorted(used), "turns": tr.turns,
+                      {**({"spark": sp} if spark is not None else {}),
+                       "final": got, "tools": sorted(used), "turns": tr.turns,
                        "retries": tr.retries, "tool_errors": tr.errors,
                        "subagents": tr.subagents, "stopped": tr.stopped},
                       truncated=tr.stopped == "context-limit",
@@ -195,6 +200,9 @@ def grade_one(task: Task, chat) -> Graded:
                          task.answer)
     # finish == "length": the answer was cut off by the token cap, not necessarily wrong. Flag it
     # so the summary can report the truncation rate instead of silently counting it as a miss.
-    return Graded(task.id, task.tier, ok, r.tokens, r.latency_s, {"finish": r.finish},
+    detail = {"finish": r.finish}
+    if spark is not None:
+        detail["spark"] = spark(task.id, task.tier, task.prompt, r.text or "", ok)
+    return Graded(task.id, task.tier, ok, r.tokens, r.latency_s, detail,
                   truncated=r.finish == "length",
                   reasoning_tokens=r.reasoning_tokens, reasoning_measured=r.reasoning_measured)

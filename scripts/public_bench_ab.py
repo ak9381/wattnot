@@ -191,6 +191,8 @@ def run_real(o) -> dict:  # pragma: no cover - needs the GPU host
     pynvml.nvmlInit()
     h = pynvml.nvmlDeviceGetHandleByIndex(0)
     url = f"{o.base_url}/chat/completions"
+    from wattnot.longrun.spark_grade import grader_from_env
+    spark = grader_from_env()   # None unless this is a matrix round with spark_grade_all on
 
     def setcap(w):
         subprocess.run(["nvidia-smi", "-pl", str(w)], check=True, capture_output=True)
@@ -234,6 +236,10 @@ def run_real(o) -> dict:  # pragma: no cover - needs the GPU host
             wall = time.time() - t0
             joules = (pynvml.nvmlDeviceGetTotalEnergyConsumption(h) - e0) / 1000.0
             ok = [bool(gf(x, r[0])) if r[1] != "error" else False for x, r in zip(items, res)]
+            if spark is not None:   # Spark beside the deterministic grade; `ok` still decides
+                spark.arm = "without_wattnot" if a == "stock" else "with_wattnot"
+                for i, (x, r, k) in enumerate(zip(items, res, ok)):
+                    spark(x.get("task_id", i), n, pf(x), r[0] or "", k)
             lat = [r[2] for r in res]
             rounds[n].append({"arm": a, "rep": rep, "cap_w": got, "joules": joules, "wall_s": wall,
                               "n": len(items), "correct": sum(ok),
@@ -246,6 +252,9 @@ def run_real(o) -> dict:  # pragma: no cover - needs the GPU host
             print(f"[public] {n} {a} rep{rep} cap {got:.0f} W: {sum(ok)}/{len(items)} correct, "
                   f"{joules:.0f} J, {wall:.0f} s", flush=True)
     setcap(700)   # leave the card at stock
+    if spark is not None:
+        (out / "spark_grades.json").write_text(json.dumps(
+            {"summary": spark.summary(), "answers": spark.records}, indent=1))
     summ = {"label": "MEASURED", "cap_w": o.cap, "stock_w": 700, "prefix_caching": "off (both arms)",
             "sets": {n: summarize(n, rs) for n, rs in rounds.items()}, "rounds": rounds}
     (out / "public_bench_summary.json").write_text(json.dumps(summ, indent=1))

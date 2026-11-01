@@ -3,6 +3,7 @@
 // info-panel texts. Numbers come only from the run record; anything the
 // record does not hold reads "Measured in the long run".
 import { sharedLegend } from "./legend.js";
+import { metaSpend } from "./v2lib.js";
 import { popup, registerInfo, infoBtn, tip, lineChart, donut, gauge, workedExample, wireR7, KWH_PER_J, WATER_L_PER_KWH, WATER_L_PER_KWH_UPPER } from "./r7.js";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -403,7 +404,7 @@ export function overviewHtml(S) {
       })()}
       ${kpi("Slowest 1% (p99)", r.p99_change_pct != null ? `${r.p99_change_pct > 0 ? "+" : ""}${fmt(r.p99_change_pct, 1)}%` : null, "MEASURED", "limit +10%", "p99")}
       ${kpi("Quality: fixed-check pass rate", r.quality_cap_pct != null ? `${fmt(r.quality_cap_pct, 1)}%` : null, "MEASURED", r.quality_stock_pct != null ? `uncapped ${fmt(r.quality_stock_pct, 1)}% · share of fixed checks passed · quality gate: drop ≤ 1.0 pt (held); latency gate p99 ≤ +10% decides the cap` : "", "quality")}
-      ${kpi("Meta API spend", led.total_usd != null ? `$${fmt(led.total_usd)}` : null, "MEASURED", led.calls != null ? `${fmt(led.calls, 0)} calls in the bundled ledger snapshot (later live calls are on the receipt addenda)` : "", null)}
+      ${(() => { const m = metaSpend(S.metaLive, led); return kpi("Meta API spend", m.usd != null ? `$${fmt(m.usd)}` : null, m.label, m.note, null); })()}
     </div>
     ${metaTile()}
     <div class="ov-grid">
