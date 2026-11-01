@@ -237,3 +237,9 @@ def test_receipt_block(tmp_path, clock):
     assert block["audit_chain_ok"] is True
     assert len(block["audit_head_sha256"]) == 64
     assert [o["op"] for o in block["ops"]] == ["approve"]
+
+
+@pytest.fixture(autouse=True)
+def _act_mode(monkeypatch):
+    """These tests apply changes, so they run in act mode (the library default is watch)."""
+    monkeypatch.setenv("WATTNOT_MODE", "act")

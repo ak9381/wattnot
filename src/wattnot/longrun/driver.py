@@ -153,7 +153,7 @@ def host_inner(argv: list[str]) -> str:
             f"if [ ! -f {shlex.quote(activate)} ]; then "
             f"echo '[live] venv missing: {activate} (setup builds it)' >&2; exit 97; fi; "
             f". {shlex.quote(activate)} || {{ echo '[live] cannot activate {activate}' >&2; "
-            f"exit 97; }}; " + cmd)
+            f"exit 97; }}; export WATTNOT_MODE=act; " + cmd)
 
 
 def _m(minutes: float) -> float:
@@ -170,11 +170,13 @@ def plan(out: Path, model: str = "llama", plan_name: str = "full") -> list[Block
     if model == "glimmer-test":
         if plan_name == "long":
             return plan_glimmer_long(out)
+        if plan_name == "max":
+            return plan_glimmer_max(out)
         return plan_glimmer_retest(out) if plan_name == "retest" else plan_glimmer_test(out)
     live = out / "live.jsonl"
     reh = lambda tag, *extra: _py("wattnot.proof.orchestrate", "--mode", "rehearsal",  # noqa: E731
                                   "--out", str(out / "runs" / tag), "--profile", "quick",
-                                  "--auto-approve", "--fresh", "--live-file", str(live), *extra)
+                                  "--auto-approve", "--act", "--fresh", "--live-file", str(live), *extra)
     guard = str(Path(__file__).resolve().parents[3] / "examples/longrun/guardrails-wonder.json")
     return [
         Block("b0-setup", "Launch, setup, probe, go/no-go", 1.0, None),
@@ -200,7 +202,7 @@ def plan_glimmer(out: Path) -> list[Block]:
     live = out / "live.jsonl"
     reh = lambda tag, *extra: _py("wattnot.proof.orchestrate", "--mode", "rehearsal",  # noqa: E731
                                   "--out", str(out / "runs" / tag), "--profile", "quick",
-                                  "--auto-approve", "--fresh", "--live-file", str(live), *extra)
+                                  "--auto-approve", "--act", "--fresh", "--live-file", str(live), *extra)
     guard = str(Path(__file__).resolve().parents[3] / "examples/longrun/guardrails-wonder.json")
     tiers = lambda tag, cfg, *x: _py("wattnot.longrun.harness", "--cap", "350",  # noqa: E731
                                      "--out", str(out / "runs" / tag), "--fake",
@@ -263,7 +265,8 @@ HOST_BASE_URL = "http://127.0.0.1:8000/v1"
 
 
 def sweep_live_argv(out: Path, live_file: Path, guard_cfg: str, *, sweep_budget_s: int,
-                    reps: int, warmup: int, warmup_s: int, grid: str) -> list[str]:
+                    reps: int, warmup: int, warmup_s: int, grid: str,
+                    tag: str = "t1-sweep") -> list[str]:
     """The live BF16 power-cap sweep command. The planner is the REAL Wonder (``--wonder-live``),
     never the deterministic "muse-wonder-mock" (RUN3 shipped the mock because this flag was missing;
     nomock.audit_plan now fails a live wonder sweep without it). The budget/warm-up/rounds are tuned
@@ -274,8 +277,8 @@ def sweep_live_argv(out: Path, live_file: Path, guard_cfg: str, *, sweep_budget_
     (58% max drop from 700 W stock; orchestrate refuses live caps below it). The approval demo
     policy allows a 58% drop, so it approves every sweep cap that passes the gates."""
     return _py("wattnot.proof.orchestrate", "--mode", "live", "--host", "{HOST}",
-               "--key", "{KEY}", "--model", GLIMMER_MODEL, "--out", str(out / "runs" / "t1-sweep"),
-               "--profile", "quick", "--planner", "wonder", "--wonder-live", "--no-adaptive",
+               "--key", "{KEY}", "--model", GLIMMER_MODEL, "--out", str(out / "runs" / tag),
+               "--profile", "quick", "--planner", "wonder", "--wonder-live", "--act", "--no-adaptive",
                "--fresh", "--sweep-budget-s", str(sweep_budget_s), "--warmup", str(warmup),
                "--reps", str(reps), "--grid", grid,
                # Glimmer reasons before answering: floor each request so proof-v1's small QA/math
@@ -505,7 +508,7 @@ def _default_hours(model: str, plan_name: str) -> float:
     """VM hours when --max-hours is not given. The long plan is booked for LONG_BOOKING_H; the
     old 3.5 h test default dropped batching, prefix, public benchmarks and the copy block."""
     if model == "glimmer-test":
-        return LONG_BOOKING_H if plan_name == "long" else 3.5
+        return {"long": LONG_BOOKING_H, "max": MAX_BOOKING_H}.get(plan_name, 3.5)
     return 18.0
 
 
@@ -536,6 +539,146 @@ def plan_glimmer_long(out: Path) -> list[Block]:
         if b.id == "t3-copy":
             blocks.append(public)
         blocks.append(replace(b, **kw) if kw else b)
+    return blocks
+
+
+# Max plan (``--plan max``, glimmer-test). PLAN ONLY: building it starts nothing.
+# Sized to the E2E balance read on 1 Nov (Rs 8,801.29 MEASURED, read-only): the run may spend
+# MAX_BUDGET_CAP_INR, which keeps the driver's Rs 1,500 balance floor intact (8,801 - 1,500 =
+# 7,301). MAX_BOOKING_H x INR_PER_H = Rs 7,219 ESTIMATE. Block minutes below sum to ~15 h
+# (ESTIMATE) so a slow block still finishes inside the 16 h booking minus the 8 min margin.
+MAX_BOOKING_H = 16.0
+MAX_BUDGET_CAP_INR = 7300
+# Repeated full E2E passes. Each pass runs every GPU-live layer of the flow (sweep + gates +
+# signed receipt, thinking budget, tiers at the best cap, eye, spoken, phase clock, LangChain
+# through the waste proxy, agent-waste A/B) on a different dataset and cap order. The off-GPU
+# layers and the per-pass signed flow receipt run after the VM is gone
+# (scripts/e2e/post_run_offgpu.py -> python -m wattnot.flow --gpu-dir ...).
+MAX_PASSES = (
+    # (pass, sweep tag, cap order, dataset)
+    ("p1", "t1-sweep", "375,350,325,300", "own"),
+    ("p2", "p2-sweep", "300,325,350,375", "gsm8k300"),
+    ("p3", "p3-sweep", "360,340,320,300", "humaneval164"),
+)
+MAX_PASS_LAYERS_MIN = {"sweep": 95, "think": 15, "tiers": 25, "eye": 3, "spoken": 3,
+                       "phase": 5, "langchain": 25, "agentwaste": 20}   # ESTIMATE, 191 min
+MAX_LANGCHAIN_ITEMS = 40
+MAX_PUBLIC_SETS = ("gsm8k300", "humaneval164")   # 300 GSM8K + all 164 HumanEval
+MAX_PUBLIC_REPS = 3
+MAX_TIERS_PER_TIER = 10
+MAX_HOURS_MIN = {"t2g-serverless": 30, "t2c-prefix": 40, "t2d-combined": 25, "t2e-public": 120}
+MAX_DEDICATED = ("t2g-serverless", "t2-fp8", "t2-eye", "t2-spoken", "t2b-batch", "t2c-prefix",
+                 "t2d-combined", "t2e-public")
+MAX_REQUIRED_BLOCKS = ("t1-sweep", "p1-think", "p1-tiers", "p1-eye", "p1-spoken", "p1-phase",
+                       "p1-langchain", "p1-agentwaste", "t2-fp8", "t2-eye", "t2-spoken",
+                       "t2b-batch", "t2c-prefix")
+MAX_EXTRA_BLOCKS = tuple(f"{p}-{l}" for p, *_ in MAX_PASSES[1:] for l in MAX_PASS_LAYERS_MIN
+                         if l != "sweep") + ("p2-sweep", "p3-sweep", "t2g-serverless",
+                                             "t2d-combined", "t2e-public")
+
+
+def pass_blocks(out: Path, pas: str, sweep_tag: str, grid: str, dataset: str,
+                optional: bool, sweep_dry: list[str]) -> list[Block]:
+    """One full E2E pass: every GPU-live layer, results under <pass>-<layer>."""
+    live_file = out / "live.jsonl"
+    guard_cfg = str(Path(__file__).resolve().parents[3] / "examples/longrun/guardrails-wonder.json")
+    M = MAX_PASS_LAYERS_MIN
+    R = lambda layer: f"{REMOTE_RESULTS}/{pas}-{layer}"  # noqa: E731
+    D = lambda layer: str(out / "runs" / f"{pas}-{layer}")  # noqa: E731
+    start = 0
+    sweep = Block(
+        sweep_tag, f"Pass {pas}: BF16 power-cap sweep ({grid}), Wonder planner, gates, approvals, "
+        "SAM, signed receipt", _m(M["sweep"]),
+        [x.replace(str(out / "runs" / "t1-sweep"), str(out / "runs" / sweep_tag)) for x in sweep_dry],
+        live=sweep_live_argv(out, live_file, guard_cfg, sweep_budget_s=LONG_WONDER_SWEEP_BUDGET_S,
+                             reps=2, warmup=4, warmup_s=5, grid=grid, tag=sweep_tag),
+        depends_on=("t0-probe",), skip_if_short=optional)
+    url = f"{HOST_BASE_URL}/chat/completions"
+    bl = [
+        sweep,
+        Block(f"{pas}-think", f"Pass {pas}: thinking budget per tier", _m(M["think"]),
+              _py("wattnot.longrun.thinking_budget", "--fake", "--per-tier", "2", "--out", D("think")),
+              live=_rpy("wattnot.longrun.thinking_budget", "--url", url, "--per-tier", "4",
+                        "--out", R("think")), host=True, skip_if_short=optional),
+        Block(f"{pas}-tiers", f"Pass {pas}: tiers at the best cap vs stock", _m(M["tiers"]),
+              _py("wattnot.longrun.harness", "--cap", "325", "--fake", "--model-config",
+                  "muse-glimmer-30b", "--per-tier", "2", "--out", D("tiers")),
+              live=_rpy("wattnot.longrun.harness", "--cap", "{BEST_CAP}", "--out", R("tiers"),
+                        "--model-config", "muse-glimmer-30b", "--per-tier",
+                        str(MAX_TIERS_PER_TIER), "--reps", "2", "--url", url),
+              host=True, depends_on=("t1-sweep",), skip_if_short=optional),
+        Block(f"{pas}-eye", f"Pass {pas}: eye test gate", _m(M["eye"]),
+              _py("wattnot.vision.run", "--fake", "--out", D("eye"), "--budget-s",
+                  str(EYE_TEST_BUDGET_S)),
+              live=_rpy("wattnot.vision.run", "--base-url", HOST_BASE_URL, "--out", R("eye"),
+                        "--budget-s", str(EYE_TEST_BUDGET_S)), host=True, skip_if_short=optional),
+        Block(f"{pas}-spoken", f"Pass {pas}: spoken answers gate", _m(M["spoken"]),
+              _py("wattnot.spokenanswer.run", "--fake", "--out", D("spoken"), "--budget-s",
+                  str(SPOKEN_TEST_BUDGET_S)),
+              live=_rpy("wattnot.spokenanswer.run", "--base-url", HOST_BASE_URL, "--out",
+                        R("spoken"), "--budget-s", str(SPOKEN_TEST_BUDGET_S)),
+              host=True, skip_if_short=optional),
+        Block(f"{pas}-phase", f"Pass {pas}: phase-aware clock sidecar, 3 min", _m(M["phase"]),
+              _py("wattnot.control.phase_clock", "--mock", "--duration-s", "2", "--summary",
+                  D("phase") + "/summary.json", "--log", D("phase") + "/log.jsonl"),
+              live=_rpy("wattnot.control.phase_clock", "--url", HOST_BASE_URL, "--duration-s",
+                        "180", "--summary", R("phase") + "/summary.json", "--log",
+                        R("phase") + "/log.jsonl"), host=True, skip_if_short=optional),
+        Block(f"{pas}-langchain", f"Pass {pas}: LangChain agent through the waste proxy to "
+              f"Glimmer, saver OFF vs ON, {dataset}", _m(M["langchain"]),
+              [sys.executable, "scripts/langchain_pass.py", "--fake", "--dataset", dataset,
+               "--n", "3", "--out", D("langchain")],
+              live=["python", "scripts/langchain_pass.py", "--base-url", HOST_BASE_URL,
+                    "--dataset", dataset, "--start", str(start), "--n",
+                    str(MAX_LANGCHAIN_ITEMS), "--out", R("langchain")],
+              host=True, skip_if_short=optional),
+        Block(f"{pas}-agentwaste", f"Pass {pas}: agent-waste saver on the GPU, OFF vs ON",
+              _m(M["agentwaste"]),
+              [sys.executable, "scripts/agentwaste_gpu_ab.py", "--fake", "--out", D("agentwaste")],
+              live=["python", "scripts/agentwaste_gpu_ab.py", "--base-url", HOST_BASE_URL,
+                    "--out", R("agentwaste")], host=True, skip_if_short=optional),
+    ]
+    return bl
+
+
+def plan_glimmer_max(out: Path) -> list[Block]:
+    """The max plan: setup once, then three full E2E passes (own set, GSM8K, HumanEval), then the
+    dedicated blocks that need a serving restart or many reps (serverless idle, FP8 + its gates,
+    batching, prefix cache, combined, public benchmarks), then copy back. Off-GPU work (Wonder
+    chart, EU, flow receipts, Code Mode, replay pack) runs after teardown."""
+    long_blocks = {b.id: b for b in plan_glimmer_long(out)}
+    blocks = [long_blocks["t0-setup"], long_blocks["t0-probe"]]
+    for i, (pas, tag, grid, ds) in enumerate(MAX_PASSES):
+        blocks += pass_blocks(out, pas, tag, grid, ds, optional=i > 0,
+                              sweep_dry=long_blocks["t1-sweep"].dry)
+    sets = list(MAX_PUBLIC_SETS)
+    public = replace(
+        long_blocks["t2e-public"],
+        title=f"Public benchmarks at the best cap vs stock: GSM8K (300) + HumanEval (164), "
+              f"{MAX_PUBLIC_REPS} reps", hours=_m(MAX_HOURS_MIN["t2e-public"]),
+        dry=[sys.executable, "scripts/public_bench_ab.py", "--fake", "--cap", "325", "--reps",
+             str(MAX_PUBLIC_REPS), "--sets", *sets, "--out", str(out / "runs" / "t2e-public")],
+        live=["python", "scripts/public_bench_ab.py", "--cap", "{BEST_CAP}", "--reps",
+              str(MAX_PUBLIC_REPS), "--sets", *sets, "--out", f"{REMOTE_RESULTS}/t2e-public"],
+        min_hours=_m(80),
+        trim=[sys.executable, "scripts/public_bench_ab.py", "--fake", "--cap", "325", "--reps", "3",
+              "--sets", "gsm8k300", "--out", str(out / "runs" / "t2e-public")],
+        trim_live=["python", "scripts/public_bench_ab.py", "--cap", "{BEST_CAP}", "--reps", "3",
+                   "--sets", "gsm8k300", "--out", f"{REMOTE_RESULTS}/t2e-public"])
+    prefix = replace(long_blocks["t2c-prefix"], hours=_m(MAX_HOURS_MIN["t2c-prefix"]),
+                     live=["python", "scripts/prefix_cache_ab.py", "--out",
+                           f"{REMOTE_RESULTS}/t2c-prefix", "--reps", "5"])
+    combined = _combined_block(out, minutes=MAX_HOURS_MIN["t2d-combined"], reps=5)
+    serverless = Block(
+        "t2g-serverless", "Serverless-style tuning: warm idle vs scale-to-zero idle W, cold-start "
+        "seconds + joules, break-even request gap (3 reps; leaves BF16 serving)",
+        _m(MAX_HOURS_MIN["t2g-serverless"]),
+        [sys.executable, "scripts/serverless_ab.py", "--fake", "--out",
+         str(out / "runs" / "t2g-serverless")],
+        live=["python", "scripts/serverless_ab.py", "--reps", "3", "--out",
+              f"{REMOTE_RESULTS}/t2g-serverless"], host=True, skip_if_short=True)
+    blocks += [serverless, long_blocks["t2-fp8"], long_blocks["t2-eye"], long_blocks["t2-spoken"],
+               long_blocks["t2b-batch"], prefix, combined, public, long_blocks["t3-copy"]]
     return blocks
 
 
@@ -975,6 +1118,12 @@ def _live_runner(out: Path, host: str, key: str, vm: RemoteVm, log=print):
             return 7 if vm.copy_mismatched else 0   # copied, but sha256 mismatch: block fails
         if b.live is None:
             return 0
+        if any("{BEST_CAP}" in a for a in b.live) and not best_cap_from_sweep(out) \
+                and not any("prefix_cache_ab.py" in a for a in b.live):
+            # only prefix_cache_ab.py understands "NONE"; the harness and public_bench_ab.py take
+            # an int cap, so with no passing cap these blocks have nothing to compare: skip
+            log(f"[live] {b.id}: skipped, the sweep found no passing cap")
+            return 0
         argv = fill(b.live)
         logf = out / "logs" / f"{b.id}.log"
         logf.parent.mkdir(parents=True, exist_ok=True)
@@ -1180,7 +1329,7 @@ def main(argv=None) -> int:
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--model", choices=["glimmer", "llama", "glimmer-test"], default="glimmer",
                     help="glimmer = primary plan; llama = fallback; glimmer-test = the 2 h test VM")
-    ap.add_argument("--plan", choices=["full", "retest", "long"], default="full",
+    ap.add_argument("--plan", choices=["full", "retest", "long", "max"], default="full",
                     help="retest (glimmer-test only): re-run setup, probe, the sweep and the RUN3 "
                          "failures only, sized to a 2 h VM")
     ap.add_argument("--host", help="live: the GPU host's IP (default: read scripts/e2e ip file)")
@@ -1189,7 +1338,7 @@ def main(argv=None) -> int:
     ap.add_argument("--drop-link", default="b2-wonder-sweep:3",
                     help="dry: simulate an SSH drop: block:probes ('' for none)")
     a = ap.parse_args(argv)
-    if a.plan in ("retest", "long") and a.model != "glimmer-test":
+    if a.plan in ("retest", "long", "max") and a.model != "glimmer-test":
         # plan() only honours retest/long for glimmer-test; anything else would silently run
         # the old full plan on a paid VM
         ap.error(f"--plan {a.plan} needs --model glimmer-test")

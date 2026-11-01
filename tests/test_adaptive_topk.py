@@ -369,3 +369,9 @@ def test_router_output_order_is_found_by_shape_and_dtype():
     assert _router_order((idx, w, logits), torch) == (2, 1, 0)
     with pytest.raises(AdaptiveError):
         _router_order((logits, w, w), torch)
+
+
+@pytest.fixture(autouse=True)
+def _act_mode(monkeypatch):
+    """These tests apply changes, so they run in act mode (the library default is watch)."""
+    monkeypatch.setenv("WATTNOT_MODE", "act")

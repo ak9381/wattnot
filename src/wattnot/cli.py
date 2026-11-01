@@ -158,7 +158,7 @@ def _run_receipt(a: argparse.Namespace) -> int:
             print(f"[{block['label']}] candidate {c['j_per_answer']} J per answer, "
                   f"{c['j_per_good_answer']} J per good answer")
             ch = block["change_pct"]["j_per_good_answer"]
-            print(f"change per good answer: {ch}%"
+            print(f"[{block['label']}] change per good answer: {ch}%"
                   + ("" if ok else "  (stored joules block does NOT match)"))
         return 0 if ok else 1
     if a.receipt_cmd == "from-cloud":
@@ -191,7 +191,9 @@ def _run_recommend(a: argparse.Namespace) -> int:
         r = json.load(f)
     keys = ("start_cap_w", "final_cap_w", "gate_passed", "base_wh_per_req",
             "final_wh_per_req", "base_p99_ms", "final_p99_ms", "knob")
+    # only a MEASURED report may say MEASURED; EXAMPLE / SIMULATED / missing labels are downgraded
     rec = _rec.with_summary(_rec.for_run(**{k: r[k] for k in keys if k in r},
+                                         simulated=r.get("label") != "MEASURED",
                                          **r.get("assumptions", {})), None)
     if a.json:
         print(json.dumps(rec.to_dict(), indent=2))

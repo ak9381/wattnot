@@ -50,6 +50,15 @@ def compute_mask_sha256(mask_dict: Mapping[str, Any]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def _mock_mode(mock: bool | None, live: bool) -> bool:
+    """Live SAM by default. The deterministic mask is only allowed with WATTNOT_META_MOCK=1."""
+    env = os.environ.get("WATTNOT_META_MOCK") == "1"
+    if (mock or not live) and not env:
+        raise ValueError("the mock hotspot mask needs WATTNOT_META_MOCK=1 (tests only); "
+                         "the default is live SAM")
+    return env
+
+
 def detect_hotspot_mask(
     photo_path: str | Path | None = None,
     *,
@@ -60,7 +69,7 @@ def detect_hotspot_mask(
     prompt: str = "thermal hotspot rack slot",
 ) -> dict[str, Any]:
     """Segment the hotspot rack/GPU region using SAM 3.1 (or deterministic mock)."""
-    is_mock = bool(mock) or (not live) or (os.environ.get("WATTNOT_META_MOCK") == "1")
+    is_mock = _mock_mode(mock, live)
 
     live_poly: list[list[int]] | None = None
     if not is_mock:
@@ -119,7 +128,7 @@ def plan_hotspot_cap(
 
     Returns the mask details, cap decision, updated cap map, and technical reason.
     """
-    is_mock = bool(mock) or (not live) or (os.environ.get("WATTNOT_META_MOCK") == "1")
+    is_mock = _mock_mode(mock, live)
 
     # Normalise GPU caps dictionary
     current_caps: dict[int, int] = {}

@@ -136,6 +136,11 @@ def verify_document(receipt, bundle: dict | None, *, trusted: set[str] | None = 
     g = grade(receipt, sha_ok=steps[0].ok and sha_ok, sig_ok=sig_ok,
               rekor_ok=log_index is not None, derived_ok=derived_ok) \
         if isinstance(receipt, dict) else "UNVERIFIABLE"
+    lab = next((x for x in steps if x.name == "labels"), None)
+    if lab is not None and not lab.ok and g != "UNVERIFIABLE":
+        # weak labels lower the grade: a SIMULATED/MOCK headline grades SIMULATED, an unknown
+        # label means we can't say what the number is
+        g = "UNVERIFIABLE" if lab.detail.get("unknown") else "SIMULATED"
     claimed = integ.get("grade") if integ else None
     steps.append(Step("grade", g != "UNVERIFIABLE", {"grade": g, "claimed": claimed}))
     return Report(path, steps, g, claimed, derived)
@@ -222,7 +227,8 @@ def format_report(r: Report) -> str:
     j = (r.joules or {}).get("candidate")
     if j and j.get("j_per_answer") is not None:
         good = j.get("j_per_good_answer")
-        lines.append(f"  info {'':<9} candidate {j['j_per_answer']:.1f} J per answer, "
+        lab = j.get("label") or (r.joules or {}).get("label") or "ESTIMATE"
+        lines.append(f"  info {'':<9} [{lab}] candidate {j['j_per_answer']:.1f} J per answer, "
                      + (f"{good:.1f} J per good answer" if good is not None
                         else "no good answers (pass rate 0)"))
     return "\n".join(lines)

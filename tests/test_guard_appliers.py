@@ -82,3 +82,9 @@ def test_demo_appliers_merge_with_standard(tmp_path):
     assert isinstance(merged[m.POWER_CAP], MockPowerCapApplier)
     token = merged[m.POWER_CAP].apply(cap_proposal(500))
     assert token["after_w"] == 500
+
+
+@pytest.fixture(autouse=True)
+def _act_mode(monkeypatch):
+    """These tests apply changes, so they run in act mode (the library default is watch)."""
+    monkeypatch.setenv("WATTNOT_MODE", "act")

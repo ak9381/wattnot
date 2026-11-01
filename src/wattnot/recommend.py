@@ -146,7 +146,7 @@ def _for_run(*, start_cap_w: int, final_cap_w: int, gate_passed: bool,
            if base_p99_ms is not None and final_p99_ms is not None else "")
     acts.append(Item(MEASURED, f"set the power cap to {final_cap_w} W (from {start_cap_w} W). "
                      "It is the last cap that passed the gate: quality within 1 point and "
-                     f"p99 within +10%{p99}", "power_cap_w", final_cap_w, "W"))
+                     f"p99 within +{_p99_limit_pct():g}%{p99}", "power_cap_w", final_cap_w, "W"))
     acts.append(Item(MEASURED, f"energy per request {base_wh_per_req:.4f} -> "
                      f"{final_wh_per_req:.4f} Wh ({saving_pct:.1f}% less)",
                      "wh_saved_pct", round(saving_pct, 1), "%"))
@@ -170,6 +170,11 @@ def _for_run(*, start_cap_w: int, final_cap_w: int, gate_passed: bool,
                            _applies(cap_freed_w=freed, kwh=i.kwh, litres=i.litres,
                                     always_on=always_on, changed=True),
                            tuple(acts), assumptions)
+
+
+def _p99_limit_pct() -> float:
+    from wattnot.settings import max_p99_increase_pct
+    return max_p99_increase_pct()
 
 
 def for_run(*, simulated: bool = False, **kw) -> Recommendations:

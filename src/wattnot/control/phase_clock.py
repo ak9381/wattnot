@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import signal
 import time
@@ -107,6 +108,9 @@ def main(argv=None) -> int:
     stop = {"v": False}
     signal.signal(signal.SIGTERM, lambda *_: stop.update(v=True))
     t0 = time.time()
+    for path in (a.log, a.summary):
+        if path and os.path.dirname(path):
+            os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(a.log, "a") as lg:
         c = Controller(gpu, a.high, a.low, a.ratio, lg)
         try:

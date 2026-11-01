@@ -24,6 +24,7 @@ wrapper both do this. Nothing here is installed or enabled by this repo.
 from __future__ import annotations
 
 import argparse
+import os
 import json
 import subprocess
 import sys
@@ -281,10 +282,10 @@ def main(argv=None, *, env=None) -> int:
     # carries no deadline/spend of its own. Sized for the 3.5 h H100 test (3.5 h x Rs451.2 = Rs1579,
     # under Rs2000); raise them for a longer run. Config values, not measurements. Pass
     # "unset" (or "") to DISABLE a cap.
-    ap.add_argument("--budget-cap-inr", default="2000",
+    ap.add_argument("--budget-cap-inr", default=os.environ.get("BUDGET_CAP_INR", "2000"),
                     help="off-box spend ceiling in INR (default-on, 2000; the 3.5 h test costs at most ~1579). "
                          "Pass 'unset' to disable.")
-    ap.add_argument("--max-hours", default="3.6",
+    ap.add_argument("--max-hours", default=os.environ.get("MAX_HOURS", "3.6"),
                     help="time-cap backstop in hours (default-on, 3.6; the 3.5 h test plus 6 min, behind ctl.py's delete at 3.5 h - 8 min). "
                          "Pass 'unset' to disable.")
     ap.add_argument("--max-stale-s", default=str(DEFAULT_MAX_STALE_S))

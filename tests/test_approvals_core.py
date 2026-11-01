@@ -549,3 +549,9 @@ def test_a_policy_cannot_list_trial_grants_and_evaluate_refuses_them():
     on = pol.Policy.from_dict(POLICY)
     ok, why = on.evaluate({"kind": m.TRIAL_GRANT, "scope": m.TRIAL, "savings": [], "checks": {}})
     assert not ok and "never auto-approved" in why[0]
+
+
+@pytest.fixture(autouse=True)
+def _act_mode(monkeypatch):
+    """These tests apply changes, so they run in act mode (the library default is watch)."""
+    monkeypatch.setenv("WATTNOT_MODE", "act")

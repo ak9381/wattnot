@@ -19,7 +19,7 @@ _COUNTER_KEYS = (
     "reasoning_tokens",
     "nudges",
 )
-_FLAG_KINDS = ("repeat", "no_op", "cycle", "reasoning")
+_FLAG_KINDS = ("repeat", "no_op", "cycle", "reasoning", "error_storm", "low_gain", "paraphrase")
 
 
 def _run_id(body: dict) -> str:
@@ -81,6 +81,8 @@ def tier_body(body: dict, tier: Mapping | None) -> dict:
     if tier is None:
         return body
     out = {**body, "model": tier["model"]}
+    if tier.get("body_extra"):   # e.g. one served model with thinking off vs on
+        out.update(tier["body_extra"])
     if tier.get("reasoning"):
         budget = int(tier.get("max_output") or REASONING_BUDGET)
         asked = out.pop("max_tokens", None) or out.get("max_completion_tokens") or 0
@@ -121,7 +123,13 @@ def sse_chunks(response: dict, include_usage: bool):
     tcs = msg.get("tool_calls") or []
     if tcs:
         yield chunk({"tool_calls": [{**tc, "index": i} for i, tc in enumerate(tcs)]})
-    yield chunk({}, choice.get("finish_reason") or "stop")
+    fin = chunk({}, choice.get("finish_reason") or "stop")
+    if response.get("wattnot"):
+        # keep the done/stopped envelope for streaming clients (extra key, ignored by SDKs)
+        c = json.loads(fin[len("data: "):])
+        c["wattnot"] = response["wattnot"]
+        fin = "data: " + json.dumps(c) + "\n\n"
+    yield fin
     if include_usage and response.get("usage"):
         yield chunk({}, usage=response["usage"])
     yield "data: [DONE]\n\n"
@@ -191,6 +199,12 @@ def create_app(
         verdict = guard.before(body)
         if verdict.action == "stop":
             assert verdict.reason is not None
+            # a guard stop is a call too: count it, so the receipt's call total is honest
+            calls.append({"run": run[:16], "framework": detect_framework(request.headers),
+                          "tokens_before": None, "tokens_after": None,
+                          "dropped_fields": dropped, "stream": stream, "attempts": [],
+                          "answered_by": "wattnot:guard", "gate_passed": False,
+                          "stopped": verdict.reason, "escalated_tokens": 0})
             return reply(
                 guard.stop_response(verdict.reason, model=str(body.get("model", "")))
             )
@@ -207,6 +221,7 @@ def create_app(
         chain = list(tiers) if tiers else [None]
         attempts = []
         response: dict = {}
+        esc_tokens = 0
         try:
             for i, tier in enumerate(chain):
                 body_t = tier_body(out_body, tier)
@@ -224,15 +239,31 @@ def create_app(
                 if ok or i == len(chain) - 1:
                     break
                 guard.charge(response)  # escalated attempt: billed, never shown to the caller
+                u = response.get("usage") or {}
+                esc_tokens += int(u.get("prompt_tokens") or 0) + int(u.get("completion_tokens") or 0)
         except Exception:
+            # keep a record: tokens already charged for escalated attempts stay visible in
+            # /stats and the receipt, and the call counts as an upstream error, not a pass
+            rec.update({"attempts": attempts, "answered_by": "wattnot:upstream_error",
+                        "gate_passed": False, "error": "upstream error",
+                        "escalated_tokens": esc_tokens})
+            calls.append(rec)
             return JSONResponse(
                 status_code=502, content={"detail": "upstream error"}
             )
         rec["attempts"] = attempts
         rec["answered_by"] = attempts[-1]["tier"] if attempts else None
         rec["gate_passed"] = bool(attempts and attempts[-1]["passed"])
+        rec["escalated_tokens"] = esc_tokens
         calls.append(rec)
-        return reply(guard.after(response))
+        out = guard.after(response)
+        if esc_tokens and isinstance(out, dict):
+            # `usage` stays the answer's own (OpenAI shape); the hidden escalated attempts are
+            # billed too, so say how many tokens they cost
+            env = dict(out.get("wattnot") or {})
+            env["escalated_attempt_tokens"] = esc_tokens
+            out = {**out, "wattnot": env}
+        return reply(out)
 
     @app.get("/v1/wattnot/stats")
     async def wattnot_stats() -> JSONResponse:
@@ -249,6 +280,7 @@ def create_app(
     @app.get("/v1/wattnot/receipt")
     async def wattnot_receipt() -> JSONResponse:
         n = len(calls)
+        answered = [c for c in calls if not c.get("stopped") and not c.get("error")]
         routed = [c for c in calls if c["attempts"] and c["attempts"][0]["tier"] is not None]
         small_pass = sum(1 for c in routed if c["attempts"][0]["passed"])
         escalated = sum(1 for c in routed if len(c["attempts"]) > 1)
@@ -273,7 +305,11 @@ def create_app(
                         "small_model_pass_rate": round(small_pass / len(routed), 4) if routed else None,
                         "answered_by": {t: sum(1 for c in calls if c["answered_by"] == t)
                                         for t in {c["answered_by"] for c in calls}}},
-            "gate": {"pass_pct": round(100 * sum(c["gate_passed"] for c in calls) / n, 2) if n else None},
+            "gate": {"pass_pct": round(100 * sum(c["gate_passed"] for c in answered) / len(answered), 2)
+                     if answered else None, "answered_calls": len(answered),
+                     "stopped_by_guard": sum(1 for c in calls if c.get("stopped")),
+                     "upstream_errors": sum(1 for c in calls if c.get("error"))},
+            "escalated_attempt_tokens": sum(c.get("escalated_tokens", 0) for c in calls),
             "context_saver": {"enabled": context_saver is not None, "tokens_before": tb,
                               "tokens_after": ta, "tokens_saved": tb - ta, "label": "ESTIMATE"},
             "agent_waste": {**waste, "runs": len(guards), "runs_stopped_early": stops},

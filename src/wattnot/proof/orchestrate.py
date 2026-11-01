@@ -840,6 +840,16 @@ def drive(a, *, transport: Transport, planner, scan_base: dict | None, out: Path
                 )
                 kr.outputs = "rolled back: no approval (stock stays)"
                 kr.add("kept cap", stock_w, "W", label)
+            elif best and _watch_only_keep(a):
+                # watch-only: show the would-be kept cap and its saving, change nothing
+                s.emit("action.rolled_back",
+                       {"change": {"power_cap_w": None}, "restored_cap_w": stock_w,
+                        "failed_gates": ["watch-only mode (run with --act to keep the cap)"],
+                        "would_keep_cap_w": best["cap_w"], "label": label},
+                       step_id="keep_rollback", parent=None)
+                kr.outputs = f"watch-only: would keep {best['cap_w']} W (stock stays)"
+                kr.add("kept cap", stock_w, "W", label)
+                kr.add("would-keep cap", best["cap_w"], "W", label)
             elif best:
                 if vm("apply", "--cap", str(best["cap_w"]), "--keep-cap") != 0:
                     raise RuntimeError("could not apply the chosen cap")
@@ -1275,6 +1285,15 @@ def drive_with_retries(a, *, transport: Transport, planner, out: Path, wait_s: f
 CAP_FLOOR_W = 294  # 700 W stock with the 58% max cap drop
 
 
+def _watch_only_keep(a) -> bool:
+    """True when the sweep must not keep a cap: watch-only config and no --act. Rehearsal runs
+    touch no hardware, so they always keep their simulated cap."""
+    if getattr(a, "mode", None) == "rehearsal" or getattr(a, "act", False):
+        return False
+    from wattnot.settings import watch_only
+    return watch_only()
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--mode", choices=["live", "rehearsal"], default="rehearsal")
@@ -1330,6 +1349,9 @@ def main(argv=None) -> int:
         help="adaptive top-k: share of the router weight to keep (default: the tuned value)",
     )
     ap.add_argument("--sign-key", type=Path, default=Path("receipt-offline-key.pem"))
+    ap.add_argument("--act", action="store_true",
+                    help="allow kept changes (power caps) even when the config says watch-only; "
+                         "the long-run VM path passes this explicitly")
     ap.add_argument("--auto-approve", action="store_true",
                     help="approve the kept change without waiting for an operator; "
                          "logged as auto-approve-flag, not a person's decision")
@@ -1366,6 +1388,8 @@ def main(argv=None) -> int:
     ap.add_argument("--ssh-reconnect-budget-s", type=float, default=600.0)
     ap.add_argument("--ssh-stall-s", type=float, default=240.0)
     a = ap.parse_args(argv)
+    if a.act:
+        os.environ["WATTNOT_MODE"] = "act"
     a.grid = tuple(int(x) for x in a.grid.split(",") if x)
     if a.mode == "live" and ((a.grid and min(a.grid) < CAP_FLOOR_W) or a.wonder_lo < CAP_FLOOR_W):
         ap.error(f"live caps must stay >= {CAP_FLOOR_W} W (58% max drop from 700 W stock)")

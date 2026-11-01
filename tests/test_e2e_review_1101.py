@@ -32,3 +32,27 @@ def test_init_keeps_watch_when_config_has_no_mode(tmp_path, monkeypatch):
     with pytest.raises(SystemExit):
         init.init(p)
     assert json.loads("{}") == {}
+
+
+def test_library_default_is_watch(monkeypatch, tmp_path):
+    from wattnot import settings
+    monkeypatch.delenv("WATTNOT_MODE", raising=False)
+    monkeypatch.setenv("WATTNOT_CONFIG", str(tmp_path / "none.json"))
+    assert settings.watch_only()
+
+
+def test_sweep_keeps_cap_only_with_act(monkeypatch, tmp_path):
+    from types import SimpleNamespace as NS
+
+    from wattnot.proof.orchestrate import _watch_only_keep
+    monkeypatch.delenv("WATTNOT_MODE", raising=False)
+    monkeypatch.setenv("WATTNOT_CONFIG", str(tmp_path / "none.json"))
+    assert _watch_only_keep(NS(mode="live", act=False))
+    assert not _watch_only_keep(NS(mode="live", act=True))
+    assert not _watch_only_keep(NS(mode="rehearsal", act=False))
+
+
+def test_long_run_vm_path_acts():
+    from pathlib import Path
+    assert "WATTNOT_MODE=act" in driver.host_inner(["python", "-V"])
+    assert "--act" in driver.sweep_live_argv(Path("o"), Path("l"), "g", sweep_budget_s=60, reps=2, warmup=4, warmup_s=5, grid="375")

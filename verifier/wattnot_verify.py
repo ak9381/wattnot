@@ -360,6 +360,11 @@ def verify_document(receipt, bundle=None, trusted=None, path="<receipt>"):
             g = _claimed_grade(receipt, log_index is not None)
         except (KeyError, TypeError):
             g = "UNVERIFIABLE"
+    lab = next((x for x in steps if x.get("name") == "labels"), None)
+    if lab is not None and not lab["ok"] and g != "UNVERIFIABLE":
+        # same rule as the in-tree verifier: a SIMULATED/MOCK headline grades SIMULATED,
+        # an unknown label grades UNVERIFIABLE
+        g = "UNVERIFIABLE" if lab.get("unknown") else "SIMULATED"
     claimed = integ.get("grade") if integ else None
     steps.append({"name": "grade", "ok": g != "UNVERIFIABLE", "grade": g, "claimed": claimed})
     return {"path": path, "grade": g, "claimed_grade": claimed, "steps": steps,
@@ -392,7 +397,7 @@ def labels_step(receipt):
     counts = {}
     for _, v in found:
         counts[v] = counts.get(v, 0) + 1
-    d = {"counts": counts}
+    d = {"counts": counts, **({"unknown": unknown[:5]} if unknown else {})}
     if weak:
         d["error"] = "headline result uses " + ", ".join(weak[:3])
     elif unknown:

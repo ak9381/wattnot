@@ -172,3 +172,9 @@ def test_dashboard_item_carries_the_planner(tmp_path):
     assert None in planners
     assert json.loads(c.get("/api/dash/approvals").text)["pending"][0]["planner"] \
         in ({**OPEN, "tier": "strict"}, None)
+
+
+@pytest.fixture(autouse=True)
+def _act_mode(monkeypatch):
+    """These tests apply changes, so they run in act mode (the library default is watch)."""
+    monkeypatch.setenv("WATTNOT_MODE", "act")

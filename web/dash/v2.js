@@ -186,6 +186,16 @@ function pickCard(name, c, checked, extra) {
     <span class="pick-c"><span class="pick-ic" aria-hidden="true">${SVG[c.icon] || ""}</span>
     <span class="pick-t"><b>${esc(c.t)}</b><small>${esc(c.d)}</small><small class="ex">${esc(c.ex)}</small>${extra || ""}</span></span></label>`;
 }
+// Setup screen: grey out features this host can't run, from the read-only preflight check.
+async function loadPreflight() {
+  const pf = S.preflight ?? (S.preflight = await fetch("/api/dash/v2/preflight").then((r) => (r.ok ? r.json() : null)).catch(() => null));
+  const tile = $("#pfTile"), list = $("#pfList");
+  if (!pf || !Array.isArray(pf.features) || !tile || !list) return;
+  list.innerHTML = pf.features.map((f) => `<li class="${f.available ? "" : "off is-pending"}" title="${esc(f.available ? "Available here" : f.reason || "Not available on this host")}" aria-disabled="${f.available ? "false" : "true"}"><span class="dot" aria-hidden="true"></span>${esc(f.title)}${f.available ? "" : ` <small>(${esc(f.reason || "not available")})</small>`}</li>`).join("")
+    + `<li><small>Mode: ${esc(pf.mode === "act" ? "act (applies approved changes)" : "watch-only (changes nothing)")}</small></li>`;
+  tile.hidden = false;
+}
+
 function renderCfg() {
   const O = S.opts;
   for (const o of O.options) S.choice[o.id] ??= o.default;
@@ -200,6 +210,7 @@ function renderCfg() {
     </div>
     <div class="step-side span2"><div class="glass tile low picked" id="pickSum" aria-live="polite"><h3>Your choices</h3><ol class="picked-list" id="pickList"></ol></div>
       <div class="glass tile low conn"><h3>Already connected</h3><p>Wired by default, read from the partners list.</p><ul id="connList"></ul></div>
+      <div class="glass tile low conn" id="pfTile" hidden><h3>This machine</h3><p>From the preflight check. Greyed out means this host can't run it yet; hover for why.</p><ul id="pfList"></ul></div>
       <div class="grp glass tile low"><h3>What will happen</h3><div id="cfgSum"></div>${legendHtml()}
       <p class="lock">Live mode needs the owner's okay and the command line. It is never started from here.</p></div></div></div>
     <details class="adv glass" id="advDis"><summary id="advSum" aria-expanded="false"><span class="adv-t">Advanced settings</span>
@@ -211,6 +222,7 @@ function renderCfg() {
     <select id="f-${o.id}" data-k="${o.id}">${o.choices.map((c) => `<option value="${esc(JSON.stringify(c.v))}" ${JSON.stringify(c.v) === JSON.stringify(S.choice[o.id]) ? "selected" : ""} ${o.id === "mode" && c.v === "live" ? "disabled" : ""}>${esc(c.label)}</option>`).join("")}</select>
     <button class="info" data-info="${o.id}" aria-label="What is ${esc(o.label)}?">i</button></div>`;
   }
+  loadPreflight();
   $$("#pCfg select").forEach((s) => (s.onchange = () => { S.choice[s.dataset.k] = JSON.parse(s.value); sumCfg(); syncAdv(); }));
   datasetUpload();
   $("#advDis").addEventListener("toggle", syncAdv);

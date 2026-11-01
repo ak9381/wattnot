@@ -502,7 +502,7 @@ export class Product {
     return `<section class="rc" aria-label="Agent waste"><header><h2>Agent waste</h2><em class="pb" style="--c:${PCOL[who.id] || "var(--dim)"}">${esc(who.name || "")}</em>${dot("MEASURED")} on Muse Spark</header>
       <p class="note2">${esc(w.headline || "")}</p>
       <table class="cmpt"><thead><tr><th></th><th>Without the saver</th><th>With the saver</th><th>Change</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-      <div class="qrow"><b>Tasks passed</b><span>${pct(s.off_pct)} without, ${pct(s.on_pct)} with the saver</span></div>
+      <div class="qrow"><b>Tasks passed</b><span>${pct(s.off_pct)} without, ${pct(s.on_pct)} with the saver${dot("MEASURED")}</span></div>
       <div class="wgroups">${glines}<p class="hnt">Standard harness (stops by itself): ${num(ref.calls_per_run)} calls per run, ${pct(ref.success_pct)} tasks passed.</p></div>
       <div class="wnotes">${notes}</div>${secondLayerHtml(w.second_layer)}</section>`;
   }
