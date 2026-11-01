@@ -13,7 +13,11 @@ PROVIDER = "baseten"
 MODEL = "meta-models/muse-spark-open"  # verified live 29 Oct 2026 (HTTP 200); the old -1026 slug no longer answers
 BASE_URL = "https://inference.baseten.co/v1"
 MGMT_URL = "https://api.baseten.co"
-KEY_ENV = "BASETEN_API_KEY"
+# The env var inference actually reads (the paid workspace key). The old free hackathon key
+# BASETEN_API_KEY is dead (401, 1 Nov 2026) and is never used for inference; it is only ever
+# refused (wattnot.cloud.transport.read_key) so a run can never silently stand on it.
+KEY_ENV = "BASETEN_METRICS_KEY"
+DEAD_KEY_ENV = "BASETEN_API_KEY"   # the retired free hackathon key: refused, never read
 # Inference key lookup order. On 29 Oct 2026 BASETEN_METRICS_KEY answered inference (200) and
 # BASETEN_API_KEY returned 401, so the working key goes first and the old one is the fallback.
 # 1 Nov 2026: inference uses ONLY the hackathon key (BASETEN_API_KEY). BASETEN_METRICS_KEY belongs

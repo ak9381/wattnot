@@ -225,15 +225,13 @@ def review_change(change: dict, risk: str, ev: dict, *, reviewer: str = "Akash K
         passed = ev.get(g)
         ck(f"{g} gate passed", None if passed is None else passed is True, {"passed": passed})
     # Only a check that really failed (ok is False) rejects. A skipped check (ok is None: no data)
-    # holds the change for a human, exactly as the Modal runner's verify_change does.
-    failed = [c["check"] for c in checks if c["ok"] is False]
-    skipped = [c["check"] for c in checks if c["ok"] is None]
-    if failed:
-        decision = "rejected"
-    elif skipped:
-        decision = "held"
-    else:
-        decision = "approved"
+    # holds the change for a human, exactly as the Modal runner's verify_change does. The rule is
+    # the one shared implementation in wattnot.approvals.review, so every approval path decides the
+    # same way (the long-run driver's path reaches it through this reviewer).
+    from wattnot.approvals.review import held_decision
+    verdict = held_decision(checks)
+    decision = verdict["decision"]
+    failed, skipped = verdict["failed_checks"], verdict["skipped_checks"]
     why = ("every check passed" if decision == "approved" else
            "failed: " + "; ".join(failed) if failed else
            "held for review, no data for: " + "; ".join(skipped))

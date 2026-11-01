@@ -23,6 +23,41 @@ ROOT = Path(__file__).resolve().parents[1]
 CLASSES = {"own": "own set (proof-v1 math)", "gsm8k300": "GSM8K", "humaneval164": "HumanEval"}
 GATE_PTS = 1.0   # a provider may be at most 1 point below the best pass rate for that class
 
+# Spend caps for combined leg 4 (Baseten + Modal share). The Baseten key is the PAID workspace key
+# BASETEN_METRICS_KEY only (the free BASETEN_API_KEY is dead and never used). The Modal share runs
+# from the $100 Modal credit.
+BASETEN_ROUND_CAP_USD = 8.0      # HARD stop per Baseten round: hosted_ab --cap-usd 8
+META_SOFT_CAP_USD = 100.0        # Meta (grading) spend soft cap: warn and keep going
+META_HARD_CAP_USD = 120.0        # Meta (grading) spend hard cap: stop
+BASETEN_KEY_ENV = "BASETEN_METRICS_KEY"
+
+
+class CapExceeded(RuntimeError):
+    """A recorded provider spend went past its hard cap: the round is a hard stop, not a result."""
+
+
+def caps() -> dict:
+    """The spend caps this leg runs under (written into every plan/decision for the receipt)."""
+    return {"baseten_round_hard_usd": BASETEN_ROUND_CAP_USD,
+            "meta_soft_usd": META_SOFT_CAP_USD, "meta_hard_usd": META_HARD_CAP_USD,
+            "baseten_key_env": BASETEN_KEY_ENV, "modal": "from the $100 Modal credit"}
+
+
+def _baseten_spend(results: dict) -> float:
+    """Total recorded Baseten USD across classes in a same-prompt results file."""
+    row = results.get("baseten") or {}
+    return round(sum(float((c or {}).get("usd") or 0.0) for c in row.values()), 4)
+
+
+def enforce_caps(results: dict) -> dict:
+    """Hard-stop check on a real results file: refuse to report if Baseten went past its round cap."""
+    spent = _baseten_spend(results)
+    if spent > BASETEN_ROUND_CAP_USD:
+        raise CapExceeded(f"Baseten round spent ${spent} > hard cap ${BASETEN_ROUND_CAP_USD}; "
+                          "stopped (raise the cap only with Akash's go)")
+    return {"baseten_usd": spent, "baseten_round_hard_usd": BASETEN_ROUND_CAP_USD,
+            "within_cap": True}
+
 # ESTIMATE inputs for the plan. Sources in each note.
 BASETEN_USD_PER_1K = 1.863593      # MEASURED on 28 Oct (reports/hosted-ab/live-20261028.json)
 MODAL_A100_USD_PER_H = 2.50        # ESTIMATE: list price class for one A100 80GB, check before go
@@ -33,6 +68,7 @@ MODAL_S_PER_ITEM = 25              # ESTIMATE: ~512 tokens at 27 tok/s (MEASURED
 def plan(items_per_class: int, reps: int) -> dict:
     calls = items_per_class * len(CLASSES) * reps
     modal_h = (MODAL_COLD_START_MIN * 60 + calls * MODAL_S_PER_ITEM) / 3600
+    baseten_usd = round(calls / 1000 * BASETEN_USD_PER_1K * 1.5, 2)
     return {
         "spec": "wattnot.multiprovider-plan/1", "label": "ESTIMATE",
         "same_prompts": True, "classes": CLASSES, "items_per_class": items_per_class, "reps": reps,
@@ -40,17 +76,24 @@ def plan(items_per_class: int, reps: int) -> dict:
         "providers": {
             "h100_e2e": {"usd": 0.0, "note": "inside the E2E pass time already booked",
                          "energy": "MEASURED (NVML)"},
-            "baseten": {"usd": round(calls / 1000 * BASETEN_USD_PER_1K * 1.5, 2),
-                        "note": "1.5x the MEASURED $/1k answers for longer prompts; guard: "
-                                "hosted_ab --cap-usd 2", "energy": "ESTIMATE (no GPU counters)"},
+            "baseten": {"usd": baseten_usd,
+                        "note": f"1.5x the MEASURED $/1k answers for longer prompts; guard: "
+                                f"hosted_ab --cap-usd {BASETEN_ROUND_CAP_USD:g} "
+                                f"(hard stop); key {BASETEN_KEY_ENV} only",
+                        "over_round_cap": baseten_usd > BASETEN_ROUND_CAP_USD,
+                        "energy": "ESTIMATE (no GPU counters)"},
             "modal": {"usd": round(modal_h * MODAL_A100_USD_PER_H, 2), "gpu_h": round(modal_h, 2),
                       "note": "from the $100 Modal credit; scale-to-zero after", "energy":
                       "MEASURED (NVML on the Modal A100)"},
         },
+        "caps": caps(),
         "needs_go": True,
         "live_commands_not_run": [
-            "python -m wattnot.spark_open.hosted_ab --live --hosts baseten --cap-usd 2 ...",
+            f"{BASETEN_KEY_ENV}=... python -m wattnot.spark_open.hosted_ab --live --hosts baseten "
+            f"--cap-usd {BASETEN_ROUND_CAP_USD:g} ...   # hard stop at ${BASETEN_ROUND_CAP_USD:g}/round",
             "modal run modal/proof_cpu30.py  (same prompts, our Glimmer, thinking off)",
+            f"# grading (Meta): soft cap ${META_SOFT_CAP_USD:g}, hard cap ${META_HARD_CAP_USD:g} "
+            "(enforced by the Meta spend ledger)",
         ],
     }
 
@@ -113,7 +156,19 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     if a.results:
         res = json.loads(Path(a.results).read_text())
+        try:
+            cap_check = enforce_caps(res["providers"])
+        except CapExceeded as e:
+            # a real round that blew the Baseten hard cap is a hard stop: report it, do not decide
+            doc = {"spec": "wattnot.multiprovider-route/1", "label": res.get("label", "MEASURED"),
+                   "caps": caps(), "hard_stop": str(e), "inputs": res["providers"]}
+            out = Path(a.out)
+            out.mkdir(parents=True, exist_ok=True)
+            (out / "multiprovider.json").write_text(json.dumps(doc, indent=2))
+            print("HARD STOP:", e)
+            return 1
         doc = {"spec": "wattnot.multiprovider-route/1", "label": res.get("label", "MEASURED"),
+               "caps": caps(), "cap_check": cap_check,
                "decision": decide(res["providers"]), "inputs": res["providers"]}
     elif a.replay:
         doc = replay()

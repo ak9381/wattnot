@@ -24,6 +24,7 @@ import inspect
 import json
 import os
 import shlex
+import shutil
 import signal
 import subprocess
 import sys
@@ -43,6 +44,9 @@ LINK_LOST_RCS = (4, 5)     # run2_remote: 4 = link lost mid-setup, 5 = unreachab
 WATCHDOG_MARGIN_H = 8 / 60.0  # ctl.py deletes the VM at deadline minus 8 min: stop before then
 OVERRUN_FACTOR = 1.5       # a block may run up to 1.5x its budget before it is killed
 PULL_TIMEOUT_S = 600.0     # a copy-back must not hang forever (RUN3: a pull wedged 14+ min)
+# Free-disk floor for the results/model dirs. Below this the pass aborts cleanly (results saved,
+# VM deleted) rather than wedging on a full disk. Override with WATTNOT_DISK_FREE_FLOOR_GB.
+DISK_FREE_FLOOR_GB = float(os.environ.get("WATTNOT_DISK_FREE_FLOOR_GB", "15"))
 
 
 # Process groups of control-machine children (run2_remote setup / pull) the driver started. Each
@@ -573,8 +577,13 @@ MAX_HOURS_MIN = {"t2g-serverless": 30, "t2c-prefix": 40, "t2d-combined": 25, "t2
 # cap), 1 rep. ESTIMATE ~16 min a round on Glimmer 30B. The host only RECORDS answers
 # (WATTNOT_MATRIX_RECORD=1, no Meta key on the GPU); Spark grades them off-box after copy-back
 # (post_run_offgpu -> matrix_round --grade), through the guarded client and the $120 cap.
-# Leg 4's Baseten / Modal share is paid outside this booking and is NOT run by the driver; it
-# needs Akash's go (scripts/multiprovider_route.py prints those commands).
+# Leg 4's Baseten / Modal share is paid outside this booking and is NOT run by the driver (the
+# driver never spends on a hosted API): it needs Akash's go. scripts/multiprovider_route.py is the
+# scripted command that carries the caps and prints the exact capped commands: a $8/round HARD stop
+# on Baseten (hosted_ab --cap-usd 8, paid key BASETEN_METRICS_KEY only), the Modal share from the
+# $100 credit, and the Meta grading soft $100 / hard $120 caps (enforced by the Meta spend ledger).
+# `--results <same-prompt file>` re-checks the recorded Baseten spend against the $8 hard cap and
+# refuses to report a decision if it was exceeded.
 MAX_MATRIX_LEGS = (("m3-h100", "Run matrix leg 3: H100", ("r07", "r08", "r09")),
                    ("m4-combined", "Run matrix leg 4: combined, H100 share", ("r10", "r11", "r12")))
 MAX_MATRIX_ROUND_MIN = 16
@@ -832,7 +841,9 @@ class Driver:
                  sleep=time.sleep, clock=time.monotonic, log=print,
                  heartbeat_path: Path | None = None, wallclock: Callable[[], float] = time.time,
                  balance_floor_inr: float = BALANCE_FLOOR_INR, publisher=None,
-                 watchdog_margin_h: float = 0.0) -> None:
+                 watchdog_margin_h: float = 0.0,
+                 disk_floor_gb: float = DISK_FREE_FLOOR_GB,
+                 disk_free_gb: Callable[[], float | None] | None = None) -> None:
         self.out, self.blocks, self.vm, self.label = out, blocks, vm, label
         self.run, self.max_hours, self.balance, self.used = run, max_hours, balance_inr, hours_used
         self.capture, self.include = capture, set(include_optional)
@@ -848,6 +859,10 @@ class Driver:
         # Stop this many hours before the hard cap, matching the off-box watchdog, so the driver
         # tears down cleanly instead of being killed mid-block (ctl.py deletes at deadline - 8 min).
         self.watchdog_margin_h = watchdog_margin_h
+        # Abort the pass cleanly (results saved) if free disk on the results dir falls below this.
+        # disk_free_gb is injectable for tests; the default measures self.out's filesystem.
+        self.disk_floor_gb = disk_floor_gb
+        self._disk_free_gb_fn = disk_free_gb or self._default_disk_free_gb
         self._run_arity = self._arity(run)
         self._launch_wall = wallclock()
         self.state_path = out / "driver_state.json"
@@ -865,6 +880,13 @@ class Driver:
     def _deadline_h(self) -> float:
         """The usable hours: the hard cap minus the watchdog margin."""
         return self.max_hours - self.watchdog_margin_h
+
+    def _default_disk_free_gb(self) -> float | None:
+        """Free GB on the results dir's filesystem, or None if it cannot be read (never fatal)."""
+        try:
+            return shutil.disk_usage(str(self.out)).free / 1e9
+        except OSError:
+            return None
 
     def _invoke(self, b: Block, timeout_s: float) -> int:
         """Run a block, bounded by `timeout_s`. Runners that take a second arg get the budget so
@@ -976,6 +998,15 @@ class Driver:
                 self._teardown(why=f"before {b.id}", balance_low=bal < self.balance_floor,
                                hard_deadline_hit=self.used() >= self._deadline_h())
                 self.state["stopped"] = "money rule"
+                break
+            # periodic free-disk check (before each block): a near-full results/model disk aborts the
+            # pass cleanly with what has been saved, rather than wedging a block on a write that fails
+            free_gb = self._disk_free_gb_fn()
+            if free_gb is not None and self.disk_floor_gb > 0 and free_gb < self.disk_floor_gb:
+                self._note(kind="disk-low", block=b.id, free_gb=round(free_gb, 2),
+                           floor_gb=self.disk_floor_gb)
+                self._teardown(why=f"disk low before {b.id} ({free_gb:.1f} GB free)", disk_low=True)
+                self.state["stopped"] = f"disk low ({free_gb:.1f} GB free < {self.disk_floor_gb:g} GB)"
                 break
             if b.hours > left and b.min_hours is not None and b.min_hours <= left:
                 self._note(kind="trimmed", block=b.id, hours=b.min_hours, left=round(left, 2))
@@ -1275,7 +1306,7 @@ def live_run(out: Path, *, host: str, key: str = "~/.ssh/e2e_h100", model: str =
         with contextlib.suppress(ValueError, OSError):
             prev[s] = signal.signal(s, _on_signal)
     try:
-        return d.go()
+        state = d.go()
     except BaseException:
         # a driver crash, Ctrl-C or a stop signal must not leave a billing VM or an orphaned child:
         # kill child groups, copy what we can, then delete
@@ -1287,6 +1318,16 @@ def live_run(out: Path, *, host: str, key: str = "~/.ssh/e2e_h100", model: str =
         for s, h in prev.items():
             with contextlib.suppress(ValueError, OSError):
                 signal.signal(s, h)
+    # end-of-run no-mock audit: a live pass may not stand on a MOCK-labelled block. Scans the
+    # recorded results/receipts and fails the run (non-zero via main) on any MOCK label.
+    audit = nomock.audit_results(out, model=model)
+    nomock.write_report(audit, out / "nomock-results.json")
+    state["nomock_results"] = audit
+    if not audit["ok"]:
+        state["stopped"] = (f"{state.get('stopped')}; MOCK-labelled blocks: "
+                            f"{len(audit['findings'])}")
+    d._save()
+    return state
 
 
 VM_RECORD = Path("/workspace/hackathon/e2e-glimmer-test/vm.json")   # written by scripts/e2e/ctl.py
@@ -1410,6 +1451,13 @@ def main(argv=None) -> int:
                   f"{v.get('wall_s', '')}s {v.get('why', v.get('teardown', ''))}")
         print("stopped:", st.get("stopped"))
         print("copy verify:", (st.get("copy_verify") or {}).get("status", "?"))
+        nm = st.get("nomock_results") or {"ok": True, "findings": []}
+        print("nomock results audit:", "OK" if nm["ok"]
+              else f"FAILED ({len(nm['findings'])} MOCK-labelled)")
+        if not nm["ok"]:
+            for f in nm["findings"][:10]:
+                print(f"  - {f['where']}: {f['what']}", file=sys.stderr)
+            return 1
         # an early stop (money rule, VM dead) is not a success even if every block that ran passed
         if (st.get("copy_verify") or {}).get("status") == "FLAGGED":
             return 1

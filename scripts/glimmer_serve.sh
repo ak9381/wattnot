@@ -41,7 +41,9 @@ echo "[glimmer] $PREC seqs=$MAX_NUM_SEQS mem_util=$GPU_MEM_UTIL kv_dtype=${KV_CA
 docker run -d --name glimmer --gpus device=0 --ipc=host -p "$PORT:$PORT" \
   -v "$HOME/.cache/huggingface:/root/.cache/huggingface" -e HF_TOKEN \
   "$IMAGE" "$MODEL" --port "$PORT" --served-model-name "$MODEL" \
-  --reasoning-parser muse_glimmer --max-model-len 8192 \
+  --reasoning-parser muse_glimmer \
+  --enable-auto-tool-choice --tool-call-parser muse_glimmer \
+  --max-model-len 8192 \
   --gpu-memory-utilization "$GPU_MEM_UTIL" --max-num-seqs "$MAX_NUM_SEQS" \
   --limit-mm-per-prompt.image "$LIMIT_MM_IMAGE" "${EXTRA[@]}" > /dev/null
 docker logs -f glimmer > "$LOG/vllm-glimmer-$PREC.log" 2>&1 &

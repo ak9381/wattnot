@@ -16,6 +16,15 @@ def test_transport_refuses_hackathon_key_alone():
         LiveTransport(env={"BASETEN_API_KEY": "hack"})
 
 
+def test_dead_key_set_without_paid_fails_with_clear_message():
+    from wattnot.cloud.transport import read_key
+    with pytest.raises(MissingKey) as e:
+        read_key({"BASETEN_API_KEY": "hack"})
+    msg = str(e.value)
+    assert "BASETEN_METRICS_KEY" in msg and "BASETEN_API_KEY" in msg
+    assert "hack" not in msg  # never echo the key value
+
+
 def test_model_id():
     assert MODEL == "meta-models/muse-spark-open"
 
