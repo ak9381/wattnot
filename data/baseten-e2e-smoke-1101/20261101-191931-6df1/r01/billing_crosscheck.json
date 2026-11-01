@@ -1,0 +1,13 @@
+{"label": "MEASURED",
+ "read_at_ist": "2026-11-02 01:05",
+ "token_price_cost_usd": 0.30422,
+ "token_price_method": "tokens x Baseten list price, all 60 Baseten arm calls (30+30) plus eye/hearing calls, per runner spend",
+ "billing_day_subtotal_before_usd": 3.0419864,
+ "billing_day_subtotal_after_usd": 3.3462061,
+ "billed_cost_usd": 0.3042197,
+ "billed_method": "difference in Baseten /v1/billing/model_apis day subtotal (2026-11-01 UTC), read before launch and ~11 min after the run ended; no other use of the workspace in the window",
+ "diff_pct": 0.0,
+ "usage_window_utc": ["2026-11-01T19:19:00Z", "2026-11-01T19:26:00Z"],
+ "usage_match": true,
+ "note": "billing read 2 min after the run showed only 0.2841 (lag); settled value matches token price to 0.0001 USD",
+ "meta_usd": {"value": 0.055103, "label": "MEASURED", "source": "Meta spend ledger"}}

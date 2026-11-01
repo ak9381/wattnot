@@ -1,0 +1,1524 @@
+{
+ "round": "r01",
+ "leg": "baseten",
+ "status": "done",
+ "label": "MEASURED",
+ "model": "meta-models/muse-spark-open",
+ "where": "Baseten Model API (Muse Spark Open)",
+ "started_utc": "2026-11-01T19:19:31.882936+00:00",
+ "ended_utc": "2026-11-01T19:24:59.392775+00:00",
+ "stop_reason": null,
+ "smoke": true,
+ "note": "accuracy, tokens, USD and latency MEASURED; energy ESTIMATE from tokens (hosted API, no GPU meter); deterministic checks decide, Muse Spark grades beside them",
+ "levers": {
+  "without_wattnot": "effort medium for every request",
+  "with_wattnot": "every hosted WattNot feature ON (see features); effort low first, step up to medium on a failed check"
+ },
+ "results": {
+  "accuracy_without": 0.9,
+  "accuracy_with": 1.0,
+  "j_per_correct_without": 966.97,
+  "j_per_correct_with": 327.46,
+  "energy_saved_pct": {
+   "value": 62.37,
+   "label": "ESTIMATE"
+  },
+  "usd_saved_pct": {
+   "value": 67.48,
+   "label": "MEASURED"
+  },
+  "per_arm": {
+   "without_wattnot": {
+    "answers": 30,
+    "correct": 27,
+    "accuracy": 0.9,
+    "per_set": {
+     "ours": {
+      "correct": 8,
+      "answers": 10,
+      "accuracy": 0.8
+     },
+     "gsm8k": {
+      "correct": 9,
+      "answers": 10,
+      "accuracy": 0.9
+     },
+     "humaneval": {
+      "correct": 10,
+      "answers": 10,
+      "accuracy": 1.0
+     }
+    },
+    "calls": 30,
+    "errors": 0,
+    "tokens": {
+     "prompt": 6529,
+     "cached": 3200,
+     "completion": 28066,
+     "label": "MEASURED"
+    },
+    "usd": {
+     "value": 0.123922,
+     "label": "MEASURED",
+     "method": "tokens x Baseten list price"
+    },
+    "energy_wh": {
+     "value": 7.2522,
+     "low": 1.3186,
+     "high": 13.1859,
+     "label": "ESTIMATE",
+     "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+    },
+    "j_per_correct": {
+     "value": 966.97,
+     "label": "ESTIMATE"
+    },
+    "item_latency_s": {
+     "p50": 4.2443,
+     "p99": 14.428,
+     "label": "MEASURED"
+    },
+    "call_latency_s": {
+     "p50": 3.9945,
+     "p99": 14.4271,
+     "mean": 4.9926,
+     "label": "MEASURED"
+    },
+    "stepped_up": 0
+   },
+   "with_wattnot": {
+    "answers": 30,
+    "correct": 30,
+    "accuracy": 1.0,
+    "per_set": {
+     "ours": {
+      "correct": 10,
+      "answers": 10,
+      "accuracy": 1.0
+     },
+     "gsm8k": {
+      "correct": 10,
+      "answers": 10,
+      "accuracy": 1.0
+     },
+     "humaneval": {
+      "correct": 10,
+      "answers": 10,
+      "accuracy": 1.0
+     }
+    },
+    "calls": 30,
+    "errors": 0,
+    "tokens": {
+     "prompt": 6529,
+     "cached": 3072,
+     "completion": 8356,
+     "label": "MEASURED"
+    },
+    "usd": {
+     "value": 0.040295,
+     "label": "MEASURED",
+     "method": "tokens x Baseten list price"
+    },
+    "energy_wh": {
+     "value": 2.7288,
+     "low": 0.4961,
+     "high": 4.9615,
+     "label": "ESTIMATE",
+     "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+    },
+    "j_per_correct": {
+     "value": 327.46,
+     "label": "ESTIMATE"
+    },
+    "item_latency_s": {
+     "p50": 2.84,
+     "p99": 7.3493,
+     "label": "MEASURED"
+    },
+    "call_latency_s": {
+     "p50": 2.8159,
+     "p99": 7.3285,
+     "mean": 3.184,
+     "label": "MEASURED"
+    },
+    "stepped_up": 0
+   }
+  }
+ },
+ "spend": {
+  "baseten_usd": {
+   "value": 0.30422,
+   "label": "MEASURED",
+   "method": "tokens x list price (not yet checked against the invoice)"
+  },
+  "meta_usd": {
+   "value": 0.055103,
+   "label": "MEASURED",
+   "source": "Meta spend ledger"
+  },
+  "meta_ledger_after_usd": 27.4445
+ },
+ "spark_summary": {
+  "label": "LIVE",
+  "answers": 60,
+  "spark_graded": 58,
+  "agreement": 1.0,
+  "disagreements": 0,
+  "stopped": null
+ },
+ "answers": [
+  {
+   "id": "easy-00",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "80 + 31 equals 111 as given.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.4175
+  },
+  {
+   "id": "easy-01",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "40 times 9 equals 360.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 4.2443
+  },
+  {
+   "id": "easy-02",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "224/4 equals 56.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.3469
+  },
+  {
+   "id": "easy-03",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "No answer was provided instead of 420.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 13.0318
+  },
+  {
+   "id": "easy-04",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "No number provided, expected 167.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 12.2295
+  },
+  {
+   "id": "easy-05",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "66+59 equals 125 as answered.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 7.2882
+  },
+  {
+   "id": "easy-06",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "23 times 7 equals 161 as given.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 5.7027
+  },
+  {
+   "id": "easy-07",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "184 divided by 4 equals 46.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.8732
+  },
+  {
+   "id": "easy-08",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Answer 300 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.2933
+  },
+  {
+   "id": "easy-09",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "166 minus 58 equals 108.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.255
+  },
+  {
+   "id": "Janet\u2019s ducks lay 16 eggs per day. She e",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation is correct and final line matches required format.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.1525
+  },
+  {
+   "id": "A robe takes 2 bolts of blue fiber and h",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly calculates 2 + 1 = 3 bolts total.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.4218
+  },
+  {
+   "id": "Josh decides to try flipping a house.  H",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": null,
+   "spark_reason": "unparseable Spark reply",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 5.3827
+  },
+  {
+   "id": "James decides to run 3 sprints 3 times a",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "No answer was provided to grade.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 14.428
+  },
+  {
+   "id": "Every day, Wendi feeds each of her chick",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Final answer 20 matches correct calculation.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.9951
+  },
+  {
+   "id": "Kylar went to the store to buy glasses f",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation of 8 pairs at $8 each totaling $64 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 4.5701
+  },
+  {
+   "id": "Toulouse has twice as many sheep as Char",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Total 20+80+160=260 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.3995
+  },
+  {
+   "id": "Carla is downloading a 200 GB file. Norm",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Total time 40+20+100=160 minutes is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 5.6225
+  },
+  {
+   "id": "John drives for 3 hours at a speed of 60",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 45 miles remaining.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 5.1727
+  },
+  {
+   "id": "Eliza's rate per hour for the first 40 h",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Regular and overtime pay calculated correctly totaling 460.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.4816
+  },
+  {
+   "id": "HumanEval/0",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Sorted adjacent difference check correctly detects close pairs.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 5.8747
+  },
+  {
+   "id": "HumanEval/1",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly splits balanced groups ignoring spaces.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 5.6853
+  },
+  {
+   "id": "HumanEval/2",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Returns fractional part correctly via number minus int.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 4.9419
+  },
+  {
+   "id": "HumanEval/3",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly tracks balance and returns True when below zero.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 5.2484
+  },
+  {
+   "id": "HumanEval/4",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Computes mean then average absolute deviation correctly, matching example.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 4.9279
+  },
+  {
+   "id": "HumanEval/5",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly inserts delimiter between elements and handles empty list.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.9011
+  },
+  {
+   "id": "HumanEval/6",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly computes max nesting depth per group.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 4.5114
+  },
+  {
+   "id": "HumanEval/7",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly filters strings containing substring.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.9617
+  },
+  {
+   "id": "HumanEval/8",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly computes sum and product with proper empty-case values.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 4.1887
+  },
+  {
+   "id": "HumanEval/9",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Produces correct rolling maximum for example and edge cases.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.4702
+  },
+  {
+   "id": "easy-00",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "80+31 equals 111.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 4.2088
+  },
+  {
+   "id": "easy-01",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "360 is the correct product of 40 and 9.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.8216
+  },
+  {
+   "id": "easy-02",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "224 divided by 4 equals 56.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.0352
+  },
+  {
+   "id": "easy-03",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "7 hours times 60 equals 420 minutes.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.1687
+  },
+  {
+   "id": "easy-04",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "199 minus 32 equals 167.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.6979
+  },
+  {
+   "id": "easy-05",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "66 + 59 equals 125 as answered.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.4863
+  },
+  {
+   "id": "easy-06",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "23 times 7 equals 161.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.7225
+  },
+  {
+   "id": "easy-07",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "184 divided by 4 equals 46.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.6017
+  },
+  {
+   "id": "easy-08",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "300 is the correct number of minutes in 5 hours.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.4348
+  },
+  {
+   "id": "easy-09",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "166-58 equals 108.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.5929
+  },
+  {
+   "id": "Janet\u2019s ducks lay 16 eggs per day. She e",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 16-3-4=9 eggs at $2 yields $18 correctly.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.9714
+  },
+  {
+   "id": "A robe takes 2 bolts of blue fiber and h",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly computes 2 blue plus 1 white equals 3 total.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.225
+  },
+  {
+   "id": "Josh decides to try flipping a house.  H",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": null,
+   "spark_reason": "unparseable Spark reply",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 5.1958
+  },
+  {
+   "id": "James decides to run 3 sprints 3 times a",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations yield 540 meters correctly.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.1271
+  },
+  {
+   "id": "Every day, Wendi feeds each of her chick",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly finds 60 total minus 40 given equals 20.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 5.0889
+  },
+  {
+   "id": "Kylar went to the store to buy glasses f",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 8*5+8*3=64 is correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.2496
+  },
+  {
+   "id": "Toulouse has twice as many sheep as Char",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations and total 260 are correct with required format.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.3818
+  },
+  {
+   "id": "Carla is downloading a 200 GB file. Norm",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "The time calculation 40+20+100=160 minutes is correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 4.3655
+  },
+  {
+   "id": "John drives for 3 hours at a speed of 60",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations for outward 180 miles and return 135 miles leaving 45 miles are correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.3319
+  },
+  {
+   "id": "Eliza's rate per hour for the first 40 h",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation of 400 plus 60 equals 460 is correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.0782
+  },
+  {
+   "id": "HumanEval/0",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Solution correctly checks sorted adjacent differences against threshold.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 6.0821
+  },
+  {
+   "id": "HumanEval/1",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implementation correctly splits balanced groups ignoring spaces.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.8482
+  },
+  {
+   "id": "HumanEval/2",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Returns fractional part correctly for positive floats.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.8025
+  },
+  {
+   "id": "HumanEval/3",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Balance tracking correctly detects below-zero.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.7583
+  },
+  {
+   "id": "HumanEval/4",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Computes mean and average absolute deviation correctly.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 7.3493
+  },
+  {
+   "id": "HumanEval/5",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implementation correctly inserts delimiter between elements and handles empty list.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.4015
+  },
+  {
+   "id": "HumanEval/6",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly computes max nesting depth per group.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 7.0676
+  },
+  {
+   "id": "HumanEval/7",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Returns correct filtered list using substring check.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.8558
+  },
+  {
+   "id": "HumanEval/8",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly computes sum and product including empty-list edge cases.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.84
+  },
+  {
+   "id": "HumanEval/9",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly computes rolling maximum for all cases.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.4847
+  }
+ ],
+ "raw_dir": "out/launch/20261101-191931-6df1/r01",
+ "refusal_watch": [
+  {
+   "after": "without_wattnot",
+   "at": "2026-11-01T19:22:14.177188+00:00",
+   "endpoint": "/v1/billing/model_apis",
+   "status": 200,
+   "refusal": false,
+   "words": [],
+   "day": "2026-11-01",
+   "day_subtotal_usd": 3.0419864,
+   "label": "MEASURED"
+  },
+  {
+   "after": "with_wattnot",
+   "at": "2026-11-01T19:24:40.843174+00:00",
+   "endpoint": "/v1/billing/model_apis",
+   "status": 200,
+   "refusal": false,
+   "words": [],
+   "day": "2026-11-01",
+   "day_subtotal_usd": 3.16590815,
+   "label": "MEASURED"
+  }
+ ],
+ "provider_usage": {
+  "status": "ok",
+  "label": "MEASURED",
+  "source": "Baseten GET /v1/model_apis/usage + /v1/billing/model_apis",
+  "window_utc": [
+   "2026-11-01T19:19:00Z",
+   "2026-11-01T19:26:00Z"
+  ],
+  "baseten": {
+   "requests": 60,
+   "input_tokens": 13058,
+   "cached_input_tokens": 6272,
+   "output_tokens": 36422
+  },
+  "billing": {
+   "date_utc": "2026-11-01",
+   "subtotal_usd": 3.2062032,
+   "note": "whole-day workspace subtotal, includes any other use that day"
+  },
+  "crosscheck": {
+   "requests": {
+    "baseten": 60,
+    "ours": 60,
+    "diff_pct": 0.0
+   },
+   "input_tokens": {
+    "baseten": 13058,
+    "ours": 13058,
+    "diff_pct": 0.0
+   },
+   "cached_input_tokens": {
+    "baseten": 6272,
+    "ours": 6272,
+    "diff_pct": 0.0
+   },
+   "output_tokens": {
+    "baseten": 36422,
+    "ours": 36422,
+    "diff_pct": 0.0
+   }
+  },
+  "worst_diff_pct": 0.0,
+  "match": true,
+  "note": "window is workspace-wide for this model: other use of the same key in the window shows up here; energy is not exposed for Model APIs and stays ESTIMATE"
+ },
+ "features": [
+  {
+   "id": "effort_routing",
+   "name": "Reasoning-effort + cheapest-first routing (low, step up on a failed check)",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "thinking_budget",
+   "name": "Thinking-budget enforcer (max_tokens per effort)",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "router",
+   "name": "Backend/effort router",
+   "status": "ON",
+   "reason": "effort leg only; one hosted backend on this stage"
+  },
+  {
+   "id": "context_saver",
+   "name": "Agent saver: tool-output dedup + memory compression",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "waste_guard",
+   "name": "Agent-waste proxy (repeat/no-op/cycle/overspend detectors)",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "code_mode",
+   "name": "Code Mode with locked sandbox + network boundary",
+   "status": "ON",
+   "reason": "runs on the box over recorded traces"
+  },
+  {
+   "id": "prefix_cache_provider",
+   "name": "Prefix caching (provider side, reported cached tokens)",
+   "status": "ON",
+   "reason": "MEASURED cached_tokens from the API; we cannot control the cache"
+  },
+  {
+   "id": "concurrency_batching",
+   "name": "Concurrency batching (client side)",
+   "status": "ON",
+   "reason": "client concurrency only"
+  },
+  {
+   "id": "gates",
+   "name": "Noise gate, fixed answer gate, LLM judge, reasoning-leak strip",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "spark_grades",
+   "name": "Muse Spark grades every answer",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "joule_slo",
+   "name": "Joule-SLO + user p99 limit",
+   "status": "ON",
+   "reason": "energy ESTIMATE from tokens"
+  },
+  {
+   "id": "eye_check",
+   "name": "Eye check: vision gate on the SYNTHETIC Muse Image set",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "sam_hotspot",
+   "name": "SAM 3.1 hotspot audit",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "hearing_check",
+   "name": "Hearing check: Muse Voice Transcribe on spoken answers",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "wonder_planner",
+   "name": "Muse Wonder planner + Wonderchart",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "spark_trace",
+   "name": "Spark 4-call trace (probe, proposal, gate, receipt)",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "approvals",
+   "name": "Approve-before-apply with risk classifier, undo",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "musecode_pr",
+   "name": "Muse Code PR flow (ak9381/wattnot-demo-deploy only)",
+   "status": "ON",
+   "reason": "patch always built; PR opened only with --open-pr at stage time"
+  },
+  {
+   "id": "receipt",
+   "name": "Signed receipt + SCI carbon/water + joules per good answer",
+   "status": "ON",
+   "reason": "local signing key"
+  },
+  {
+   "id": "eu_report",
+   "name": "EU report",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "label_lint",
+   "name": "Label-honesty lint",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "spend_guard",
+   "name": "Spend guards (Baseten hard cap, Meta soft cap, ledger)",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "power_caps",
+   "name": "Power-cap sweep + J/correct gate",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "fp8",
+   "name": "FP8 quantization keep/reject gate",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "kv_batch",
+   "name": "Batch-size + KV-cache sweep",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "vllm_prefix",
+   "name": "vLLM prefix-cache control",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "clock_sidecar",
+   "name": "Phase-aware clock sidecar, marginal-joule knee",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "moe",
+   "name": "MoE top-k / per-expert pinning",
+   "status": "OFF",
+   "reason": "needs Spark Open self-served (8x B200)"
+  },
+  {
+   "id": "measured_energy",
+   "name": "MEASURED GPU energy (NVML)",
+   "status": "OFF",
+   "reason": "hosted API exposes no power meter; energy is ESTIMATE"
+  },
+  {
+   "id": "flex",
+   "name": "Flex grid-event load shedding",
+   "status": "OFF",
+   "reason": "simulator only"
+  },
+  {
+   "id": "rekor",
+   "name": "Rekor publish",
+   "status": "OFF",
+   "reason": "only after the long run, with Akash's yes"
+  },
+  {
+   "id": "own_gpu_serving",
+   "name": "Own-GPU vLLM serving + E2E rig",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  }
+ ],
+ "levers_stats": {
+  "calls": 30,
+  "tokens_saved_est": 0,
+  "guard_stops": 0,
+  "guard_flags": 0,
+  "tool_calling": true,
+  "tools_skipped": 0,
+  "label": "ESTIMATE"
+ },
+ "feature_stages": {
+  "mode": "live",
+  "label": "MEASURED",
+  "eye_check": {
+   "status": "ok",
+   "passed": false,
+   "reason": "vision misread 1/10 image(s): gauge-reading",
+   "arms": {
+    "with_wattnot": {
+     "passed": false,
+     "reason": "vision misread 1/10 image(s): gauge-reading",
+     "effort": "low+step-up (WattNot)"
+    },
+    "without_wattnot": {
+     "passed": false,
+     "reason": "vision misread 1/10 image(s): gauge-reading",
+     "effort": "medium (plain)"
+    }
+   },
+   "route": "baseten:meta-models/muse-spark-open",
+   "live_label": "LIVE"
+  },
+  "hearing_check": {
+   "status": "ok",
+   "passed": true,
+   "reason": "all 20 spoken answers correct",
+   "transcribe_usd_est": 0.002588,
+   "arms": {
+    "with_wattnot": {
+     "passed": true,
+     "reason": "all 20 spoken answers correct",
+     "transcribe_usd_est": 0.002588,
+     "effort": "low+step-up (WattNot)"
+    },
+    "without_wattnot": {
+     "passed": true,
+     "reason": "all 20 spoken answers correct",
+     "transcribe_usd_est": 0.002588,
+     "effort": "medium (plain)"
+    }
+   },
+   "route": "meta-api:muse-voice-transcribe-1.0 + baseten:meta-models/muse-spark-open",
+   "live_label": "LIVE"
+  },
+  "sam_hotspot": {
+   "status": "ok",
+   "argv": [
+    "--out",
+    "/tmp/wn-merge/out/launch/20261101-191931-6df1/r01/features/sam",
+    "--live"
+   ],
+   "route": "meta-api:sam-3.1",
+   "live_label": "LIVE",
+   "without_wattnot": "not applicable (WattNot feature)"
+  },
+  "wonder_chart": {
+   "status": "ok",
+   "argv": [
+    "--sweep",
+    "/tmp/wn-merge/out/launch/20261101-191931-6df1/r01/features/trials.json",
+    "--out",
+    "/tmp/wn-merge/out/launch/20261101-191931-6df1/r01/features/wonder",
+    "--live"
+   ],
+   "route": "meta-api:muse-wonder-1.0",
+   "live_label": "LIVE",
+   "without_wattnot": "not applicable (WattNot feature)"
+  },
+  "spark_trace": {
+   "status": "ok",
+   "steps": 4,
+   "ok": 2,
+   "route": "meta-api:muse-spark-1.3",
+   "live_label": "LIVE"
+  },
+  "approvals": {
+   "status": "ok",
+   "held_change": {
+    "kind": "reasoning_effort",
+    "change": {
+     "reasoning_effort": "low",
+     "step_up": "medium"
+    }
+   },
+   "risk": "high",
+   "reasons": [
+    "unknown kind 'reasoning_effort'; a person decides"
+   ],
+   "evidence": {
+    "accuracy_without": 0.9,
+    "accuracy_with": 1.0,
+    "p99_without": 14.428,
+    "p99_with": 7.3493,
+    "spark_agreement": 1.0,
+    "j_per_correct_without": 966.97,
+    "j_per_correct_with": 327.46,
+    "eye_check": false,
+    "hearing_check": true
+   },
+   "review": {
+    "who": "Akash K Raju (delegated reviewer)",
+    "what": {
+     "reasoning_effort": "low",
+     "step_up": "medium"
+    },
+    "risk": "high",
+    "checks": [
+     {
+      "check": "accuracy (with >= without - 1 pt)",
+      "ok": true,
+      "detail": {
+       "without": 0.9,
+       "with": 1.0,
+       "label": "MEASURED"
+      }
+     },
+     {
+      "check": "p99 limit (with <= 1.10 x without)",
+      "ok": true,
+      "detail": {
+       "without_s": 14.428,
+       "with_s": 7.3493,
+       "label": "MEASURED"
+      }
+     },
+     {
+      "check": "Spark agreement >= 0.90",
+      "ok": true,
+      "detail": {
+       "agreement": 1.0
+      }
+     },
+     {
+      "check": "joule-SLO (J/correct with <= without)",
+      "ok": true,
+      "detail": {
+       "without": 966.97,
+       "with": 327.46,
+       "label": "ESTIMATE"
+      }
+     },
+     {
+      "check": "eye_check gate passed",
+      "ok": false,
+      "detail": {
+       "passed": false
+      }
+     },
+     {
+      "check": "hearing_check gate passed",
+      "ok": true,
+      "detail": {
+       "passed": true
+      }
+     }
+    ],
+    "decision": "rejected",
+    "failed_checks": [
+     "eye_check gate passed"
+    ],
+    "skipped_checks": [],
+    "why": "failed: eye_check gate passed",
+    "started_utc": "2026-11-01T19:30:21.656491+00:00",
+    "decided_utc": "2026-11-01T19:30:21.656523+00:00",
+    "auto_approve": false
+   }
+  },
+  "musecode_pr": {
+   "status": "skipped",
+   "why": "one PR per stage, opened after the last round"
+  },
+  "code_mode": {
+   "status": "ok",
+   "runs": 144,
+   "label": "ESTIMATE"
+  },
+  "receipt": {
+   "status": "ok",
+   "path": "/tmp/wn-merge/out/launch/20261101-191931-6df1/r01/features/receipt.json",
+   "signer": "offline:cc61d7cb91526c69",
+   "bundle": "/tmp/wn-merge/out/launch/20261101-191931-6df1/r01/features/receipt.sigstore.json"
+  },
+  "eu_report": {
+   "status": "ok",
+   "wording_issues": []
+  },
+  "label_lint": {
+   "status": "ok",
+   "issues": []
+  },
+  "no_mocks": true,
+  "feature_audit": {
+   "eye_check": {
+    "route": "baseten:meta-models/muse-spark-open",
+    "label": "LIVE",
+    "status": "ok",
+    "fell_back": null,
+    "without_wattnot": "compared in both arms"
+   },
+   "hearing_check": {
+    "route": "meta-api:muse-voice-transcribe-1.0 + baseten:meta-models/muse-spark-open",
+    "label": "LIVE",
+    "status": "ok",
+    "fell_back": null,
+    "without_wattnot": "compared in both arms"
+   },
+   "sam_hotspot": {
+    "route": "meta-api:sam-3.1",
+    "label": "LIVE",
+    "status": "ok",
+    "fell_back": null,
+    "without_wattnot": "not applicable (WattNot feature)"
+   },
+   "wonder_chart": {
+    "route": "meta-api:muse-wonder-1.0",
+    "label": "LIVE",
+    "status": "ok",
+    "fell_back": null,
+    "without_wattnot": "not applicable (WattNot feature)"
+   },
+   "spark_trace": {
+    "route": "meta-api:muse-spark-1.3",
+    "label": "LIVE",
+    "status": "ok",
+    "fell_back": null,
+    "without_wattnot": "compared in both arms"
+   }
+  },
+  "meta_guard": {
+   "ok": true,
+   "why": "within caps",
+   "ledger_total_usd": 27.4959,
+   "worst_meta_usd": 0.228,
+   "soft_cap_usd": 100.0,
+   "meta_cap_usd": 1.0,
+   "basis": "SAM 6x$0.0025/img + Wonder 1 call + Spark trace 4 calls + voice 40 clips@$0.0005 + Spark grades 60x$0.0021575",
+   "label": "ESTIMATE"
+  }
+ }
+}

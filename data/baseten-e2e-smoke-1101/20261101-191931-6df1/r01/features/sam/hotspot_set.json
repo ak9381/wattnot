@@ -1,0 +1,181 @@
+{
+  "spec": "wattnot.hotspotset/1",
+  "mode": "live",
+  "detector": "SAM 3.1",
+  "label": "SYNTHETIC",
+  "passed": true,
+  "reason": "SAM 3.1 found all 6 SYNTHETIC hotspots",
+  "run": {
+    "detected": 6,
+    "total": 6,
+    "budget_s": null,
+    "budget_hit": false,
+    "elapsed_s": 9.90035
+  },
+  "detail": {
+    "checked": 6,
+    "passed_count": 6,
+    "missed": [],
+    "scenes": [
+      {
+        "id": "blocked-fan-0",
+        "fault": "blocked_fan",
+        "slot": 0,
+        "expected_bbox": [
+          190,
+          110,
+          430,
+          250
+        ],
+        "got_bbox": [
+          190,
+          110,
+          430,
+          250
+        ],
+        "iou": 1.0,
+        "ok": true,
+        "mask_label": "SIMULATED",
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.5,
+          "label": "ESTIMATE"
+        }
+      },
+      {
+        "id": "blocked-fan-3",
+        "fault": "blocked_fan",
+        "slot": 3,
+        "expected_bbox": [
+          190,
+          620,
+          430,
+          760
+        ],
+        "got_bbox": [
+          190,
+          620,
+          430,
+          760
+        ],
+        "iou": 1.0,
+        "ok": true,
+        "mask_label": "SIMULATED",
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.5,
+          "label": "ESTIMATE"
+        }
+      },
+      {
+        "id": "clogged-heatsink-1",
+        "fault": "clogged_heatsink",
+        "slot": 1,
+        "expected_bbox": [
+          190,
+          280,
+          430,
+          420
+        ],
+        "got_bbox": [
+          190,
+          280,
+          430,
+          420
+        ],
+        "iou": 1.0,
+        "ok": true,
+        "mask_label": "SIMULATED",
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.5,
+          "label": "ESTIMATE"
+        }
+      },
+      {
+        "id": "clogged-heatsink-2",
+        "fault": "clogged_heatsink",
+        "slot": 2,
+        "expected_bbox": [
+          190,
+          450,
+          430,
+          590
+        ],
+        "got_bbox": [
+          190,
+          450,
+          430,
+          590
+        ],
+        "iou": 1.0,
+        "ok": true,
+        "mask_label": "SIMULATED",
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.5,
+          "label": "ESTIMATE"
+        }
+      },
+      {
+        "id": "cable-airflow-2",
+        "fault": "cable_airflow",
+        "slot": 2,
+        "expected_bbox": [
+          190,
+          450,
+          430,
+          590
+        ],
+        "got_bbox": [
+          190,
+          450,
+          430,
+          590
+        ],
+        "iou": 1.0,
+        "ok": true,
+        "mask_label": "SIMULATED",
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.5,
+          "label": "ESTIMATE"
+        }
+      },
+      {
+        "id": "cable-airflow-0",
+        "fault": "cable_airflow",
+        "slot": 0,
+        "expected_bbox": [
+          190,
+          110,
+          430,
+          250
+        ],
+        "got_bbox": [
+          190,
+          110,
+          430,
+          250
+        ],
+        "iou": 1.0,
+        "ok": true,
+        "mask_label": "SIMULATED",
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.5,
+          "label": "ESTIMATE"
+        }
+      }
+    ],
+    "faults": [
+      "blocked_fan",
+      "cable_airflow",
+      "clogged_heatsink"
+    ],
+    "label": "SYNTHETIC",
+    "iou_pass": 0.5,
+    "est_wh_per_image": 0.5,
+    "blocks_musecode_pr": false
+  }
+}

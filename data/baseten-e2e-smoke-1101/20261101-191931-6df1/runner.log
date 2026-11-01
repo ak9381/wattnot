@@ -1,0 +1,12 @@
+[guard] Meta worst $0.2280 (SAM 6x$0.0025/img + Wonder 1 call + Spark trace 4 calls + voice 40 clips@$0.0005 + Spark grades 60x$0.0021575) -> within caps
+[r01] 30 items x 2 arms, Meta ledger $27.3894 (MEASURED)
+[r01] without_wattnot 20/30 errors=0 baseten=$0.0931
+[r01] without_wattnot done in 41s: 27/30 correct
+[watch] billing after without_wattnot: {'at': '2026-11-01T19:22:14.177188+00:00', 'endpoint': '/v1/billing/model_apis', 'status': 200, 'refusal': False, 'words': [], 'day': '2026-11-01', 'day_subtotal_usd': 3.0419864, 'label': 'MEASURED'}
+[r01] with_wattnot 20/30 errors=0 baseten=$0.1477
+[r01] with_wattnot done in 25s: 30/30 correct
+[watch] billing after with_wattnot: {'at': '2026-11-01T19:24:40.843174+00:00', 'endpoint': '/v1/billing/model_apis', 'status': 200, 'refusal': False, 'words': [], 'day': '2026-11-01', 'day_subtotal_usd': 3.16590815, 'label': 'MEASURED'}
+[usage] {"status": "ok", "worst_diff_pct": 0.0, "match": true}
+hotspot set [live] (SYNTHETIC tests): SAM 3.1 found all 6 SYNTHETIC hotspots
+wonder chart [live · wonder]: next = 300W/locked-mid — No measured settings exist yet, so test the lowest-power locked-mid profile most likely to minimize joules per correct answer.
+{"round": "r01", "status": "done", "acc": [0.9, 1.0], "wh": [7.2522, 2.7288], "p50": [4.2443, 2.84], "baseten_usd": 0.3042, "meta_usd": 0.0551, "agree": 1.0, "errors": 0, "stop": null}
