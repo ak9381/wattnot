@@ -98,10 +98,10 @@ def plan(items_per_class: int, reps: int) -> dict:
     }
 
 
-def decide(results: dict) -> dict:
+def decide(results: dict, classes: dict | None = None) -> dict:
     """results[provider][class] = {correct, n, j (or None), usd}. Pick per class."""
     out = {}
-    for cls in CLASSES:
+    for cls in (classes or CLASSES):
         rows = {p: r[cls] for p, r in results.items() if cls in r and r[cls].get("n")}
         if not rows:
             continue

@@ -90,12 +90,15 @@ def test_transcribe_uses_header_sample_rate_and_duration(tmp_path, monkeypatch):
         captured["data"] = req.data
         return _Resp()
 
-    class _FakeLedger:
-        def reserve(self, body, purpose):
-            return "eid", True
+    charged = []
 
-        def settle(self, eid, usage, **k):
-            return None
+    class _FakeLedger:
+        def charge_usd(self, model, purpose, usd, note=""):
+            charged.append((model, purpose, usd))
+            return "eid"
+
+        def refund(self, eid, note=""):
+            charged.append(("refund", eid, 0))
 
     monkeypatch.setattr(live.urllib.request, "urlopen", fake_urlopen)
     monkeypatch.setattr("wattnot.meta.client.load_key", lambda: "k")
@@ -107,3 +110,5 @@ def test_transcribe_uses_header_sample_rate_and_duration(tmp_path, monkeypatch):
     assert b'"sampleRateHertz": 24000' in captured["data"]
     # duration (hence cost) comes from frames / sample_rate = 2.0 s, not (len-44)/32000
     assert usd == pytest.approx(round(2.0 / 3600 * 0.18, 6))
+    # the ledger gets the real (non-zero) cost before the call, not a 0-token entry
+    assert charged == [("muse-voice-transcribe-1.0", "voice:transcribe-e2e", usd)] and usd > 0

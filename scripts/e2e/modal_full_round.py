@@ -162,7 +162,9 @@ def build_receipt_for(rdir: Path, round_id: str, inner: dict, fake: bool) -> Pat
         "subject": {"model": "meta-models/Muse-Glimmer-30B",
                     "host": {"provider": "modal", "gpu": inner["gpu"], "driver": "recorded"},
                     "mode": "container",
-                    "workload": {"name": "ours92+gsm8k60+humaneval40", "version": "1",
+                    "workload": {"name": "+".join({"ours": "ours92", "gsm8k": "gsm8k60", "humaneval": "humaneval40"}[x]
+                                                  for x in inner.get("sets") or ("ours", "gsm8k", "humaneval")),
+                                 "version": "1",
                                  "n_requests": wo["answers"]}},
         "baseline": {"params": {"power_cap_w": None, **S["without_server"]},
                      "wh_samples": wo["wh_per_item_samples"]["values"],
@@ -300,6 +302,8 @@ def main(argv=None) -> int:
     ap.add_argument("--round", required=True)
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--skip", default="")
+    ap.add_argument("--sets", nargs="+", default=[],
+                    help="datasets (ours gsm8k humaneval); empty = all three. Public round: --sets gsm8k humaneval")
     ap.add_argument("--fake", action="store_true")
     ap.add_argument("--no-spark", action="store_true")
     ap.add_argument("--live-meta", action="store_true", help="Wonder/SAM/Spark trace live (paid, cents)")
@@ -312,13 +316,15 @@ def main(argv=None) -> int:
     if rdir.exists() and not a.fake:
         print(f"[stop] {rdir} exists; never overwriting a recorded round")
         return 2
-    stage = {"limit": a.limit}
+    stage = {"limit": a.limit, "sets": a.sets or ["ours", "gsm8k", "humaneval"]}
     recovered, state = False, None
-    a.events = (a.events or DATA / f"{tag}.events.jsonl").resolve()
+    # a --fake run keeps its events under data/.../fake/ so it can never sit where a live round writes
+    a.events = (a.events or (DATA / "fake" if a.fake else DATA) / f"{tag}.events.jsonl").resolve()
     a.events.parent.mkdir(parents=True, exist_ok=True)
     if a.fake:
         subprocess.run([sys.executable, "scripts/e2e/modal_full_inner.py", "--fake", "--out", str(rdir),
-                        "--limit", str(a.limit or 2)], cwd=ROOT, check=True)
+                        "--limit", str(a.limit or 2)] + (["--sets", *a.sets] if a.sets else []),
+                       cwd=ROOT, check=True)
     else:
         if os.environ.get(full_stage.GO_ENV) != "1":
             print(f"[stop] set {full_stage.GO_ENV}=1 for a paid round")
@@ -343,7 +349,8 @@ def main(argv=None) -> int:
         t0, rc = time.time(), 1
         try:
             rc = subprocess.run(["modal", "run", "modal/full_stage.py::round_", "--round", tag, "--limit",
-                                 str(a.limit), "--skip", a.skip, "--out", str(inc), "--events", str(a.events)], cwd=ROOT,
+                                 str(a.limit), "--skip", a.skip, "--out", str(inc), "--events", str(a.events)]
+                                + (["--sets", ",".join(a.sets)] if a.sets else []), cwd=ROOT,
                                 timeout=cap_s + 900).returncode
         except Exception as e:  # noqa: BLE001 - timeout / CLI missing: still record spend + teardown
             print(f"[fail] modal run: {type(e).__name__}")

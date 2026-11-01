@@ -170,6 +170,7 @@ def main():
     ap.add_argument("--rounds", nargs="+", default=["r04", "r05", "r06"])
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--no-pr", action="store_true")
+    ap.add_argument("--sets", nargs="+", default=[], help="datasets; public round: --sets gsm8k humaneval")
     a = ap.parse_args()
     CLIPS.mkdir(parents=True, exist_ok=True)
     log = []
@@ -183,6 +184,7 @@ def main():
         cmd = [PY, "scripts/e2e/modal_full_round.py", "--round", rnd, "--live-meta", "--events", str(base)]
         cmd += [] if a.no_pr else ["--live-pr"]
         cmd += ["--limit", str(a.limit)] if a.limit else []
+        cmd += ["--sets", *a.sets] if a.sets else []
         logf = open(DATA / f"{tag}.log", "w")
         runner = subprocess.Popen(cmd, cwd=ROOT, env={**os.environ, "PYTHONPATH": f"{ROOT}:{ROOT / 'src'}"},
                                   stdout=logf, stderr=subprocess.STDOUT)

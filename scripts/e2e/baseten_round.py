@@ -42,7 +42,7 @@ sys.path[:0] = [str(ROOT), str(ROOT / "src")]
 
 from wattnot.cloud import MODEL  # noqa: E402
 from wattnot.cloud import energy as cloud_energy  # noqa: E402
-from wattnot.cloud.efforts import max_tokens_for  # noqa: E402
+from wattnot.cloud.efforts import DEFAULT_ALLOWANCE, max_tokens_for  # noqa: E402
 from wattnot.cloud.pricing import Rates, cost_usd  # noqa: E402
 from wattnot.cloud.transport import CloudError, LiveTransport, Reply as CReply, Request  # noqa: E402
 from wattnot.longrun.grade import grade_one  # noqa: E402
@@ -61,6 +61,13 @@ REFUSAL_WORDS = ("deactivat", "unpaid", "billing", "suspend", "limit")
 class Refused(BudgetStop):
     """Baseten refused (401/402/403/final 429 or a deactivated/unpaid/limit message): stop at once."""
 PUB_BUDGET = {"gsm8k": 512, "humaneval": 768}
+# Token-cap fairness (bigger live smoke 20261101-191931-6df1: all 3 without-WattNot misses were
+# finish=length at medium, i.e. the cap, not the model, failed them). Both arms answer at
+# "medium" in the end (stock always, WattNot after a step-up), so raising the medium allowance
+# here is applied to both arms equally. "low" keeps its 768 runaway cap on purpose: a cut low try
+# steps up to medium, it is never scored as a final answer. Billing is by tokens used, so a higher
+# cap only raises the worst-case reservation, not the measured cost.
+FAIR_ALLOWANCE = {**DEFAULT_ALLOWANCE, "medium": 12000}
 RATES = Rates()
 SOFT_META_USD = 100.0
 
@@ -133,7 +140,7 @@ class BasetenChat:
         self.context_limit = None
 
     def __call__(self, messages, max_tokens):
-        mt = max_tokens_for(self.effort, max_tokens)
+        mt = max_tokens_for(self.effort, max_tokens, FAIR_ALLOWANCE)
         prompt = " ".join(str(m.get("content") or "") for m in messages)
         self.cap.check(worst_case_usd(RATES, prompt, mt))
         body = {"model": MODEL, "reasoning_effort": self.effort, "max_tokens": mt, "temperature": 0,
@@ -191,11 +198,15 @@ class Capture:
         return self.last
 
 
-def items_for(b, limit):
+ALL_SETS = ("ours", "gsm8k", "humaneval")
+
+
+def items_for(b, limit, sets=ALL_SETS):
     out = []
-    for t in build():
-        out.append(("ours", t.id, t))
-    for name in ("gsm8k", "humaneval"):
+    if "ours" in sets:
+        for t in build():
+            out.append(("ours", t.id, t))
+    for name in (n for n in ("gsm8k", "humaneval") if n in sets):
         for x in b.load(name):
             out.append((name, str(x.get("task_id", x.get("question", "")[:40])), x))
     if limit:
@@ -315,6 +326,16 @@ def arm_summary(answers, rows):
             "stepped_up": sum(len(a.get("tries", [])) > 1 for a in answers)}
 
 
+class DryTransport:
+    """--dry-run only: a canned Baseten reply (MOCK). Never opens a socket, never bills."""
+
+    def __call__(self, req):
+        from wattnot.cloud.transport import Reply
+        mt = int(req.body.get("max_tokens") or 0)
+        return Reply(200, {"choices": [{"message": {"content": "MOCK answer 42"}, "finish_reason": "stop"}],
+                           "usage": {"prompt_tokens": 120, "completion_tokens": min(300, mt)}}, 0.01)
+
+
 def meta_total():
     from wattnot.meta.ledger import SpendLedger
     return SpendLedger().total()
@@ -338,7 +359,16 @@ def main(argv=None) -> int:
                          "budget, a slow stage is skipped (reason recorded) so the receipt still lands")
     ap.add_argument("--out", type=Path, default=ROOT / "out" / "matrix")
     ap.add_argument("--raw", type=Path, default=ROOT / "data" / "baseten-1101")
+    ap.add_argument("--sets", nargs="+", choices=ALL_SETS, default=list(ALL_SETS),
+                    help="datasets for this round; the public round is: --sets gsm8k humaneval")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="CPU plumbing check: canned MOCK replies, no Spark, MOCK feature stages, "
+                         "no billing read, output under /tmp/wattnot-dry/baseten. $0")
     a = ap.parse_args(argv)
+    if a.dry_run:
+        a.no_spark, a.mode, a.open_pr = True, "smoke", False
+        a.out = a.raw = Path("/tmp/wattnot-dry/baseten")
+        (a.raw / a.round / "baseten_spend.json").unlink(missing_ok=True)   # MOCK $ never accumulates
 
     if not 0 < a.cap_usd <= HARD_CAP_USD:
         print(f"[stop] --cap-usd must be in (0, {HARD_CAP_USD}]")
@@ -350,7 +380,7 @@ def main(argv=None) -> int:
     BasetenChat.levers = RequestLevers()
     cfg = load_config()
     b = _bench()
-    items = items_for(b, a.limit)
+    items = items_for(b, a.limit, tuple(a.sets))
     m0 = meta_total()
     # Meta spend guard, before any live feature stage: worst-case Meta for the live stages (SAM,
     # Wonder, Spark trace, voice, and, unless --no-spark, the per-answer grades) must fit under the
@@ -365,9 +395,12 @@ def main(argv=None) -> int:
     raw = a.raw / a.round
     raw.mkdir(parents=True, exist_ok=True)
     cap = SafeCap(SpendCap(a.cap_usd, raw / "baseten_spend.json"))
-    lt = LiveTransport()
-    lt.timeout_s, lt.max_retries = 240.0, 2
-    tr = LockedTransport(lt)
+    if a.dry_run:
+        tr = DryTransport()
+    else:
+        lt = LiveTransport()
+        lt.timeout_s, lt.max_retries = 240.0, 2
+        tr = LockedTransport(lt)
     tag0 = "smoke-" if a.limit else ""
     live_ans = open(raw / f"{tag0}answers.partial.jsonl", "a")
     calls = Calls()
@@ -433,7 +466,7 @@ def main(argv=None) -> int:
         # refusal watch after every arm batch: re-read the free billing endpoint (no inference spend)
         try:
             from wattnot.e2e.live import billing_check
-            bc = billing_check()
+            bc = {"status": "dry-run, not read"} if a.dry_run else billing_check()
             doc_checks.append({"after": arm, **bc})
             print(f"[watch] billing after {arm}: {bc}", flush=True)
             if bc.get("refusal"):
@@ -490,6 +523,12 @@ def main(argv=None) -> int:
                  "no GPU meter); deterministic checks decide, Muse Spark grades beside them"),
         "levers": {"without_wattnot": "effort medium for every request",
                    "with_wattnot": "every hosted WattNot feature ON (see features); effort low first, step up to medium on a failed check"},
+        "token_caps": {"allowance": FAIR_ALLOWANCE, "answer_budget": {"ours": "per task", **PUB_BUDGET},
+                       "rule": "max_tokens = answer budget + allowance[effort], same table for both arms",
+                       "truncated_final_answers": {arm: sum(1 for x in answers.get(arm, [])
+                                                            if x.get("finish") in ("length", "context-limit"))
+                                                   for arm in ARMS},
+                       "label": "MEASURED"},
         "results": {
             "accuracy_without": wo["accuracy"], "accuracy_with": wi["accuracy"],
             "j_per_correct_without": wo["j_per_correct"]["value"], "j_per_correct_with": wi["j_per_correct"]["value"],
@@ -512,7 +551,11 @@ def main(argv=None) -> int:
            "cached_input_tokens": sum(r["cached_tokens"] for r in allr),
            "output_tokens": sum(r["completion_tokens"] for r in allr), "usd": round(cap.session_usd, 6)}
     doc["refusal_watch"] = doc_checks
-    doc["provider_usage"] = provider_usage(started, datetime.now(UTC).isoformat(), own)
+    doc["provider_usage"] = ({"status": "dry-run, not read", "match": None, "worst_diff_pct": None}
+                             if a.dry_run else provider_usage(started, datetime.now(UTC).isoformat(), own))
+    doc["sets"] = list(a.sets)
+    if a.dry_run:
+        doc["label"], doc["status"] = "MOCK", "dry-run"
     print("[usage] " + json.dumps({k: doc["provider_usage"].get(k) for k in ("status", "worst_diff_pct", "match")}))
     doc["features"] = feature_table()
     doc["levers_stats"] = {**BasetenChat.levers.stats, "label": "ESTIMATE"}

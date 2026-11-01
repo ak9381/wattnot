@@ -22,6 +22,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path[:0] = [str(ROOT / "src")]
 PORT = 8771
 CHROME = "/opt/google/chrome/chrome"
 CLIPS = ROOT / "data" / "baseten-1101" / "clips"
@@ -29,9 +30,22 @@ if "--smoke" in sys.argv:
     CLIPS = ROOT / "data" / "baseten-1101" / "clips-smoke"
 
 
+# Lesson from the Modal 1:00 AM abort: the dashboard needs uvicorn/fastapi, which may live in a
+# different venv than the runner. WN_DASH_PY picks that venv (preflight checks it imports).
+DASH_PY = os.environ.get("WN_DASH_PY", os.environ.get("WN_PY", "/home/box/.local/bin/python"))
+
+
+def stop_runner(runner) -> None:
+    runner.terminate()
+    try:
+        runner.wait(timeout=60)
+    except subprocess.TimeoutExpired:
+        runner.kill()
+
+
 def server(events: Path):
     health = f"http://127.0.0.1:{PORT}/api/dash/health"
-    p = subprocess.Popen([os.environ.get("WN_PY", "/home/box/.local/bin/python"), "-m", "wattnot.dash", "--port", str(PORT), "--events", str(events)],
+    p = subprocess.Popen([DASH_PY, "-m", "wattnot.dash", "--port", str(PORT), "--events", str(events)],
                          cwd=ROOT, env={**os.environ, "PYTHONPATH": f"{ROOT}:{ROOT/'src'}"},
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     last = ""
@@ -93,7 +107,16 @@ def main():
     ap.add_argument("--rounds", nargs="+", default=["r01", "r02", "r03"])
     ap.add_argument("--pr-round", default="r03")
     ap.add_argument("--smoke", action="store_true", help="1-item smoke of the whole flow (no PR)")
+    ap.add_argument("--sets", nargs="+", default=[], help="datasets; public round: --sets gsm8k humaneval")
     a = ap.parse_args()
+    from wattnot.launch_check import run as preflight   # $0, no network: every Modal lesson first
+    pf = preflight("baseten")
+    if not pf["ok"]:
+        for c in pf["checks"]:
+            if not c["ok"]:
+                print(f"[preflight] FAIL {c['id']}: {c['detail']}", flush=True)
+        print("[stage] preflight failed; nothing paid was started", flush=True)
+        return 3
     CLIPS.mkdir(parents=True, exist_ok=True)
     summary = []
     for rnd in a.rounds:
@@ -102,24 +125,29 @@ def main():
             shutil.rmtree(live)
         live.mkdir(parents=True)
         cmd = [os.environ.get("WN_PY", "/home/box/.local/bin/python"), "scripts/e2e/baseten_round.py", "--round", rnd, "--mode", "smoke" if a.smoke else "live",
-               "--events-dir", str(live), "--open-pr"] + (["--pr"] if rnd == a.pr_round and not a.smoke else []) + (["--limit", "1"] if a.smoke else [])
+               "--events-dir", str(live), "--open-pr"] + (["--pr"] if rnd == a.pr_round and not a.smoke else []) + (["--limit", "1"] if a.smoke else []) + (["--sets", *a.sets] if a.sets else [])
         logf = open(ROOT / "data" / "baseten-1101" / f"{rnd}.log", "w")
         runner = subprocess.Popen(cmd, cwd=ROOT, env={**os.environ, "PYTHONPATH": f"{ROOT}:{ROOT/'src'}"},
                                   stdout=logf, stderr=subprocess.STDOUT)
-        for arm, tag in (("without_wattnot", "without"), ("with_wattnot", "with")):
-            ev = live / f"events-{arm}.jsonl"
-            ev.touch()
-            srv = server(ev)
-            try:
-                done = finished(ev, arm)
-                record(f"http://127.0.0.1:{PORT}/graph.html?live=1", CLIPS / f"baseten-{rnd}-graph-{tag}.mp4",
-                       until=lambda: done() or runner.poll() is not None, max_s=3 * 3600,
-                       ready=lambda: (live / f"go-{arm}").touch())
-            finally:
-                srv.send_signal(signal.SIGTERM)
-                srv.wait(timeout=20)
-            if runner.poll() is not None and not done():
-                break
+        try:
+            for arm, tag in (("without_wattnot", "without"), ("with_wattnot", "with")):
+                ev = live / f"events-{arm}.jsonl"
+                ev.touch()
+                srv = server(ev)
+                try:
+                    done = finished(ev, arm)
+                    record(f"http://127.0.0.1:{PORT}/graph.html?live=1", CLIPS / f"baseten-{rnd}-graph-{tag}.mp4",
+                           until=lambda: done() or runner.poll() is not None, max_s=3 * 3600,
+                           ready=lambda: (live / f"go-{arm}").touch())
+                finally:
+                    srv.send_signal(signal.SIGTERM)
+                    srv.wait(timeout=20)
+                if runner.poll() is not None and not done():
+                    break
+        except BaseException:
+            # never leave a paid runner going without its recorder (Modal 1:00 AM lesson)
+            stop_runner(runner)
+            raise
         rc = runner.wait()
         logf.close()
         # dashboard clip: the run matrix after the round (main dashboard view of the round)

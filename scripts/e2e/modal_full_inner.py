@@ -369,9 +369,12 @@ def _bench():
     return m
 
 
-def items(b, limit=0):
-    out = [("ours", t.id, t) for t in build()]
-    for name, n in PUB_N.items():
+ALL_SETS = ("ours", "gsm8k", "humaneval")
+
+
+def items(b, limit=0, sets=ALL_SETS):
+    out = [("ours", t.id, t) for t in build()] if "ours" in sets else []
+    for name, n in ((k, v) for k, v in PUB_N.items() if k in sets):
         for i, x in enumerate(b.load(name)[:n]):
             out.append((name, str(x.get("task_id") or f"{name}-{i:03d}"), x))
     if limit:
@@ -573,6 +576,8 @@ def main(argv=None) -> int:
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--model-path", default=MODEL)
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--sets", nargs="+", choices=ALL_SETS, default=list(ALL_SETS),
+                    help="datasets; the public round is --sets gsm8k humaneval")
     ap.add_argument("--fake", action="store_true")
     ap.add_argument("--skip", nargs="*", default=[], help="steps to skip (smoke tests)")
     ap.add_argument("--deadline-s", type=float, default=0, help="seconds from start; optional steps skip past it")
@@ -584,9 +589,9 @@ def main(argv=None) -> int:
     NV[0] = nv
     srv = Server(a.model_path, raw, a.fake)
     b = _bench()
-    its = items(b, a.limit)
+    its = items(b, a.limit, tuple(a.sets))
     sl = its[:: max(1, len(its) // SLICE_N)][:SLICE_N] if not a.limit else its
-    doc = {"started_utc": datetime.now(UTC).isoformat(), "gpu": nv.name(), "fake": a.fake,
+    doc = {"started_utc": datetime.now(UTC).isoformat(), "gpu": nv.name(), "fake": a.fake, "sets": list(a.sets),
            "idle_w": {"value": round(nv.power_w(), 1), "label": "MEASURED", "when": "before vLLM start"},
            "cap_probe": nv.cap_probe(), "items": len(its), "slice": len(sl), "steps": {}, "failed": FAILED,
            "deadline_s": a.deadline_s or None}

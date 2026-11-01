@@ -92,39 +92,23 @@ def live_eye(out: Path, client) -> dict:
     return {"passed": r.passed, "reason": r.reason}
 
 
-def _transcribe(path: Path) -> tuple[str, float]:
-    import io
-    import uuid
-    import wave
-    from wattnot.meta.client import DEFAULT_BASE, load_key
-    from wattnot.meta.ledger import SpendLedger
+def _transcribe(path: Path, *, ledger=None, urlopen=None, timeout_s: float = 120.0) -> tuple[str, float]:
+    """One live Muse Voice Transcribe call for the hosted e2e hearing check.
+
+    Uses the shared client (wattnot.spokenanswer.client.transcribe_wav_live), so the per-second
+    cost (ESTIMATE, $0.18/h of audio, from the WAV header rate and length) is charged to the Meta
+    spend ledger BEFORE the call and refunded if the provider rejects it. The old version settled
+    a 0-token entry, so hearing showed as $0 in the ledger even though it was billed.
+    """
+    import urllib.request as _ur
+
+    from wattnot.spokenanswer.client import ASR_USD_PER_HOUR, transcribe_wav_live, wav_rate_and_seconds
     audio = path.read_bytes()
-    # Read the real sample rate and length from the WAV header instead of assuming 16 kHz / 32 kB/s:
-    # the regenerated edge-tts clips carry their own rate, and the duration must match it.
-    try:
-        with wave.open(io.BytesIO(audio), "rb") as w:
-            sample_rate, n_frames = w.getframerate(), w.getnframes()
-    except (wave.Error, EOFError):
-        sample_rate, n_frames = 16000, max(0, (len(audio) - 44) // 2)
-    dur = (n_frames / sample_rate) if sample_rate else 0.0
-    b = uuid.uuid4().hex
-    reqj = json.dumps({"model": "muse-voice-transcribe-1.0", "audioEncoding": "WAV",
-                       "sampleRateHertz": sample_rate})
-    body = b"".join([
-        f'--{b}\r\nContent-Disposition: form-data; name="request"\r\nContent-Type: application/json\r\n\r\n{reqj}\r\n'.encode(),
-        f'--{b}\r\nContent-Disposition: form-data; name="audio"; filename="q.wav"\r\nContent-Type: audio/wav\r\n\r\n'.encode()
-        + audio + b"\r\n", f"--{b}--\r\n".encode()])
-    req = urllib.request.Request(f"{DEFAULT_BASE}/asr/transcribe", data=body, headers={
-        "Authorization": f"Bearer {load_key()}", "Content-Type": f"multipart/form-data; boundary={b}"})
-    with urllib.request.urlopen(req, timeout=120) as r:  # noqa: S310
-        d = json.loads(r.read())
-    usd = round(dur / 3600 * 0.18, 6)
-    led = SpendLedger()
-    eid, _ = led.reserve({"model": "muse-spark-1.3-contributor", "max_tokens": 1, "messages": []},
-                         purpose="voice:transcribe-e2e")
-    led.settle(eid, {"prompt_tokens": 0, "completion_tokens": 0}, model="muse-spark-1.3-contributor",
-               status="ok", note=f"voice transcribe {dur:.1f}s ~${usd} (ESTIMATE at $0.18/h)")
-    return str(d.get("transcript") or ""), usd
+    _, secs = wav_rate_and_seconds(audio)
+    usd = round(secs / 3600 * ASR_USD_PER_HOUR, 6)
+    text = transcribe_wav_live(audio, timeout_s=timeout_s, ledger=ledger,
+                               urlopen=urlopen or _ur.urlopen, purpose="voice:transcribe-e2e")
+    return text, usd
 
 
 def live_hearing(out: Path, client, log: EventLog | None) -> dict:

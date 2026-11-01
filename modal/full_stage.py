@@ -158,7 +158,7 @@ try:  # pragma: no cover - only with modal installed
                 return
             time.sleep(2)
 
-    def _body(round_id: str, limit: int, skip: list[str], cap_s: int, q=None) -> bytes:
+    def _body(round_id: str, limit: int, skip: list[str], cap_s: int, q=None, sets: str = "") -> bytes:
         import subprocess
         import threading
         sys.path[:0] = ["/app", "/app/src"]
@@ -192,6 +192,8 @@ try:  # pragma: no cover - only with modal installed
             cmd += ["--limit", str(limit)]
         if skip:
             cmd += ["--skip", *skip]
+        if sets:   # e.g. "gsm8k,humaneval" for the public round; empty = all three sets
+            cmd += ["--sets", *[x for x in sets.split(",") if x]]
         os.makedirs(out, exist_ok=True)
         _write_status(out, "running", round_id)
         stop = threading.Event()
@@ -240,22 +242,24 @@ try:  # pragma: no cover - only with modal installed
 
     @app.function(image=image, gpu=GPU, timeout=ROUND_CAP_S,
                   volumes={"/weights": weights, "/results": results}, scaledown_window=10)
-    def gpu_round(round_id: str, limit: int = 0, skip: list[str] | None = None, q=None) -> bytes:
-        return _body(round_id, limit, skip or [], ROUND_CAP_S, q)
+    def gpu_round(round_id: str, limit: int = 0, skip: list[str] | None = None, q=None,
+                  sets: str = "") -> bytes:
+        return _body(round_id, limit, skip or [], ROUND_CAP_S, q, sets)
 
     @app.function(image=image, gpu=GPU, timeout=SMOKE_CAP_S,
                   volumes={"/weights": weights, "/results": results}, scaledown_window=10)
-    def gpu_smoke(round_id: str, limit: int = 1, skip: list[str] | None = None, q=None) -> bytes:
-        return _body(round_id, limit, skip or [], SMOKE_CAP_S, q)
+    def gpu_smoke(round_id: str, limit: int = 1, skip: list[str] | None = None, q=None,
+                  sets: str = "") -> bytes:
+        return _body(round_id, limit, skip or [], SMOKE_CAP_S, q, sets)
 
     @app.local_entrypoint()
     def round_(round: str, limit: int = 0, skip: str = "", out: str = "data/modal-full-1101/_incoming",
-               events: str = ""):
+               events: str = "", sets: str = ""):
         _require_go()
         import time
         fn = gpu_smoke if limit else gpu_round
         with modal.Queue.ephemeral() as q:
-            call = fn.spawn(round, limit, [x for x in skip.split(",") if x], q)
+            call = fn.spawn(round, limit, [x for x in skip.split(",") if x], q, sets)
             data, st, net_errs = None, {}, 0
             while data is None:
                 try:

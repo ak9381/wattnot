@@ -176,6 +176,8 @@ def plan(out: Path, model: str = "llama", plan_name: str = "full") -> list[Block
             return plan_glimmer_long(out)
         if plan_name == "max":
             return plan_glimmer_max(out)
+        if plan_name == "public":
+            return plan_glimmer_public(out)
         return plan_glimmer_retest(out) if plan_name == "retest" else plan_glimmer_test(out)
     live = out / "live.jsonl"
     reh = lambda tag, *extra: _py("wattnot.proof.orchestrate", "--mode", "rehearsal",  # noqa: E731
@@ -512,7 +514,8 @@ def _default_hours(model: str, plan_name: str) -> float:
     """VM hours when --max-hours is not given. The long plan is booked for LONG_BOOKING_H; the
     old 3.5 h test default dropped batching, prefix, public benchmarks and the copy block."""
     if model == "glimmer-test":
-        return {"long": LONG_BOOKING_H, "max": MAX_BOOKING_H}.get(plan_name, 3.5)
+        return {"long": LONG_BOOKING_H, "max": MAX_BOOKING_H,
+                "public": PUBLIC_BOOKING_H}.get(plan_name, 3.5)
     return 18.0
 
 
@@ -661,11 +664,14 @@ def pass_blocks(out: Path, pas: str, sweep_tag: str, grid: str, dataset: str,
     return bl
 
 
-def _matrix_round_sh(rid: str, cap: str) -> str:
+def _matrix_round_sh(rid: str, cap: str, public_only: bool = False) -> str:
     R = f"{REMOTE_RESULTS}/matrix/{rid}"
     env = f"WATTNOT_MATRIX_ROUND={rid} WATTNOT_MATRIX_RECORD=1"
-    return (f"{env} python scripts/public_bench_ab.py --cap {cap} --reps 1 --sets gsm8k humaneval "
-            f"--out {R}/public && {env} python -m wattnot.longrun.harness --cap {cap} --reps 1 "
+    pub = (f"{env} python scripts/public_bench_ab.py --cap {cap} --reps 1 --sets gsm8k humaneval "
+           f"--out {R}/public")
+    if public_only:   # the public round (GSM8K 60 + HumanEval 40 only; our set is not run)
+        return pub
+    return (f"{pub} && {env} python -m wattnot.longrun.harness --cap {cap} --reps 1 "
             f"--model-config muse-glimmer-30b --url {HOST_BASE_URL}/chat/completions --out {R}/ours")
 
 
@@ -728,6 +734,51 @@ def plan_glimmer_max(out: Path) -> list[Block]:
     blocks += [serverless, long_blocks["t2-fp8"], long_blocks["t2-eye"], long_blocks["t2-spoken"],
                long_blocks["t2b-batch"], prefix, combined, public, *matrix_leg_blocks(out),
                long_blocks["t3-copy"]]
+    return blocks
+
+
+# Public end-to-end plan (``--plan public``, glimmer-test). PLAN ONLY: building it starts nothing.
+# Akash's revised plan (2 Nov): one H100 round, end to end, on the public data set of the matrix's
+# round 2 (GSM8K first 60 + HumanEval first 40). One full pass of every GPU-live layer (sweep +
+# gates + signed receipt, thinking budget, tiers, eye, spoken, phase clock, LangChain, agent
+# waste), the FP8 candidate with its eye/hearing re-checks, batching and prefix cache, then the
+# public matrix round at stock vs the best cap. PUBLIC_MATRIX_ROUND picks which round id the
+# answers are filed under: r11 = combined leg (H100 share; Baseten + Modal shares run outside
+# the booking through scripts/e2e/round.py --provider combined), r08 = H100-only leg.
+PUBLIC_MATRIX_ROUND = os.environ.get("WATTNOT_PUBLIC_MATRIX_ROUND", "r11")
+PUBLIC_BOOKING_H = 7.0     # ESTIMATE; block minutes sum to ~6 h, so a slow block still fits
+PUBLIC_BUDGET_CAP_INR = round(PUBLIC_BOOKING_H * INR_PER_H) + 100   # Rs 3,258 (ESTIMATE + margin)
+# Public-plan block budgets (minutes, ESTIMATE) that differ from the long plan. Kill limit = x OVERRUN_FACTOR.
+PUBLIC_BLOCK_MIN = {"p1-agentwaste": 30, "p1-langchain": 45, "t2-fp8": 30, "m-public": 25}
+PUBLIC_AGENTWASTE_TRIM = ("--reps", "1", "--max-cases", "8", "--max-tokens", "768")
+
+
+def plan_glimmer_public(out: Path) -> list[Block]:
+    long_blocks = {b.id: b for b in plan_glimmer_long(out)}
+    pas, tag, grid, ds = MAX_PASSES[0]
+    blocks = [long_blocks["t0-setup"], long_blocks["t0-probe"]]
+    blocks += pass_blocks(out, pas, tag, grid, ds, optional=False,
+                          sweep_dry=long_blocks["t1-sweep"].dry)
+    # Modal lessons (r04-try1): the agent-waste block ran 30 cases x 2 reps at 2048 tokens and hit
+    # its cap (rc 124); FP8 start (compile + health wait up to 1200 s) left no room for its harness.
+    # The public plan trims agent waste the same way Modal does and gives FP8 and the matrix room;
+    # wattnot.preflight checks every block's worst-case time against its kill limit.
+    blocks = [replace(b, hours=_m(PUBLIC_BLOCK_MIN["p1-agentwaste"]),
+                      live=(b.live or []) + list(PUBLIC_AGENTWASTE_TRIM))
+              if b.id == "p1-agentwaste" else b for b in blocks]
+    # langchain on Modal r04-try1: 20 items took 898 s (MEASURED); the public plan runs 40.
+    blocks = [replace(b, hours=_m(PUBLIC_BLOCK_MIN["p1-langchain"])) if b.id == "p1-langchain" else b
+              for b in blocks]
+    rid = PUBLIC_MATRIX_ROUND
+    matrix = Block(
+        f"m-public-{rid}", f"Public round {rid}: GSM8K 60 + HumanEval 40, stock vs WattNot best cap; "
+        "answers recorded for the off-box Spark grade", _m(PUBLIC_BLOCK_MIN["m-public"]),
+        _py("wattnot.longrun.matrix_round", "--dry-run", "--round", rid,
+            "--out", str(out / "runs" / f"m-public-{rid}")),
+        live=["bash", "-c", _matrix_round_sh(rid, "{BEST_CAP}", public_only=True)],
+        host=True, depends_on=("t1-sweep",))
+    blocks += [replace(long_blocks["t2-fp8"], hours=_m(PUBLIC_BLOCK_MIN["t2-fp8"])), long_blocks["t2-eye"], long_blocks["t2-spoken"],
+               long_blocks["t2b-batch"], long_blocks["t2c-prefix"], matrix, long_blocks["t3-copy"]]
     return blocks
 
 
@@ -1414,7 +1465,7 @@ def main(argv=None) -> int:
                          "real Glimmer 30B). glimmer = the older 18 h plan-B block list (--plan "
                          "full only); with --plan long/max/retest it is read as glimmer-test. "
                          "llama = fallback")
-    ap.add_argument("--plan", choices=["full", "retest", "long", "max"], default="full",
+    ap.add_argument("--plan", choices=["full", "retest", "long", "max", "public"], default="full",
                     help="retest (glimmer-test only): re-run setup, probe, the sweep and the RUN3 "
                          "failures only, sized to a 2 h VM")
     ap.add_argument("--host", help="live: the GPU host's IP (default: read scripts/e2e ip file)")
@@ -1423,17 +1474,26 @@ def main(argv=None) -> int:
     ap.add_argument("--drop-link", default="b2-wonder-sweep:3",
                     help="dry: simulate an SSH drop: block:probes ('' for none)")
     a = ap.parse_args(argv)
-    if a.plan in ("retest", "long", "max") and a.model == "glimmer":
+    if a.plan in ("retest", "long", "max", "public") and a.model == "glimmer":
         # same weights (GLIMMER_MODEL) and the same one-H100 VM: the plan-B list only exists for
         # --plan full, so the real-model launch of these plans IS the glimmer-test setting
         print(f"[driver] --model glimmer --plan {a.plan}: using glimmer-test (Muse Glimmer 30B "
               "on the E2E H100; same weights)", file=sys.stderr)
         a.model = "glimmer-test"
-    if a.plan in ("retest", "long", "max") and a.model != "glimmer-test":
+    if a.plan in ("retest", "long", "max", "public") and a.model != "glimmer-test":
         # plan() only honours retest/long for glimmer-test; anything else would silently run
         # the old full plan on a paid VM
         ap.error(f"--plan {a.plan} needs --model glimmer-test")
 
+    if a.live and a.plan == "public":
+        from wattnot.launch_check import run as preflight   # $0 Modal-lessons check before the VM
+        pf = preflight("h100", dash=False)
+        if not pf["ok"]:
+            for c in pf["checks"]:
+                if not c["ok"]:
+                    print(f"[preflight] FAIL {c['id']}: {c['detail']}", file=sys.stderr)
+            print("[driver] preflight failed; nothing paid was started", file=sys.stderr)
+            return 3
     if a.live:
         host = a.host
         if not host:

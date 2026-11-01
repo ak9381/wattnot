@@ -18,6 +18,10 @@ ROOT="${SETUP_ROOT:-/root}"
 LOG="$ROOT/run2"
 VENV="$ROOT/venv"
 PIP_EXTRA="${SETUP_PIP_EXTRA-accelerate vllm}"
+# Modal lesson (8ba59a9, r04-try1): blocks import langchain and optuna; a missing package only shows
+# up hours into a paid run. Install the framework pins and import-check everything right after.
+PIP_FRAMEWORKS="${SETUP_PIP_FRAMEWORKS-langchain-core==1.7.1 langchain-openai==1.7.3}"
+IMPORT_CHECK="${SETUP_IMPORT_CHECK-optuna uvicorn fastapi jsonschema langchain_core langchain_openai}"
 MIN_FREE_GB="${MIN_FREE_GB:-150}"   # Glimmer weights (~60 GB) + the vLLM image + headroom
 mkdir -p "$LOG"
 echo "[setup] $(date +%T) start"
@@ -107,7 +111,11 @@ export UV_LINK_MODE=copy UV_NO_CACHE=1   # no second copy of the wheels on a sma
 # accelerate: the adaptive step loads the MoE model with device_map="cuda", which needs it
 # shellcheck disable=SC2086  # PIP_EXTRA is a word list on purpose
 "$VENV/bin/uv" pip install -q --python "$VENV/bin/python" -e "$REPO" \
-  "huggingface_hub>=0.30" ninja $PIP_EXTRA
+  "huggingface_hub>=0.30" ninja $PIP_FRAMEWORKS $PIP_EXTRA
+for m in $IMPORT_CHECK; do
+  "$VENV/bin/python" -c "import $m" 2>/dev/null || { echo "[setup] import check failed: $m"; exit 15; }
+done
+echo "[setup] import check ok: $IMPORT_CHECK"
 # the three RUN2 first-boot fixes must hold before the slow part starts
 command -v ninja >/dev/null || { echo "[setup] ninja is not on PATH after install"; exit 15; }
 [ -f "$PYINC/Python.h" ] || { echo "[setup] still no Python.h in $PYINC (Triton would fail)"; exit 15; }

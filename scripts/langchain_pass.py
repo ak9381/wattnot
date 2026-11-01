@@ -152,6 +152,15 @@ def serve(upstream, saver_on: bool, label: str, tiers):
     return f"http://127.0.0.1:{port}/v1", server
 
 
+def upstream_base(url: str | None) -> str | None:
+    """http_upstream appends /v1/chat/completions itself, so hand it the host without /v1.
+    Handles a trailing slash too ('.../v1/' used to become '.../v' and then '/v/v1')."""
+    if not url:
+        return url
+    u = url.rstrip("/")
+    return u[:-3] if u.endswith("/v1") else u
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--out", required=True)
@@ -168,8 +177,7 @@ def main(argv=None) -> int:
     live = bool(a.base_url) and not a.fake
     label = "MEASURED" if live else "MOCK"
     # http_upstream appends /v1/chat/completions itself; a base URL ending in /v1 gave /v1/v1 (502 on Modal)
-    up_base = a.base_url[:-3] if live and a.base_url.rstrip("/").endswith("/v1") else a.base_url
-    upstream = http_upstream(up_base.rstrip("/") if up_base else up_base) if live else mock_upstream
+    upstream = http_upstream(upstream_base(a.base_url)) if live else mock_upstream
     model = GLIMMER if live else "mock-model"
     tiers = [{"name": "glimmer-think-off", "model": model, "body_extra": {"chat_template_kwargs": {"enable_thinking": False}}},
              {"name": "glimmer-think-on", "model": model, "reasoning": True}]
