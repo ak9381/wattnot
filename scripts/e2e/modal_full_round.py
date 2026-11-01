@@ -206,6 +206,33 @@ def modal_metered() -> float | None:
         return None
 
 
+def recover_partial(tag: str, inc: Path, fetch=None) -> Path | None:
+    """Pull whatever the container synced to the wattnot-results volume for this round.
+    A free storage read (no GPU, no spend). Returns inc/tag if it now holds an inner.json, else None."""
+    def _default_fetch(t, dest):
+        base = ["modal", "volume", "get", full_stage.RESULTS_VOL, t, str(dest)]
+        try:
+            p = subprocess.run(base + ["--force"], capture_output=True, text=True, timeout=300)
+            if p.returncode != 0:   # older CLI has no --force: retry the plain form
+                subprocess.run(base, capture_output=True, text=True, timeout=300)
+        except Exception:  # noqa: BLE001 - recovery is best-effort; absence is handled by the caller
+            pass
+    (fetch or _default_fetch)(tag, inc)
+    return (inc / tag) if (inc / tag / "inner.json").exists() else None
+
+
+def write_partial(rdir: Path, inner: dict, stage: dict, state) -> Path:
+    """Record what a partial/crashed round managed to finish (no receipt, no grading, no pipeline)."""
+    steps = inner.get("steps") or {}
+    p = rdir / "partial.json"
+    p.write_text(json.dumps({"status": "partial", "label": "MEASURED",
+                             "recovered_from": "modal volume wattnot-results", "state": state,
+                             "finished_steps": list(steps), "blocks": steps.get("blocks"),
+                             "failed": inner.get("failed"), "fatal": inner.get("fatal"),
+                             "spend": stage}, indent=1))
+    return p
+
+
 def fresh_demo_clone(tag: str) -> Path:
     """A clean clone of the demo repo on main for this round (never the user's working copy)."""
     d = Path("/tmp/wn-demo") / tag
@@ -286,6 +313,7 @@ def main(argv=None) -> int:
         print(f"[stop] {rdir} exists; never overwriting a recorded round")
         return 2
     stage = {"limit": a.limit}
+    recovered, state = False, None
     a.events = (a.events or DATA / f"{tag}.events.jsonl").resolve()
     a.events.parent.mkdir(parents=True, exist_ok=True)
     if a.fake:
@@ -343,8 +371,13 @@ def main(argv=None) -> int:
             if meas1 - meas0 > est:   # the cap counts whichever is higher
                 add_spend(f"{tag}-metered-true-up", meas1 - meas0 - est, 0)
         if rc != 0 or not (inc / tag / "inner.json").exists():
-            print(f"[fail] modal run rc={rc}")
-            return 5
+            if recover_partial(tag, inc) is None:   # nothing synced to the volume either: give up
+                print(f"[fail] modal run rc={rc}")
+                return 5
+            recovered = True
+            st = inc / tag / "status.json"
+            state = json.loads(st.read_text()).get("state") if st.exists() else None
+            print(f"[recover] partial results from volume (state={state})")
         shutil.move(str(inc / tag), str(rdir))
     if a.fake and (rdir / "events.jsonl").exists():
         full_stage.route_events((rdir / "events.jsonl").read_text().splitlines(), str(a.events), {})
@@ -353,6 +386,15 @@ def main(argv=None) -> int:
     with_ev = Path(full_stage.arm_events_path(str(a.events), "with"))
     E = lambda t, **d: emit(with_ev, f"modal {tag}", t, label=d.pop("label", lab0), **d)  # noqa: E731
     if "with" not in inner["steps"]:
+        state = state or ("crashed" if inner.get("fatal") else "incomplete")
+        write_partial(rdir, inner, stage, state)   # crashed/partial runs still record what finished
+        try:
+            E("run.finished", arm="with_wattnot", status="partial", state=state)
+        except Exception:  # noqa: BLE001 - the partial.json is the record; the event is a nicety
+            pass
+        if recovered:
+            print(f"[recover] with-WattNot arm missing; wrote partial.json (state={state})")
+            return 7
         print("[fail] the with-WattNot arm did not finish; see inner.log")
         return 6
     if a.fake:
@@ -405,6 +447,8 @@ def main(argv=None) -> int:
            "levers_detail": {k: S.get(k) for k in ("batch_kv", "fp8", "limits", "blocks")},
            "cap_probe": inner["cap_probe"], "spark_summary": spark,
            "receipt": str(receipt.relative_to(ROOT)) if receipt else None, "raw_dir": str(rdir.relative_to(ROOT)), "spend": stage}
+    if recovered:   # the with arm ran but the tar was lost; results came back off the volume
+        doc["status"], doc["recovered"] = "recovered", True
     # shared with-WattNot pipeline (same wiring as the Baseten stage), GPU feature table
     from wattnot.e2e.fullstack import gpu_feature_table, post_round
     failed = dict(inner.get("failed") or {})
