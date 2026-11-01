@@ -504,7 +504,8 @@ def run_index() -> dict:
     out = []
     for r in rounds():
         src_dir = r["source"].rsplit("/", 2)[0]
-        named = next((j for j in jobs if src_dir and src_dir in j["cmd"]), None)
+        tag = str(r.get("round") or "")
+        named = next((j for j in jobs if (src_dir and src_dir in j["cmd"]) or (tag and f"--round {tag} " in j["cmd"] + " ")), None)
         out.append({"id": r["id"], "name": named["name"] if named else f'{r["provider"]} {r.get("round") or r["id"]}',
                     "kind": "round", "provider": r["provider"], "stage": "smoke" if r.get("smoke") else "stage",
                     "date": r.get("started_utc"), "label": r.get("label"), "status": r.get("status"),
