@@ -122,3 +122,24 @@ body{grid-template-columns:minmax(0,1fr)}
 .orch,.flowwrap,.logcol{min-width:0}
 @media (prefers-reduced-motion:reduce){.edge{animation:none}}
 .wn-mic-slot{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;min-width:32px;min-height:32px;flex:0 0 32px;vertical-align:middle}
+
+/* Muse Spark trace panel (sparktrace.js) */
+.sparkTrace { margin: 8px 0; padding: 8px 10px; border: 1px solid var(--line, #2a3340); border-radius: 8px; }
+.sparkTrace h5 { margin: 0 0 6px; }
+.sparkTrace ol { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 6px; }
+.sparkRow { padding: 6px 8px; border-left: 3px solid #556; }
+.sparkRow.ok { border-left-color: #2fbf71; }
+.sparkRow.bad { border-left-color: #e5534b; }
+.sparkRow.wait { opacity: .6; }
+.sparkMeta { font-size: 12px; opacity: .85; }
+.sparkMeta code { font-size: 11px; }
+.sparkSum { font-size: 12px; }
+.sparkLbl { font-size: 10px; padding: 0 4px; border: 1px solid currentColor; border-radius: 3px; margin-left: 4px; }
+/* Meta models at work strip (metastrip.js) */
+.metaStrip { margin: 8px 0; }
+.metaStrip h5 { margin: 0 0 6px; }
+.metaChips { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; }
+.metaChip { padding: 6px 8px; border: 1px solid var(--line, #2a3340); border-radius: 8px; font-size: 12px; }
+.metaChip.off { opacity: .55; }
+.metaChipName { font-weight: 600; }
+.metaChipRole { opacity: .75; }

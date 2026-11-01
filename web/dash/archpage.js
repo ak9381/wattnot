@@ -3,6 +3,8 @@
 import { ArchView, fmt, panelHtml, statHtml } from "./arch.js";
 import { init as initPan } from "./pancanvas.js";
 import { expertStrip } from "./expertstrip.js";
+import { renderSparkTrace, sparkCallFrom } from "./sparktrace.js";
+import { addEvent as metaAdd, renderMetaStrip } from "./metastrip.js";
 import { openThermal } from "./thermal.js";
 import { wireR7, infoBtn } from "./r7.js";
 import "./v2r7.js";
@@ -327,11 +329,13 @@ export class ArchPage {
     if (!ok) { cap.innerHTML = `<span class="err">No run is being followed. Start the server with <code>--events path/to/events.jsonl</code> to watch a live run here. Recorded replays work without it.</span>`; return; }
     this.view.reset(); cap.textContent = "Following the run as it writes events…";
     const es = (this.es = new EventSource(`/api/dash/arch/live?speed=${this.speed}`)); let last = 0;
-    this.roomPay = {}; this.tagged = false; $("#aroom", H).hidden = true;
+    this.roomPay = {}; this.tagged = false; this.spark = []; this.meta = {}; $("#aspark", H)?.remove(); $("#ameta", H)?.remove(); $("#aroom", H).hidden = true;
     es.addEventListener("event", (m) => {
       let ev; try { ev = JSON.parse(m.data); } catch { return; }
       const d = ev.data || {};
       if (d.kind === "room_scan") this.roomScan(d);                       // a room_scan payload: draw it with the room node
+      const sc = sparkCallFrom(ev); if (sc) this.sparkTrace(sc);
+      if (d.model) this.metaStrip(ev);                                   // any Meta model call: tally it in the strip         // Muse Spark operator call: show it in the trace panel
       if (ev.type === "telemetry.sample" && d.power_w != null) { this.liveW = d.power_w; this.renderMeter(0); }
       if (ev.type === "run.started") this.liveBadge(ev);
       if (ev.type === "run.finished") { this.view.finish(this.view.cur); this.view.cur = null; return; }
@@ -372,6 +376,18 @@ export class ArchPage {
       const { labels } = await mountRoomScan(host, this.roomPay, (this.roomCache ||= {}));
       $("#aroomTag", this.host).innerHTML = `<span class="muted">racks</span> ${dot(labels.rack_outline || "MEASURED")} <span class="muted">heat</span> ${dot(labels.thermal_frame || "SIMULATED")}`;
     } catch (e) { host.innerHTML = `<p class="muted">The room picture could not be drawn (${esc(e.message)}).</p>`; }
+  }
+  metaStrip(ev) {
+    metaAdd((this.meta ||= {}), ev);
+    let box = $("#ameta", this.host);
+    if (!box) { box = document.createElement("div"); box.id = "ameta"; $("#acap", this.host).after(box); }
+    box.innerHTML = renderMetaStrip(this.meta);
+  }
+  sparkTrace(c) {
+    (this.spark ||= []).push(c);
+    let box = $("#aspark", this.host);
+    if (!box) { box = document.createElement("div"); box.id = "aspark"; $("#acap", this.host).after(box); }
+    box.innerHTML = renderSparkTrace(this.spark);
   }
   stopLive() { this.es?.close(); this.es = null; }
   fitOnce() {
