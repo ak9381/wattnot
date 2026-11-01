@@ -1,0 +1,94 @@
+{
+ "held_change": {
+  "kind": "reasoning_effort",
+  "change": {
+   "reasoning_effort": "low",
+   "step_up": "medium"
+  }
+ },
+ "risk": "high",
+ "reasons": [
+  "unknown kind 'reasoning_effort'; a person decides"
+ ],
+ "evidence": {
+  "accuracy_without": 1.0,
+  "accuracy_with": 1.0,
+  "p99_without": 6.5433,
+  "p99_with": 10.2947,
+  "spark_agreement": 1.0,
+  "j_per_correct_without": 558.7,
+  "j_per_correct_with": 669.85,
+  "eye_check": false,
+  "hearing_check": false
+ },
+ "review": {
+  "who": "Akash K Raju (delegated reviewer)",
+  "what": {
+   "reasoning_effort": "low",
+   "step_up": "medium"
+  },
+  "risk": "high",
+  "checks": [
+   {
+    "check": "accuracy (with >= without - 1 pt)",
+    "ok": true,
+    "detail": {
+     "without": 1.0,
+     "with": 1.0,
+     "label": "MEASURED"
+    }
+   },
+   {
+    "check": "p99 limit (with <= 1.10 x without)",
+    "ok": false,
+    "detail": {
+     "without_s": 6.5433,
+     "with_s": 10.2947,
+     "label": "MEASURED"
+    }
+   },
+   {
+    "check": "Spark agreement >= 0.90",
+    "ok": true,
+    "detail": {
+     "agreement": 1.0
+    }
+   },
+   {
+    "check": "joule-SLO (J/correct with <= without)",
+    "ok": false,
+    "detail": {
+     "without": 558.7,
+     "with": 669.85,
+     "label": "ESTIMATE"
+    }
+   },
+   {
+    "check": "eye_check gate passed",
+    "ok": false,
+    "detail": {
+     "passed": false
+    }
+   },
+   {
+    "check": "hearing_check gate passed",
+    "ok": false,
+    "detail": {
+     "passed": false
+    }
+   }
+  ],
+  "decision": "rejected",
+  "failed_checks": [
+   "p99 limit (with <= 1.10 x without)",
+   "joule-SLO (J/correct with <= without)",
+   "eye_check gate passed",
+   "hearing_check gate passed"
+  ],
+  "skipped_checks": [],
+  "why": "failed: p99 limit (with <= 1.10 x without); joule-SLO (J/correct with <= without); eye_check gate passed; hearing_check gate passed",
+  "started_utc": "2026-11-01T18:13:06.713955+00:00",
+  "decided_utc": "2026-11-01T18:13:06.713977+00:00",
+  "auto_approve": false
+ }
+}

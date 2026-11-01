@@ -1,0 +1,273 @@
+{
+ "label": "SYNTHETIC",
+ "answers_label": "MEASURED",
+ "transcriber": "muse-voice-transcribe-1.0 (live)",
+ "transcripts": {
+  "q-gpus-clean": "How many many US are interacting?",
+  "q-gpus-datacenter": "And",
+  "q-cap-clean": "What is the power cabin?",
+  "q-cap-datacenter": "What is the power of...",
+  "q-light-clean": "What power is this thatist like?",
+  "q-light-datacenter": "What power is this that this.",
+  "q-meter-clean": "What does the power meter reading?.?",
+  "q-meter-datacenter": "What powerful meter",
+  "q-bay-clean": "which has the...",
+  "q-bay-datacenter": "which had.",
+  "q-fans-clean": "how many pens are spending?,",
+  "q-fans-datacenter": "and",
+  "q-coolant-clean": "What is the temperature in Celsius?",
+  "q-coolant-datacenter": "What is the",
+  "q-rack-clean": "What is the racket?",
+  "q-rack-datacenter": "What is the...",
+  "q-servers-clean": "How many servers are online?",
+  "q-servers-datacenter": "How many",
+  "q-speed-clean": "What is the 10%?",
+  "q-speed-datacenter": "What is the 2%?"
+ },
+ "transcribe_usd": {
+  "value": 0.001955,
+  "label": "ESTIMATE"
+ },
+ "passed": false,
+ "reason": "spoken misheard 12/20 answer(s): q-gpus-clean, q-gpus-datacenter, q-cap-datacenter, q-light-clean, q-light-datacenter, q-fans-clean \u2026",
+ "run": {
+  "answered": 20,
+  "total": 20,
+  "budget_s": null,
+  "budget_hit": false,
+  "concurrency": 4,
+  "elapsed_s": 16.179579
+ },
+ "detail": {
+  "checked": 20,
+  "passed_count": 8,
+  "missed": [
+   "q-gpus-clean",
+   "q-gpus-datacenter",
+   "q-cap-datacenter",
+   "q-light-clean",
+   "q-light-datacenter",
+   "q-fans-clean",
+   "q-fans-datacenter",
+   "q-coolant-datacenter",
+   "q-rack-datacenter",
+   "q-servers-datacenter",
+   "q-speed-clean",
+   "q-speed-datacenter"
+  ],
+  "missed_noisy": [
+   "q-gpus-datacenter",
+   "q-cap-datacenter",
+   "q-light-datacenter",
+   "q-fans-datacenter",
+   "q-coolant-datacenter",
+   "q-rack-datacenter",
+   "q-servers-datacenter",
+   "q-speed-datacenter"
+  ],
+  "items": [
+   {
+    "id": "q-gpus-clean",
+    "kind": "text",
+    "noise": "clean",
+    "question": "How many GPUs are in the rack?",
+    "expected": "8",
+    "got": "Information not available in current telemetry readings for rack",
+    "ok": false,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-gpus-datacenter",
+    "kind": "text",
+    "noise": "datacenter",
+    "question": "How many GPUs are in the rack?",
+    "expected": "8",
+    "got": "Ready",
+    "ok": false,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-cap-clean",
+    "kind": "number",
+    "noise": "clean",
+    "question": "What is the power cap in watts?",
+    "expected": "350",
+    "got": "350 watts",
+    "ok": true,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-cap-datacenter",
+    "kind": "number",
+    "noise": "datacenter",
+    "question": "What is the power cap in watts?",
+    "expected": "350",
+    "got": "275 watts",
+    "ok": false,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-light-clean",
+    "kind": "text",
+    "noise": "clean",
+    "question": "What colour is the status light?",
+    "expected": "green",
+    "got": "275 watts",
+    "ok": false,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-light-datacenter",
+    "kind": "text",
+    "noise": "datacenter",
+    "question": "What colour is the status light?",
+    "expected": "green",
+    "got": "275 watts",
+    "ok": false,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-meter-clean",
+    "kind": "number",
+    "noise": "clean",
+    "question": "What does the power meter read in watts?",
+    "expected": "275",
+    "got": "275 watts",
+    "ok": true,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-meter-datacenter",
+    "kind": "number",
+    "noise": "datacenter",
+    "question": "What does the power meter read in watts?",
+    "expected": "275",
+    "got": "275 watts",
+    "ok": true,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-bay-clean",
+    "kind": "text",
+    "noise": "clean",
+    "question": "Which bay has the fault?",
+    "expected": "B3",
+    "got": "B3",
+    "ok": true,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-bay-datacenter",
+    "kind": "text",
+    "noise": "datacenter",
+    "question": "Which bay has the fault?",
+    "expected": "B3",
+    "got": "B3",
+    "ok": true,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-fans-clean",
+    "kind": "number",
+    "noise": "clean",
+    "question": "How many fans are spinning?",
+    "expected": "4",
+    "got": "Telemetry for rack R12 does not include a reading for pens spend",
+    "ok": false,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-fans-datacenter",
+    "kind": "number",
+    "noise": "datacenter",
+    "question": "How many fans are spinning?",
+    "expected": "4",
+    "got": "OK",
+    "ok": false,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-coolant-clean",
+    "kind": "number",
+    "noise": "clean",
+    "question": "What is the coolant temperature in celsius?",
+    "expected": "29",
+    "got": "29",
+    "ok": true,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-coolant-datacenter",
+    "kind": "number",
+    "noise": "datacenter",
+    "question": "What is the coolant temperature in celsius?",
+    "expected": "29",
+    "got": "Please specify which value you need: R12, 8, 16, 350 watts, 275 ",
+    "ok": false,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-rack-clean",
+    "kind": "text",
+    "noise": "clean",
+    "question": "What is the rack id?",
+    "expected": "R12",
+    "got": "R12",
+    "ok": true,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-rack-datacenter",
+    "kind": "text",
+    "noise": "datacenter",
+    "question": "What is the rack id?",
+    "expected": "R12",
+    "got": "Please specify which reading you need \u2014 I will answer with only ",
+    "ok": false,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-servers-clean",
+    "kind": "number",
+    "noise": "clean",
+    "question": "How many servers are online?",
+    "expected": "16",
+    "got": "16",
+    "ok": true,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-servers-datacenter",
+    "kind": "number",
+    "noise": "datacenter",
+    "question": "How many servers are online?",
+    "expected": "16",
+    "got": "8",
+    "ok": false,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-speed-clean",
+    "kind": "number",
+    "noise": "clean",
+    "question": "What is the fan speed percent?",
+    "expected": "80",
+    "got": "No telemetry reading is 10% - the available readings are: Rack i",
+    "ok": false,
+    "label": "SYNTHETIC"
+   },
+   {
+    "id": "q-speed-datacenter",
+    "kind": "number",
+    "noise": "datacenter",
+    "question": "What is the fan speed percent?",
+    "expected": "80",
+    "got": "I can only answer using the current rack telemetry, and there is",
+    "ok": false,
+    "label": "SYNTHETIC"
+   }
+  ],
+  "label": "SYNTHETIC",
+  "blocks_musecode_pr": true
+ }
+}

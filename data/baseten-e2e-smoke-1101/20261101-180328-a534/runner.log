@@ -1,0 +1,10 @@
+[guard] Meta worst $0.1244 (SAM 6x$0.0025/img + Wonder 1 call + Spark trace 4 calls + voice 40 clips@$0.0005 + Spark grades 12x$0.0021575) -> within caps
+[r01] 6 items x 2 arms, Meta ledger $27.3225 (MEASURED)
+[r01] without_wattnot done in 9s: 6/6 correct
+[watch] billing after without_wattnot: {'at': '2026-11-01T18:05:40.883807+00:00', 'endpoint': '/v1/billing/model_apis', 'status': 200, 'refusal': False, 'words': [], 'day': '2026-11-01', 'day_subtotal_usd': 2.83013115, 'label': 'MEASURED'}
+[r01] with_wattnot done in 10s: 6/6 correct
+[watch] billing after with_wattnot: {'at': '2026-11-01T18:07:52.942340+00:00', 'endpoint': '/v1/billing/model_apis', 'status': 200, 'refusal': False, 'words': [], 'day': '2026-11-01', 'day_subtotal_usd': 2.83013115, 'label': 'MEASURED'}
+[usage] {"status": "ok", "worst_diff_pct": 57.14, "match": false}
+hotspot set [live] (SYNTHETIC tests): SAM 3.1 found all 6 SYNTHETIC hotspots
+wonder chart [live · wonder]: next = 300W/base — No measured trials yet, so test the lowest base cap first to probe the efficiency frontier while checking quality retention.
+{"round": "r01", "status": "done", "acc": [1.0, 1.0], "wh": [0.9312, 1.1164], "p50": [4.736, 3.4], "baseten_usd": 0.2119, "meta_usd": 0.0112, "agree": 1.0, "errors": 0, "stop": null}

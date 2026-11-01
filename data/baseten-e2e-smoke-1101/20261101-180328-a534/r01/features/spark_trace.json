@@ -1,0 +1,42 @@
+[
+ {
+  "kind": "spark_call",
+  "step": "probe",
+  "model": "muse-spark-1.3",
+  "status": "empty",
+  "trace_id": "chatcmpl-01a19850-5d41-7760-ac4b-aa04bd9fd1b5",
+  "latency_s": 6.632,
+  "text": "",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "proposal",
+  "model": "muse-spark-1.3",
+  "status": "ok",
+  "trace_id": "chatcmpl-01a19850-7a66-7094-ab1e-00d91d280b8b",
+  "latency_s": 7.514,
+  "text": "{\"change\": \"disable extended thinking: set thinking_budget=0 / route to low-effort\", \"why\": \"accuracy_without=1.0 equals accuracy_with=1.0 with spark_agreement=1.0, so extra compute adds no quality; without cuts p99 10.2947->6.5433 and J/per-correct 669.85->558.7, and eye_check=false/hearing_check=false confirms no vision/audio reasoning needed.\"}",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "gate",
+  "model": "muse-spark-1.3",
+  "status": "ok",
+  "trace_id": "chatcmpl-01a19850-8d19-7275-a7b8-8a3300e461d0",
+  "latency_s": 4.763,
+  "text": "FAIL - accuracy flat at 1.0 while p99 regressed 6.54\u219210.29 and J/correct rose 558.7\u2192669.9.",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "receipt",
+  "model": "muse-spark-1.3",
+  "status": "ok",
+  "trace_id": "chatcmpl-01a19850-ae35-759b-bbb1-ece239698a40",
+  "latency_s": 8.453,
+  "text": "Accuracy held at 1.0 both without and with, with",
+  "label": "MEASURED"
+ }
+]
