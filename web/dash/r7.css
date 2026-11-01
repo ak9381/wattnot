@@ -14,8 +14,8 @@
   --r7-navy:#1F1A2F;--r7-navy2:#1F1A2F;--r7-slate:#2B2637;--r7-mist:#8E7A9E;--r7-rose:#E9A6B4;--r7-replay:#B2A6C3;
   --cy:var(--r7-blue);--tl:var(--r7-green);--am:var(--r7-gold);--rd:var(--r7-red);--vi:var(--r7-mauve);--viol:var(--r7-mauve);--green:var(--r7-green);--red:var(--r7-red)}
 html,body,button,select,input{font-family:"Space Grotesk",Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
-body{background:radial-gradient(900px 520px at 6% -10%,rgba(14,27,72,.75),transparent 60%),radial-gradient(800px 500px at 100% 0%,rgba(193,141,180,.12),transparent 60%),radial-gradient(700px 600px at 50% 120%,rgba(39,66,93,.35),transparent 60%),#080B10;background-attachment:fixed}
-h1,.r7-title{font-weight:700;letter-spacing:-.02em;background:linear-gradient(90deg,#F3F0F7 0%,#C79BB4 45%,#B49BDB 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+body{background:#080B10}
+h1,.r7-title{font-weight:600;letter-spacing:-.02em;color:var(--v-cream)}
 h1{font-size:32px}
 .btn.pri{background:linear-gradient(90deg,#8E7A9E,#8E7A9E);color:#080B10}
 nav.tabs button.on{background:rgba(142,122,158,.14);border-color:rgba(142,122,158,.5)}

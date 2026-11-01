@@ -28,16 +28,11 @@
   html,body{margin:0;background:var(--v-bg);color:var(--v-cream);font:16px/1.55 var(--v-body)}
   body{
     min-height:100vh;
-    background:
-      radial-gradient(900px 520px at 15% -5%, rgba(59,58,84,.40), transparent 65%),
-      radial-gradient(800px 500px at 85% 10%, rgba(79,74,99,.25), transparent 60%),
-      radial-gradient(700px 600px at 50% 120%, rgba(46,43,68,.30), transparent 65%),
-      var(--v-bg);
-    background-attachment:fixed;
+    background:var(--v-bg);
   }
   a{color:var(--v-peach)}
   h1,h2,h3,h4{margin:0;font-family:var(--v-head);letter-spacing:-.01em;color:var(--v-cream)}
-  h1{font-size:28px;font-weight:700}
+  h1{font-size:28px;font-weight:600}
   p{margin:.35em 0;color:var(--v-sub)}
   header.top{
     position:relative;z-index:30;display:flex;gap:16px;align-items:center;flex-wrap:wrap;
@@ -76,12 +71,11 @@
     margin-bottom:18px;border-bottom:1px solid var(--v-line);padding-bottom:12px;
   }
   .hero-kicker{
-    font-family:var(--v-head);font-size:12px;font-weight:700;letter-spacing:.12em;
-    text-transform:uppercase;color:var(--v-peach);display:flex;align-items:center;gap:8px;
+    font-family:var(--v-head);font-size:12px;font-weight:700;letter-spacing:.01em;
+    text-transform:none;color:var(--v-peach);display:flex;align-items:center;gap:8px;
   }
   .hero-kicker::before{
     content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--v-peach);
-    box-shadow:0 0 10px var(--v-glow);
   }
   .hero-grid{
     display:grid;grid-template-columns:repeat(4,1fr);gap:20px;align-items:stretch;
@@ -94,7 +88,7 @@
     border-radius:14px;padding:16px 18px;
   }
   .hero-item .label{
-    font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--v-mut);margin-bottom:8px;
+    font-size:12px;font-weight:600;letter-spacing:.01em;text-transform:none;color:var(--v-mut);margin-bottom:8px;
   }
   .hero-item .hero-val{
     font-family:var(--v-num);font-size:30px;font-weight:700;color:var(--v-cream);line-height:1.15;
@@ -120,7 +114,7 @@
   }
   .hero-dl-btn:hover{
     background:rgba(178,166,195,.32);border-color:var(--v-peach);
-    box-shadow:0 0 16px rgba(178,166,195,.25);color:#fff;text-decoration:none;
+    color:#fff;text-decoration:none;
   }
   .hero-dl-note{
     font-size:12px;color:var(--v-mut);margin-top:6px;text-align:center;
@@ -145,7 +139,7 @@
     z-index:2;
   }
   .breakdown-title{
-    font-size:14px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+    font-size:14px;font-weight:600;letter-spacing:.01em;text-transform:none;
     color:var(--v-mut);margin-bottom:14px;display:flex;align-items:center;gap:10px;
   }
   .breakdown-title::after{
@@ -161,7 +155,7 @@
   }
   .bd-card:hover{
     transform:translateY(-2px);border-color:var(--v-line2);
-    box-shadow:0 12px 36px rgba(0,0,0,.45),0 0 16px rgba(178,166,195,.12),inset 0 1px 0 rgba(220,214,228,.16);
+    box-shadow:0 12px 36px rgba(0,0,0,.45),inset 0 1px 0 rgba(220,214,228,.16);
   }
   .bd-card:focus-visible{
     outline:2px solid var(--v-peach);outline-offset:2px;
@@ -175,11 +169,11 @@
     background:rgba(46,43,68,.6);border:1px solid var(--v-line);flex:none;
   }
   .bd-card.active-num .bd-card-num{
-    background:var(--v-peach);color:var(--v-bg);box-shadow:0 0 10px var(--v-glow);border-color:var(--v-peach);
+    background:var(--v-peach);color:var(--v-bg);border-color:var(--v-peach);
   }
   .bd-card-name{
-    font-family:var(--v-head);font-weight:600;font-size:10px;letter-spacing:0;
-    text-transform:uppercase;color:var(--v-cream);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    font-family:var(--v-head);font-weight:600;font-size:10px;letter-spacing:.01em;
+    text-transform:none;color:var(--v-cream);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .bd-card-val{
     font-family:var(--v-num);font-size:20px;font-weight:700;color:var(--v-cream);
@@ -212,7 +206,7 @@
   }
   aside.side.on{transform:none}
   aside.side h2{font-family:var(--v-head);font-size:22px;margin-bottom:8px;color:var(--v-cream)}
-  aside.side h4{color:var(--v-peach);font-size:12px;text-transform:uppercase;letter-spacing:.09em;margin:18px 0 6px;font-family:var(--v-head)}
+  aside.side h4{color:var(--v-peach);font-size:12px;text-transform:none;letter-spacing:.01em;margin:18px 0 6px;font-family:var(--v-head)}
   aside.side p{color:var(--v-cream);line-height:1.55}
   aside.side .btn{
     float:right;background:rgba(142,122,158,.2);border:1px solid var(--v-line2);color:var(--v-cream);
