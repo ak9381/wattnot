@@ -69,6 +69,8 @@ def build_parser() -> argparse.ArgumentParser:
     vf.add_argument("receipts", nargs="+", help="receipt JSON files (bundle: <id>.sigstore.json)")
     vf.add_argument("--bundle", help="bundle path (only with one receipt)")
     vf.add_argument("--trust", help="trusted-keys JSON (default verifier/trusted-keys.json)")
+    vf.add_argument("--trust-signer", action="append", default=[], metavar="SIGNER",
+                    help="also accept this signer id (e.g. offline:aa51c251...); repeatable")
     vf.add_argument("--json", action="store_true", help="one JSON report per line")
     vf.add_argument("--rekor-online", action="store_true",
                     help="look each receipt up on the public Rekor log (rekor.sigstore.dev)")
@@ -221,6 +223,8 @@ def _run_verify(a: argparse.Namespace) -> int:
     if a.bundle and len(a.receipts) != 1:
         raise ValueError("--bundle works with one receipt")
     trusted = load_trusted(a.trust)
+    if trusted is not None and a.trust_signer:
+        trusted |= set(a.trust_signer)
     # a folder means every receipt in it, oldest name first; globs pick up bundles
     a.receipts = [str(q) for p in a.receipts for q in (sorted(Path(p).glob("*.json")) if Path(p).is_dir() else [p])]
     a.receipts = [p for p in a.receipts if not p.endswith(".sigstore.json")]

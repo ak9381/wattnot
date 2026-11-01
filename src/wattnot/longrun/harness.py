@@ -484,7 +484,7 @@ def main(argv=None) -> int:
     a.out.mkdir(parents=True, exist_ok=True)
     from .spark_grade import SparkGrader, grader_from_env
     spark = grader_from_env()
-    if spark is not None and a.fake and not spark.mock:   # a fake run never makes a paid call
+    if isinstance(spark, SparkGrader) and a.fake and not spark.mock:   # a fake run never makes a paid call
         spark = SparkGrader(mock=True, round_id=spark.round_id)
     block = run_block(nvml, h, chat, tasks, a.cap, reps=a.reps, clock=clock,
                       conc_scale=cfg["concurrency_scale"], spark=spark)

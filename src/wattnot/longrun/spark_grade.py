@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[3]
 CONFIG = ROOT / "scripts" / "e2e" / "round-matrix.json"
 ROUND_ENV = "WATTNOT_MATRIX_ROUND"
 ARM_ENV = "WATTNOT_MATRIX_ARM"
+RECORD_ENV = "WATTNOT_MATRIX_RECORD"
 MAX_ANSWER = 3000
 SYSTEM = ("Grade one answer. Reply JSON {\"correct\": bool, \"reason\": str}. correct = the answer "
           "solves the task (final number right, or the code would pass reasonable tests). Ignore style. "
@@ -110,11 +111,39 @@ class SparkGrader:
                 "disagreements": len(dis), "stopped": self.stopped}
 
 
-def grader_from_env(config: Path | None = None) -> SparkGrader | None:
-    """A grader when the matrix config asks for it and this run is a matrix round; else None."""
+class AnswerRecorder:
+    """Same call shape as SparkGrader, but makes no Meta call: it keeps the prompt, the answer and
+    the deterministic verdict so Spark can grade them off the GPU host after copy-back
+    (`matrix_round --grade`). The GPU host never holds the Meta key."""
+
+    label = "RECORDED"
+
+    def __init__(self, round_id: str = "", arm: str = "") -> None:
+        self.round_id, self.arm, self.mock, self.stopped = round_id, arm, False, None
+        self.records: list[dict] = []
+        self._lock = threading.Lock()
+
+    def __call__(self, item_id, dataset, prompt, answer, deterministic) -> dict:
+        rec = {"id": str(item_id), "dataset": dataset, "arm": self.arm,
+               "deterministic": bool(deterministic), "spark": None, "spark_reason": "pending off-box grade",
+               "spark_label": self.label, "prompt": (prompt or "")[:2000], "answer": (answer or "")[:MAX_ANSWER]}
+        with self._lock:
+            self.records.append(rec)
+        return rec
+
+    def summary(self) -> dict:
+        return {"label": self.label, "answers": len(self.records), "spark_graded": 0,
+                "agreement": None, "disagreements": 0, "stopped": None}
+
+
+def grader_from_env(config: Path | None = None) -> SparkGrader | AnswerRecorder | None:
+    """A grader when the matrix config asks for it and this run is a matrix round; else None.
+    WATTNOT_MATRIX_RECORD=1 (set on the GPU host) records answers for an off-box grade instead."""
     rid = os.environ.get(ROUND_ENV, "").strip()
     if not rid or not load_config(config).get("spark_grade_all"):
         return None
+    if os.environ.get(RECORD_ENV, "").strip() == "1":
+        return AnswerRecorder(round_id=rid, arm=os.environ.get(ARM_ENV, ""))
     return SparkGrader(model=load_config(config).get("spark_grade_model"), round_id=rid,
                        arm=os.environ.get(ARM_ENV, ""))
 

@@ -17,9 +17,16 @@ def test_long_plan_defaults_to_its_booking():
     assert driver._default_hours("glimmer-test", "retest") == 3.5
 
 
-def test_long_plan_needs_glimmer_test():
+def test_long_plan_needs_the_glimmer_h100_setting(tmp_path, monkeypatch):
+    # llama has no long plan: refused rather than silently running the old full plan
     with pytest.raises(SystemExit):
-        driver.main(["--dry-run", "--plan", "long", "--out", "x"])
+        driver.main(["--dry-run", "--plan", "long", "--model", "llama", "--out", str(tmp_path)])
+    # glimmer (the default) is the same Glimmer 30B on the H100: it runs the glimmer-test plan
+    seen = {}
+    monkeypatch.setattr(driver, "dry_run", lambda out, **kw: seen.update(kw) or
+                        {"blocks": {}, "stopped": "finished", "sim": {}})
+    assert driver.main(["--dry-run", "--plan", "long", "--out", str(tmp_path)]) == 0
+    assert seen["model"] == "glimmer-test" and seen["plan_name"] == "long"
 
 
 def test_init_keeps_watch_when_config_has_no_mode(tmp_path, monkeypatch):

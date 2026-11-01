@@ -94,6 +94,39 @@ def dry_round(round_id: str, out_dir: Path, config: Path | None = None) -> dict:
     return doc
 
 
+def grade_pulled(round_id: str, src: Path, out_dir: Path, *, client=None, mock: bool | None = None,
+                 config: Path | None = None) -> dict:
+    """Off-box Spark grade of a live round: read the answers the GPU host recorded
+    (<src>/<round>/**/spark_grades.json, AnswerRecorder), grade each through the guarded client
+    (stops at the $120 cap), write <out_dir>/<round>.json for the Run matrix page. The recorded
+    deterministic verdict is kept as is and still decides."""
+    cfg = load_config(config)
+    r = next((x for x in cfg.get("rounds", []) if x["id"] == round_id), None)
+    if r is None:
+        raise SystemExit(f"unknown round {round_id!r}")
+    files = sorted((src / round_id).rglob("spark_grades.json"))
+    spark = SparkGrader(mock=mock, client=client, round_id=round_id, model=cfg.get("spark_grade_model"))
+    acc: dict[str, list[int]] = {a: [0, 0] for a in r["arms"]}
+    for f in files:
+        for rec in json.loads(f.read_text()).get("answers", []):
+            spark.arm = rec.get("arm", "")
+            spark(rec["id"], rec["dataset"], rec.get("prompt", ""), rec.get("answer", ""), rec["deterministic"])
+            if spark.arm in acc:
+                acc[spark.arm][0] += bool(rec["deterministic"])
+                acc[spark.arm][1] += 1
+    res = {f"accuracy_{'without' if a == 'without_wattnot' else 'with'}": round(ok / n, 4) if n else None
+           for a, (ok, n) in acc.items()}
+    doc = {"round": round_id, "leg": r["leg"], "status": "done" if files else "missing",
+           "label": "MOCK" if spark.mock else "MEASURED",
+           "note": "accuracy MEASURED by the deterministic checks; Spark verdicts beside them",
+           "spark_grade_all": True, "deterministic_decides": True,
+           "results": {**res, "per_arm": {a: {"correct": v[0], "answers": v[1]} for a, v in acc.items()}},
+           "spark_summary": spark.summary(), "answers": spark.records, "source_files": [str(f) for f in files]}
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / f"{round_id}.json").write_text(json.dumps(doc, indent=1))
+    return doc
+
+
 def estimate(config: Path | None = None) -> dict:
     """Worst-case Meta $ for grading every answer in all rounds (guard pricing), no calls."""
     from wattnot.meta.ledger import estimate as worst
@@ -112,16 +145,26 @@ def main(argv=None) -> int:
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--dry-run", action="store_true")
     g.add_argument("--estimate", action="store_true")
-    ap.add_argument("--round", default="all", help="r01..r12 or all")
-    ap.add_argument("--out", type=Path, default=Path("/tmp/matrix-dry"))
+    g.add_argument("--grade", type=Path, metavar="PULLED_MATRIX_DIR",
+                   help="off-box Spark grade of answers recorded on the GPU host (guarded, $120 cap)")
+    ap.add_argument("--round", nargs="+", default=["all"], help="r01..r12 (several allowed) or all")
+    ap.add_argument("--out", type=Path, default=None,
+                    help="default /tmp/matrix-dry for --dry-run, <repo>/out/matrix for --grade")
     ap.add_argument("--config", type=Path, default=CONFIG)
     a = ap.parse_args(argv)
     if a.estimate:
         print(json.dumps(estimate(a.config), indent=1))
         return 0
-    ids = [r["id"] for r in load_config(a.config)["rounds"]] if a.round == "all" else [a.round]
+    ids = [r["id"] for r in load_config(a.config)["rounds"]] if a.round == ["all"] else a.round
+    if a.grade is not None:
+        for rid in ids:
+            d = grade_pulled(rid, a.grade, a.out or ROOT / "out" / "matrix", config=a.config)
+            s = d["spark_summary"]
+            print(f"[matrix] {rid} {d['status']} spark {s['spark_graded']}/{s['answers']} "
+                  f"agree {s['agreement']} [{d['label']}]", flush=True)
+        return 0
     for rid in ids:
-        d = dry_round(rid, a.out, a.config)
+        d = dry_round(rid, a.out or Path("/tmp/matrix-dry"), a.config)
         s = d["spark_summary"]
         print(f"[matrix] {rid} {d['leg']:<9} acc {d['results']['accuracy_without']:.3f} -> "
               f"{d['results']['accuracy_with']:.3f}  spark {s['spark_graded']}/{s['answers']} "

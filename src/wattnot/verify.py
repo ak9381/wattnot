@@ -47,7 +47,22 @@ class Report:
                 "joules": self.joules, "sci": self.sci}
 
 
+FLOW_SPEC = "wattnot.flow-receipt/1"
+
+
+def _is_flow(receipt) -> bool:
+    return isinstance(receipt, dict) and receipt.get("spec") == FLOW_SPEC
+
+
 def _schema_step(receipt) -> Step:
+    if _is_flow(receipt):
+        # a flow receipt: one row per layer, the layer artifacts hashed; it carries no
+        # measurement block of its own, so it never grades above ESTIMATE
+        lay = receipt.get("layers")
+        if not isinstance(lay, list) or not all(isinstance(x, dict) and "id" in x for x in lay) \
+                or not isinstance(receipt.get("integrity"), dict):
+            return Step("schema", False, {"error": "flow receipt needs layers[{id,...}] and integrity"})
+        return Step("schema", True, {"spec": FLOW_SPEC, "layers": len(lay)})
     if not isinstance(receipt, dict) or receipt.get("spec") != SPEC:
         spec = receipt.get("spec") if isinstance(receipt, dict) else None
         return Step("schema", False, {"error": f"spec is {spec!r}, want {SPEC}"})
@@ -115,7 +130,14 @@ def verify_document(receipt, bundle: dict | None, *, trusted: set[str] | None = 
             ok, detail = False, {"error": f"receipt names signer {integ.get('signer')}, "
                                           f"bundle is {why}"}
         if ok and trusted is not None and why not in trusted:
-            ok, detail = False, {"error": f"signer {why} is not a trusted key"}
+            if _is_flow(receipt):
+                # the flow signs with a per-run (or local test) key: the signature is checked,
+                # but the key proves only that this file was not changed since the run
+                detail = {"signer": why, "trusted": False,
+                          "note": "per-run key, not in trusted-keys.json: self-signed, grade at most "
+                                  "ESTIMATE (pass --trust-signer to accept it)"}
+            else:
+                ok, detail = False, {"error": f"signer {why} is not a trusted key"}
         steps.append(Step("signature", ok, detail))
 
     rekor = b.get("rekor") if isinstance(b, dict) else None
@@ -142,9 +164,12 @@ def verify_document(receipt, bundle: dict | None, *, trusted: set[str] | None = 
     if isinstance(receipt, dict):
         steps.append(labels_step(receipt))
     sha_ok, sig_ok = steps[1].ok, steps[2].ok
-    g = grade(receipt, sha_ok=steps[0].ok and sha_ok, sig_ok=sig_ok,
-              rekor_ok=log_index is not None, derived_ok=derived_ok) \
-        if isinstance(receipt, dict) else "UNVERIFIABLE"
+    if _is_flow(receipt):
+        g = "ESTIMATE" if steps[0].ok and sha_ok and sig_ok else "UNVERIFIABLE"
+    else:
+        g = grade(receipt, sha_ok=steps[0].ok and sha_ok, sig_ok=sig_ok,
+                  rekor_ok=log_index is not None, derived_ok=derived_ok) \
+            if isinstance(receipt, dict) else "UNVERIFIABLE"
     lab = next((x for x in steps if x.name == "labels"), None)
     if lab is not None and not lab.ok and g != "UNVERIFIABLE":
         # weak labels lower the grade: a SIMULATED/MOCK headline grades SIMULATED, an unknown
@@ -218,7 +243,10 @@ def format_report(r: Report) -> str:
         if s.name == "sha256":
             info = f"expected {d.get('expected')}  got {d.get('got', d.get('error'))}"
         elif s.name == "signature":
-            info = f"signer {d['signer']}" if s.ok else d.get("error", "")
+            info = (f"signer {d['signer']}" + (f"  ({d['note']})" if d.get("note") else "")) \
+                if s.ok else d.get("error", "")
+            if s.ok and d.get("trusted") is False:
+                mark = "warn"
         elif s.name == "rekor":
             info = f"log_index {d['log_index']}" if s.ok else d.get("note", "")
             mark = "ok  " if s.ok else "none"

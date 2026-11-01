@@ -17,6 +17,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -67,7 +68,11 @@ class Flow:
             p = self.out / a
             if p.is_file():
                 arts[a] = _sha(p)
+        # a label is one bare word the verifier knows; any qualifier goes to label_note
+        m = re.match(r"^([A-Z]+) \((.+)\)$", label)
+        label, label_note = (m.group(1), m.group(2)) if m else (label, "")
         st = {"id": sid, "inventory": rows, "mode": mode, "label": label,
+              **({"label_note": label_note} if label_note else {}),
               "status": "ok" if rc == 0 else "failed", "rc": rc, "note": str(note)[:400],
               "seconds": round(time.time() - t0, 2), "artifacts": arts}
         self.steps.append(st)
@@ -355,8 +360,8 @@ def _flow_receipt(F: Flow, receipt: Path | None) -> str:
             "gpu": "live" if F.gpu else "replay",
             "gpu_receipt": {"file": receipt.name, "sha256": _sha(receipt)} if receipt else None,
             "limits": settings.receipt_block(),
-            "layers": [{k: s[k] for k in ("id", "mode", "label", "status", "artifacts")}
-                       for s in F.steps]}
+            "layers": [{k: s[k] for k in ("id", "mode", "label", "label_note", "status", "artifacts")
+                        if k in s} for s in F.steps]}
     body["integrity"] = {"sha256": canonical_sha256(body)}
     p = F.out / "flow-receipt.json"
     p.write_text(json.dumps(body, indent=2))
