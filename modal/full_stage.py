@@ -128,7 +128,7 @@ try:  # pragma: no cover - only with modal installed
     image = (modal.Image.from_registry("vllm/vllm-openai:muse-glimmer")
              .dockerfile_commands(["RUN ln -sf \"$(command -v python3)\" /usr/local/bin/python"])
              .entrypoint([])
-             .pip_install("pynvml", "jsonschema", "pyyaml", "numpy", "langchain-core", "langchain-openai")
+             .pip_install("pynvml", "jsonschema", "pyyaml", "numpy", "langchain-core", "langchain-openai", "optuna>=3.6,<5")
              .add_local_dir("src", "/app/src")
              .add_local_dir("scripts", "/app/scripts")
              .add_local_dir("workloads", "/app/workloads")

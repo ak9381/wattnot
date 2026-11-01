@@ -104,7 +104,7 @@ def _load_font(size: int):
 
 
 # Gauge geometry (module level so the readability test can reproduce the needle tip exactly).
-GAUGE_RADIUS_FRAC = 0.42
+GAUGE_RADIUS_FRAC = 0.34
 # Sweep the 0..100 scale over a 270-degree arc. 0 at lower-left (225 deg measured anticlockwise
 # from +x in screen space, i.e. pointing down-left), sweeping clockwise through the top to 100 at
 # lower-right.
@@ -115,6 +115,8 @@ GAUGE_SWEEP_DEG = -270.0  # clockwise sweep across the full scale
 # tick, not stopping short of it.
 NEEDLE_TIP_FRAC = 0.97
 NEEDLE_TAIL_FRAC = 0.14   # short counterweight tail behind the hub
+GAUGE_MAJOR_STEP = 20     # labelled major ticks (0, 20, 40, 60, 80, 100)
+GAUGE_MINOR_STEP = 10     # unlabelled minor ticks; no finer divisions
 
 
 def _gauge_angle(value: float) -> float:
@@ -165,17 +167,19 @@ def render_gauge(value: int = 60, size: int = 512) -> bytes:
     num_font = _load_font(int(size * 0.072))
     unit_font = _load_font(int(size * 0.06))
 
-    # Ticks: minor every 2, major every 10 with a large bold numeral.
-    for v in range(0, 101, 2):
-        is_major = (v % 10 == 0)
+    # Ticks: few divisions so the reading is unambiguous. Labelled major ticks every 20 (the true
+    # value sits ON one), unlabelled minor ticks every 10, nothing finer: there is no 2-unit
+    # division for a model to land one step off on (it misread the old 2-unit dial as 62).
+    for v in range(0, 101, GAUGE_MINOR_STEP):
+        is_major = (v % GAUGE_MAJOR_STEP == 0)
         r_outer = radius
         r_inner = radius - (radius * (0.14 if is_major else 0.07))
         x1, y1 = point(v, r_inner)
         x2, y2 = point(v, r_outer)
         draw.line([x1, y1, x2, y2], fill="black",
-                  width=max(3, size // 150) if is_major else max(1, size // 350))
+                  width=max(5, size // 100) if is_major else max(2, size // 250))
         if is_major:
-            lx, ly = point(v, radius * 0.64)
+            lx, ly = point(v, radius * 1.22)  # outside the dial: the needle never covers a label
             label = str(v)
             bbox = draw.textbbox((0, 0), label, font=num_font)
             w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
@@ -189,8 +193,8 @@ def render_gauge(value: int = 60, size: int = 512) -> bytes:
     a = angle_for(value)
     ux, uy = math.cos(a), -math.sin(a)           # unit vector along the needle (screen coords)
     px, py = -uy, ux                              # perpendicular, for the needle width
-    shaft_hw = max(4, size // 110)               # half-width of the shaft
-    head_hw = max(9, size // 55)                 # half-width where the arrowhead flares out
+    shaft_hw = max(6, size // 70)                # half-width of the shaft
+    head_hw = max(12, size // 40)                # half-width where the arrowhead flares out
     head_frac = 0.80                             # the arrowhead starts here and tapers to the tip
 
     def axis(frac: float) -> tuple[float, float]:
@@ -244,10 +248,10 @@ def _gen_gauge() -> int:
     manifest = json.loads((ASSETS / "answers.json").read_text(encoding="utf-8"))
     note = ("Rendered deterministically by scripts/gen_vision_assets.py --gauge "
             "with PIL (not a photo, not the image model); needle on the labelled "
-            "60 tick. The answer (60) was already correct; this only improved the "
-            "dial's readability - a pointed needle running across the tick band to "
-            "the outer edge of the 60 tick, so it is not misread as 62. Not "
-            "re-verified live.")
+            "60 tick. Answer unchanged (60). Second redraw after the live Baseten "
+            "smoke still read 62: the dial now has labelled ticks every 20 and "
+            "unlabelled ticks every 10 only (no 2-unit divisions), and a thicker "
+            "needle, so 62 is not a reading the dial can show. Not re-verified live.")
     for item in manifest["items"]:
         if item["id"] == "gauge-reading":
             item["file"] = "gauge-reading.webp"
