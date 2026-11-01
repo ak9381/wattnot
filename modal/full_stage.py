@@ -129,6 +129,9 @@ try:  # pragma: no cover - only with modal installed
         threading.Timer(cap_s - 90, lambda: os._exit(4)).start()    # last-resort backstop
         os.environ["HF_HUB_CACHE"] = os.environ["HF_HOME"] = "/weights"
         os.environ["HF_HUB_OFFLINE"] = "1"
+        # torch.compile / AOT cache on the volume: first BF16 and first FP8 start of a round skip ~61 s compile
+        os.environ["VLLM_CACHE_ROOT"] = "/weights/vllm-cache"
+        os.makedirs("/weights/vllm-cache", exist_ok=True)
         from glob import glob
         snaps = sorted(glob("/weights/models--meta-models--Muse-Glimmer-30B/snapshots/*"))
         if not snaps:   # offline: a repo id cannot load; stop before any server start
@@ -162,6 +165,10 @@ try:  # pragma: no cover - only with modal installed
                 with open(lg, "wb") as f:
                     f.write(b"[truncated to the last 2 MB]\n" + keep)
         open(f"{out}/inner.log", "w").write(str(log)[-200000:])
+        try:   # persist the compile cache for the next round (cheap, a few hundred MB at most)
+            weights.commit()
+        except Exception:  # noqa: BLE001 - cache is an optimisation, never fail the round on it
+            pass
         buf = io.BytesIO()
         with tarfile.open(fileobj=buf, mode="w:gz") as t:
             t.add(out, arcname=round_id)
