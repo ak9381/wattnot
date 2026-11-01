@@ -340,11 +340,16 @@ def generate_report(receipt_or_path: Mapping | str | Path, out_dir: str | Path |
     # Verify receipt integrity hash
     # proof receipts too: a SHA-256 mismatch on either kind refuses the export
     try:
-        check_receipt_hash(receipt)
+        if isinstance(receipt_or_path, (str, Path)):
+            receipt, signed = check_receipt_file(receipt_or_path)
+        else:
+            signed = check_receipt_doc(receipt, None)
     except ValueError:
-        raise ValueError(f"receipt {receipt.get('receipt_id')} integrity hash verification failed") from None
+        raise ValueError(f"receipt {receipt.get('receipt_id')} integrity hash verification failed (or a bad signature)") from None
 
     rows = fields_for(receipt, **kw)
+    if signed is False:   # same rule as export(): unsigned MEASURED shows as ESTIMATE
+        rows = _unsigned(rows)
     if out_dir is not None:
         out = Path(out_dir) / f"eu_report_{receipt.get('receipt_id', 'latest')}"
         if isinstance(receipt_or_path, (str, Path)):

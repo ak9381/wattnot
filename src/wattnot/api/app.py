@@ -159,12 +159,15 @@ def _eu_out(receipt: dict, signed: Any, format: str) -> Any:  # noqa: A002
         rows = eu.fields_for(receipt)
     except (KeyError, TypeError, ValueError):
         return JSONResponse({"code": "not_a_receipt"}, status_code=400)
-    if signed is False:   # same rule as the CLI export: unsigned MEASURED shows as ESTIMATE
+    # The API can only check offline bundles itself. Anything it did not verify (no bundle, or
+    # a Sigstore/unknown bundle) can't back a MEASURED claim here: shown as ESTIMATE.
+    if signed is not True:
         rows = eu._unsigned(rows)
+    hdr = {"X-WattNot-Signed": "verified" if signed is True else "unverified"}
     if format == "csv":
-        return PlainTextResponse(eu.to_csv(rows), media_type="text/csv")
+        return PlainTextResponse(eu.to_csv(rows), media_type="text/csv", headers=hdr)
     if format == "html":
-        return HTMLResponse(eu.to_html(rows))
+        return HTMLResponse(eu.to_html(rows), headers=hdr)
     if format != "json":
         return JSONResponse({"code": "bad_format"}, status_code=400)
     return {"receipt_id": receipt.get("receipt_id"), "signed": signed, "fields": rows}
@@ -209,7 +212,7 @@ def _receipt_path(root: Path, receipt_id: str | None) -> Path | None:
     if path.is_file():
         return path
     hits = sorted(p for p in d.rglob(f"{receipt_id}.json") if p.is_file()) if d.is_dir() else []
-    return hits[0] if hits else None
+    return hits[0] if len(hits) == 1 else None   # ambiguous id: refuse, never guess
 
 
 def _receipt_for(root: Path, events: list[dict]) -> dict | None:
