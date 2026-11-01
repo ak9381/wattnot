@@ -192,7 +192,7 @@ try:  # pragma: no cover - only with modal installed
         fn = gpu_smoke if limit else gpu_round
         with modal.Queue.ephemeral() as q:
             call = fn.spawn(round, limit, [x for x in skip.split(",") if x], q)
-            data, st = None, {}
+            data, st, net_errs = None, {}, 0
             while data is None:
                 try:
                     lines = q.get_many(500, timeout=2)
@@ -202,8 +202,17 @@ try:  # pragma: no cover - only with modal installed
                     route_events(lines, events, st)
                 try:
                     data = call.get(timeout=0)
+                    net_errs = 0
                 except (TimeoutError, modal.exception.TimeoutError):
                     time.sleep(1)
+                except (ConnectionError, OSError, modal.exception.ConnectionError) as e:
+                    # a network blip on this machine must not stop the paid GPU run (1 Nov smoke-ui1617
+                    # lost its results to one "Deadline exceeded"); retry for up to ~10 min
+                    net_errs += 1
+                    if net_errs > 120:
+                        raise
+                    print(f"[poll] network error {net_errs}, retrying: {type(e).__name__}: {e}", flush=True)
+                    time.sleep(5)
             for _ in range(3):   # drain what is left
                 try:
                     lines = q.get_many(5000, timeout=1)
