@@ -37,7 +37,7 @@
           <a class="wn-link" data-nav="configure" href="${prefix}v2.html#pCfg">Configure &amp; run</a>
           <a class="wn-link" data-nav="runs" href="${prefix}runs.html">Runs</a>
           <a class="wn-link" data-nav="compare" href="${prefix}v2.html#pReport">Compare</a>
-          <a class="wn-link" data-nav="reports" href="${prefix}report.html?run=run2-llama-350w">Reports</a>
+          <a class="wn-link" data-nav="reports" href="${prefix}report.html">Reports</a>
           <a class="wn-link" data-nav="graph" href="${prefix}graph.html">Live graph</a>
           <a class="wn-link" data-nav="costbudget" href="${prefix}costbudget.html">Cost budget</a>
           <a class="wn-link" data-nav="matrix" href="${prefix}matrix.html">Run matrix</a>
@@ -53,6 +53,13 @@
     if (!document.querySelector('link[href$="elig.css"]')) {
       const l = document.createElement("link"); l.rel = "stylesheet"; l.href = prefix + "elig.css"; document.head.appendChild(l);
       const m = document.createElement("script"); m.type = "module"; m.src = prefix + "elig.js"; document.head.appendChild(m);
+    }
+
+    if (!document.querySelector('script[src$="runpick.js"]')) {
+      const rp = document.createElement("script"); rp.type = "module"; rp.src = prefix + "runpick.js"; document.head.appendChild(rp);
+    }
+    if (!document.querySelector('script[src$="elig.js"]')) {
+      const m2 = document.createElement("script"); m2.type = "module"; m2.src = prefix + "elig.js"; document.head.appendChild(m2);
     }
 
     // 2. Mic slot positioning on app pages (never on landing)
@@ -187,4 +194,21 @@
   } else {
     initChrome();
   }
+})();
+
+// Side drawers start below the floating header and end above the footer, on every page and width.
+(function wnDrawerBounds() {
+  const set = () => {
+    const nav = document.querySelector("nav.wn-nav");
+    const foot = document.querySelector(".wn-footer");
+    const top = nav ? Math.ceil(nav.getBoundingClientRect().bottom) + 10 : 16;
+    const ft = foot ? foot.getBoundingClientRect().top : innerHeight;
+    const bottom = ft > top + 200 && ft < innerHeight ? Math.ceil(innerHeight - ft) + 10 : 12;
+    document.documentElement.style.setProperty("--wn-drawer-top", top + "px");
+    document.documentElement.style.setProperty("--wn-drawer-bottom", bottom + "px");
+  };
+  addEventListener("resize", set);
+  addEventListener("load", set);
+  document.addEventListener("DOMContentLoaded", () => { set(); setTimeout(set, 600); });
+  new MutationObserver(set).observe(document.documentElement, { childList: true, subtree: false });
 })();

@@ -11,7 +11,8 @@ export function row(r, a = arm()) {
   const x = (r.arms || {})[a] || {}, s = r.source, l = (t) => `<a href="${src(s)}" title="${esc(s)}">${t}</a>`;
   const rc = r.receipt ? `<a href="${src(r.receipt)}">receipt</a>` : "no receipt";
   const sv = r.energy_saved_pct || {};
-  return `<tr data-provider="${esc(r.provider)}">
+  const sel = (globalThis.localStorage && (new URL(globalThis.location?.href || "http://x/").searchParams.get("run") || localStorage.getItem("wn.run"))) === r.id;
+  return `<tr data-provider="${esc(r.provider)}" data-run="${esc(r.id)}"${sel ? ' class="wn-run-sel" aria-current="true"' : ""}>
     <td>${esc(PROV[r.provider] || r.provider)}, round ${esc(String(r.round).replace(/^r0?/, ""))}${r.smoke ? " (small test)" : ""}</td>
     <td>${esc(String(r.model || "").split("/").pop())}</td>
     <td>${l(num(x.accuracy * 100, 0) + "%")} ${lab("MEASURED")}</td>

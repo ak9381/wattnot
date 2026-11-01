@@ -116,7 +116,9 @@ test("shared chrome header has updated nav links and Live graph", () => {
   assert.match(chromeJs, /href="\${prefix}v2\.html#pHome">Dashboard<\/a>/);
   assert.match(chromeJs, /href="\${prefix}runs\.html">Runs<\/a>/);
   assert.match(chromeJs, /href="\${prefix}v2\.html#pReport">Compare<\/a>/);
-  assert.match(chromeJs, /href="\${prefix}report\.html\?run=run2-llama-350w">Reports<\/a>/);
+  // The run comes from the header picker (runpick.js adds ?run= to every link).
+  assert.match(chromeJs, /href="\${prefix}report\.html">Reports<\/a>/);
+  assert.match(chromeJs, /runpick\.js/);
   assert.match(chromeJs, /href="\${prefix}graph\.html">Live graph<\/a>/);
   assert.doesNotMatch(chromeJs, />Architecture<\/a>/);
 

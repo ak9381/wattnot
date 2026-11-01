@@ -148,7 +148,7 @@ const EXPLAIN_CSS = `
 
 .explain-popover-chip.measured { color: #8fbba0; border-color: rgba(143, 187, 160, 0.3); }
 .explain-popover-chip.estimate { color: #f6dbc0; border-color: rgba(246, 219, 192, 0.3); }
-.explain-popover-chip.simulated { color: #b2a6c3; border-color: rgba(178, 166, 195, 0.3); }
+.explain-popover-chip.simulated { color: #D6CEE0; border-color: rgba(178, 166, 195, 0.3); }
 .explain-popover-chip.mock { color: #e0a3b2; border-color: rgba(224, 163, 178, 0.3); }
 .explain-popover-chip.replay { color: #9bb5d9; border-color: rgba(155, 181, 217, 0.3); }
 .explain-popover-chip.advice { color: #d6b88d; border-color: rgba(214, 184, 141, 0.3); }
@@ -705,7 +705,7 @@ export function showAmbiguousChoices(candidates, doc = document) {
     <h3 class="explain-choices-title">Which one?</h3>
     <p class="explain-choices-sub">Multiple metrics matched your query. Select the element you'd like explained:</p>
     <div class="explain-choices-list">${choicesHtml}</div>
-    <button class="explain-choice-item" id="explain-choices-cancel" style="justify-content:center;color:#b2a6c3;">Cancel</button>
+    <button class="explain-choice-item" id="explain-choices-cancel" style="justify-content:center;color:#D6CEE0;">Cancel</button>
   `;
 
   doc.body.appendChild(dialog);

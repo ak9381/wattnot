@@ -7,7 +7,7 @@
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 2rem;
-  color: #DCD6E4;
+  color: #F3F0F7;
   font-family: "Source Sans 3", "Source Sans Pro", system-ui, sans-serif;
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
@@ -40,9 +40,9 @@
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
   background: rgba(142, 122, 158, 0.2);
-  color: #DCD6E4;
+  color: #F3F0F7;
 }
-.spk-energy { color: #C4B4D6; }
+.spk-energy { color: #DDD4E7; }
 
 .spk-verdict {
   font-family: "Fira Code", monospace;
@@ -54,7 +54,7 @@
 .spk-ok { color: #A3BE8C; background: rgba(163, 190, 140, 0.14); }
 .spk-blocked { color: #E06C75; background: rgba(224, 108, 117, 0.16); }
 
-.spk-sub { color: #B2A6C3; font-size: 0.9rem; margin: 0 0 0.5rem; }
+.spk-sub { color: #D6CEE0; font-size: 0.9rem; margin: 0 0 0.5rem; }
 .spk-reason { font-size: 0.9rem; margin: 0 0 0.75rem; }
 
 .spk-table {
@@ -66,7 +66,7 @@
   text-align: left;
   font-family: "Montserrat", sans-serif;
   font-weight: 600;
-  color: #8E7A9E;
+  color: #CBC4D6;
   padding: 0.35rem 0.5rem;
   border-bottom: 1px solid rgba(110, 94, 124, 0.3);
 }
@@ -88,9 +88,9 @@
   padding: 0.05rem 0.35rem;
   border-radius: 3px;
   background: rgba(142, 122, 158, 0.18);
-  color: #B2A6C3;
+  color: #D6CEE0;
 }
-.spk-syn { color: #C4B4D6; }
-.spk-stat { font-family: "Fira Code", monospace; color: #B2A6C3; }
+.spk-syn { color: #DDD4E7; }
+.spk-stat { font-family: "Fira Code", monospace; color: #D6CEE0; }
 .spk-pass .spk-stat { color: #A3BE8C; }
 .spk-fail .spk-stat { color: #E06C75; }

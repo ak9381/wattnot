@@ -59,7 +59,7 @@ export function drawPreview(view, cv, state = {}) {
     x.stroke();
   }
   if (state.step != null) {
-    x.fillStyle = "#A79BB9"; x.font = "10px JetBrains Mono, monospace";
+    x.fillStyle = "#CBC4D6"; x.font = "10px JetBrains Mono, monospace";
     x.fillText(String(state.text || state.step || ""), 8, 12);
   }
 }

@@ -56,7 +56,7 @@ nav.wn-nav.gl {
   font-weight: 700;
   font-size: 19px;
   letter-spacing: 0.01em;
-  color: var(--v-cream, #DCD6E4);
+  color: var(--v-cream, #F3F0F7);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -104,11 +104,11 @@ nav.wn-nav.gl {
   transition: all 0.15s ease;
 }
 .wn-tabs button:hover {
-  color: var(--v-cream, #DCD6E4);
+  color: var(--v-cream, #F3F0F7);
   background: rgba(178, 166, 195, 0.15);
 }
 .wn-tabs button.on {
-  color: var(--v-cream, #DCD6E4);
+  color: var(--v-cream, #F3F0F7);
   background: rgba(178, 166, 195, 0.25);
   border-color: rgba(255, 255, 255, 0.18);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
@@ -132,14 +132,14 @@ nav.wn-nav.gl {
 }
 
 .wn-link:hover {
-  color: var(--v-cream, #DCD6E4);
+  color: var(--v-cream, #F3F0F7);
   background: rgba(220, 214, 228, 0.08);
   border-color: rgba(220, 214, 228, 0.15);
   text-decoration: none;
 }
 
 .wn-link.on, .wn-link[aria-current="page"] {
-  color: var(--v-cream, #DCD6E4);
+  color: var(--v-cream, #F3F0F7);
   background: rgba(178, 166, 195, 0.16);
   border-color: rgba(178, 166, 195, 0.4);
   font-weight: 600;
@@ -226,7 +226,7 @@ footer.wn-footer.gl {
 .wn-footer-left .wn-logo {
   font-family: var(--v-head, "Montserrat", system-ui, sans-serif);
   font-weight: 700;
-  color: var(--v-cream, #DCD6E4);
+  color: var(--v-cream, #F3F0F7);
   font-size: 15px;
 }
 
@@ -266,7 +266,7 @@ footer.wn-footer.gl {
   flex: none;
 }
 
-.wn-leg-dot.lab-measured { background: var(--v-l-measured, #DCD6E4); }
+.wn-leg-dot.lab-measured { background: var(--v-l-measured, #F3F0F7); }
 .wn-leg-dot.lab-estimate { background: var(--v-l-estimate, #C4B4D6); }
 .wn-leg-dot.lab-mock { background: var(--v-l-mock, #C6B2C2); }
 
@@ -296,7 +296,7 @@ footer.wn-footer.gl {
 }
 
 .wn-footer-gh:hover {
-  color: var(--v-cream, #DCD6E4);
+  color: var(--v-cream, #F3F0F7);
   background: rgba(220, 214, 228, 0.12);
   border-color: rgba(220, 214, 228, 0.3);
   text-decoration: none;
@@ -345,7 +345,7 @@ body.is-landing nav.wn-nav.gl .wn-brand i {
 
 body.is-landing nav.wn-nav.gl .wn-link {
   font-size: 14px;
-  color: #7C8599;
+  color: #C8CCD4;
 }
 
 body.is-landing nav.wn-nav.gl .wn-link:hover {
@@ -375,7 +375,7 @@ body.is-landing footer.wn-footer.gl {
   -webkit-backdrop-filter: blur(24px) saturate(170%);
   border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  color: #7C8599;
+  color: #C8CCD4;
   font-family: "Inter Tight", system-ui, sans-serif;
   padding: 12px 20px;
 }
@@ -396,7 +396,7 @@ body.is-landing footer.wn-footer.gl .wn-footer-track,
 body.is-landing footer.wn-footer.gl .wn-footer-year,
 body.is-landing footer.wn-footer.gl .wn-leg-item,
 body.is-landing footer.wn-footer.gl .wn-footer-note {
-  color: #7C8599;
+  color: #C8CCD4;
 }
 body.is-landing footer.wn-footer.gl .wn-footer-gh {
   color: #F2F5FA;
