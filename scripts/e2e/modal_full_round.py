@@ -297,7 +297,7 @@ def main(argv=None) -> int:
             return 3
         cap_s = full_stage.SMOKE_CAP_S if a.limit else full_stage.ROUND_CAP_S
         worst = cap_s / 3600 * full_stage.GPU_USD_H
-        if worst > full_stage.ROUND_HARD_USD:
+        if worst > (full_stage.SMOKE_HARD_USD if a.limit else full_stage.ROUND_HARD_USD):
             print(f"[stop] round worst ${worst:.2f} > hard ${full_stage.ROUND_HARD_USD:.0f} cap")
             return 4
         if app_running() != []:
@@ -305,7 +305,7 @@ def main(argv=None) -> int:
             return 4
         meas0 = modal_metered()
         if a.limit > 3:
-            print("[stop] smoke rounds take --limit 1..3 (22-min container cap)")
+            print("[stop] smoke rounds take --limit 1..3 (35-min container cap, $1.46 worst)")
             return 4
         if stage_committed() + worst > STAGE_CAP_USD:
             print(f"[stop] stage ${stage_committed():.2f} + worst ${worst:.2f} > ${STAGE_CAP_USD:.0f} cap")
