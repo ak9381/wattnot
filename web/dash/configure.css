@@ -1,0 +1,51 @@
+.cfg, .cfg * { box-sizing: border-box; }
+body:has(> main.cfg) { margin: 0; background: var(--v-bg); color: var(--v-cream); font-family: var(--v-body); line-height: 1.5; }
+.cfg a { color: var(--v-peach); }
+main.cfg { max-width: 1180px; margin: 0 auto; padding: 18px clamp(14px, 4vw, 40px) 80px; }
+.cfg h1, .cfg h2, .cfg h3 { font-family: var(--v-head); font-weight: 600; margin: 0 0 8px; }
+.cfg h1 { font-size: clamp(24px, 3vw, 32px); } .cfg h2 { font-size: 19px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; } .cfg h3 { font-size: 15px; margin-top: 14px; }
+.cfg .sub, .cfg .hint { color: var(--v-sub); font-size: 14px; } .cfg .hint { display: block; font-size: 12.5px; color: var(--v-mut); }
+.cfg .steps { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 10px 0 0; counter-reset: s; }
+.cfg .steps li { padding: 4px 12px; border: 1px solid var(--v-line2); border-radius: 999px; font-size: 13px; color: var(--v-mut); }
+.cfg .steps li.on { background: var(--v-violet); color: var(--v-cream); }
+.cfg .card { background: var(--v-surf-17); border: 1px solid var(--v-line); border-radius: var(--v-r); padding: 18px 20px; margin-top: 16px; }
+.cfg .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px 22px; }
+.cfg fieldset { border: 1px solid var(--v-line); border-radius: 12px; padding: 10px 12px; margin: 0; } .cfg legend { color: var(--v-sub); font-size: 13px; padding: 0 4px; }
+.cfg label { display: flex; flex-direction: column; gap: 4px; font-size: 14px; } .cfg label.tog { flex-direction: row; align-items: center; gap: 8px; }
+.cfg .row { display: flex; gap: 8px; align-items: center; color: var(--v-sub); }
+.cfg select, .cfg input[type=number] { background: var(--v-bg2); color: var(--v-cream); border: 1px solid var(--v-line2); border-radius: 8px; padding: 6px 8px; font: inherit; }
+.cfg input[type=number] { width: 70px; }
+.cfg .radios label, .cfg .checks label { flex-direction: row; gap: 8px; align-items: flex-start; padding: 3px 0; }
+.cfg .radios small { display: block; color: var(--v-mut); }
+.cfg .caps { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; font-size: 14px; }
+.cfg .fixed { margin: 0; font-size: 14px; color: var(--v-sub); }
+.cfg .models { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+.cfg .mchip { border: 1px solid var(--v-line2); border-radius: 12px; padding: 10px 12px; font-size: 13.5px; }
+.cfg .mchip b { display: block; font-size: 14.5px; color: var(--v-cream); } .cfg .mchip span { color: var(--v-sub); }
+.cfg .pill { display: inline-block; font: 600 11px/1 var(--v-num); padding: 4px 7px; border-radius: 999px; border: 1px solid currentColor; }
+.cfg .pill.yes { color: var(--v-pass); } .cfg .pill.no { color: var(--v-reject); } .cfg .pill.warn { color: var(--v-l-estimate); }
+.cfg .tablewrap { max-height: 460px; overflow: auto; border: 1px solid var(--v-line); border-radius: 12px; }
+.cfg table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.cfg th, .cfg td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--v-line); vertical-align: top; }
+.cfg th { position: sticky; top: 0; background: var(--v-bg3); color: var(--v-sub); font-weight: 600; }
+.cfg tr.wn-inel::after { content: none; } .cfg tr.wn-inel { opacity: .55; }
+.cfg .filt { display: inline-flex; gap: 4px; margin-left: 8px; } .cfg .filt button, .cfg .btn { font: inherit; cursor: pointer; }
+.cfg .filt button { background: none; border: 1px solid var(--v-line2); color: var(--v-sub); border-radius: 999px; padding: 1px 10px; font-size: 12.5px; }
+.cfg .filt button[aria-pressed=true] { background: var(--v-violet); color: var(--v-cream); }
+.cfg .checks-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.cfg .checks-list li { display: grid; grid-template-columns: 64px 1fr; gap: 4px 12px; border: 1px solid var(--v-line); border-radius: 12px; padding: 9px 12px; }
+.cfg .checks-list .t { font-weight: 600; } .cfg .checks-list .r { grid-column: 2; color: var(--v-sub); font-size: 13.5px; } .cfg .checks-list .f { grid-column: 2; color: var(--v-l-estimate); font-size: 13px; }
+.cfg .st { font: 600 12px/1 var(--v-num); padding: 5px 0; text-align: center; border-radius: 8px; border: 1px solid currentColor; height: fit-content; }
+.cfg .st.pass { color: var(--v-pass); } .cfg .st.fail { color: var(--v-reject); } .cfg .st.warn { color: var(--v-l-estimate); } .cfg .st.wait { color: var(--v-mut); }
+.cfg .btn { background: var(--v-accent-6c); color: var(--v-cream); border: 1px solid var(--v-line2); border-radius: 999px; padding: 8px 18px; }
+.cfg .btn.ghost { background: transparent; } .cfg .btn:disabled { opacity: .45; cursor: not-allowed; }
+.cfg .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; } .cfg .why { color: var(--v-mut); font-size: 13.5px; }
+.cfg .est { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.cfg .est div { border: 1px solid var(--v-line); border-radius: 12px; padding: 10px 12px; } .cfg .est b { display: block; font: 600 20px/1.2 var(--v-num); }
+.cfg .log { background: var(--v-bg); border: 1px solid var(--v-line); border-radius: 12px; padding: 10px; max-height: 420px; overflow: auto; font: 12.5px/1.45 var(--v-num); white-space: pre-wrap; color: var(--v-sub); }
+.cfg code { font-family: var(--v-num); font-size: .92em; }
+@media (max-width: 560px) { .cfg .checks-list li { grid-template-columns: 1fr; } .cfg .checks-list .r, .cfg .checks-list .f { grid-column: 1; } .cfg th:nth-child(1), .cfg td:nth-child(1) { display: none; } }
+.cfg [hidden]{display:none!important}
+.cfg label.tog {display:block;line-height:1.5} .cfg label.tog input[type=checkbox] {margin-right:6px;vertical-align:middle} .cfg label.tog input[type=number] {width:3.5em}
+.wn-launch.cfg { margin-top: 18px; padding: 0; }
+.wn-launch .cfg-head h2 { font-size: 20px; }

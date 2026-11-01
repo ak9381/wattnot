@@ -4,6 +4,7 @@ import { renderProof, wireIllus } from "./proof.js";
 import { init as initPanCanvas } from "./pancanvas.js";
 import { overviewHtml, openPowerGraph, wireR7, metaInRun, branchPopup, cmpHeadHtml, openWhere, methodPopup, branchInfo, savedPct, childSaved, CHILDREN, CHILD_ONLY, DERIVED_HINT, BUNDLED_ID, compareState, bundledRecord, emptyStateHtml, bundledBanner, TREE, treeChildren, treeFind, treeValue, contextSaver, WATER_L_PER_KWH, WATER_L_PER_KWH_UPPER } from "./v2r7.js";
 import { compareRows } from "./metatools.js";
+import * as LS from "./launchsteps.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -45,7 +46,10 @@ function show(p) {
 $$("#tabs button").forEach((b) => (b.onclick = () => show(b.dataset.p)));
 
 // ---------- info side panel ----------
+let infoFrom = null;
 function openInfo(id) {
+  infoFrom = document.activeElement;
+  if (id.startsWith("L:")) { const x = LS.infoHtml(id.slice(2)); if (x) { openSidePanel(x.title, x.html); document.body.classList.remove("drawer-open"); } return; }
   const o = S.opts.options.find((x) => x.id === id) || LEARN_INFO[id]; if (!o) return;
   $("#sideBody").innerHTML = `<h2>${esc(o.label)}</h2>
     <h4>What it is</h4><p>${esc(o.help.what)}</p><h4>Why it matters here</h4><p>${esc(o.help.why)}</p><h4>Example</h4><p>${esc(o.help.example)}</p>
@@ -57,6 +61,7 @@ function closeInfo() {
   document.body.classList.remove("drawer-open");
   $("#scrim").hidden = true;
   setTimeout(() => S.radPan?.fit(), 310);
+  if (infoFrom?.focus) { infoFrom.focus(); infoFrom = null; }
 }
 // Open arbitrary detail HTML in the shared side panel (used by the Compare tree
 // info buttons: detail opens here, never in a pop-up).
@@ -161,7 +166,8 @@ const STACK_CARDS = [
   { v: "llamaindex", t: "LlamaIndex", d: "LlamaIndex OpenAILike integration", snippet: 'OpenAILike(api_base="http://localhost:8000/v1")', icon: "batch", ex: 'llm = OpenAILike(api_base="http://localhost:8000/v1")' },
   { v: "plain", t: "plain API", d: "Direct HTTP completions endpoint", snippet: 'curl http://localhost:8000/v1/chat/completions', icon: "chat", ex: 'curl http://localhost:8000/v1/chat/completions' },
 ];
-const STEP_Q = ["What do you want to save on?", "Which AI are you running?", "What kind of traffic?", "Your stack", "How careful should we be?", "How do you want to run it?"];
+const STEP_Q = ["Name this run", "What do you want to save on?", "Where does it run?", "Which AI are you running?", "What traffic, which datasets?", "Your stack", "Limits and spend caps", "Approvals and the code PR", "What works on this setup", "Pre-launch checks", "Confirm and run"];
+const NSTEP = STEP_Q.length;
 const CONN_ITEMS = [
   { id: "nvidia", t: "GPU telemetry", d: "NVIDIA NVML power counter" },
   { id: "e2e", t: "E2E Networks H100", d: "the rented GPU" },
@@ -202,7 +208,7 @@ function renderCfg() {
   S.step ??= 1;
   const byId = Object.fromEntries(O.options.map((o) => [o.id, o]));
   const adv = O.options.filter((o) => !ESSENTIAL_IDS.includes(o.id)).map((o) => fld(o)).join("");
-  $("#pCfg").innerHTML = `<div class="intro"><div><h1>Configure a new run</h1><p>Six short questions. Edit any answer on the right. Replays recorded runs only: no GPU, no cost.</p></div></div>
+  $("#pCfg").innerHTML = `<div class="intro"><div><h1>Configure a new run</h1><p>One question at a time. Tap <b>i</b> next to any field for what it means, the options and what it costs.</p></div></div>${LS.BANNER}
     <div class="cfg-step bento"><div class="glass tile span4 lift step-main">
       <div class="step-prog"><span id="stepCount" role="status"></span><ol id="stepDots" aria-label="Progress"></ol></div>
       <div id="stepBody" aria-live="polite"></div>
@@ -212,7 +218,7 @@ function renderCfg() {
       <div class="glass tile low conn"><h3>Already connected</h3><p>Wired by default, read from the partners list.</p><ul id="connList"></ul></div>
       <div class="glass tile low conn" id="pfTile" hidden><h3>This machine</h3><p>From the preflight check. Greyed out means this host can't run it yet; hover for why.</p><ul id="pfList"></ul></div>
       <div class="grp glass tile low"><h3>What will happen</h3><div id="cfgSum"></div>${legendHtml()}
-      <p class="lock">Live mode needs the owner's okay and the command line. It is never started from here.</p></div></div></div>
+      <p class="lock">Paid runs start only from the last step, after the free pre-launch checks pass and you confirm the cost. High-risk changes are always held for a reviewer.</p></div></div></div>
     <details class="adv glass" id="advDis"><summary id="advSum" aria-expanded="false"><span class="adv-t">Advanced settings</span>
       <span class="adv-line">Safe defaults are set; open this to change limits, gates and budgets.</span><span class="chev" aria-hidden="true">›</span></summary>
       <div class="adv-defaults" id="advDef"><span class="lvl">Defaults in use</span><div id="advDefList"></div></div>
@@ -227,10 +233,10 @@ function renderCfg() {
   datasetUpload();
   $("#advDis").addEventListener("toggle", syncAdv);
   $("#stepBack").onclick = () => { if (S.step > 1) { S.step--; renderStep(); } };
-  $("#stepNext").onclick = () => { if (S.step < 6) { markDone(S.step); S.step++; renderStep(); } };
+  $("#stepNext").onclick = () => { if (S.step < NSTEP && stepOk()) { markDone(S.step); S.step++; renderStep(); } };
   document.onkeydown = (e) => {
     if (!$("#pCfg").classList.contains("on")) return;
-    if (e.key === "ArrowRight" && S.step < 6 && e.target.tagName !== "SELECT" && e.target.tagName !== "INPUT") { markDone(S.step); S.step++; renderStep(); }
+    if (e.key === "ArrowRight" && S.step < NSTEP && stepOk() && e.target.tagName !== "SELECT" && e.target.tagName !== "INPUT") { markDone(S.step); S.step++; renderStep(); }
     if (e.key === "ArrowLeft" && S.step > 1 && e.target.tagName !== "SELECT" && e.target.tagName !== "INPUT") { S.step--; renderStep(); }
   };
   renderStep(); renderConn(); sumCfg(); syncAdv();
@@ -243,13 +249,25 @@ function workloadLabel(id) {
 function markDone(n) { (S.answered ??= {})[n] = true; renderPicked(); }
 function cardLabel(cards, v) { return cards.find((c) => c.v === v)?.t; }
 function pickedAnswer(n) {
-  const c = S.choice;
-  if (n === 1) return cardLabel(SAVE_CARDS, c.save_target);
-  if (n === 2) return S.opts.options.find((o) => o.id === "model")?.choices.find((x) => x.v === c.model)?.label;
-  if (n === 3) return cardLabel(TRAFFIC_CARDS, c.traffic);
-  if (n === 4) return STACK_CARDS.find((s) => s.v === (c.framework || "openai-python"))?.t || "openai-python";
-  if (n === 5) { const t = cardLabel(CARE_CARDS, c.care); return t ? `${t} (slowest 1% may rise ${c.p99_slack_pct}%, answers must agree ${c.min_quality_pct}%)` : null; }
-  return S.answered?.[6] ? `Replay: ${c.name || "My first replay"}` : null;
+  const c = S.choice, lc = LS.L.cfg;
+  if (n === 1) return c.name ? c.name : null;
+  if (n === 2) return cardLabel(SAVE_CARDS, c.save_target);
+  if (n === 3) return LS.L.opt?.providers[lc.provider]?.label || lc.provider;
+  if (n === 4) return S.opts.options.find((o) => o.id === "model")?.choices.find((x) => x.v === c.model)?.label;
+  if (n === 5) { const t = cardLabel(TRAFFIC_CARDS, c.traffic); return t ? `${t} · ${lc.datasets.join(", ")}` : lc.datasets.join(", "); }
+  if (n === 6) return STACK_CARDS.find((s) => s.v === (c.framework || "openai-python"))?.t || "openai-python";
+  if (n === 7) return `p99 +${lc.p99_pct}% · ${lc.rounds} round(s)${lc.smoke ? ` · GPU smoke ${lc.smoke.limit}` : ""}`;
+  if (n === 8) return `High risk held · PR ${lc.open_pr !== false ? "on" : "off"}`;
+  if (n === 9) return LS.L.elig ? `${LS.L.elig.counts.eligible} of ${LS.L.elig.counts.total} features` : null;
+  if (n === 10) return LS.L.checks ? (LS.L.checks.ready ? "All required pass" : "Some fail") : null;
+  return null;
+}
+function stepOk() {
+  if (S.step !== 1) return true;
+  const ok = !!(S.choice.name || "").trim();
+  const e = $("#f-name-err"); if (e) e.hidden = ok;
+  if (!ok) $("#f-name")?.focus();
+  return ok;
 }
 function renderPicked() {
   const el = $("#pickList"); if (!el) return;
@@ -262,45 +280,55 @@ function renderPicked() {
   $$("#pickList [data-edit]").forEach((b) => (b.onclick = () => { S.step = +b.dataset.edit; renderStep(); $("#stepBody")?.querySelector("input")?.focus(); }));
 }
 function renderStep() {
-  const n = S.step, body = $("#stepBody");
-  $("#stepCount").textContent = `Step ${n} of 6`;
+  const n = S.step, body = $("#stepBody"), Q = STEP_Q[n - 1];
+  $("#stepCount").textContent = `Step ${n} of ${NSTEP}`;
   $("#stepDots").innerHTML = STEP_Q.map((q, i) => `<li class="${i + 1 === n ? "now" : i + 1 < n ? "done" : ""}" ${i + 1 === n ? 'aria-current="step"' : ""} title="${esc(q)}"><span></span></li>`).join("");
   $("#stepBack").disabled = n === 1;
-  $("#stepNext").hidden = n === 6;
-  if (n === 1) body.innerHTML = `<h2>${esc(STEP_Q[0])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[0])}">
-    ${SAVE_CARDS.map((c) => pickCard("save", c, S.choice.save_target === c.v)).join("")}</div>`;
-  else if (n === 2) {
-    const o = S.opts.options.find((x) => x.id === "model");
-    body.innerHTML = `<h2>${esc(STEP_Q[1])}</h2><p class="step-note">A model is the AI program that answers your users' prompts.</p>
-      <div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[1])}">${o.choices.map((c) => pickCard("model",
-        { v: c.v, t: c.label, d: MODEL_BLURB[c.v] || c.label, icon: "chip" }, S.choice.model === c.v)).join("")}</div>`;
-  } else if (n === 3) body.innerHTML = `<h2>${esc(STEP_Q[2])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[2])}">
-    ${TRAFFIC_CARDS.map((c) => pickCard("traffic", c, S.choice.traffic === c.v, `<small class="ex">Runs as: ${esc(workloadLabel(TRAFFIC_MAP[c.v]))}</small>`)).join("")}</div>`;
+  $("#stepNext").hidden = n === NSTEP;
+  const IK = [null, "goal", "provider", "model", "traffic", "stack", "care", "approvals", "eligibility", "checks", "confirm"][n - 1];
+  const h = (note = "") => `<h2>${esc(Q)} ${IK ? LS.info(IK, Q) : ""}</h2>${note ? `<p class="step-note">${note}</p>` : ""}`;
+  const radios = (name, cards, cur, extra) => `<div class="picks" role="radiogroup" aria-label="${esc(Q)}">${cards.map((c) => pickCard(name, c, cur === c.v, extra?.(c))).join("")}</div>`;
+  LS.L.cfg.name = S.choice.name || ""; LS.L.cfg.description = S.choice.description || "";
+  if (n === 1) body.innerHTML = h("Basics only. Everything else comes one step at a time.") + `
+    <div class="fld namerow"><label for="f-name">Run name <small>required</small></label><input type="text" id="f-name" maxlength="80" required aria-required="true" aria-describedby="f-name-err" value="${esc(S.choice.name || "")}" placeholder="e.g. Baseten round 2, cheaper thinking">${LS.info("name", "Run name")}</div>
+    <p class="err" id="f-name-err" role="alert" hidden>Give the run a name to continue.</p>
+    <div class="fld namerow"><label for="f-desc">Short description <small>optional</small></label><textarea id="f-desc" rows="2" maxlength="300" placeholder="Why this run, in a line or two">${esc(S.choice.description || "")}</textarea>${LS.info("desc", "Short description")}</div>`;
+  else if (n === 2) body.innerHTML = h() + radios("save", SAVE_CARDS, S.choice.save_target);
+  else if (n === 3) { body.innerHTML = h(`The platform both arms run on. It decides which features can act and how energy is measured.`) + `<div id="lsBody"></div>`; LS.init().then(() => LS.where($("#lsBody"))); }
   else if (n === 4) {
+    const o = S.opts.options.find((x) => x.id === "model");
+    body.innerHTML = h("A model is the AI program that answers your users' prompts.") + `<div class="picks" role="radiogroup" aria-label="${esc(Q)}">${o.choices.map((c) => pickCard("model",
+        { v: c.v, t: c.label, d: MODEL_BLURB[c.v] || c.label, icon: "chip" }, S.choice.model === c.v)).join("")}</div><p class="lock" id="lsModel"></p>`;
+    LS.init().then((opt) => { const m = opt && opt.models.find((x) => x.id === opt.providers[LS.L.cfg.provider].default_model); if (m) $("#lsModel").textContent = `A real run on this platform serves ${m.name}. The model above picks the recorded run to replay.`; });
+  } else if (n === 5) {
+    body.innerHTML = h() + radios("traffic", TRAFFIC_CARDS, S.choice.traffic, (c) => `<small class="ex">Runs as: ${esc(workloadLabel(TRAFFIC_MAP[c.v]))}</small>`) + `<div id="lsBody" style="margin-top:14px"></div>`;
+    LS.init().then(() => LS.datasets($("#lsBody")));
+  } else if (n === 6) {
     const curFw = S.choice.framework || "openai-python";
     const curCard = STACK_CARDS.find((c) => c.v === curFw) || STACK_CARDS[0];
-    body.innerHTML = `<h2>${esc(STEP_Q[3])}</h2><p class="step-note">WattNot is a drop-in proxy. Connect your framework by updating the <code>base_url</code> to point to WattNot.</p>
-      <div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[3])}">${STACK_CARDS.map((c) => pickCard("stack", c, curFw === c.v, frameworkStackBadge(S.frameworks, c.v))).join("")}</div>
+    body.innerHTML = h("WattNot is a drop-in proxy. Connect your framework by updating the <code>base_url</code> to point to WattNot.") + radios("stack", STACK_CARDS, curFw, (c) => frameworkStackBadge(S.frameworks, c.v)) + `
       <div class="stack-box glass" style="margin-top:14px;padding:12px 14px;border-radius:14px;background:rgba(31,26,47,.75);border:1px solid rgba(220,214,228,.14)">
         <div style="font-size:12px;color:var(--mu);margin-bottom:6px">One-line change for <b>${esc(curCard.t)}</b>:</div>
-        <pre style="margin:0;font-family:var(--mo);color:#DCD6E4;font-size:13px;padding:8px 12px;background:rgba(0,0,0,.35);border-radius:8px;overflow-x:auto"><code>${esc(curCard.snippet)}</code></pre>
-      </div>`;
-  } else if (n === 5) body.innerHTML = `<h2>${esc(STEP_Q[4])}</h2><div class="picks" role="radiogroup" aria-label="${esc(STEP_Q[4])}">
-    ${CARE_CARDS.map((c) => pickCard("care", c, S.choice.care === c.v)).join("")}</div>`;
-  else body.innerHTML = `<h2>${esc(STEP_Q[5])}</h2>
-    <p class="lock">This run measures both: baseline first, then WattNot.</p>
-    <div class="where3"><h3>Where it runs</h3><p class="lock">All three are compared in this run.</p><ul>${["Your GPU · Muse Glimmer 30B (Meta) · power caps + FP8 · thinking budget and prefix caching pending", "Baseten hosted", "Modal hosted"].map((t) => `<li><span class="chk" aria-hidden="true">✓</span>${esc(t)}</li>`).join("")}</ul></div>
-    <div class="fld namerow"><label for="f-name">Run name<small>free text</small></label><input type="text" id="f-name" value="${esc(S.choice.name || "My first replay")}"></div>
-    <button class="btn pri big" id="startRun">Start replay</button>
-    <p class="lock">Replay only, no GPU. Live mode needs the owner's okay and the command line.</p>`;
-  $$('input[name="save"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.goal = SAVE_MAP[v]; S.choice.save_target = v; sumCfg(); markDone(1); }));
-  $$('input[name="model"]', body).forEach((r) => (r.onchange = () => { S.choice.model = JSON.parse(r.value); sumCfg(); markDone(2); }));
-  $$('input[name="traffic"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.workload = TRAFFIC_MAP[v]; S.choice.traffic = v; sumCfg(); markDone(3); }));
-  $$('input[name="stack"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.framework = v; sumCfg(); markDone(4); renderStep(); }));
-  $$('input[name="care"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); Object.assign(S.choice, CARE_MAP[v]); S.choice.care = v; sumCfg(); syncAdv(); markDone(5); }));
-  const fn = $("#f-name"); if (fn) fn.oninput = (e) => { S.choice.name = e.target.value; markDone(6); };
+        <pre style="margin:0;font-family:var(--mo);color:#DCD6E4;font-size:13px;padding:8px 12px;background:rgba(0,0,0,.35);border-radius:8px;overflow-x:auto"><code>${esc(curCard.snippet)}</code></pre></div>`;
+  } else if (n === 7) {
+    body.innerHTML = h("How careful WattNot is, and the most it may spend.") + radios("care", CARE_CARDS, S.choice.care) + `<div id="lsBody" style="margin-top:14px"></div>`;
+    LS.init().then(() => { if (S.choice.p99_slack_pct != null && LS.L.cfg.p99_pct == null) LS.L.cfg.p99_pct = S.choice.p99_slack_pct; LS.limits($("#lsBody")); });
+  } else if (n === 8) { body.innerHTML = h() + `<div id="lsBody"></div>`; LS.approvals($("#lsBody")); }
+  else if (n === 9) { body.innerHTML = h("The with-WattNot arm turns on everything eligible. Greyed items explain why they can't run here.") + `<div id="lsBody"></div>`; LS.init().then(() => LS.eligibility($("#lsBody"))).then(renderPicked); }
+  else if (n === 10) { body.innerHTML = h() + `<div id="lsBody"></div>`; LS.init().then(() => LS.checks($("#lsBody"))).then(renderPicked); }
+  else {
+    body.innerHTML = h() + `<div id="lsBody"></div>`;
+    const replayHtml = `<p class="lock">This run measures both: baseline first, then WattNot.</p><h3>Free replay</h3><p class="lock">Re-plays a recorded run for <b>${esc(S.choice.name || "this run")}</b>. No GPU, no cost ${badge("REPLAY")}.</p><button class="btn big" id="startRun">Start replay</button>`;
+    LS.init().then(() => LS.confirm($("#lsBody"), { replayHtml, onReplay: () => { const st = $("#startRun"); if (st) st.onclick = startRun; } }));
+  }
+  $$('input[name="save"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.goal = SAVE_MAP[v]; S.choice.save_target = v; sumCfg(); markDone(2); }));
+  $$('input[name="model"]', body).forEach((r) => (r.onchange = () => { S.choice.model = JSON.parse(r.value); sumCfg(); markDone(4); }));
+  $$('input[name="traffic"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.workload = TRAFFIC_MAP[v]; S.choice.traffic = v; sumCfg(); markDone(5); }));
+  $$('input[name="stack"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); S.choice.framework = v; sumCfg(); markDone(6); renderStep(); }));
+  $$('input[name="care"]', body).forEach((r) => (r.onchange = () => { const v = JSON.parse(r.value); Object.assign(S.choice, CARE_MAP[v]); S.choice.care = v; LS.L.cfg.p99_pct = S.choice.p99_slack_pct; sumCfg(); syncAdv(); markDone(7); }));
+  const fn = $("#f-name"); if (fn) fn.oninput = (e) => { S.choice.name = e.target.value; LS.L.cfg.name = e.target.value; if (e.target.value.trim()) { $("#f-name-err").hidden = true; markDone(1); } };
+  const fd = $("#f-desc"); if (fd) fd.oninput = (e) => { S.choice.description = e.target.value; LS.L.cfg.description = e.target.value; };
   renderPicked();
-  const st = $("#startRun"); if (st) st.onclick = startRun;
 }
 function advChoiceLabel(o) {
   const hit = o.choices.find((c) => JSON.stringify(c.v) === JSON.stringify(S.choice[o.id]));
@@ -320,7 +348,7 @@ function sumCfg() {
   $("#cfgSum").innerHTML = `<dl class="kv" style="grid-template-columns:110px 1fr"><dt>Model</dt><dd>${esc(m?.label)}</dd>${g ? `<dt>Goal</dt><dd>${esc(g)}</dd>` : ""}<dt>Framework</dt><dd>${esc(fw)}</dd><dt>Speed limit</dt><dd>p99 may rise ${esc(c.p99_slack_pct)}%</dd><dt>Quality bar</dt><dd>${esc(c.min_quality_pct)}% agreement</dd><dt>Approval</dt><dd>${esc(S.opts.options.find((o) => o.id === "approval").choices.find((x) => x.v === c.approval)?.label)}</dd><dt>Cost</dt><dd>$0 ${badge("REPLAY")}</dd></dl>`;
 }
 async function startRun() {
-  markDone(6);
+  markDone(NSTEP);
   const btn = $("#startRun"); btn.disabled = true; btn.textContent = "Loading the recorded run…";
   try {
     const r = await fetch("/api/dash/v2/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(S.choice) });
@@ -894,7 +922,11 @@ async function renderReport() {
   const runs = S.runs?.runs || [];
   const selId = S.selRunId || (runs[0] && runs[0].id) || "default";
   const hubTitle = S.selRun?.run_name || `${r2.model || "Llama 3.1 8B Instruct"} · ${r2.cap_w || 350} W cap`;
-  const hubDetail = r2.j_per_req_stock != null
+  const mx = S.selRun?.kind === "matrix" ? S.selRun : null;
+  const mb = mx?.phases?.baseline?.metrics, mw = mx?.phases?.wattnot?.metrics;
+  const hubDetail = mx && mb && mw
+    ? `<p>Real ${esc(mx.leg)} round on ${esc(mx.model || "")}: the same prompts without WattNot (effort medium) and with it (effort low, step up only when the answer check fails). Accuracy went from <b>${num(mb.quality_pct, 1)}%</b> to <b>${num(mw.quality_pct, 1)}%</b> ${badge("MEASURED")}, energy per answer changed by <b>${num(mw.saved_pct, 1)}%</b> ${badge("ESTIMATE")} (hosted API, no power meter), the slowest 1% changed by <b>${num(mw.p99_change_pct, 1)}%</b> ${badge("MEASURED")}, and cost went from <b>$${num(mb.usd, 4)}</b> to <b>$${num(mw.usd, 4)}</b> ${badge("MEASURED")}. Muse Spark agreed with the answer checks on <b>${num(100 * (mx.matrix?.spark?.agreement ?? 0), 1)}%</b> of ${esc(mx.matrix?.spark?.spark_graded ?? 0)} answers ${badge("MEASURED")}.</p>`
+    : r2.j_per_req_stock != null
     ? `<p>We capped an H100 at <b>${r2.cap_w} W</b> instead of ${r2.stock_w} W on ${esc(r2.model)} and measured energy per request, the slowest 1% of requests, and answer quality. Energy fell <b>${num(r2.saved_pct, 1)}%</b> ${badge("MEASURED")}, the slowest 1% changed by <b>${num(r2.p99_change_pct, 1)}%</b> ${badge("MEASURED")}, and quality went from <b>${num(r2.quality_stock_pct, 1)}%</b> to <b>${num(r2.quality_cap_pct, 1)}%</b> ${badge("MEASURED")}.</p>`
     : `<p>${esc(S.selRun?.phases?.wattnot?.note || "This run has no measured headline numbers.")}</p>`;
   const topicHtml = (t) => `<div class="topic" data-topic="${t.id}" data-open="0">

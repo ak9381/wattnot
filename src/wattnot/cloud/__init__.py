@@ -16,7 +16,12 @@ MGMT_URL = "https://api.baseten.co"
 KEY_ENV = "BASETEN_API_KEY"
 # Inference key lookup order. On 29 Oct 2026 BASETEN_METRICS_KEY answered inference (200) and
 # BASETEN_API_KEY returned 401, so the working key goes first and the old one is the fallback.
-INFERENCE_KEY_ENVS = ("BASETEN_METRICS_KEY", "BASETEN_API_KEY")
+# 1 Nov 2026: inference uses ONLY the hackathon key (BASETEN_API_KEY). BASETEN_METRICS_KEY belongs
+# to a personal workspace and billed it; it must never be used for inference (pinned by
+# tests/test_baseten_key_lock.py). It may still read usage/prices (free management calls).
+# 1 Nov 2026 (later): the hackathon key still 401s; Akash moved Baseten to his paid workspace.
+# Inference now uses ONLY BASETEN_METRICS_KEY, no fallback (pinned by tests/test_baseten_key_lock.py).
+INFERENCE_KEY_ENVS = ("BASETEN_METRICS_KEY",)
 # A Spark call whose max_tokens is all spent on reasoning comes back with content None: that is
 # a cut-off answer and is scored as a fail. Live proof: max_tokens 64 -> 61 reasoning, no answer.
 JUDGE_MAX_TOKENS = 1500  # judge at low effort; pinned to the batch judge (wattnot.gates.judge). 512 still spent the whole budget reasoning on some replies

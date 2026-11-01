@@ -34,6 +34,7 @@
         <a class="wn-brand" href="${prefix}index.html">Watt<i>Not</i></a>
         <div class="wn-links" style="margin-left:auto">
           <a class="wn-link" data-nav="dashboard" href="${prefix}v2.html#pHome">Dashboard</a>
+          <a class="wn-link" data-nav="configure" href="${prefix}v2.html#pCfg">Configure &amp; run</a>
           <a class="wn-link" data-nav="runs" href="${prefix}runs.html">Runs</a>
           <a class="wn-link" data-nav="compare" href="${prefix}v2.html#pReport">Compare</a>
           <a class="wn-link" data-nav="reports" href="${prefix}report.html?run=run2-llama-350w">Reports</a>
@@ -41,12 +42,18 @@
           <a class="wn-link" data-nav="costbudget" href="${prefix}costbudget.html">Cost budget</a>
           <a class="wn-link" data-nav="matrix" href="${prefix}matrix.html">Run matrix</a>
           <a class="wn-link" data-nav="eu" href="${prefix}eu.html">EU Compliance</a>
+          <a class="wn-link" data-nav="approvals" href="${prefix}approvals.html">Approvals</a>
         </div>
         <div class="wn-slot-wrap" id="wn-slot-wrap"></div>
       </div>
     `;
 
     document.body.prepend(nav);
+    // Shared eligibility bar + greying (configuration from the Configure screen).
+    if (!document.querySelector('link[href$="elig.css"]')) {
+      const l = document.createElement("link"); l.rel = "stylesheet"; l.href = prefix + "elig.css"; document.head.appendChild(l);
+      const m = document.createElement("script"); m.type = "module"; m.src = prefix + "elig.js"; document.head.appendChild(m);
+    }
 
     // 2. Mic slot positioning on app pages (never on landing)
     if (!isLanding) {
@@ -108,7 +115,11 @@
       });
 
       let targetNav = null;
-      if (path.includes("runs.html")) {
+      if (path.includes("configure.html") || (path.includes("v2.html") && hash === "#pCfg")) {
+        targetNav = "configure";
+      } else if (path.includes("approvals.html")) {
+        targetNav = "approvals";
+      } else if (path.includes("runs.html")) {
         targetNav = "runs";
       } else if (path.includes("graph.html")) {
         targetNav = "graph";

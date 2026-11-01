@@ -1,0 +1,1288 @@
+{
+ "source": "docs/WALKTHROUGH.md section 0",
+ "count": 110,
+ "features": [
+  {
+   "n": 1,
+   "section": "Lead differentiator",
+   "name": "One verifiable receipt for energy + carbon + water (SCI-formatted) — lead differentiator",
+   "label": "MEASURED / ESTIMATE / NOT_AVAILABLE",
+   "where": "EU card on /eu.html; `wattnot verify`",
+   "req": "any"
+  },
+  {
+   "n": 2,
+   "section": "Master feature table",
+   "name": "Power-cap sweep + joules/correct gate",
+   "label": "MEASURED",
+   "where": "/v2.html#pHome; /runs.html",
+   "req": "power_write"
+  },
+  {
+   "n": 3,
+   "section": "Master feature table",
+   "name": "Simulated GPU power model",
+   "label": "ESTIMATE / SIMULATED",
+   "where": "/v2.html#pHome; /runs.html",
+   "req": "any"
+  },
+  {
+   "n": 4,
+   "section": "Master feature table",
+   "name": "NVML capability probe (read + cap/clock write test)",
+   "label": "MEASURED / SYNTHETIC / MOCK",
+   "where": "/v2.html#pHome; /runs.html",
+   "req": "nvml_read"
+  },
+  {
+   "n": 5,
+   "section": "Master feature table",
+   "name": "FP8 quantization keep/reject gate",
+   "label": "MEASURED",
+   "where": "`src/wattnot/longrun/harness.py`, `src/wattnot/receipt/build.py`",
+   "req": "own_vllm"
+  },
+  {
+   "n": 6,
+   "section": "Master feature table",
+   "name": "Thinking-budget enforcer (per-tier)",
+   "label": "MOCK",
+   "where": "`src/wattnot/longrun/thinking_budget.py`",
+   "req": "any"
+  },
+  {
+   "n": 7,
+   "section": "Master feature table",
+   "name": "MoE adaptive top-k (experts-per-token)",
+   "label": "MEASURED / ESTIMATE",
+   "where": "`modal/spark_topk_sprint.py`",
+   "req": "spark_open_self"
+  },
+  {
+   "n": 8,
+   "section": "Master feature table",
+   "name": "Flex grid-event load shedding",
+   "label": "SIMULATED",
+   "where": "`wattnot flex`",
+   "req": "simulator"
+  },
+  {
+   "n": 9,
+   "section": "Master feature table",
+   "name": "Fleet impact estimator",
+   "label": "ESTIMATE",
+   "where": "`src/wattnot/impact.py`, `src/wattnot/headline.py`",
+   "req": "any"
+  },
+  {
+   "n": 10,
+   "section": "Master feature table",
+   "name": "Model fit/placement + per-model joules",
+   "label": "MEASURED / ESTIMATE",
+   "where": "`src/wattnot/models.py`, `src/wattnot/receipt/per_model.py`",
+   "req": "any"
+  },
+  {
+   "n": 11,
+   "section": "Master feature table",
+   "name": "Tool-output dedup middleware",
+   "label": "MEASURED / ESTIMATE",
+   "where": "`src/wattnot/context_saver/middleware.py`",
+   "req": "any"
+  },
+  {
+   "n": 12,
+   "section": "Master feature table",
+   "name": "Memory-compression middleware",
+   "label": "MEASURED",
+   "where": "`src/wattnot/context_saver/middleware.py`",
+   "req": "any"
+  },
+  {
+   "n": 13,
+   "section": "Master feature table",
+   "name": "Prefix-cache A/B harness",
+   "label": "MEASURED / MOCK",
+   "where": "`src/wattnot/context_saver/prefix_cache.py`",
+   "req": "own_vllm"
+  },
+  {
+   "n": 14,
+   "section": "Master feature table",
+   "name": "Code Mode + locked sandbox",
+   "label": "MEASURED",
+   "where": "`src/wattnot/agentwaste/sandbox/runner.py`, `data/agent-waste/codemode/`",
+   "req": "any"
+  },
+  {
+   "n": 15,
+   "section": "Master feature table",
+   "name": "Reasoning-effort / cheapest-first router",
+   "label": "MEASURED",
+   "where": "`wattnot route`; flow step multiprovider",
+   "req": "any"
+  },
+  {
+   "n": 16,
+   "section": "Master feature table",
+   "name": "Noise gate (billability)",
+   "label": "MEASURED",
+   "where": "`src/wattnot/gates/noise.py`",
+   "req": "any"
+  },
+  {
+   "n": 17,
+   "section": "Master feature table",
+   "name": "Fixed answer/quality gate",
+   "label": "MEASURED",
+   "where": "`src/wattnot/gates/fixed.py`",
+   "req": "any"
+  },
+  {
+   "n": 18,
+   "section": "Master feature table",
+   "name": "LLM judge gate (pairwise)",
+   "label": "MEASURED",
+   "where": "`src/wattnot/gates/judge.py`",
+   "req": "any"
+  },
+  {
+   "n": 19,
+   "section": "Master feature table",
+   "name": "Reasoning-leak strip",
+   "label": "n/a",
+   "where": "`src/wattnot/proof/client.py`",
+   "req": "any"
+  },
+  {
+   "n": 20,
+   "section": "Master feature table",
+   "name": "Grading-label honesty lint",
+   "label": "MEASURED / SIMULATED / MOCK",
+   "where": "`src/wattnot/receipt/{grade,lint}.py`",
+   "req": "any"
+  },
+  {
+   "n": 21,
+   "section": "Master feature table",
+   "name": "Code-sandbox network boundary",
+   "label": "MEASURED",
+   "where": "`src/wattnot/agentwaste/sandbox/runner.py`",
+   "req": "any"
+  },
+  {
+   "n": 22,
+   "section": "Master feature table",
+   "name": "Approve-before-apply + risk classifier",
+   "label": "n/a",
+   "where": "`src/wattnot/approvals/cli.py`",
+   "req": "any"
+  },
+  {
+   "n": 23,
+   "section": "Master feature table",
+   "name": "Muse Wonder Pareto planner/supervisor",
+   "label": "MOCK / LIVE",
+   "where": "`src/wattnot/meta/wonder.py`",
+   "req": "meta_api"
+  },
+  {
+   "n": 24,
+   "section": "Master feature table",
+   "name": "Wonderchart (Wonder reads the chart)",
+   "label": "ESTIMATE / SYNTHETIC",
+   "where": "`src/wattnot/wonderchart/{chart,reader,run}.py`",
+   "req": "meta_api"
+  },
+  {
+   "n": 25,
+   "section": "Master feature table",
+   "name": "SAM 3.1 rack/room/hotspot audit",
+   "label": "MEASURED / SIMULATED",
+   "where": "/graph.html Meta strip; flow step sam",
+   "req": "meta_api"
+  },
+  {
+   "n": 26,
+   "section": "Master feature table",
+   "name": "Muse Spark hosted planner + effort router",
+   "label": "n/a",
+   "where": "/graph.html Spark trace panel",
+   "req": "meta_api"
+  },
+  {
+   "n": 27,
+   "section": "Master feature table",
+   "name": "Muse Spark Open (served MoE)",
+   "label": "MEASURED",
+   "where": "/graph.html Spark trace panel",
+   "req": "spark_open_self"
+  },
+  {
+   "n": 28,
+   "section": "Master feature table",
+   "name": "Muse Glimmer 30B (served main model)",
+   "label": "MEASURED / MOCK",
+   "where": "`src/wattnot/models.py`, `src/wattnot/longrun/harness.py`",
+   "req": "own_vllm"
+  },
+  {
+   "n": 29,
+   "section": "Master feature table",
+   "name": "Muse Code \"apply change as a PR\"",
+   "label": "ESTIMATE / LIVE",
+   "where": "`src/wattnot/musecode/apply_pr.py` (`apply_pr`; real PR only to `ak9381/wattnot-demo-deplo",
+   "req": "meta_api"
+  },
+  {
+   "n": 30,
+   "section": "Master feature table",
+   "name": "Muse Voice Transcribe (spoken-answer energy)",
+   "label": "SYNTHETIC",
+   "where": "Ask box mic",
+   "req": "meta_api"
+  },
+  {
+   "n": 31,
+   "section": "Master feature table",
+   "name": "Voice guide (grounded intent)",
+   "label": "MEASURED / MOCK / REPLAY",
+   "where": "Ask box mic",
+   "req": "meta_api"
+  },
+  {
+   "n": 32,
+   "section": "Master feature table",
+   "name": "Tuner (spoken → safe knob plan)",
+   "label": "n/a",
+   "where": "`src/wattnot/meta/tuner.py`",
+   "req": "any"
+  },
+  {
+   "n": 33,
+   "section": "Master feature table",
+   "name": "Muse Image (eighth Meta hero: vision-gate and SAM test sets)",
+   "label": "SYNTHETIC",
+   "where": "/graph.html Meta strip; flow step sam",
+   "req": "meta_api"
+  },
+  {
+   "n": 34,
+   "section": "Master feature table",
+   "name": "Signed receipt + canonicalization",
+   "label": "MEASURED / ESTIMATE",
+   "where": "`wattnot verify`; /v2.html#pProof",
+   "req": "any"
+  },
+  {
+   "n": 35,
+   "section": "Master feature table",
+   "name": "Independent stdlib verifier + forge vectors",
+   "label": "MEASURED",
+   "where": "`verifier/wattnot_verify.py`, `verifier/vectors/*`",
+   "req": "any"
+  },
+  {
+   "n": 36,
+   "section": "Master feature table",
+   "name": "Joules per good answer",
+   "label": "MEASURED / SIMULATED",
+   "where": "`src/wattnot/receipt/joules.py`",
+   "req": "any"
+  },
+  {
+   "n": 37,
+   "section": "Master feature table",
+   "name": "EU efficiency report (Reg 2024/1364)",
+   "label": "MEASURED / SYNTHETIC / NOT_AVAILABLE",
+   "where": "/eu.html; `wattnot report eu`",
+   "req": "any"
+  },
+  {
+   "n": 38,
+   "section": "Master feature table",
+   "name": "Cloud effort-router receipt + per-call audit",
+   "label": "MEASURED / ESTIMATE / NOT_AVAILABLE",
+   "where": "`wattnot route`; flow step multiprovider",
+   "req": "any"
+  },
+  {
+   "n": 39,
+   "section": "Master feature table",
+   "name": "Hosted A/B (two providers)",
+   "label": "MEASURED / ESTIMATE",
+   "where": "`src/wattnot/spark_open/hosted_ab.py`",
+   "req": "multi_provider"
+  },
+  {
+   "n": 40,
+   "section": "Master feature table",
+   "name": "Mock efficiency certificate",
+   "label": "MOCK",
+   "where": "`wattnot certificate`",
+   "req": "any"
+  },
+  {
+   "n": 41,
+   "section": "Master feature table",
+   "name": "Recommend / health / runbook / rehearse / demo",
+   "label": "n/a",
+   "where": "`src/wattnot/{recommend,health,runbook,rehearse,demo}.py`",
+   "req": "any"
+  },
+  {
+   "n": 42,
+   "section": "Master feature table",
+   "name": "Static dashboard shell",
+   "label": "MEASURED",
+   "where": "/v2.html",
+   "req": "any"
+  },
+  {
+   "n": 43,
+   "section": "Master feature table",
+   "name": "Live run view (3 mini-views)",
+   "label": "REPLAY",
+   "where": "`web/dash/liveviews.js`, `app.js`, `replayclock.js`",
+   "req": "any"
+  },
+  {
+   "n": 44,
+   "section": "Master feature table",
+   "name": "Expert / orchestra view",
+   "label": "MEASURED",
+   "where": "`web/dash/{core,orchestra,expertstrip}.js`",
+   "req": "any"
+  },
+  {
+   "n": 45,
+   "section": "Master feature table",
+   "name": "Compare tree",
+   "label": "n/a",
+   "where": "`web/dash/v2.js`, `metatools.js`",
+   "req": "any"
+  },
+  {
+   "n": 46,
+   "section": "Master feature table",
+   "name": "Receipt viewer / per-run report",
+   "label": "MEASURED / ESTIMATE / SIMULATED",
+   "where": "`wattnot verify`; /v2.html#pProof",
+   "req": "any"
+  },
+  {
+   "n": 47,
+   "section": "Master feature table",
+   "name": "EU report card/link",
+   "label": "n/a",
+   "where": "/eu.html; `wattnot report eu`",
+   "req": "any"
+  },
+  {
+   "n": 48,
+   "section": "Master feature table",
+   "name": "Voice guide UI",
+   "label": "MOCK / REPLAY / LIVE",
+   "where": "Ask box mic",
+   "req": "any"
+  },
+  {
+   "n": 49,
+   "section": "Master feature table",
+   "name": "Hotspot overlay + hotspot-set",
+   "label": "SIMULATED / MOCK",
+   "where": "`web/dash/{hotspot,hotspotset}.js`",
+   "req": "any"
+  },
+  {
+   "n": 50,
+   "section": "Master feature table",
+   "name": "Wonderchart UI",
+   "label": "ESTIMATE / SYNTHETIC",
+   "where": "`web/dash/wonderchart.js`",
+   "req": "any"
+  },
+  {
+   "n": 51,
+   "section": "Master feature table",
+   "name": "Cost/budget panel",
+   "label": "ESTIMATE",
+   "where": "/costbudget.html",
+   "req": "any"
+  },
+  {
+   "n": 52,
+   "section": "Master feature table",
+   "name": "Code-mode view",
+   "label": "n/a",
+   "where": "`web/dash/codemode.js`",
+   "req": "any"
+  },
+  {
+   "n": 53,
+   "section": "Master feature table",
+   "name": "Meta-tools card",
+   "label": "n/a",
+   "where": "`web/dash/metatools.js`, `live.js`",
+   "req": "any"
+  },
+  {
+   "n": 54,
+   "section": "Master feature table",
+   "name": "Five-layer teardown watchdog",
+   "label": "SIMULATED",
+   "where": "`src/wattnot/longrun/watchdog/{core,local,agent,offbox}.py`",
+   "req": "any"
+  },
+  {
+   "n": 55,
+   "section": "Master feature table",
+   "name": "Heartbeat publisher",
+   "label": "n/a",
+   "where": "`src/wattnot/longrun/watchdog/publisher.py`",
+   "req": "any"
+  },
+  {
+   "n": 56,
+   "section": "Master feature table",
+   "name": "Spend guard (soft/hard $ caps)",
+   "label": "ESTIMATE",
+   "where": "/v2.html#pHome; /runs.html",
+   "req": "any"
+  },
+  {
+   "n": 57,
+   "section": "Master feature table",
+   "name": "Cloud timeout backstop",
+   "label": "ESTIMATE",
+   "where": "`wattnot cloud`",
+   "req": "any"
+  },
+  {
+   "n": 58,
+   "section": "Master feature table",
+   "name": "Meta spend ledger",
+   "label": "MEASURED",
+   "where": "`src/wattnot/meta/ledger.py`",
+   "req": "any"
+  },
+  {
+   "n": 59,
+   "section": "Master feature table",
+   "name": "Own rented GPU serving (dedicated-GPU rental)",
+   "label": "MEASURED / ESTIMATE",
+   "where": "`scripts/vm_docker.sh`, `scripts/run2_remote.py`",
+   "req": "own_vllm"
+  },
+  {
+   "n": 60,
+   "section": "Master feature table",
+   "name": "Hosted-inference provider adapter",
+   "label": "MEASURED / ESTIMATE",
+   "where": "`src/wattnot/receipt/cloud_adapter.py`",
+   "req": "hosted_api"
+  },
+  {
+   "n": 61,
+   "section": "Master feature table",
+   "name": "Serverless-GPU provider adapter (LIVE on `feat/mocks-live-1031` `373742c`: 1,397 J/req MEA",
+   "label": "MEASURED / ESTIMATE / LIVE",
+   "where": "`modal/proof_cpu30.py`, `modal/spark_topk_sprint.py`",
+   "req": "serverless_gpu"
+  },
+  {
+   "n": 62,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Voice Ask, live",
+   "label": "MEASURED / LIVE",
+   "where": "Ask box (any page, bottom)",
+   "req": "meta_api"
+  },
+  {
+   "n": 63,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Public benchmark check",
+   "label": "MEASURED / LIVE",
+   "where": "see docs",
+   "req": "any"
+  },
+  {
+   "n": 64,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Combined best-cap + prefix-cache block",
+   "label": "MEASURED / LIVE",
+   "where": "/v2.html#pHome; /runs.html",
+   "req": "power_write"
+  },
+  {
+   "n": 65,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Every-cap sweep grid",
+   "label": "MEASURED / LIVE",
+   "where": "/v2.html#pHome; /runs.html",
+   "req": "power_write"
+  },
+  {
+   "n": 66,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Dashboard login gate",
+   "label": "n/a",
+   "where": "/v2.html",
+   "req": "any"
+  },
+  {
+   "n": 67,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Dashboard approvals and undo",
+   "label": "MOCK",
+   "where": "/v2.html",
+   "req": "any"
+  },
+  {
+   "n": 68,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Approvals HTTP API",
+   "label": "n/a",
+   "where": "see docs",
+   "req": "any"
+  },
+  {
+   "n": 69,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Receipts REST API",
+   "label": "n/a",
+   "where": "`wattnot verify`; /v2.html#pProof",
+   "req": "any"
+  },
+  {
+   "n": 70,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Agent-waste proxy",
+   "label": "n/a",
+   "where": "see docs",
+   "req": "any"
+  },
+  {
+   "n": 71,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Phase-aware clock sidecar",
+   "label": "n/a",
+   "where": "see docs",
+   "req": "clock_write"
+  },
+  {
+   "n": 72,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Search planner + ablation",
+   "label": "ESTIMATE",
+   "where": "see docs",
+   "req": "any"
+  },
+  {
+   "n": 73,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Marginal-joule knee",
+   "label": "n/a",
+   "where": "see docs",
+   "req": "clock_write"
+  },
+  {
+   "n": 74,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Joule-SLO",
+   "label": "n/a",
+   "where": "see docs",
+   "req": "any"
+  },
+  {
+   "n": 75,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Backend/effort/region router",
+   "label": "MOCK",
+   "where": "`wattnot route`; flow step multiprovider",
+   "req": "any"
+  },
+  {
+   "n": 76,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Vision eye-test gate",
+   "label": "SYNTHETIC / LIVE",
+   "where": "see docs",
+   "req": "meta_api"
+  },
+  {
+   "n": 77,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Run event log",
+   "label": "n/a",
+   "where": "see docs",
+   "req": "any"
+  },
+  {
+   "n": 78,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "MoE top-k tuning (CPU)",
+   "label": "ESTIMATE",
+   "where": "see docs",
+   "req": "spark_open_self"
+  },
+  {
+   "n": 79,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Spark Open per-expert pinning",
+   "label": "SIMULATED",
+   "where": "/graph.html Spark trace panel",
+   "req": "spark_open_self"
+  },
+  {
+   "n": 80,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Run narrator",
+   "label": "MEASURED / LIVE",
+   "where": "see docs",
+   "req": "any"
+  },
+  {
+   "n": 81,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Batch-size / KV-cache sweep",
+   "label": "n/a",
+   "where": "see docs",
+   "req": "own_vllm"
+  },
+  {
+   "n": 82,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "No-mock preflight",
+   "label": "n/a",
+   "where": "see docs",
+   "req": "any"
+  },
+  {
+   "n": 83,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "GPU VM controller",
+   "label": "LIVE",
+   "where": "see docs",
+   "req": "gpu_vm"
+  },
+  {
+   "n": 84,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Replay-only container + public site",
+   "label": "MOCK",
+   "where": "see docs",
+   "req": "any"
+  },
+  {
+   "n": 85,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Data licences doc",
+   "label": "n/a",
+   "where": "see docs",
+   "req": "any"
+  },
+  {
+   "n": 86,
+   "section": "Added in the Nov 1 audit (fe",
+   "name": "Judges' hosted app",
+   "label": "PLANNED",
+   "where": "see docs",
+   "req": "planned"
+  },
+  {
+   "n": 87,
+   "section": "Update 2026-11-01 (overnight",
+   "name": "Mocks removed from the live paths",
+   "label": "n/a",
+   "where": "see docs",
+   "req": "any"
+  },
+  {
+   "n": 88,
+   "section": "Update 2026-11-01 (overnight",
+   "name": "Live Ask (answers from real receipts and runs)",
+   "label": "n/a",
+   "where": "Ask box (any page, bottom)",
+   "req": "any"
+  },
+  {
+   "n": 89,
+   "section": "Update 2026-11-01 (overnight",
+   "name": "LangChain proxy, real calls",
+   "label": "MEASURED / ESTIMATE",
+   "where": "`python -m wattnot.flow` step langchain",
+   "req": "any"
+  },
+  {
+   "n": 90,
+   "section": "Update 2026-11-01 (overnight",
+   "name": "Rerun receipt `rcpt_20261031_rerun_cap325`",
+   "label": "ESTIMATE",
+   "where": "`wattnot verify`; /v2.html#pProof",
+   "req": "any"
+  },
+  {
+   "n": 91,
+   "section": "Update 2026-11-01 (overnight",
+   "name": "Data licences doc",
+   "label": "n/a",
+   "where": "see docs",
+   "req": "any"
+  },
+  {
+   "n": 92,
+   "section": "Update 2026-11-01 (overnight",
+   "name": "Mac dashboard + tunnel",
+   "label": "n/a",
+   "where": "/v2.html",
+   "req": "any"
+  },
+  {
+   "n": 93,
+   "section": "Update 2026-11-01 (overnight",
+   "name": "Dataset picker (benchmarks, mixed, custom JSONL upload, \"let WattNot decide\"); receipt rec",
+   "label": "n/a",
+   "where": "`wattnot verify`; /v2.html#pProof",
+   "req": "any"
+  },
+  {
+   "n": 94,
+   "section": "Update 2026-11-01 (overnight",
+   "name": "User-set p99 limit (default +10%), auto-approve cap drop option (58%); receipt `limits` bl",
+   "label": "n/a",
+   "where": "`wattnot verify`; /v2.html#pProof",
+   "req": "any"
+  },
+  {
+   "n": 95,
+   "section": "Update 2026-11-01 (overnight",
+   "name": "Long-run plan (`--plan long`, ~4.6 h of blocks, 5 h booking, ESTIMATE)",
+   "label": "ESTIMATE",
+   "where": "see docs",
+   "req": "any"
+  },
+  {
+   "n": 96,
+   "section": "Update 2026-11-01 (overnight",
+   "name": "Receipt converter to judge pack (`wattnot receipt convert`)",
+   "label": "n/a",
+   "where": "`wattnot verify`; /v2.html#pProof",
+   "req": "any"
+  },
+  {
+   "n": 97,
+   "section": "Update 2026-11-01 (overnight",
+   "name": "GitHub watchdog vars reset (`WATCHDOG_ENABLED`, `WATCHDOG_LIVE` = false)",
+   "label": "LIVE",
+   "where": "see docs",
+   "req": "any"
+  },
+  {
+   "n": 98,
+   "section": "Update 2026-11-01 (overnight",
+   "name": "One-command install: `wattnot init` (watch-only by default), `wattnot preflight` (driver,",
+   "label": "n/a",
+   "where": "/v2.html#pHome; /runs.html",
+   "req": "any"
+  },
+  {
+   "n": 99,
+   "section": "Update 2026-11-01 (overnight",
+   "name": "Judges' hosted app and demo modes",
+   "label": "PLANNED",
+   "where": "see docs",
+   "req": "planned"
+  },
+  {
+   "n": 100,
+   "section": "Update 2026-11-01 (overnight",
+   "name": "Rekor publish of receipts",
+   "label": "PLANNED",
+   "where": "`wattnot verify`; /v2.html#pProof",
+   "req": "after_long_run"
+  },
+  {
+   "n": 101,
+   "section": "Merged 1 Nov",
+   "name": "SCI receipt block (energy, carbon, water) in every receipt; verifier recomputes it",
+   "label": "",
+   "where": "`wattnot verify`, `/eu.html`, EU report",
+   "req": "any"
+  },
+  {
+   "n": 102,
+   "section": "Merged 1 Nov",
+   "name": "Muse Spark 4-call trace: probe, proposal, gate, receipt",
+   "label": "",
+   "where": "`/graph.html` Spark trace panel",
+   "req": "meta_api"
+  },
+  {
+   "n": 103,
+   "section": "Merged 1 Nov",
+   "name": "\"Meta models at work\" strip, all 8 models (Spark, Wonder, Glimmer 30B, SAM 3.1, Voice Transcribe, Muse Code, Spark Open, Muse Image)",
+   "label": "",
+   "where": "`/graph.html` strip",
+   "req": "any"
+  },
+  {
+   "n": 104,
+   "section": "Merged 1 Nov",
+   "name": "EU upload: drop a receipt + bundle, get the field report",
+   "label": "",
+   "where": "`/eu.html`, `POST /api/report/eu/upload`",
+   "req": "any"
+  },
+  {
+   "n": 105,
+   "section": "Merged 1 Nov",
+   "name": "Run matrix: 12 rounds (Baseten, Modal, H100, all), datasets, with/without WattNot",
+   "label": "",
+   "where": "`/matrix.html`",
+   "req": "any"
+  },
+  {
+   "n": 106,
+   "section": "Merged 1 Nov",
+   "name": "Spark grades every answer, next to the answer checks (checks decide pass/fail)",
+   "label": "",
+   "where": "`/matrix.html` agreement column",
+   "req": "meta_api"
+  },
+  {
+   "n": 107,
+   "section": "Merged 1 Nov",
+   "name": "Meta spend meter, $120 cap / $100 warning, split by model",
+   "label": "",
+   "where": "`/matrix.html`, `GET /api/dash/meta/spend`",
+   "req": "any"
+  },
+  {
+   "n": 108,
+   "section": "Merged 1 Nov",
+   "name": "Credit meters: Baseten, Modal, E2E",
+   "label": "",
+   "where": "`/matrix.html`",
+   "req": "any"
+  },
+  {
+   "n": 109,
+   "section": "Merged 1 Nov",
+   "name": "Ask with glowing cards: empty Ask, cards glow, pick one, Spark explains and highlights",
+   "label": "",
+   "where": "Ask box at the bottom of every page",
+   "req": "any"
+  },
+  {
+   "n": 110,
+   "section": "Merged 1 Nov",
+   "name": "Voice Ask via Muse Voice Transcribe (speech to text only, no spoken reply)",
+   "label": "",
+   "where": "mic in the Ask box",
+   "req": "meta_api"
+  }
+ ],
+ "providers": {
+  "baseten": {
+   "label": "Baseten (hosted Spark Open, per token)",
+   "runner": "baseten",
+   "caps": [
+    "hosted_api",
+    "local",
+    "meta_api"
+   ],
+   "default_model": "spark-open",
+   "cost_round_usd": [
+    3.0,
+    4.0
+   ],
+   "hard_cap_usd": 8.0,
+   "spend": "Baseten card (BASETEN_METRICS_KEY)",
+   "energy_label": "ESTIMATE"
+  },
+  "modal_a100": {
+   "label": "Modal A100 (our own vLLM, Glimmer 30B)",
+   "runner": "modal",
+   "caps": [
+    "local",
+    "meta_api",
+    "nvml_read",
+    "own_vllm",
+    "serverless_gpu"
+   ],
+   "default_model": "glimmer-30b",
+   "cost_round_usd": [
+    3.0,
+    3.6
+   ],
+   "hard_cap_usd": 60.0,
+   "round_cap_usd": 10.0,
+   "spend": "Modal hackathon credits",
+   "energy_label": "MEASURED"
+  },
+  "e2e_h100": {
+   "label": "E2E H100 (rented VM, full GPU control)",
+   "runner": null,
+   "caps": [
+    "clock_write",
+    "gpu_vm",
+    "local",
+    "meta_api",
+    "nvml_read",
+    "own_vllm",
+    "power_write"
+   ],
+   "default_model": "glimmer-30b",
+   "cost_round_usd": null,
+   "hard_cap_usd": null,
+   "spend": "E2E prepaid balance",
+   "energy_label": "MEASURED"
+  },
+  "combined": {
+   "label": "Combined (Baseten + Modal A100 + E2E H100)",
+   "runner": null,
+   "caps": [
+    "clock_write",
+    "gpu_vm",
+    "hosted_api",
+    "local",
+    "meta_api",
+    "multi_provider",
+    "nvml_read",
+    "own_vllm",
+    "power_write",
+    "serverless_gpu"
+   ],
+   "default_model": "glimmer-30b",
+   "cost_round_usd": null,
+   "hard_cap_usd": null,
+   "spend": "all three",
+   "energy_label": "MEASURED"
+  }
+ },
+ "reqs": {
+  "any": {
+   "cap": null,
+   "why": ""
+  },
+  "meta_api": {
+   "cap": "meta_api",
+   "why": "Meta API call"
+  },
+  "hosted_api": {
+   "cap": "hosted_api",
+   "why": "needs a hosted per-token provider (Baseten)"
+  },
+  "own_vllm": {
+   "cap": "own_vllm",
+   "why": "no GPU access: needs our own vLLM server"
+  },
+  "nvml_read": {
+   "cap": "nvml_read",
+   "why": "no GPU power meter on a hosted API; energy is ESTIMATE"
+  },
+  "power_write": {
+   "cap": "power_write",
+   "why": "power caps need NVML writes; refused here"
+  },
+  "clock_write": {
+   "cap": "clock_write",
+   "why": "clock control needs NVML clock writes; refused here"
+  },
+  "gpu_vm": {
+   "cap": "gpu_vm",
+   "why": "needs the rented E2E H100 VM"
+  },
+  "serverless_gpu": {
+   "cap": "serverless_gpu",
+   "why": "needs the Modal serverless GPU"
+  },
+  "multi_provider": {
+   "cap": "multi_provider",
+   "why": "needs two providers in one plan (combined)"
+  },
+  "spark_open_self": {
+   "cap": "__never__",
+   "why": "needs Spark Open self-served on 8x B200; too costly, not run"
+  },
+  "simulator": {
+   "cap": "__never__",
+   "why": "runs only as a simulator, never in a live round"
+  },
+  "after_long_run": {
+   "cap": "__never__",
+   "why": "only after the long run, with Akash's yes"
+  },
+  "planned": {
+   "cap": "__never__",
+   "why": "planned, not built yet"
+  }
+ },
+ "models": [
+  {
+   "id": "spark",
+   "name": "Muse Spark",
+   "req": "meta_api",
+   "role": "planner, grader, 4-call trace"
+  },
+  {
+   "id": "wonder",
+   "name": "Muse Wonder",
+   "req": "meta_api",
+   "role": "Pareto planner + Wonderchart"
+  },
+  {
+   "id": "glimmer-30b",
+   "name": "Muse Glimmer 30B",
+   "req": "own_vllm",
+   "role": "main model on our own vLLM"
+  },
+  {
+   "id": "sam-3.1",
+   "name": "SAM 3.1",
+   "req": "meta_api",
+   "role": "hotspot audit"
+  },
+  {
+   "id": "muse-image",
+   "name": "Muse Image",
+   "req": "meta_api",
+   "role": "eye-check test set",
+   "label": "SYNTHETIC",
+   "note": "images are SYNTHETIC test inputs only"
+  },
+  {
+   "id": "muse-voice",
+   "name": "Muse Voice Transcribe",
+   "req": "meta_api",
+   "role": "hearing check, voice Ask"
+  },
+  {
+   "id": "muse-code",
+   "name": "Muse Code",
+   "req": "meta_api",
+   "role": "applies the change as a PR (demo repo only)"
+  },
+  {
+   "id": "spark-open",
+   "name": "Muse Spark Open",
+   "req": "hosted_api",
+   "role": "main model, hosted on Baseten",
+   "self_note": "self-serving needs 8x B200"
+  }
+ ],
+ "runner": {
+  "effort_routing": {
+   "req": "any",
+   "rows": [
+    15,
+    26
+   ]
+  },
+  "thinking_budget": {
+   "req": "any",
+   "rows": [
+    6
+   ]
+  },
+  "router": {
+   "req": "any",
+   "rows": [
+    75
+   ]
+  },
+  "context_saver": {
+   "req": "any",
+   "rows": [
+    11,
+    12
+   ]
+  },
+  "waste_guard": {
+   "req": "any",
+   "rows": [
+    70
+   ]
+  },
+  "code_mode": {
+   "req": "any",
+   "rows": [
+    14,
+    21
+   ]
+  },
+  "prefix_cache_provider": {
+   "req": "any",
+   "rows": [
+    13
+   ]
+  },
+  "concurrency_batching": {
+   "req": "any",
+   "rows": []
+  },
+  "gates": {
+   "req": "any",
+   "rows": [
+    16,
+    17,
+    18,
+    19
+   ]
+  },
+  "spark_grades": {
+   "req": "meta_api",
+   "rows": [
+    106
+   ]
+  },
+  "joule_slo": {
+   "req": "any",
+   "rows": [
+    74,
+    94
+   ]
+  },
+  "eye_check": {
+   "req": "meta_api",
+   "rows": [
+    76,
+    33
+   ]
+  },
+  "sam_hotspot": {
+   "req": "meta_api",
+   "rows": [
+    25
+   ]
+  },
+  "hearing_check": {
+   "req": "meta_api",
+   "rows": [
+    30
+   ]
+  },
+  "wonder_planner": {
+   "req": "meta_api",
+   "rows": [
+    23,
+    24
+   ]
+  },
+  "spark_trace": {
+   "req": "meta_api",
+   "rows": [
+    102
+   ]
+  },
+  "approvals": {
+   "req": "any",
+   "rows": [
+    22,
+    67
+   ]
+  },
+  "musecode_pr": {
+   "req": "meta_api",
+   "rows": [
+    29
+   ]
+  },
+  "receipt": {
+   "req": "any",
+   "rows": [
+    1,
+    34,
+    36,
+    101
+   ]
+  },
+  "eu_report": {
+   "req": "any",
+   "rows": [
+    37
+   ]
+  },
+  "label_lint": {
+   "req": "any",
+   "rows": [
+    20
+   ]
+  },
+  "spend_guard": {
+   "req": "any",
+   "rows": [
+    56,
+    58
+   ]
+  },
+  "power_caps": {
+   "req": "power_write",
+   "rows": [
+    2
+   ]
+  },
+  "fp8": {
+   "req": "own_vllm",
+   "rows": [
+    5
+   ]
+  },
+  "kv_batch": {
+   "req": "own_vllm",
+   "rows": [
+    81
+   ]
+  },
+  "vllm_prefix": {
+   "req": "own_vllm",
+   "rows": [
+    13
+   ]
+  },
+  "clock_sidecar": {
+   "req": "clock_write",
+   "rows": [
+    71,
+    73
+   ]
+  },
+  "moe": {
+   "req": "spark_open_self",
+   "rows": [
+    7,
+    78,
+    79
+   ]
+  },
+  "measured_energy": {
+   "req": "nvml_read",
+   "rows": [
+    4
+   ]
+  },
+  "flex": {
+   "req": "simulator",
+   "rows": [
+    8
+   ]
+  },
+  "rekor": {
+   "req": "after_long_run",
+   "rows": [
+    100
+   ]
+  },
+  "own_gpu_serving": {
+   "req": "own_vllm",
+   "rows": [
+    59
+   ]
+  }
+ },
+ "main_models": {
+  "spark-open": "hosted_api",
+  "glimmer-30b": "own_vllm"
+ }
+}

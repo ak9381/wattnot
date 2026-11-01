@@ -4,6 +4,7 @@ import { ArchView, fmt, panelHtml, statHtml } from "./arch.js";
 import { init as initPan } from "./pancanvas.js";
 import { expertStrip } from "./expertstrip.js";
 import { renderSparkTrace, sparkCallFrom } from "./sparktrace.js";
+import { armPhase, stageOff, stepFacts } from "./livearm.js";
 import { addEvent as metaAdd, renderMetaStrip } from "./metastrip.js";
 import { openThermal } from "./thermal.js";
 import { wireR7, infoBtn } from "./r7.js";
@@ -107,6 +108,9 @@ export class ArchPage {
     { const _le = this.view.layoutEdges.bind(this.view); this.view.layoutEdges = () => { _le(); this.pan?.refreshMinimap(); }; }
     this._fitted = false;
     this.wire(); this.mode = "all"; this.liveW = null; this.renderMeter(0);
+    // Configure-screen eligibility greys nodes before any event arrives; a live stage.features event wins.
+    const _el = (e) => { if (!this._liveOff && e && e.off_nodes) this.view.setOff(e.off_nodes); };
+    _el(window.__wnElig); window.addEventListener("wn:eligibility", (ev) => _el(ev.detail));
     // The live expert card nested in the Adaptive top-k block follows the same
     // replay clock (progress 0..1 across both phases) as the map animation.
     this._expertProgress = 0;
@@ -128,8 +132,8 @@ export class ArchPage {
   setMode(m) {
     this.mode = m; const H = this.host; this.closePanel();
     H.querySelectorAll(".archmode button").forEach((b) => { const on = b.dataset.m === m; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
-    $("#apipe", H).hidden = m !== "pipe"; $("#aall", H).hidden = m !== "all";
-    $("#amodeNote", H).textContent = m === "pipe" ? "The real steps of one run, lit up as its events arrive. Click a step for its sub-steps and numbers." : "Every module in the system, with who built it. Pick a replay to watch it.";
+    { const ap = $("#apipe", H); if (ap) ap.hidden = m !== "pipe"; } $("#aall", H).hidden = m !== "all";
+    const note = $("#amodeNote", H); if (note) note.textContent = m === "pipe" ? "The real steps of one run, lit up as its events arrive. Click a step for its sub-steps and numbers." : "Every module in the system, with who built it. Pick a replay to watch it.";
     if (m === "pipe") this.ensurePipe(); else requestAnimationFrame(() => { this.view.layoutEdges(); this.fitOnce(); });
   }
   // The run pipeline: the same run view as the product, mounted here and started on the default H100 settings.
@@ -329,7 +333,7 @@ export class ArchPage {
     if (!ok) { cap.innerHTML = `<span class="err">No run is being followed. Start the server with <code>--events path/to/events.jsonl</code> to watch a live run here. Recorded replays work without it.</span>`; return; }
     this.view.reset(); cap.textContent = "Following the run as it writes events…";
     const es = (this.es = new EventSource(`/api/dash/arch/live?speed=${this.speed}`)); let last = 0;
-    this.roomPay = {}; this.tagged = false; this.spark = []; this.meta = {}; $("#aspark", H)?.remove(); $("#ameta", H)?.remove(); $("#aroom", H).hidden = true;
+    this.roomPay = {}; this.tagged = false; this.spark = []; this.meta = {}; $("#aspark", H)?.remove(); $("#ameta", H)?.remove(); { const ar = $("#aroom", H); if (ar) ar.hidden = true; }
     es.addEventListener("event", (m) => {
       let ev; try { ev = JSON.parse(m.data); } catch { return; }
       const d = ev.data || {};
@@ -337,7 +341,8 @@ export class ArchPage {
       const sc = sparkCallFrom(ev); if (sc) this.sparkTrace(sc);
       if (d.model) this.metaStrip(ev);                                   // any Meta model call: tally it in the strip         // Muse Spark operator call: show it in the trace panel
       if (ev.type === "telemetry.sample" && d.power_w != null) { this.liveW = d.power_w; this.renderMeter(0); }
-      if (ev.type === "run.started") this.liveBadge(ev);
+      { const off = stageOff(ev); if (off) { this._liveOff = true; this.view.setOff(off); return; } }
+      if (ev.type === "run.started") { const ap = armPhase(ev); this.liveBadge(ev); if (ap) { this.view.setPhase(ap[0], ap[1]); const ph = $("#aphase", H); if (ph) ph.textContent = ap[0] === 1 ? "Without WattNot (live)" : "With WattNot (live)"; } }
       if (ev.type === "run.finished") { this.view.finish(this.view.cur); this.view.cur = null; return; }
       const r = this.route(ev); if (!r) return;
       const now = performance.now();
@@ -362,12 +367,22 @@ export class ArchPage {
     const d = ev.data || {}, v = this.view, el = v.el(node), b = el?.querySelector(`.sub[data-sub="${sub}"]`);
     if (d.duration_s != null) v.timing[`${node}.${sub}`] = d.duration_s;
     if (b) { b.classList.remove("on"); b.classList.add(d.status === "ok" || d.status == null ? "done" : "bad"); }
+    if (this.replay === "live" && el && v.cur !== node && !el.classList.contains("skipped")) v.activate({ node, sub, text: d.summary || d.label || sub, tag, ok: d.status !== "bad" });
+    if (this.replay === "live" && el) this.stepBlock(el, ev);
     if (v.cur === node) { el.querySelector(".now").innerHTML = `${esc(d.summary || d.label || sub)}${tag ? dot(tag) : ""}`; }
     $("#acap", this.host).innerHTML = `<b>${esc(this.d.nodes.find((n) => n.id === node)?.title || node)}</b> · ${esc(d.summary || d.label || "")}${tag ? dot(tag) : ""}`;
   }
+  // Inline step block: what this step did, from the event's own fields; one open at a time (the active node).
+  stepBlock(el, ev) {
+    const facts = stepFacts(ev); if (!facts.length) return;
+    this.host.querySelectorAll(".avn .sblk.open").forEach((b) => { if (!el.contains(b)) b.classList.remove("open"); });
+    let b = el.querySelector(".sblk"); if (!b) { b = document.createElement("div"); b.className = "sblk"; el.querySelector(".now")?.after(b); }
+    b.innerHTML = facts.map(([k, val, lab]) => `<div><span class="muted">${esc(k)}</span> <b>${k === "PR" ? `<a href="${esc(val)}">${esc(val.replace(/^https:\/\/github.com\//, ""))}</a>` : esc(val)}</b>${lab ? dot(lab) : ""}</div>`).join("");
+    b.classList.add("open");
+  }
   liveBadge(ev) {
     const d = ev.data || {}, l = d.mode === "mock" || d.label === "MOCK" ? "MOCK" : this.h.health?.replay_only || d.replay || d.mode === "replay" ? "REPLAY" : "LIVE";
-    $("#aprog", this.host).innerHTML = `${dot(l)} <span class="muted">${esc(d.run || d.model || "")}</span>`;
+    const pr = $("#aprog", this.host) || $("#acap", this.host); if (pr) pr.innerHTML = `${dot(l)} <span class="muted">${esc(d.run || d.model || "")}</span>`;
   }
   // The room node: a room_scan payload (before, then after) mounted with web/room/node.js (see roomnode.js).
   async roomScan(p) {

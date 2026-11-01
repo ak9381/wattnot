@@ -1,0 +1,13 @@
+wattnot_verify /workspace/wn-main/data/modal-full-1101/smoke-r04/flow/sweep/rcpt_20261101_modal_full_smoke-r04.json
+  ok   schema    wattnot.receipt/1
+  ok   sha256    expected 2efd9c83ba957d4d0e23c026600fed61fafc21c0adb7b28ec361a8ada1ebd225  got 2efd9c83ba957d4d0e23c026600fed61fafc21c0adb7b28ec361a8ada1ebd225
+  ok   signature signer offline:56475aa75463474c
+  none rekor     no Rekor entry (offline signature): grade at most ESTIMATE
+  ok   joules    matches the receipt's numbers
+  ok   sci       E x I and water match the receipt's numbers
+  ok   labels    ESTIMATE 10, MEASURED 9, SYNTHETIC 1
+  ok   grade     NOISE
+  info           candidate 4150.5 J per answer, 4150.5 J per good answer
+  info           [ESTIMATE] SCI 0.8382 gCO2e per correct answer (E 0.001153 kWh [MEASURED] x I 727 g/kWh, IN (India national grid) FY 2023-24; M NOT_AVAILABLE); water 0.4151 mL per correct at 0.36 L/kWh
+
+--- stderr ---

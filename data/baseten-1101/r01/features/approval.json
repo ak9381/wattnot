@@ -1,0 +1,21 @@
+{
+ "risk": "high",
+ "reasons": [
+  "unknown kind 'reasoning_effort'; a person decides"
+ ],
+ "evidence": {
+  "accuracy_without": 1.0,
+  "accuracy_with": 1.0,
+  "p99_without": 3.5018,
+  "p99_with": 4.2526,
+  "spark_agreement": 1.0,
+  "j_per_correct_without": 533.61,
+  "j_per_correct_with": 429.38,
+  "eye_check": null,
+  "hearing_check": null
+ },
+ "review": {
+  "decision": "recorded (no apply in smoke)",
+  "auto_approve": false
+ }
+}

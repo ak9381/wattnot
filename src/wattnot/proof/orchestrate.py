@@ -1454,7 +1454,7 @@ def main(argv=None) -> int:
         elif a.planner == "baseten-open":
             from wattnot.cloud import inference_key
             if not inference_key()[1]:
-                ap.error("BASETEN_METRICS_KEY (or BASETEN_API_KEY) is not set")
+                ap.error("BASETEN_API_KEY is not set (inference uses only the hackathon key)")
             from wattnot.proof.baseten_planner import BasetenClient, OpenWeightsPlanner
 
             planner = OpenWeightsPlanner(BasetenClient(

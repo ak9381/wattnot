@@ -440,3 +440,25 @@ h1,h2,h3,h4,.brand,nav.tabs button,.kpi .c,.lvl{font-family:"Montserrat",system-
 .fw-val{display:inline-block;margin-top:6px;font-size:11px;font-family:var(--mo);padding:2px 8px;border-radius:999px;line-height:1.5;border:1px solid}
 .fw-val-ok{color:var(--tl);border-color:rgba(127,168,138,.5);background:rgba(127,168,138,.1)}
 .fw-val-skip{color:var(--mu);border-color:rgba(167,155,185,.4);background:rgba(167,155,185,.08)}
+.wn-twice{margin:0 0 14px;padding:10px 14px;border-radius:14px;border:1px solid rgba(220,214,228,.18);font-size:14px;line-height:1.5}
+#stepBody textarea{width:100%;background:rgba(0,0,0,.25);color:inherit;border:1px solid rgba(220,214,228,.18);border-radius:10px;padding:8px 10px;font:inherit}
+#stepBody .err{color:var(--v-reject);margin:4px 0 0}
+.lfs{border:1px solid rgba(220,214,228,.14);border-radius:12px;padding:10px 12px;margin:10px 0}
+.lchecks,.lcaps{display:flex;flex-wrap:wrap;gap:8px 18px}.lcaps label{display:flex;gap:6px;align-items:center;font-size:14px}
+.lcaps input,.lgrid input,.lgrid select{width:5.5em}
+.lgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.ltog{display:block;line-height:1.5}.ltog input{margin-right:6px}
+.lfold{margin:10px 0}.lfold summary{cursor:pointer;font-weight:600}
+.lmodels{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-top:8px}
+.lmodels .mchip{border:1px solid rgba(220,214,228,.14);border-radius:10px;padding:8px;font-size:13px}
+.lfilt{display:flex;gap:6px;margin:8px 0}.lfilt [aria-pressed=true]{outline:1px solid currentColor}
+.ltab{max-height:420px;overflow:auto}.ltab table{width:100%;border-collapse:collapse;font-size:13px}.ltab td,.ltab th{padding:5px 8px;border-bottom:1px solid rgba(220,214,228,.1);text-align:left;vertical-align:top}
+.lchk{list-style:none;padding:0;margin:8px 0;display:grid;gap:6px}
+.lchk li{display:grid;grid-template-columns:64px 1fr;gap:2px 10px;padding:8px;border:1px solid rgba(220,214,228,.12);border-radius:10px}
+.lchk .r,.lchk .f{grid-column:2;font-size:13px;opacity:.85}.lchk .f{color:var(--v-l-estimate)}.lchk .lsum{display:block}
+.lchk .st,.lsum .st{font-size:11px;font-weight:700;border-radius:6px;padding:2px 6px;text-align:center;height:fit-content}
+.lchk .st{border:1px solid currentColor}.lchk .st.pass{color:var(--v-pass)}.lchk .st.fail{color:var(--v-reject)}.lchk .st.warn{color:var(--v-l-estimate)}.lchk .st.wait{color:var(--v-mut)}
+.lestg{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:8px 0}.lestg>div{border:1px solid rgba(220,214,228,.14);border-radius:12px;padding:10px;font-size:13px}.lestg b{display:block;font-size:20px;margin:4px 0}
+.lact{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}.lwhy{font-size:13px;opacity:.85}
+.llog{max-height:340px;overflow:auto;background:rgba(0,0,0,.35);border-radius:10px;padding:10px;font-size:12px;white-space:pre-wrap}
+.namerow .info,.lfs .info,h2 .info,.fld .info{margin-left:6px}

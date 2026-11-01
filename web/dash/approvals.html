@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WattNot: approvals</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Source+Sans+3:wght@400;600&family=Fira+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="violet.css">
+<link rel="stylesheet" href="chrome.css">
+<link rel="stylesheet" href="elig.css">
+<link rel="stylesheet" href="configure.css">
+<script src="chrome.js" defer></script>
+</head>
+<body>
+<main class="cfg" id="main">
+  <header class="cfg-head">
+    <h1>Approvals</h1>
+    <p class="sub">Every change WattNot wants to apply is classified for risk. High-risk changes are held here, never auto-approved. The reviewer sees the round's evidence, checks it, and decides. Approve stays locked until every required check passes. Each decision is saved as structured evidence in <code>data/reviews/</code>.</p>
+  </header>
+  <div id="list"></div>
+</main>
+<script type="module" src="approvals.js"></script>
+</body>
+</html>

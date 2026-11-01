@@ -1,0 +1,4 @@
+spoken answer [fake]: all 20 spoken answers correct
+  energy [MOCK]: 1260.0 J/correct spoken, 210.0 J/token, 42.0 J/correct answer
+
+--- stderr ---

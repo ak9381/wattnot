@@ -160,7 +160,7 @@ class FakeServer:
         self.model = model or (f"Muse-Spark-Open#topk{topk}" if provider == "modal"
                                else "meta-models/muse-spark-open")
         self.key_env = ("MODAL_PROXY_TOKEN_ID+MODAL_PROXY_TOKEN_SECRET" if provider == "modal"
-                        else "BASETEN_METRICS_KEY")
+                        else "BASETEN_API_KEY")
         wl = load_workload(workload or rn.WORKLOAD)
         self._answer = {i.prompt: f"ANSWER: {i.meta.get('gold', '0')}" for i in wl.items}
 

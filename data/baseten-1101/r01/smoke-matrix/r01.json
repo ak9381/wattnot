@@ -1,0 +1,611 @@
+{
+ "round": "r01",
+ "leg": "baseten",
+ "status": "done",
+ "label": "MEASURED",
+ "model": "meta-models/muse-spark-open",
+ "where": "Baseten Model API (Muse Spark Open)",
+ "started_utc": "2026-11-01T11:54:56.260519+00:00",
+ "ended_utc": "2026-11-01T11:55:24.916329+00:00",
+ "stop_reason": null,
+ "smoke": true,
+ "note": "accuracy, tokens, USD and latency MEASURED; energy ESTIMATE from tokens (hosted API, no GPU meter); deterministic checks decide, Muse Spark grades beside them",
+ "levers": {
+  "without_wattnot": "effort medium for every request",
+  "with_wattnot": "every hosted WattNot feature ON (see features); effort low first, step up to medium on a failed check"
+ },
+ "results": {
+  "accuracy_without": 1.0,
+  "accuracy_with": 1.0,
+  "j_per_correct_without": 533.61,
+  "j_per_correct_with": 429.38,
+  "energy_saved_pct": {
+   "value": 19.54,
+   "label": "ESTIMATE"
+  },
+  "usd_saved_pct": {
+   "value": 24.34,
+   "label": "MEASURED"
+  },
+  "per_arm": {
+   "without_wattnot": {
+    "answers": 3,
+    "correct": 3,
+    "accuracy": 1.0,
+    "per_set": {
+     "ours": {
+      "correct": 1,
+      "answers": 1,
+      "accuracy": 1.0
+     },
+     "gsm8k": {
+      "correct": 1,
+      "answers": 1,
+      "accuracy": 1.0
+     },
+     "humaneval": {
+      "correct": 1,
+      "answers": 1,
+      "accuracy": 1.0
+     }
+    },
+    "calls": 3,
+    "errors": 0,
+    "tokens": {
+     "prompt": 673,
+     "cached": 128,
+     "completion": 1380,
+     "label": "MEASURED"
+    },
+    "usd": {
+     "value": 0.006565,
+     "label": "MEASURED",
+     "method": "tokens x Baseten list price"
+    },
+    "energy_wh": {
+     "value": 0.4447,
+     "low": 0.0809,
+     "high": 0.8085,
+     "label": "ESTIMATE",
+     "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+    },
+    "j_per_correct": {
+     "value": 533.61,
+     "label": "ESTIMATE"
+    },
+    "item_latency_s": {
+     "p50": 3.2639,
+     "p99": 3.5018,
+     "label": "MEASURED"
+    },
+    "call_latency_s": {
+     "p50": 3.2462,
+     "p99": 3.5009,
+     "mean": 2.8324,
+     "label": "MEASURED"
+    },
+    "stepped_up": 0
+   },
+   "with_wattnot": {
+    "answers": 3,
+    "correct": 3,
+    "accuracy": 1.0,
+    "per_set": {
+     "ours": {
+      "correct": 1,
+      "answers": 1,
+      "accuracy": 1.0
+     },
+     "gsm8k": {
+      "correct": 1,
+      "answers": 1,
+      "accuracy": 1.0
+     },
+     "humaneval": {
+      "correct": 1,
+      "answers": 1,
+      "accuracy": 1.0
+     }
+    },
+    "calls": 3,
+    "errors": 0,
+    "tokens": {
+     "prompt": 673,
+     "cached": 128,
+     "completion": 1004,
+     "label": "MEASURED"
+    },
+    "usd": {
+     "value": 0.004967,
+     "label": "MEASURED",
+     "method": "tokens x Baseten list price"
+    },
+    "energy_wh": {
+     "value": 0.3578,
+     "low": 0.0651,
+     "high": 0.6506,
+     "label": "ESTIMATE",
+     "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+    },
+    "j_per_correct": {
+     "value": 429.38,
+     "label": "ESTIMATE"
+    },
+    "item_latency_s": {
+     "p50": 3.3033,
+     "p99": 4.2526,
+     "label": "MEASURED"
+    },
+    "call_latency_s": {
+     "p50": 3.1459,
+     "p99": 4.0949,
+     "mean": 3.2946,
+     "label": "MEASURED"
+    },
+    "stepped_up": 0
+   }
+  }
+ },
+ "spend": {
+  "baseten_usd": {
+   "value": 0.011533,
+   "label": "MEASURED",
+   "method": "tokens x list price (not yet checked against the invoice)"
+  },
+  "meta_usd": {
+   "value": 0.005297,
+   "label": "MEASURED",
+   "source": "Meta spend ledger"
+  },
+  "meta_ledger_after_usd": 27.3225
+ },
+ "spark_summary": {
+  "label": "LIVE",
+  "answers": 6,
+  "spark_graded": 6,
+  "agreement": 1.0,
+  "disagreements": 0,
+  "stopped": null
+ },
+ "answers": [
+  {
+   "id": "easy-00",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "80 + 31 equals 111.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 1.7509
+  },
+  {
+   "id": "Janet\u2019s ducks lay 16 eggs per day. She e",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 16-3-4=9 eggs at $2 gives $18 correctly.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.5018
+  },
+  {
+   "id": "HumanEval/0",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Double loop correctly detects any pair with difference below threshold.",
+   "tries": [
+    "medium"
+   ],
+   "wall_s": 3.2639
+  },
+  {
+   "id": "easy-00",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "80+31 equals 111 as answered.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 4.2526
+  },
+  {
+   "id": "Janet\u2019s ducks lay 16 eggs per day. She e",
+   "dataset": "gsm8k",
+   "set": "gsm8k",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 16-7=9 times $2 equals $18 is correct.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 3.3033
+  },
+  {
+   "id": "HumanEval/0",
+   "dataset": "humaneval",
+   "set": "humaneval",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Sorted adjacent-difference check correctly detects any pair closer than threshold.",
+   "tries": [
+    "low"
+   ],
+   "wall_s": 2.8163
+  }
+ ],
+ "raw_dir": "data/baseten-1101/r01",
+ "refusal_watch": [
+  {
+   "after": "without_wattnot",
+   "at": "2026-11-01T11:55:14.270205+00:00",
+   "endpoint": "/v1/billing/model_apis",
+   "status": 200,
+   "refusal": false,
+   "words": [],
+   "day": "2026-11-01",
+   "day_subtotal_usd": 2.7642133,
+   "label": "MEASURED"
+  },
+  {
+   "after": "with_wattnot",
+   "at": "2026-11-01T11:55:21.008548+00:00",
+   "endpoint": "/v1/billing/model_apis",
+   "status": 200,
+   "refusal": false,
+   "words": [],
+   "day": "2026-11-01",
+   "day_subtotal_usd": 2.7642133,
+   "label": "MEASURED"
+  }
+ ],
+ "provider_usage": {
+  "status": "ok",
+  "label": "MEASURED",
+  "source": "Baseten GET /v1/model_apis/usage + /v1/billing/model_apis",
+  "window_utc": [
+   "2026-11-01T11:54:00Z",
+   "2026-11-01T11:57:00Z"
+  ],
+  "baseten": {
+   "requests": 6,
+   "input_tokens": 1346,
+   "cached_input_tokens": 256,
+   "output_tokens": 2384
+  },
+  "billing": {
+   "date_utc": "2026-11-01",
+   "subtotal_usd": 2.7757462,
+   "note": "whole-day workspace subtotal, includes any other use that day"
+  },
+  "crosscheck": {
+   "requests": {
+    "baseten": 6,
+    "ours": 6,
+    "diff_pct": 0.0
+   },
+   "input_tokens": {
+    "baseten": 1346,
+    "ours": 1346,
+    "diff_pct": 0.0
+   },
+   "cached_input_tokens": {
+    "baseten": 256,
+    "ours": 256,
+    "diff_pct": 0.0
+   },
+   "output_tokens": {
+    "baseten": 2384,
+    "ours": 2384,
+    "diff_pct": 0.0
+   }
+  },
+  "worst_diff_pct": 0.0,
+  "match": true,
+  "note": "window is workspace-wide for this model: other use of the same key in the window shows up here; energy is not exposed for Model APIs and stays ESTIMATE"
+ },
+ "features": [
+  {
+   "id": "effort_routing",
+   "name": "Reasoning-effort + cheapest-first routing (low, step up on a failed check)",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "thinking_budget",
+   "name": "Thinking-budget enforcer (max_tokens per effort)",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "router",
+   "name": "Backend/effort router",
+   "status": "ON",
+   "reason": "effort leg only; one hosted backend on this stage"
+  },
+  {
+   "id": "context_saver",
+   "name": "Agent saver: tool-output dedup + memory compression",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "waste_guard",
+   "name": "Agent-waste proxy (repeat/no-op/cycle/overspend detectors)",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "code_mode",
+   "name": "Code Mode with locked sandbox + network boundary",
+   "status": "ON",
+   "reason": "runs on the box over recorded traces"
+  },
+  {
+   "id": "prefix_cache_provider",
+   "name": "Prefix caching (provider side, reported cached tokens)",
+   "status": "ON",
+   "reason": "MEASURED cached_tokens from the API; we cannot control the cache"
+  },
+  {
+   "id": "concurrency_batching",
+   "name": "Concurrency batching (client side)",
+   "status": "ON",
+   "reason": "client concurrency only"
+  },
+  {
+   "id": "gates",
+   "name": "Noise gate, fixed answer gate, LLM judge, reasoning-leak strip",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "spark_grades",
+   "name": "Muse Spark grades every answer",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "joule_slo",
+   "name": "Joule-SLO + user p99 limit",
+   "status": "ON",
+   "reason": "energy ESTIMATE from tokens"
+  },
+  {
+   "id": "eye_check",
+   "name": "Eye check: vision gate on the SYNTHETIC Muse Image set",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "sam_hotspot",
+   "name": "SAM 3.1 hotspot audit",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "hearing_check",
+   "name": "Hearing check: Muse Voice Transcribe on spoken answers",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "wonder_planner",
+   "name": "Muse Wonder planner + Wonderchart",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "spark_trace",
+   "name": "Spark 4-call trace (probe, proposal, gate, receipt)",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "approvals",
+   "name": "Approve-before-apply with risk classifier, undo",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "musecode_pr",
+   "name": "Muse Code PR flow (ak9381/wattnot-demo-deploy only)",
+   "status": "ON",
+   "reason": "patch always built; PR opened only with --open-pr at stage time"
+  },
+  {
+   "id": "receipt",
+   "name": "Signed receipt + SCI carbon/water + joules per good answer",
+   "status": "ON",
+   "reason": "local signing key"
+  },
+  {
+   "id": "eu_report",
+   "name": "EU report",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "label_lint",
+   "name": "Label-honesty lint",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "spend_guard",
+   "name": "Spend guards (Baseten hard cap, Meta soft cap, ledger)",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "power_caps",
+   "name": "Power-cap sweep + J/correct gate",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "fp8",
+   "name": "FP8 quantization keep/reject gate",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "kv_batch",
+   "name": "Batch-size + KV-cache sweep",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "vllm_prefix",
+   "name": "vLLM prefix-cache control",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "clock_sidecar",
+   "name": "Phase-aware clock sidecar, marginal-joule knee",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "moe",
+   "name": "MoE top-k / per-expert pinning",
+   "status": "OFF",
+   "reason": "needs Spark Open self-served (8x B200)"
+  },
+  {
+   "id": "measured_energy",
+   "name": "MEASURED GPU energy (NVML)",
+   "status": "OFF",
+   "reason": "hosted API exposes no power meter; energy is ESTIMATE"
+  },
+  {
+   "id": "flex",
+   "name": "Flex grid-event load shedding",
+   "status": "OFF",
+   "reason": "simulator only"
+  },
+  {
+   "id": "rekor",
+   "name": "Rekor publish",
+   "status": "OFF",
+   "reason": "only after the long run, with Akash's yes"
+  },
+  {
+   "id": "own_gpu_serving",
+   "name": "Own-GPU vLLM serving + E2E rig",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  }
+ ],
+ "levers_stats": {
+  "calls": 3,
+  "tokens_saved_est": 0,
+  "guard_stops": 0,
+  "guard_flags": 0,
+  "label": "ESTIMATE"
+ },
+ "feature_stages": {
+  "mode": "smoke",
+  "label": "MOCK",
+  "eye_check": {
+   "status": "ok",
+   "argv": [
+    "--out",
+    "/workspace/wn-baseten/data/baseten-1101/r01/features/eye",
+    "--fake"
+   ]
+  },
+  "hearing_check": {
+   "status": "ok",
+   "argv": [
+    "--out",
+    "/workspace/wn-baseten/data/baseten-1101/r01/features/voice",
+    "--fake"
+   ]
+  },
+  "sam_hotspot": {
+   "status": "ok",
+   "argv": [
+    "--out",
+    "/workspace/wn-baseten/data/baseten-1101/r01/features/sam",
+    "--fake"
+   ]
+  },
+  "wonder_chart": {
+   "status": "ok",
+   "argv": [
+    "--sweep",
+    "/workspace/wn-baseten/data/baseten-1101/r01/features/trials.json",
+    "--out",
+    "/workspace/wn-baseten/data/baseten-1101/r01/features/wonder",
+    "--fake"
+   ]
+  },
+  "spark_trace": {
+   "status": "ok",
+   "steps": 4
+  },
+  "approvals": {
+   "status": "ok",
+   "risk": "high",
+   "reasons": [
+    "unknown kind 'reasoning_effort'; a person decides"
+   ],
+   "evidence": {
+    "accuracy_without": 1.0,
+    "accuracy_with": 1.0,
+    "p99_without": 3.5018,
+    "p99_with": 4.2526,
+    "spark_agreement": 1.0,
+    "j_per_correct_without": 533.61,
+    "j_per_correct_with": 429.38,
+    "eye_check": null,
+    "hearing_check": null
+   },
+   "review": {
+    "decision": "recorded (no apply in smoke)",
+    "auto_approve": false
+   }
+  },
+  "musecode_pr": {
+   "status": "ok",
+   "result": "ApplyPRResult(patch_diff='--- a/launch.sh\\n+++ b/launch.sh\\n@@ -10,5 +10,5 @@\\n exec vllm serve meta-llama/Llama-3.1-8B-Instruct \\\\\\n     --host 0.0.0.0 \\\\\\n     --port 8000 \\\\\\n-    --max-num-seqs 256 \\\\\\n+    --max-num-seqs 16 \\\\\\n     --gpu-memory-utilization 0.90\\n--- a/values.yaml\\n+++ b/values",
+   "pr_opened": false
+  },
+  "code_mode": {
+   "status": "ok",
+   "runs": 144,
+   "label": "ESTIMATE"
+  },
+  "receipt": {
+   "status": "ok",
+   "path": "/workspace/wn-baseten/data/baseten-1101/r01/features/receipt.json",
+   "signer": "offline:cc61d7cb91526c69",
+   "bundle": "/workspace/wn-baseten/data/baseten-1101/r01/features/receipt.sigstore.json"
+  },
+  "eu_report": {
+   "status": "ok",
+   "wording_issues": []
+  },
+  "label_lint": {
+   "status": "ok",
+   "issues": [
+    "$.musecode_pr.result: string of 300 chars (max 200)"
+   ]
+  }
+ }
+}

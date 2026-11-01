@@ -201,12 +201,64 @@ def discover_fixtures(root: Path) -> list[str]:
     return [stem for _, stem in found]
 
 
+def _matrix_record(root: Path, rid: str) -> dict | None:
+    """A two-phase record from a real Run matrix round (out/matrix/<rid>.json), e.g. a Baseten
+    round: accuracy, tokens, USD and latency MEASURED; energy ESTIMATE (hosted API, no meter)."""
+    p = Path(root) / "out" / "matrix" / f"{rid}.json"
+    if not p.is_file():
+        return None
+    try:
+        d = json.loads(p.read_text())
+    except ValueError:
+        return None
+    if d.get("label") != "MEASURED" or d.get("smoke") or d.get("status") != "done":
+        return None
+    arms = (d.get("results") or {}).get("per_arm") or {}
+
+    def phase(arm: str, title: str) -> dict:
+        a = arms.get(arm) or {}
+        n = max(1, a.get("answers") or 1)
+        wh = (a.get("energy_wh") or {}).get("value")
+        return {"title": title, "label": "MEASURED", "cap_w": None,
+                "metrics": {"label": "MEASURED", "energy_label": "ESTIMATE",
+                            "j_per_req": round(wh * 3600 / n, 3) if wh is not None else None,
+                            "j_per_correct": (a.get("j_per_correct") or {}).get("value"),
+                            "p99_s": (a.get("item_latency_s") or {}).get("p99"),
+                            "p50_s": (a.get("item_latency_s") or {}).get("p50"),
+                            "quality_pct": round(100 * a["accuracy"], 2) if a.get("accuracy") is not None else None,
+                            "usd": (a.get("usd") or {}).get("value"), "tokens": a.get("tokens"),
+                            "requests": a.get("answers"), "per_set": a.get("per_set"), "repeats": 1},
+                "events": []}
+
+    b, w = phase("without_wattnot", "Without WattNot"), phase("with_wattnot", "With WattNot")
+    bj, wj = b["metrics"]["j_per_req"], w["metrics"]["j_per_req"]
+    bp, wp = b["metrics"]["p99_s"], w["metrics"]["p99_s"]
+    w["metrics"]["saved_pct"] = round(100 * (wj - bj) / bj, 2) if bj and wj is not None else None
+    w["metrics"]["p99_change_pct"] = round(100 * (wp - bp) / bp, 2) if bp and wp is not None else None
+    leg = d.get("leg", "")
+    return {"id": f"matrix-{rid}", "kind": "matrix", "leg": leg,
+            "run_name": f"Matrix {rid} · {leg.capitalize()} · Muse Spark Open",
+            "model": d.get("model"), "date": (d.get("started_utc") or "")[:10] or None,
+            "label": "MEASURED", "source": [f"out/matrix/{rid}.json", d.get("raw_dir", "")],
+            "matrix": {"spark": d.get("spark_summary"), "spend": d.get("spend"), "levers": d.get("levers"),
+                       "note": d.get("note")},
+            "phases": {"baseline": b, "wattnot": w}}
+
+
+def matrix_ids(root: Path) -> list[str]:
+    return [p.stem for p in sorted((Path(root) / "out" / "matrix").glob("r*.json"))]
+
+
 def list_runs(root: Path | str | None = None) -> list[dict]:
     """Run summaries by run name: id, name, model, date. RUN2 first, then cloud runs."""
     root = Path(root) if root is not None else Path(__file__).resolve().parents[3]
     rec = build_record(root)
     out = [{"id": rec["id"], "name": rec["run_name"],
             "model": rec["model"], "date": rec["date"]}]
+    for rid in matrix_ids(root):
+        m = _matrix_record(root, rid)
+        if m is not None:
+            out.append({"id": m["id"], "name": m["run_name"], "model": m["model"], "date": m["date"]})
     for stem in discover_fixtures(root):
         f = _fixture_record(root, stem)
         if f is not None:
@@ -235,6 +287,8 @@ def get_run(root: Path | str | None, run_id: str) -> dict | None:
     root = Path(root) if root is not None else Path(__file__).resolve().parents[3]
     if run_id == RUN2_ID:
         rec = build_record(root)
+    elif run_id.startswith("matrix-"):
+        rec = _matrix_record(root, run_id[len("matrix-"):])
     elif run_id.startswith("cloud-"):
         rec = _fixture_record(root, run_id[len("cloud-"):])
     else:

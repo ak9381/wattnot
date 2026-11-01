@@ -1,0 +1,238 @@
+{
+ "round": "r04",
+ "tag": "smoke-r04",
+ "leg": "modal",
+ "status": "done",
+ "label": "MEASURED",
+ "model": "meta-models/Muse-Glimmer-30B",
+ "where": "Modal NVIDIA A100-SXM4-80GB, our own vLLM",
+ "billing": "Modal hackathon credits",
+ "smoke": true,
+ "fake": false,
+ "started_utc": "2026-11-01T11:24:38.146647+00:00",
+ "ended_utc": "2026-11-01T11:33:04.190201+00:00",
+ "levers": {
+  "without_wattnot": "BF16, prefix cache off, thinking on (3072-token budget), concurrency 4",
+  "with_wattnot": "every lever Modal allows; table in docs/MODAL-FULL-STAGE.md"
+ },
+ "results": {
+  "accuracy_without": 1.0,
+  "accuracy_with": 1.0,
+  "j_per_correct_without": 4104.7,
+  "j_per_correct_with": 4150.5,
+  "energy_saved_pct": {
+   "value": -1.12,
+   "label": "MEASURED"
+  },
+  "j_per_correct_saved_pct": {
+   "value": -1.12,
+   "label": "MEASURED"
+  },
+  "per_arm": {
+   "without_wattnot": {
+    "tag": "without",
+    "arm": "without_wattnot",
+    "answers": 3,
+    "correct": 3,
+    "accuracy": 1.0,
+    "per_set": {
+     "ours": {
+      "correct": 1,
+      "answers": 1
+     },
+     "gsm8k": {
+      "correct": 1,
+      "answers": 1
+     },
+     "humaneval": {
+      "correct": 1,
+      "answers": 1
+     }
+    },
+    "calls": 3,
+    "errors": 0,
+    "truncated": 0,
+    "tokens": {
+     "prompt": 406,
+     "cached": 0,
+     "completion": 1018,
+     "label": "MEASURED"
+    },
+    "energy_j": {
+     "value": 12314.2,
+     "label": "MEASURED",
+     "method": "NVML total-energy counter across the whole arm"
+    },
+    "wall_s": {
+     "value": 36.2,
+     "label": "MEASURED"
+    },
+    "avg_w": {
+     "value": 339.9,
+     "label": "MEASURED"
+    },
+    "j_per_correct": {
+     "value": 4104.7,
+     "label": "MEASURED"
+    },
+    "item_latency_s": {
+     "p50": 11.2729,
+     "p99": 21.9993,
+     "label": "MEASURED"
+    },
+    "stepped_up": 0,
+    "concurrency": 4,
+    "wh_per_item_samples": {
+     "values": [
+      0.257806,
+      1.063239,
+      2.099569
+     ],
+     "label": "MEASURED",
+     "method": "NVML counter per chunk of 1 items / items in chunk"
+    }
+   },
+   "with_wattnot": {
+    "tag": "with",
+    "arm": "with_wattnot",
+    "answers": 3,
+    "correct": 3,
+    "accuracy": 1.0,
+    "per_set": {
+     "ours": {
+      "correct": 1,
+      "answers": 1
+     },
+     "gsm8k": {
+      "correct": 1,
+      "answers": 1
+     },
+     "humaneval": {
+      "correct": 1,
+      "answers": 1
+     }
+    },
+    "calls": 4,
+    "errors": 0,
+    "truncated": 1,
+    "tokens": {
+     "prompt": 477,
+     "cached": 0,
+     "completion": 1025,
+     "label": "MEASURED"
+    },
+    "energy_j": {
+     "value": 12451.6,
+     "label": "MEASURED",
+     "method": "NVML total-energy counter across the whole arm"
+    },
+    "wall_s": {
+     "value": 36.5,
+     "label": "MEASURED"
+    },
+    "avg_w": {
+     "value": 341.6,
+     "label": "MEASURED"
+    },
+    "j_per_correct": {
+     "value": 4150.5,
+     "label": "MEASURED"
+    },
+    "item_latency_s": {
+     "p50": 11.2614,
+     "p99": 21.6659,
+     "label": "MEASURED"
+    },
+    "stepped_up": 1,
+    "concurrency": 4,
+    "wh_per_item_samples": {
+     "values": [
+      0.313044,
+      1.063211,
+      2.082514
+     ],
+     "label": "MEASURED",
+     "method": "NVML counter per chunk of 1 items / items in chunk"
+    }
+   }
+  }
+ },
+ "levers_detail": {
+  "batch_kv": {
+   "grid": [],
+   "kept": {
+    "concurrency": 4,
+    "max_num_seqs": 64
+   },
+   "label": "MEASURED"
+  },
+  "fp8": null,
+  "limits": {
+   "p99_limit": "+10%",
+   "p99_ok": true,
+   "joule_slo_ok": false,
+   "quality_gate": {
+    "keep": false,
+    "accuracy_ok": true,
+    "energy_ok": false,
+    "acc_drop_pts": 0.0,
+    "label": "MEASURED"
+   },
+   "label": "MEASURED"
+  },
+  "blocks": {
+   "eye": {
+    "rc": 0,
+    "wall_s": 38.1,
+    "out": "eye",
+    "energy_j": {
+     "value": 13730.5,
+     "label": "MEASURED"
+    }
+   }
+  }
+ },
+ "cap_probe": {
+  "writable": false,
+  "reason": "NVML refused the power-limit write (NVMLError_NoPermission); Modal containers have no privileged GPU control",
+  "label": "MEASURED"
+ },
+ "spark_summary": {
+  "label": "LIVE",
+  "graded": 6,
+  "disagreements": 0,
+  "agreement": 1.0,
+  "stopped": null
+ },
+ "receipt": "data/modal-full-1101/smoke-r04/sweep/rcpt_20261101_modal_full_smoke-r04.json",
+ "raw_dir": "data/modal-full-1101/smoke-r04",
+ "spend": {
+  "limit": 1,
+  "modal_usd": {
+   "value": 0.3774,
+   "label": "ESTIMATE",
+   "method": "wall minutes incl. image and container start x list price"
+  },
+  "stage_total_usd": {
+   "value": 0.3774,
+   "label": "ESTIMATE"
+  },
+  "teardown": {
+   "stopped": [],
+   "still_running": [],
+   "checked_at": "2026-11-01T11:33:19.695403+00:00"
+  },
+  "meta_usd": {
+   "value": 0.0051,
+   "label": "MEASURED",
+   "source": "Meta spend ledger"
+  },
+  "musecode": {
+   "pr_url": null,
+   "patch_sha256": "753ce84aa36b2614064dac31d2310b287b2724feb51c9f50e787a992190377ba",
+   "opened": false,
+   "label": "LIVE"
+  },
+  "flow_rc": 1
+ }
+}
