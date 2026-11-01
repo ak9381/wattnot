@@ -147,7 +147,7 @@ def test_a_malformed_matching_entry_is_skipped_and_a_later_one_still_wins():
 def test_cli_defaults_to_per_call_and_writes_a_sidecar_the_page_shows(made, tmp_path, capsys,
                                                                       monkeypatch):
     monkeypatch.delenv("BASETEN_METRICS_KEY", raising=False)
-    monkeypatch.delenv("BASETEN_API_KEY", raising=False)
+    monkeypatch.delenv("BASETEN_METRICS_KEY", raising=False)
     path, r, _, _ = made
     for f in Path(path).parent.glob(path.stem + "*"):
         (tmp_path / f.name).write_bytes(f.read_bytes())
@@ -166,7 +166,7 @@ def test_cli_defaults_to_per_call_and_writes_a_sidecar_the_page_shows(made, tmp_
 
 def test_cli_meter_source_still_says_not_available_without_a_key(made, tmp_path, monkeypatch,
                                                                  capsys):
-    monkeypatch.delenv("BASETEN_API_KEY", raising=False)
+    monkeypatch.delenv("BASETEN_METRICS_KEY", raising=False)
     monkeypatch.delenv("BASETEN_METRICS_KEY", raising=False)
     path, _, _, _ = made
     (tmp_path / path.name).write_bytes(path.read_bytes())

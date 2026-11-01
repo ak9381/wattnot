@@ -1,5 +1,5 @@
 """Baseten proof: 3 tiny calls through the $98 spend guard; compare ledger vs returned usage.
-Key from BASETEN_METRICS_KEY (fallback BASETEN_API_KEY); never printed."""
+Key from BASETEN_API_KEY only (hackathon key); never printed."""
 import json, os, sys, threading, time, urllib.request, urllib.error
 from pathlib import Path
 from wattnot.cloud import BASE_URL, MODEL, inference_key
