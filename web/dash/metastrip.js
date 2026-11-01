@@ -9,6 +9,8 @@ export const ROSTER = [
   { id: "voice", name: "Muse Voice", role: "spoken Ask and tune", match: /^muse-voice/ },
   { id: "code", name: "Muse Code", role: "sandboxed PR for the change", match: /^muse-code/ },
   { id: "open", name: "Spark Open", role: "routing on Baseten", match: /spark-open/ },
+  // Muse Image is blocked in India: never a live call here, only its pre-generated test sets.
+  { id: "image", name: "Muse Image", role: "vision quality gate images (any miss rejects a change); SAM hotspot test set", match: /^$/, static: "SYNTHETIC", note: "pre-generated set; blocked in India, no live call" },
 ];
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
@@ -31,11 +33,11 @@ export function addEvent(state, ev) {
 
 export function renderMetaStrip(state) {
   const chips = ROSTER.map((r) => {
-    const s = state?.[r.id];
-    const body = s
+    const s = r.static ? null : state?.[r.id];
+    const body = r.static ? `<span class="muted">${esc(r.note)}</span> <span class="sparkLbl">${esc(r.static)}</span>` : s
       ? `<b>${s.calls}</b> call${s.calls === 1 ? "" : "s"} · <code>${esc(s.trace || "–")}</code> · ${s.latency == null ? "–" : `${Math.round(s.latency)} ms`} · ${s.usdLabel ? `$${s.usd.toFixed(5)} <span class="sparkLbl">${esc(s.usdLabel)}</span>` : "$ –"}${s.label ? ` <span class="sparkLbl">${esc(s.label)}</span>` : ""}`
       : `<span class="muted">no call in this run's event log</span>`;
-    return `<div class="metaChip ${s ? "on" : "off"}" data-model="${r.id}"><div class="metaChipName">${esc(r.name)}</div><div class="metaChipRole">${esc(r.role)}</div><div class="metaChipBody">${body}</div></div>`;
+    return `<div class="metaChip ${s || r.static ? "on" : "off"}" data-model="${r.id}"><div class="metaChipName">${esc(r.name)}</div><div class="metaChipRole">${esc(r.role)}</div><div class="metaChipBody">${body}</div></div>`;
   }).join("");
   return `<div class="metaStrip"><h5>Meta models at work</h5><div class="metaChips">${chips}</div></div>`;
 }
