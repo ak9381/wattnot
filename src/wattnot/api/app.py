@@ -300,6 +300,15 @@ def create_app(root: str | os.PathLike[str] = ".") -> FastAPI:
     base = Path(root)
     app = FastAPI(title="WattNot read-only API", version="1")
 
+    @app.middleware("http")
+    async def no_cache_static(request: Request, call_next):
+        """The mounted dashboard pages revalidate every load (no stale heuristic cache)."""
+        response = await call_next(request)
+        path = request.url.path
+        if path == "/" or path.endswith((".html", ".css", ".js")):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
     @app.get("/api/runs")
     def list_runs() -> list[dict]:
         runs_dir = _runs_dir(base)

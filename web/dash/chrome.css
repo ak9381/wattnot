@@ -226,6 +226,36 @@ body.is-landing footer.wn-footer.gl {
   .wn-footer-left .wn-footer-sep { display: none; }
 }
 
+/* body.story pages (e.g. graph.html) are a fixed, full-screen canvas layout with no
+   in-flow content, so a static footer floats up under the header. Pin it to the viewport
+   bottom on every body.story page — robustly, not relying on any per-page override.
+   margin:0 overrides the full-bleed insets chrome.js sets inline (a fixed bar reaches
+   both edges from left:0;right:0 and needs none). */
+body.story footer.wn-footer.gl {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: auto;
+  margin: 0 !important;
+  width: 100%;
+  z-index: 28;
+}
+
+/* Sticky footer for ordinary app pages: the body is a full-height flex column so the
+   footer sits at the bottom of the viewport even when the page content is short. The
+   fixed header, fixed left sidebar (.wn-side) and glow blobs are out of flow, so they
+   are untouched; the left-column padding reserved for the sidebar is kept. body.story
+   (pinned above) and .viewport pages keep their own full-screen layouts. */
+body:not(.is-landing):not(.story):not(:has(.viewport)) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+body:not(.is-landing):not(.story):not(:has(.viewport)) > footer.wn-footer.gl {
+  margin-top: auto;
+}
+
 .wn-footer-left {
   display: flex;
   align-items: center;

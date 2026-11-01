@@ -14,6 +14,11 @@
   font:12px var(--mono,ui-monospace,monospace);
 }
 @media (min-width:1100px){ .gbar{ left:262px; } }           /* clear the persistent left sidebar */
+/* The canvas sits left:0 by default; at >=1100px the persistent sidebar is shown, so
+   push #stage right by the same 262px as the toolbar above it. graphbar.js only sets
+   #stage's top, so its left comes from here. Below 1100px the sidebar slides out, so
+   the canvas keeps the full width. */
+@media (min-width:1100px){ body.story.wn-has-side #stage{ left:262px; } }
 .gbar .gbar-grp{ display:flex; gap:4px; align-items:center; }
 .gbar button{ font:12px var(--mono,ui-monospace,monospace); color:var(--ink2,#cdd3dd);
   background:transparent; border:1px solid var(--hair2,rgba(255,255,255,.16)); border-radius:6px;
@@ -46,9 +51,8 @@
 .infodrawer .info-item.live{ border-color:var(--cy,#7fd1c9); box-shadow:0 0 0 1px var(--cy,#7fd1c9) inset; }
 .infodrawer .infolist[data-arm="without_wattnot"] .info-item:not(.wn-inel){ opacity:.55; } /* baseline arm: features are off */
 
-/* ---- footer: a full-width black bar pinned to the page end. body.story is a fixed
-   full-screen layout, so pin the footer instead of letting it float up over the canvas. */
-body.story .wn-footer.gl{ position:fixed; left:0!important; right:0!important; bottom:0; top:auto; margin:0!important; z-index:28; }
+/* ---- footer: a full-width black bar pinned to the page end. The body.story footer pin
+   now lives in chrome.css so it applies to every body.story page, not only this one. */
 body.story #rail.rail{ display:none; }                       /* the empty duplicate bottom bar */
 body.story .wn-elig{ display:none; }                         /* the old config/arm bar — folded into the toolbar above */
 
