@@ -8,7 +8,7 @@
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 2rem;
-  color: #DCD6E4;
+  color: #F3F0F7;
   font-family: "Source Sans 3", "Source Sans Pro", system-ui, sans-serif;
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
@@ -41,9 +41,9 @@
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
   background: rgba(142, 122, 158, 0.2);
-  color: #DCD6E4;
+  color: #F3F0F7;
 }
-.hset-energy { color: #C4B4D6; }
+.hset-energy { color: #DDD4E7; }
 
 .hset-verdict {
   font-family: "Fira Code", monospace;
@@ -55,7 +55,7 @@
 .hset-ok { color: #A3BE8C; background: rgba(163, 190, 140, 0.14); }
 .hset-blocked { color: #E06C75; background: rgba(224, 108, 117, 0.16); }
 
-.hset-sub { color: #B2A6C3; font-size: 0.9rem; margin: 0 0 0.5rem; }
+.hset-sub { color: #D6CEE0; font-size: 0.9rem; margin: 0 0 0.5rem; }
 .hset-reason { font-size: 0.9rem; margin: 0 0 0.75rem; }
 
 .hset-table {
@@ -67,7 +67,7 @@
   text-align: left;
   font-family: "Montserrat", sans-serif;
   font-weight: 600;
-  color: #8E7A9E;
+  color: #CBC4D6;
   padding: 0.35rem 0.5rem;
   border-bottom: 1px solid rgba(110, 94, 124, 0.3);
 }
@@ -82,8 +82,8 @@
 .hset-fail { background: rgba(224, 108, 117, 0.07); }
 .hset-id { font-family: "Fira Code", monospace; }
 .hset-iou { font-family: "Fira Code", monospace; }
-.hset-thresh { color: #8E7A9E; font-size: 0.72rem; }
-.hset-fault, .hset-slot { color: #B2A6C3; }
+.hset-thresh { color: #CBC4D6; font-size: 0.72rem; }
+.hset-fault, .hset-slot { color: #D6CEE0; }
 .hset-syn {
   display: inline-block;
   margin-left: 0.4rem;
@@ -91,8 +91,8 @@
   padding: 0.05rem 0.35rem;
   border-radius: 3px;
   background: rgba(142, 122, 158, 0.18);
-  color: #C4B4D6;
+  color: #DDD4E7;
 }
-.hset-stat { font-family: "Fira Code", monospace; color: #B2A6C3; }
+.hset-stat { font-family: "Fira Code", monospace; color: #D6CEE0; }
 .hset-pass .hset-stat { color: #A3BE8C; }
 .hset-fail .hset-stat { color: #E06C75; }

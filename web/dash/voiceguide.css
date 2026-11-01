@@ -5,7 +5,7 @@
   right: 16px;
   z-index: 9999;
   font-family: "Source Sans 3", "Source Sans Pro", system-ui, sans-serif;
-  color: #DCD6E4;
+  color: #F3F0F7;
 }
 
 .wn-slot-wrap .vg-slot-container,
@@ -58,7 +58,7 @@
 .vg-mic-btn {
   background: #2E2B44;
   border: 1px solid #6C5E7C;
-  color: #DCD6E4;
+  color: #F3F0F7;
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -94,7 +94,7 @@
   border: 1px solid rgba(110, 94, 124, 0.3);
   border-radius: 16px;
   padding: 4px 10px;
-  color: #DCD6E4;
+  color: #F3F0F7;
   font-family: inherit;
   font-size: 0.85rem;
   width: 170px;
@@ -111,7 +111,7 @@
 .vg-submit-btn {
   background: transparent;
   border: none;
-  color: #B2A6C3;
+  color: #D6CEE0;
   cursor: pointer;
   font-size: 0.85rem;
   padding: 2px 6px;
@@ -121,14 +121,14 @@
 }
 
 .vg-submit-btn:hover {
-  color: #DCD6E4;
+  color: #F3F0F7;
   background: rgba(142, 122, 158, 0.2);
 }
 
 .vg-status-bubble {
   font-family: "Fira Code", monospace;
   font-size: 0.75rem;
-  color: #B2A6C3;
+  color: #D6CEE0;
   padding: 2px 6px;
   border-radius: 4px;
   background: rgba(79, 74, 99, 0.4);
@@ -168,7 +168,7 @@
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
-  color: #8E7A9E;
+  color: #CBC4D6;
 }
 
 .vg-panel-tag {
@@ -177,13 +177,13 @@
   padding: 1px 4px;
   border-radius: 3px;
   background: rgba(142, 122, 158, 0.2);
-  color: #B2A6C3;
+  color: #D6CEE0;
 }
 
 .vg-panel-body {
   font-size: 0.85rem;
   line-height: 1.4;
-  color: #DCD6E4;
+  color: #F3F0F7;
 }
 
 .vg-panel-route {
@@ -200,7 +200,7 @@
 .vg-panel-close {
   background: transparent;
   border: none;
-  color: #8E7A9E;
+  color: #CBC4D6;
   cursor: pointer;
   font-size: 14px;
 }
@@ -221,13 +221,13 @@
   padding: 1px 5px;
   border-radius: 3px;
   background: rgba(142, 122, 158, 0.25);
-  color: #DCD6E4;
+  color: #F3F0F7;
 }
 
 .vg-speak-btn {
   background: #2E2B44;
   border: 1px solid #6C5E7C;
-  color: #DCD6E4;
+  color: #F3F0F7;
   font-family: "Fira Code", monospace;
   font-size: 0.65rem;
   border-radius: 12px;
@@ -255,7 +255,7 @@
 .vg-tune-change {
   font-family: "Fira Code", monospace;
   font-size: 0.75rem;
-  color: #DCD6E4;
+  color: #F3F0F7;
 }
 
 .vg-tune-route {
@@ -278,20 +278,20 @@
 }
 
 .vg-tune-why {
-  color: #B2A6C3;
+  color: #D6CEE0;
   font-size: 0.75rem;
 }
 
 .vg-tune-skip,
 .vg-tune-note {
   font-size: 0.72rem;
-  color: #B2A6C3;
+  color: #D6CEE0;
   margin: 6px 0 0;
 }
 
 .vg-tune-empty {
   font-size: 0.82rem;
-  color: #DCD6E4;
+  color: #F3F0F7;
   margin: 4px 0;
 }
 

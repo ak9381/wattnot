@@ -8,7 +8,7 @@ import * as LS from "./launchsteps.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-const S = { opts: null, choice: {}, run: null, n: 0, playing: false, speed: 2, timer: null, story: null, verify: null, partners: null, lastActive: null };
+const S = { selRunId: (() => { const v = new URL(location.href).searchParams.get("run") || localStorage.getItem("wn.run"); return v && !v.includes(":") ? v : undefined; })(), opts: null, choice: {}, run: null, n: 0, playing: false, speed: 2, timer: null, story: null, verify: null, partners: null, lastActive: null };
 const ICON = { room: "▦", baseline: "◔", gate: "✓", sweep: "⚡", topk: "◇", effort: "◎", waste: "♻", approve: "✋", keep: "↺", receipt: "✎", hosted: "☁" };
 
 // ---------- cards (drill-down) ----------
@@ -309,7 +309,7 @@ function renderStep() {
     body.innerHTML = h("WattNot is a drop-in proxy. Connect your framework by updating the <code>base_url</code> to point to WattNot.") + radios("stack", STACK_CARDS, curFw, (c) => frameworkStackBadge(S.frameworks, c.v)) + `
       <div class="stack-box glass" style="margin-top:14px;padding:12px 14px;border-radius:14px;background:rgba(31,26,47,.75);border:1px solid rgba(220,214,228,.14)">
         <div style="font-size:12px;color:var(--mu);margin-bottom:6px">One-line change for <b>${esc(curCard.t)}</b>:</div>
-        <pre style="margin:0;font-family:var(--mo);color:#DCD6E4;font-size:13px;padding:8px 12px;background:rgba(0,0,0,.35);border-radius:8px;overflow-x:auto"><code>${esc(curCard.snippet)}</code></pre></div>`;
+        <pre style="margin:0;font-family:var(--mo);color:#F3F0F7;font-size:13px;padding:8px 12px;background:rgba(0,0,0,.35);border-radius:8px;overflow-x:auto"><code>${esc(curCard.snippet)}</code></pre></div>`;
   } else if (n === 7) {
     body.innerHTML = h("How careful WattNot is, and the most it may spend.") + radios("care", CARE_CARDS, S.choice.care) + `<div id="lsBody" style="margin-top:14px"></div>`;
     LS.init().then(() => { if (S.choice.p99_slack_pct != null && LS.L.cfg.p99_pct == null) LS.L.cfg.p99_pct = S.choice.p99_slack_pct; LS.limits($("#lsBody")); });
@@ -339,7 +339,7 @@ function syncAdv() {
   $("#advSum")?.setAttribute("aria-expanded", String(d.open));
   const list = $("#advDefList"); if (!list) return;
   list.innerHTML = S.opts.options.filter((o) => !ESSENTIAL_IDS.includes(o.id))
-    .map((o) => `<span class="chip">${esc(o.label)}: <b style="color:#DCD6E4">${esc(advChoiceLabel(o))}</b></span>`).join("");
+    .map((o) => `<span class="chip">${esc(o.label)}: <b style="color:#F3F0F7">${esc(advChoiceLabel(o))}</b></span>`).join("");
 }
 function sumCfg() {
   const c = S.choice, m = S.opts.options.find((o) => o.id === "model").choices.find((x) => x.v === c.model);
@@ -388,7 +388,7 @@ function stageBody(p, evs) {
   const subs = p.subs.map((s) => { const f = fin[s.id]; const st = f ? (f.data.status === "failed" ? "fail" : "done") : mine.some((e) => e.data.sub === s.id) ? "run" : "todo";
     return `<div class="sub"><span class="st ${st}" style="margin-top:6px"></span><div style="flex:1"><b>${esc(s.title)}</b>${s.partner ? ` <span class="ptag">${esc(s.partner)}</span>` : ""}<p>${esc(f?.data.summary || s.desc)}</p>
       <div class="io">in: ${esc(s.inputs)} → out: ${esc(s.outputs)} · <code>${esc(s.code || "")}</code></div>
-      ${(f?.data.numbers || []).map((x) => `<span class="chip" style="margin:4px 4px 0 0">${esc(x.label)} <b style="color:#DCD6E4">${num(x.v)} ${esc(x.unit)}</b>${badge(x.tag)}</span>`).join("")}</div></div>`; }).join("");
+      ${(f?.data.numbers || []).map((x) => `<span class="chip" style="margin:4px 4px 0 0">${esc(x.label)} <b style="color:#F3F0F7">${num(x.v)} ${esc(x.unit)}</b>${badge(x.tag)}</span>`).join("")}</div></div>`; }).join("");
   return `<p>${esc(p.desc)}</p>${say ? `<div class="say">${esc(say.text)} <small style="color:var(--mu)">(${esc(say.source)})</small></div>` : ""}
     <div class="lvl">Steps inside</div>${subs}${mine.length ? raw(`${p.id}: ${mine.length} events`, mine) : ""}`;
 }
@@ -538,7 +538,7 @@ function mapTopics() {
       kids: [leaf("r-s", "x", "Without WattNot", `No gate: 325 W would just run slower at p99 <b>+10.9%</b>`),
              leaf("r-w", "x", "With WattNot", `Gate rejects 325 W: p99 <b>+10.9%</b> is over the <b>10%</b> limit ${badge("MEASURED")}`)],
       detail: `<b>325 W rejected:</b> p99 rose <b>+10.9%</b>, over the 10% limit ${badge("MEASURED")} (data/h100-run2/vm/steps/cap325.json). Rejections are the system working.` },
-    { id: "proof", color: "#DCD6E4", name: "Proof", sub: "Fingerprint, verifier, raw files",
+    { id: "proof", color: "#F3F0F7", name: "Proof", sub: "Fingerprint, verifier, raw files",
       kids: [leaf("f-s", "doc", "Without WattNot", `A chart you cannot re-check`),
              leaf("f-w", "doc", "With WattNot", `Fingerprint plus verifier plus raw files ${badge("SAMPLE")}`)],
       detail: `The fingerprint covers the headline numbers only, with sorted keys and no timestamps. The verifier re-checks sample receipts ${badge("SAMPLE")}. Raw data: data/h100-run2/vm/steps/cap350.json, data/h100-run2/vm/steps/cap325.json, verifier/samples/.` },
@@ -1254,6 +1254,8 @@ function mountCompare() {
 
   $("#compareMetaSection")?.remove();
   const base = rec?.receipt || rec || {};
+  // No showcase with filled-in sample values: this table appears only when the run's receipt carries a measurement block.
+  if (!base.measurement) return;
   const metaRec = {
     receipt_id: base.receipt_id || base.id || "rcpt_run2_cap350",
     framework: rec?.framework || base.framework || "vllm",
@@ -1321,7 +1323,7 @@ function wireCompareTooltips(stage) {
     tip = document.createElement("div");
     tip.id = "cmpTooltip";
     tip.className = "cmp-tooltip glass";
-    tip.style.cssText = "position:fixed;z-index:9999;display:none;pointer-events:none;padding:8px 12px;border-radius:10px;font-size:12px;color:#DCD6E4;background:rgba(23,23,36,0.94);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.14);box-shadow:0 8px 24px rgba(0,0,0,0.5);max-width:280px;line-height:1.4;";
+    tip.style.cssText = "position:fixed;z-index:9999;display:none;pointer-events:none;padding:8px 12px;border-radius:10px;font-size:12px;color:#F3F0F7;background:rgba(23,23,36,0.94);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.14);box-shadow:0 8px 24px rgba(0,0,0,0.5);max-width:280px;line-height:1.4;";
     document.body.appendChild(tip);
   }
 
@@ -1337,7 +1339,7 @@ function wireCompareTooltips(stage) {
     if (titleEl) { const clone = titleEl.cloneNode(true); clone.querySelectorAll(".v-chip, .b-chip").forEach((x) => x.remove()); title = clone.textContent.trim(); }
     const desc = el.querySelector(".rad-leaf-desc, small, .centre-sub")?.textContent || el.title || "";
     if (!title && !desc) return;
-    tip.innerHTML = `<div style="font-weight:600;color:#DCD6E4;margin-bottom:2px">${esc(title)}${lab ? ` <span class="v-chip ${esc(lab)}"><i class="v-lab ${esc(lab)}"></i>${esc(lab)}</span>` : ""}</div>${desc ? `<div style="color:var(--v-sub,#B2A6C3);font-size:11.5px">${esc(desc)}</div>` : ""}${val && val !== "–" ? `<div style="margin-top:4px;font-family:var(--v-num,monospace);color:#8FD3B0">${esc(val)}</div>` : ""}`;
+    tip.innerHTML = `<div style="font-weight:600;color:#F3F0F7;margin-bottom:2px">${esc(title)}${lab ? ` <span class="v-chip ${esc(lab)}"><i class="v-lab ${esc(lab)}"></i>${esc(lab)}</span>` : ""}</div>${desc ? `<div style="color:var(--v-sub,#B2A6C3);font-size:11.5px">${esc(desc)}</div>` : ""}${val && val !== "–" ? `<div style="margin-top:4px;font-family:var(--v-num,monospace);color:#8FD3B0">${esc(val)}</div>` : ""}`;
     tip.style.display = "block";
     const r = el.getBoundingClientRect();
     const tw = tip.offsetWidth || 200, th = tip.offsetHeight || 50;
@@ -1493,9 +1495,9 @@ function drawTreeWires(cx, cy, W, H) {
   }
 
   const dottedSvg = dottedPaths.map(({ d, highlight }) =>
-    `<path d="${d}" stroke="${highlight ? '#DCD6E4' : 'rgba(178,166,195,0.30)'}" stroke-width="${highlight ? '2' : '1.4'}" stroke-dasharray="4,4" fill="none" />`
+    `<path d="${d}" stroke="${highlight ? '#F3F0F7' : 'rgba(178,166,195,0.30)'}" stroke-width="${highlight ? '2' : '1.4'}" stroke-dasharray="4,4" fill="none" />`
   ).join("");
-  const dotsSvg = dots.map(([x, y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#B2A6C3" /><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.5" fill="#DCD6E4" />`).join("");
+  const dotsSvg = dots.map(([x, y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#B2A6C3" /><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.5" fill="#F3F0F7" />`).join("");
 
   svg.innerHTML = dottedSvg + dotsSvg;
 }

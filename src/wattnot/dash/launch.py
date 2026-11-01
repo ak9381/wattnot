@@ -332,7 +332,8 @@ def check_eligibility(cfg):
 def check_runner(cfg):
     ok = E.PROVIDERS[cfg["provider"]]["runner"] is not None
     return _item("runner", "A runner exists for this configuration", "pass" if ok else "fail",
-                 "scripts/e2e/" + ("baseten_stage.py" if cfg["provider"] == "baseten" else "modal_stage.py")
+                 next((Path(a).relative_to(ROOT).as_posix() if Path(a).is_absolute() else a)
+                      for a in command(cfg, "live")[0] if str(a).endswith(".py"))
                  if ok else "E2E H100 and combined stages are not wired to the UI yet",
                  "" if ok else "pick Baseten or Modal A100")
 
@@ -480,6 +481,39 @@ def rounds() -> list[dict]:
                     "receipt": (feats / "receipt.json").relative_to(ROOT).as_posix() if (feats / "receipt.json").exists() else None,
                     "events": sorted(p.relative_to(ROOT).as_posix() for p in rdir.rglob("events*.jsonl"))[:4]})
     return out
+
+
+def run_index() -> dict:
+    """Every run the header picker can show: real rounds plus runs started from the UI, newest first.
+    The name is the wizard's run name when a UI job produced the round, else the round id."""
+    jobs = []
+    for cf in sorted(JOBS_DIR.glob("*/config.json")) if JOBS_DIR.exists() else []:
+        try:
+            j = json.loads(cf.read_text())
+        except (OSError, ValueError):
+            continue
+        c = j.get("config") or {}
+        jid = cf.parent.name
+        live = JOBS.get(jid, {})
+        jobs.append({"id": "job:" + jid, "name": c.get("name") or jid, "kind": "job", "provider": c.get("provider"),
+                     "stage": "smoke" if c.get("smoke") else ("replay" if j.get("mode") == "mock" else "stage"),
+                     "date": live.get("started") or f"{jid[:4]}-{jid[4:6]}-{jid[6:8]}T{jid[9:11]}:{jid[11:13]}:{jid[13:15]}Z",
+                     "label": "REPLAY" if j.get("mode") == "mock" else (j.get("label") or "MEASURED"),
+                     "status": live.get("state") or "ended", "cmd": " ".join(j.get("cmd") or []),
+                     "source": cf.relative_to(ROOT).as_posix() if cf.is_relative_to(ROOT) else None})
+    out = []
+    for r in rounds():
+        src_dir = r["source"].rsplit("/", 2)[0]
+        named = next((j for j in jobs if src_dir and src_dir in j["cmd"]), None)
+        out.append({"id": r["id"], "name": named["name"] if named else f'{r["provider"]} {r.get("round") or r["id"]}',
+                    "kind": "round", "provider": r["provider"], "stage": "smoke" if r.get("smoke") else "stage",
+                    "date": r.get("started_utc"), "label": r.get("label"), "status": r.get("status"),
+                    "source": r["source"], "receipt": r.get("receipt"), "events": r.get("events"),
+                    "job": named["id"] if named else None})
+    used = {o["job"] for o in out if o.get("job")}
+    out += [{k: v for k, v in j.items() if k != "cmd"} for j in jobs if j["id"] not in used]
+    out.sort(key=lambda o: o.get("date") or "", reverse=True)
+    return {"runs": out, "latest": out[0]["id"] if out else None}
 
 
 # ---------------------------------------------------------------- approvals evidence
@@ -693,6 +727,10 @@ def router() -> APIRouter:
         if f.suffix in (".log", ".jsonl", ".txt"):
             return PlainTextResponse(SECRETISH.sub(r"\1=[hidden]", f.read_text(errors="ignore")[-400_000:]))
         return FileResponse(f)
+
+    @r.get("/runs")
+    def runs_ep():
+        return run_index()
 
     @r.get("/rounds")
     def rnds():

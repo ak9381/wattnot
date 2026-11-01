@@ -1,21 +1,21 @@
 /* Eligibility bar + greying shared by every page. Uses the existing palette variables only. */
 .wn-elig{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:8px clamp(16px,4vw,40px);
-  font:14px/1.4 var(--v-body,system-ui);color:var(--v-sub,#C9C1D6);border-bottom:1px solid var(--v-line,rgba(255,255,255,.14));
+  font:14px/1.4 var(--v-body,system-ui);color:var(--v-sub,#E4DFEB);border-bottom:1px solid var(--v-line,rgba(255,255,255,.14));
   background:var(--v-surf-17,#171724)}
-.wn-elig b{color:var(--v-cream,#DCD6E4);font-weight:600}
+.wn-elig b{color:var(--v-cream,#F3F0F7);font-weight:600}
 .wn-elig a{color:var(--v-peach,#B2A6C3)}
 .wn-elig .seg{display:inline-flex;border:1px solid var(--v-line2,rgba(178,166,195,.28));border-radius:999px;overflow:hidden}
-.wn-elig .seg button{all:unset;cursor:pointer;padding:3px 12px;font-size:13px;color:var(--v-sub,#C9C1D6)}
-.wn-elig .seg button[aria-pressed="true"]{background:var(--v-violet,#3B3A54);color:var(--v-cream,#DCD6E4)}
+.wn-elig .seg button{all:unset;cursor:pointer;padding:3px 12px;font-size:13px;color:var(--v-sub,#E4DFEB)}
+.wn-elig .seg button[aria-pressed="true"]{background:var(--v-violet,#3B3A54);color:var(--v-cream,#F3F0F7)}
 .wn-elig .seg button:focus-visible{outline:2px solid var(--v-peach,#B2A6C3)}
 .wn-lab{display:inline-block;font:600 10.5px/1 var(--v-num,monospace);letter-spacing:.06em;padding:3px 6px;border-radius:6px;
   border:1px solid currentColor;vertical-align:middle;margin-left:4px}
 .wn-lab.MEASURED{color:var(--v-l-measured,#8FD3B0)}.wn-lab.ESTIMATE{color:var(--v-l-estimate,#E6C27A)}
 .wn-lab.SIMULATED{color:var(--v-l-simulated,#8EC5F0)}.wn-lab.MOCK{color:var(--v-l-mock,#E9A6B4)}
 .wn-lab.REPLAY,.wn-lab.SYNTHETIC{color:var(--v-l-replay,#B2A6C3)}
-.wn-inel{opacity:.38;filter:grayscale(1);position:relative}
+.wn-inel{opacity:.62;filter:grayscale(1);position:relative}
 .wn-inel::after{content:"Ineligible";position:absolute;top:4px;right:6px;font:600 10px/1 var(--v-num,monospace);
-  color:var(--v-mut,#A79BB9);letter-spacing:.05em}
+  color:var(--v-mut,#CBC4D6);letter-spacing:.05em}
 .wn-real { margin: 24px 0; padding: 16px 18px; border: 1px solid var(--v-line2, #333); border-radius: 14px; background: var(--v-bg2, transparent); }
 .wn-real h2 { font-size: 16px; margin: 0 0 6px; }
 .wn-rtab { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -26,3 +26,62 @@
 .wn-sources { margin: 36px 0 24px; } .wn-sources h2 { font-size: 20px; margin: 0 0 8px; }
 .wn-sources p { max-width: 75ch; line-height: 1.55; } .wn-src-links a { color: inherit; text-decoration: underline; }
 .wn-src-tags { list-style: none; padding: 0; margin: 6px 0 16px; display: grid; gap: 6px; } .wn-src-tags .wn-lab { margin-right: 8px; }
+/* Drawers sit fully below the header (set by chrome.js) and scroll inside. */
+aside.side,body:has(.wn-nav-v2) aside.side,aside.panel#spanel{top:var(--wn-drawer-top,76px)!important;bottom:var(--wn-drawer-bottom,12px)!important;height:auto!important;max-height:none!important;overflow-y:auto!important;overscroll-behavior:contain}
+aside.side #sideX{position:sticky;top:0;float:right;margin:-6px -6px 6px 8px}
+/* Readability floor for small captions that used accent shades as text. */
+.eulink-roadmap-tag,.metatools-subtitle{color:var(--v-mut,#CBC4D6)!important}
+/* Narrow screens: nothing runs off the right edge. */
+@media (max-width: 720px) {
+  .cfg .grid,.cfg .models{grid-template-columns:1fr}
+  .cfg li,.cfg .card,#pCfg *,.wn-real *{min-width:0;overflow-wrap:anywhere}
+  .mx-t,.cfg table,.wn-real table{display:block;overflow-x:auto;max-width:100%}
+  pre,code{white-space:pre-wrap;word-break:break-word}
+  .radial-bar,#pReport .rad-head,#pReport .r7legend{flex-wrap:wrap!important;white-space:normal!important;height:auto}
+  #pReport .lead{white-space:normal}
+}
+/* Header run picker */
+.wn-runpick{display:inline-flex;align-items:center;gap:6px;margin-left:14px;font-size:12px;color:var(--v-mut,#CBC4D6);flex:0 1 auto;min-width:0}
+.wn-runpick select{max-width:260px;min-width:0;background:rgba(23,23,36,.85);color:var(--v-cream,#F3F0F7);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:4px 10px;font-size:12px;text-overflow:ellipsis}
+@media (max-width: 720px){.wn-runpick{margin-left:8px}.wn-runpick span{display:none}.wn-runpick select{max-width:130px}}
+.wn-real tr.wn-run-sel td{background:rgba(178,166,195,.14)}
+@media (max-width: 720px) {
+  #pReport .bento{display:block!important;width:auto!important;max-width:100%}
+  #pReport .bento>*,#pReport .cmp-head,#pReport .cmp-head>div,#pReport .radial-bar{width:auto!important;max-width:100%!important;flex-wrap:wrap!important;white-space:normal!important;min-width:0}
+  #pReport .cmp-head .lead{white-space:normal!important;flex:1 1 100%}
+}
+/* ---- Left sidebar: below the header, own scroll; slide-out on narrow screens ---- */
+.wn-side{position:fixed;left:14px;top:var(--wn-drawer-top,76px);bottom:var(--wn-drawer-bottom,12px);width:232px;overflow-y:auto;overscroll-behavior:contain;z-index:90;
+  padding:12px 10px;border-radius:16px;background:rgba(23,23,36,.82);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);font-size:13.5px;scrollbar-width:thin}
+.wn-side ul{list-style:none;margin:0;padding:0}
+.wn-side .wn-grp{margin:2px 0}
+.wn-side summary{cursor:pointer;padding:7px 10px;border-radius:10px;color:var(--v-cream,#F3F0F7);font-weight:600;list-style:none}
+.wn-side summary::-webkit-details-marker{display:none}
+.wn-side summary::before{content:"›";display:inline-block;width:14px;transition:transform .15s;color:var(--v-mut,#CBC4D6)}
+.wn-side details[open]>summary::before{transform:rotate(90deg)}
+.wn-side summary:hover,.wn-side .wn-grp.on>summary{background:rgba(178,166,195,.12)}
+.wn-side .wn-link{display:block;padding:5px 10px 5px 24px;border-radius:999px;font-size:13.5px;white-space:normal}
+.wn-side .wn-secs a{display:block;padding:3px 10px 3px 36px;color:var(--v-mut,#CBC4D6);text-decoration:none;font-size:12.5px;border-left:2px solid transparent;margin-left:22px}
+.wn-side .wn-secs a.on,.wn-side .wn-secs a:hover{color:var(--v-cream,#F3F0F7);border-left-color:var(--v-peach,#B2A6C3)}
+.wn-side-run{padding:4px 6px 10px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:8px}
+.wn-side-run .wn-runpick{display:flex;flex-direction:column;align-items:stretch;margin:0;gap:4px}
+.wn-side-run .wn-runpick span{display:block!important}
+.wn-side-run .wn-runpick select{max-width:none!important;width:100%;border-radius:10px}
+.wn-sec-hidden{display:none!important}
+.wn-menu{display:none;background:rgba(178,166,195,.15);color:var(--v-cream,#F3F0F7);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}
+.wn-side-scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:85}
+@media (min-width: 1100px){ body.wn-has-side{padding-left:262px!important} body.wn-has-side.is-landing{padding-left:0!important} body.is-landing .wn-side{display:none} }
+@media (max-width: 1099px){
+  .wn-menu{display:inline-block}
+  .wn-side{transform:translateX(-110%);transition:transform .25s ease;left:0;border-radius:0 16px 16px 0;width:min(300px,84vw)}
+  body.wn-side-open .wn-side{transform:none}
+  nav.wn-nav .wn-links{display:none}
+}
+@media (min-width: 1100px){ .wn-side-scrim{display:none!important} }
+/* Run picker stays pinned at the top of the sidebar; the route list scrolls under it. */
+.wn-side{padding-top:0}
+.wn-side-run{position:sticky;top:0;z-index:2;background:rgba(23,23,36,.97);margin:0 -10px 8px;padding:12px 16px 10px}
+/* Wizard: the "Your choices" column scrolls on its own so a step fits one screen. */
+#pCfg .cfg-step{align-items:start}
+#pCfg .step-side{max-height:calc(100vh - var(--wn-drawer-top,76px) - 190px);overflow-y:auto;overscroll-behavior:contain;position:sticky;top:var(--wn-drawer-top,76px)}
+#wnRunPickBox[hidden]{display:none!important}

@@ -24,7 +24,9 @@ test("no page markup ships its own nav or brand header", () => {
 test("shared header has no second tab row and highlights per page", () => {
   const c = read("dash/chrome.js");
   assert.doesNotMatch(c, /wn-nav-subline|wn-tabs|id="tabs"/);
-  assert.match(c, /hash === "#pReport" \? "compare" : "dashboard"/);
+  // v2 in-page sections map their hash to the matching sidebar route, defaulting to the home link.
+  assert.match(c, /"#pReport":\s*"compare"/);
+  assert.match(c, /\|\|\s*"dashboard"/);
 });
 
 test("overview has no sidebar nav, only in-page anchors and a legend", () => {

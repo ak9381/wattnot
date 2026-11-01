@@ -9,15 +9,15 @@
 .wn-dot *{display:none!important}
 .wn-dot-measured{background:#2DD4A7}.wn-dot-estimate{background:#F5C451}.wn-dot-simulated{background:#5B9FE8}
 .wn-dot-replay{background:#A78BFA}.wn-dot-mock{background:#FB7185}.wn-dot-live{background:#34D399;box-shadow:0 0 0 2px rgba(52,211,153,.25)!important}.wn-dot-advice{background:#E39B7B}
-.wn-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:#A99FB8;margin:0 auto 12px;max-width:1240px;padding:0 4px}
+.wn-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:#CBC4D6;margin:0 auto 12px;max-width:1240px;padding:0 4px}
 .wn-legend span{display:inline-flex;align-items:center;gap:6px}.wn-legend .wn-dot{margin:0!important}
 .wn-pop-scrim{position:fixed;inset:0;z-index:1000;background:rgba(10,8,16,.6);display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 .wn-pop-scrim.on{display:flex}
-.wn-pop{width:min(480px,92vw);max-height:80vh;overflow:auto;background:#1F1A2F;border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:20px 22px;color:#DCD6E4;position:relative;font-size:14px;line-height:1.5}
+.wn-pop{width:min(480px,92vw);max-height:80vh;overflow:auto;background:#1F1A2F;border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:20px 22px;color:#F3F0F7;position:relative;font-size:14px;line-height:1.5}
 .wn-pop h3{margin:0 0 10px;font-size:16px}
-.wn-pop-x{position:absolute;top:10px;right:12px;background:none;border:0;color:#C9C1D6;font-size:22px;cursor:pointer}
+.wn-pop-x{position:absolute;top:10px;right:12px;background:none;border:0;color:#E4DFEB;font-size:22px;cursor:pointer}
 .wn-pop-full .wn-detail{display:block!important}.wn-pop-full{font-size:13px}.wn-pop-full code,.wn-pop-src code{font-size:12px;word-break:break-all}
-.wn-pop-lab,.wn-pop-src{margin:12px 0 0;font-size:12px;color:#A99FB8}
+.wn-pop-lab,.wn-pop-src{margin:12px 0 0;font-size:12px;color:#CBC4D6}
 .hotspot-card .hotspot-reason,.hotspot-card .hotspot-hash,.hotspot-card .hotspot-hash-label{display:none}
 .wn-pop .hotspot-reason,.wn-pop .hotspot-hash,.wn-pop .hotspot-hash-label{display:block}
 .wn-stub{opacity:.45}

@@ -25,7 +25,13 @@ export function card(a) {
 async function load() {
   const r = await fetch("/api/launch/approvals").then((x) => x.json());
   const host = document.getElementById("list");
-  host.innerHTML = r.items.length ? r.items.map(card).join("") : '<p class="sub">Nothing held right now.</p>';
+  const run = new URL(location.href).searchParams.get("run") || localStorage.getItem("wn.run") || "";
+  const rnd = run.includes(":") ? run.split(":")[1] : "";
+  const mine = rnd ? r.items.filter((it) => it.id.endsWith("/" + rnd) && it.id.includes(run.startsWith("modal") ? "modal" : "baseten")) : r.items;
+  const all = new URL(location.href).searchParams.get("all") === "1";
+  const items = all || !rnd ? r.items : mine;
+  const note = rnd ? `<p class="sub">${all ? `Showing all runs. <a href="?run=${encodeURIComponent(run)}">Only the selected run</a>` : `Showing approvals for the selected run (${esc(run)}): ${mine.length}. <a href="?run=${encodeURIComponent(run)}&all=1">Show all runs</a>`}</p>` : "";
+  host.innerHTML = note + (items.length ? items.map(card).join("") : '<p class="sub">Nothing held for this run.</p>');
   host.querySelectorAll("[data-d]").forEach((b) => b.addEventListener("click", async () => {
     const sec = b.closest("section");
     const res = await fetch("/api/launch/approvals/decide", { method: "POST", headers: { "content-type": "application/json" },

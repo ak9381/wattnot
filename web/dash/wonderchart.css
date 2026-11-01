@@ -8,7 +8,7 @@
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 2rem;
-  color: #DCD6E4;
+  color: #F3F0F7;
   font-family: "Source Sans 3", "Source Sans Pro", system-ui, sans-serif;
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
@@ -41,9 +41,9 @@
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
   background: rgba(142, 122, 158, 0.2);
-  color: #DCD6E4;
+  color: #F3F0F7;
 }
-.wc-energy { color: #C4B4D6; }
+.wc-energy { color: #DDD4E7; }
 
 .wc-verdict {
   font-family: "Fira Code", monospace;
@@ -53,16 +53,16 @@
   border-radius: 6px;
 }
 .wc-try { color: #A3BE8C; background: rgba(163, 190, 140, 0.14); }
-.wc-stop { color: #C4B4D6; background: rgba(142, 122, 158, 0.18); }
+.wc-stop { color: #DDD4E7; background: rgba(142, 122, 158, 0.18); }
 
-.wc-sub { color: #B2A6C3; font-size: 0.9rem; margin: 0 0 0.5rem; }
-.wc-source { color: #B2A6C3; font-size: 0.85rem; margin: 0 0 0.75rem; }
+.wc-sub { color: #D6CEE0; font-size: 0.9rem; margin: 0 0 0.5rem; }
+.wc-source { color: #D6CEE0; font-size: 0.85rem; margin: 0 0 0.75rem; }
 .wc-reason { font-size: 0.9rem; margin: 0.75rem 0 0; }
-.wc-foot { color: #8E7A9E; font-size: 0.78rem; margin: 0.5rem 0 0; }
+.wc-foot { color: #CBC4D6; font-size: 0.78rem; margin: 0.5rem 0 0; }
 .wc-source code, .wc-reason code, .wc-foot code {
   font-family: "Fira Code", monospace;
   font-size: 0.92em;
-  color: #C4B4D6;
+  color: #DDD4E7;
 }
 
 /* inline scatter redrawn from the receipt's plotted points */
@@ -80,7 +80,7 @@
   font-size: 10px;
 }
 .wc-axis { fill: #B2A6C3; font-family: "Montserrat", sans-serif; font-size: 11px; }
-.wc-dotlabel { fill: #DCD6E4; }
-.wc-dot { stroke: #DCD6E4; stroke-width: 1; }
+.wc-dotlabel { fill: #F3F0F7; }
+.wc-dot { stroke: #F3F0F7; stroke-width: 1; }
 .wc-kept { fill: #2EA043; }
 .wc-rejected { fill: #E06C75; }

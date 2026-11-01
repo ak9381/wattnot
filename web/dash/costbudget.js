@@ -90,7 +90,7 @@ export function renderBudget(r) {
     <div class="cb-row" style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:10px 0;border-top:1px solid rgba(255,255,255,0.08)${row.pending ? ";opacity:0.6" : ""}">
       <div style="min-width:0">
         <div style="font-size:14px">${esc(row.dim)}</div>
-        <div style="font-size:12px;color:#8E7A9E">${esc(row.note)}</div>
+        <div style="font-size:12px;color:#CBC4D6">${esc(row.note)}</div>
       </div>
       <div style="text-align:right;flex:none">
         <div style="font-size:18px;font-weight:600">${row.value == null ? "—" : esc(row.value)}</div>
@@ -98,11 +98,11 @@ export function renderBudget(r) {
       </div>
     </div>`).join("");
   return `<div class="cb-card" role="group" aria-label="Energy and cost budget verdict" style="max-width:640px;padding:18px 20px;border-radius:14px;background:rgba(178,166,195,0.06);border:1px solid rgba(255,255,255,0.12)">
-    <div style="font-size:12px;letter-spacing:0.04em;text-transform:uppercase;color:#8E7A9E">Energy &amp; cost budget</div>
+    <div style="font-size:12px;letter-spacing:0.04em;text-transform:uppercase;color:#CBC4D6">Energy &amp; cost budget</div>
     <div style="font-size:20px;font-weight:700;margin:4px 0 2px">${esc(verdictLine(r))}</div>
-    <div style="font-size:13px;color:#8E7A9E;margin-bottom:6px">${esc(bindsWording(r))}</div>
+    <div style="font-size:13px;color:#CBC4D6;margin-bottom:6px">${esc(bindsWording(r))}</div>
     ${rowHtml}
-    <div style="font-size:11px;color:#8E7A9E;margin-top:10px;border-top:1px solid rgba(255,255,255,0.08);padding-top:8px">${costFootnote(r)}</div>
+    <div style="font-size:11px;color:#CBC4D6;margin-top:10px;border-top:1px solid rgba(255,255,255,0.08);padding-top:8px">${costFootnote(r)}</div>
   </div>`;
 }
 

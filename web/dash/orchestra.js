@@ -81,7 +81,7 @@ export class Orchestra {
       const dim = f.group != null && f.group !== s.g;
       x.globalAlpha = dim ? 0.35 : 1; x.fillStyle = colors[s.g]; x.font = "500 11px JetBrains Mono, monospace";
       x.fillText(st.names[s.g], s.x, 14);
-      x.fillStyle = "#A79BB9"; x.font = "10px JetBrains Mono, monospace";
+      x.fillStyle = "#CBC4D6"; x.font = "10px JetBrains Mono, monospace";
       const e = C.jPerSlot(st, arm) == null ? "" : ` · ~${C.fmtJ(gt[s.g].joules)} J`;
       x.fillText(s.w < 100 ? pct(gt[s.g].share) : `${pct(gt[s.g].share)} tokens${e}`, s.x, 26);
       x.strokeStyle = colors[s.g]; x.globalAlpha = dim ? 0.1 : 0.35; x.beginPath(); x.moveTo(s.x, g.top - 3); x.lineTo(s.x + s.w, g.top - 3); x.stroke();

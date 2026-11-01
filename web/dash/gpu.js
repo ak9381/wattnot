@@ -159,7 +159,7 @@ export class Power {
     const lo = Math.max(0, Math.floor((Math.min(...all) - 30) / 50) * 50), hi = Math.ceil((Math.max(...all) + 20) / 50) * 50;
     const X = (t) => pad.l + ((t - t0) / Math.max(1, t1 - t0)) * (W - pad.l - pad.r);
     const Y = (v) => pad.t + (1 - (v - lo) / (hi - lo)) * (H - pad.t - pad.b);
-    x.strokeStyle = "#2B2637"; x.fillStyle = "#A79BB9"; x.font = "10px JetBrains Mono, monospace"; x.lineWidth = 1;
+    x.strokeStyle = "#2B2637"; x.fillStyle = "#CBC4D6"; x.font = "10px JetBrains Mono, monospace"; x.lineWidth = 1;
     for (let v = lo; v <= hi; v += 100) { x.beginPath(); x.moveTo(pad.l, Y(v)); x.lineTo(W - pad.r, Y(v)); x.stroke(); x.fillText(`${v} W`, 2, Y(v) + 3); }
     // arm bands for adaptive scene
     let prev = null, start = 0;

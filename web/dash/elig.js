@@ -24,6 +24,12 @@ export const lab = (l) => (l ? `<span class="wn-lab ${esc(l)}">${esc(l)}</span>`
 // Meta strip ids (metastrip.js / archpage) -> eligibility model ids
 export const MODEL_ALIAS = { glimmer: "glimmer-30b", sam: "sam-3.1", voice: "muse-voice", code: "muse-code", open: "spark-open", image: "muse-image" };
 
+// Compare-tree and graph node ids -> runner feature ids, so those nodes grey out with the same verdict.
+export const NODE_FEATURE = { waste: "waste_guard", loopstop: "waste_guard", bt_waste: "waste_guard", md_waste: "waste_guard",
+  smallfirst: "router", bt_routing: "router", md_routing: "router", context: "context_saver", memcomp: "context_saver", dupcut: "context_saver",
+  prefix: "vllm_prefix", prefixcache: "vllm_prefix", caps: "power_caps", capsweep: "power_caps", clocks: "clock_sidecar",
+  think: "thinking_budget", quant: "fp8", gate: "gates", bt_gate: "gates", md_gate: "gates", q: "spark_grades", speed: "joule_slo",
+  budget: "spend_guard", sam: "sam_hotspot" };
 export function applyGrey(root, elig) {
   if (!elig) return 0;
   const models = Object.fromEntries(elig.models.map((m) => [m.id, m]));
@@ -39,6 +45,7 @@ export function applyGrey(root, elig) {
     const m = models[el.dataset.model] || models[MODEL_ALIAS[el.dataset.model]]; if (m) mark(el, m.eligible, m.reason);
   });
   root.querySelectorAll("[data-feature]").forEach((el) => { const f = feats[el.dataset.feature]; if (f) mark(el, f.eligible, f.reason); });
+  root.querySelectorAll("[data-node]").forEach((el) => { const f = feats[NODE_FEATURE[el.dataset.node]]; if (f) mark(el, f.eligible, f.reason); });
   root.querySelectorAll("[data-feature-row]").forEach((el) => { const f = rows[el.dataset.featureRow]; if (f) mark(el, f.eligible, f.reason); });
   return n;
 }
