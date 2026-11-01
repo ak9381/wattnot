@@ -35,6 +35,48 @@ DEFAULT_MODEL = "meta-models/Muse-Glimmer-30B"
 _INSTRUCTION = "Answer with only the value, no explanation."
 
 
+class SpokenTranscribeError(RuntimeError):
+    """A LIVE transcription could not be produced. A live run must FAIL on this, never replay."""
+
+
+def transcribe_spoken_live(spoken: SpokenSet, *,
+                           transcribe: Callable[[bytes], str] | None = None,
+                           timeout_s: float = 60.0) -> dict[str, str]:
+    """Transcribe every recording LIVE via Muse Voice Transcribe (Meta Model API).
+
+    Returns ``{item id: transcript}`` labelled LIVE/MEASURED by the caller. Reuses the same
+    endpoint ``scripts/voice_live_transcribe.py`` uses (``wattnot.meta.voiceguide.transcribe_audio``).
+    Raises ``SpokenTranscribeError`` if the live transcriber is unavailable (Meta mock on, no key)
+    or any call fails or returns no text — a live run never silently falls back to the cached
+    REPLAY transcripts. ``transcribe`` is injectable so tests can exercise this offline.
+    """
+    from wattnot.meta.client import meta_mock_on
+    if transcribe is None:
+        if meta_mock_on():
+            raise SpokenTranscribeError(
+                "Meta mock is on (WATTNOT_META_MOCK): a mock transcript cannot be a LIVE result")
+
+        def transcribe(audio: bytes) -> str:
+            from wattnot.meta.voiceguide import transcribe_audio
+            return transcribe_audio(audio, fallback_text="", live=True)
+
+    out: dict[str, str] = {}
+    for it in spoken.items:
+        try:
+            audio = it.path(spoken.base_dir).read_bytes()
+        except OSError as e:
+            raise SpokenTranscribeError(f"cannot read recording for {it.id!r}: {type(e).__name__}") from e
+        try:
+            text = (transcribe(audio) or "").strip()
+        except Exception as e:  # noqa: BLE001 - any live failure fails the block, never replays
+            raise SpokenTranscribeError(
+                f"live transcription failed for {it.id!r}: {type(e).__name__}: {e}") from e
+        if not text:
+            raise SpokenTranscribeError(f"live transcription returned no text for {it.id!r}")
+        out[it.id] = text
+    return out
+
+
 class OfflineAnswerer:
     """Returns ground truth. No I/O; for dry runs and tests only (not measured)."""
 
@@ -152,5 +194,7 @@ __all__ = [
     "DEFAULT_MODEL",
     "OfflineAnswerer",
     "ServedSpokenAnswerer",
+    "SpokenTranscribeError",
     "answer_spoken_set",
+    "transcribe_spoken_live",
 ]

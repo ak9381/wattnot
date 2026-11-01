@@ -174,6 +174,48 @@ def audit_plan(model: str = "glimmer-test", out: Path | None = None,
     return {"ok": not findings, "model": model, "findings": findings, "checked": checked}
 
 
+# Keys whose value names a label on a recorded result; a LIVE run may carry none that is MOCK.
+_LABEL_KEYS = ("label", "answers_label", "transcripts_label", "gpu", "usd_label")
+
+
+def _mock_label_hits(obj, path: str, hits: list[str]) -> None:
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k in _LABEL_KEYS and isinstance(v, str) and v.strip().upper() == "MOCK":
+                hits.append(f"{path}:{k}")
+            _mock_label_hits(v, f"{path}/{k}", hits)
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            _mock_label_hits(v, f"{path}[{i}]", hits)
+
+
+def audit_results(result_root: str | Path, *, model: str = "glimmer-test") -> dict:
+    """End-of-run audit: a LIVE pass may not stand on a MOCK-labelled block.
+
+    Scans the recorded result JSONs under ``result_root`` (the pulled results, per-block receipts
+    and summaries) and flags any file carrying a MOCK label. Returns ``{ok, findings[], scanned}``;
+    the driver fails the run (non-zero) when ``ok`` is false. Own report files
+    (nomock-preflight.json / nomock-results.json) are skipped so the audit never flags itself."""
+    root = Path(result_root)
+    findings: list[dict] = []
+    scanned = 0
+    for p in sorted(root.rglob("*.json")):
+        if p.name in ("nomock-preflight.json", "nomock-results.json"):
+            continue
+        try:
+            doc = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        scanned += 1
+        hits: list[str] = []
+        _mock_label_hits(doc, p.name, hits)
+        for h in hits:
+            findings.append({
+                "where": str(p.relative_to(root)), "what": f"MOCK label at {h}",
+                "fix": "re-run this block live; a live pass may not stand on a MOCK result"})
+    return {"ok": not findings, "model": model, "findings": findings, "scanned": scanned}
+
+
 def write_report(report: dict, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

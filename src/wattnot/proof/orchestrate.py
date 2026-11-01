@@ -1452,9 +1452,10 @@ def main(argv=None) -> int:
                                    threshold=0.01, patience=3)
             planner = WonderPlanner(sup, lo=a.wonder_lo, hi=a.wonder_hi)
         elif a.planner == "baseten-open":
-            from wattnot.cloud import inference_key
+            from wattnot.cloud import INFERENCE_KEY_ENVS, inference_key
             if not inference_key()[1]:
-                ap.error("BASETEN_API_KEY is not set (inference uses only the hackathon key)")
+                ap.error(f"{INFERENCE_KEY_ENVS[0]} is not set (inference uses only the paid "
+                         "workspace key; the free BASETEN_API_KEY is dead and never used)")
             from wattnot.proof.baseten_planner import BasetenClient, OpenWeightsPlanner
 
             planner = OpenWeightsPlanner(BasetenClient(

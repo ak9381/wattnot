@@ -2,7 +2,7 @@
 # The real side-demo run. Run it ON a GPU box you already rented and will stop yourself.
 # This script never rents or stops a GPU.
 #   export HF_TOKEN=...             # for the download
-#   export BASETEN_API_KEY=...      # only if BASETEN=live
+#   export BASETEN_METRICS_KEY=...  # only if BASETEN=live (paid key; the free BASETEN_API_KEY is dead)
 #   bash scripts/spark1gpu_run.sh [--baseten live|replay|off] [--planner fallback|muse]
 # Checks first: a GPU is visible, 250 GB RAM free-ish, and enough disk for the quant.
 # Results: results/spark1gpu-<time>/{tune.json,h2h.json} (copy them back before you stop the box).

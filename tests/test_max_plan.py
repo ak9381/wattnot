@@ -4,6 +4,8 @@ import os
 import sys
 from pathlib import Path
 
+import pytest
+
 from wattnot.longrun import driver, nomock
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -136,6 +138,23 @@ def test_langchain_pass_mock_and_multiprovider_plan(tmp_path):
     d = mp.decide({"a": {"own": {"n": 10, "correct": 10, "j": 100, "usd": 1}},
                    "b": {"own": {"n": 10, "correct": 5, "j": 10, "usd": 0.1}}})
     assert d["own"]["route_to"] == "a"   # b is cheaper but fails the quality gate
+    # leg 4 carries the spend caps: $8/round Baseten hard stop, Meta $100 soft / $120 hard,
+    # and the paid key env (never the dead free key)
+    c = plan["caps"]
+    assert c["baseten_round_hard_usd"] == 8.0
+    assert c["meta_soft_usd"] == 100.0 and c["meta_hard_usd"] == 120.0
+    assert c["baseten_key_env"] == "BASETEN_METRICS_KEY"
+    assert "--cap-usd 8" in " ".join(plan["live_commands_not_run"])
+
+
+def test_multiprovider_baseten_round_cap_hard_stops():
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import multiprovider_route as mp
+    over = {"baseten": {"own": {"n": 100, "correct": 100, "j": None, "usd": 9.0}}}
+    with pytest.raises(mp.CapExceeded):
+        mp.enforce_caps(over)
+    under = {"baseten": {"own": {"n": 100, "correct": 100, "j": None, "usd": 3.0}}}
+    assert mp.enforce_caps(under)["within_cap"]
 
 
 def test_phase_clock_creates_missing_out_dir(tmp_path):

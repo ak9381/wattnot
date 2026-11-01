@@ -100,6 +100,15 @@ def test_cloud_policy_low_with_before():
     assert classify(high, CFG).level == "high"
 
 
+def test_reasoning_effort_is_low():
+    # the effort-routing feature emits this request-level knob; it must not be unknown->high
+    chg = {"kind": m.REASONING_EFFORT,
+           "change": {"reasoning_effort": "low", "step_up": "medium"}}
+    r = classify(chg, CFG)
+    assert r.level == "low" and not r.needs_approval
+    assert r.inputs["reasoning_effort"] == "low" and r.inputs["step_up"] == "medium"
+
+
 def test_unknown_kind_is_high():
     assert classify({"kind": "laser", "change": {"after": {}}}, CFG).level == "high"
 

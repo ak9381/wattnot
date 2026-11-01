@@ -247,7 +247,7 @@ def test_cli_demo_end_to_end(tmp_path, capsys):
 
 def test_cli_live_without_key_fails_clearly(monkeypatch, capsys, tmp_path):
     monkeypatch.delenv("BASETEN_METRICS_KEY", raising=False)
-    monkeypatch.delenv("BASETEN_METRICS_KEY", raising=False)
+    monkeypatch.delenv("BASETEN_API_KEY", raising=False)  # also drop the dead key so neither is set
     assert cli.main(["cloud", "tune", "--live", "--out", str(tmp_path)]) == 2
     err = capsys.readouterr().err
     assert "BASETEN_METRICS_KEY is set" in err

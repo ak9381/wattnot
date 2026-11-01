@@ -6,9 +6,11 @@ headers) and hands it to a transport that returns a `Reply`. Live runs use
 by tag. `Recorder` wraps a live transport and writes a fixture that can be
 replayed later.
 
-The API key comes only from the BASETEN_API_KEY environment variable. It is
-sent in one header and is scrubbed from every error text. It is never logged,
-written to a fixture or put in a receipt.
+The inference API key comes only from the BASETEN_METRICS_KEY environment variable (the paid
+workspace key). The retired free hackathon key BASETEN_API_KEY is dead (401) and is never used:
+if it is set while BASETEN_METRICS_KEY is not, `read_key` refuses with a clear message rather than
+falling back to it. The key is sent in one header and is scrubbed from every error text. It is
+never logged, written to a fixture or put in a receipt.
 """
 
 from __future__ import annotations
@@ -24,7 +26,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from wattnot.cloud import BASE_URL, INFERENCE_KEY_ENVS, KEY_ENV, MODEL, inference_key
+from wattnot.cloud import BASE_URL, DEAD_KEY_ENV, INFERENCE_KEY_ENVS, KEY_ENV, MODEL, inference_key
 from wattnot.cloud.modal_url import ModalUrlUnset, resolve_modal_url
 
 FIXTURE_FORMAT = "wattnot.cloud-fixture/1"
@@ -74,6 +76,12 @@ def read_env(name: str, env: Mapping[str, str] | None = None) -> str:
 def read_key(env: Mapping[str, str] | None = None) -> str:
     _, key = inference_key(env)
     if not key:
+        if read_env(DEAD_KEY_ENV, env):
+            # the dead free hackathon key is set but the paid key is not: refuse, never fall back
+            raise MissingKey(
+                f"{DEAD_KEY_ENV} is set but it is the retired free key (401); inference uses only "
+                f"{INFERENCE_KEY_ENVS[0]} (the paid workspace key). Export {INFERENCE_KEY_ENVS[0]} "
+                f"and unset {DEAD_KEY_ENV}.")
         raise MissingKey(f"none of {', '.join(INFERENCE_KEY_ENVS)} is set. Export it in your shell; it is never read from "
                          "a file or a flag.")
     return key

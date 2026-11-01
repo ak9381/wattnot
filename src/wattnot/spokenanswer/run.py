@@ -5,8 +5,12 @@
 ``--fake`` uses the offline answerer (ground truth, no network, not a
 measurement): it exercises the plumbing inside the 2-hour Glimmer test without
 a launch or a paid call. A live run passes ``--base-url`` to reach the served
-model (Glimmer), which answers the *transcribed* questions (the transcripts are
-cached from Muse Voice Transcribe; no transcription happens here). ``--budget-s``
+model (Glimmer), which answers the *transcribed* questions. In live mode the
+recordings are transcribed LIVE through Muse Voice Transcribe (the Meta Model
+API), labelled LIVE/MEASURED; a failed live transcription FAILS the block, it
+never silently falls back to the cached transcripts. The cached
+``transcripts.json`` is a REPLAY used only in offline mode, or via the explicit
+``--replay-transcripts WHY`` escape hatch (also labelled REPLAY). ``--budget-s``
 caps the wall-clock the gate may take so it always fits the test window;
 recordings left unanswered by the cut count as misses.
 
@@ -24,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 from wattnot.spokenanswer.assets import load_context, load_spoken_set, load_transcripts
@@ -32,7 +37,9 @@ from wattnot.spokenanswer.client import (
     REASONING_MAX_COMPLETION_TOKENS,
     OfflineAnswerer,
     ServedSpokenAnswerer,
+    SpokenTranscribeError,
     answer_spoken_set,
+    transcribe_spoken_live,
 )
 from wattnot.spokenanswer.gate import spoken_answer_gate, spoken_energy
 
@@ -62,14 +69,36 @@ def main(argv: list[str] | None = None) -> int:
                     help="answer the recordings in parallel (live): fit the budget on a reasoner")
     ap.add_argument("--max-completion-tokens", type=int, default=REASONING_MAX_COMPLETION_TOKENS,
                     help="completion-token cap per answer (reasoning models need room)")
+    ap.add_argument("--transcribe-timeout-s", type=float, default=60.0,
+                    help="per-recording timeout for the LIVE Muse Voice Transcribe call")
+    ap.add_argument("--replay-transcripts", default=None, metavar="WHY",
+                    help="LIVE escape hatch: use the cached transcripts.json instead of a live "
+                         "transcription, labelled REPLAY, with WHY recorded (e.g. 'no Meta key'). "
+                         "Never the default: a live run transcribes live and FAILS on error.")
     args = ap.parse_args(argv)
 
     spoken = load_spoken_set(args.assets, require_files=not args.fake)
+    # The transcription step: LIVE (Muse Voice Transcribe via the Meta Model API) in live mode;
+    # REPLAY (cached transcripts.json) in offline mode or via the explicit --replay-transcripts
+    # escape hatch. A failed live transcription FAILS the block; it never silently replays.
+    transcripts_label = "REPLAY"
+    transcribe_note = "offline: served model not called"
     if args.fake or not args.base_url:
         answerer = OfflineAnswerer(spoken)
         mode = "fake"
     else:
-        transcripts = load_transcripts(args.assets)
+        if args.replay_transcripts:
+            transcripts = load_transcripts(args.assets)
+            transcribe_note = f"REPLAY of cached transcripts (not live): {args.replay_transcripts}"
+        else:
+            try:
+                transcripts = transcribe_spoken_live(spoken, timeout_s=args.transcribe_timeout_s)
+            except SpokenTranscribeError as e:
+                print(f"spoken answer [live]: FAILED — live transcription unavailable: {e}",
+                      file=sys.stderr)
+                return 1
+            transcripts_label = "LIVE"
+            transcribe_note = "transcribed live via Muse Voice Transcribe (Meta Model API)"
         # the rack-scene telemetry the questions ask about, given to the model as a system message
         answerer = ServedSpokenAnswerer(transcripts, model=args.model, base_url=args.base_url,
                                         context=load_context(args.assets),
@@ -108,6 +137,8 @@ def main(argv: list[str] | None = None) -> int:
         "transcriber": spoken.transcriber,
         "label": "SYNTHETIC",   # the test items (images / audio) are synthetic
         "answers_label": "MOCK" if mode == "fake" else "MEASURED",   # served-model answers
+        "transcripts_label": transcripts_label,   # LIVE (live transcribe) or REPLAY (cached)
+        "transcribe_note": transcribe_note,
         "passed": result.passed,
         "reason": result.reason,
         "run": run_meta,
@@ -120,7 +151,8 @@ def main(argv: list[str] | None = None) -> int:
 
     miss = result.detail.get("missed") or []
     print(f"spoken answer [{mode}]: {result.reason}"
-          + (f" (budget {args.budget_s}s hit)" if run_meta.get("budget_hit") else ""))
+          + (f" (budget {args.budget_s}s hit)" if run_meta.get("budget_hit") else "")
+          + (f" | transcripts {transcripts_label}" if mode == "live" else ""))
     if energy is not None:
         print(f"  energy [{energy['label']}]: {energy['j_per_correct_spoken']} J/correct spoken, "
               f"{energy['j_per_token']} J/token, {energy.get('j_per_correct_answer')} J/correct answer")

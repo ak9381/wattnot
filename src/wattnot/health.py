@@ -25,7 +25,7 @@ ENDPOINTS = (
      "base": "https://api.meta.ai/v1", "key_env": "META_API_KEY", "auth": "Bearer",
      "model": "muse-spark", "fallback": "deterministic planner policy (bisect)"},
     {"id": "baseten", "name": "Baseten (Muse Spark Open)", "base_env": "BASETEN_BASE_URL",
-     "base": "https://inference.baseten.co/v1", "key_env": "BASETEN_API_KEY", "auth": "Api-Key",
+     "base": "https://inference.baseten.co/v1", "key_env": "BASETEN_METRICS_KEY", "auth": "Api-Key",
      "model": "muse-spark-open", "fallback": "Modal, else our own GPU only"},
     {"id": "modal", "name": "Modal (Muse Spark Open)", "base_env": "MODAL_ENDPOINT_URL",
      "base": None, "key_env": "MODAL_PROXY_TOKEN_ID", "auth": "modal-proxy",
@@ -50,7 +50,7 @@ def _key(ep: Mapping, env: Mapping) -> str | None:
             return load_key() or None
         except Exception:
             return None
-    if ep["id"] == "baseten":   # the one key lookup for Baseten (hackathon BASETEN_API_KEY only)
+    if ep["id"] == "baseten":   # the one key lookup for Baseten (paid BASETEN_METRICS_KEY only)
         from wattnot.cloud import inference_key
         return inference_key(env)[1] or None
     return env.get(ep["key_env"]) or None

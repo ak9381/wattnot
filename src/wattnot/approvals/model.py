@@ -28,6 +28,13 @@ MOE_ROUTING = "moe_routing"      # MoE routing knob: adaptive top-k (off unless 
 TRIAL_GRANT = "trial_grant"      # permission to try changes inside bounds, to take measurements
 KINDS = (POWER_CAP, VLLM_CONFIG, CLOUD_POLICY, FLEX_SHED, MOE_ROUTING, TRIAL_GRANT)
 
+# A per-request effort-routing knob the effort-routing feature emits (wattnot.e2e.fullstack,
+# wattnot.dash). It is a reversible request-level setting (reasoning_effort, with an optional
+# step_up), never a hardware change, so it is NOT a full proposal kind (it is not built or stored
+# via build(); it is only classified by wattnot.approvals.risk). The risk layer recognises it as
+# low risk rather than treating it as an unknown high-risk change.
+REASONING_EFFORT = "reasoning_effort"
+
 # Commit = leave the change in place. Trial = change things temporarily to measure, then restore.
 COMMIT, TRIAL = "commit", "trial"
 SCOPES = (COMMIT, TRIAL)
