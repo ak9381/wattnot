@@ -1,0 +1,4 @@
+not minted:
+  grade: grade is NOISE; only VALID or ESTIMATE are minted
+
+--- stderr ---

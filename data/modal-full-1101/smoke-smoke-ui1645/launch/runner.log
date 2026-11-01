@@ -1,0 +1,34 @@
+✓ Initialized. View run at 
+https://modal.com/apps/akashkraju218/main/ap-w4ViDSjTY0zn57AjwCaU8O
+✓ Created objects.
+├── ✓ Uploaded /tmp/wn-merge/modal/full_stage.py
+├── ✓ Uploaded pyproject.toml
+├── ✓ Uploaded /tmp/wn-merge/data/public_bench
+├── ✓ Uploaded /tmp/wn-merge/workloads
+├── ✓ Uploaded /tmp/wn-merge/data/voice
+├── ✓ Uploaded /tmp/wn-merge/examples
+├── ✓ Uploaded /tmp/wn-merge/data/vision
+├── ✓ Uploaded /tmp/wn-merge/scripts
+├── ✓ Uploaded /tmp/wn-merge/src
+├── ✓ Created Function gpu_round.
+└── ✓ Created Function gpu_smoke.
+[modal-client] 2026-11-01T17:09:24+0000 Detected 1 background thread(s) [Thread-2] still running after container exit. This will prevent runner shutdown for up to 30 seconds.
+[full_stage] smoke-smoke-ui1645: results in 
+/tmp/wn-merge/data/modal-full-1101/_incoming/smoke-smoke-ui1645
+Stopping app - local entrypoint completed.
+Exception ignored in: <module 'threading' from '/usr/lib/python3.12/threading.py'>
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/threading.py", line 1622, in _shutdown
+    lock.acquire()
+KeyboardInterrupt: 
+[modal-client] 2026-11-01T22:39:43+0530 Timed out waiting for final app logs.
+✓ App completed. View run at 
+https://modal.com/apps/akashkraju218/main/ap-w4ViDSjTY0zn57AjwCaU8O
+[teardown] {"stopped": [], "still_running": [], "verified_empty": true, "checked_at": "2026-11-01T17:09:46.248675+00:00"}
+[approval] held change held: failed checks []
+eye test [fake]: all 10 eye-test images read correctly
+spoken answer [fake]: all 20 spoken answers correct
+  energy [MOCK]: 1260.0 J/correct spoken, 210.0 J/token, 42.0 J/correct answer
+hotspot set [fake] (SYNTHETIC tests): SAM 3.1 found all 6 SYNTHETIC hotspots
+wonder chart [fake · fallback]: next = 375W/base — offline fallback: MOCK: selected next candidate 375W (base)
+{"round": "smoke-smoke-ui1645", "acc": [1.0, 1.0], "j_per_correct": [4413.0, 3393.6], "saved_pct": {"value": 23.1, "label": "MEASURED"}, "spark": {"label": null, "stopped": "not run"}, "flow_rc": 1, "musecode": {"status": "ok", "result": "ApplyPRResult(patch_diff='# No modifications produced\\n', patch_sha256='a2cb2754499f3be8f1d030db21a35798b96c9ca31e0956865ac2a533fe5b3462', pr_body='# Apply WattNot Efficiency Optimizations\\n\\nAutomated configuration update from verified WattNot energy run.\\n\\n**Receipt Reference**: [`wattnot://0e545", "pr_opened": false}, "modal_usd": {"value": 0.9907, "label": "ESTIMATE", "method": "wall minutes incl. image and container start x list price"}, "approval": "held", "failed": ["context_saver", "eye_check", "hearing_check", "waste_guard"]}

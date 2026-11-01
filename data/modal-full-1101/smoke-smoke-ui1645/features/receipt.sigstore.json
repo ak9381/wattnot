@@ -1,0 +1,8 @@
+{
+  "mediaType": "application/vnd.wattnot.offline-signature.v1+json",
+  "sha256": "5be6d9d14dd13d9f93429cbf3707a95abef484fa0701b971a41dd359fac7cf98",
+  "signature": "5ad4723d7a95c5b109d27b38845216cd378989618b68fcf2d9d100d6f261c0c5c6a19f6a9714e1ccee9b9c11dcc308f69130f4cdab1782be88131e866e3a0e09",
+  "public_key": "4e403293052ec81105222a53b1399598285b7acccca4479bc9d0c9990e68c3aa",
+  "key_id": "cc61d7cb91526c69",
+  "rekor": null
+}

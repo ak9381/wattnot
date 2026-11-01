@@ -1,0 +1,356 @@
+{
+ "cap_w": 325,
+ "stock_w": 700,
+ "arms": [
+  {
+   "arm": "stock",
+   "limit_w": 700,
+   "tiers": {
+    "easy": {
+     "n": 2,
+     "pass": 2,
+     "joules": 8.32,
+     "wall_s": 0.00054867600556463,
+     "p99_s": 0.008,
+     "tokens": 8,
+     "reasoning_tokens": 0,
+     "reasoning_measured": false,
+     "truncated": 0,
+     "fails": [],
+     "agent": null
+    },
+    "medium": {
+     "n": 2,
+     "pass": 2,
+     "joules": 124.8,
+     "wall_s": 0.0005081769777461886,
+     "p99_s": 0.12,
+     "tokens": 120,
+     "reasoning_tokens": 0,
+     "reasoning_measured": false,
+     "truncated": 0,
+     "fails": [],
+     "agent": null
+    },
+    "hard": {
+     "n": 2,
+     "pass": 2,
+     "joules": 249.6,
+     "wall_s": 0.013074178976239637,
+     "p99_s": 0.24,
+     "tokens": 240,
+     "reasoning_tokens": 0,
+     "reasoning_measured": false,
+     "truncated": 0,
+     "fails": [],
+     "agent": null
+    },
+    "complex": {
+     "n": 2,
+     "pass": 2,
+     "joules": 572.0,
+     "wall_s": 0.0005790670111309737,
+     "p99_s": 0.56,
+     "tokens": 550,
+     "reasoning_tokens": 0,
+     "reasoning_measured": false,
+     "truncated": 0,
+     "fails": [],
+     "agent": [
+      {
+       "final": 17840.64,
+       "tools": [
+        "fx",
+        "inventory",
+        "price"
+       ],
+       "turns": 7,
+       "retries": 1,
+       "tool_errors": 1,
+       "subagents": 0,
+       "stopped": ""
+      },
+      {
+       "final": 42741.0,
+       "tools": [
+        "inventory",
+        "price",
+        "subagent"
+       ],
+       "turns": 8,
+       "retries": 1,
+       "tool_errors": 1,
+       "subagents": 1,
+       "stopped": ""
+      }
+     ]
+    }
+   }
+  },
+  {
+   "arm": "cap",
+   "limit_w": 325,
+   "tiers": {
+    "easy": {
+     "n": 2,
+     "pass": 2,
+     "joules": 5.616,
+     "wall_s": 0.0004429130058269948,
+     "p99_s": 0.009000000000000001,
+     "tokens": 8,
+     "reasoning_tokens": 0,
+     "reasoning_measured": false,
+     "truncated": 0,
+     "fails": [],
+     "agent": null
+    },
+    "medium": {
+     "n": 2,
+     "pass": 2,
+     "joules": 84.24,
+     "wall_s": 0.00043341401033103466,
+     "p99_s": 0.135,
+     "tokens": 120,
+     "reasoning_tokens": 0,
+     "reasoning_measured": false,
+     "truncated": 0,
+     "fails": [],
+     "agent": null
+    },
+    "hard": {
+     "n": 2,
+     "pass": 2,
+     "joules": 168.48,
+     "wall_s": 0.011171716003445908,
+     "p99_s": 0.27,
+     "tokens": 240,
+     "reasoning_tokens": 0,
+     "reasoning_measured": false,
+     "truncated": 0,
+     "fails": [],
+     "agent": null
+    },
+    "complex": {
+     "n": 2,
+     "pass": 2,
+     "joules": 386.1,
+     "wall_s": 0.001235147996339947,
+     "p99_s": 0.63,
+     "tokens": 550,
+     "reasoning_tokens": 0,
+     "reasoning_measured": false,
+     "truncated": 0,
+     "fails": [],
+     "agent": [
+      {
+       "final": 17840.64,
+       "tools": [
+        "fx",
+        "inventory",
+        "price"
+       ],
+       "turns": 7,
+       "retries": 1,
+       "tool_errors": 1,
+       "subagents": 0,
+       "stopped": ""
+      },
+      {
+       "final": 42741.0,
+       "tools": [
+        "inventory",
+        "price",
+        "subagent"
+       ],
+       "turns": 8,
+       "retries": 1,
+       "tool_errors": 1,
+       "subagents": 1,
+       "stopped": ""
+      }
+     ]
+    }
+   }
+  },
+  {
+   "arm": "cap",
+   "limit_w": 325,
+   "tiers": {
+    "easy": {
+     "n": 2,
+     "pass": 2,
+     "joules": 5.616,
+     "wall_s": 0.0006500209856312722,
+     "p99_s": 0.009000000000000001,
+     "tokens": 8,
+     "reasoning_tokens": 0,
+     "reasoning_measured": false,
+     "truncated": 0,
+     "fails": [],
+     "agent": null
+    },
+    "medium": {
+     "n": 2,
+     "pass": 2,
+     "joules": 84.24,
+     "wall_s": 0.00043708799057640135,
+     "p99_s": 0.135,
+     "tokens": 120,
+     "reasoning_tokens": 0,
+     "reasoning_measured": false,
+     "truncated": 0,
+     "fails": [],
+     "agent": null
+    },
+    "hard": {
+     "n": 2,
+     "pass": 2,
+     "joules": 168.48,
+     "wall_s": 0.011133027990581468,
+     "p99_s": 0.27,
+     "tokens": 240,
+     "reasoning_tokens": 0,
+     "reasoning_measured": false,
+     "truncated": 0,
+     "fails": [],
+     "agent": null
+    },
+    "complex": {
+     "n": 2,
+     "pass": 2,
+     "joules": 386.1,
+     "wall_s": 0.0006979290046729147,
+     "p99_s": 0.63,
+     "tokens": 550,
+     "reasoning_tokens": 0,
+     "reasoning_measured": false,
+     "truncated": 0,
+     "fails": [],
+     "agent": [
+      {
+       "final": 17840.64,
+       "tools": [
+        "fx",
+        "inventory",
+        "price"
+       ],
+       "turns": 7,
+       "retries": 1,
+       "tool_errors": 1,
+       "subagents": 0,
+       "stopped": ""
+      },
+      {
+       "final": 42741.0,
+       "tools": [
+        "inventory",
+        "price",
+        "subagent"
+       ],
+       "turns": 8,
+       "retries": 1,
+       "tool_errors": 1,
+       "subagents": 1,
+       "stopped": ""
+      }
+     ]
+    }
+   }
+  },
+  {
+   "arm": "stock",
+   "limit_w": 700,
+   "tiers": {
+    "easy": {
+     "n": 2,
+     "pass": 2,
+     "joules": 8.32,
+     "wall_s": 0.0014145459863357246,
+     "p99_s": 0.008,
+     "tokens": 8,
+     "reasoning_tokens": 0,
+     "reasoning_measured": false,
+     "truncated": 0,
+     "fails": [],
+     "agent": null
+    },
+    "medium": {
+     "n": 2,
+     "pass": 2,
+     "joules": 124.8,
+     "wall_s": 0.0008543849980924278,
+     "p99_s": 0.12,
+     "tokens": 120,
+     "reasoning_tokens": 0,
+     "reasoning_measured": false,
+     "truncated": 0,
+     "fails": [],
+     "agent": null
+    },
+    "hard": {
+     "n": 2,
+     "pass": 2,
+     "joules": 249.6,
+     "wall_s": 0.011952385015320033,
+     "p99_s": 0.24,
+     "tokens": 240,
+     "reasoning_tokens": 0,
+     "reasoning_measured": false,
+     "truncated": 0,
+     "fails": [],
+     "agent": null
+    },
+    "complex": {
+     "n": 2,
+     "pass": 2,
+     "joules": 572.0,
+     "wall_s": 0.0006496190035250038,
+     "p99_s": 0.56,
+     "tokens": 550,
+     "reasoning_tokens": 0,
+     "reasoning_measured": false,
+     "truncated": 0,
+     "fails": [],
+     "agent": [
+      {
+       "final": 17840.64,
+       "tools": [
+        "fx",
+        "inventory",
+        "price"
+       ],
+       "turns": 7,
+       "retries": 1,
+       "tool_errors": 1,
+       "subagents": 0,
+       "stopped": ""
+      },
+      {
+       "final": 42741.0,
+       "tools": [
+        "inventory",
+        "price",
+        "subagent"
+       ],
+       "turns": 8,
+       "retries": 1,
+       "tool_errors": 1,
+       "subagents": 1,
+       "stopped": ""
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "model": {
+  "name": "muse-glimmer-30b",
+  "model": "meta-models/Muse-Glimmer-30B",
+  "origin": "Meta",
+  "max_tokens_scale": 8.0,
+  "concurrency_scale": 0.5,
+  "reasoning": true,
+  "max_model_len": 8192,
+  "reasoning_floor": 1024
+ }
+}
