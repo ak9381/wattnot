@@ -129,16 +129,14 @@ test("shared chrome footer has credits, track, github, and year", () => {
   assert.match(chromeJs, /2026/);
 });
 
-test("header and footer are fixed with Apple glassmorphism and glow blobs", () => {
+test("header is fixed glass, footer is a plain bar at the page end", () => {
   const chromeCss = fs.readFileSync(path.join(dashDir, "chrome.css"), "utf8");
   assert.match(chromeCss, /nav\.wn-nav\.gl\s*\{[^}]*position:\s*fixed;/);
-  assert.match(chromeCss, /footer\.wn-footer\.gl\s*\{[^}]*position:\s*fixed;/);
-  assert.match(chromeCss, /bottom:\s*14px;/);
+  // Footer is a plain full-width bar at the end of the page, never fixed over content.
+  assert.doesNotMatch(chromeCss, /footer\.wn-footer\.gl\s*\{[^}]*position:\s*fixed;/);
   assert.match(chromeCss, /blur\(24px\)\s*saturate\(170%\)/);
   assert.match(chromeCss, /rgba\(255,\s*255,\s*255,\s*0?\.14\)/);
   assert.match(chromeCss, /inset 0 1px 0 rgba\(255,\s*255,\s*255,\s*0?\.12\)/);
-  assert.match(chromeCss, /padding-top:\s*74px;/);
-  assert.match(chromeCss, /padding-bottom:\s*110px;/);
   assert.match(chromeCss, /#6C5E7C/);
   assert.match(chromeCss, /#8E7A9E/);
   assert.match(chromeCss, /#4F4A63/);
