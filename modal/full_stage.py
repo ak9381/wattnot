@@ -22,7 +22,9 @@ GPU = "A100-80GB"
 GPU_USD_H = 2.50              # ESTIMATE, Modal list price for A100-80GB (not a bill)
 ROUND_CAP_S = int(3.75 * 3600)  # hard container timeout: 225 min, worst 3.75 h x $2.50 = $9.38 (ESTIMATE)
 ROUND_HARD_USD = 10.0         # a single round's worst case must never exceed this
-SMOKE_CAP_S = 22 * 60         # smoke tests: 22 min x $2.50 = $0.92 worst case (ESTIMATE)
+SMOKE_CAP_S = 35 * 60         # smoke tests: 35 min x $2.50 = $1.46 worst case (ESTIMATE), under the $1.50 smoke cap
+SMOKE_HARD_USD = 1.50
+assert SMOKE_CAP_S / 3600 * GPU_USD_H <= SMOKE_HARD_USD
 VOL = "wattnot-glimmer-weights"
 GO_ENV = "WATTNOT_MODAL_GO"
 # ESTIMATE minutes per round, scaled from the 1 Nov A100 smoke (9 items) to 192 items

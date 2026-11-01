@@ -51,7 +51,7 @@ def test_paid_round_needs_go_and_stage_cap(monkeypatch):
     assert fs.ROUND_HARD_USD == 10.0
     assert worst <= fs.ROUND_HARD_USD and worst <= 10          # a single round's worst case <= $10
     assert m.STAGE_CAP_USD == 60.0                             # stage cap raised to $60
-    assert fs.SMOKE_CAP_S / 3600 * fs.GPU_USD_H < 1.0
+    assert fs.SMOKE_CAP_S / 3600 * fs.GPU_USD_H <= 1.50
 
 
 def test_blocks_run_before_fp8(tmp_path):

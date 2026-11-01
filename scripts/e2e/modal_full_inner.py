@@ -109,6 +109,12 @@ EV = Events()
 NV = [None]
 
 
+def FP8_KIND(gpu: str) -> str:
+    """A100 has no native FP8 math: vLLM falls back to Marlin weight-only FP8 (memory saving, not energy)."""
+    return ("memory-only (A100: no native FP8, Marlin weight-only; not an energy feature)"
+            if "A100" in (gpu or "") else "native FP8 compute")
+
+
 def left() -> float:
     return (DEADLINE[0] - time.time()) if DEADLINE[0] else 1e9
 
@@ -686,10 +692,10 @@ def main(argv=None) -> int:
                 EV.emit("step.finished", node="gates", sub="quality", status="ok" if cand else "bad",
                         summary=f"FP8 {'candidate kept' if cand else 'rejected'}: acc drop {g['acc_drop_pts']} pts")
                 S["fp8"] = {"bf16": {k: bf[k] for k in ("accuracy", "j_per_correct")}, "fp8": s, "gate": g,
-                            "kept": cand, "applied": False,
+                            "kept": cand, "applied": False, "kind": FP8_KIND(nv.name()),
                             "note": "candidate for next round; this round's with arm stays BF16"}
             except Exception as e:  # noqa: BLE001 - FP8 is optional; BF16 stays applied
-                S["fp8"] = {"kept": False, "applied": False, "error": f"{type(e).__name__}: {e}"[:300]}
+                S["fp8"] = {"kept": False, "applied": False, "kind": FP8_KIND(nv.name()), "error": f"{type(e).__name__}: {e}"[:300]}
                 fail("fp8", f"FP8 candidate failed, BF16 kept: {type(e).__name__}: {e}")
             save()
     except Exception as e:  # noqa: BLE001 - record and still save what we have
