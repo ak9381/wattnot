@@ -24,6 +24,7 @@ import inspect
 import json
 import os
 import shlex
+import shutil
 import signal
 import subprocess
 import sys
@@ -43,6 +44,9 @@ LINK_LOST_RCS = (4, 5)     # run2_remote: 4 = link lost mid-setup, 5 = unreachab
 WATCHDOG_MARGIN_H = 8 / 60.0  # ctl.py deletes the VM at deadline minus 8 min: stop before then
 OVERRUN_FACTOR = 1.5       # a block may run up to 1.5x its budget before it is killed
 PULL_TIMEOUT_S = 600.0     # a copy-back must not hang forever (RUN3: a pull wedged 14+ min)
+# Free-disk floor for the results/model dirs. Below this the pass aborts cleanly (results saved,
+# VM deleted) rather than wedging on a full disk. Override with WATTNOT_DISK_FREE_FLOOR_GB.
+DISK_FREE_FLOOR_GB = float(os.environ.get("WATTNOT_DISK_FREE_FLOOR_GB", "15"))
 
 
 # Process groups of control-machine children (run2_remote setup / pull) the driver started. Each
@@ -172,6 +176,8 @@ def plan(out: Path, model: str = "llama", plan_name: str = "full") -> list[Block
             return plan_glimmer_long(out)
         if plan_name == "max":
             return plan_glimmer_max(out)
+        if plan_name == "public":
+            return plan_glimmer_public(out)
         return plan_glimmer_retest(out) if plan_name == "retest" else plan_glimmer_test(out)
     live = out / "live.jsonl"
     reh = lambda tag, *extra: _py("wattnot.proof.orchestrate", "--mode", "rehearsal",  # noqa: E731
@@ -508,7 +514,8 @@ def _default_hours(model: str, plan_name: str) -> float:
     """VM hours when --max-hours is not given. The long plan is booked for LONG_BOOKING_H; the
     old 3.5 h test default dropped batching, prefix, public benchmarks and the copy block."""
     if model == "glimmer-test":
-        return {"long": LONG_BOOKING_H, "max": MAX_BOOKING_H}.get(plan_name, 3.5)
+        return {"long": LONG_BOOKING_H, "max": MAX_BOOKING_H,
+                "public": PUBLIC_BOOKING_H}.get(plan_name, 3.5)
     return 18.0
 
 
@@ -573,8 +580,13 @@ MAX_HOURS_MIN = {"t2g-serverless": 30, "t2c-prefix": 40, "t2d-combined": 25, "t2
 # cap), 1 rep. ESTIMATE ~16 min a round on Glimmer 30B. The host only RECORDS answers
 # (WATTNOT_MATRIX_RECORD=1, no Meta key on the GPU); Spark grades them off-box after copy-back
 # (post_run_offgpu -> matrix_round --grade), through the guarded client and the $120 cap.
-# Leg 4's Baseten / Modal share is paid outside this booking and is NOT run by the driver; it
-# needs Akash's go (scripts/multiprovider_route.py prints those commands).
+# Leg 4's Baseten / Modal share is paid outside this booking and is NOT run by the driver (the
+# driver never spends on a hosted API): it needs Akash's go. scripts/multiprovider_route.py is the
+# scripted command that carries the caps and prints the exact capped commands: a $8/round HARD stop
+# on Baseten (hosted_ab --cap-usd 8, paid key BASETEN_METRICS_KEY only), the Modal share from the
+# $100 credit, and the Meta grading soft $100 / hard $120 caps (enforced by the Meta spend ledger).
+# `--results <same-prompt file>` re-checks the recorded Baseten spend against the $8 hard cap and
+# refuses to report a decision if it was exceeded.
 MAX_MATRIX_LEGS = (("m3-h100", "Run matrix leg 3: H100", ("r07", "r08", "r09")),
                    ("m4-combined", "Run matrix leg 4: combined, H100 share", ("r10", "r11", "r12")))
 MAX_MATRIX_ROUND_MIN = 16
@@ -652,11 +664,14 @@ def pass_blocks(out: Path, pas: str, sweep_tag: str, grid: str, dataset: str,
     return bl
 
 
-def _matrix_round_sh(rid: str, cap: str) -> str:
+def _matrix_round_sh(rid: str, cap: str, public_only: bool = False) -> str:
     R = f"{REMOTE_RESULTS}/matrix/{rid}"
     env = f"WATTNOT_MATRIX_ROUND={rid} WATTNOT_MATRIX_RECORD=1"
-    return (f"{env} python scripts/public_bench_ab.py --cap {cap} --reps 1 --sets gsm8k humaneval "
-            f"--out {R}/public && {env} python -m wattnot.longrun.harness --cap {cap} --reps 1 "
+    pub = (f"{env} python scripts/public_bench_ab.py --cap {cap} --reps 1 --sets gsm8k humaneval "
+           f"--out {R}/public")
+    if public_only:   # the public round (GSM8K 60 + HumanEval 40 only; our set is not run)
+        return pub
+    return (f"{pub} && {env} python -m wattnot.longrun.harness --cap {cap} --reps 1 "
             f"--model-config muse-glimmer-30b --url {HOST_BASE_URL}/chat/completions --out {R}/ours")
 
 
@@ -719,6 +734,51 @@ def plan_glimmer_max(out: Path) -> list[Block]:
     blocks += [serverless, long_blocks["t2-fp8"], long_blocks["t2-eye"], long_blocks["t2-spoken"],
                long_blocks["t2b-batch"], prefix, combined, public, *matrix_leg_blocks(out),
                long_blocks["t3-copy"]]
+    return blocks
+
+
+# Public end-to-end plan (``--plan public``, glimmer-test). PLAN ONLY: building it starts nothing.
+# Akash's revised plan (2 Nov): one H100 round, end to end, on the public data set of the matrix's
+# round 2 (GSM8K first 60 + HumanEval first 40). One full pass of every GPU-live layer (sweep +
+# gates + signed receipt, thinking budget, tiers, eye, spoken, phase clock, LangChain, agent
+# waste), the FP8 candidate with its eye/hearing re-checks, batching and prefix cache, then the
+# public matrix round at stock vs the best cap. PUBLIC_MATRIX_ROUND picks which round id the
+# answers are filed under: r11 = combined leg (H100 share; Baseten + Modal shares run outside
+# the booking through scripts/e2e/round.py --provider combined), r08 = H100-only leg.
+PUBLIC_MATRIX_ROUND = os.environ.get("WATTNOT_PUBLIC_MATRIX_ROUND", "r11")
+PUBLIC_BOOKING_H = 7.0     # ESTIMATE; block minutes sum to ~6 h, so a slow block still fits
+PUBLIC_BUDGET_CAP_INR = round(PUBLIC_BOOKING_H * INR_PER_H) + 100   # Rs 3,258 (ESTIMATE + margin)
+# Public-plan block budgets (minutes, ESTIMATE) that differ from the long plan. Kill limit = x OVERRUN_FACTOR.
+PUBLIC_BLOCK_MIN = {"p1-agentwaste": 30, "p1-langchain": 45, "t2-fp8": 30, "m-public": 25}
+PUBLIC_AGENTWASTE_TRIM = ("--reps", "1", "--max-cases", "8", "--max-tokens", "768")
+
+
+def plan_glimmer_public(out: Path) -> list[Block]:
+    long_blocks = {b.id: b for b in plan_glimmer_long(out)}
+    pas, tag, grid, ds = MAX_PASSES[0]
+    blocks = [long_blocks["t0-setup"], long_blocks["t0-probe"]]
+    blocks += pass_blocks(out, pas, tag, grid, ds, optional=False,
+                          sweep_dry=long_blocks["t1-sweep"].dry)
+    # Modal lessons (r04-try1): the agent-waste block ran 30 cases x 2 reps at 2048 tokens and hit
+    # its cap (rc 124); FP8 start (compile + health wait up to 1200 s) left no room for its harness.
+    # The public plan trims agent waste the same way Modal does and gives FP8 and the matrix room;
+    # wattnot.preflight checks every block's worst-case time against its kill limit.
+    blocks = [replace(b, hours=_m(PUBLIC_BLOCK_MIN["p1-agentwaste"]),
+                      live=(b.live or []) + list(PUBLIC_AGENTWASTE_TRIM))
+              if b.id == "p1-agentwaste" else b for b in blocks]
+    # langchain on Modal r04-try1: 20 items took 898 s (MEASURED); the public plan runs 40.
+    blocks = [replace(b, hours=_m(PUBLIC_BLOCK_MIN["p1-langchain"])) if b.id == "p1-langchain" else b
+              for b in blocks]
+    rid = PUBLIC_MATRIX_ROUND
+    matrix = Block(
+        f"m-public-{rid}", f"Public round {rid}: GSM8K 60 + HumanEval 40, stock vs WattNot best cap; "
+        "answers recorded for the off-box Spark grade", _m(PUBLIC_BLOCK_MIN["m-public"]),
+        _py("wattnot.longrun.matrix_round", "--dry-run", "--round", rid,
+            "--out", str(out / "runs" / f"m-public-{rid}")),
+        live=["bash", "-c", _matrix_round_sh(rid, "{BEST_CAP}", public_only=True)],
+        host=True, depends_on=("t1-sweep",))
+    blocks += [replace(long_blocks["t2-fp8"], hours=_m(PUBLIC_BLOCK_MIN["t2-fp8"])), long_blocks["t2-eye"], long_blocks["t2-spoken"],
+               long_blocks["t2b-batch"], long_blocks["t2c-prefix"], matrix, long_blocks["t3-copy"]]
     return blocks
 
 
@@ -832,7 +892,9 @@ class Driver:
                  sleep=time.sleep, clock=time.monotonic, log=print,
                  heartbeat_path: Path | None = None, wallclock: Callable[[], float] = time.time,
                  balance_floor_inr: float = BALANCE_FLOOR_INR, publisher=None,
-                 watchdog_margin_h: float = 0.0) -> None:
+                 watchdog_margin_h: float = 0.0,
+                 disk_floor_gb: float = DISK_FREE_FLOOR_GB,
+                 disk_free_gb: Callable[[], float | None] | None = None) -> None:
         self.out, self.blocks, self.vm, self.label = out, blocks, vm, label
         self.run, self.max_hours, self.balance, self.used = run, max_hours, balance_inr, hours_used
         self.capture, self.include = capture, set(include_optional)
@@ -848,6 +910,10 @@ class Driver:
         # Stop this many hours before the hard cap, matching the off-box watchdog, so the driver
         # tears down cleanly instead of being killed mid-block (ctl.py deletes at deadline - 8 min).
         self.watchdog_margin_h = watchdog_margin_h
+        # Abort the pass cleanly (results saved) if free disk on the results dir falls below this.
+        # disk_free_gb is injectable for tests; the default measures self.out's filesystem.
+        self.disk_floor_gb = disk_floor_gb
+        self._disk_free_gb_fn = disk_free_gb or self._default_disk_free_gb
         self._run_arity = self._arity(run)
         self._launch_wall = wallclock()
         self.state_path = out / "driver_state.json"
@@ -865,6 +931,13 @@ class Driver:
     def _deadline_h(self) -> float:
         """The usable hours: the hard cap minus the watchdog margin."""
         return self.max_hours - self.watchdog_margin_h
+
+    def _default_disk_free_gb(self) -> float | None:
+        """Free GB on the results dir's filesystem, or None if it cannot be read (never fatal)."""
+        try:
+            return shutil.disk_usage(str(self.out)).free / 1e9
+        except OSError:
+            return None
 
     def _invoke(self, b: Block, timeout_s: float) -> int:
         """Run a block, bounded by `timeout_s`. Runners that take a second arg get the budget so
@@ -976,6 +1049,15 @@ class Driver:
                 self._teardown(why=f"before {b.id}", balance_low=bal < self.balance_floor,
                                hard_deadline_hit=self.used() >= self._deadline_h())
                 self.state["stopped"] = "money rule"
+                break
+            # periodic free-disk check (before each block): a near-full results/model disk aborts the
+            # pass cleanly with what has been saved, rather than wedging a block on a write that fails
+            free_gb = self._disk_free_gb_fn()
+            if free_gb is not None and self.disk_floor_gb > 0 and free_gb < self.disk_floor_gb:
+                self._note(kind="disk-low", block=b.id, free_gb=round(free_gb, 2),
+                           floor_gb=self.disk_floor_gb)
+                self._teardown(why=f"disk low before {b.id} ({free_gb:.1f} GB free)", disk_low=True)
+                self.state["stopped"] = f"disk low ({free_gb:.1f} GB free < {self.disk_floor_gb:g} GB)"
                 break
             if b.hours > left and b.min_hours is not None and b.min_hours <= left:
                 self._note(kind="trimmed", block=b.id, hours=b.min_hours, left=round(left, 2))
@@ -1275,7 +1357,7 @@ def live_run(out: Path, *, host: str, key: str = "~/.ssh/e2e_h100", model: str =
         with contextlib.suppress(ValueError, OSError):
             prev[s] = signal.signal(s, _on_signal)
     try:
-        return d.go()
+        state = d.go()
     except BaseException:
         # a driver crash, Ctrl-C or a stop signal must not leave a billing VM or an orphaned child:
         # kill child groups, copy what we can, then delete
@@ -1287,6 +1369,16 @@ def live_run(out: Path, *, host: str, key: str = "~/.ssh/e2e_h100", model: str =
         for s, h in prev.items():
             with contextlib.suppress(ValueError, OSError):
                 signal.signal(s, h)
+    # end-of-run no-mock audit: a live pass may not stand on a MOCK-labelled block. Scans the
+    # recorded results/receipts and fails the run (non-zero via main) on any MOCK label.
+    audit = nomock.audit_results(out, model=model)
+    nomock.write_report(audit, out / "nomock-results.json")
+    state["nomock_results"] = audit
+    if not audit["ok"]:
+        state["stopped"] = (f"{state.get('stopped')}; MOCK-labelled blocks: "
+                            f"{len(audit['findings'])}")
+    d._save()
+    return state
 
 
 VM_RECORD = Path("/workspace/hackathon/e2e-glimmer-test/vm.json")   # written by scripts/e2e/ctl.py
@@ -1373,7 +1465,7 @@ def main(argv=None) -> int:
                          "real Glimmer 30B). glimmer = the older 18 h plan-B block list (--plan "
                          "full only); with --plan long/max/retest it is read as glimmer-test. "
                          "llama = fallback")
-    ap.add_argument("--plan", choices=["full", "retest", "long", "max"], default="full",
+    ap.add_argument("--plan", choices=["full", "retest", "long", "max", "public"], default="full",
                     help="retest (glimmer-test only): re-run setup, probe, the sweep and the RUN3 "
                          "failures only, sized to a 2 h VM")
     ap.add_argument("--host", help="live: the GPU host's IP (default: read scripts/e2e ip file)")
@@ -1382,17 +1474,26 @@ def main(argv=None) -> int:
     ap.add_argument("--drop-link", default="b2-wonder-sweep:3",
                     help="dry: simulate an SSH drop: block:probes ('' for none)")
     a = ap.parse_args(argv)
-    if a.plan in ("retest", "long", "max") and a.model == "glimmer":
+    if a.plan in ("retest", "long", "max", "public") and a.model == "glimmer":
         # same weights (GLIMMER_MODEL) and the same one-H100 VM: the plan-B list only exists for
         # --plan full, so the real-model launch of these plans IS the glimmer-test setting
         print(f"[driver] --model glimmer --plan {a.plan}: using glimmer-test (Muse Glimmer 30B "
               "on the E2E H100; same weights)", file=sys.stderr)
         a.model = "glimmer-test"
-    if a.plan in ("retest", "long", "max") and a.model != "glimmer-test":
+    if a.plan in ("retest", "long", "max", "public") and a.model != "glimmer-test":
         # plan() only honours retest/long for glimmer-test; anything else would silently run
         # the old full plan on a paid VM
         ap.error(f"--plan {a.plan} needs --model glimmer-test")
 
+    if a.live and a.plan == "public":
+        from wattnot.launch_check import run as preflight   # $0 Modal-lessons check before the VM
+        pf = preflight("h100", dash=False)
+        if not pf["ok"]:
+            for c in pf["checks"]:
+                if not c["ok"]:
+                    print(f"[preflight] FAIL {c['id']}: {c['detail']}", file=sys.stderr)
+            print("[driver] preflight failed; nothing paid was started", file=sys.stderr)
+            return 3
     if a.live:
         host = a.host
         if not host:
@@ -1410,6 +1511,13 @@ def main(argv=None) -> int:
                   f"{v.get('wall_s', '')}s {v.get('why', v.get('teardown', ''))}")
         print("stopped:", st.get("stopped"))
         print("copy verify:", (st.get("copy_verify") or {}).get("status", "?"))
+        nm = st.get("nomock_results") or {"ok": True, "findings": []}
+        print("nomock results audit:", "OK" if nm["ok"]
+              else f"FAILED ({len(nm['findings'])} MOCK-labelled)")
+        if not nm["ok"]:
+            for f in nm["findings"][:10]:
+                print(f"  - {f['where']}: {f['what']}", file=sys.stderr)
+            return 1
         # an early stop (money rule, VM dead) is not a success even if every block that ran passed
         if (st.get("copy_verify") or {}).get("status") == "FLAGGED":
             return 1

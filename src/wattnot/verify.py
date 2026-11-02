@@ -77,13 +77,19 @@ def _schema_step(receipt) -> Step:
 TRUSTED_KEYS = Path(__file__).resolve().parents[2] / "verifier" / "trusted-keys.json"
 
 
-def load_trusted(path: str | Path | None = None) -> set[str] | None:
-    """Signer ids we accept. None means: accept any key that verifies."""
+TRUST_LABELS = {"ed25519-test": "test-signed (public sample key)",
+                "ed25519-wattnot": "signed (WattNot certificate key)"}
+
+
+def load_trusted(path: str | Path | None = None) -> dict[str, str] | None:
+    """Signer ids we accept -> their kind (a dict, so `id in trusted` works like the old set).
+    None means: accept any key that verifies. Anything signed by an 'ed25519-test' key
+    (WNC-0001 and every receipt before Modal round r04d) is labelled test-signed."""
 
     p = Path(path) if path else TRUSTED_KEYS
     if not p.exists():
         return None
-    return {k["signer"] for k in json.loads(p.read_text())["keys"]}
+    return {k["signer"]: k.get("kind", "") for k in json.loads(p.read_text())["keys"]}
 
 
 def verify_receipt(receipt_path: str | Path, bundle: str | Path | None = None,
@@ -138,6 +144,8 @@ def verify_document(receipt, bundle: dict | None, *, trusted: set[str] | None = 
                                   "ESTIMATE (pass --trust-signer to accept it)"}
             else:
                 ok, detail = False, {"error": f"signer {why} is not a trusted key"}
+        if ok and isinstance(trusted, dict) and trusted.get(why):
+            detail["trust"] = TRUST_LABELS.get(trusted[why], trusted[why])
         steps.append(Step("signature", ok, detail))
 
     rekor = b.get("rekor") if isinstance(b, dict) else None
@@ -243,7 +251,8 @@ def format_report(r: Report) -> str:
         if s.name == "sha256":
             info = f"expected {d.get('expected')}  got {d.get('got', d.get('error'))}"
         elif s.name == "signature":
-            info = (f"signer {d['signer']}" + (f"  ({d['note']})" if d.get("note") else "")) \
+            info = (f"signer {d['signer']}" + (f" [{d['trust']}]" if d.get("trust") else "")
+                    + (f"  ({d['note']})" if d.get("note") else "")) \
                 if s.ok else d.get("error", "")
             if s.ok and d.get("trusted") is False:
                 mark = "warn"

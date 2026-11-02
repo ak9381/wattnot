@@ -41,7 +41,7 @@ function plan(scan, side) {
     const cx = pos(i), f = (t(r) - lo) / (hi - lo), c = ironbow(f), x = cx - rackW / 2;
     glow.push(`<ellipse cx="${cx}" cy="${B.y + rackD / 2 + (f > 0.6 ? 18 : 0)}" rx="${rackW * (0.6 + 0.8 * f)}" ry="${rackD * (0.5 + 0.5 * f)}" fill="${c}" opacity="${(0.25 + f * 0.55).toFixed(2)}" filter="url(#thb)"/>`);
     real.push(`<g class="th-r" tabindex="0"><title>${esc(r.id)} · ${t(r).toFixed(1)} °C (simulated) · ${pw(r)} W per GPU (replay)${r.decision ? ` · ${esc(r.decision)}` : ""}</title>
-      <rect x="${x}" y="${B.y}" width="${rackW}" height="${rackD}" rx="2" fill="${c}" stroke="#DCD6E4" stroke-width="1.2"/>
+      <rect x="${x}" y="${B.y}" width="${rackW}" height="${rackD}" rx="2" fill="${c}" stroke="#F3F0F7" stroke-width="1.2"/>
       <text x="${cx}" y="${B.y + rackD / 2 + 4}" text-anchor="middle" class="th-t">${t(r).toFixed(0)}°</text>
       <text x="${cx}" y="${B.y - 5}" text-anchor="middle" class="th-id" font-size="12">${esc(r.id)}${r.id === scan.real_rack ? "★" : ""}</text></g>`);
   });
@@ -58,7 +58,7 @@ function plan(scan, side) {
     ${glow.join("")}${real.join("")}
     ${cracs}
     <text x="${x0}" y="${top - 40}" class="th-aisle">Row B: SAM 3.1 rack outlines, placed in scan order (measured) · other rows, CRAC units and room: illustrative, no data</text>
-    <g transform="translate(${x0},${H - 60})"><rect width="${sb}" height="6" fill="#DCD6E4"/><rect width="${sb / 5}" height="6" fill="#080B10" x="${sb / 5}"/><rect width="${sb / 5}" height="6" fill="#080B10" x="${(3 * sb) / 5}"/><text y="22" class="th-aisle">0</text><text x="${sb}" y="22" text-anchor="end" class="th-aisle">5 m</text></g>
+    <g transform="translate(${x0},${H - 60})"><rect width="${sb}" height="6" fill="#F3F0F7"/><rect width="${sb / 5}" height="6" fill="#080B10" x="${sb / 5}"/><rect width="${sb / 5}" height="6" fill="#080B10" x="${(3 * sb) / 5}"/><text y="22" class="th-aisle">0</text><text x="${sb}" y="22" text-anchor="end" class="th-aisle">5 m</text></g>
     <g transform="translate(${x0 + sb + 60},${H - 60})"><rect width="260" height="10" fill="url(#thg)"/><text y="26" class="th-aisle">${lo} °C</text><text x="260" y="26" text-anchor="end" class="th-aisle">${hi} °C (simulated)</text></g>
   </svg>`;
 }

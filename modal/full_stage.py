@@ -24,6 +24,9 @@ ROUND_CAP_S = int(3.75 * 3600)  # hard container timeout: 225 min, worst 3.75 h 
 ROUND_HARD_USD = 10.0         # a single round's worst case must never exceed this
 SMOKE_CAP_S = 32 * 60         # smoke tests: 32 min x $2.50 = $1.33 worst case (ESTIMATE); margin under the $1.50 smoke cap for metering drift
 SMOKE_HARD_USD = 1.50
+# block-only run (r04e LangChain rerun): server start ~2 min + LangChain limit 3000 s + pull;
+# 75 min x $2.50 = $3.13 worst case (ESTIMATE), under the $10 round cap
+BLOCK_CAP_S = 75 * 60
 assert SMOKE_CAP_S / 3600 * GPU_USD_H <= SMOKE_HARD_USD
 VOL = "wattnot-glimmer-weights"
 RESULTS_VOL = "wattnot-results"   # incremental/recoverable results; a crash leaves partials here
@@ -128,7 +131,7 @@ try:  # pragma: no cover - only with modal installed
     image = (modal.Image.from_registry("vllm/vllm-openai:muse-glimmer")
              .dockerfile_commands(["RUN ln -sf \"$(command -v python3)\" /usr/local/bin/python"])
              .entrypoint([])
-             .pip_install("pynvml", "jsonschema", "pyyaml", "numpy", "langchain-core", "langchain-openai")
+             .pip_install("pynvml", "jsonschema", "pyyaml", "numpy", "langchain-core", "langchain-openai", "optuna>=3.6,<5")
              .add_local_dir("src", "/app/src")
              .add_local_dir("scripts", "/app/scripts")
              .add_local_dir("workloads", "/app/workloads")
@@ -137,6 +140,21 @@ try:  # pragma: no cover - only with modal installed
              .add_local_dir("data/vision", "/app/data/vision")
              .add_local_dir("data/voice", "/app/data/voice")
              .add_local_file("pyproject.toml", "/app/pyproject.toml"))
+
+    META_SECRET = "wattnot-meta"
+
+    def _meta_secrets() -> list:
+        """The hearing block transcribes live through the Meta API, so the container needs
+        META_API_KEY (r04c: HTTP 401 without it). A NAMED Modal secret, created once from the local
+        key (never printed): the object list is identical locally and in the container. r04d
+        crash-looped because a from_dict secret was only added when the key was found locally."""
+        return [modal.Secret.from_name(META_SECRET)]
+
+    # one dependency set for every function, so the CPU startup probe hydrates exactly what
+    # gpu_round hydrates (a mismatch fails there, free, not on a paid GPU)
+    def _deps() -> dict:
+        return dict(image=image, volumes={"/weights": weights, "/results": results},
+                    secrets=_meta_secrets())
 
     def _tail_events(path: str, q, stop):
         """Stream the container's events.jsonl to the local graph page through a Modal Queue."""
@@ -158,7 +176,8 @@ try:  # pragma: no cover - only with modal installed
                 return
             time.sleep(2)
 
-    def _body(round_id: str, limit: int, skip: list[str], cap_s: int, q=None) -> bytes:
+    def _body(round_id: str, limit: int, skip: list[str], cap_s: int, q=None, sets: str = "",
+              only: str = "") -> bytes:
         import subprocess
         import threading
         sys.path[:0] = ["/app", "/app/src"]
@@ -192,6 +211,10 @@ try:  # pragma: no cover - only with modal installed
             cmd += ["--limit", str(limit)]
         if skip:
             cmd += ["--skip", *skip]
+        if only:   # block-only run (e.g. "langchain"): with-WattNot server + those blocks, no A/B
+            cmd += ["--only", *[x for x in only.split(",") if x]]
+        if sets:   # e.g. "gsm8k,humaneval" for the public round; empty = all three sets
+            cmd += ["--sets", *[x for x in sets.split(",") if x]]
         os.makedirs(out, exist_ok=True)
         _write_status(out, "running", round_id)
         stop = threading.Event()
@@ -238,24 +261,43 @@ try:  # pragma: no cover - only with modal installed
             t.add(out, arcname=round_id)
         return buf.getvalue()
 
-    @app.function(image=image, gpu=GPU, timeout=ROUND_CAP_S,
-                  volumes={"/weights": weights, "/results": results}, scaledown_window=10)
-    def gpu_round(round_id: str, limit: int = 0, skip: list[str] | None = None, q=None) -> bytes:
-        return _body(round_id, limit, skip or [], ROUND_CAP_S, q)
+    @app.function(gpu=GPU, timeout=ROUND_CAP_S, scaledown_window=10, **_deps())
+    def gpu_round(round_id: str, limit: int = 0, skip: list[str] | None = None, q=None,
+                  sets: str = "") -> bytes:
+        return _body(round_id, limit, skip or [], ROUND_CAP_S, q, sets)
 
-    @app.function(image=image, gpu=GPU, timeout=SMOKE_CAP_S,
-                  volumes={"/weights": weights, "/results": results}, scaledown_window=10)
-    def gpu_smoke(round_id: str, limit: int = 1, skip: list[str] | None = None, q=None) -> bytes:
-        return _body(round_id, limit, skip or [], SMOKE_CAP_S, q)
+    @app.function(gpu=GPU, timeout=SMOKE_CAP_S, scaledown_window=10, **_deps())
+    def gpu_smoke(round_id: str, limit: int = 1, skip: list[str] | None = None, q=None,
+                  sets: str = "") -> bytes:
+        return _body(round_id, limit, skip or [], SMOKE_CAP_S, q, sets)
+
+    @app.function(gpu=GPU, timeout=BLOCK_CAP_S, scaledown_window=10, **_deps())
+    def gpu_block(round_id: str, only: str, q=None) -> bytes:
+        """Block-only run: its own run id and a shorter container cap than a full round."""
+        return _body(round_id, 0, [], BLOCK_CAP_S, q, "", only)
+
+    @app.function(timeout=300, scaledown_window=2, **_deps())   # CPU only: no gpu=
+    def deps_probe() -> dict:
+        """Starts a container with gpu_round's exact dependencies; returns names only, no values."""
+        return {"meta_key": bool(os.environ.get("META_API_KEY")),
+                "weights": os.path.isdir("/weights"), "results": os.path.isdir("/results")}
+
+    @app.local_entrypoint()
+    def probe_():
+        import json as _j
+        print("[deps_probe] " + _j.dumps(deps_probe.remote()))
 
     @app.local_entrypoint()
     def round_(round: str, limit: int = 0, skip: str = "", out: str = "data/modal-full-1101/_incoming",
-               events: str = ""):
+               events: str = "", sets: str = "", only: str = ""):
         _require_go()
         import time
         fn = gpu_smoke if limit else gpu_round
         with modal.Queue.ephemeral() as q:
-            call = fn.spawn(round, limit, [x for x in skip.split(",") if x], q)
+            if only:
+                call = gpu_block.spawn(round, only, q)
+            else:
+                call = fn.spawn(round, limit, [x for x in skip.split(",") if x], q, sets)
             data, st, net_errs = None, {}, 0
             while data is None:
                 try:

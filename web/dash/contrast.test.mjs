@@ -47,13 +47,16 @@ const CASES = [
   ["--v-l-advice", ["bg", "bg2", "s2e", "s17"]],
 ];
 
+// Text tokens are held higher than AA: body and secondary text >= 7:1 (AAA), muted captions >= 6:1.
+const TEXT_MIN = { "--v-cream": 7, "--v-sub": 7, "--v-mut": 6 };
 for (const [name, bgs] of CASES) {
-  test(`${name} >= 4.5:1 on ${bgs.join(", ")}`, () => {
+  test(`${name} >= ${TEXT_MIN[name] || 4.5}:1 on ${bgs.join(", ")}`, () => {
     const fg = vars[name];
     assert.ok(fg, `${name} missing from violet.css`);
     for (const key of bgs) {
       const r = ratio(fg, BG[key]);
-      assert.ok(r >= 4.5, `${name} (${fg}) on ${key} (${BG[key]}) = ${r.toFixed(2)}:1, need >= 4.5`);
+      const min = TEXT_MIN[name] || 4.5;
+      assert.ok(r >= min, `${name} (${fg}) on ${key} (${BG[key]}) = ${r.toFixed(2)}:1, need >= ${min}`);
     }
   });
 }

@@ -29,7 +29,7 @@ export function labelOf(text) { const m = (text || "").trim().match(RX); return 
 
 function quiet(root) {
   root.querySelectorAll("span, b, i, small, em").forEach((el) => {
-    if (el.closest(".wn-pop, .wn-legend, .wn-dot, .r7legend, .legend, .vg-slot-container") || el.dataset.wnq) return;
+    if (el.closest(".wn-pop, .wn-legend, .wn-dot, .r7legend, .legend, .vg-slot-container, [data-wn-keep]") || el.dataset.wnq) return;
     if (el.children.length > 2) return;
     const l = labelOf(el.textContent); if (!l) return;
     const host = el.parentElement?.closest(".v-chip, .b-chip, .lv-chip") || el;

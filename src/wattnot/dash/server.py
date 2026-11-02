@@ -207,6 +207,16 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
                 return r
             return RedirectResponse("/login?bad=1", status_code=303)
 
+    @app.middleware("http")
+    async def no_cache_static(request: Request, call_next):
+        """Serve the static pages with Cache-Control: no-cache so an edited .html/.css/.js
+        is always revalidated and a stale heuristic cache cannot pin old styling."""
+        response = await call_next(request)
+        path = request.url.path
+        if path == "/" or path.endswith((".html", ".css", ".js")):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
     app.add_middleware(GZipMiddleware, minimum_size=2000, compresslevel=3)
     cap_path = Path(follow or capture or DEFAULT_CAPTURE)
     following = follow is not None
@@ -791,6 +801,9 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
 
         return StreamingResponse(gen(), media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache"})
+
+    from wattnot.dash.launch import router as _launch_router
+    app.include_router(_launch_router())
 
     @app.get("/")
     def index():

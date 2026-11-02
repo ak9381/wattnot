@@ -440,6 +440,8 @@ async function boot() {
   archPage.setMode("all");
   archPage.show();
   if (params.get("filter") === "meta") archPage.setFilter("meta");
+  // ?live=1 follows the events file the server was started with (screen recorder; no replay)
+  if (params.get("live") === "1") { archPage.replay = "live"; archPage.liveW = null; archPage.renderMeter(0); archPage.stopLive?.(); archPage.startLive(); }
 }
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { if ($("pop") && !$("pop").hidden) return togglePop(false); if ($("spanel")?.classList.contains("open")) return closePanel(); if (drawerOpen) { if ($("apanel")?.classList.contains("open")) return archPage.closePanel(); return closeDrawer(); } return; }

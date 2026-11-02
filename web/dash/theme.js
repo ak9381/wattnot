@@ -4,7 +4,7 @@ export const GROUP_COLORS = {
 };
 export const TOPIC_COLORS = { code: "#8E7A9E", "gpu-ops": "#8E7A9E", science: "#7FA88A", writing: "#B49BDB",
   math: "#C4B4D6", history: "#D094A0" };
-export const topicColor = (t) => TOPIC_COLORS[t] || "#A79BB9";
+export const topicColor = (t) => TOPIC_COLORS[t] || "#CBC4D6";
 export const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 export const pill = (l) => `<span class="pill ${l}">${l}</span>`;
 // Label colours: the number itself carries the colour, the dot names it on

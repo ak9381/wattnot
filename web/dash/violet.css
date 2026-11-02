@@ -1,6 +1,6 @@
 /* Dusk palette — the one shared palette for every dashboard page.
    10-step palette, light to dark:
-   #DCD6E4 #B2A6C3 #8E7A9E #6C5E7C #4F4A63 #3B3A54 #2E2B44 #2B2637 #1F1A2F #171724
+   #F3F0F7 #B2A6C3 #8E7A9E #6C5E7C #4F4A63 #3B3A54 #2E2B44 #2B2637 #1F1A2F #171724
    Page background: #080B10.
    contrast.test.mjs checks every text/status colour here against the dark
    surfaces it sits on and fails below WCAG AA (4.5:1). */
@@ -22,9 +22,9 @@
 
   /* light shades: text and highlights */
   --v-peach: #B2A6C3;       /* highlights, glow lines, headings accent */
-  --v-cream: #DCD6E4;       /* primary text */
-  --v-sub: #C9C1D6;         /* secondary text */
-  --v-mut: #A79BB9;         /* muted captions */
+  --v-cream: #F3F0F7;       /* primary text */
+  --v-sub: #E4DFEB;         /* secondary text */
+  --v-mut: #CBC4D6;         /* muted captions */
 
   /* status: always paired with an icon (✓/✕) and a word, never colour alone */
   --v-pass: #7FA88A;        /* muted sage */

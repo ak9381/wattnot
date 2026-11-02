@@ -46,7 +46,7 @@ class TeardownDecision:
 
 def plan_teardown(*, ssh_alive: Callable[[], bool], api_state: Callable[[], str | None],
                   pull: Callable[[], bool], why: str, hard_deadline_hit: bool = False,
-                  balance_low: bool = False, finished: bool = False,
+                  balance_low: bool = False, disk_low: bool = False, finished: bool = False,
                   dead_window_s: float = DEAD_WINDOW_S, probe_every_s: float = PROBE_EVERY_S,
                   min_probes: int = MIN_PROBES, pull_tries: int = PULL_TRIES,
                   finish_grace_s: float = FINISH_GRACE_S,
@@ -58,7 +58,9 @@ def plan_teardown(*, ssh_alive: Callable[[], bool], api_state: Callable[[], str 
     None if the API itself could not be read. pull() copies results to the box and returns True
     on success. Nothing here deletes anything."""
     probes: list[dict] = []
-    money = hard_deadline_hit or balance_low
+    # A near-full results/model disk is a resource floor like the money rules: copy what we can,
+    # then delete regardless so the pass stops cleanly instead of wedging on a failing write.
+    money = hard_deadline_hit or balance_low or disk_low
 
     def try_pull() -> bool:
         for _ in range(pull_tries):
@@ -70,7 +72,8 @@ def plan_teardown(*, ssh_alive: Callable[[], bool], api_state: Callable[[], str 
     # Money first: still try one copy, but never wait the dead window.
     if money:
         copied = ssh_alive() and try_pull()
-        rule = "hard deadline" if hard_deadline_hit else "balance floor"
+        rule = ("hard deadline" if hard_deadline_hit else "balance floor" if balance_low
+                else "disk floor")
         return TeardownDecision(True, f"{rule} reached ({why}); delete regardless", "unknown",
                                 copied, forced=not copied, probes=probes)
 

@@ -29,11 +29,20 @@ CLIPS = DATA / "clips"
 PORT = 8772
 CHROME = "/opt/google/chrome/chrome"
 PY = os.environ.get("WN_PY", sys.executable)
+# The recorder dashboard needs uvicorn/fastapi, which live in the dashboard venv, not in the
+# system python that runs Modal + Playwright.
+DASH_PY = os.environ.get("WN_DASH_PY", PY)
 PR_REPO = "ak9381/wattnot-demo-deploy"
 
 
+
+def _foreign_owner():
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from modal_full_round import foreign_owner
+    return foreign_owner()
+
 def server(events: Path):
-    p = subprocess.Popen([PY, "-m", "wattnot.dash", "--port", str(PORT), "--events", str(events)], cwd=ROOT,
+    p = subprocess.Popen([DASH_PY, "-m", "wattnot.dash", "--port", str(PORT), "--events", str(events)], cwd=ROOT,
                          env={**os.environ, "PYTHONPATH": f"{ROOT}:{ROOT / 'src'}"},
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     for _ in range(80):
@@ -60,7 +69,10 @@ def to_mp4(webm: Path, mp4: Path):
     webm.unlink(missing_ok=True)
 
 
-def record(url: str, out_mp4: Path, until, max_s: float, tail_s: float = 4.0, actions=None):
+def record(url: str, out_mp4: Path, until, max_s: float, tail_s: float = 4.0, actions=None,
+           convert: bool = True):
+    """Record a page. ``convert=False`` keeps the raw webm next to the mp4 path and returns it, so
+    the ffmpeg encode can wait until the round's results are written (r04e waited 19 min on it)."""
     from playwright.sync_api import sync_playwright
     tmp = CLIPS / "_tmp"
     tmp.mkdir(parents=True, exist_ok=True)
@@ -80,7 +92,12 @@ def record(url: str, out_mp4: Path, until, max_s: float, tail_s: float = 4.0, ac
         v = pg.video.path()
         ctx.close()
         b.close()
+    if not convert:
+        raw = out_mp4.with_suffix(".webm")
+        Path(v).replace(raw)
+        return raw
     to_mp4(Path(v), out_mp4)
+    return out_mp4
 
 
 def plays(mp4: Path) -> dict:
@@ -162,11 +179,72 @@ def find_pr(rdir: Path) -> str | None:
     return None
 
 
+def write_entry(rdir: Path, entry: dict, review: dict | None):
+    if rdir.exists():
+        (rdir / "stage_entry.json").write_text(json.dumps({**entry, "pr_review_full": review}, indent=1))
+
+
+def push_results(rdir: Path, tag: str, run=subprocess.run) -> dict:
+    """Commit the round's results folder (no clips, no keys) as ak9381 and push the current branch."""
+    if not rdir.exists():
+        return {"pushed": False, "why": "no results folder"}
+    bad = [p.name for p in rdir.rglob("*") if p.suffix in (".pem", ".key", ".mp4", ".webm")]
+    if bad:
+        return {"pushed": False, "why": f"refused: key or clip files in results: {bad[:3]}"}
+    who = ["-c", "user.name=ak9381", "-c", "user.email=ak9381@users.noreply.github.com"]
+    steps = [["git", "add", str(rdir)], ["git", *who, "commit", "-q", "-m", f"Results: Modal round {tag}"],
+             ["git", "push", "-q", "origin", "HEAD"]]
+    for st in steps:
+        r = run(st, cwd=ROOT, capture_output=True, text=True)
+        if r.returncode != 0:
+            return {"pushed": False, "step": st[1] if st[1] != "-c" else "commit", "rc": r.returncode}
+    return {"pushed": True}
+
+
+def finish_clips(tag: str, rdir: Path, pr: str | None, clips: list[Path]) -> tuple[dict, dict]:
+    """After the results: encode the live recordings, record the matrix and PR pages, ffprobe all."""
+    for c in clips:
+        raw = c.with_suffix(".webm")
+        if raw.exists():
+            try:
+                to_mp4(raw, c)
+            except Exception as e:  # noqa: BLE001 - a bad clip never loses the results
+                print(f"[clip] encode {c.name} failed: {type(e).__name__}", flush=True)
+    srv = server(DATA / f"{tag}.with.events.jsonl")
+    try:
+        t = time.time()
+        record(f"http://127.0.0.1:{PORT}/matrix.html", CLIPS / f"modal-{tag}-matrix.mp4",
+               until=lambda: time.time() - t > 12, max_s=15)
+        clips.append(CLIPS / f"modal-{tag}-matrix.mp4")
+    finally:
+        stop(srv)
+    review = pr_review(pr, rdir / "pr_review") if pr else {"decision": None, "why": "no PR opened this round"}
+    if pr:
+        def scroll(pg):
+            for _ in range(6):
+                pg.mouse.wheel(0, 500)
+                pg.wait_for_timeout(1500)
+            pg.goto(pr + "/files")
+            pg.wait_for_timeout(3000)
+            for _ in range(4):
+                pg.mouse.wheel(0, 400)
+                pg.wait_for_timeout(1500)
+        t = time.time()
+        record(pr, CLIPS / f"modal-{tag}-pr-review.mp4", until=lambda: time.time() - t > 2, max_s=5,
+               actions=scroll)
+        clips.append(CLIPS / f"modal-{tag}-pr-review.mp4")
+    return ({"round": tag, "pr": pr, "pr_review": review.get("decision"),
+             "clips": [plays(c) for c in clips if c.exists()]}, review)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rounds", nargs="+", default=["r04", "r05", "r06"])
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--no-pr", action="store_true")
+    ap.add_argument("--push-results", action="store_true",
+                    help="commit and push the round's results folder before recording clips")
+    ap.add_argument("--sets", nargs="+", default=[], help="datasets; public round: --sets gsm8k humaneval")
     a = ap.parse_args()
     CLIPS.mkdir(parents=True, exist_ok=True)
     log = []
@@ -180,56 +258,68 @@ def main():
         cmd = [PY, "scripts/e2e/modal_full_round.py", "--round", rnd, "--live-meta", "--events", str(base)]
         cmd += [] if a.no_pr else ["--live-pr"]
         cmd += ["--limit", str(a.limit)] if a.limit else []
+        cmd += ["--sets", *a.sets] if a.sets else []
         logf = open(DATA / f"{tag}.log", "w")
         runner = subprocess.Popen(cmd, cwd=ROOT, env={**os.environ, "PYTHONPATH": f"{ROOT}:{ROOT / 'src'}"},
                                   stdout=logf, stderr=subprocess.STDOUT)
         clips = []
-        srv = server(evw)
         try:
-            record(f"http://127.0.0.1:{PORT}/graph.html?live=1", CLIPS / f"modal-{tag}-graph-without.mp4",
-                   until=lambda: has(evi, '"run.started"') or runner.poll() is not None, max_s=4 * 3600)
-        finally:
-            stop(srv)
-        clips.append(CLIPS / f"modal-{tag}-graph-without.mp4")
-        srv = server(evi)
-        try:
-            record(f"http://127.0.0.1:{PORT}/graph.html?live=1", CLIPS / f"modal-{tag}-graph-with.mp4",
-                   until=lambda: has(evi, '"run.finished"') or runner.poll() is not None, max_s=4 * 3600,
-                   tail_s=8)
-        finally:
-            stop(srv)
+            srv = server(evw)
+            try:
+                record(f"http://127.0.0.1:{PORT}/graph.html?live=1", CLIPS / f"modal-{tag}-graph-without.mp4",
+                       until=lambda: has(evi, '"run.started"') or runner.poll() is not None, max_s=4 * 3600,
+                       convert=False)
+            finally:
+                stop(srv)
+            clips.append(CLIPS / f"modal-{tag}-graph-without.mp4")
+            srv = server(evi)
+            try:
+                record(f"http://127.0.0.1:{PORT}/graph.html?live=1", CLIPS / f"modal-{tag}-graph-with.mp4",
+                       until=lambda: has(evi, '"run.finished"') or runner.poll() is not None, max_s=4 * 3600,
+                       tail_s=8, convert=False)
+            finally:
+                stop(srv)
+        except BaseException:
+            # never leave a paid runner going without its recorder: stop it (its own exit path
+            # stops the Modal app) and re-raise
+            runner.terminate()
+            try:
+                runner.wait(timeout=180)
+            except subprocess.TimeoutExpired:
+                runner.kill()
+            for _ in range(3):
+                try:
+                    apps = json.loads(subprocess.run(["modal", "app", "list", "--json"], capture_output=True,
+                                                     text=True, timeout=120).stdout or "[]")
+                except Exception:  # noqa: BLE001
+                    apps = []
+                live = [a for a in apps if "wattnot-full-stage" in json.dumps(a)
+                        and "stopped" not in json.dumps(a).lower()]
+                if not live:
+                    break
+                if _foreign_owner():
+                    break   # another live round owns the app; never stop it from here
+                for a in live:
+                    aid = a.get("App ID") or a.get("app_id") or a.get("id")
+                    if aid:
+                        subprocess.run(["modal", "app", "stop", "-y", aid], capture_output=True, timeout=120)
+            raise
         clips.append(CLIPS / f"modal-{tag}-graph-with.mp4")
         rc = runner.wait()
         logf.close()
-        srv = server(evi)
-        try:
-            t = time.time()
-            record(f"http://127.0.0.1:{PORT}/matrix.html", CLIPS / f"modal-{tag}-matrix.mp4",
-                   until=lambda: time.time() - t > 12, max_s=15)
-            clips.append(CLIPS / f"modal-{tag}-matrix.mp4")
-        finally:
-            stop(srv)
         rdir = DATA / tag
+        # 1. results first: the round's entry is written (and pushed with --push-results) before
+        #    any clip is encoded or recorded
         pr = find_pr(rdir)
-        review = pr_review(pr, rdir / "pr_review") if pr else {"decision": None, "why": "no PR opened this round"}
-        if pr:
-            def scroll(pg):
-                for _ in range(6):
-                    pg.mouse.wheel(0, 500)
-                    pg.wait_for_timeout(1500)
-                pg.goto(pr + "/files")
-                pg.wait_for_timeout(3000)
-                for _ in range(4):
-                    pg.mouse.wheel(0, 400)
-                    pg.wait_for_timeout(1500)
-            t = time.time()
-            record(pr, CLIPS / f"modal-{tag}-pr-review.mp4", until=lambda: time.time() - t > 2, max_s=5,
-                   actions=scroll)
-            clips.append(CLIPS / f"modal-{tag}-pr-review.mp4")
-        entry = {"round": tag, "rc": rc, "pr": pr, "pr_review": review.get("decision"),
-                 "clips": [plays(c) for c in clips if c.exists()]}
-        (rdir / "stage_entry.json").write_text(json.dumps({**entry, "pr_review_full": review}, indent=1)) \
-            if rdir.exists() else None
+        entry = {"round": tag, "rc": rc, "pr": pr, "pr_review": None, "clips": "pending"}
+        write_entry(rdir, entry, None)
+        print("[results-ready] " + json.dumps(entry), flush=True)
+        if a.push_results:
+            print("[results-pushed] " + json.dumps(push_results(rdir, tag)), flush=True)
+        # 2. then the clips: encode the live graph recordings, record matrix + PR review, ffprobe
+        entry, review = finish_clips(tag, rdir, pr, clips)
+        entry["rc"] = rc
+        write_entry(rdir, entry, review)
         log.append(entry)
         print(json.dumps(entry), flush=True)
         if rc != 0:

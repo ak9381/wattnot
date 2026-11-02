@@ -71,7 +71,7 @@ OFF_NODES = {"adaptive": "MoE top-k needs Spark Open self-served (8x B200)",
              "spark_open": "816B side stage not run (about 700 GB GPU memory)",
              "baseten_model": "not used on this stage (our own vLLM on Modal)",
              "meters_roadmap": "Zeus/DCGM meters not bound; NVML is the meter",
-             "certificate": "mock certificate format, not minted",
+             "certificate": "efficiency certificate from the run receipt (declined, not minted, when the saving is not significant)",
              "e2e_rig": "the H100 rig is not used; this stage runs on a Modal A100-80GB"}
 SLICE_MAX_S = 15 * 60                   # a sweep/FP8 slice arm never runs longer than this
 BUDGET_FAIL_MAX = 5                     # BudgetChat errors before the enforcer is switched off
@@ -369,9 +369,12 @@ def _bench():
     return m
 
 
-def items(b, limit=0):
-    out = [("ours", t.id, t) for t in build()]
-    for name, n in PUB_N.items():
+ALL_SETS = ("ours", "gsm8k", "humaneval")
+
+
+def items(b, limit=0, sets=ALL_SETS):
+    out = [("ours", t.id, t) for t in build()] if "ours" in sets else []
+    for name, n in ((k, v) for k, v in PUB_N.items() if k in sets):
         for i, x in enumerate(b.load(name)[:n]):
             out.append((name, str(x.get("task_id") or f"{name}-{i:03d}"), x))
     if limit:
@@ -523,6 +526,40 @@ def gate(base, cand):
             "acc_drop_pts": round((a0 - a1) * 100, 2), "label": "MEASURED"}
 
 
+def block_cmds(limit: int, fake: bool, out: Path) -> dict:
+    """The agent-saver / eye / hearing / thinking-budget GPU blocks. In smoke (limit > 0) the
+    agentwaste block is shortened (--reps 1 --max-cases 4 --max-tokens 768) so it fits the
+    container budget; the full round (limit == 0) runs 12 of the 30 cases once per arm at 768 tokens: r04 showed
+    --reps 2 over all 30 cases at 2048 tokens cannot finish inside the 15-min block cap (rc 124)."""
+    fk = ["--fake"] if fake else []
+    return {
+        "think": [sys.executable, "-m", "wattnot.longrun.thinking_budget", "--per-tier",
+                  str(limit or 2), "--out", str(out / "think")]
+                 + (["--fake"] if fake else ["--url", f"{BASE}/chat/completions"]),
+        "agentwaste": [sys.executable, "scripts/agentwaste_gpu_ab.py", "--base-url", BASE]
+                      + (["--reps", "1", "--max-cases", "4", "--max-tokens", "768"] if limit
+                         else ["--reps", "1", "--max-cases", "12", "--max-tokens", "768"])
+                      + ["--out", str(out / "agentwaste")] + fk,
+        "langchain": [sys.executable, "scripts/langchain_pass.py", "--dataset", "own", "--n",
+                      str(limit or 20), "--out", str(out / "langchain"), "--route", "final-check"]
+                     + (["--fake"] if fake else ["--base-url", BASE]),
+        "eye": [sys.executable, "-m", "wattnot.vision.run", "--base-url", BASE, "--out", str(out / "eye"),
+                "--budget-s", "90"] + fk,
+        "spoken": [sys.executable, "-m", "wattnot.spokenanswer.run", "--base-url", BASE, "--out",
+                    str(out / "spoken"), "--budget-s", "90"] + fk,
+    }
+
+
+def block_cap(k: str, limit: int) -> int:
+    """Per-block wall cap. Smoke caps agentwaste hardest (it is the long pole), other blocks at
+    5 min; the full round takes each block's limit from the modal provider profile, sized so the
+    block's worst case fits in 80% of it."""
+    if not limit:
+        from wattnot.providers import block_limit_s
+        return block_limit_s("modal", k)
+    return 240 if k == "agentwaste" else 300
+
+
 def sub(argv, out: Path, timeout: float) -> dict:
     t0 = time.time()
     try:
@@ -536,13 +573,64 @@ def sub(argv, out: Path, timeout: float) -> dict:
     return {"rc": rc, "wall_s": round(time.time() - t0, 1), "out": out.name}
 
 
+ONLY_SERVER = {"fp8": False, "prefix": True, "max_seqs": 128}   # r04e's kept with-WattNot server
+
+
+def only_blocks(a, out: Path, srv, nv, doc: dict, save) -> int:
+    """A block-only run (r04e LangChain rerun): the with-WattNot server as r04e kept it, then
+    only the named blocks. No A/B arms, no sweep, no FP8; its own run id, attached to a round."""
+    S = doc["steps"]
+    S["only"] = list(a.only)
+    rc_all = 0
+    try:
+        S["with_server"] = srv.start(**ONLY_SERVER)
+        blocks = block_cmds(a.limit, a.fake, out)
+        S["blocks"] = {}
+        for k in a.only:
+            if k not in blocks:
+                S["blocks"][k] = {"rc": None, "skipped": "unknown block"}
+                rc_all = 2
+                continue
+            tmo = min(block_cap(k, a.limit), max(120.0, left() - 240))
+            cmd = blocks[k]
+            if a.fake and k in INJECT:
+                cmd = [sys.executable, "-c", "raise SystemExit(3)"]
+            e0 = nv.energy_j()
+            EV.emit("step.started", node="effort_router", sub=k, summary=f"{k} block (block-only run)")
+            r = sub(cmd, out / k, tmo)
+            EV.emit("step.finished", node="effort_router", sub=k, status="ok" if r["rc"] == 0 else "bad",
+                    summary=f"{k}: rc {r['rc']} in {r['wall_s']} s")
+            r["energy_j"] = {"value": round(nv.energy_j() - e0, 1), "label": "SIMULATED" if a.fake else "MEASURED"}
+            S["blocks"][k] = r
+            if r["rc"] != 0:
+                fail(k, f"{k} GPU block exited rc={r['rc']} (see {k}/block.log)")
+                rc_all = rc_all or 1
+            save()
+    except Exception as e:  # noqa: BLE001 - record, never hang the container
+        doc["fatal"] = f"{type(e).__name__}: {e}"[:300]
+        rc_all = 3
+    finally:
+        try:
+            srv.stop()
+        except Exception:  # noqa: BLE001
+            pass
+        doc["ended_utc"] = datetime.now(UTC).isoformat()
+        save()
+        EV.emit("gpu.done", fatal=doc.get("fatal"))
+    return 0 if doc.get("fatal") is None else rc_all
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--model-path", default=MODEL)
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--sets", nargs="+", choices=ALL_SETS, default=list(ALL_SETS),
+                    help="datasets; the public round is --sets gsm8k humaneval")
     ap.add_argument("--fake", action="store_true")
     ap.add_argument("--skip", nargs="*", default=[], help="steps to skip (smoke tests)")
+    ap.add_argument("--only", nargs="*", default=[],
+                    help="run only these GPU blocks on the with-WattNot server (e.g. langchain), no A/B arms")
     ap.add_argument("--deadline-s", type=float, default=0, help="seconds from start; optional steps skip past it")
     a = ap.parse_args(argv)
     DEADLINE[0] = T_START + a.deadline_s if a.deadline_s else None
@@ -552,9 +640,9 @@ def main(argv=None) -> int:
     NV[0] = nv
     srv = Server(a.model_path, raw, a.fake)
     b = _bench()
-    its = items(b, a.limit)
+    its = items(b, a.limit, tuple(a.sets))
     sl = its[:: max(1, len(its) // SLICE_N)][:SLICE_N] if not a.limit else its
-    doc = {"started_utc": datetime.now(UTC).isoformat(), "gpu": nv.name(), "fake": a.fake,
+    doc = {"started_utc": datetime.now(UTC).isoformat(), "gpu": nv.name(), "fake": a.fake, "sets": list(a.sets),
            "idle_w": {"value": round(nv.power_w(), 1), "label": "MEASURED", "when": "before vLLM start"},
            "cap_probe": nv.cap_probe(), "items": len(its), "slice": len(sl), "steps": {}, "failed": FAILED,
            "deadline_s": a.deadline_s or None}
@@ -572,6 +660,8 @@ def main(argv=None) -> int:
             txt = txt.replace('"MEASURED"', '"MOCK"')
         (out / "inner.json").write_text(txt)
 
+    if a.only:
+        return only_blocks(a, out, srv, nv, doc, save)
     try:
         # 1. without WattNot: stock serving
         EV.emit("run.started", arm="without_wattnot", run=f"modal {out.name} without WattNot", model=MODEL,
@@ -631,28 +721,14 @@ def main(argv=None) -> int:
                        "quality_gate": gate(wo, wi), "label": "MEASURED"}
         save()
         # 4. agent saver, eye, hearing, thinking budget on the WattNot server (BF16)
-        fk = ["--fake"] if a.fake else []
-        blocks = {
-            "think": [sys.executable, "-m", "wattnot.longrun.thinking_budget", "--per-tier",
-                      str(a.limit or 2), "--out", str(out / "think")]
-                     + (["--fake"] if a.fake else ["--url", f"{BASE}/chat/completions"]),
-            "agentwaste": [sys.executable, "scripts/agentwaste_gpu_ab.py", "--base-url", BASE, "--reps", "2",
-                           "--out", str(out / "agentwaste")] + fk,
-            "langchain": [sys.executable, "scripts/langchain_pass.py", "--dataset", "own", "--n",
-                          str(a.limit or 20), "--out", str(out / "langchain")]
-                         + (["--fake"] if a.fake else ["--base-url", BASE]),
-            "eye": [sys.executable, "-m", "wattnot.vision.run", "--base-url", BASE, "--out", str(out / "eye"),
-                    "--budget-s", "90"] + fk,
-            "spoken": [sys.executable, "-m", "wattnot.spokenanswer.run", "--base-url", BASE, "--out",
-                        str(out / "spoken"), "--budget-s", "90"] + fk,
-        }
+        blocks = block_cmds(a.limit, a.fake, out)
         feat = {"agentwaste": "context_saver", "langchain": "waste_guard", "eye": "eye_check",
                 "spoken": "hearing_check", "think": "thinking_budget"}
         S["blocks"] = {}
         for k, cmd in blocks.items():
             if k in a.skip:
                 continue
-            tmo = min(900, left() - 240)
+            tmo = min(block_cap(k, a.limit), left() - 240)
             if tmo < 120:
                 S["blocks"][k] = {"rc": None, "skipped": f"{left() / 60:.1f} min left"}
                 fail(feat[k], f"{k} GPU block skipped: container time ran out")

@@ -261,9 +261,10 @@ def run_flow(a) -> int:
               fn=lambda: _lint(receipt))
         F.run("eu-report", ["EU efficiency report"], "off-gpu-live", GLL,
               cli + ["report", "eu", "--receipts", str(receipt), "--out", str(out / "eu/eu")])
-        F.run("certificate", ["Mock efficiency certificate"], "off-gpu-live", "MOCK",
+        F.run("certificate", ["Efficiency certificate"], "off-gpu-live", "MEASURED",
               cli + ["certificate", "mint", "--receipt", str(receipt), "--out",
-                     str(out / "certificate")])
+                     str(out / "certificate")],
+              fn=lambda: _cert_note(out / "certificate"))
     F.run("flow-verify", ["Flow receipt offline signature"], "off-gpu-live", "MEASURED",
           fn=lambda: _flow_verify(fr))
     F.run("receipts-api", ["A8 receipts REST API"], "off-gpu-live", GLL,
@@ -288,6 +289,21 @@ def _copy(src: Path, dst: Path, note: str) -> str:
     dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dst)
     return note
+
+
+def _cert_note(cdir: Path) -> str:
+    """Report what the certificate step produced: a minted certificate, or an honest
+    "not issued" statement when the run's saving is not statistically shown (declined, not
+    failed). Reads the mint command's own output files."""
+    minted = sorted(cdir.glob("WNC-*.json"))
+    if minted:
+        c = json.loads(minted[-1].read_text())
+        return f"minted {c.get('serial')} [{c.get('status')}]"
+    declined = sorted(cdir.glob("not-issued-*.json"))
+    if declined:
+        d = json.loads(declined[-1].read_text())
+        return f"not issued (declined): grade {d.get('receipt', {}).get('grade')}"
+    return "no certificate produced"
 
 
 def _codemode(out: Path) -> str:
@@ -370,7 +386,12 @@ def _flow_receipt(F: Flow, receipt: Path | None) -> str:
 
 
 def _offline_key(out: Path) -> Path:
-    """The local test key if present; on a fresh clone, a throwaway Ed25519 key in out/."""
+    """Live rounds (WATTNOT_REQUIRE_CERT_KEY=1): the WattNot certificate key, fail closed.
+    Otherwise the local test key if present; on a fresh clone, a throwaway Ed25519 key in out/."""
+    import os
+    if os.environ.get("WATTNOT_REQUIRE_CERT_KEY") == "1":
+        from wattnot.receipt.certkey import require_cert_key
+        return require_cert_key()
     if TEST_KEY.exists():
         return TEST_KEY
     from cryptography.hazmat.primitives import serialization

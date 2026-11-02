@@ -23,7 +23,7 @@ OUT = "cloud-receipts"
 def _src(p: argparse.ArgumentParser, *, record: bool = False) -> None:
     g = p.add_mutually_exclusive_group()
     g.add_argument("--live", action="store_true",
-                   help="call Baseten (key from env BASETEN_API_KEY; spends real money)")
+                   help="call Baseten (key from env BASETEN_METRICS_KEY; spends real money)")
     g.add_argument("--fixture", help="replay a fixture file, no network")
     g.add_argument("--demo", action="store_true", help="replay the bundled SYNTHETIC fixture")
     if record:

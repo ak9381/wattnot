@@ -1,6 +1,6 @@
 // Meta Tools v5 UI Component
 // Renders glass card for Muse Wonder, Muse Code, and the quality judge (hosted Muse Spark; Llama 3.1 8B fallback).
-// Palette: lavender scale (#DCD6E4 to #171724) on black, Montserrat headings, Fira numbers.
+// Palette: lavender scale (#F3F0F7 to #171724) on black, Montserrat headings, Fira numbers.
 
 function escapeHtml(str) {
   if (typeof str !== "string") return str == null ? "" : String(str);

@@ -2,7 +2,7 @@ import json
 
 from wattnot.health import check_all, log_fallback
 
-ENV = {"META_API_KEY": "k", "BASETEN_API_KEY": "k", "MODAL_ENDPOINT_URL": "https://m.example",
+ENV = {"META_API_KEY": "k", "BASETEN_METRICS_KEY": "k", "MODAL_ENDPOINT_URL": "https://m.example",
        "MODAL_PROXY_TOKEN_ID": "i", "MODAL_PROXY_TOKEN_SECRET": "s"}
 
 
@@ -36,5 +36,5 @@ def test_model_missing_and_runtime_log():
 
 
 def test_key_never_in_ledger():
-    led = check_all(env={**ENV, "BASETEN_API_KEY": "SECRET123"}, opener=lambda r, t: (500, b""))
+    led = check_all(env={**ENV, "BASETEN_METRICS_KEY": "SECRET123"}, opener=lambda r, t: (500, b""))
     assert "SECRET123" not in json.dumps(led)

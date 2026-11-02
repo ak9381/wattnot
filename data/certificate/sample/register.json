@@ -1,10 +1,10 @@
 {
   "format": "wattnot.cert-register/1",
-  "label": "MOCK",
+  "label": "NOT TRADABLE",
   "note": "Local file. Nothing here is public and nothing here is tradable.",
   "entries": [
     {
-      "serial": "WNC-MOCK-0001",
+      "serial": "WNC-0001",
       "minted_at": "2026-10-28T10:00:00+00:00",
       "receipt_sha256": "57a3a95761b4e746dcf44dcace104eeedd212682ea75c90ba7ab641362fc4813",
       "claim_keys": [
@@ -12,11 +12,11 @@
         "run:run_20261028_100000_a00002"
       ],
       "grade": "ESTIMATE",
-      "label": "MOCK",
-      "certificate_sha256": "604615bab00ece698aeb731a057b31cf535e80ddf5115b073bec95b131493bd2",
+      "label": "ESTIMATE",
+      "certificate_sha256": "652bc8934140ad6745e17e0c141abe006e87a4cd1e18702f3a693dec566a92c3",
       "prev_sha256": null,
       "integrity": {
-        "sha256": "7aff1e08194d76a3924998d2f89c45ca35ef68db4769f6289519c45ef114e4f6"
+        "sha256": "df8d10d45a183b22f718ebd1f602d8aff6ae3b61ef7f4c001f34c8a287e7da6f"
       }
     }
   ]

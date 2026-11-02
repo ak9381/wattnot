@@ -1,0 +1,119 @@
+/* graph.html chrome: one compact toolbar directly below the shared site header,
+   a right-side legend drawer, and the footer pinned to the page end. Scoped to
+   body.story (graph.html is the only page that carries it), so no other page moves. */
+
+/* ---- the single graph toolbar: fixed directly below the header, never over the canvas.
+   graphbar.js sets its `top` to the header bottom and pushes #stage below its bottom. */
+.gbar{
+  position:fixed; left:0; right:0; z-index:29;
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:7px clamp(12px,3vw,24px);
+  background:rgba(8,11,16,.94);
+  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--hair,rgba(255,255,255,.08));
+  font:12px var(--mono,ui-monospace,monospace);
+}
+@media (min-width:1100px){ .gbar{ left:262px; } }           /* clear the persistent left sidebar */
+/* The canvas sits left:0 by default; at >=1100px the persistent sidebar is shown, so
+   push #stage right by the same 262px as the toolbar above it. graphbar.js only sets
+   #stage's top, so its left comes from here. Below 1100px the sidebar slides out, so
+   the canvas keeps the full width. */
+@media (min-width:1100px){ body.story.wn-has-side #stage{ left:262px; } }
+.gbar .gbar-grp{ display:flex; gap:4px; align-items:center; }
+.gbar button{ font:12px var(--mono,ui-monospace,monospace); color:var(--ink2,#cdd3dd);
+  background:transparent; border:1px solid var(--hair2,rgba(255,255,255,.16)); border-radius:6px;
+  padding:4px 9px; cursor:pointer; line-height:1.4; }
+.gbar button:hover{ border-color:var(--dim,#8a93a3); color:var(--ink,#fff); }
+.gbar button.on,.gbar .seg button[aria-pressed="true"]{ border-color:var(--cy,#7fd1c9); color:var(--cy,#7fd1c9); }
+.gbar .seg{ display:flex; gap:2px; border:1px solid var(--hair2,rgba(255,255,255,.16)); border-radius:7px; padding:2px; }
+.gbar .seg button{ border:1px solid transparent; }
+.gbar-chip{ padding:3px 9px; border-radius:999px; border:1px solid var(--hair2,rgba(255,255,255,.16)); color:var(--dim,#8a93a3); }
+.gbar-chip.live{ color:var(--green,#7fd18a); border-color:rgba(127,209,138,.4); }
+.gbar #gMeta{ margin-left:auto; }                            /* push the badge group to the top-right */
+.gbar-badge.on{ border-color:var(--cy,#7fd1c9); color:var(--cy,#7fd1c9); }
+.gbar-legend.on{ border-color:var(--cy,#7fd1c9); color:var(--cy,#7fd1c9); }
+
+/* ---- info drawer (Meta models / WattNot features): shares .legdrawer position + chrome,
+   but starts below the toolbar so its badges stay clickable while it is open. */
+.legdrawer.infodrawer{ top:var(--wn-gbar-bottom,112px); }
+.infodrawer .info-arm{ margin:0 0 10px; }
+.infodrawer .info-arm button{ font:12px var(--mono,monospace); color:var(--ink2,#cdd3dd);
+  background:transparent; border:1px solid transparent; border-radius:6px; padding:4px 10px; cursor:pointer; }
+.infodrawer .info-arm button[aria-pressed="true"]{ border-color:var(--cy,#7fd1c9); color:var(--cy,#7fd1c9); }
+.infodrawer .info-note{ font-size:12px; color:var(--dim,#8a93a3); margin:0 0 12px; line-height:1.5; }
+.infodrawer .info-item{ padding:9px 10px; margin:0 0 7px; border-radius:9px; border:1px solid var(--hair2,rgba(255,255,255,.14));
+  background:rgba(255,255,255,.02); }
+.infodrawer .info-item b{ display:block; font:600 13px Inter,system-ui,sans-serif; color:var(--ink,#fff); }
+.infodrawer .info-item .info-role{ display:block; font-size:11.5px; color:var(--ink2,#cdd3dd); margin-top:1px; }
+.infodrawer .info-item .info-reason{ display:block; font-size:11.5px; color:var(--dim,#8a93a3); margin-top:3px; line-height:1.4; }
+.infodrawer .info-item.wn-inel{ opacity:.5; }                /* ineligible: greyed, reason stays readable */
+.infodrawer .info-item.wn-inel .info-reason{ color:#c58; }
+.infodrawer .info-item.live{ border-color:var(--cy,#7fd1c9); box-shadow:0 0 0 1px var(--cy,#7fd1c9) inset; }
+.infodrawer .infolist[data-arm="without_wattnot"] .info-item:not(.wn-inel){ opacity:.55; } /* baseline arm: features are off */
+
+/* ---- footer: a full-width black bar pinned to the page end. The body.story footer pin
+   now lives in chrome.css so it applies to every body.story page, not only this one. */
+body.story #rail.rail{ display:none; }                       /* the empty duplicate bottom bar */
+body.story .wn-elig{ display:none; }                         /* the old config/arm bar — folded into the toolbar above */
+
+/* The toolbar drives the canvas now, so drop the floating control cluster. */
+body.story #amap .pc-controls{ display:none; }
+
+/* ---- every legend lives in the drawer: keep them out of the page until Legend is pressed. */
+body.story .lab-legend{ display:none; }
+body.story .wn-legend{ display:none; }
+
+/* ---- right-side legend drawer: starts below the header, ends above the footer. */
+.legdrawer{
+  position:fixed; top:var(--wn-drawer-top,64px); right:0; bottom:var(--wn-drawer-bottom,12px);
+  width:min(360px,92vw); z-index:46;
+  background:rgba(23,23,36,.9); -webkit-backdrop-filter:blur(24px) saturate(170%); backdrop-filter:blur(24px) saturate(170%);
+  border-left:1px solid rgba(255,255,255,.14); box-shadow:-16px 0 48px rgba(0,0,0,.5);
+  border-radius:14px 0 0 14px; overflow:auto;
+  transform:translateX(104%); transition:transform .25s ease; visibility:hidden;
+}
+.legdrawer.open{ transform:none; visibility:visible; }
+.legdrawer-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px 8px;
+  position:sticky; top:0; background:rgba(23,23,36,.96); }
+.legdrawer-head b{ font:600 15px Inter,system-ui,sans-serif; color:var(--ink,#fff); }
+.legdrawer-x{ font:12px var(--mono,monospace); color:var(--ink2,#cdd3dd); background:transparent;
+  border:1px solid var(--hair2,rgba(255,255,255,.16)); border-radius:6px; padding:4px 10px; cursor:pointer; }
+.legdrawer-body{ padding:4px 16px 18px; }
+.legdrawer .leg-sec{ margin:0 0 16px; }
+.legdrawer .leg-sec h4{ margin:0 0 7px; font:600 12px var(--mono,monospace); letter-spacing:.03em; color:var(--dim,#8a93a3); }
+.legdrawer .leg-row{ display:flex; align-items:center; gap:8px; margin:3px 0; font-size:12.5px; color:var(--ink2,#cdd3dd); }
+.legdrawer .leg-row .pdot{ width:9px; height:9px; }
+.legdrawer .leg-row b{ min-width:86px; }
+.legdrawer p{ font-size:12.5px; color:var(--ink2,#cdd3dd); margin:4px 0; line-height:1.5; }
+.legdrawer #afil{ display:flex; flex-wrap:wrap; gap:6px; }
+
+/* Re-show legend content once it is INSIDE the drawer (overrides the page-level hide above). */
+body.story #legdrawer .wn-legend{ display:block; }
+body.story #legdrawer .lab-legend{ display:inline-flex; }
+
+/* ---- full screen: the live graph (#amap) fills the viewport above everything; same palette */
+body.story.wn-graph-full #stage #amap{ position:fixed !important; inset:0 !important; top:0 !important; left:0 !important;
+  width:100vw !important; height:100vh !important; z-index:1000; background:var(--bg,#0b0d12); }
+body.story.wn-graph-full{ overflow:hidden; }
+.gfull-x{ position:fixed; top:12px; right:14px; z-index:1001; width:36px; height:36px; border-radius:8px;
+  font:20px/1 var(--mono,ui-monospace,monospace); color:var(--ink,#fff); cursor:pointer;
+  background:rgba(8,11,16,.9); border:1px solid var(--hair2,rgba(255,255,255,.16)); }
+.gfull-x:hover,.gfull-x:focus-visible{ border-color:var(--cy,#7fd1c9); color:var(--cy,#7fd1c9); }
+body.story.wn-graph-full #stage{ z-index:1000 !important; transform:none !important; filter:none !important; }
+
+/* ---- marching ants on the live graph: golden and glowing, normal and full-screen views. */
+body.story{ --wn-ant:#FFC940; --wn-ant2:#F5B700; }
+body.story .av-edges .e{ stroke:var(--ln2,#3B3A54); stroke-width:1.8; opacity:1; }
+body.story .av-edges .e.flow{ stroke:var(--wn-ant); stroke-width:3.2; opacity:1; stroke-dasharray:8 7;
+  filter:drop-shadow(0 0 2px var(--wn-ant)) drop-shadow(0 0 8px var(--wn-ant2)); }
+body.story .av-edges .e.done{ stroke:var(--wn-ant2); stroke-width:2.2; opacity:.8;
+  filter:drop-shadow(0 0 3px rgba(245,183,0,.5)); }
+
+/* full-screen camera: smooth glides for the automatic zoom out / in, and the small mode switch */
+body.story.wn-graph-full #amap .pc-inner.wn-glide{ transition:transform 1.2s cubic-bezier(.4,0,.2,1); }
+.gfull-cam{ position:fixed; top:12px; right:60px; z-index:1001; display:flex; gap:2px; padding:2px;
+  background:rgba(8,11,16,.9); border:1px solid var(--hair2,rgba(255,255,255,.16)); border-radius:8px; }
+.gfull-cam button{ font:12px var(--mono,ui-monospace,monospace); color:var(--ink2,#cdd3dd); background:transparent;
+  border:1px solid transparent; border-radius:6px; padding:6px 10px; cursor:pointer; }
+.gfull-cam button[aria-pressed="true"]{ border-color:var(--wn-ant,#FFC940); color:var(--wn-ant,#FFC940); }
+@media (prefers-reduced-motion:reduce){ body.story.wn-graph-full #amap .pc-inner.wn-glide{ transition:none; } }

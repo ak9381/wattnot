@@ -103,12 +103,45 @@ def _load_font(size: int):
         return ImageFont.load_default()
 
 
+# Gauge geometry (module level so the readability test can reproduce the needle tip exactly).
+GAUGE_RADIUS_FRAC = 0.34
+# Sweep the 0..100 scale over a 270-degree arc. 0 at lower-left (225 deg measured anticlockwise
+# from +x in screen space, i.e. pointing down-left), sweeping clockwise through the top to 100 at
+# lower-right.
+GAUGE_START_DEG = 225.0   # angle (CCW from +x, y-down screen) for value 0
+GAUGE_SWEEP_DEG = -270.0  # clockwise sweep across the full scale
+# Major ticks run from radius*0.86 (= radius - 0.14*radius) to the outer edge radius*1.0. The needle
+# tip runs across that band to near the outer edge so it reads like a real gauge pointing AT the
+# tick, not stopping short of it.
+NEEDLE_TIP_FRAC = 0.97
+NEEDLE_TAIL_FRAC = 0.14   # short counterweight tail behind the hub
+GAUGE_MAJOR_STEP = 20     # labelled major ticks (0, 20, 40, 60, 80, 100)
+GAUGE_MINOR_STEP = 10     # unlabelled minor ticks; no finer divisions
+
+
+def _gauge_angle(value: float) -> float:
+    return math.radians(GAUGE_START_DEG + GAUGE_SWEEP_DEG * (value / 100.0))
+
+
+def _gauge_point(cx: float, cy: float, r: float, value: float) -> tuple[float, float]:
+    a = _gauge_angle(value)
+    # Screen coords: y grows downward, so subtract the sine term.
+    return (cx + r * math.cos(a), cy - r * math.sin(a))
+
+
+def needle_tip(value: float, size: int = 512) -> tuple[float, float]:
+    """The pixel the needle tip lands on for ``value`` - the single source of truth for the tip."""
+    cx = cy = size / 2
+    return _gauge_point(cx, cy, size * GAUGE_RADIUS_FRAC * NEEDLE_TIP_FRAC, value)
+
+
 def render_gauge(value: int = 60, size: int = 512) -> bytes:
     """Draw a clean analog gauge (scale 0..100) with the needle dead-on ``value``.
 
     Deterministic: no randomness, no time, no network — identical bytes every run.
-    Returns PNG bytes. The needle lands exactly on the labelled major tick for
-    ``value`` so the reading is unambiguous.
+    Returns PNG bytes. The needle is a pointed blade running across the major-tick band to near
+    the outer edge of the labelled tick for ``value`` (with a short counterweight tail), so the
+    reading is unambiguous - it clearly points AT the tick rather than stopping short of it.
     """
     from PIL import Image, ImageDraw
 
@@ -116,20 +149,13 @@ def render_gauge(value: int = 60, size: int = 512) -> bytes:
     draw = ImageDraw.Draw(img)
 
     cx = cy = size / 2
-    radius = size * 0.42
-    # Sweep the 0..100 scale over a 270-degree arc. 0 at lower-left (225 deg
-    # measured anticlockwise from +x in screen space, i.e. pointing down-left),
-    # sweeping clockwise through the top to 100 at lower-right.
-    start_deg = 225.0  # angle (CCW from +x, y-down screen) for value 0
-    sweep_deg = -270.0  # clockwise sweep across the full scale
+    radius = size * GAUGE_RADIUS_FRAC
 
     def angle_for(v: float) -> float:
-        return math.radians(start_deg + sweep_deg * (v / 100.0))
+        return _gauge_angle(v)
 
     def point(v: float, r: float) -> tuple[float, float]:
-        a = angle_for(v)
-        # Screen coords: y grows downward, so subtract the sine term.
-        return (cx + r * math.cos(a), cy - r * math.sin(a))
+        return _gauge_point(cx, cy, r, v)
 
     # Dial face: outer circle + a faint inner ring.
     draw.ellipse([cx - radius, cy - radius, cx + radius, cy + radius],
@@ -141,26 +167,47 @@ def render_gauge(value: int = 60, size: int = 512) -> bytes:
     num_font = _load_font(int(size * 0.072))
     unit_font = _load_font(int(size * 0.06))
 
-    # Ticks: minor every 2, major every 10 with a large bold numeral.
-    for v in range(0, 101, 2):
-        is_major = (v % 10 == 0)
+    # Ticks: few divisions so the reading is unambiguous. Labelled major ticks every 20 (the true
+    # value sits ON one), unlabelled minor ticks every 10, nothing finer: there is no 2-unit
+    # division for a model to land one step off on (it misread the old 2-unit dial as 62).
+    for v in range(0, 101, GAUGE_MINOR_STEP):
+        is_major = (v % GAUGE_MAJOR_STEP == 0)
         r_outer = radius
         r_inner = radius - (radius * (0.14 if is_major else 0.07))
         x1, y1 = point(v, r_inner)
         x2, y2 = point(v, r_outer)
         draw.line([x1, y1, x2, y2], fill="black",
-                  width=max(3, size // 150) if is_major else max(1, size // 350))
+                  width=max(5, size // 100) if is_major else max(2, size // 250))
         if is_major:
-            lx, ly = point(v, radius * 0.64)
+            lx, ly = point(v, radius * 1.22)  # outside the dial: the needle never covers a label
             label = str(v)
             bbox = draw.textbbox((0, 0), label, font=num_font)
             w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
             draw.text((lx - w / 2 - bbox[0], ly - h / 2 - bbox[1]), label,
                       fill="black", font=num_font)
 
-    # Needle: bold line from centre to just inside the target tick + centre hub.
-    nx, ny = point(value, radius * 0.86)
-    draw.line([cx, cy, nx, ny], fill=(200, 0, 0), width=max(4, size // 90))
+    # Needle: a shaft with an arrowhead and a short counterweight tail. The arrowhead runs across
+    # the major-tick band to a sharp tip near the outer edge of the target tick, so it reads like a
+    # real gauge pointing AT the tick (not stopping short of it, and not a thin sliver misread as
+    # the next minor division).
+    a = angle_for(value)
+    ux, uy = math.cos(a), -math.sin(a)           # unit vector along the needle (screen coords)
+    px, py = -uy, ux                              # perpendicular, for the needle width
+    shaft_hw = max(6, size // 70)                # half-width of the shaft
+    head_hw = max(12, size // 40)                # half-width where the arrowhead flares out
+    head_frac = 0.80                             # the arrowhead starts here and tapers to the tip
+
+    def axis(frac: float) -> tuple[float, float]:
+        return (cx + ux * radius * frac, cy + uy * radius * frac)
+
+    def off(pt: tuple[float, float], s: float) -> tuple[float, float]:
+        return (pt[0] + px * s, pt[1] + py * s)
+
+    tip = axis(NEEDLE_TIP_FRAC)
+    sh = axis(head_frac)
+    tail = axis(-NEEDLE_TAIL_FRAC)
+    draw.polygon([off(tail, shaft_hw), off(sh, shaft_hw), off(sh, head_hw), tip,
+                  off(sh, -head_hw), off(sh, -shaft_hw), off(tail, -shaft_hw)], fill=(200, 0, 0))
     hub = max(6, size // 42)
     draw.ellipse([cx - hub, cy - hub, cx + hub, cy + hub], fill="black")
 
@@ -201,7 +248,10 @@ def _gen_gauge() -> int:
     manifest = json.loads((ASSETS / "answers.json").read_text(encoding="utf-8"))
     note = ("Rendered deterministically by scripts/gen_vision_assets.py --gauge "
             "with PIL (not a photo, not the image model); needle on the labelled "
-            "60 tick.")
+            "60 tick. Answer unchanged (60). Second redraw after the live Baseten "
+            "smoke still read 62: the dial now has labelled ticks every 20 and "
+            "unlabelled ticks every 10 only (no 2-unit divisions), and a thicker "
+            "needle, so 62 is not a reading the dial can show. Not re-verified live.")
     for item in manifest["items"]:
         if item["id"] == "gauge-reading":
             item["file"] = "gauge-reading.webp"

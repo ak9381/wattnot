@@ -28,16 +28,11 @@
   html,body{margin:0;background:var(--v-bg);color:var(--v-cream);font:16px/1.55 var(--v-body)}
   body{
     min-height:100vh;
-    background:
-      radial-gradient(900px 520px at 15% -5%, rgba(59,58,84,.40), transparent 65%),
-      radial-gradient(800px 500px at 85% 10%, rgba(79,74,99,.25), transparent 60%),
-      radial-gradient(700px 600px at 50% 120%, rgba(46,43,68,.30), transparent 65%),
-      var(--v-bg);
-    background-attachment:fixed;
+    background:var(--v-bg);
   }
   a{color:var(--v-peach)}
   h1,h2,h3,h4{margin:0;font-family:var(--v-head);letter-spacing:-.01em;color:var(--v-cream)}
-  h1{font-size:28px;font-weight:700}
+  h1{font-size:28px;font-weight:600}
   p{margin:.35em 0;color:var(--v-sub)}
   header.top{
     position:relative;z-index:30;display:flex;gap:16px;align-items:center;flex-wrap:wrap;
@@ -76,12 +71,11 @@
     margin-bottom:18px;border-bottom:1px solid var(--v-line);padding-bottom:12px;
   }
   .hero-kicker{
-    font-family:var(--v-head);font-size:12px;font-weight:700;letter-spacing:.12em;
-    text-transform:uppercase;color:var(--v-peach);display:flex;align-items:center;gap:8px;
+    font-family:var(--v-head);font-size:12px;font-weight:700;letter-spacing:.01em;
+    text-transform:none;color:var(--v-peach);display:flex;align-items:center;gap:8px;
   }
   .hero-kicker::before{
     content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--v-peach);
-    box-shadow:0 0 10px var(--v-glow);
   }
   .hero-grid{
     display:grid;grid-template-columns:repeat(4,1fr);gap:20px;align-items:stretch;
@@ -94,7 +88,7 @@
     border-radius:14px;padding:16px 18px;
   }
   .hero-item .label{
-    font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--v-mut);margin-bottom:8px;
+    font-size:12px;font-weight:600;letter-spacing:.01em;text-transform:none;color:var(--v-mut);margin-bottom:8px;
   }
   .hero-item .hero-val{
     font-family:var(--v-num);font-size:30px;font-weight:700;color:var(--v-cream);line-height:1.15;
@@ -120,7 +114,7 @@
   }
   .hero-dl-btn:hover{
     background:rgba(178,166,195,.32);border-color:var(--v-peach);
-    box-shadow:0 0 16px rgba(178,166,195,.25);color:#fff;text-decoration:none;
+    color:#fff;text-decoration:none;
   }
   .hero-dl-note{
     font-size:12px;color:var(--v-mut);margin-top:6px;text-align:center;
@@ -145,7 +139,7 @@
     z-index:2;
   }
   .breakdown-title{
-    font-size:14px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+    font-size:14px;font-weight:600;letter-spacing:.01em;text-transform:none;
     color:var(--v-mut);margin-bottom:14px;display:flex;align-items:center;gap:10px;
   }
   .breakdown-title::after{
@@ -161,7 +155,7 @@
   }
   .bd-card:hover{
     transform:translateY(-2px);border-color:var(--v-line2);
-    box-shadow:0 12px 36px rgba(0,0,0,.45),0 0 16px rgba(178,166,195,.12),inset 0 1px 0 rgba(220,214,228,.16);
+    box-shadow:0 12px 36px rgba(0,0,0,.45),inset 0 1px 0 rgba(220,214,228,.16);
   }
   .bd-card:focus-visible{
     outline:2px solid var(--v-peach);outline-offset:2px;
@@ -175,11 +169,11 @@
     background:rgba(46,43,68,.6);border:1px solid var(--v-line);flex:none;
   }
   .bd-card.active-num .bd-card-num{
-    background:var(--v-peach);color:var(--v-bg);box-shadow:0 0 10px var(--v-glow);border-color:var(--v-peach);
+    background:var(--v-peach);color:var(--v-bg);border-color:var(--v-peach);
   }
   .bd-card-name{
-    font-family:var(--v-head);font-weight:600;font-size:10px;letter-spacing:0;
-    text-transform:uppercase;color:var(--v-cream);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    font-family:var(--v-head);font-weight:600;font-size:10px;letter-spacing:.01em;
+    text-transform:none;color:var(--v-cream);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .bd-card-val{
     font-family:var(--v-num);font-size:20px;font-weight:700;color:var(--v-cream);
@@ -212,7 +206,7 @@
   }
   aside.side.on{transform:none}
   aside.side h2{font-family:var(--v-head);font-size:22px;margin-bottom:8px;color:var(--v-cream)}
-  aside.side h4{color:var(--v-peach);font-size:12px;text-transform:uppercase;letter-spacing:.09em;margin:18px 0 6px;font-family:var(--v-head)}
+  aside.side h4{color:var(--v-peach);font-size:12px;text-transform:none;letter-spacing:.01em;margin:18px 0 6px;font-family:var(--v-head)}
   aside.side p{color:var(--v-cream);line-height:1.55}
   aside.side .btn{
     float:right;background:rgba(142,122,158,.2);border:1px solid var(--v-line2);color:var(--v-cream);
@@ -275,7 +269,7 @@
 
   <!-- 5. Cooling Hotspots Card (SAM 3.1) -->
   <div id="live-mount" style="margin-top:28px"></div>
-  <div id="hotspot-mount" style="margin-top:28px"></div>
+  <div id="hotspot-mount" style="margin-top:28px" hidden></div>
 
   <!-- 5a. Eye test: served vision model reads SYNTHETIC known-answer images -->
   <div id="eyetest-mount" style="margin-top:28px" hidden></div>
@@ -293,11 +287,21 @@
   <div id="codemode-mount" style="margin-top:28px"></div>
   <div id="codemode-sandbox-mount" style="margin-top:28px"></div>
 
-  <!-- 6. EU report: full page lives at eu.html (EU Compliance tab) -->
-
-  <!-- 4. Meta Tools v5 Card: sample values, kept below the real run data -->
-  <h2 class="wn-sample-h">Sample data · not from this run</h2>
-  <div id="metatools-mount" style="margin-top:12px"></div>
+  <section class="wn-sources" id="wn-sources" aria-labelledby="srcH">
+    <h2 id="srcH">Where these numbers come from</h2>
+    <p>Every number above is read from this run's receipt, a JSON file written when the run finished. The signature file next to it proves the receipt has not been edited since. Open either to check any figure yourself.</p>
+    <p id="srcLinks" class="wn-src-links"></p>
+    <p>Each number carries a tag that says how it was obtained:</p>
+    <ul class="wn-src-tags" data-wn-keep>
+      <li><span class="wn-lab MEASURED"></span><b>Measured:</b> read from the GPU power meter or counted directly in the run.</li>
+      <li><span class="wn-lab ESTIMATE"></span><b>Estimate:</b> worked out from measured numbers plus one stated assumption, such as a price per token.</li>
+      <li><span class="wn-lab SIMULATED"></span><b>Simulated:</b> produced by a model of the hardware, not measured.</li>
+      <li><span class="wn-lab SYNTHETIC"></span><b>Synthetic:</b> test inputs made up on purpose so the right answer is known.</li>
+      <li><span class="wn-lab MOCK"></span><b>Mock:</b> placeholder values that only show the layout.</li>
+      <li><span class="wn-lab REPLAY"></span><b>Replay:</b> played back from saved records; nothing new was run.</li>
+    </ul>
+    <div id="wn-real-runs"></div>
+  </section>
 </main>
 
 <div class="scrim" id="scrim" hidden></div>
@@ -307,5 +311,6 @@
 </aside>
 <script type="module" src="report.js"></script>
 <script type="module" src="live.js"></script>
+<script type="module" src="realruns.js"></script>
 </body>
 </html>

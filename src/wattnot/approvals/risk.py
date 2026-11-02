@@ -149,6 +149,12 @@ def classify(proposal_or_spec: Mapping, cfg: RiskConfig | None = None, *,
         if not isinstance(before, Mapping) or not before:
             return _risk("high", ["no current policy to compare with"], {"kind": kind})
         return _risk("low", ["no hardware touched"], {"kind": kind})
+    if kind == m.REASONING_EFFORT:
+        # A per-request reasoning-effort knob (effort routing): reversible, request-level, touches
+        # no hardware, so it goes through on its own rather than waiting for a person.
+        eff = change.get("reasoning_effort")
+        return _risk("low", ["request-level reasoning-effort knob, reversible, no hardware touched"],
+                     {"kind": kind, "reasoning_effort": eff, "step_up": change.get("step_up")})
     return _risk("high", [f"unknown kind {kind!r}; a person decides"], {"kind": kind})
 
 

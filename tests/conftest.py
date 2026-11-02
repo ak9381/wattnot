@@ -16,6 +16,7 @@ def _meta_mock_in_tests(monkeypatch):
     monkeypatch.setenv("WATTNOT_META_MOCK", "1")
     monkeypatch.delenv("META_API_KEY", raising=False)
     monkeypatch.setenv("WATTNOT_MUSE_AUTH", "/nonexistent/muse-auth.json")
+    monkeypatch.setenv("WATTNOT_NO_REMOTE_PROBE", "1")   # no Modal container from unit tests
 
 
 # Slow tests (~20 s each). Quick feature check: python -m pytest -q -m "not slow" <files>.

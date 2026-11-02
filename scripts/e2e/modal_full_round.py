@@ -40,7 +40,7 @@ def _load_stage():
 full_stage = _load_stage()
 
 DATA = ROOT / "data" / "modal-full-1101"
-STAGE_CAP_USD = 60.0
+STAGE_CAP_USD = 60.0   # raised from $40 with Akash's yes (1 Nov, 5:39 PM IST); covers the later combined stage too
 SOFT_META_USD = 100.0
 SPEND = DATA / "stage_spend.json"
 KEY = ROOT / "verifier" / "samples" / "test-key.pem"
@@ -96,7 +96,47 @@ def app_running() -> list[str] | None:
     return out
 
 
+OWNER = Path(os.environ.get("WATTNOT_MODAL_OWNER", "/tmp/wattnot-modal-owner.json"))
+
+
+def foreign_owner() -> dict | None:
+    """The paid round that owns the live wattnot-full-stage app, if it is another live process.
+    r04b was stopped from outside at 04:28 IST: every stop path matched apps by NAME, so any other
+    script's teardown could kill a running round. Now nothing stops the app while another live
+    process holds this lock."""
+    try:
+        d = json.loads(OWNER.read_text())
+        pid = int(d["pid"])
+    except Exception:  # noqa: BLE001 - no lock / unreadable lock = no owner
+        return None
+    if pid == os.getpid():
+        return None
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return None
+    except PermissionError:
+        pass
+    return d
+
+
+def take_owner(tag: str):
+    OWNER.write_text(json.dumps({"pid": os.getpid(), "round": tag, "t": time.time()}))
+
+
+def drop_owner():
+    try:
+        if json.loads(OWNER.read_text()).get("pid") == os.getpid():
+            OWNER.unlink()
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def teardown() -> dict:
+    fo = foreign_owner()
+    if fo:
+        return {"stopped": [], "still_running": None, "verified_empty": False,
+                "skipped": f"app owned by live round {fo.get('round')} (pid {fo.get('pid')}); not stopping it"}
     stopped, left = [], None
     for _ in range(5):
         ids = app_running()
@@ -105,10 +145,10 @@ def teardown() -> dict:
             break
         for i in ids or []:
             if i == "UNKNOWN-ID":
-                subprocess.run(["modal", "app", "stop", full_stage.APP_NAME], capture_output=True, timeout=120)
+                subprocess.run(["modal", "app", "stop", "-y", full_stage.APP_NAME], capture_output=True, timeout=120)
                 continue
             try:
-                subprocess.run(["modal", "app", "stop", i], capture_output=True, timeout=120)
+                subprocess.run(["modal", "app", "stop", "-y", i], capture_output=True, timeout=120)
                 stopped.append(i)
             except Exception:  # noqa: BLE001 - keep trying the others, re-checked below
                 pass
@@ -162,7 +202,9 @@ def build_receipt_for(rdir: Path, round_id: str, inner: dict, fake: bool) -> Pat
         "subject": {"model": "meta-models/Muse-Glimmer-30B",
                     "host": {"provider": "modal", "gpu": inner["gpu"], "driver": "recorded"},
                     "mode": "container",
-                    "workload": {"name": "ours92+gsm8k60+humaneval40", "version": "1",
+                    "workload": {"name": "+".join({"ours": "ours92", "gsm8k": "gsm8k60", "humaneval": "humaneval40"}[x]
+                                                  for x in inner.get("sets") or ("ours", "gsm8k", "humaneval")),
+                                 "version": "1",
                                  "n_requests": wo["answers"]}},
         "baseline": {"params": {"power_cap_w": None, **S["without_server"]},
                      "wh_samples": wo["wh_per_item_samples"]["values"],
@@ -186,14 +228,19 @@ def build_receipt_for(rdir: Path, round_id: str, inner: dict, fake: bool) -> Pat
                         "batch_kv": S.get("batch_kv", {}).get("kept"),
                         "fp8": {"kept": S.get("fp8", {}).get("kept"), "gate": S.get("fp8", {}).get("gate")},
                         "limits": S.get("limits"),
-                        "note": "Signed locally with the public TEST key; not published to Rekor."}
+                        "note": ("Signed locally with the public TEST key (fake run); not published to Rekor."
+                                 if fake else "Signed locally with the WattNot certificate key "
+                                 "(ed25519-wattnot, verifier/trusted-keys.json); not published to Rekor.")}
     r["integrity"]["sha256"] = canonical_sha256(r)
     assert verify_hash(r)[0], "hash did not re-seal"
     d = rdir / "sweep"
     d.mkdir(exist_ok=True)
     path = d / f"{r['receipt_id']}.json"
     path.write_text(json.dumps(r, indent=2) + "\n")
-    sign(path, no_rekor=True, key_path=KEY)
+    # live rounds sign with the real certificate key and fail closed without it; only fake runs
+    # (tests, samples) use the public test key
+    from wattnot.receipt.certkey import require_cert_key
+    sign(path, no_rekor=True, key_path=KEY if fake else require_cert_key())
     return path
 
 
@@ -300,6 +347,8 @@ def main(argv=None) -> int:
     ap.add_argument("--round", required=True)
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--skip", default="")
+    ap.add_argument("--sets", nargs="+", default=[],
+                    help="datasets (ours gsm8k humaneval); empty = all three. Public round: --sets gsm8k humaneval")
     ap.add_argument("--fake", action="store_true")
     ap.add_argument("--no-spark", action="store_true")
     ap.add_argument("--live-meta", action="store_true", help="Wonder/SAM/Spark trace live (paid, cents)")
@@ -312,13 +361,15 @@ def main(argv=None) -> int:
     if rdir.exists() and not a.fake:
         print(f"[stop] {rdir} exists; never overwriting a recorded round")
         return 2
-    stage = {"limit": a.limit}
+    stage = {"limit": a.limit, "sets": a.sets or ["ours", "gsm8k", "humaneval"]}
     recovered, state = False, None
-    a.events = (a.events or DATA / f"{tag}.events.jsonl").resolve()
+    # a --fake run keeps its events under data/.../fake/ so it can never sit where a live round writes
+    a.events = (a.events or (DATA / "fake" if a.fake else DATA) / f"{tag}.events.jsonl").resolve()
     a.events.parent.mkdir(parents=True, exist_ok=True)
     if a.fake:
         subprocess.run([sys.executable, "scripts/e2e/modal_full_inner.py", "--fake", "--out", str(rdir),
-                        "--limit", str(a.limit or 2)], cwd=ROOT, check=True)
+                        "--limit", str(a.limit or 2)] + (["--sets", *a.sets] if a.sets else []),
+                       cwd=ROOT, check=True)
     else:
         if os.environ.get(full_stage.GO_ENV) != "1":
             print(f"[stop] set {full_stage.GO_ENV}=1 for a paid round")
@@ -338,12 +389,17 @@ def main(argv=None) -> int:
         if stage_committed() + worst > STAGE_CAP_USD:
             print(f"[stop] stage ${stage_committed():.2f} + worst ${worst:.2f} > ${STAGE_CAP_USD:.0f} cap")
             return 4
+        if foreign_owner():
+            print(f"[stop] another paid round holds {OWNER}; one job at a time")
+            return 4
         reserve(tag, worst)
+        take_owner(tag)
         inc = DATA / "_incoming"
         t0, rc = time.time(), 1
         try:
             rc = subprocess.run(["modal", "run", "modal/full_stage.py::round_", "--round", tag, "--limit",
-                                 str(a.limit), "--skip", a.skip, "--out", str(inc), "--events", str(a.events)], cwd=ROOT,
+                                 str(a.limit), "--skip", a.skip, "--out", str(inc), "--events", str(a.events)]
+                                + (["--sets", ",".join(a.sets)] if a.sets else []), cwd=ROOT,
                                 timeout=cap_s + 900).returncode
         except Exception as e:  # noqa: BLE001 - timeout / CLI missing: still record spend + teardown
             print(f"[fail] modal run: {type(e).__name__}")
@@ -356,6 +412,7 @@ def main(argv=None) -> int:
                 td = teardown()
             except Exception as e:  # noqa: BLE001
                 td = {"verified_empty": False, "error": f"{type(e).__name__}"}
+            drop_owner()
             print(f"[teardown] {json.dumps(td)}")
             if not td["verified_empty"]:
                 print("[ALERT] Modal app still running or unverifiable; stop it by hand: modal app list")
@@ -424,7 +481,8 @@ def main(argv=None) -> int:
     flow = [sys.executable, "-m", "wattnot.flow", "--out", str(rdir / "flow"), "--gpu-dir", str(rdir),
             "--tag", tag] + (["--live-meta"] if a.live_meta else [])
     fr = subprocess.run(flow, cwd=ROOT, capture_output=True, text=True, timeout=3600,
-                        env={**os.environ, "PYTHONPATH": f"{ROOT}:{ROOT / 'src'}"})
+                        env={**os.environ, "PYTHONPATH": f"{ROOT}:{ROOT / 'src'}",
+                             **({} if a.fake else {"WATTNOT_REQUIRE_CERT_KEY": "1"})})
     (rdir / "flow.log").write_text((fr.stdout + fr.stderr)[-100000:])
     stage["flow_rc"] = fr.returncode
     S = inner["steps"]
@@ -485,7 +543,7 @@ def main(argv=None) -> int:
         if (stages.get(st) or {}).get("status") == "error":
             failed.setdefault(fid, f"{st} stage error: {stages[st].get('error')}")
     if fr.returncode != 0:
-        doc["flow_note"] = "flow exited non-zero (see flow.log); the mock certificate refuses a NOISE grade"
+        doc["flow_note"] = "flow exited non-zero (see flow.log); the efficiency certificate now declines a NOISE grade with exit 0, so it is not the cause"
     doc["feature_stages"] = stages
     doc["failed"] = failed
     doc["features"] = gpu_feature_table(failed)

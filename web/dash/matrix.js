@@ -23,7 +23,7 @@ export function roundRow(r) {
     + `<td>${(r.datasets || []).map(esc).join(", ")}</td><td>${(r.arms || []).length === 2 ? "without + with WattNot" : esc((r.arms || []).join(", "))}</td>`
     + `<td>${planned ? labelChip("PLANNED") : `${esc(r.status)} ${labelChip(r.label)}`}</td>`
     + `<td>${cell("accuracy_without")} → ${cell("accuracy_with")}</td><td>${cell("j_per_correct_without")} → ${cell("j_per_correct_with")}</td>`
-    + `<td>${g ? pct(g.agreement) : "–"}</td></tr>`;
+    + `<td data-feature="spark_grades">${g ? pct(g.agreement) : "–"}</td></tr>`;
 }
 
 export function matrixTable(v) {

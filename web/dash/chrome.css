@@ -1,8 +1,8 @@
 /* WattNot Shared Header & Footer Chrome (Dusk & Landing) */
 
-/* Height the sticky header occupies (nav height + top offset + margins).
+/* Height the full-width header bar occupies.
    Used so anchored/scrolled-to content is never hidden beneath the header. */
-:root { --wn-header-h: 84px; }
+:root { --wn-header-h: 64px; }
 
 /* Honour the header when jumping to in-page anchors or scrollIntoView targets. */
 html { scroll-padding-top: var(--wn-header-h); }
@@ -15,24 +15,25 @@ h1, h2, h3,
   scroll-margin-top: var(--wn-header-h);
 }
 
-/* ---- Shared Floating Header ---- */
+/* ---- Shared full-width Header bar (edge to edge, glass) ---- */
 nav.wn-nav.gl {
   position: fixed;
-  top: 14px;
+  top: 0;
   left: 0;
   right: 0;
-  margin: 0 auto;
-  width: min(1160px, calc(100% - 32px));
+  margin: 0;
+  width: 100%;
   z-index: 100;
-  border-radius: 20px;
+  border-radius: 0;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%),
     linear-gradient(0deg, rgba(178, 166, 195, 0.10), rgba(178, 166, 195, 0.10)),
     rgba(27, 23, 40, 0.65);
   backdrop-filter: blur(24px) saturate(170%);
   -webkit-backdrop-filter: blur(24px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   font-family: var(--v-body, "Source Sans 3", Inter, system-ui, sans-serif);
 }
 
@@ -43,7 +44,7 @@ nav.wn-nav.gl {
 }
 
 .wn-nav-inner {
-  height: 50px;
+  height: 52px;
   padding: 0 18px;
   display: flex;
   align-items: center;
@@ -56,7 +57,7 @@ nav.wn-nav.gl {
   font-weight: 700;
   font-size: 19px;
   letter-spacing: 0.01em;
-  color: var(--v-cream, #DCD6E4);
+  color: var(--v-cream, #F3F0F7);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -104,11 +105,11 @@ nav.wn-nav.gl {
   transition: all 0.15s ease;
 }
 .wn-tabs button:hover {
-  color: var(--v-cream, #DCD6E4);
+  color: var(--v-cream, #F3F0F7);
   background: rgba(178, 166, 195, 0.15);
 }
 .wn-tabs button.on {
-  color: var(--v-cream, #DCD6E4);
+  color: var(--v-cream, #F3F0F7);
   background: rgba(178, 166, 195, 0.25);
   border-color: rgba(255, 255, 255, 0.18);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
@@ -132,14 +133,14 @@ nav.wn-nav.gl {
 }
 
 .wn-link:hover {
-  color: var(--v-cream, #DCD6E4);
+  color: var(--v-cream, #F3F0F7);
   background: rgba(220, 214, 228, 0.08);
   border-color: rgba(220, 214, 228, 0.15);
   text-decoration: none;
 }
 
 .wn-link.on, .wn-link[aria-current="page"] {
-  color: var(--v-cream, #DCD6E4);
+  color: var(--v-cream, #F3F0F7);
   background: rgba(178, 166, 195, 0.16);
   border-color: rgba(178, 166, 195, 0.4);
   font-weight: 600;
@@ -177,42 +178,82 @@ nav.wn-nav.gl {
   flex: none;
 }
 
-/* ---- Shared Minimal Glass Footer ---- */
-footer.wn-footer.gl {
-  position: fixed;
-  bottom: 14px;
+/* ---- Shared plain black full-width Footer bar (static at page end) ---- */
+footer.wn-footer.gl,
+body.is-landing footer.wn-footer.gl {
+  position: static;
+  margin: 0;
   left: 0;
   right: 0;
-  margin: 0 auto;
-  width: min(1160px, calc(100% - 32px));
+  width: 100%;
   z-index: 100;
-  border-radius: 20px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%),
-    linear-gradient(0deg, rgba(178, 166, 195, 0.10), rgba(178, 166, 195, 0.10)),
-    rgba(27, 23, 40, 0.65);
-  backdrop-filter: blur(24px) saturate(170%);
-  -webkit-backdrop-filter: blur(24px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  padding: 12px 20px;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0;
+  background: #000;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  height: 56px;
+  min-height: 56px;
+  /* width + negative margins (set by chrome.js) break the bar out of the body's
+     padding so it reaches both viewport edges while staying static in the flow. */
+  width: auto;
+  padding: 0 clamp(16px, 4vw, 40px);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
   font-size: 13px;
   color: var(--v-mut, #8E7A9E);
   font-family: var(--v-body, "Source Sans 3", Inter, system-ui, sans-serif);
-}
-
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  footer.wn-footer.gl {
-    background: #1F1A2F;
-  }
 }
 
 .wn-footer-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
+  flex-wrap: nowrap;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Keep the bar compact on narrow screens: drop the middle credits, keep brand + year + link. */
+@media (max-width: 720px) {
+  .wn-footer-credit, .wn-footer-track,
+  .wn-footer-left .wn-footer-sep { display: none; }
+}
+
+/* body.story pages (e.g. graph.html) are a fixed, full-screen canvas layout with no
+   in-flow content, so a static footer floats up under the header. Pin it to the viewport
+   bottom on every body.story page — robustly, not relying on any per-page override.
+   margin:0 overrides the full-bleed insets chrome.js sets inline (a fixed bar reaches
+   both edges from left:0;right:0 and needs none). */
+body.story footer.wn-footer.gl {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: auto;
+  margin: 0 !important;
+  width: 100%;
+  z-index: 28;
+}
+
+/* Sticky footer for ordinary app pages: the body is a full-height flex column so the
+   footer sits at the bottom of the viewport even when the page content is short. The
+   fixed header, fixed left sidebar (.wn-side) and glow blobs are out of flow, so they
+   are untouched; the left-column padding reserved for the sidebar is kept. body.story
+   (pinned above) and .viewport pages keep their own full-screen layouts. */
+body:not(.is-landing):not(.story):not(:has(.viewport)) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+body:not(.is-landing):not(.story):not(:has(.viewport)) > footer.wn-footer.gl {
+  margin-top: auto;
 }
 
 .wn-footer-left {
@@ -226,7 +267,7 @@ footer.wn-footer.gl {
 .wn-footer-left .wn-logo {
   font-family: var(--v-head, "Montserrat", system-ui, sans-serif);
   font-weight: 700;
-  color: var(--v-cream, #DCD6E4);
+  color: var(--v-cream, #F3F0F7);
   font-size: 15px;
 }
 
@@ -266,7 +307,7 @@ footer.wn-footer.gl {
   flex: none;
 }
 
-.wn-leg-dot.lab-measured { background: var(--v-l-measured, #DCD6E4); }
+.wn-leg-dot.lab-measured { background: var(--v-l-measured, #F3F0F7); }
 .wn-leg-dot.lab-estimate { background: var(--v-l-estimate, #C4B4D6); }
 .wn-leg-dot.lab-mock { background: var(--v-l-mock, #C6B2C2); }
 
@@ -296,7 +337,7 @@ footer.wn-footer.gl {
 }
 
 .wn-footer-gh:hover {
-  color: var(--v-cream, #DCD6E4);
+  color: var(--v-cream, #F3F0F7);
   background: rgba(220, 214, 228, 0.12);
   border-color: rgba(220, 214, 228, 0.3);
   text-decoration: none;
@@ -305,20 +346,21 @@ footer.wn-footer.gl {
 /* ---- Landing Page Specific Styles ---- */
 body.is-landing nav.wn-nav.gl {
   position: fixed;
-  top: 14px;
+  top: 0;
   left: 0;
   right: 0;
-  margin: 0 auto;
-  width: min(1160px, calc(100% - 32px));
-  border-radius: 20px;
+  margin: 0;
+  width: 100%;
+  border-radius: 0;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%),
     linear-gradient(0deg, rgba(178, 166, 195, 0.10), rgba(178, 166, 195, 0.10)),
     rgba(14, 18, 32, 0.55);
   backdrop-filter: blur(24px) saturate(170%);
   -webkit-backdrop-filter: blur(24px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   font-family: "Inter Tight", system-ui, sans-serif;
 }
 
@@ -345,7 +387,7 @@ body.is-landing nav.wn-nav.gl .wn-brand i {
 
 body.is-landing nav.wn-nav.gl .wn-link {
   font-size: 14px;
-  color: #7C8599;
+  color: #C8CCD4;
 }
 
 body.is-landing nav.wn-nav.gl .wn-link:hover {
@@ -359,31 +401,10 @@ body.is-landing nav.wn-nav.gl .wn-link.on {
   background: rgba(255, 255, 255, 0.08);
 }
 
+/* Landing keeps the same plain black bar; only type/colour differ. */
 body.is-landing footer.wn-footer.gl {
-  position: fixed;
-  bottom: 14px;
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  width: min(1160px, calc(100% - 32px));
-  border-radius: 20px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%),
-    linear-gradient(0deg, rgba(178, 166, 195, 0.10), rgba(178, 166, 195, 0.10)),
-    rgba(14, 18, 32, 0.55);
-  backdrop-filter: blur(24px) saturate(170%);
-  -webkit-backdrop-filter: blur(24px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  color: #7C8599;
+  color: #C8CCD4;
   font-family: "Inter Tight", system-ui, sans-serif;
-  padding: 12px 20px;
-}
-
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  body.is-landing footer.wn-footer.gl {
-    background: #0E1220;
-  }
 }
 
 body.is-landing footer.wn-footer.gl .wn-logo {
@@ -396,7 +417,7 @@ body.is-landing footer.wn-footer.gl .wn-footer-track,
 body.is-landing footer.wn-footer.gl .wn-footer-year,
 body.is-landing footer.wn-footer.gl .wn-leg-item,
 body.is-landing footer.wn-footer.gl .wn-footer-note {
-  color: #7C8599;
+  color: #C8CCD4;
 }
 body.is-landing footer.wn-footer.gl .wn-footer-gh {
   color: #F2F5FA;
@@ -410,8 +431,8 @@ body.is-landing footer.wn-footer.gl .wn-footer-gh:hover {
 
 /* ---- App pages padding & glow blobs behind glass cards (#6C5E7C / #8E7A9E / #4F4A63) ---- */
 body:not(.is-landing) {
-  padding-top: 74px;
-  padding-bottom: 110px;
+  padding-top: 64px;
+  padding-bottom: 0;
   box-sizing: border-box;
   background-color: #080B10;
   background-image:
@@ -474,7 +495,9 @@ body:has(.viewport) {
 }
 body:has(.viewport) nav.wn-nav.gl {
   position: relative;
-  margin: 6px auto;
+  margin: 0;
+  width: 100%;
+  border-radius: 0;
   flex: none;
 }
 body:has(.viewport) .bar {

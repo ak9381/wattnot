@@ -60,7 +60,8 @@ function contextSaver() {
 const CONTEXT_PARTS = [["prefix", "Prefix cache hit rate"], ["memcomp", "Memory compression"], ["dupcut", "Tool-output dedup"]];
 
 const params = new URLSearchParams(location.search);
-const RUN_ID = params.get("run") || "run2-llama-350w";
+const RUN_ID = params.get("run") || localStorage.getItem("wn.run") || "run2-llama-350w";
+const IS_REAL = RUN_ID.includes(":");
 
 let STATE = { run: null, bundle: null, receipt: null };
 
@@ -70,7 +71,32 @@ async function getJSON(url) {
   return r.json();
 }
 
+// A real round or UI job picked in the header: show that run's own numbers, each linked to its file.
+async function loadReal() {
+  const fileUrl = (p) => `/api/launch/file?path=${encodeURIComponent(p)}`;
+  let idx = { runs: [] }, rounds = { rounds: [] };
+  try { [idx, rounds] = await Promise.all([getJSON("/api/launch/runs"), getJSON("/api/launch/rounds")]); } catch { /* server offline */ }
+  const meta = idx.runs.find((r) => r.id === RUN_ID);
+  const r = rounds.rounds.find((x) => x.id === RUN_ID);
+  document.querySelectorAll("main > *:not(#lede):not(#wn-real-runs):not(.wn-sources)").forEach((el) => { el.hidden = true; });
+  if (!meta) { $("#lede").innerHTML = `<h1>Run not found</h1><p>No run <code>${esc(RUN_ID)}</code>. Pick another in the header.</p>`; return; }
+  const arm = (k, a) => { const v = r?.arms?.[a]?.[k]; return v == null ? "n/a" : v; };
+  const lbl = (t) => `<span class="v-chip ${esc(t)}">${esc(t[0] + t.slice(1).toLowerCase())}</span>`;
+  const link = (t) => (r ? `<a href="${fileUrl(r.source)}">${esc(t)}</a>` : esc(t));
+  $("#lede").innerHTML = `<h1>${esc(meta.name)}</h1>
+    <p class="sub">${esc(meta.provider || "")} · ${esc(meta.stage)} · ${esc((meta.date || "").slice(0, 16).replace("T", " "))} UTC · ${lbl(meta.label || "MEASURED")} · status ${esc(meta.status || "n/a")}</p>
+    ${r ? `<table class="wn-rtab"><thead><tr><th></th><th>Without WattNot</th><th>With WattNot</th></tr></thead><tbody>
+      <tr><td>Accuracy</td><td>${link(arm("accuracy", "without_wattnot"))}</td><td>${link(arm("accuracy", "with_wattnot"))}</td></tr>
+      <tr><td>Energy (${esc(r.arms.with_wattnot.energy_unit || "")}) ${lbl(r.arms.with_wattnot.energy_label || "ESTIMATE")}</td><td>${link(arm("energy", "without_wattnot"))}</td><td>${link(arm("energy", "with_wattnot"))}</td></tr>
+      <tr><td>p99 latency (s)</td><td>${link(arm("p99_s", "without_wattnot"))}</td><td>${link(arm("p99_s", "with_wattnot"))}</td></tr>
+      <tr><td>Cost ($)</td><td>${link(arm("usd", "without_wattnot"))}</td><td>${link(arm("usd", "with_wattnot"))}</td></tr>
+    </tbody></table>
+    <p class="sub">Source: <a href="${fileUrl(r.source)}">${esc(r.source)}</a>${r.receipt ? ` · <a href="${fileUrl(r.receipt)}">receipt</a>` : " · no receipt yet"}${(r.events || []).map((e) => ` · <a href="${fileUrl(e)}">events</a>`).join("")}</p>`
+      : `<p class="sub">This run has no round file yet${meta.source ? ` (config: <a href="${fileUrl(meta.source)}">${esc(meta.source)}</a>)` : ""}.</p>`}`;
+}
+
 async function load() {
+  if (IS_REAL) return loadReal();
   try {
     STATE.run = await getJSON(`/api/dash/v2/runs/${encodeURIComponent(RUN_ID)}`);
   } catch (e) {
@@ -379,18 +405,24 @@ function render() {
 
   const targetRcpt = STATE.metaReceipt || STATE.receipt;
   if ($("#metatools-mount")) {
-    mountMetaTools($("#metatools-mount"), targetRcpt);
-    if (STATE.metaIsSample) $("#metatools-mount").insertAdjacentHTML("afterbegin",
-      `<p class="metatools-sample-note" style="margin:0 0 8px;color:var(--v-mut,#B2A6C3)">Sample data (MOCK): this card shows the full layout with sample values. This run's real live calls (Wonder, Muse Code PR, SAM, Voice) are in the “Live Meta calls” card.</p>`);
+    // Sample receipts are never shown as a showcase card; the card appears only for a run's own receipt.
+    if (STATE.metaIsSample || !targetRcpt) $("#metatools-mount").hidden = true;
+    else mountMetaTools($("#metatools-mount"), targetRcpt);
+  }
+  if ($("#srcLinks")) {
+    const R = RECEIPTS[RUN_ID];
+    $("#srcLinks").innerHTML = R ? `<a href="/api/launch/file?path=${encodeURIComponent(R.json.replace(/^\.\.\//, ""))}">Receipt for this run (JSON)</a> · <a href="/api/launch/file?path=${encodeURIComponent(R.sig.replace(/^\.\.\//, ""))}">Signature (Sigstore bundle)</a>`
+      : "This run has no saved receipt yet, so its numbers cannot be checked here.";
   }
   if ($("#hotspot-mount")) {
-    mountHotspotCard($("#hotspot-mount"), STATE.receipt || {});
+    // Shown only when this run has a live SAM 3.1 addendum; the built-in layout sample is not shown on a report.
     // A live SAM 3.1 call is saved as a signed addendum next to the RUN2 receipt; prefer it when present.
     if (RECEIPTS[RUN_ID]) fetch(RECEIPTS[RUN_ID].json.replace(/\.json$/, ".sam_hotspot.json")).then((r) => (r.ok ? r.json() : null)).then((a) => {
       const d = a?.data; if (!d) return;
+      $("#hotspot-mount").hidden = false;
       mountHotspotCard($("#hotspot-mount"), { hotspot_cap: { live: true, mask: d.mask, decision: d.decision, heat_label: d.labels?.heat_attribution,
         response_id: d.sam?.response_id,
-        photo: { url: "media/rack.jpg", w: 960, h: 720, credit: "Photo: Compaq server rack, Wikimedia Commons, CC BY 2.0 (not thermal)." },
+        photo: { url: "media/rack.jpg", w: 960, h: 720, credit: "Photo: public server-rack photo, not thermal (source in docs/CREDITS.md)." },
         reason: `Live SAM 3.1 box on the public rack photo (response ${d.sam?.response_id}). The photo is not thermal, so the hot slot is simulated; the cap change is advice only.` } });
     }).catch(() => {});
   }
@@ -466,8 +498,8 @@ function drawConnectors() {
   // Draw soft glow underlayer, core glowing line, and endpoint dots
   const glowPaths = paths.map((p) => `<path d="${p}" fill="none" stroke="rgba(178,166,195,0.45)" stroke-width="3.5" filter="url(#softGlow)" />`).join("");
   const corePaths = paths.map((p) => `<path d="${p}" fill="none" stroke="#B2A6C3" stroke-width="1.6" stroke-linecap="round" />`).join("");
-  const endDots = dots.map(([x, y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="#B2A6C3" filter="url(#softGlow)" /><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2" fill="#DCD6E4" />`).join("");
-  const startDot = `<circle cx="${heroX.toFixed(1)}" cy="${heroY.toFixed(1)}" r="4" fill="#B2A6C3" filter="url(#softGlow)" /><circle cx="${heroX.toFixed(1)}" cy="${heroY.toFixed(1)}" r="2" fill="#DCD6E4" />`;
+  const endDots = dots.map(([x, y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="#B2A6C3" filter="url(#softGlow)" /><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2" fill="#F3F0F7" />`).join("");
+  const startDot = `<circle cx="${heroX.toFixed(1)}" cy="${heroY.toFixed(1)}" r="4" fill="#B2A6C3" filter="url(#softGlow)" /><circle cx="${heroX.toFixed(1)}" cy="${heroY.toFixed(1)}" r="2" fill="#F3F0F7" />`;
 
   svg.innerHTML = filterDef + glowPaths + corePaths + startDot + endDots;
 }

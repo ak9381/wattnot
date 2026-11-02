@@ -1,11 +1,14 @@
-"""`wattnot certificate ...`: mock efficiency certificates from verified receipts.
+"""`wattnot certificate ...`: efficiency certificates from verified receipts.
 
     wattnot certificate mint --receipt receipts/<id>.json --out certificates
-    wattnot certificate verify certificates/WNC-MOCK-0001.json --receipt receipts/<id>.json
+    wattnot certificate verify certificates/WNC-0001.json --receipt receipts/<id>.json
     wattnot certificate register --register certificates/register.json
     wattnot certificate roadmap
 
-Every certificate is a MOCK and says so on every page. There is no flag to remove that.
+Each certificate restates one receipt's own figures, labelled by the receipt's evidence
+(MEASURED for a measured run). It carries the "NOT TRADABLE / NOT A CARBON CREDIT" watermark on
+every page and there is no flag to remove it. A receipt whose saving is not statistically shown
+(grade NOISE / UNVERIFIABLE) is declined — a "not issued" statement, exit 0 — not failed.
 """
 
 from __future__ import annotations
@@ -21,7 +24,7 @@ DEFAULT_REGISTER = "certificates/register.json"
 
 
 def add_parser(sub) -> None:
-    c = sub.add_parser("certificate", help="MOCK efficiency certificates from verified receipts")
+    c = sub.add_parser("certificate", help="efficiency certificates from verified receipts")
     s = c.add_subparsers(dest="cert_cmd")
     m = s.add_parser("mint", help="check the mint rules, then write the certificate")
     m.add_argument("--receipt", required=True, help="receipt JSON (bundle beside it)")
@@ -67,6 +70,22 @@ def _do_mint(a) -> int:
                           allow_simulated=a.allow_simulated, issued_at=a.issued_at,
                           verify_url=a.verify_url)
     except _mint.MintRefused as e:
+        if _mint.declinable(e.reasons):
+            # An intact receipt whose saving is not statistically shown: decline it honestly
+            # (write a "not issued" statement, exit 0) rather than fail.
+            doc = _mint.decline_doc_for(a.receipt, e.reasons, bundle=a.bundle,
+                                        trusted_path=a.trust, issued_at=a.issued_at)
+            out.mkdir(parents=True, exist_ok=True)
+            tag = (doc["receipt"].get("sha256") or "unknown")[:12]
+            jp = out / f"not-issued-{tag}.json"
+            jp.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+            if a.json:
+                print(json.dumps({"minted": False, "status": "declined", "statement": doc,
+                                  "reasons": e.reasons, "files": [str(jp)]}, indent=2))
+            else:
+                print(f"not issued (declined): {doc['receipt']['grade']} — {e.reasons[0]['detail']}")
+                print(f"  {jp}")
+            return 0
         if a.json:
             print(json.dumps({"minted": False, "reasons": e.reasons}, indent=2))
         else:
@@ -86,8 +105,8 @@ def _do_mint(a) -> int:
         print(json.dumps({"minted": True, "certificate": cert, "files": files,
                           "register": reg}, indent=2))
     else:
-        print(f"MOCK certificate {cert['serial']} for receipt {cert['receipt']['receipt_id']} "
-              f"[{cert['receipt']['grade']}]")
+        print(f"certificate {cert['serial']} for receipt {cert['receipt']['receipt_id']} "
+              f"[{cert['receipt']['grade']}, {cert['status']}]")
         print("\n".join(f"  {f}" for f in files))
         print(f"  register: {reg}")
     return 0
@@ -104,7 +123,7 @@ def _do_verify(a) -> int:
         print(f"{cert.get('serial')}: FAILED")
         print("\n".join(f"  - {x}" for x in bad))
     else:
-        print(f"{cert.get('serial')}: ok (still a MOCK)")
+        print(f"{cert.get('serial')}: ok (not tradable, not a carbon credit)")
     return 1 if bad else 0
 
 
@@ -137,7 +156,7 @@ def _do_register(a) -> int:
         print(json.dumps({**reg, "chain_ok": not bad, "problems": bad}, indent=2))
     else:
         print(f"register {a.register}: {len(reg['entries'])} entries, "
-              f"chain {'intact' if not bad else 'BROKEN'} (all MOCK)")
+              f"chain {'intact' if not bad else 'BROKEN'} (not tradable)")
         for e in reg["entries"]:
             print(f"  {e['serial']}  {e['grade']:<10} receipt {e['receipt_sha256'][:12]}  "
                   f"{e['minted_at']}")

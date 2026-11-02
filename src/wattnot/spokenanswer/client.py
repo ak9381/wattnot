@@ -35,6 +35,99 @@ DEFAULT_MODEL = "meta-models/Muse-Glimmer-30B"
 _INSTRUCTION = "Answer with only the value, no explanation."
 
 
+class SpokenTranscribeError(RuntimeError):
+    """A LIVE transcription could not be produced. A live run must FAIL on this, never replay."""
+
+
+ASR_MODEL = "muse-voice-transcribe-1.0"
+ASR_USD_PER_HOUR = 0.18   # ESTIMATE, the same rate wattnot.e2e.live uses
+
+
+def wav_rate_and_seconds(audio: bytes) -> tuple[int, float]:
+    """Sample rate and duration from the WAV header (same rule as wattnot.e2e.live._transcribe):
+    the edge-tts clips carry their own rate, so never assume 16 kHz."""
+    import io
+    import wave
+    try:
+        with wave.open(io.BytesIO(audio), "rb") as w:
+            rate, frames = w.getframerate(), w.getnframes()
+    except (wave.Error, EOFError):
+        rate, frames = 16000, max(0, (len(audio) - 44) // 2)
+    return rate, (frames / rate) if rate else 0.0
+
+
+def transcribe_wav_live(audio: bytes, *, timeout_s: float = 60.0, ledger=None,
+                        urlopen: Callable | None = None,
+                        purpose: str = "voice:transcribe-spoken") -> str:
+    """One LIVE Muse Voice Transcribe call: sends the header sample rate, charges the Meta spend
+    ledger BEFORE the call (so the per-run cap can refuse it), and honours ``timeout_s``."""
+    import urllib.error
+    import urllib.request
+    import uuid
+
+    from wattnot.meta.client import DEFAULT_BASE, load_key
+    from wattnot.meta.ledger import SpendLedger
+
+    rate, secs = wav_rate_and_seconds(audio)
+    usd = round(secs / 3600 * ASR_USD_PER_HOUR, 6)
+    led = ledger if ledger is not None else SpendLedger()
+    eid = led.charge_usd(ASR_MODEL, purpose, usd,
+                         note=f"voice transcribe {secs:.1f}s @ {rate} Hz ~${usd} (ESTIMATE $0.18/h)")
+    bnd = uuid.uuid4().hex
+    reqj = json.dumps({"model": ASR_MODEL, "audioEncoding": "WAV", "sampleRateHertz": rate})
+    body = (f'--{bnd}\r\nContent-Disposition: form-data; name="request"\r\n'
+            f'Content-Type: application/json\r\n\r\n{reqj}\r\n').encode()
+    body += (f'--{bnd}\r\nContent-Disposition: form-data; name="audio"; filename="a.wav"\r\n'
+             f'Content-Type: audio/wav\r\n\r\n').encode() + audio + f"\r\n--{bnd}--\r\n".encode()
+    req = urllib.request.Request(f"{DEFAULT_BASE}/asr/transcribe", data=body, headers={
+        "Authorization": f"Bearer {load_key()}", "Content-Type": f"multipart/form-data; boundary={bnd}"})
+    opener = urlopen or urllib.request.urlopen
+    try:
+        with opener(req, timeout=timeout_s) as r:  # noqa: S310
+            data = json.loads(r.read() or b"{}")
+    except urllib.error.HTTPError:
+        led.refund(eid, note="rejected by the provider, not billed")
+        raise
+    return str(data.get("transcript") or "").strip()
+
+
+def transcribe_spoken_live(spoken: SpokenSet, *,
+                           transcribe: Callable[[bytes], str] | None = None,
+                           timeout_s: float = 60.0) -> dict[str, str]:
+    """Transcribe every recording LIVE via Muse Voice Transcribe (Meta Model API).
+
+    Returns ``{item id: transcript}`` labelled LIVE/MEASURED by the caller. Reuses the same
+    endpoint ``scripts/voice_live_transcribe.py`` uses (``wattnot.meta.voiceguide.transcribe_audio``).
+    Raises ``SpokenTranscribeError`` if the live transcriber is unavailable (Meta mock on, no key)
+    or any call fails or returns no text — a live run never silently falls back to the cached
+    REPLAY transcripts. ``transcribe`` is injectable so tests can exercise this offline.
+    """
+    from wattnot.meta.client import meta_mock_on
+    if transcribe is None:
+        if meta_mock_on():
+            raise SpokenTranscribeError(
+                "Meta mock is on (WATTNOT_META_MOCK): a mock transcript cannot be a LIVE result")
+
+        def transcribe(audio: bytes) -> str:
+            return transcribe_wav_live(audio, timeout_s=timeout_s)
+
+    out: dict[str, str] = {}
+    for it in spoken.items:
+        try:
+            audio = it.path(spoken.base_dir).read_bytes()
+        except OSError as e:
+            raise SpokenTranscribeError(f"cannot read recording for {it.id!r}: {type(e).__name__}") from e
+        try:
+            text = (transcribe(audio) or "").strip()
+        except Exception as e:  # noqa: BLE001 - any live failure fails the block, never replays
+            raise SpokenTranscribeError(
+                f"live transcription failed for {it.id!r}: {type(e).__name__}: {e}") from e
+        if not text:
+            raise SpokenTranscribeError(f"live transcription returned no text for {it.id!r}")
+        out[it.id] = text
+    return out
+
+
 class OfflineAnswerer:
     """Returns ground truth. No I/O; for dry runs and tests only (not measured)."""
 
@@ -152,5 +245,9 @@ __all__ = [
     "DEFAULT_MODEL",
     "OfflineAnswerer",
     "ServedSpokenAnswerer",
+    "SpokenTranscribeError",
     "answer_spoken_set",
+    "transcribe_spoken_live",
+    "transcribe_wav_live",
+    "wav_rate_and_seconds",
 ]

@@ -170,6 +170,88 @@ def test_write_partial_records_finished_steps(tmp_path):
     assert d["spend"] == stage
 
 
+def test_smoke_agentwaste_block_is_shortened():
+    """Smoke (limit > 0): the agentwaste block is reps 1 / max-cases 4 / max-tokens 768 and its
+    wall cap is 240 s; the other blocks cap at 300 s."""
+    m = _load(ROOT / "scripts/e2e/modal_full_inner.py")
+    cmd = m.block_cmds(4, False, Path("/tmp/out"))["agentwaste"]
+    assert "--reps" in cmd and cmd[cmd.index("--reps") + 1] == "1"
+    assert "--max-cases" in cmd and cmd[cmd.index("--max-cases") + 1] == "4"
+    assert "--max-tokens" in cmd and cmd[cmd.index("--max-tokens") + 1] == "768"
+    assert m.block_cap("agentwaste", 4) == 240
+    assert all(m.block_cap(k, 4) == 300 for k in ("think", "langchain", "eye", "spoken"))
+
+
+def test_full_round_agentwaste_block_fits_cap():
+    """Full round (limit == 0): r04 timed out at 900 s with reps 2 over all 30 cases, so the full
+    round runs 12 cases once per arm at 768 tokens; block limits come from the modal profile."""
+    m = _load(ROOT / "scripts/e2e/modal_full_inner.py")
+    cmd = m.block_cmds(0, False, Path("/tmp/out"))["agentwaste"]
+    assert cmd[cmd.index("--reps") + 1] == "1"
+    assert cmd[cmd.index("--max-cases") + 1] == "12" and cmd[cmd.index("--max-tokens") + 1] == "768"
+    from wattnot.providers import PROFILES
+    lim = PROFILES["modal"]["block_limits_s"]
+    assert all(m.block_cap(k, 0) == lim[k] for k in ("agentwaste", "think", "langchain", "eye", "spoken"))
+
+
+def test_modal_blocks_fit_80pct_and_round_stays_under_10usd():
+    from wattnot import providers as pv
+    assert pv.block_fit_problems("modal") == []
+    prof = pv.PROFILES["modal"]
+    # langchain 898 s MEASURED (r04-try1) and agentwaste ~43 min both fit in 80%
+    assert 898 <= 0.8 * prof["block_limits_s"]["langchain"]
+    assert 43 * 60 <= 0.8 * prof["block_limits_s"]["agentwaste"]
+    c = prof["caps"]
+    assert c["round_ceiling_min"] / 60 * c["gpu_usd_h"] < c["round_hard_usd"]
+
+
+def test_block_fit_flags_a_tight_block(monkeypatch):
+    from wattnot import providers as pv
+    monkeypatch.setitem(pv.PROFILES["modal"], "block_worst_s", {"langchain": 898})
+    monkeypatch.setitem(pv.PROFILES["modal"], "block_limits_s", {"langchain": 900})
+    assert pv.block_fit_problems("modal")
+
+
+def test_teardown_never_stops_a_round_owned_by_another_live_process(tmp_path, monkeypatch):
+    import os
+    import subprocess as sp
+    m = _load(ROOT / "scripts/e2e/modal_full_round.py")
+    lock = tmp_path / "owner.json"
+    monkeypatch.setattr(m, "OWNER", lock)
+    calls = []
+    monkeypatch.setattr(m.subprocess, "run", lambda *a, **k: calls.append(a) or sp.CompletedProcess(a, 0, "[]", ""))
+    lock.write_text(json.dumps({"pid": os.getppid(), "round": "r04c"}))
+    td = m.teardown()
+    assert td["verified_empty"] is False and "r04c" in td["skipped"] and calls == []
+    lock.write_text(json.dumps({"pid": 999999999, "round": "dead"}))   # dead owner: normal teardown
+    assert m.foreign_owner() is None
+
+
+def test_agentwaste_fake_max_cases_runs(tmp_path):
+    """agentwaste_gpu_ab --fake --max-cases runs and records the knobs in the summary."""
+    out = tmp_path / "aw"
+    m = _load(ROOT / "scripts/agentwaste_gpu_ab.py")
+    assert m.main(["--fake", "--reps", "1", "--max-cases", "4", "--max-tokens", "768",
+                   "--out", str(out)]) == 0
+    s = json.loads((out / "agentwaste_gpu_summary.json").read_text())
+    assert s["max_cases"] == 4 and s["max_tokens"] == 768
+
+
+def test_agentwaste_pick_cases_is_deterministic_and_bounded():
+    """pick_cases keeps at most N, is deterministic, and spans the kinds (not just normals)."""
+    m = _load(ROOT / "scripts/agentwaste_gpu_ab.py")
+    import sys as _sys
+    _sys.path[:0] = [str(ROOT / "src")]
+    from wattnot.agentwaste.bench.cases import all_cases
+    cases = all_cases()
+    pick = m.pick_cases(cases, 4)
+    assert len(pick) == 4
+    assert m.pick_cases(cases, 4) == pick                      # deterministic
+    assert m.pick_cases(cases, 0) == cases                     # 0 = all
+    assert len(m.pick_cases(cases, 10_000)) == len(cases)      # N >= len -> all
+    assert {c.category for c in pick} != {"normal"}            # later kinds represented
+
+
 def test_no_metrics_key_anywhere():
     for p in ("scripts/e2e/modal_full_round.py", "scripts/e2e/modal_full_inner.py", "modal/full_stage.py"):
         assert "BASETEN_METRICS_KEY" not in (ROOT / p).read_text().replace("Never reads BASETEN_METRICS_KEY", "")

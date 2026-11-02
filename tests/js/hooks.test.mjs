@@ -111,18 +111,13 @@ test("root redirect page has description and OG tags", () => {
   }
 });
 
-test("shared chrome header has updated nav links and Live graph", () => {
+test("shared chrome header has plain top routes and a sidebar with every page", () => {
   const chromeJs = fs.readFileSync(path.join(dashDir, "chrome.js"), "utf8");
-  assert.match(chromeJs, /href="\${prefix}v2\.html#pHome">Dashboard<\/a>/);
-  assert.match(chromeJs, /href="\${prefix}runs\.html">Runs<\/a>/);
-  assert.match(chromeJs, /href="\${prefix}v2\.html#pReport">Compare<\/a>/);
-  assert.match(chromeJs, /href="\${prefix}report\.html\?run=run2-llama-350w">Reports<\/a>/);
-  assert.match(chromeJs, /href="\${prefix}graph\.html">Live graph<\/a>/);
+  for (const t of ["Set up a run", "Watch it run", "Results", "Proof", "Costs", "Connected tools"]) assert.ok(chromeJs.includes(`>${t}</a>`), t);
+  for (const h of ["v2.html#pHome", "runs.html", "v2.html#pReport", "report.html", "graph.html", "approvals.html", "matrix.html", "eu.html", "metatools.html"]) assert.ok(chromeJs.includes(`"${h}"`), h);
+  assert.match(chromeJs, /runpick\.js/);
+  assert.match(chromeJs, /sidenav\.js/);
   assert.doesNotMatch(chromeJs, />Architecture<\/a>/);
-
-  const graphHtml = fs.readFileSync(path.join(dashDir, "graph.html"), "utf8");
-  assert.match(graphHtml, /<title>WattNot: Live graph<\/title>/);
-  assert.doesNotMatch(graphHtml, /<header class="top">/);
 });
 
 test("shared chrome footer has credits, track, github, and year", () => {
@@ -134,16 +129,14 @@ test("shared chrome footer has credits, track, github, and year", () => {
   assert.match(chromeJs, /2026/);
 });
 
-test("header and footer are fixed with Apple glassmorphism and glow blobs", () => {
+test("header is fixed glass, footer is a plain bar at the page end", () => {
   const chromeCss = fs.readFileSync(path.join(dashDir, "chrome.css"), "utf8");
   assert.match(chromeCss, /nav\.wn-nav\.gl\s*\{[^}]*position:\s*fixed;/);
-  assert.match(chromeCss, /footer\.wn-footer\.gl\s*\{[^}]*position:\s*fixed;/);
-  assert.match(chromeCss, /bottom:\s*14px;/);
+  // Footer is a plain full-width bar at the end of the page, never fixed over content.
+  assert.doesNotMatch(chromeCss, /^footer\.wn-footer\.gl[^{]*\{[^}]*position:\s*fixed;/m);  // body.story pages pin it on purpose
   assert.match(chromeCss, /blur\(24px\)\s*saturate\(170%\)/);
   assert.match(chromeCss, /rgba\(255,\s*255,\s*255,\s*0?\.14\)/);
   assert.match(chromeCss, /inset 0 1px 0 rgba\(255,\s*255,\s*255,\s*0?\.12\)/);
-  assert.match(chromeCss, /padding-top:\s*74px;/);
-  assert.match(chromeCss, /padding-bottom:\s*110px;/);
   assert.match(chromeCss, /#6C5E7C/);
   assert.match(chromeCss, /#8E7A9E/);
   assert.match(chromeCss, /#4F4A63/);

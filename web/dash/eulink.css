@@ -7,7 +7,7 @@
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
   margin-bottom: 2rem;
-  color: #DCD6E4;
+  color: #F3F0F7;
   font-family: "Source Sans 3", "Source Sans Pro", system-ui, sans-serif;
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
@@ -25,7 +25,7 @@
   font-family: "Montserrat", sans-serif;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #DCD6E4;
+  color: #F3F0F7;
   margin: 0;
   display: flex;
   align-items: center;
@@ -39,7 +39,7 @@
   border-radius: 4px;
   background: rgba(142, 122, 158, 0.2);
   border: 1px solid #8E7A9E;
-  color: #B2A6C3;
+  color: #D6CEE0;
 }
 
 .eulink-roadmap-tag {
@@ -49,12 +49,12 @@
   border-radius: 4px;
   background: rgba(46, 43, 68, 0.8);
   border: 1px solid #4F4A63;
-  color: #8E7A9E;
+  color: #CBC4D6;
 }
 
 .eulink-body {
   font-size: 0.9rem;
-  color: #B2A6C3;
+  color: #D6CEE0;
   line-height: 1.45;
   margin-bottom: 1rem;
 }
@@ -76,7 +76,7 @@
 .eulink-metric-label {
   font-size: 0.72rem;
   text-transform: uppercase;
-  color: #8E7A9E;
+  color: #CBC4D6;
   letter-spacing: 0.04em;
   margin-bottom: 0.2rem;
 }
@@ -84,7 +84,7 @@
 .eulink-metric-val {
   font-family: "Fira Code", monospace;
   font-size: 1.05rem;
-  color: #DCD6E4;
+  color: #F3F0F7;
   font-weight: 600;
 }
 
@@ -94,7 +94,7 @@
   border-radius: 3px;
   margin-left: 0.3rem;
   background: rgba(142, 122, 158, 0.25);
-  color: #B2A6C3;
+  color: #D6CEE0;
 }
 
 .eulink-actions {
@@ -107,7 +107,7 @@
 .eulink-btn {
   background: #3B3A54;
   border: 1px solid #6C5E7C;
-  color: #DCD6E4;
+  color: #F3F0F7;
   padding: 0.45rem 0.9rem;
   border-radius: 6px;
   font-size: 0.85rem;
@@ -129,17 +129,17 @@
 .eulink-btn-secondary {
   background: transparent;
   border: 1px solid rgba(142, 122, 158, 0.3);
-  color: #B2A6C3;
+  color: #D6CEE0;
 }
 
 .eulink-btn-secondary:hover {
   background: rgba(142, 122, 158, 0.15);
-  color: #DCD6E4;
+  color: #F3F0F7;
 }
 
 .eulink-disclaimer {
   font-size: 0.75rem;
-  color: #6C5E7C;
+  color: #CBC4D6;
   margin-top: 0.75rem;
   font-style: italic;
 }
@@ -149,7 +149,7 @@
 .eucard{display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px;padding:16px 20px;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(163,190,140,.45);box-shadow:0 0 0 1px rgba(255,255,255,.04) inset}
 .eucard-main{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:4px;min-width:240px;flex:1}
 .eucard-main:focus-visible{outline:2px solid #A3BE8C;outline-offset:4px;border-radius:8px}
-.eucard-k{font:600 .78rem/1 Montserrat,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;opacity:.8}
+.eucard-k{font:600 .78rem/1 Montserrat,system-ui,sans-serif;letter-spacing:.01em;text-transform:none;opacity:.8}
 .eucard-big{font:700 2.4rem/1.05 Montserrat,system-ui,sans-serif;color:#A3BE8C}
 .eucard-l{font-size:.9rem;opacity:.85}
 .eucard-acts{display:flex;gap:10px;align-items:center;flex-wrap:wrap}

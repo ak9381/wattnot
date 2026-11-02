@@ -52,7 +52,8 @@ def test_memory_compression_summarises_old_turns_and_retrieves():
     msgs = [{"role": "system", "content": "system prompt"}]
     for i in range(6):
         msgs.append({"role": "user", "content":
-                     f"Turn {i} about the power cap controller and nvml energy sampling detail {i}."})
+                     f"Turn {i} about the power cap controller and nvml energy sampling detail {i}. "
+                         + "Extra measured context that the summary can drop. " * 6})
     msgs.append({"role": "user", "content": "Tell me about the power cap controller."})
     out, st = mw.apply(msgs)
     assert st["applied"] and st["summarize_calls"] > 0
@@ -60,7 +61,8 @@ def test_memory_compression_summarises_old_turns_and_retrieves():
     # system prompt is preserved and a compressed recap was inserted
     assert out[0]["content"] == "system prompt"
     assert any("Earlier context (compressed" in (m.get("content") or "") for m in out)
-    assert len(mw.store) == st["chunks_made"]
+    # chunks live only for this conversation (r04e: a shared store leaked other items' turns)
+    assert st["chunks_made"] > 0 and len(mw.store) == 0
 
 
 def test_memory_compression_noop_when_few_turns():

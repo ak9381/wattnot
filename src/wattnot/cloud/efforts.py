@@ -24,9 +24,15 @@ from collections.abc import Mapping, Sequence
 
 from wattnot.cloud import EFFORTS, MODEL, REFERENCE
 
-# Tokens the model may spend thinking, on top of the answer budget. Starting values;
-# the first live run replaces them with measured numbers (see `calibrated_allowance`).
-DEFAULT_ALLOWANCE = {"low": 1500, "medium": 4000, "high": 12000, "xhigh": 32000}
+# Tokens the model may spend thinking, on top of the answer budget. The `low` cap is a *runaway*
+# cap, not a comfortable budget: live Baseten smoke (data/baseten-e2e-smoke-1101/...-a534) measured
+# real low calls spending 21-363 reasoning tokens (medium 43-775), while one runaway low try on the
+# gsm8k "Janet's ducks" item spent 2009 reasoning tokens and hit finish=length at the old 1500 cap,
+# costing $0.0087 - more than the $0.0024 medium retry that followed. 768 cuts such a runaway early
+# so a failed low try costs less than the medium step-up, yet still clears every low call that
+# actually answered. The higher levels are starting values the first live run replaces with measured
+# numbers (see `calibrated_allowance`).
+DEFAULT_ALLOWANCE = {"low": 768, "medium": 4000, "high": 12000, "xhigh": 32000}
 MAX_TOKENS_CEILING = 65536  # higher max_tokens values are scheduled slightly later
 
 TAIL_STOPS = {"low": ["\n\n\n", "\n---"], "medium": ["\n\n\n"], "high": [], "xhigh": []}

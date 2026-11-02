@@ -1,6 +1,17 @@
 {
-  "note": "Signers the verifier accepts. The offline key is a public TEST key for the sample vectors; it proves nothing about real runs.",
+  "note": "Signers the verifier accepts. 'ed25519-wattnot' is the real WattNot certificate key (private half on the build box only, never in git). 'ed25519-test' is a PUBLIC sample key: anything it signed, including certificate WNC-0001 and every receipt before Modal round r04d, is test-signed and proves nothing about who ran it.",
   "keys": [
-    {"signer": "offline:56475aa75463474c", "kind": "ed25519-test", "source": "verifier/samples/test-key.pem"}
+    {
+      "signer": "offline:56475aa75463474c",
+      "kind": "ed25519-test",
+      "source": "verifier/samples/test-key.pem"
+    },
+    {
+      "signer": "offline:a10d641cddc104d8",
+      "kind": "ed25519-wattnot",
+      "signer_name": "wattnot-cert-signing-2026-11-02",
+      "public_key": "b4dc87c6b1c96e7a0639f952091968162f8d19578f1120ca5511f481112c642c",
+      "since": "2026-11-02 (Modal round r04d)"
+    }
   ]
 }

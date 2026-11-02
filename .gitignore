@@ -43,3 +43,4 @@ results/
 !verifier/samples/test-key.pem
 site/
 approval-policy.json
+data/modal-full-1101/fake/

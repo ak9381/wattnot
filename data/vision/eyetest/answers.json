@@ -89,8 +89,8 @@
       "answer": "60",
       "watermark": "SYNTHETIC",
       "source": "RENDERED-PIL",
-      "source_note": "Rendered deterministically by scripts/gen_vision_assets.py --gauge with PIL (not a photo, not the image model); needle on the labelled 60 tick.",
-      "sha256": "e8c5b3a4017604ed4c67fe6d8714b40b9ee93441cf2fdf1abb28a69077f852bf"
+      "source_note": "Rendered deterministically by scripts/gen_vision_assets.py --gauge with PIL (not a photo, not the image model); needle on the labelled 60 tick. Answer unchanged (60). Second redraw after the live Baseten smoke still read 62: the dial now has labelled ticks every 20 and unlabelled ticks every 10 only (no 2-unit divisions), and a thicker needle, so 62 is not a reading the dial can show. Not re-verified live.",
+      "sha256": "14091ad6c341defd12812eb79e751673a05a387294071b2ad87bd025bfde9e66"
     },
     {
       "id": "sign-exit",

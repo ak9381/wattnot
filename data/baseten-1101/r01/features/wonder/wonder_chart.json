@@ -1,0 +1,50 @@
+{
+  "spec": "wattnot.wonderchart/1",
+  "mode": "fake",
+  "source": "fallback",
+  "suggestion": {
+    "action": "try",
+    "cap_w": 375,
+    "clock_profile": "base"
+  },
+  "reason": "offline fallback: MOCK: selected next candidate 375W (base)",
+  "trace_id": "wonder-5eea914106c822f5",
+  "wonder_chart": {
+    "label": "SYNTHETIC",
+    "chart_sha256": "ec82ddb6ca9947a69a63e3532cc4888ade3691129ee088ad97b4185f35c8220a",
+    "source": "fallback",
+    "offline_fallback": true,
+    "model": "deterministic",
+    "suggestion": {
+      "action": "try",
+      "cap_w": 375,
+      "clock_profile": "base"
+    },
+    "reason": "offline fallback: MOCK: selected next candidate 375W (base)",
+    "trace_id": "wonder-5eea914106c822f5",
+    "est_wh": {
+      "value": 0.5,
+      "label": "ESTIMATE"
+    },
+    "points": [
+      {
+        "setting": "0W/base",
+        "cap_w": 0,
+        "clock_profile": "base",
+        "joules_per_correct": 1.0,
+        "quality": 1.0,
+        "kept": false,
+        "label": "ESTIMATE"
+      },
+      {
+        "setting": "0W/base",
+        "cap_w": 0,
+        "clock_profile": "base",
+        "joules_per_correct": 1.0,
+        "quality": 1.0,
+        "kept": false,
+        "label": "ESTIMATE"
+      }
+    ]
+  }
+}

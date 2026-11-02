@@ -184,16 +184,26 @@ export class ArchView {
   // Which nodes those are comes from the node data (baseline: true), decided
   // by the bundle builder — never from a list here. An old bundle without the
   // flag keeps everything active, exactly as before.
-  setPhase(p) {
+  // Stage feature table (data-driven, sent before the run): {nodeId: reason} for features OFF on this platform.
+  setOff(map) { this.off = map || {}; this.setPhase(this.phase || 2, this._baseIds || null); }
+  setPhase(p, baselineIds = null) {
+    this._baseIds = baselineIds;
     this.phase = p;
-    const base = new Set(this.d.nodes.filter((n) => n.baseline).map((n) => n.id));
+    // a live arm may name its own baseline nodes (hosted runs have no rig or meter)
+    const base = new Set(baselineIds || this.d.nodes.filter((n) => n.baseline).map((n) => n.id));
     this.skipped = (p === 1 && base.size) ? new Set([...this.ids].filter((id) => !base.has(id))) : new Set();
+    const off = this.off || {};   // stage feature table: nodes this platform cannot run, greyed in both arms
+    for (const id of Object.keys(off)) if (this.ids.has(id)) this.skipped.add(id);
     for (const n of this.nodes) {
       const el = this.el(n.id); if (!el) continue;
-      const sk = this.skipped.has(n.id);
+      const sk = this.skipped.has(n.id), why = off[n.id];
       el.classList.toggle("skipped", sk);
+      if (why) el.title = `Off on this stage: ${why}`; else if (el.dataset.offTitle) el.removeAttribute("title");
+      if (why) el.dataset.offTitle = "1";
       let tag = el.querySelector(".ft .skiptag");
-      if (sk && !tag) { tag = document.createElement("span"); tag.className = "skiptag"; tag.textContent = "skipped in baseline"; el.querySelector(".ft")?.appendChild(tag); }
+      const txt = why ? "off on this stage" : "skipped in baseline";
+      if (sk && !tag) { tag = document.createElement("span"); tag.className = "skiptag"; el.querySelector(".ft")?.appendChild(tag); }
+      if (sk && tag) { tag.textContent = txt; tag.title = why || "not part of the without-WattNot run"; }
       if (!sk && tag) tag.remove();
     }
     this.paintEdges();

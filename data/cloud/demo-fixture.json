@@ -5575,7 +5575,7 @@
       "finish_reason": "length",
       "message": {
        "content": "",
-       "reasoning_chars": 6240,
+       "reasoning_chars": 3312,
        "reasoning_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
        "role": "assistant"
       }
@@ -5584,22 +5584,22 @@
     "id": "chatcmpl-sim-000169",
     "model": "meta-models/muse-spark-open",
     "usage": {
-     "completion_tokens": 1560,
+     "completion_tokens": 828,
      "completion_tokens_details": {
-      "reasoning_tokens": 1560
+      "reasoning_tokens": 828
      },
      "prompt_tokens": 90,
      "prompt_tokens_details": {
       "cached_tokens": 0
      },
-     "total_tokens": 1650
+     "total_tokens": 918
     }
    },
    "headers": {
     "x-ratelimit-remaining-requests": "110",
     "x-ratelimit-remaining-tokens": "480000"
    },
-   "latency_s": 17.521,
+   "latency_s": 9.816,
    "retries": 0,
    "status": 200
   },
@@ -5610,7 +5610,7 @@
       "finish_reason": "length",
       "message": {
        "content": "",
-       "reasoning_chars": 6240,
+       "reasoning_chars": 3312,
        "reasoning_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
        "role": "assistant"
       }
@@ -5619,22 +5619,22 @@
     "id": "chatcmpl-sim-000170",
     "model": "meta-models/muse-spark-open",
     "usage": {
-     "completion_tokens": 1560,
+     "completion_tokens": 828,
      "completion_tokens_details": {
-      "reasoning_tokens": 1560
+      "reasoning_tokens": 828
      },
      "prompt_tokens": 90,
      "prompt_tokens_details": {
       "cached_tokens": 0
      },
-     "total_tokens": 1650
+     "total_tokens": 918
     }
    },
    "headers": {
     "x-ratelimit-remaining-requests": "110",
     "x-ratelimit-remaining-tokens": "480000"
    },
-   "latency_s": 17.521,
+   "latency_s": 9.816,
    "retries": 0,
    "status": 200
   },
@@ -5645,7 +5645,7 @@
       "finish_reason": "length",
       "message": {
        "content": "",
-       "reasoning_chars": 6240,
+       "reasoning_chars": 3312,
        "reasoning_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
        "role": "assistant"
       }
@@ -5654,22 +5654,22 @@
     "id": "chatcmpl-sim-000171",
     "model": "meta-models/muse-spark-open",
     "usage": {
-     "completion_tokens": 1560,
+     "completion_tokens": 828,
      "completion_tokens_details": {
-      "reasoning_tokens": 1560
+      "reasoning_tokens": 828
      },
      "prompt_tokens": 90,
      "prompt_tokens_details": {
       "cached_tokens": 0
      },
-     "total_tokens": 1650
+     "total_tokens": 918
     }
    },
    "headers": {
     "x-ratelimit-remaining-requests": "110",
     "x-ratelimit-remaining-tokens": "480000"
    },
-   "latency_s": 17.521,
+   "latency_s": 9.816,
    "retries": 0,
    "status": 200
   },

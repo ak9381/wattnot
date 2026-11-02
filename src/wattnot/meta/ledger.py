@@ -45,8 +45,8 @@ def _env_usd(name: str) -> float | None:
 
 
 def caps_from_env() -> tuple[float, float]:
-    """(hard, soft) for this process. Defaults are the approved $100 / $80. The env vars can
-    only tighten them: a value above the approved cap is refused, not silently clamped."""
+    """(hard, soft) for this process. Defaults are the approved $120 hard / $100 soft. The env
+    vars can only tighten them: a value above the approved cap is refused, not silently clamped."""
     cap = _env_usd(CAP_ENV)
     soft = _env_usd(SOFT_ENV)
     if cap is None:
@@ -285,6 +285,26 @@ class SpendLedger:
                 "input_tokens": 0, "output_tokens": 0, "cached_tokens": 0, "usd": usd,
                 "estimated": False, "price_assumed": False, "images": images,
                 "note": note[:200]})
+            return eid
+
+    def charge_usd(self, model: str, purpose: str, usd: float, *, note: str = "") -> str:
+        """Record a flat-priced call (e.g. per-second transcription) BEFORE it is sent.
+
+        Raises BudgetExceeded over the cap, so the per-run Meta cap sees non-token spend too.
+        Returns the entry id; call `refund` if the provider rejected the request.
+        """
+
+        usd = round(float(usd), 8)
+        with self._locked() as doc:
+            total = sum(e["usd"] for e in doc["entries"])
+            if total + usd > self.cap_usd:
+                raise BudgetExceeded(f"refused: ${total:.4f} spent + ${usd:.4f} for this call "
+                                     f"> ${self.cap_usd:.2f} cap")
+            eid = uuid.uuid4().hex[:12]
+            doc["entries"].append({
+                "id": eid, "ts": _now(), "model": model, "purpose": purpose, "status": "ok",
+                "input_tokens": 0, "output_tokens": 0, "cached_tokens": 0, "usd": usd,
+                "estimated": True, "price_assumed": False, "note": note[:200]})
             return eid
 
     def refund(self, eid: str, note: str = "") -> None:
