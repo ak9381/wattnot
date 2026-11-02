@@ -1,0 +1,7 @@
+{"run_id": "r04e-langchain-20261102T071628Z", "attaches_to": "r04e", "block": "langchain", "status": "failed",
+ "label": "MEASURED",
+ "why": "Modal stopped the app at about 13:18 IST (07:48Z): 'local client disconnected' after missed client heartbeats; the local client process was still alive (heartbeat errors logged 13:20:48 IST). The LangChain block was cut about 17 min in (started 07:31:59Z); langchain_pass.json is written only at block end, so no per-question results came back.",
+ "weights_load_s": 753.5, "chat_requests_served": 82,
+ "modal_usd": {"value": 1.35, "label": "MEASURED", "source": "modal billing report, 07:00Z hour, app ap-TUqsk7bTr8g6c2B76Vh1nU"},
+ "meta_usd": {"value": null, "label": "not separately metered for this run"},
+ "teardown": {"verified_empty": true, "checked_at": "2026-11-02T07:51:16Z"}}
