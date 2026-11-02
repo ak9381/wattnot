@@ -1,0 +1,23 @@
+{
+  "format": "wattnot.cert-register/1",
+  "label": "NOT TRADABLE",
+  "note": "Local file. Nothing here is public and nothing here is tradable.",
+  "entries": [
+    {
+      "serial": "WNC-0001",
+      "minted_at": "2026-11-02T13:57:13+00:00",
+      "receipt_sha256": "04a693250f00da905e14c85407ac9f4491dbbe19c3a0532ef55a39a62c2279d6",
+      "claim_keys": [
+        "receipt:04a693250f00da905e14c85407ac9f4491dbbe19c3a0532ef55a39a62c2279d6",
+        "run:run_20261101_modal_full_r05"
+      ],
+      "grade": "ESTIMATE",
+      "label": "MEASURED",
+      "certificate_sha256": "ff099dd12516448b10dd46cfcf5f66884ffbf199ca69865b8098bbc6110af36c",
+      "prev_sha256": null,
+      "integrity": {
+        "sha256": "3eb65e573b83a7e5b75e30459c6438be22e8a0badd27863086cbee5b655c27ec"
+      }
+    }
+  ]
+}
