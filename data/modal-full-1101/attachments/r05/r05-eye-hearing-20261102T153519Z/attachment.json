@@ -1,0 +1,92 @@
+{
+  "spec": "wattnot.round-attachment/1",
+  "run_id": "r05-eye-hearing-20261102T153519Z",
+  "attaches_to": "r05",
+  "block": "eye,spoken",
+  "status": "passed",
+  "label": "MEASURED",
+  "summary": "eye: with_wattnot 10/10 920.9 J/correct vs without_wattnot 10/10 960.9 J/correct; spoken: with_wattnot 20/20 344.9 J/correct vs without_wattnot 20/20 358.4 J/correct",
+  "created_at": "2026-11-02T15:42:41.906264+00:00",
+  "server": {
+    "fp8": false,
+    "prefix_caching": true,
+    "max_num_seqs": 128,
+    "start_s": {
+      "value": 60.0,
+      "label": "MEASURED"
+    }
+  },
+  "gpu": "NVIDIA A100-SXM4-80GB",
+  "results": {
+    "eye": {
+      "rc": 0,
+      "energy_j": {
+        "value": 9209.4,
+        "label": "MEASURED"
+      },
+      "file": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/eye/eye_test.json",
+      "file_sha256": "7e4f87ad21b0577bfc2a3ade2365b5a850241a59a9d40aa240d03d0f6c8aa6df",
+      "quality_held": true,
+      "arms": {
+        "with_wattnot": {
+          "correct": 10,
+          "n": 10,
+          "gpu_j": 9209.4,
+          "j_per_correct": 920.9
+        },
+        "without_wattnot": {
+          "correct": 10,
+          "n": 10,
+          "gpu_j": 9608.9,
+          "j_per_correct": 960.9
+        }
+      }
+    },
+    "spoken": {
+      "rc": 0,
+      "energy_j": {
+        "value": 6898.7,
+        "label": "MEASURED"
+      },
+      "file": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/spoken/spoken_answer.json",
+      "file_sha256": "ac2208ef17cd86210c4cc5519b178db8644875d67037436d57c0a40295fa26e1",
+      "quality_held": true,
+      "arms": {
+        "with_wattnot": {
+          "correct": 20,
+          "n": 20,
+          "gpu_j": 6898.7,
+          "j_per_correct": 344.9
+        },
+        "without_wattnot": {
+          "correct": 20,
+          "n": 20,
+          "gpu_j": 7168.0,
+          "j_per_correct": 358.4
+        }
+      }
+    }
+  },
+  "spend": {
+    "modal_usd": {
+      "value": 0.2401,
+      "label": "ESTIMATE"
+    },
+    "stage_total_usd": {
+      "value": 39.5548,
+      "label": "ESTIMATE"
+    },
+    "teardown": {
+      "stopped": [],
+      "still_running": [],
+      "verified_empty": true,
+      "checked_at": "2026-11-02T15:41:10.388104+00:00"
+    }
+  },
+  "note": "Separate run with its own id; the round's own files are never changed.",
+  "integrity": {
+    "sha256": "edf08d239b0fa7cfe2a01bda54096f47c51d07fbc7f9686a18b97a0442e09b67",
+    "signer": "offline:a10d641cddc104d8",
+    "rekor": null
+  }
+}

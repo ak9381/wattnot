@@ -1,5 +1,5 @@
 {
- "usd": 0.6739,
+ "usd": 39.5548,
  "rounds": [
   {
    "round": "smoke-r04",
@@ -12,8 +12,207 @@
    "usd": 0.2965,
    "minutes": 7.1,
    "at": "2026-11-01T11:41:45.828792+00:00"
+  },
+  {
+   "round": "smoke-smoke-ui1426",
+   "usd": 0.6478,
+   "minutes": 15.5,
+   "at": "2026-11-01T14:42:22.535936+00:00"
+  },
+  {
+   "round": "smoke-smoke-ui1426-metered-true-up",
+   "usd": 0.2397,
+   "minutes": 0,
+   "at": "2026-11-01T14:43:27.642979+00:00"
+  },
+  {
+   "round": "smoke-smoke-ui1554",
+   "usd": 0.6977,
+   "minutes": 16.7,
+   "at": "2026-11-01T16:11:01.209307+00:00"
+  },
+  {
+   "round": "smoke-smoke-ui1554-metered-true-up",
+   "usd": 0.0743,
+   "minutes": 0,
+   "at": "2026-11-01T16:12:07.328281+00:00"
+  },
+  {
+   "round": "smoke-smoke-ui1617",
+   "usd": 0.6199,
+   "minutes": 14.9,
+   "at": "2026-11-01T16:32:36.009354+00:00"
+  },
+  {
+   "round": "smoke-smoke-ui1617-metered-true-up",
+   "usd": 0.024,
+   "minutes": 0,
+   "at": "2026-11-01T16:34:25.365106+00:00"
+  },
+  {
+   "round": "smoke-smoke-ui1645",
+   "usd": 0.9907,
+   "minutes": 23.8,
+   "at": "2026-11-01T17:09:43.869791+00:00"
+  },
+  {
+   "round": "smoke-smoke-ui1645-metered-true-up",
+   "usd": 0.2458,
+   "minutes": 0,
+   "at": "2026-11-01T17:10:49.322071+00:00"
+  },
+  {
+   "round": "smoke-smoke-ui1728",
+   "usd": 0.8213,
+   "minutes": 19.7,
+   "at": "2026-11-01T17:48:31.360585+00:00"
+  },
+  {
+   "round": "smoke-smoke-ui1728-metered-true-up",
+   "usd": 0.1673,
+   "minutes": 0,
+   "at": "2026-11-01T17:49:36.597720+00:00"
+  },
+  {
+   "round": "r04-aborted-recorder",
+   "usd": 0.125,
+   "minutes": 3.0,
+   "at": "2026-11-01T19:33:25+00:00",
+   "note": "r04 launch at 01:00 IST aborted: recorder dashboard failed to start; app stopped by hand at 01:03 IST"
+  },
+  {
+   "round": "r04",
+   "usd": 3.9742,
+   "minutes": 95.4,
+   "at": "2026-11-01T21:16:06.378624+00:00"
+  },
+  {
+   "round": "r04-metered-true-up",
+   "usd": 0.1057,
+   "minutes": 0,
+   "at": "2026-11-01T21:17:25.924853+00:00"
+  },
+  {
+   "round": "r04",
+   "usd": 1.8417,
+   "minutes": 44.2,
+   "at": "2026-11-01T22:13:56.946470+00:00"
+  },
+  {
+   "round": "r04-metered-true-up",
+   "usd": 0.204,
+   "minutes": 0,
+   "at": "2026-11-01T22:15:31.922177+00:00"
+  },
+  {
+   "round": "r04b",
+   "usd": 0.788,
+   "minutes": 18.9,
+   "at": "2026-11-01T23:05:35.890402+00:00"
+  },
+  {
+   "round": "r04c",
+   "usd": 4.4646,
+   "minutes": 107.2,
+   "at": "2026-11-02T02:10:40.599567+00:00"
+  },
+  {
+   "round": "r04c-metered-true-up",
+   "usd": 0.4035,
+   "minutes": 0,
+   "at": "2026-11-02T02:12:00.696273+00:00"
+  },
+  {
+   "round": "r04d",
+   "usd": 0.6967,
+   "minutes": 16.7,
+   "at": "2026-11-02T03:03:53.090401+00:00"
+  },
+  {
+   "round": "r04e",
+   "usd": 5.7762,
+   "minutes": 138.6,
+   "at": "2026-11-02T06:01:58.204953+00:00"
+  },
+  {
+   "round": "r04e-metered-true-up",
+   "usd": 0.2472,
+   "minutes": 0,
+   "at": "2026-11-02T06:03:17.882030+00:00"
+  },
+  {
+   "round": "r04e-langchain-20261102T071628Z",
+   "usd": 1.4465,
+   "minutes": 34.7,
+   "at": "2026-11-02T07:51:14.065030+00:00"
+  },
+  {
+   "round": "r04e-langchain-20261102T081001Z",
+   "usd": 1.436,
+   "minutes": 34.5,
+   "at": "2026-11-02T08:44:32.130731+00:00"
+  },
+  {
+   "round": "r04f",
+   "usd": 4.2779,
+   "minutes": 102.7,
+   "at": "2026-11-02T10:57:16.476777+00:00"
+  },
+  {
+   "round": "r04f-metered-true-up",
+   "usd": 0.1426,
+   "minutes": 0,
+   "at": "2026-11-02T10:58:21.991302+00:00"
+  },
+  {
+   "round": "r04f-langchain-20261102T112336Z",
+   "usd": 2.5974,
+   "minutes": 62.3,
+   "at": "2026-11-02T12:25:58.822293+00:00"
+  },
+  {
+   "round": "r05",
+   "usd": 3.4704,
+   "minutes": 83.3,
+   "at": "2026-11-02T13:52:45.576832+00:00"
+  },
+  {
+   "round": "r05-metered-true-up",
+   "usd": 0.1524,
+   "minutes": 0,
+   "at": "2026-11-02T13:54:06.562732+00:00"
+  },
+  {
+   "round": "r05-langchain-20261102T140740Z",
+   "usd": 1.2933,
+   "minutes": 31.0,
+   "at": "2026-11-02T14:38:45.581113+00:00"
+  },
+  {
+   "round": "r05-ablate-20261102T145207Z",
+   "usd": 0.669,
+   "minutes": 16.1,
+   "at": "2026-11-02T15:08:13.276089+00:00"
+  },
+  {
+   "round": "r05-eye-hearing-20261102T153519Z",
+   "usd": 0.2401,
+   "minutes": 5.8,
+   "at": "2026-11-02T15:41:08.130883+00:00"
   }
  ],
  "label": "ESTIMATE",
- "method": "container wall minutes x A100-80GB list price"
+ "method": "container wall minutes x A100-80GB list price",
+ "reserved": {},
+ "measured": [
+  {
+   "round": "smoke-smoke-ui1426",
+   "app_id": "ap-GveXLmrZ2DjcDyeUnexex2",
+   "usd": 0.6437,
+   "label": "MEASURED",
+   "source": "modal billing report 2026-11-01 (hourly, app wattnot-full-stage)",
+   "run_name": "A100 smoke: FP8 + batch sweep + thinking budget",
+   "job": "20261101-142644-9a5d"
+  }
+ ]
 }
