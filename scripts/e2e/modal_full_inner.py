@@ -198,7 +198,11 @@ class Server:
                     "--enable-auto-tool-choice", "--tool-call-parser", "muse_glimmer",   # agent blocks send tools
                     "--gpu-memory-utilization", "0.90", "--max-num-seqs", str(max_seqs),
                     "--limit-mm-per-prompt.image", "1", "--port", str(PORT),
-                    "--enable-prefix-caching" if prefix else "--no-enable-prefix-caching"]
+                    "--enable-prefix-caching" if prefix else "--no-enable-prefix-caching",
+                    # read the 55 GiB checkpoint sequentially into RAM first: vLLM turns auto-prefetch
+                    # off on Modal's 9P volume mount, and lazy mmap reads on a cold worker took 753.5 s
+                    # (r04e LangChain-only run) vs 32.6 s on a warm one (r04e)
+                    "--safetensors-load-strategy", "prefetch"]
             if fp8:
                 argv += ["--quantization", "fp8"]
             tag = f"{'fp8' if fp8 else 'bf16'}-{'pc' if prefix else 'nopc'}-{max_seqs}"
