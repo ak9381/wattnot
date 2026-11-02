@@ -8,7 +8,7 @@ sys.path[:0] = [str(ROOT / "scripts" / "e2e")]
 def test_replay_complex_items_fixed_saver_no_looping():
     import replay_complex_saver as RP
     ids = [f"complex-{i:02d}" for i in range(11)]
-    for style in ("notes", "stateless"):
+    for style in RP.STYLES:
         new = RP.run(ids, "new", style)
         off = RP.run(ids, "off", style)
         assert all(r["ok"] for r in new), [r for r in new if not r["ok"]]
@@ -53,3 +53,17 @@ def test_stage_pushes_results_before_clips_and_refuses_keys(tmp_path):
     assert main.index("[results-ready]") < main.index("finish_clips(") 
     assert main.index("push_results(") < main.index("finish_clips(")
     assert "convert=False" in main
+
+
+def test_smart_saver_keeps_facts_and_beats_safe_on_wordy_stateless_agent():
+    import replay_complex_saver as RP
+    from wattnot.context_saver.middleware import key_facts
+    facts, prose = key_facts('I will now check the stock level carefully. It is wise.\n'
+                             'CALL subagent {"task": "cost for a (to 100 units). Report it."}\n'
+                             "See src/x.py for details. Error: boom\n```\nprint(1)\n```")
+    assert 'CALL subagent {"task": "cost for a (to 100 units). Report it."}' in facts
+    assert any("src/x.py" in f for f in facts) and any("print(1)" in f for f in facts)
+    assert "check the stock level" in prose and "100" not in prose
+    ids = ["complex-01", "complex-04"]
+    assert all(r["ok"] for r in RP.run(ids, "new", "verbose-stateless"))
+    assert not any(r["ok"] for r in RP.run(ids, "safe", "verbose-stateless"))
