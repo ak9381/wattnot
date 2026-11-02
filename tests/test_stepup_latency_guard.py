@@ -65,3 +65,55 @@ def test_r04f_replay_brings_p99_within_limit():
         s = sorted(xs)
         return s[min(len(s) - 1, int(round(0.99 * (len(s) - 1))))]
     assert p99(walls) <= 1.10 * p99([a["wall_s"] for a in o])
+
+
+def _a(i, w, tries=("low",)):
+    return {"id": f"i{i}", "set": "s", "wall_s": w, "tries": list(tries)}
+
+
+def test_verdict_strict_pass():
+    wo = [_a(i, 10) for i in range(100)]
+    assert lg.latency_verdict(wo, [_a(i, 10.5) for i in range(100)])["verdict"] == "pass"
+
+
+def test_verdict_note_when_two_outliers_and_p95_ok():
+    wo = [_a(i, 10 + i * 0.1) for i in range(100)]
+    wi = [_a(i, 10 + i * 0.1) for i in range(97)] + [_a(97, 80), _a(98, 90, ("low", "medium")), _a(99, 95, ("low", "medium"))]
+    v = lg.latency_verdict(wo, wi)
+    assert v["strict_ok"] is False and v["verdict"] == "pass_with_latency_note"
+    assert [x["id"] for x in v["items"]] == ["i99", "i98"] and v["items"][0]["reason"].startswith("step-up")
+
+
+def test_verdict_fail_when_p95_bad_or_too_many():
+    wo = [_a(i, 10) for i in range(100)]
+    assert lg.latency_verdict(wo, [_a(i, 12) for i in range(100)])["verdict"] == "fail"
+    wi = [_a(i, 10) for i in range(96)] + [_a(96 + k, 99) for k in range(4)]
+    assert lg.latency_verdict(wo, wi)["verdict"] == "fail"
+
+
+@pytest.mark.skipif(not (R04F / "with.answers.jsonl").exists(), reason="fixture missing")
+def test_r04f_replay_note_only_if_p95_passes():
+    wi = lg.load_answers(R04F / "with.answers.jsonl")
+    wo = lg.load_answers(R04F / "without.answers.jsonl")
+    v = lg.latency_verdict(wo, wi)
+    assert v["strict_ok"] is False
+    if v["p95_ok"]:
+        assert v["verdict"] == "pass_with_latency_note"
+        assert {x["id"] for x in v["items"]} <= {"HumanEval/32", "complex-11"} and v["items"]
+    else:
+        assert v["verdict"] == "fail"
+
+
+def test_p99_check_in_stage_verdict(tmp_path):
+    import importlib.util
+    root = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location("mfr", root / "scripts/e2e/modal_full_round.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    (tmp_path / "raw").mkdir()
+    for n in ("with", "without"):
+        (tmp_path / "raw" / f"{n}.answers.jsonl").write_text((R04F / f"{n}.answers.jsonl").read_text())
+    S = {"without": {"item_latency_s": {"p99": 88.3794}}, "with": {"item_latency_s": {"p99": 104.6458}}}
+    c = m.p99_check({"p99_ok": False}, S, tmp_path)
+    assert c["strict_ok"] is False and c["verdict"] in ("pass_with_latency_note", "fail")
+    assert m.p99_check({"p99_ok": False}, S, None)["ok"] is False

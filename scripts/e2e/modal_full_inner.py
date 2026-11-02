@@ -507,7 +507,7 @@ def run_arm(b, nv, arm, its, conc, raw: Path, tag: str, max_s: float | None = No
             "avg_w": {"value": round(j / wall, 1) if wall else None, "label": "MEASURED"},
             "j_per_correct": {"value": round(j / correct, 1) if correct else None,
                               "label": "SIMULATED" if nv.fake else "MEASURED"},
-            "item_latency_s": {"p50": pctl(walls, 0.5), "p99": pctl(walls, 0.99), "label": "MEASURED"},
+            "item_latency_s": {"p50": pctl(walls, 0.5), "p95": pctl(walls, 0.95), "p99": pctl(walls, 0.99), "label": "MEASURED"},
             "stepped_up": sum(len(a["tries"]) > 1 for a in ans), "concurrency": conc,
             "partial": len(ans) < len(its), "item_errors": sum("error" in a for a in ans),
             "wh_per_item_samples": {"values": [round(c["j"] / c["n"] / 3600, 6) for c in chunks if c["n"]],

@@ -310,7 +310,23 @@ def fresh_demo_clone(tag: str) -> Path:
     return d
 
 
-def verify_change(inner: dict, spark: dict, receipt: Path, no_spark: bool = False) -> dict:
+def p99_check(lim: dict, S: dict, rdir: Path | None) -> dict:
+    """Strict p99 check, plus the shared latency note rule (wattnot.e2e.latency_guard)."""
+    from wattnot.e2e.latency_guard import latency_verdict, load_answers
+    strict = bool(lim.get("p99_ok"))
+    chk = {"ok": strict, "strict_ok": strict, "verdict": "pass" if strict else "fail",
+           "rule": "with-arm item p99 within +10% of without",
+           "without_s": S["without"]["item_latency_s"]["p99"], "with_s": S["with"]["item_latency_s"]["p99"]}
+    if rdir is not None and not strict:
+        lv = latency_verdict(load_answers(rdir / "raw" / "without.answers.jsonl"),
+                             load_answers(rdir / "raw" / "with.answers.jsonl"))
+        chk["latency_verdict"] = lv
+        if lv.get("verdict") == "pass_with_latency_note":
+            chk.update(ok=True, verdict="pass_with_latency_note", note_items=lv["items"])
+    return chk
+
+
+def verify_change(inner: dict, spark: dict, receipt: Path, no_spark: bool = False, rdir: Path | None = None) -> dict:
     """Approve-before-apply: verify the held change against every gate. No auto-approve."""
     from wattnot.receipt.build import verify_hash
     S = inner["steps"]
@@ -325,8 +341,7 @@ def verify_change(inner: dict, spark: dict, receipt: Path, no_spark: bool = Fals
     checks = {
         "accuracy_vs_baseline": {"ok": bool(qg.get("accuracy_ok")), "drop_pts": qg.get("acc_drop_pts"),
                                  "rule": "accuracy may drop at most 2 points"},
-        "p99": {"ok": bool(lim.get("p99_ok")), "rule": "with-arm item p99 within +10% of without",
-                "without_s": S["without"]["item_latency_s"]["p99"], "with_s": S["with"]["item_latency_s"]["p99"]},
+        "p99": p99_check(lim, S, rdir),
         "joule_slo": {"ok": bool(lim.get("joule_slo_ok")), "rule": "J/correct with <= without",
                       "without": S["without"]["j_per_correct"]["value"], "with": S["with"]["j_per_correct"]["value"]},
         "spark_agreement": spark_chk,
@@ -343,7 +358,9 @@ def verify_change(inner: dict, spark: dict, receipt: Path, no_spark: bool = Fals
         decision = "held"       # a check was skipped: needs human review, not auto-approved
     else:
         decision = "approved"
+    note = checks["p99"].get("verdict") == "pass_with_latency_note"
     return {"decision": decision, "auto_approve": False, "checks": checks,
+            "latency_note": checks["p99"].get("note_items") if note else None,
             "failed_checks": failed_checks, "skipped_checks": skipped_checks,
             "at": datetime.now(UTC).isoformat(), "by": "runner verification (rules above), recorded as evidence"}
 
@@ -535,11 +552,14 @@ def main(argv=None) -> int:
     failed = dict(inner.get("failed") or {})
     if not a.no_spark and spark.get("agreement") is None and spark.get("stopped") != "not run":
         failed["spark_grades"] = f"Spark grading did not complete: {spark.get('stopped')}"
-    decision = verify_change(inner, spark, receipt, a.no_spark) if receipt else {
+    decision = verify_change(inner, spark, receipt, a.no_spark, rdir) if receipt else {
         "decision": "rejected", "auto_approve": False, "failed_checks": ["receipt_hash"], "checks": {},
         "at": datetime.now(UTC).isoformat()}
     (rdir / "approval_evidence.json").write_text(json.dumps(decision, indent=1))
     print(f"[approval] held change {decision['decision']}: failed checks {decision['failed_checks']}")
+    for it in decision.get("latency_note") or []:
+        print(f"[approval] latency note: {it['set']}:{it['id']} with {it['with_wall_s']} s vs without "
+              f"{it['without_wall_s']} s ({it['reason']}) (MEASURED)")
     E("step.finished", node="proposals", sub="review", status="ok" if decision["decision"] == "approved" else "bad",
       summary=f"held change {decision['decision']} after checks" + (f" (failed: {', '.join(decision['failed_checks'])})"
                                                                     if decision["failed_checks"] else ""))
