@@ -13,6 +13,78 @@ from pathlib import Path
 from wattnot.dash.arch import PRICE, WATER
 
 SPEC = "wattnot.proof-receipt/1"
+OTHER_SPECS = ("wattnot.receipt/1",)   # sweep receipts; round receipts carry `kind`, no spec
+
+
+def load_any(path: Path) -> dict:
+    """A proof receipt, else a sweep (`wattnot.receipt/1`) or round (`kind` + `round`) receipt.
+
+    Raises ValueError when the file is none of these or has no integrity hash."""
+    try:
+        return load_receipt(path)
+    except ValueError as first:
+        try:
+            doc = json.loads(Path(path).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            raise first from None
+        integ = doc.get("integrity") if isinstance(doc, dict) else None
+        known = isinstance(doc, dict) and (doc.get("spec") in OTHER_SPECS
+                                            or (doc.get("kind") and doc.get("round")))
+        if not known or not isinstance(integ, dict) or not isinstance(integ.get("sha256"), str):
+            raise first from None
+        return doc
+
+
+def _lab(v):
+    """(value, label) from a {value, label} cell or a bare number."""
+    if isinstance(v, dict):
+        return v.get("value", v.get("mean")), v.get("label")
+    return v, None
+
+
+def summary_view(doc: dict) -> dict:
+    """A short view of a sweep or round receipt: ids, signature, hash and the headline numbers
+    exactly as the receipt states them (no new numbers are computed here)."""
+    integ = doc.get("integrity") or {}
+    facts = []
+    if doc.get("spec") in OTHER_SPECS:
+        res = doc.get("result") or {}
+        sav = (res.get("saving_pct") or {})
+        lab = (doc.get("measurement") or {}).get("label")
+        if sav.get("mean") is not None:
+            facts.append({"name": "Energy saved (mean)", "value": sav["mean"], "unit": "%", "label": lab})
+            facts.append({"name": "95% interval low", "value": sav.get("ci_low"), "unit": "%", "label": lab})
+            facts.append({"name": "95% interval high", "value": sav.get("ci_high"), "unit": "%", "label": lab})
+        model = (doc.get("subject") or {}).get("model")
+        rid, run, label = doc.get("receipt_id"), doc.get("run_id"), doc.get("grade")
+    else:
+        res = doc.get("results") or {}
+        for key, name, unit in (("energy_saved_pct", "Energy saved", "%"),
+                                ("j_per_correct_saved_pct", "Energy per correct answer saved", "%"),
+                                ("j_per_correct_without", "Energy per correct answer, without WattNot", "J"),
+                                ("j_per_correct_with", "Energy per correct answer, with WattNot", "J"),
+                                ("accuracy_without", "Accuracy without WattNot", ""),
+                                ("accuracy_with", "Accuracy with WattNot", "")):
+            if key in res:
+                v, lab = _lab(res[key])
+                if isinstance(v, (int, float)):
+                    facts.append({"name": name, "value": v, "unit": unit,
+                                  "label": lab or (doc.get("labels") or {}).get("energy")})
+        model, rid, run, label = doc.get("model"), f"{doc.get('kind')}:{doc.get('round')}", doc.get("round"), None
+    return {
+        "kind": "summary",
+        "receipt_id": rid, "run_id": run, "model": model, "label": label,
+        "spec": doc.get("spec") or doc.get("kind"),
+        "facts": facts,
+        "hash": integ.get("sha256"),
+        "signature": {"signed": integ.get("signer") is not None,
+                      "signer": integ.get("signer"), "rekor": integ.get("rekor")},
+        "steps": [],
+    }
+
+
+def view_any(doc: dict) -> dict:
+    return view(doc) if doc.get("spec") == SPEC else summary_view(doc)
 
 
 def find_receipt(events_file: Path) -> Path:

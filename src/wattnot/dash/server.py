@@ -348,7 +348,8 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
                 audio = _b64.b64decode(body["audio_b64"], validate=True)
             except Exception:  # noqa: BLE001
                 audio = None
-        mock = os.environ.get("WATTNOT_META_MOCK") == "1"
+        # a hosted replay never calls Meta (health says meta_calls False), so Ask runs on the labelled mock
+        mock = os.environ.get("WATTNOT_META_MOCK") == "1" or replay_only
         if not mock and not load_key():
             return JSONResponse({"intent": "answer", "label": "ERROR", "code": "no_key",
                                  "text": "Live Ask needs META_API_KEY (or ~/.config/muse/auth.json). "
@@ -503,7 +504,7 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         if events is None:
             raise HTTPException(404, "no events file is being followed (start with --events FILE)")
         try:
-            return receiptview.view(receiptview.load_receipt(receiptview.find_receipt(events)))
+            return receiptview.view_any(receiptview.load_any(receiptview.find_receipt(events)))
         except FileNotFoundError:
             raise HTTPException(404, "no signed receipt in this run folder yet") from None
         except (ValueError, OSError) as e:
