@@ -1,0 +1,47 @@
+{
+ "pr": "https://github.com/ak9381/wattnot-demo-deploy/pull/3",
+ "title": "WattNot self-hosted vLLM: bf16, max_num_seqs 128, prefix cache true",
+ "state": "OPEN",
+ "checks": {
+  "repo": {
+   "ok": true,
+   "value": "ak9381/wattnot-demo-deploy"
+  },
+  "base_main": {
+   "ok": true,
+   "value": "main"
+  },
+  "files_allowed": {
+   "ok": true,
+   "value": [
+    "values.yaml"
+   ]
+  },
+  "no_secrets": {
+   "ok": true
+  },
+  "small": {
+   "ok": true,
+   "value": [
+    2,
+    2
+   ]
+  },
+  "test_launch_sh_parses": {
+   "ok": true,
+   "stderr": ""
+  },
+  "test_values_yaml_parses": {
+   "ok": true
+  },
+  "repo_tests": {
+   "ok": true,
+   "value": "the demo repo has no test suite; parse checks above stand in"
+  }
+ },
+ "decision": "approved",
+ "auto_approve": false,
+ "failed_checks": [],
+ "at": "2026-11-02T14:02:46.384162+00:00",
+ "note": "GitHub does not let the PR author approve their own PR; the review is recorded here"
+}
