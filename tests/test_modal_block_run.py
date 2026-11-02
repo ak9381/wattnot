@@ -102,3 +102,8 @@ def test_detach_prefetch_and_cap():
     assert B.FS.BLOCK_CAP_S == 90 * 60 and B.plan(["langchain"])["worst_usd"] <= B.FS.ROUND_HARD_USD
     sh = (ROOT / "scripts" / "e2e" / "launch_detached.sh").read_text()
     assert "setsid nohup" in sh
+
+
+def test_ablate_plan_is_labelled_and_capped():
+    p = B.plan(["ablate"])
+    assert p["label"] == "ESTIMATE" and p["expected_usd"] < p["worst_usd"] <= B.FS.ROUND_HARD_USD
