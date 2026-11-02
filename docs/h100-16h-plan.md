@@ -55,8 +55,27 @@ Drop order if late (driver trims from the bottom; never drop 1-5): m4, m3, t2e t
 See "Dry-run results" below (filled from `python -m wattnot.longrun.driver --dry-run`).
 
 ## Dry-run results
-Main is at 04add68. Command: `PYTHONPATH=src python -m wattnot.longrun.driver --dry-run --out /tmp/dry/glimmer-<plan> --model glimmer --plan <plan>`. Every number here is MOCK (no GPU, no spend).
-- The `max` dry run was in progress at 03:50 IST: 10 blocks done, 9 run dirs written, receipt chain advancing, no errors in the log. Final status: see the update below.
+Run 3 Nov 2026, 04:05-04:45 IST, on main f782d8a with the box CPU only. Every number is MOCK: no GPU, no network, no spend, and provider keys were removed from the environment.
+Driver command: `PYTHONPATH=src python -m wattnot.longrun.driver --dry-run --out DIR --model M --plan P`. The driver uses `glimmer-test` for glimmer.
+
+| Dry run | Result | Notes |
+|---|---|---|
+| glimmer `--plan max` (recommended) | PASS | 37/37 blocks done, 0 failures, about 24 min wall time |
+| glimmer `--plan public` | PASS | 17/17 blocks done |
+| glimmer `--plan long` | PASS | 16/16 blocks done |
+| glimmer `--plan full` | PASS | 11 done; `g8-buffer` dropped by design (needs 0.75 h, 0.31 h left) |
+| llama `--plan full` | PASS | 8 done; `b5-second-model` skipped by design (needs Akash's yes) |
+| llama `--plan max` | refused (expected) | the guard says `--plan max needs --model glimmer-test` |
+| `scripts/e2e/baseten_round.py --round r01 --mode smoke --limit 2 --dry-run` | PASS | status dry-run, 0 errors, billing not read |
+| `scripts/e2e/round.py --dry-run` for modal, baseten and h100 | PASS | all rc 0 |
+| `modal/spark_topk_sprint.py --dry-run` | PASS after a fix | Bug: it appended $0 "reconcile" rows to the tracked `data/spend/modal.ledger.jsonl`. Fixed in fix/dry-run-ledger: the dry run now writes `DIR/dry-run.ledger.jsonl`, with a regression test. |
+| `scripts/e2e/preflight.py --no-dash` for baseten, h100, modal and combined | PASS | all rc 0 (launch allowed) |
+| Prefix cache auto/on/off (`context_saver.prefix_switch.choose`) | PASS | auto turns it on for a shared prompt prefix (87%) and off for unique prompts (0%); on and off force the vLLM flag either way |
+| `wattnot report eu --receipts receipts/rerun-1031/...cap325.json` | PASS | CSV and HTML written |
+| `wattnot verify` on the H100 rerun receipt and the modal-r1/r2 energy receipts | PASS | every check ok |
+| Round receipts of all 4 replays (signature check) | PASS | `check_receipt_file` is signed=True. `wattnot verify` covers energy receipts only, so it reports schema FAIL on round receipts. That is a documentation gap, not a broken receipt. |
+
+The mock tier gates show "blocked: p99 +12%". That comes from the synthetic latency model, not a real measurement.
 
 ## Open questions for Akash
 1. Go/no-go for ~₹7,300 of H100 time, and will you top up (≥ ₹1,500) so E2E's 24 h launch rule passes?
