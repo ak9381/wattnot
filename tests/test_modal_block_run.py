@@ -45,3 +45,16 @@ def test_round_view_lists_attachments(tmp_path, monkeypatch):
                                                    "status": "passed", "integrity": {"sha256": "ab"}}))
     got = L.round_attachments(tmp_path / "r04e")
     assert got[0]["run_id"] == "r04e-lc-1" and got[0]["signed"] is False
+
+
+def test_block_run_is_detached_and_waits_for_the_app():
+    src = (ROOT / "scripts" / "e2e" / "modal_block_run.py").read_text()
+    assert '"modal", "run", "--detach"' in src
+    seq = iter([["ap-1"], None, ["ap-1"], []])
+    clock = iter(range(0, 10000, 60))
+    sleeps = []
+    got = B.wait_app_stopped(5000, lister=lambda: next(seq), sleep=sleeps.append, now=lambda: next(clock))
+    assert got == {"stopped": True, "polls": 4} and len(sleeps) == 3   # None (list failed) never counts as stopped
+    never = B.wait_app_stopped(120, lister=lambda: ["ap-1"], sleep=lambda s: None,
+                               now=iter(range(0, 1000, 60)).__next__)
+    assert never["stopped"] is False and never["why"] == "deadline"

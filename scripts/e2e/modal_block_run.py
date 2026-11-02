@@ -50,6 +50,25 @@ def plan(only: list[str]) -> dict:
                       "worst = container cap"}
 
 
+def wait_app_stopped(deadline: float, lister=None, poll_s: float = 60, sleep=time.sleep,
+                     now=time.time) -> dict:
+    """Wait until no wattnot-full-stage app is running (or the deadline).
+
+    The run is launched with ``modal run --detach``: if the local client drops (r04e LangChain
+    run, 13:18 IST: "Stopping app - local client disconnected" after missed heartbeats), the
+    container keeps going and still syncs its results to the volume. So a non-zero client exit
+    is not the end of the run: wait for the app to stop, then recover from the volume."""
+    lister = lister or R.app_running
+    polls = 0
+    while now() < deadline:
+        live = lister()
+        polls += 1
+        if live == []:
+            return {"stopped": True, "polls": polls}
+        sleep(poll_s)
+    return {"stopped": False, "polls": polls, "why": "deadline"}
+
+
 def attachment(rdir: Path, attach: str, run_id: str, only: list[str], fake: bool, spend: dict) -> Path:
     from wattnot.receipt.canon import canonical_sha256
     from wattnot.receipt.sign import sign
@@ -138,12 +157,15 @@ def main(argv=None) -> int:
         events = DATA / "attachments" / a.attach / f"{run_id}.events.jsonl"
         t0, rc = time.time(), 1
         try:
-            rc = subprocess.run(["modal", "run", "modal/full_stage.py::round_", "--round", run_id,
+            rc = subprocess.run(["modal", "run", "--detach", "modal/full_stage.py::round_", "--round", run_id,
                                  "--only", ",".join(a.only), "--out", str(inc), "--events", str(events)],
                                 cwd=ROOT, timeout=FS.BLOCK_CAP_S + 900).returncode
         except Exception as e:  # noqa: BLE001
             print(f"[fail] modal run: {type(e).__name__}")
         finally:
+            if rc != 0:   # client gone or call failed: the detached app may still be working
+                print(f"[wait] client rc={rc}; waiting for the detached app to stop", flush=True)
+                print("[wait] " + json.dumps(wait_app_stopped(t0 + FS.BLOCK_CAP_S + 600)), flush=True)
             mins = (time.time() - t0) / 60
             R.add_spend(run_id, mins / 60 * FS.GPU_USD_H, mins)
             R.reserve(run_id, None)
