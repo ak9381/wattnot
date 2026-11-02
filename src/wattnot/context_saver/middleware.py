@@ -171,9 +171,15 @@ class ChunkStore:
 class MemoryCompressionMiddleware:
     """Summarise old agent turns (Muse Spark live, offline mock by default), keep a chunk store, retrieve relevant chunks back.
 
-    The system prompt and the last ``keep_last`` messages stay verbatim. Older non-system messages
-    are summarised (one chunk each) into ``store``; then the chunks most relevant to the latest
-    user message are stitched back as one compact recap, placed right after the system prompt.
+    The system prompt, the FIRST user message (the task) and the last ``keep_last`` messages stay
+    verbatim. Older messages in between are summarised (one chunk each) into a store built fresh
+    for this conversation; then the chunks most relevant to the latest user message are stitched
+    back as one compact recap, placed right after the system prompt.
+
+    r04e (Modal): with the live summariser on, the task itself was summarised away and the store
+    was shared by every conversation, so agents lost the question ("No current user request...")
+    and retrieved chunks from other items. Both are fixed here: the task is pinned, and ``store``
+    only seeds the per-call store (tests); summaries are cached by text hash, which never leaks.
     """
 
     summarize: Callable[[str], str] = field(default_factory=lambda: default_summarizer())
@@ -182,11 +188,17 @@ class MemoryCompressionMiddleware:
     retrieve_k: int = 3
     store: ChunkStore = field(default_factory=ChunkStore)
     name: str = "memory_compression"
+    _cache: dict = field(default_factory=dict, repr=False)
 
     def apply(self, messages: list[dict]) -> tuple[list[dict], dict]:
         before = conversation_tokens(messages)
         head = [m for m in messages if isinstance(m, dict) and m.get("role") == "system"]
         rest = [m for m in messages if isinstance(m, dict) and m.get("role") != "system"]
+        # pin the task: the first user message is never summarised away
+        task = next((m for m in rest if m.get("role") == "user"), None)
+        if task is not None:
+            head = [*head, task]
+            rest = [m for m in rest if m is not task]
         model = getattr(self.summarize, "model", "summarizer")
         if len(rest) - self.keep_last < self.min_old:
             return messages, {"name": self.name, "applied": False, "tokens_before": before,
@@ -204,14 +216,21 @@ class MemoryCompressionMiddleware:
                               "tokens_after": before, "chunks_made": 0, "chunks_retrieved": 0,
                               "summarize_calls": 0, "model": model}
         old, recent = rest[:split], rest[split:]
+        # a fresh store per conversation: a shared store mixed chunks from other items (r04e)
+        store = ChunkStore()
+        for c in self.store._chunks:   # noqa: SLF001 - seeded chunks (tests) only
+            store.add(c.text, c.role)
         calls0 = getattr(self.summarize, "calls", 0)
         for m in old:
             text = _text(m.get("content")) or _text(m.get("tool_calls") or [{}])
             if text.strip():
-                self.store.add(self.summarize(text), str(m.get("role", "")))
+                key = hashlib.sha256(text.encode()).hexdigest()
+                if key not in self._cache:
+                    self._cache[key] = self.summarize(text)
+                store.add(self._cache[key], str(m.get("role", "")))
         query = next((_text(m.get("content")) for m in reversed(recent)
                       if m.get("role") == "user"), _text(recent[-1].get("content")) if recent else "")
-        picked = self.store.retrieve(query, self.retrieve_k)
+        picked = store.retrieve(query, self.retrieve_k)
         recap_body = "Earlier context (compressed, retrieved by relevance):\n" + \
             "\n".join(f"- [{c.ref}] {c.text}" for c in picked)
         recap = {"role": "system", "content": recap_body}

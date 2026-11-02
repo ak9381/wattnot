@@ -54,6 +54,37 @@ def _answer(response: dict) -> tuple[str | None, str | None, bool]:
     return msg.get("content"), choice.get("finish_reason"), bool(msg.get("tool_calls"))
 
 
+def _only_done_call(response: dict, done_tool: str) -> str | None:
+    """The reason text when the reply's only tool calls are the guard's `done` tool, else None.
+
+    final-check mode treats such a reply as the agent's FINAL answer (r04e LangChain: 14 of 20
+    runs ended on `done("Calculations completed...")`, which reached the caller as the answer and
+    was never judged because it looked like a tool turn)."""
+    try:
+        msg = (response.get("choices") or [])[0].get("message") or {}
+    except (IndexError, AttributeError):
+        return None
+    tcs = msg.get("tool_calls") or []
+    if not tcs or any(((tc or {}).get("function") or {}).get("name") != done_tool for tc in tcs):
+        return None
+    raw = ((tcs[0] or {}).get("function") or {}).get("arguments") or ""
+    try:
+        return str(json.loads(raw).get("reason", raw)) if isinstance(raw, str) else str(raw)
+    except (ValueError, AttributeError):
+        return str(raw)
+
+
+FINALIZE_NOTE = ("Give your final answer now, in the format the task asks for (for math, the "
+                 "final number on the last line as '#### <number>'). Do not call any tool.")
+
+
+def finalize_body(body: dict, done_tool: str) -> dict:
+    """One more call that must answer: no tools, the task's format restated."""
+    out = {k: v for k, v in body.items() if k not in ("tools", "tool_choice")}
+    out["messages"] = [*(body.get("messages") or []), {"role": "user", "content": FINALIZE_NOTE}]
+    return out
+
+
 # OpenAI chat fields the proxy forwards upstream. Anything else is dropped (and listed in the
 # receipt) so a framework's extras never turn into an upstream 400.
 ALLOWED_FIELDS = frozenset({
@@ -204,6 +235,26 @@ def create_app(
         run = request.headers.get("x-wattnot-run") or _run_id(body)
         guard = guard_for(run)
         verdict = guard.before(body)
+        if (verdict.action == "stop" and final_check and verdict.reason
+                and "budget" not in verdict.reason and isinstance(body.get("messages"), list)):
+            # final-check mode: a detector stop (repeat, cycle, no-op...) must still end with an
+            # answer, so the run gets one finalize call instead of a "stopped" text (r04e)
+            fin_tier = (list(tiers) if tiers else [None])[-1]
+            try:
+                response = upstream(tier_body(finalize_body(body, cfg.done_tool), fin_tier),
+                                    dict(request.headers))
+            except Exception:  # noqa: BLE001
+                response = None
+            if response is not None:
+                calls.append({"run": run[:16], "framework": detect_framework(request.headers),
+                              "tokens_before": None, "tokens_after": None, "dropped_fields": dropped,
+                              "stream": stream, "answered_by": None if fin_tier is None else fin_tier["name"],
+                              "attempts": [{"tier": None if fin_tier is None else fin_tier["name"],
+                                            "passed": None, "reason": f"finalize after guard stop: {verdict.reason}",
+                                            "finalize": True}],
+                              "gate_passed": True, "stopped": verdict.reason, "escalated_tokens": 0})
+                guard.charge(response)
+                return reply(response)
         if verdict.action == "stop":
             assert verdict.reason is not None
             # a guard stop is a call too: count it, so the receipt's call total is honest
@@ -234,6 +285,28 @@ def create_app(
                 body_t = tier_body(out_body, tier)
                 response = upstream(body_t, headers)
                 text, finish, tool = _answer(response)
+                done_reason = _only_done_call(response, cfg.done_tool) if final_check else None
+                if done_reason is not None:
+                    # `done` ends the run: judge it like a final answer; a shaky one gets one
+                    # finalize call (tools off, format restated) instead of reaching the caller
+                    k = request.headers.get("x-wattnot-kind") or fc.infer_kind(out_body.get("messages") or [])
+                    ok, why = fc.check(k, done_reason, finish, out_body.get("messages") or [], response)
+                    if not ok:
+                        guard.charge(response)
+                        u = response.get("usage") or {}
+                        esc_tokens += int(u.get("prompt_tokens") or 0) + int(u.get("completion_tokens") or 0)
+                        fin_tier = chain[-1]
+                        response = upstream(tier_body(finalize_body(out_body, cfg.done_tool), fin_tier), headers)
+                        text, finish, tool = _answer(response)
+                        ok2, why2 = fc.check(k, text, finish, out_body.get("messages") or [], response)
+                        attempts.append({"tier": None if tier is None else tier["name"], "passed": False,
+                                         "reason": f"done call judged: {why}"})
+                        attempts.append({"tier": None if fin_tier is None else fin_tier["name"],
+                                         "passed": ok2, "reason": f"finalize: {why2}", "finalize": True})
+                    else:
+                        attempts.append({"tier": None if tier is None else tier["name"],
+                                         "passed": True, "reason": f"done call judged: {why}"})
+                    break
                 if final_check:
                     if tool:   # mid-task: not a pass, not a fail, never stepped up
                         attempts.append({"tier": None if tier is None else tier["name"],
