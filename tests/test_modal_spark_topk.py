@@ -216,3 +216,12 @@ def test_plan_reports_the_98_dollar_caps_and_no_deploy():
     assert p["hard_usd"] == 98.0 and p["soft_usd"] == 90.0 and p["effective_hard_usd"] == 96.0
     assert p["serve_deadline_min"] == 15 and "nothing deployed" in p["label"]
     assert p["topks"] == (8, 6, 4) and p["repeat_k"] == 8
+
+
+def test_dry_run_default_guard_never_touches_real_ledger(tmp_path):
+    real = ROOT / "data" / "spend" / "modal.ledger.jsonl"
+    before = real.read_bytes() if real.exists() else None
+    M.dry_run(tmp_path / "out", now=NOW)
+    after = real.read_bytes() if real.exists() else None
+    assert after == before
+    assert (tmp_path / "out" / "dry-run.ledger.jsonl").exists()
