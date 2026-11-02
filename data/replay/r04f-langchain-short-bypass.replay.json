@@ -1,0 +1,43 @@
+{
+  "mechanical": {
+    "label": "SYNTHETIC",
+    "items": 20,
+    "upstream_calls": 21,
+    "done_tool_offered": 0,
+    "expected_calls": 21
+  },
+  "estimate": {
+    "label": "REPLAY/ESTIMATE",
+    "measured_r04f": {
+      "saver_off": {
+        "billed_calls": 65,
+        "prompt_tokens": 41797,
+        "completion_tokens": 24351,
+        "gpu_kj": 329.0
+      },
+      "saver_on": {
+        "billed_calls": 77,
+        "prompt_tokens": 55512,
+        "completion_tokens": 28557,
+        "gpu_kj": 398.0,
+        "final_check_stepups": 4,
+        "tokens_saved": 0
+      }
+    },
+    "fixed_saver_on_estimate": {
+      "billed_calls": 66,
+      "prompt_tokens": 43579,
+      "completion_tokens": 25115,
+      "final_check_stepups": 1,
+      "gpu_kj": 341.7,
+      "gpu_vs_saver_off_pct": 3.8,
+      "gpu_vs_measured_saver_on_pct": -14.1,
+      "j_per_token_from_saver_off": 4.974
+    },
+    "cannot_show": [
+      "live model behaviour without the done tool (calls, answer length, accuracy)",
+      "tier 0 is thinking-off; saver-off used the model default",
+      "energy model is linear in tokens, fitted on one arm"
+    ]
+  }
+}

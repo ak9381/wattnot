@@ -233,8 +233,11 @@ class WasteGuard:
         self._stopped = True
         self._stop_reason = reason
 
-    def before(self, body: dict) -> Verdict:
-        """Check budgets and detectors. Never mutates the caller's body."""
+    def before(self, body: dict, inject_done: bool = True) -> Verdict:
+        """Check budgets and detectors. Never mutates the caller's body.
+
+        ``inject_done=False`` skips adding the done tool for this call (short-conversation bypass).
+        """
         cfg = self._config
         self._last_obs = last_observation(body.get("messages", []) or [])
         if self._shared is not None:
@@ -302,6 +305,7 @@ class WasteGuard:
         tools = (out if out is not None else body).get("tools")
         if (
             cfg.inject_done
+            and inject_done
             and isinstance(tools, list)
             and tools
             and cfg.done_tool not in _tool_names(tools)

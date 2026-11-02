@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from wattnot.agentwaste.config import WasteConfig
 from wattnot.agentwaste.guard import WasteGuard
+from wattnot.context_saver.middleware import conversation_tokens
 
 _COUNTER_KEYS = (
     "upstream_calls",
@@ -195,6 +196,7 @@ def create_app(
     label: str = "MEASURED",
     final_check: bool = False,
     max_stepups: int = 1,
+    short_bypass_tokens: int | None = None,
 ) -> FastAPI:
     """Build the proxy app. upstream(body, headers) returns parsed JSON.
 
@@ -209,11 +211,22 @@ def create_app(
     * ``final_check`` (flag, off by default): agent mode. Tool-call turns are mid-task and never
       judged; only a FINAL answer (no tool calls) is checked by ``route.final_check`` and, when
       shaky, retried on the next tier. At most ``max_stepups`` step-ups per run id.
+    * ``short_bypass_tokens``: short-conversation bypass. A call whose conversation is under this
+      many (estimated) tokens has nothing for the saver to cut, so WattNot gets out of the way: no
+      injected done tool, no answer-in-done instruction, no tier routing, and the final check
+      only runs when the reply is empty. ``None`` = follow the context saver's own long-conversation
+      gate (``min_tokens``, 500 by default) when a saver is on, else off; ``0`` = always off.
+      Added after r04f-langchain (MEASURED: every call under 500 tokens, saver-on +21% energy).
     """
     from wattnot.route import final_check as fc
     from wattnot.route.escalate import gate as answer_gate
 
     cfg = config or WasteConfig()
+    if short_bypass_tokens is None:
+        gates = [int(getattr(mw, "min_tokens", 0) or 0)
+                 for mw in getattr(context_saver, "middlewares", []) or []]
+        short_bypass_tokens = max(gates) if gates else 0
+    bypass_under = max(0, int(short_bypass_tokens))
     calls: list[dict] = []
     guards: OrderedDict[str, WasteGuard] = OrderedDict()
     stepups: dict[str, int] = {}
@@ -254,7 +267,11 @@ def create_app(
             return JSONResponse(payload)
         run = request.headers.get("x-wattnot-run") or _run_id(body)
         guard = guard_for(run)
-        verdict = guard.before(body)
+        msgs_in = body.get("messages") if isinstance(body.get("messages"), list) else []
+        # only agent calls (a tools list) are bypassed; plain Q&A routing is unchanged
+        short = (bool(bypass_under) and isinstance(body.get("tools"), list) and bool(body["tools"])
+                 and conversation_tokens(msgs_in) < bypass_under)
+        verdict = guard.before(body, inject_done=not short)
         if (verdict.action == "stop" and final_check and verdict.reason
                 and "budget" not in verdict.reason and isinstance(body.get("messages"), list)):
             # final-check mode: a detector stop (repeat, cycle, no-op...) must still end with an
@@ -288,12 +305,13 @@ def create_app(
             )
         headers = dict(request.headers)
         out_body = verdict.body
-        if final_check and isinstance(out_body, dict) and isinstance(out_body.get("tools"), list):
+        if (final_check and not short and isinstance(out_body, dict)
+                and isinstance(out_body.get("tools"), list)):
             # ask for the answer inside done(reason): a done() with the answer needs no finalize
             out_body = {**out_body, "tools": [_done_with_answer(t, cfg.done_tool) for t in out_body["tools"]]}
         rec: dict = {"run": run[:16], "framework": detect_framework(request.headers),
                      "tokens_before": None, "tokens_after": None,
-               "dropped_fields": dropped, "stream": stream}
+               "dropped_fields": dropped, "stream": stream, "short_bypass": short}
         if context_saver is not None and isinstance(out_body, dict) and out_body.get("messages"):
             saved, acct = context_saver.transform(list(out_body["messages"]))
             out_body = {**out_body, "messages": saved}
@@ -308,7 +326,7 @@ def create_app(
                 body_t = tier_body(out_body, tier)
                 response = upstream(body_t, headers)
                 text, finish, tool = _answer(response)
-                done_reason = _only_done_call(response, cfg.done_tool) if final_check else None
+                done_reason = _only_done_call(response, cfg.done_tool) if final_check and not short else None
                 if done_reason is not None:
                     # `done` ends the run: judge it like a final answer. Tuned after the r04e
                     # LangChain run (13 of 14 step-ups were done() with no number, each paid a
@@ -347,6 +365,12 @@ def create_app(
                                          "passed": ok2, "reason": f"finalize: {why2}", "finalize": True})
                         if ok2:
                             break
+                    break
+                if short and final_check and not (not tool and not (text or "").strip()):
+                    # short-conversation bypass: keep the reply as is (an empty final answer
+                    # still goes through the final check below)
+                    attempts.append({"tier": None if tier is None else tier["name"],
+                                     "passed": True, "reason": "short conversation: passed through"})
                     break
                 if final_check:
                     if tool:   # mid-task: not a pass, not a fail, never stepped up
