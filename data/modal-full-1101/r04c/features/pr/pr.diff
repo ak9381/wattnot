@@ -1,0 +1,16 @@
+diff --git a/values.yaml b/values.yaml
+index 85d7d7a..315f0ac 100644
+--- a/values.yaml
++++ b/values.yaml
+@@ -15,3 +15,11 @@ vllm:
+ resources:
+   limits:
+     nvidia.com/gpu: 1
++
++# Applied by WattNot after review (own-GPU e2e stage)
++selfHosted:
++  quantization: bf16
++  maxNumSeqs: 64
++  prefixCaching: true
++  router: cheapest-first
++  receiptSha256: 9eb74d573731fc615ae7693b3bf06f6e0f45bdb4d2b69389f8ce1b4ad294297e

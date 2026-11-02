@@ -1,0 +1,107 @@
+✓ Initialized. View run at 
+https://modal.com/apps/akashkraju218/main/ap-jnFR4P55829nA5OSdb4IyW
+✓ Created objects.
+├── ✓ Uploaded /tmp/wn-merge/modal/full_stage.py
+├── ✓ Uploaded pyproject.toml
+├── ✓ Uploaded /tmp/wn-merge/workloads
+├── ✓ Uploaded /tmp/wn-merge/data/public_bench
+├── ✓ Uploaded /tmp/wn-merge/examples
+├── ✓ Uploaded /tmp/wn-merge/data/voice
+├── ✓ Uploaded /tmp/wn-merge/data/vision
+├── ✓ Uploaded /tmp/wn-merge/scripts
+├── ✓ Uploaded /tmp/wn-merge/src
+├── ✓ Created Function gpu_round.
+└── ✓ Created Function gpu_smoke.
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+[full_stage] r04: results in /tmp/wn-merge/data/modal-full-1101/_incoming/r04
+Stopping app - local entrypoint completed.
+[modal-client] 2026-11-01T21:15:56+0000 Detected 1 background thread(s) [Thread-2] still running after container exit. This will prevent runner shutdown for up to 30 seconds.
+Exception ignored in: <module 'threading' from '/usr/lib/python3.12/threading.py'>
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/threading.py", line 1622, in _shutdown
+    lock.acquire()
+KeyboardInterrupt: 
+[modal-client] 2026-11-02T02:46:06+0530 Timed out waiting for final app logs.
+✓ App completed. View run at 
+https://modal.com/apps/akashkraju218/main/ap-jnFR4P55829nA5OSdb4IyW
+[teardown] {"stopped": ["ap-jnFR4P55829nA5OSdb4IyW"], "still_running": [], "verified_empty": true, "checked_at": "2026-11-01T21:16:23.080719+00:00"}
+[approval] held change approved: failed checks []
+eye test [fake]: all 10 eye-test images read correctly
+spoken answer [fake]: all 20 spoken answers correct
+  energy [MOCK]: 1260.0 J/correct spoken, 210.0 J/token, 42.0 J/correct answer
+hotspot set [live] (SYNTHETIC tests): SAM 3.1 found all 6 SYNTHETIC hotspots
+wonder chart [live · wonder]: next = 300W/base — No real measurements exist yet, so start at the lowest power cap to test for minimum joules per correct answer while preserving quality.
+{"round": "r04", "acc": [0.9792, 0.9896], "j_per_correct": [2074.8, 657.5], "saved_pct": {"value": 68.31, "label": "MEASURED"}, "spark": {"label": "LIVE", "graded": 360, "disagreements": 15, "agreement": 0.9583, "stopped": null}, "flow_rc": 1, "musecode": {"status": "error", "error": "KeyError: 'reasoning_effort'", "where": ["    f\"  model: meta-models/muse-spark-open\\n  reasoningEffort: {change['reasoning_effort']}\\n\"", "                                                                ~~~~~~^^^^^^^^^^^^^^^^^^^^", "KeyError: 'reasoning_effort'"]}, "modal_usd": {"value": 3.9742, "label": "ESTIMATE", "method": "wall minutes incl. image and container start x list price"}, "approval": "approved", "failed": ["context_saver", "eye_check", "musecode_pr"]}

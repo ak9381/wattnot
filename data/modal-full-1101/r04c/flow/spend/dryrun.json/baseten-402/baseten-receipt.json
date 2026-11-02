@@ -1,0 +1,13 @@
+{
+ "provider": "baseten",
+ "stop_level": "hard",
+ "why": "baseten: out of credit (402)",
+ "items_done": 39,
+ "ledger_committed_usd": 3.477875,
+ "ledger_spent_usd": 3.477875,
+ "provider_reported_usd": 0.0,
+ "soft_usd": 90.0,
+ "hard_usd": 98.0,
+ "orphans_after_teardown": [],
+ "label": "ESTIMATE until reconciled"
+}

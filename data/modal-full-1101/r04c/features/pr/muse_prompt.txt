@@ -1,0 +1,7 @@
+Edit only values.yaml. Add a top-level block named `selfHosted` for our own vLLM server with:
+  quantization: bf16
+  maxNumSeqs: 64
+  prefixCaching: true
+  router: cheapest-first
+  receiptSha256: 9eb74d573731fc615ae7693b3bf06f6e0f45bdb4d2b69389f8ce1b4ad294297e
+Add a one-line YAML comment above the block: 'Applied by WattNot after review (own-GPU e2e stage)'. Do not change anything else. Do not commit, push or run other commands.

@@ -1,0 +1,90 @@
+{
+  "format": "wattnot.certificate/1",
+  "status": "MEASURED",
+  "watermark": {
+    "lines": [
+      "NOT TRADABLE",
+      "NOT A CARBON CREDIT"
+    ],
+    "permanent": true
+  },
+  "serial": "WNC-0001",
+  "issued_at": "2026-11-01T21:20:00+00:00",
+  "title": "Verified Efficiency Statement",
+  "receipt": {
+    "receipt_id": "rcpt_20261101_modal_full_r04",
+    "sha256": "6a97e9c74bd5e4072ce1eede7a3caa7268fd50377b3e3fd86f05eedbd330ead8",
+    "spec": "wattnot.receipt/1",
+    "grade": "ESTIMATE",
+    "label": "MEASURED",
+    "signer": "offline:56475aa75463474c",
+    "rekor": false,
+    "created_at": "2026-11-01T21:19:24+00:00"
+  },
+  "subject": {
+    "model": "meta-models/Muse-Glimmer-30B",
+    "provider": "modal",
+    "gpu": "NVIDIA A100-SXM4-80GB",
+    "workload": "ours92+gsm8k60+humaneval40",
+    "mode": "container"
+  },
+  "period": {
+    "receipt_created_at": "2026-11-01T21:19:24+00:00",
+    "requests": 192
+  },
+  "headline": "Energy per request 67.9659% lower than the baseline (0.383463 Wh saved per request).",
+  "figures": {
+    "wh_per_request": {
+      "baseline": 0.564198,
+      "candidate": 0.180735,
+      "saved": 0.383463,
+      "saved_ci95": {
+        "low": 0.224931638,
+        "high": 0.515336761
+      },
+      "baseline_range": null,
+      "candidate_range": null
+    },
+    "saving_pct": {
+      "mean": 67.9659,
+      "ci_low": 39.8675,
+      "ci_high": 91.3397,
+      "basis": null
+    },
+    "usd_per_request": {
+      "baseline": 6.77038e-05,
+      "candidate": 2.16883e-05,
+      "saved": 4.60155e-05,
+      "currency": "USD"
+    },
+    "j_per_good_answer": {
+      "baseline": 2074.257353,
+      "candidate": 657.483832,
+      "change_pct": -68.3027
+    },
+    "pass_rate": {
+      "baseline": 0.9792,
+      "candidate": 0.9896
+    }
+  },
+  "labels": {
+    "grade": "ESTIMATE",
+    "energy": "MEASURED",
+    "basis": "ESTIMATE"
+  },
+  "verify": {
+    "url": "https://github.com/ak9381/wattnot/tree/main/verifier#sha256=6a97e9c74bd5e4072ce1eede7a3caa7268fd50377b3e3fd86f05eedbd330ead8",
+    "qr_text": "https://github.com/ak9381/wattnot/tree/main/verifier#sha256=6a97e9c74bd5e4072ce1eede7a3caa7268fd50377b3e3fd86f05eedbd330ead8",
+    "how": "Run the standalone verifier on the receipt and its .sigstore.json bundle, then compare the sha256."
+  },
+  "limits": [
+    "It restates one receipt. It does not say the saving would repeat on other workloads.",
+    "It is not tradable. No registry, buyer or regulator accepts it.",
+    "Energy is GPU draw (or a model of it) for the listed requests, not a whole site.",
+    "No carbon figure is given, and none should be read into it."
+  ],
+  "integrity": {
+    "canonicalization": "JCS RFC 8785",
+    "sha256": "0ee965cb5e9c588a8e73a001d7e1b678e7560de603028e7563d40c0b0edd3f0d"
+  }
+}

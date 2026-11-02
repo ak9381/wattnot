@@ -1,0 +1,193 @@
+✓ Initialized. View run at 
+https://modal.com/apps/akashkraju218/main/ap-JQ7HWNm9AMWnx0WLNYyn6Q
+Building image im-bDhqLTECuJSB7XAZRtZKj7
+
+=> Step 0: FROM base
+
+=> Step 1: RUN python -m pip install jsonschema langchain-core langchain-openai numpy 'optuna>=3.6,<5' pynvml pyyaml
+Looking in indexes: http://pypi-mirror.modal.local:5555/simple
+Requirement already satisfied: jsonschema in /usr/local/lib/python3.12/dist-packages (4.26.0)
+Collecting langchain-core
+  Downloading langchain_core-1.7.3-py3-none-any.whl.metadata (4.8 kB)
+Collecting langchain-openai
+  Downloading langchain_openai-1.7.3-py3-none-any.whl.metadata (3.6 kB)
+Requirement already satisfied: numpy in /usr/local/lib/python3.12/dist-packages (2.2.6)
+Collecting optuna<5,>=3.6
+  Downloading optuna-4.9.0-py3-none-any.whl.metadata (15 kB)
+Collecting pynvml
+  Downloading pynvml-13.0.1-py3-none-any.whl.metadata (5.6 kB)
+Requirement already satisfied: pyyaml in /usr/local/lib/python3.12/dist-packages (6.0.3)
+Collecting alembic>=1.5.0 (from optuna<5,>=3.6)
+  Downloading alembic-1.20.1-py3-none-any.whl.metadata (7.3 kB)
+Collecting colorlog (from optuna<5,>=3.6)
+  Downloading colorlog-6.12.0-py3-none-any.whl.metadata (11 kB)
+Requirement already satisfied: packaging>=20.0 in /usr/local/lib/python3.12/dist-packages (from optuna<5,>=3.6) (26.3)
+Collecting sqlalchemy>=1.4.2 (from optuna<5,>=3.6)
+  Downloading sqlalchemy-2.1.6-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (9.7 kB)
+Requirement already satisfied: tqdm in /usr/local/lib/python3.12/dist-packages (from optuna<5,>=3.6) (4.70.0)
+Requirement already satisfied: attrs>=22.2.0 in /usr/local/lib/python3.12/dist-packages (from jsonschema) (26.1.0)
+Requirement already satisfied: jsonschema-specifications>=2023.03.6 in /usr/local/lib/python3.12/dist-packages (from jsonschema) (2025.9.1)
+Requirement already satisfied: referencing>=0.28.4 in /usr/local/lib/python3.12/dist-packages (from jsonschema) (0.37.0)
+Requirement already satisfied: rpds-py>=0.25.0 in /usr/local/lib/python3.12/dist-packages (from jsonschema) (2026.6.3)
+Collecting certifi>=2026.10.19 (from langchain-core)
+  Downloading certifi-2026.10.23-py3-none-any.whl.metadata (2.5 kB)
+Requirement already satisfied: httpx>=0.23.0 in /usr/local/lib/python3.12/dist-packages (from langchain-core) (0.28.1)
+Collecting jsonpatch>=1.33.0 (from langchain-core)
+  Downloading jsonpatch-1.39-py3-none-any.whl.metadata (3.7 kB)
+Collecting langchain-protocol>=0.0.20 (from langchain-core)
+  Downloading langchain_protocol-0.0.20-py3-none-any.whl.metadata (2.4 kB)
+Collecting langsmith<1.0.0,>=0.14.9 (from langchain-core)
+  Downloading langsmith-0.14.16-py3-none-any.whl.metadata (39 kB)
+Requirement already satisfied: pydantic<3.0.0,>=2.7.4 in /usr/local/lib/python3.12/dist-packages (from langchain-core) (2.13.4)
+Collecting tenacity!=8.4.0,>=8.1.0 (from langchain-core)
+  Downloading tenacity-9.2.1-py3-none-any.whl.metadata (1.4 kB)
+Requirement already satisfied: typing-extensions>=4.7.0 in /usr/local/lib/python3.12/dist-packages (from langchain-core) (4.16.0)
+Collecting uuid-utils>=0.12.0 (from langchain-core)
+  Downloading uuid_utils-1.2.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.4 kB)
+Requirement already satisfied: anyio<5,>=3.5.0 in /usr/local/lib/python3.12/dist-packages (from langsmith<1.0.0,>=0.14.9->langchain-core) (4.14.2)
+Requirement already satisfied: distro<2,>=1.7.0 in /usr/local/lib/python3.12/dist-packages (from langsmith<1.0.0,>=0.14.9->langchain-core) (1.9.0)
+Requirement already satisfied: httpx2<3,>=2 in /usr/local/lib/python3.12/dist-packages (from langsmith<1.0.0,>=0.14.9->langchain-core) (2.10.0)
+Collecting orjson>=3.9.14 (from langsmith<1.0.0,>=0.14.9->langchain-core)
+  Downloading orjson-3.13.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (42 kB)
+Collecting requests-toolbelt>=1.0.0 (from langsmith<1.0.0,>=0.14.9->langchain-core)
+  Downloading requests_toolbelt-1.0.0-py2.py3-none-any.whl.metadata (14 kB)
+Requirement already satisfied: requests>=2.0.0 in /usr/local/lib/python3.12/dist-packages (from langsmith<1.0.0,>=0.14.9->langchain-core) (2.34.2)
+Requirement already satisfied: sniffio in /usr/local/lib/python3.12/dist-packages (from langsmith<1.0.0,>=0.14.9->langchain-core) (1.3.1)
+Collecting uuid-utils>=0.12.0 (from langchain-core)
+  Downloading uuid_utils-0.19.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.4 kB)
+Requirement already satisfied: websockets>=15.0 in /usr/local/lib/python3.12/dist-packages (from langsmith<1.0.0,>=0.14.9->langchain-core) (17.0.1)
+Collecting xxhash>=3.0.0 (from langsmith<1.0.0,>=0.14.9->langchain-core)
+  Downloading xxhash-4.0.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (17 kB)
+Collecting zstandard>=0.23.0 (from langsmith<1.0.0,>=0.14.9->langchain-core)
+  Downloading zstandard-0.25.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (3.3 kB)
+Requirement already satisfied: idna>=2.8 in /usr/local/lib/python3.12/dist-packages (from anyio<5,>=3.5.0->langsmith<1.0.0,>=0.14.9->langchain-core) (3.18)
+Requirement already satisfied: httpcore2==2.10.0 in /usr/local/lib/python3.12/dist-packages (from httpx2<3,>=2->langsmith<1.0.0,>=0.14.9->langchain-core) (2.10.0)
+Requirement already satisfied: truststore>=0.10 in /usr/local/lib/python3.12/dist-packages (from httpx2<3,>=2->langsmith<1.0.0,>=0.14.9->langchain-core) (0.10.4)
+Requirement already satisfied: h11>=0.16 in /usr/local/lib/python3.12/dist-packages (from httpcore2==2.10.0->httpx2<3,>=2->langsmith<1.0.0,>=0.14.9->langchain-core) (0.16.0)
+Requirement already satisfied: annotated-types>=0.6.0 in /usr/local/lib/python3.12/dist-packages (from pydantic<3.0.0,>=2.7.4->langchain-core) (0.8.0)
+Requirement already satisfied: pydantic-core==2.46.4 in /usr/local/lib/python3.12/dist-packages (from pydantic<3.0.0,>=2.7.4->langchain-core) (2.46.4)
+Requirement already satisfied: typing-inspection>=0.4.2 in /usr/local/lib/python3.12/dist-packages (from pydantic<3.0.0,>=2.7.4->langchain-core) (0.4.3)
+Requirement already satisfied: openai>=2.45.0 in /usr/local/lib/python3.12/dist-packages (from langchain-openai) (2.53.0)
+Requirement already satisfied: tiktoken>=0.7.0 in /usr/local/lib/python3.12/dist-packages (from langchain-openai) (0.13.0)
+Requirement already satisfied: nvidia-ml-py>=12.0.0 in /usr/local/lib/python3.12/dist-packages (from pynvml) (13.610.43)
+Collecting Mako (from alembic>=1.5.0->optuna<5,>=3.6)
+  Downloading mako-1.4.3-py3-none-any.whl.metadata (2.9 kB)
+Requirement already satisfied: httpcore==1.* in /usr/local/lib/python3.12/dist-packages (from httpx>=0.23.0->langchain-core) (1.0.9)
+Collecting jsonpointer>=3.2 (from jsonpatch>=1.33.0->langchain-core)
+  Downloading jsonpointer-3.7-py3-none-any.whl.metadata (2.6 kB)
+Requirement already satisfied: jiter<1,>=0.10.0 in /usr/local/lib/python3.12/dist-packages (from openai>=2.45.0->langchain-openai) (0.16.0)
+Requirement already satisfied: charset_normalizer<4,>=2 in /usr/local/lib/python3.12/dist-packages (from requests>=2.0.0->langsmith<1.0.0,>=0.14.9->langchain-core) (3.4.9)
+Requirement already satisfied: urllib3<3,>=1.26 in /usr/local/lib/python3.12/dist-packages (from requests>=2.0.0->langsmith<1.0.0,>=0.14.9->langchain-core) (2.7.0)
+Requirement already satisfied: regex in /usr/local/lib/python3.12/dist-packages (from tiktoken>=0.7.0->langchain-openai) (2026.7.19)
+Requirement already satisfied: MarkupSafe>=2.0 in /usr/local/lib/python3.12/dist-packages (from Mako->alembic>=1.5.0->optuna<5,>=3.6) (3.0.3)
+Downloading optuna-4.9.0-py3-none-any.whl (425 kB)
+Downloading langchain_core-1.7.3-py3-none-any.whl (577 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 577.1/577.1 kB 17.2 MB/s  0:00:00
+Downloading langsmith-0.14.16-py3-none-any.whl (933 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 933.7/933.7 kB 94.8 MB/s  0:00:00
+Downloading uuid_utils-0.19.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (330 kB)
+Downloading langchain_openai-1.7.3-py3-none-any.whl (146 kB)
+Downloading pynvml-13.0.1-py3-none-any.whl (28 kB)
+Downloading alembic-1.20.1-py3-none-any.whl (270 kB)
+Downloading certifi-2026.10.23-py3-none-any.whl (135 kB)
+Downloading jsonpatch-1.39-py3-none-any.whl (17 kB)
+Downloading jsonpointer-3.7-py3-none-any.whl (9.4 kB)
+Downloading langchain_protocol-0.0.20-py3-none-any.whl (7.3 kB)
+Downloading orjson-3.13.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (130 kB)
+Downloading requests_toolbelt-1.0.0-py2.py3-none-any.whl (54 kB)
+Downloading sqlalchemy-2.1.6-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (4.7 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.7/4.7 MB 373.4 MB/s  0:00:00
+Downloading tenacity-9.2.1-py3-none-any.whl (32 kB)
+Downloading xxhash-4.0.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (261 kB)
+Downloading zstandard-0.25.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.5 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.5/5.5 MB 378.7 MB/s  0:00:00
+Downloading colorlog-6.12.0-py3-none-any.whl (12 kB)
+Downloading mako-1.4.3-py3-none-any.whl (80 kB)
+Installing collected packages: zstandard, xxhash, uuid-utils, tenacity, sqlalchemy, pynvml, orjson, Mako, langchain-protocol, jsonpointer, colorlog, certifi, jsonpatch, alembic, requests-toolbelt, optuna, langsmith, langchain-core, langchain-openai
+  Attempting uninstall: certifi
+    Found existing installation: certifi 2026.7.22
+    Uninstalling certifi-2026.7.22:
+      Successfully uninstalled certifi-2026.7.22
+
+Successfully installed Mako-1.4.3 alembic-1.20.1 certifi-2026.10.23 colorlog-6.12.0 jsonpatch-1.39 jsonpointer-3.7 langchain-core-1.7.3 langchain-openai-1.7.3 langchain-protocol-0.0.20 langsmith-0.14.16 optuna-4.9.0 orjson-3.13.0 pynvml-13.0.1 requests-toolbelt-1.0.0 sqlalchemy-2.1.6 tenacity-9.2.1 uuid-utils-0.19.0 xxhash-4.0.2 zstandard-0.25.0
+
+[notice] A new release of pip is available: 26.2.1 -> 26.2.2
+[notice] To update, run: python -m pip install --upgrade pip
+Saving image...
+Image saved, took 4.37s
+
+Built image im-bDhqLTECuJSB7XAZRtZKj7 in 12.59s
+
+
+✓ Created objects.
+├── ✓ Uploaded /tmp/wn-merge/modal/full_stage.py
+├── ✓ Uploaded pyproject.toml
+├── ✓ Uploaded /tmp/wn-merge/data/public_bench
+├── ✓ Uploaded /tmp/wn-merge/workloads
+├── ✓ Uploaded /tmp/wn-merge/data/voice
+├── ✓ Uploaded /tmp/wn-merge/data/vision
+├── ✓ Uploaded /tmp/wn-merge/examples
+├── ✓ Uploaded /tmp/wn-merge/scripts
+├── ✓ Uploaded /tmp/wn-merge/src
+├── ✓ Created Function gpu_round.
+└── ✓ Created Function gpu_smoke.
+[modal-client] 2026-11-02T04:35:09+0530 Loop attempt for _run_app.<locals>.heartbeat failed
+Traceback (most recent call last):
+  File "/home/box/.local/lib/python3.13/site-packages/modal/_utils/async_utils.py", line 590, in loop_coro
+    await asyncio.wait_for(async_f(), timeout=timeout)
+  File "/usr/lib/python3.13/asyncio/tasks.py", line 507, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/home/box/.local/lib/python3.13/site-packages/modal/runner.py", line 68, in _heartbeat
+    await client._stub.AppHeartbeat(request, retry=Retry(attempt_timeout=HEARTBEAT_TIMEOUT))
+modal.exception.ConflictError: App state is APP_STATE_STOPPED
+[modal-client] 2026-11-02T04:35:25+0530 Loop attempt for _run_app.<locals>.heartbeat failed
+Traceback (most recent call last):
+  File "/home/box/.local/lib/python3.13/site-packages/modal/_utils/async_utils.py", line 590, in loop_coro
+    await asyncio.wait_for(async_f(), timeout=timeout)
+  File "/usr/lib/python3.13/asyncio/tasks.py", line 507, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/home/box/.local/lib/python3.13/site-packages/modal/runner.py", line 68, in _heartbeat
+    await client._stub.AppHeartbeat(request, retry=Retry(attempt_timeout=HEARTBEAT_TIMEOUT))
+modal.exception.ConflictError: App state is APP_STATE_STOPPED
+Stopping app - local client disconnected. Use `modal run --detach` to keep apps running even if your local client disconnects.
+[modal-client] 2026-11-01T22:57:55+0000 Detected 1 background thread(s) [Thread-2] still running after container exit. This will prevent runner shutdown for up to 30 seconds.
+Runner terminated.
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /tmp/wn-merge/modal/full_stage.py:268 in round_                              │
+│                                                                              │
+│   267 │   │   │   │   try:                                                   │
+│ ❱ 268 │   │   │   │   │   data = call.get(timeout=0)                         │
+│   269 │   │   │   │   │   net_errs = 0                                       │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/modal/_object.py:49 in wrapped │
+│                                                                              │
+│    48 │   │   await self.hydrate()                                           │
+│ ❱  49 │   │   return await method(self, *args, **kwargs)                     │
+│    50                                                                        │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/modal/_functions.py:2424 in    │
+│ get                                                                          │
+│                                                                              │
+│   2423 │   │   """                                                           │
+│ ❱ 2424 │   │   return await self._invocation().poll_function(timeout=timeout │
+│   2425                                                                       │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/modal/_functions.py:350 in     │
+│ poll_function                                                                │
+│                                                                              │
+│    349 │   │                                                                 │
+│ ❱  350 │   │   return await _process_result(                                 │
+│    351 │   │   │   response.outputs[0].result, response.outputs[0].data_form │
+│                                                                              │
+│ /home/box/.local/lib/python3.13/site-packages/modal/_utils/function_utils.py │
+│ :574 in _process_result                                                      │
+│                                                                              │
+│   573 │   │                                                                  │
+│ ❱ 574 │   │   raise RemoteError(result.exception)                            │
+│   575                                                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+RemoteError
+[teardown] {"stopped": [], "still_running": [], "verified_empty": true, "checked_at": "2026-11-01T23:05:38.246655+00:00"}
+[fail] modal run rc=1

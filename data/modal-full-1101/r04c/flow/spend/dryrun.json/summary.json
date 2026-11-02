@@ -1,0 +1,102 @@
+{
+ "baseten_caps": {
+  "provider": "baseten",
+  "stop_level": "soft",
+  "why": "baseten: committed $90.0775 >= soft $90.0",
+  "items_done": 1052,
+  "ledger_committed_usd": 90.0775,
+  "ledger_spent_usd": 90.0775,
+  "provider_reported_usd": 0.0,
+  "soft_usd": 90.0,
+  "hard_usd": 98.0,
+  "orphans_after_teardown": [],
+  "label": "ESTIMATE until reconciled",
+  "provider_billed_mock": 90.0775
+ },
+ "baseten_402": {
+  "provider": "baseten",
+  "stop_level": "hard",
+  "why": "baseten: out of credit (402)",
+  "items_done": 39,
+  "ledger_committed_usd": 3.477875,
+  "ledger_spent_usd": 3.477875,
+  "provider_reported_usd": 0.0,
+  "soft_usd": 90.0,
+  "hard_usd": 98.0,
+  "orphans_after_teardown": [],
+  "label": "ESTIMATE until reconciled"
+ },
+ "baseten_429": {
+  "provider": "baseten",
+  "stop_level": "soft",
+  "why": "baseten: provider error 429",
+  "items_done": 0,
+  "ledger_committed_usd": 0.554,
+  "ledger_spent_usd": 0.554,
+  "provider_reported_usd": 0.0,
+  "soft_usd": 90.0,
+  "hard_usd": 98.0,
+  "orphans_after_teardown": [],
+  "label": "ESTIMATE until reconciled"
+ },
+ "modal_caps": {
+  "provider": "modal",
+  "stop_level": "soft",
+  "why": "modal: committed $94.1463 >= soft $90.0",
+  "items_done": 5,
+  "ledger_committed_usd": 95.999988,
+  "ledger_spent_usd": 95.999988,
+  "provider_reported_usd": 0.0,
+  "soft_usd": 90.0,
+  "hard_usd": 98.0,
+  "orphans_after_teardown": [],
+  "label": "ESTIMATE until reconciled",
+  "apps_after": {
+   "wattnot-spark-topk": "stopped"
+  },
+  "blocks": [
+   "load",
+   "k8",
+   "k6",
+   "k4",
+   "k8-repeat"
+  ]
+ },
+ "modal_preempt": {
+  "provider": "modal",
+  "stop_level": "soft",
+  "why": "modal: provider error 503",
+  "items_done": 2,
+  "ledger_committed_usd": 39.390106,
+  "ledger_spent_usd": 39.390106,
+  "provider_reported_usd": 0.0,
+  "soft_usd": 90.0,
+  "hard_usd": 98.0,
+  "orphans_after_teardown": [],
+  "label": "ESTIMATE until reconciled",
+  "apps_after": {
+   "wattnot-spark-topk": "stopped"
+  },
+  "blocks": [
+   "load",
+   "k8"
+  ]
+ },
+ "resume": {
+  "first_run_committed": 5.1375,
+  "after_crash_committed": 5.276,
+  "second_run": {
+   "provider": "baseten",
+   "stop_level": "soft",
+   "why": "baseten: committed $90.0447 >= soft $90.0",
+   "items_done": 990,
+   "ledger_committed_usd": 90.04475,
+   "ledger_spent_usd": 89.90625,
+   "provider_reported_usd": 0.0,
+   "soft_usd": 90.0,
+   "hard_usd": 98.0,
+   "orphans_after_teardown": [],
+   "label": "ESTIMATE until reconciled"
+  }
+ }
+}

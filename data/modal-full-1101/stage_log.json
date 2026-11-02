@@ -1,30 +1,37 @@
 [
  {
-  "round": "r04",
+  "round": "r04c",
   "rc": 0,
-  "pr": null,
-  "pr_review": null,
+  "pr": "https://github.com/ak9381/wattnot-demo-deploy/pull/2",
+  "pr_review": "approved",
   "clips": [
    {
-    "file": "data/modal-full-1101/clips/modal-r04-graph-without.mp4",
-    "duration_s": 1393.6,
-    "frames": 13936,
+    "file": "data/modal-full-1101/clips/modal-r04c-graph-without.mp4",
+    "duration_s": 1458.8,
+    "frames": 14588,
     "plays": true,
-    "bytes": 25278095
+    "bytes": 13462155
    },
    {
-    "file": "data/modal-full-1101/clips/modal-r04-graph-with.mp4",
-    "duration_s": 4578.8,
-    "frames": 45788,
+    "file": "data/modal-full-1101/clips/modal-r04c-graph-with.mp4",
+    "duration_s": 5279.3,
+    "frames": 52793,
     "plays": true,
-    "bytes": 42144793
+    "bytes": 32763222
    },
    {
-    "file": "data/modal-full-1101/clips/modal-r04-matrix.mp4",
-    "duration_s": 19.9,
-    "frames": 199,
+    "file": "data/modal-full-1101/clips/modal-r04c-matrix.mp4",
+    "duration_s": 19.1,
+    "frames": 191,
     "plays": true,
-    "bytes": 256711
+    "bytes": 211285
+   },
+   {
+    "file": "data/modal-full-1101/clips/modal-r04c-pr-review.mp4",
+    "duration_s": 28.8,
+    "frames": 288,
+    "plays": true,
+    "bytes": 196436
    }
   ]
  }

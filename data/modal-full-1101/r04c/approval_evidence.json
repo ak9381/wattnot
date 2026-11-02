@@ -1,0 +1,44 @@
+{
+ "decision": "approved",
+ "auto_approve": false,
+ "checks": {
+  "accuracy_vs_baseline": {
+   "ok": true,
+   "drop_pts": -3.13,
+   "rule": "accuracy may drop at most 2 points"
+  },
+  "p99": {
+   "ok": true,
+   "rule": "with-arm item p99 within +10% of without",
+   "without_s": 101.831,
+   "with_s": 84.3911
+  },
+  "joule_slo": {
+   "ok": true,
+   "rule": "J/correct with <= without",
+   "without": 2254.7,
+   "with": 821.6
+  },
+  "spark_agreement": {
+   "ok": true,
+   "value": 0.9612,
+   "rule": "Spark agrees with the fixed checks on >= 90% of answers"
+  },
+  "fp8_gate": {
+   "ok": true,
+   "rule": "FP8 only if its own gate kept it"
+  },
+  "receipt_hash": {
+   "ok": true,
+   "rule": "receipt re-seals"
+  },
+  "no_fatal": {
+   "ok": true,
+   "value": null
+  }
+ },
+ "failed_checks": [],
+ "skipped_checks": [],
+ "at": "2026-11-02T02:15:04.906768+00:00",
+ "by": "runner verification (rules above), recorded as evidence"
+}
