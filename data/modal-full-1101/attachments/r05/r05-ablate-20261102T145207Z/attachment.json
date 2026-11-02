@@ -1,0 +1,128 @@
+{
+  "spec": "wattnot.round-attachment/1",
+  "run_id": "r05-ablate-20261102T145207Z",
+  "attaches_to": "r05",
+  "block": "ablate",
+  "status": "passed",
+  "label": "MEASURED",
+  "summary": "ablate: rc 0",
+  "created_at": "2026-11-02T15:08:31.801091+00:00",
+  "server": null,
+  "gpu": "NVIDIA A100-SXM4-80GB",
+  "results": {
+    "ablate": {
+      "arms": {
+        "A_stock_c32_nopc": {
+          "answers": 100,
+          "correct": 94,
+          "accuracy": 0.94,
+          "energy_j": {
+            "value": 99113.6,
+            "label": "MEASURED",
+            "method": "NVML total-energy counter across the whole arm"
+          },
+          "j_per_correct": {
+            "value": 1054.4,
+            "label": "MEASURED"
+          },
+          "wall_s": {
+            "value": 302.1,
+            "label": "MEASURED"
+          },
+          "partial": false,
+          "server": {
+            "fp8": false,
+            "prefix_caching": false,
+            "max_num_seqs": 128,
+            "start_s": {
+              "value": 132.1,
+              "label": "MEASURED"
+            }
+          }
+        },
+        "B_with_c32_nopc": {
+          "answers": 100,
+          "correct": 98,
+          "accuracy": 0.98,
+          "energy_j": {
+            "value": 44979.4,
+            "label": "MEASURED",
+            "method": "NVML total-energy counter across the whole arm"
+          },
+          "j_per_correct": {
+            "value": 459.0,
+            "label": "MEASURED"
+          },
+          "wall_s": {
+            "value": 135.1,
+            "label": "MEASURED"
+          },
+          "partial": false,
+          "server": {
+            "fp8": false,
+            "prefix_caching": false,
+            "max_num_seqs": 128,
+            "start_s": {
+              "value": 132.1,
+              "label": "MEASURED"
+            }
+          }
+        },
+        "C_with_c32_pc": {
+          "answers": 100,
+          "correct": 97,
+          "accuracy": 0.97,
+          "energy_j": {
+            "value": 65214.6,
+            "label": "MEASURED",
+            "method": "NVML total-energy counter across the whole arm"
+          },
+          "j_per_correct": {
+            "value": 672.3,
+            "label": "MEASURED"
+          },
+          "wall_s": {
+            "value": 200.4,
+            "label": "MEASURED"
+          },
+          "partial": false,
+          "server": {
+            "fp8": false,
+            "prefix_caching": true,
+            "max_num_seqs": 128,
+            "start_s": {
+              "value": 84.0,
+              "label": "MEASURED"
+            }
+          }
+        }
+      },
+      "rc": 0,
+      "fatal": null
+    }
+  },
+  "spend": {
+    "modal_usd": {
+      "value": 0.669,
+      "label": "ESTIMATE"
+    },
+    "stage_total_usd": {
+      "value": 39.3147,
+      "label": "ESTIMATE"
+    },
+    "teardown": {
+      "stopped": [
+        "ap-8xLBVWXBSg3wIOKLE1P91G"
+      ],
+      "still_running": [],
+      "verified_empty": true,
+      "checked_at": "2026-11-02T15:08:31.661815+00:00"
+    }
+  },
+  "note": "Separate run with its own id; the round's own files are never changed.",
+  "integrity": {
+    "sha256": "0d93276aadbdbb5c068157c4d1e6a27e016430ddc007d92021d1afba76c47645",
+    "signer": "offline:a10d641cddc104d8",
+    "rekor": null
+  }
+}

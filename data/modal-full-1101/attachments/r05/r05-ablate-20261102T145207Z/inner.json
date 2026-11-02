@@ -1,0 +1,300 @@
+{
+ "started_utc": "2026-11-02T14:53:25.472269+00:00",
+ "gpu": "NVIDIA A100-SXM4-80GB",
+ "fake": false,
+ "sets": [
+  "ours",
+  "gsm8k",
+  "humaneval"
+ ],
+ "idle_w": {
+  "value": 58.4,
+  "label": "MEASURED",
+  "when": "before vLLM start"
+ },
+ "cap_probe": {
+  "writable": false,
+  "reason": "NVML refused the power-limit write (NVMLError_NoPermission); Modal containers have no privileged GPU control",
+  "label": "MEASURED"
+ },
+ "items": 100,
+ "slice": 24,
+ "steps": {
+  "ablate": {
+   "arms": {
+    "A_stock_c32_nopc": {
+     "tag": "A_stock_c32_nopc",
+     "arm": "without_wattnot",
+     "answers": 100,
+     "correct": 94,
+     "accuracy": 0.94,
+     "per_set": {
+      "gsm8k": {
+       "correct": 59,
+       "answers": 60
+      },
+      "humaneval": {
+       "correct": 35,
+       "answers": 40
+      }
+     },
+     "calls": 100,
+     "errors": 0,
+     "truncated": 1,
+     "tokens": {
+      "prompt": 14993,
+      "cached": 0,
+      "completion": 68311,
+      "label": "MEASURED",
+      "note": null
+     },
+     "energy_j": {
+      "value": 99113.6,
+      "label": "MEASURED",
+      "method": "NVML total-energy counter across the whole arm"
+     },
+     "energy_wh": {
+      "value": 27.5316,
+      "label": "MEASURED"
+     },
+     "wall_s": {
+      "value": 302.1,
+      "label": "MEASURED"
+     },
+     "avg_w": {
+      "value": 328.1,
+      "label": "MEASURED"
+     },
+     "j_per_correct": {
+      "value": 1054.4,
+      "label": "MEASURED"
+     },
+     "item_latency_s": {
+      "p50": 22.8899,
+      "p95": 68.0815,
+      "p99": 115.6701,
+      "label": "MEASURED"
+     },
+     "stepped_up": 0,
+     "concurrency": 32,
+     "partial": false,
+     "item_errors": 0,
+     "wh_per_item_samples": {
+      "values": [
+       0.245905,
+       0.268776,
+       0.161868,
+       0.424714
+      ],
+      "label": "MEASURED",
+      "method": "NVML counter per chunk of 25 items / items in chunk"
+     },
+     "server": {
+      "fp8": false,
+      "prefix_caching": false,
+      "max_num_seqs": 128,
+      "start_s": {
+       "value": 132.1,
+       "label": "MEASURED"
+      }
+     }
+    },
+    "B_with_c32_nopc": {
+     "tag": "B_with_c32_nopc",
+     "arm": "with_wattnot",
+     "answers": 100,
+     "correct": 98,
+     "accuracy": 0.98,
+     "per_set": {
+      "gsm8k": {
+       "correct": 60,
+       "answers": 60
+      },
+      "humaneval": {
+       "correct": 38,
+       "answers": 40
+      }
+     },
+     "calls": 102,
+     "errors": 0,
+     "truncated": 1,
+     "tokens": {
+      "prompt": 358,
+      "cached": 0,
+      "completion": 42518,
+      "label": "MEASURED",
+      "note": "prompt/cached tokens are not returned on the two-phase thinking-budget path; those calls count 0 here"
+     },
+     "energy_j": {
+      "value": 44979.4,
+      "label": "MEASURED",
+      "method": "NVML total-energy counter across the whole arm"
+     },
+     "energy_wh": {
+      "value": 12.4943,
+      "label": "MEASURED"
+     },
+     "wall_s": {
+      "value": 135.1,
+      "label": "MEASURED"
+     },
+     "avg_w": {
+      "value": 332.9,
+      "label": "MEASURED"
+     },
+     "j_per_correct": {
+      "value": 459.0,
+      "label": "MEASURED"
+     },
+     "item_latency_s": {
+      "p50": 16.1815,
+      "p95": 29.7924,
+      "p99": 61.5847,
+      "label": "MEASURED"
+     },
+     "stepped_up": 2,
+     "concurrency": 32,
+     "partial": false,
+     "item_errors": 0,
+     "wh_per_item_samples": {
+      "values": [
+       0.069573,
+       0.064556,
+       0.124408,
+       0.241234
+      ],
+      "label": "MEASURED",
+      "method": "NVML counter per chunk of 25 items / items in chunk"
+     },
+     "server": {
+      "fp8": false,
+      "prefix_caching": false,
+      "max_num_seqs": 128,
+      "start_s": {
+       "value": 132.1,
+       "label": "MEASURED"
+      }
+     },
+     "request_levers": {
+      "calls": 102,
+      "tokens_saved_est": 0,
+      "guard_stops": 0,
+      "guard_flags": 0,
+      "tool_calling": 0,
+      "tools_skipped": 0
+     }
+    },
+    "C_with_c32_pc": {
+     "tag": "C_with_c32_pc",
+     "arm": "with_wattnot",
+     "answers": 100,
+     "correct": 97,
+     "accuracy": 0.97,
+     "per_set": {
+      "gsm8k": {
+       "correct": 60,
+       "answers": 60
+      },
+      "humaneval": {
+       "correct": 37,
+       "answers": 40
+      }
+     },
+     "calls": 103,
+     "errors": 0,
+     "truncated": 1,
+     "tokens": {
+      "prompt": 585,
+      "cached": 0,
+      "completion": 43278,
+      "label": "MEASURED",
+      "note": "prompt/cached tokens are not returned on the two-phase thinking-budget path; those calls count 0 here"
+     },
+     "energy_j": {
+      "value": 65214.6,
+      "label": "MEASURED",
+      "method": "NVML total-energy counter across the whole arm"
+     },
+     "energy_wh": {
+      "value": 18.1152,
+      "label": "MEASURED"
+     },
+     "wall_s": {
+      "value": 200.4,
+      "label": "MEASURED"
+     },
+     "avg_w": {
+      "value": 325.4,
+      "label": "MEASURED"
+     },
+     "j_per_correct": {
+      "value": 672.3,
+      "label": "MEASURED"
+     },
+     "item_latency_s": {
+      "p50": 15.0579,
+      "p95": 28.4731,
+      "p99": 57.9526,
+      "label": "MEASURED"
+     },
+     "stepped_up": 3,
+     "concurrency": 32,
+     "partial": false,
+     "item_errors": 0,
+     "wh_per_item_samples": {
+      "values": [
+       0.172681,
+       0.093145,
+       0.248491,
+       0.21029
+      ],
+      "label": "MEASURED",
+      "method": "NVML counter per chunk of 25 items / items in chunk"
+     },
+     "server": {
+      "fp8": false,
+      "prefix_caching": true,
+      "max_num_seqs": 128,
+      "start_s": {
+       "value": 84.0,
+       "label": "MEASURED"
+      }
+     },
+     "request_levers": {
+      "calls": 103,
+      "tokens_saved_est": 0,
+      "guard_stops": 0,
+      "guard_flags": 0,
+      "tool_calling": 0,
+      "tools_skipped": 0
+     }
+    }
+   },
+   "design": "A stock c32 nopc s128; B with c32 nopc s128; C with c32 pc s128",
+   "label": "MEASURED",
+   "servers": [
+    {
+     "fp8": false,
+     "prefix_caching": false,
+     "max_num_seqs": 128,
+     "start_s": {
+      "value": 132.1,
+      "label": "MEASURED"
+     }
+    },
+    {
+     "fp8": false,
+     "prefix_caching": true,
+     "max_num_seqs": 128,
+     "start_s": {
+      "value": 84.0,
+      "label": "MEASURED"
+     }
+    }
+   ]
+  }
+ },
+ "failed": {},
+ "deadline_s": 4500.0,
+ "ended_utc": "2026-11-02T15:07:49.944624+00:00"
+}
