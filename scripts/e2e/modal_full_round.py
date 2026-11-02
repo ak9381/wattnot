@@ -574,7 +574,9 @@ def main(argv=None) -> int:
     demo = fresh_demo_clone(tag) if open_pr else DEMO_REPO
     stages = post_round(rdir, doc, mode="live" if a.live_meta and not a.fake else "smoke",
                         open_pr=open_pr, demo_repo=demo, table=lambda: gpu_feature_table(failed),
-                        change=change, energy_label=lab, kind="modal-own-gpu-e2e", decision=decision)
+                        change=change, energy_label=lab, kind="modal-own-gpu-e2e", decision=decision,
+                        prior_checks=None if a.fake else {"eye_check": rdir / "eye" / "eye_test.json",
+                                                          "hearing_check": rdir / "spoken" / "spoken_answer.json"})
     node_of = {"receipt": ("receipts", "sign"), "eu_report": ("eu", "fields"), "sam_hotspot": ("sam", "map"),
                "spark_trace": ("agent", "trace"), "wonder_chart": ("agent", "plan"), "musecode_pr": ("apply", "pr"),
                "eye_check": ("gates", "eye"), "hearing_check": ("gates", "hearing")}
