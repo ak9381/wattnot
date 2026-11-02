@@ -153,6 +153,7 @@ def main(argv=None) -> int:
         R.reserve(run_id, worst)
         R.take_owner(run_id)
         inc = DATA / "_incoming"
+        FS.ensure_dir(inc)
         events = DATA / "attachments" / a.attach / f"{run_id}.events.jsonl"
         t0, rc = time.time(), 1
         try:

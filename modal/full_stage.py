@@ -49,6 +49,16 @@ def arm_events_path(base: str, arm: str) -> str:
     return base.replace(".events.jsonl", f".{arm}.events.jsonl") if base.endswith(".events.jsonl") else f"{base}.{arm}"
 
 
+def ensure_dir(path) -> None:
+    """mkdir -p that clears a stray 0-byte FILE at the path first. `modal volume get VOL DIR DEST`
+    with a missing DEST makes DEST an empty file (seen 2 Nov: r04e LangChain run 1 recovery left
+    data/.../_incoming as a 0-byte file, so run 2's copy-back failed with FileExistsError)."""
+    import os as _os
+    if _os.path.isfile(path) and _os.path.getsize(path) == 0:
+        _os.remove(path)
+    _os.makedirs(path, exist_ok=True)
+
+
 def route_events(lines: list[str], base: str, state: dict) -> None:
     """Append event lines to the current arm's file; a with-WattNot run.started switches files.
     Stage-level lines before any arm go to both files."""
@@ -326,7 +336,7 @@ try:  # pragma: no cover - only with modal installed
                     break
                 if lines and events:
                     route_events(lines, events, st)
-        os.makedirs(out, exist_ok=True)
+        ensure_dir(out)
         with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as t:
             t.extractall(out, filter="data")
         print(f"[full_stage] {round}: results in {out}/{round}")
