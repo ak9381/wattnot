@@ -35,6 +35,12 @@ DASH_PY = os.environ.get("WN_DASH_PY", PY)
 PR_REPO = "ak9381/wattnot-demo-deploy"
 
 
+
+def _foreign_owner():
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from modal_full_round import foreign_owner
+    return foreign_owner()
+
 def server(events: Path):
     p = subprocess.Popen([DASH_PY, "-m", "wattnot.dash", "--port", str(PORT), "--events", str(events)], cwd=ROOT,
                          env={**os.environ, "PYTHONPATH": f"{ROOT}:{ROOT / 'src'}"},
@@ -222,6 +228,8 @@ def main():
                         and "stopped" not in json.dumps(a).lower()]
                 if not live:
                     break
+                if _foreign_owner():
+                    break   # another live round owns the app; never stop it from here
                 for a in live:
                     aid = a.get("App ID") or a.get("app_id") or a.get("id")
                     if aid:

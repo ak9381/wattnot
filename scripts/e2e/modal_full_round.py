@@ -96,7 +96,47 @@ def app_running() -> list[str] | None:
     return out
 
 
+OWNER = Path(os.environ.get("WATTNOT_MODAL_OWNER", "/tmp/wattnot-modal-owner.json"))
+
+
+def foreign_owner() -> dict | None:
+    """The paid round that owns the live wattnot-full-stage app, if it is another live process.
+    r04b was stopped from outside at 04:28 IST: every stop path matched apps by NAME, so any other
+    script's teardown could kill a running round. Now nothing stops the app while another live
+    process holds this lock."""
+    try:
+        d = json.loads(OWNER.read_text())
+        pid = int(d["pid"])
+    except Exception:  # noqa: BLE001 - no lock / unreadable lock = no owner
+        return None
+    if pid == os.getpid():
+        return None
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return None
+    except PermissionError:
+        pass
+    return d
+
+
+def take_owner(tag: str):
+    OWNER.write_text(json.dumps({"pid": os.getpid(), "round": tag, "t": time.time()}))
+
+
+def drop_owner():
+    try:
+        if json.loads(OWNER.read_text()).get("pid") == os.getpid():
+            OWNER.unlink()
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def teardown() -> dict:
+    fo = foreign_owner()
+    if fo:
+        return {"stopped": [], "still_running": None, "verified_empty": False,
+                "skipped": f"app owned by live round {fo.get('round')} (pid {fo.get('pid')}); not stopping it"}
     stopped, left = [], None
     for _ in range(5):
         ids = app_running()
@@ -344,7 +384,11 @@ def main(argv=None) -> int:
         if stage_committed() + worst > STAGE_CAP_USD:
             print(f"[stop] stage ${stage_committed():.2f} + worst ${worst:.2f} > ${STAGE_CAP_USD:.0f} cap")
             return 4
+        if foreign_owner():
+            print(f"[stop] another paid round holds {OWNER}; one job at a time")
+            return 4
         reserve(tag, worst)
+        take_owner(tag)
         inc = DATA / "_incoming"
         t0, rc = time.time(), 1
         try:
@@ -363,6 +407,7 @@ def main(argv=None) -> int:
                 td = teardown()
             except Exception as e:  # noqa: BLE001
                 td = {"verified_empty": False, "error": f"{type(e).__name__}"}
+            drop_owner()
             print(f"[teardown] {json.dumps(td)}")
             if not td["verified_empty"]:
                 print("[ALERT] Modal app still running or unverifiable; stop it by hand: modal app list")

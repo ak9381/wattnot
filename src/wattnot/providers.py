@@ -54,6 +54,13 @@ PROFILES: dict[str, dict] = {
         "full": {"limit": 0, "agent_block": "12 cases x 1 rep, 768 tokens, inside the 900 s cap",
                  "grid": "3 batch points + FP8 last, with-arm stays BF16 unless FP8 passes"},
         "go_env": "WATTNOT_MODAL_GO",
+        # Full-round per-block wall limits (s). Rule shared with H100: a block's worst case must fit in
+        # 80% of its limit. Worst cases: agentwaste ~43 min (ESTIMATE, 12 cases x 1 rep at 768 tokens);
+        # langchain 898 s MEASURED in r04-try1 with the guard cutting the saver arm short, so ~2x that
+        # once every item runs (ESTIMATE); think 446 s MEASURED; eye 32 s, spoken 15 s MEASURED.
+        # The container ceiling (225 min, $9.38 worst) is unchanged, so the round still fits $10.
+        "block_worst_s": {"agentwaste": 2580, "langchain": 1720, "think": 450, "eye": 120, "spoken": 120},
+        "block_limits_s": {"agentwaste": 3240, "langchain": 2160, "think": 900, "eye": 300, "spoken": 300},
     },
     "baseten": {
         "where": "Baseten Model API (hosted)", "model": "meta-models/muse-spark-open",
@@ -93,6 +100,26 @@ PROFILES["combined"] = {
     "routing": "per class (GSM8K, HumanEval): providers within 1 point of the best pass rate, then "
                "the lowest $ per correct answer (ESTIMATE allocation)",
 }
+
+
+BLOCK_FIT = 0.8   # a block's worst case must fit in 80% of its wall limit (same rule as H100)
+
+
+def block_limit_s(provider: str, block: str) -> int:
+    return int(PROFILES[provider]["block_limits_s"][block])
+
+
+def block_fit_problems(provider: str) -> list[str]:
+    """Blocks whose worst case does not fit in BLOCK_FIT of their limit, plus a check that every
+    block's limit together still fits inside the round's container ceiling."""
+    prof = PROFILES[provider]
+    worst, lim = prof.get("block_worst_s", {}), prof.get("block_limits_s", {})
+    bad = [f"{k}: worst {w}s > {BLOCK_FIT:.0%} of {lim.get(k)}s" for k, w in worst.items()
+           if k not in lim or w > BLOCK_FIT * lim[k]]
+    ceil_s = prof["caps"]["round_ceiling_min"] * 60
+    if sum(lim.values()) > ceil_s - 60 * 60:   # leave >= 60 min for server start, arms and sweep
+        bad.append(f"block limits {sum(lim.values())}s leave < 60 min of the {ceil_s}s ceiling")
+    return bad
 
 
 def public_round(provider: str) -> dict:

@@ -107,11 +107,13 @@ def run_agent(base_url: str, model: str, rows: list[dict], max_steps: int, frame
 
     tl = tools()
     by_name = {t.name: t for t in tl}
-    llm = ChatOpenAI(base_url=base_url, api_key="unused", model=model, max_tokens=2048,
-                     timeout=600, default_headers={"X-WattNot-Framework": "langchain",
-                                                   "X-WattNot-Run": framework_tag}).bind_tools(tl)
     out = []
     for i, r in enumerate(rows):
+        # one guard run per item: a shared run id let the step/token budget of the whole pass stop
+        # items 13-20 (r04-try1: guard answered 17 of 29 calls, saver arm 2/20 correct)
+        llm = ChatOpenAI(base_url=base_url, api_key="unused", model=model, max_tokens=2048,
+                         timeout=600, default_headers={"X-WattNot-Framework": "langchain",
+                                                       "X-WattNot-Run": f"{framework_tag}-{i}"}).bind_tools(tl)
         msgs = [SystemMessage("You are a careful agent. Use the tools when they help."),
                 HumanMessage(r["prompt"])]
         text, steps = "", 0
@@ -216,7 +218,7 @@ def main(argv=None) -> int:
     print(json.dumps({k: v for k, v in res.items() if k != "arms"} | {
         a_: {k: v for k, v in d.items() if k in ("correct", "n", "gpu_j", "steps")}
         for a_, d in res["arms"].items()}, default=str))
-    return 0
+    return 0 if res["quality_held"] else 5   # a saver that loses answers is a failed block
 
 
 if __name__ == "__main__":
