@@ -48,7 +48,7 @@ def test_tool_dedup_matches_identical_content_even_without_args():
 
 def test_memory_compression_summarises_old_turns_and_retrieves():
     summ = MockSummarizer()
-    mw = MemoryCompressionMiddleware(summarize=summ, keep_last=2, min_old=2, store=ChunkStore())
+    mw = MemoryCompressionMiddleware(summarize=summ, min_tokens=0, keep_last=2, min_old=2, store=ChunkStore())
     msgs = [{"role": "system", "content": "system prompt"}]
     for i in range(6):
         msgs.append({"role": "user", "content":
@@ -76,7 +76,7 @@ def test_memory_compression_never_orphans_a_tool_reply():
     # The kept window would start on a `tool` reply whose assistant `tool_calls` message sits in
     # the summarised-away half. Dropping the call but keeping the reply orphans it (HTTP 400). The
     # split must move back so the whole call/reply pair is kept together.
-    mw = MemoryCompressionMiddleware(summarize=MockSummarizer(), keep_last=3, min_old=2,
+    mw = MemoryCompressionMiddleware(summarize=MockSummarizer(), min_tokens=0, keep_last=3, min_old=2,
                                      store=ChunkStore())
     msgs = [
         {"role": "system", "content": "system prompt"},

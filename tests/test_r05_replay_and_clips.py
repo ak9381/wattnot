@@ -25,7 +25,7 @@ def test_replay_reproduces_r04e_failure_with_old_saver():
 def test_short_tool_results_kept_verbatim():
     from wattnot.context_saver.middleware import MemoryCompressionMiddleware
     seen = []
-    mw = MemoryCompressionMiddleware(summarize=lambda t: seen.append(t) or "x", keep_last=2, min_old=1)
+    mw = MemoryCompressionMiddleware(summarize=lambda t: seen.append(t) or "x", keep_last=2, min_old=1, min_tokens=0)
     msgs = [{"role": "user", "content": "Task: do it"},
             {"role": "assistant", "content": 'CALL inventory {"item": "a"}'},
             {"role": "user", "content": "RESULT 37"},
