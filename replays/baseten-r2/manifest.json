@@ -1,0 +1,115 @@
+{
+  "spec": "wattnot.replay-manifest/1",
+  "name": "baseten-r2",
+  "title": "Baseten round 2 (Muse Spark open, own set): r03 rerun on the step-up budget fix",
+  "label": "REPLAY",
+  "provider": "baseten",
+  "live_calls": false,
+  "base": {
+    "id": "r03-rerun",
+    "ref": "data/baseten-1102-own-rerun",
+    "events": [
+      "data/baseten-1102-own-rerun/events/events-without_wattnot.jsonl",
+      "data/baseten-1102-own-rerun/events/events-with_wattnot.jsonl"
+    ],
+    "receipt": "data/baseten-1102-own-rerun/r03/r03/features/receipt.json",
+    "commit": "4ad8cff8b0dcc75ecd988b1c24c2b6bee9faa7bd"
+  },
+  "blocks": [
+    {
+      "id": "r03-langchain",
+      "block": "langchain",
+      "ref": "data/baseten-1102-own-e2e",
+      "dir": "data/baseten-1102-own/langchain",
+      "replaces": [],
+      "summary_from": "langchain_pass.json",
+      "why": "the rerun repeated only the main round; LangChain own 20/20 both arms comes from r03 (same day, same set)",
+      "commit": "0be15e3a874f8f558c11b70ac16879ddb773c3c4"
+    }
+  ],
+  "gaps": [
+    "LangChain is from r03, not the rerun: it ran before the step-up budget fix (a408281). The fix changes main-round step-ups only.",
+    "The LangChain block wrote no events file; one summary event is built from its langchain_pass.json."
+  ],
+  "receipt_signed": true,
+  "events": 1204,
+  "files": [
+    {
+      "file": "blocks/r03-langchain/baseten_spend.ledger.jsonl",
+      "sha256": "4193aa0abc1d58160d497356788c8b7fcbcc0c1903d1b6fc0a65e591ed0c2248",
+      "bytes": 50370,
+      "source": {
+        "ref": "data/baseten-1102-own-e2e",
+        "commit": "0be15e3a874f8f558c11b70ac16879ddb773c3c4",
+        "path": "data/baseten-1102-own/langchain/baseten_spend.ledger.jsonl"
+      }
+    },
+    {
+      "file": "blocks/r03-langchain/langchain_items.jsonl",
+      "sha256": "b7a73e40d11456401c11e446070479e5a617dc6b917bea079ee2ba1572a986c9",
+      "bytes": 11916,
+      "source": {
+        "ref": "data/baseten-1102-own-e2e",
+        "commit": "0be15e3a874f8f558c11b70ac16879ddb773c3c4",
+        "path": "data/baseten-1102-own/langchain/langchain_items.jsonl"
+      }
+    },
+    {
+      "file": "blocks/r03-langchain/langchain_pass.json",
+      "sha256": "74de084f75e246cc1a4a23f7f1823dd0d7f632cbd76bc02203d440a25641815a",
+      "bytes": 17399,
+      "source": {
+        "ref": "data/baseten-1102-own-e2e",
+        "commit": "0be15e3a874f8f558c11b70ac16879ddb773c3c4",
+        "path": "data/baseten-1102-own/langchain/langchain_pass.json"
+      }
+    },
+    {
+      "file": "events.jsonl",
+      "sha256": "550140fda13dee1750dca56206e12fc47eb4693e5e60482b2434ff062e3790f7",
+      "bytes": 468020,
+      "source": null
+    },
+    {
+      "file": "receipt.json",
+      "sha256": "cf03eab358d196f46ccc4ec2dad2735d844574476a251dcfef9ed2c0ff3af2de",
+      "bytes": 13786,
+      "source": {
+        "ref": "data/baseten-1102-own-rerun",
+        "commit": "4ad8cff8b0dcc75ecd988b1c24c2b6bee9faa7bd",
+        "path": "data/baseten-1102-own-rerun/r03/r03/features/receipt.json"
+      }
+    },
+    {
+      "file": "receipt.sigstore.json",
+      "sha256": "26bb6e2fa70743ac6834776dad19149624ddefd9a925d7913f50f12f0cd5d3ab",
+      "bytes": 431,
+      "source": {
+        "ref": "data/baseten-1102-own-rerun",
+        "commit": "4ad8cff8b0dcc75ecd988b1c24c2b6bee9faa7bd",
+        "path": "data/baseten-1102-own-rerun/r03/r03/features/receipt.sigstore.json"
+      }
+    },
+    {
+      "file": "round_eu_report.html",
+      "sha256": "fd3637e1abbc8b22d43965eaf8921cd8fb259a85f7ae566553bf119e6e8d1f7b",
+      "bytes": 3416,
+      "source": {
+        "ref": "data/baseten-1102-own-rerun",
+        "commit": "4ad8cff8b0dcc75ecd988b1c24c2b6bee9faa7bd",
+        "path": "data/baseten-1102-own-rerun/r03/r03/features/eu_report.html"
+      }
+    },
+    {
+      "file": "eu_report.html",
+      "sha256": "fd3637e1abbc8b22d43965eaf8921cd8fb259a85f7ae566553bf119e6e8d1f7b",
+      "bytes": 3416,
+      "source": {
+        "ref": "data/baseten-1102-own-rerun",
+        "commit": "4ad8cff8b0dcc75ecd988b1c24c2b6bee9faa7bd",
+        "path": "data/baseten-1102-own-rerun/r03/r03/features/eu_report.html"
+      }
+    }
+  ],
+  "launch": "python -m wattnot.dash --replay-only --events replays/baseten-r2/events.jsonl"
+}

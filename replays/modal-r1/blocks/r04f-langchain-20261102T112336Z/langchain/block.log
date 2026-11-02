@@ -1,0 +1,3 @@
+{"spec": "wattnot.langchain-pass/1", "label": "MEASURED", "dataset": "own", "start": 0, "n": 20, "framework": "langchain", "routing": "effort routing on one served model (thinking off -> on); model routing needs a second model and is in the multi-provider block", "route": "final-check", "gpu_j_saved": -68963.16499999998, "quality_held": true, "saver_off": {"correct": 20, "n": 20, "gpu_j": 329003.092, "steps": 65}, "saver_on": {"correct": 19, "n": 20, "gpu_j": 397966.257, "steps": 70}}
+/app/scripts/langchain_pass.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml

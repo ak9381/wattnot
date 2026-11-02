@@ -1,0 +1,607 @@
+{
+  "spec": "wattnot.replay-manifest/1",
+  "name": "modal-r2",
+  "title": "Modal round 2 (A100, public gsm8k+humaneval): r05, LangChain fix rerun, eye+hearing both-arms rerun, attribution arms",
+  "label": "REPLAY",
+  "provider": "modal",
+  "live_calls": false,
+  "base": {
+    "id": "r05",
+    "ref": "data/modal-full-1101",
+    "events": [
+      "data/modal-full-1101/r05.without.events.jsonl",
+      "data/modal-full-1101/r05.with.events.jsonl"
+    ],
+    "receipt": "data/modal-full-1101/r05/features/receipt.json",
+    "energy_receipt": "data/modal-full-1101/r05/sweep/rcpt_20261101_modal_full_r05.json",
+    "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853"
+  },
+  "blocks": [
+    {
+      "id": "r05-langchain-20261102T140740Z",
+      "block": "langchain",
+      "ref": "data/modal-r05-langchain-fix",
+      "dir": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z",
+      "replaces": [
+        [
+          "effort_router",
+          "langchain"
+        ]
+      ],
+      "why": "rerun on the short-conversation bypass fix (db7f925); quality held, saver_on 20/20 vs saver_off 19/20 MEASURED",
+      "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde"
+    },
+    {
+      "id": "r05-eye-hearing-20261102T153519Z",
+      "block": "eye+hearing",
+      "ref": "data/modal-r05-eye-hearing",
+      "dir": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z",
+      "replaces": [
+        [
+          "gates",
+          "eye"
+        ],
+        [
+          "gates",
+          "spoken"
+        ],
+        [
+          "gates",
+          "hearing"
+        ]
+      ],
+      "why": "both arms (stock + WattNot) with NVML energy (fix/eye-hearing-block-arms); r05's post-round eye/hearing checks were MOCK copies",
+      "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36"
+    },
+    {
+      "id": "r05-ablate-20261102T145207Z",
+      "block": "attribution",
+      "ref": "data/modal-r05-attribution",
+      "dir": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z",
+      "replaces": [],
+      "why": "extra block: arms A/B/C split of the r05 saving (batching vs levers vs cache)",
+      "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa"
+    }
+  ],
+  "gaps": [],
+  "receipt_signed": true,
+  "events": 1699,
+  "files": [
+    {
+      "file": "blocks/r05-langchain-20261102T140740Z/attachment.json",
+      "sha256": "7d6321c01a0b3ea2007c1c326378f1d722f31fb9d10ace6b5904e1496dbeffce",
+      "bytes": 1770,
+      "source": {
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/attachment.json"
+      }
+    },
+    {
+      "file": "blocks/r05-langchain-20261102T140740Z/attachment.sigstore.json",
+      "sha256": "3fb1c9ef5c81e5cc2c57c0c8cd59ce1aef4affc47f5083573d88d4c55ebeae5b",
+      "bytes": 431,
+      "source": {
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/attachment.sigstore.json"
+      }
+    },
+    {
+      "file": "blocks/r05-langchain-20261102T140740Z/events.jsonl",
+      "sha256": "27af3ad8b29ffb44197a6362484a28113a284119961aac6abe9d868aeb904852",
+      "bytes": 6064,
+      "source": {
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/events.jsonl"
+      }
+    },
+    {
+      "file": "blocks/r05-langchain-20261102T140740Z/inner.json",
+      "sha256": "e5ab0837aa3565db0bfaf6c006e1763dd472e2eb99b82cf4ab3d6c822d548cdc",
+      "bytes": 922,
+      "source": {
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/inner.json"
+      }
+    },
+    {
+      "file": "blocks/r05-langchain-20261102T140740Z/inner.log",
+      "sha256": "251c2fbad522d889f608d660f47d60049bfc1a3fc94730df07dbe6b01d974acb",
+      "bytes": 268,
+      "source": {
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/inner.log"
+      }
+    },
+    {
+      "file": "blocks/r05-langchain-20261102T140740Z/langchain/block.log",
+      "sha256": "6686b46c0d83221e9c3f489a66cba2a35ee3bea63ed17e83a4d1b43a8195a9a3",
+      "bytes": 749,
+      "source": {
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/langchain/block.log"
+      }
+    },
+    {
+      "file": "blocks/r05-langchain-20261102T140740Z/langchain/langchain_items.jsonl",
+      "sha256": "475cd8a12ec1850e75c0ce0b0287b0a81926bda5e28c093a4aab4dcbc43afd6a",
+      "bytes": 11249,
+      "source": {
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/langchain/langchain_items.jsonl"
+      }
+    },
+    {
+      "file": "blocks/r05-langchain-20261102T140740Z/langchain/langchain_pass.json",
+      "sha256": "53309ce17166ef3eaee32c9051635cd39c0b1272b6047e947cb964b998450840",
+      "bytes": 15752,
+      "source": {
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/langchain/langchain_pass.json"
+      }
+    },
+    {
+      "file": "blocks/r05-langchain-20261102T140740Z/probe/probe.json",
+      "sha256": "ccc6831eb14ecb0a9e61bedf2e77cde09977a0fd9b10c9e11de1a7718136b791",
+      "bytes": 309,
+      "source": {
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/probe/probe.json"
+      }
+    },
+    {
+      "file": "blocks/r05-langchain-20261102T140740Z/raw/vllm-bf16-pc-128.log",
+      "sha256": "07fe0c90a21e8fd8079024cfab318e2becd12148034944c965e95d69bc073fcc",
+      "bytes": 73749,
+      "source": {
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/raw/vllm-bf16-pc-128.log"
+      }
+    },
+    {
+      "file": "blocks/r05-langchain-20261102T140740Z/status.json",
+      "sha256": "e8feeb27167511fa939b06cabfecda1d853a1ac4d27e3ad608b486ae65290ecc",
+      "bytes": 86,
+      "source": {
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/status.json"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/attachment.json",
+      "sha256": "50a4a4034b93302c325060eea610bececdbf43ea9f55de223b40ebbce78d585f",
+      "bytes": 2517,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/attachment.json"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/attachment.sigstore.json",
+      "sha256": "bf2e5cfafb06c9c56e5518e31818f60f4bc144cc418c7e0e3d2e3e30c3203881",
+      "bytes": 431,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/attachment.sigstore.json"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/events.jsonl",
+      "sha256": "b834c990031b6c61b1663e7d1603bfc00d45b0968df9e8bddfee6b9b5512a56a",
+      "bytes": 6556,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/events.jsonl"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/eye/block.log",
+      "sha256": "f644cce7262e636c8dc9d569394f42e3ef387e50ffb08967f747b3faf64b63e2",
+      "bytes": 55,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/eye/block.log"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/eye/eye_test.json",
+      "sha256": "7e4f87ad21b0577bfc2a3ade2365b5a850241a59a9d40aa240d03d0f6c8aa6df",
+      "bytes": 4926,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/eye/eye_test.json"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/eye_plain/block.log",
+      "sha256": "f644cce7262e636c8dc9d569394f42e3ef387e50ffb08967f747b3faf64b63e2",
+      "bytes": 55,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/eye_plain/block.log"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/eye_plain/eye_test.json",
+      "sha256": "7d1a88a2cb0d190de4cd88d4e0d1717ee61bcf1c4045e4fb32781d90b2229b9e",
+      "bytes": 3765,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/eye_plain/eye_test.json"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/inner.json",
+      "sha256": "d086fb41c737d93ed0566c8522ed2b61bb3676c232b0f65542b5ed1e31f0a8db",
+      "bytes": 1539,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/inner.json"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/inner.log",
+      "sha256": "251c2fbad522d889f608d660f47d60049bfc1a3fc94730df07dbe6b01d974acb",
+      "bytes": 268,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/inner.log"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/probe/probe.json",
+      "sha256": "7e0534946c104be4739c19d70930e6a955d6e9c40729117d2133bb280e519abf",
+      "bytes": 309,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/probe/probe.json"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/raw/vllm-bf16-nopc-64.log",
+      "sha256": "b4268270652e0c6e075f85021c33b4ce313fe73022222ee93fe8a576083eff72",
+      "bytes": 24463,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/raw/vllm-bf16-nopc-64.log"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/raw/vllm-bf16-pc-128.log",
+      "sha256": "dafd7b92c96b27b52c6802cb94dcb541b6d6be8c13a3e903b5c0a0b4d6661ea8",
+      "bytes": 26287,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/raw/vllm-bf16-pc-128.log"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/spoken/block.log",
+      "sha256": "57179b8c0adc64175923b6a88cb6d555aeb78946fc192fbbac5e88b815018038",
+      "bytes": 71,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/spoken/block.log"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/spoken/spoken_answer.json",
+      "sha256": "ac2208ef17cd86210c4cc5519b178db8644875d67037436d57c0a40295fa26e1",
+      "bytes": 6347,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/spoken/spoken_answer.json"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/spoken_plain/block.log",
+      "sha256": "57179b8c0adc64175923b6a88cb6d555aeb78946fc192fbbac5e88b815018038",
+      "bytes": 71,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/spoken_plain/block.log"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/spoken_plain/spoken_answer.json",
+      "sha256": "f64853035b5fadd1a343878c6ca35321d9bb3fe0ac2570de976810937213e775",
+      "bytes": 5814,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/spoken_plain/spoken_answer.json"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/status.json",
+      "sha256": "adb6207d3a1680aa0dfaecf706b84e1302cae247932f74a21ba7ace42a283d8b",
+      "bytes": 88,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/status.json"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/SUMMARY.md",
+      "sha256": "dd8074d3f43be27c2a4e6f2aa1f6b60a3401baececdea1964728fd2c9ae8ffda",
+      "bytes": 1462,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/SUMMARY.md"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/attachment.json",
+      "sha256": "1f1974a8f1a6ebd00f379d07a93d146bc7c3ec14228a756d23b9eb62e480505c",
+      "bytes": 3274,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/attachment.json"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/attachment.sigstore.json",
+      "sha256": "4fc01068b19cae6b8c3edbf6b0d741ad743e64a1363e3313e80739465514e7cc",
+      "bytes": 431,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/attachment.sigstore.json"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/events.jsonl",
+      "sha256": "d7ee6a412eb9905ec4049799eab52cd514c07f26976f7669eded42ca271a01e3",
+      "bytes": 196627,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/events.jsonl"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/inner.json",
+      "sha256": "97530b45b6014e701bc7391edf72820b305affc93a8f7c24db1abad0f13197e4",
+      "bytes": 6367,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/inner.json"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/inner.log",
+      "sha256": "251c2fbad522d889f608d660f47d60049bfc1a3fc94730df07dbe6b01d974acb",
+      "bytes": 268,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/inner.log"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/probe/probe.json",
+      "sha256": "fe2287870a4581f7dac98bb3b0290b20e965239329be0aaf73e1c5c3f6a16cc3",
+      "bytes": 309,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/probe/probe.json"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/raw/A_stock_c32_nopc.answers.jsonl",
+      "sha256": "d698dae29317fbc9b0fda289af4893be16ab50a9ffada8bb440589b39c81247f",
+      "bytes": 87196,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/raw/A_stock_c32_nopc.answers.jsonl"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/raw/A_stock_c32_nopc.calls.jsonl",
+      "sha256": "46ac89a06bb41e5da4d9cab2ec0d7e56bb6b62dac906f3e7f900c0c4319bbb8f",
+      "bytes": 30245,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/raw/A_stock_c32_nopc.calls.jsonl"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/raw/A_stock_c32_nopc.power.csv",
+      "sha256": "1da1f2ee96afb6c52bbc1b4219a061199098449dbb4352fb6ceb0dd34dd41cf6",
+      "bytes": 3802,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/raw/A_stock_c32_nopc.power.csv"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/raw/B_with_c32_nopc.answers.jsonl",
+      "sha256": "8a7cdafe685895797ca33ea5720784acc128e66921f1afcbb2c445fa897ff274",
+      "bytes": 89718,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/raw/B_with_c32_nopc.answers.jsonl"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/raw/B_with_c32_nopc.calls.jsonl",
+      "sha256": "a22ae53e5cbc6b65725ea44d4922610f40f3d7ab8838a5db54a8203c5bf89ce0",
+      "bytes": 37769,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/raw/B_with_c32_nopc.calls.jsonl"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/raw/B_with_c32_nopc.power.csv",
+      "sha256": "1a7b3a722b780b291d0d4d9cbd141ba833293045c044d17e7f8506ba22e237d9",
+      "bytes": 1649,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/raw/B_with_c32_nopc.power.csv"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/raw/C_with_c32_pc.answers.jsonl",
+      "sha256": "8de2e3260321f4896721efee15b7568f2f6e76d48e1819e92141b74d3eb38a62",
+      "bytes": 88738,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/raw/C_with_c32_pc.answers.jsonl"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/raw/C_with_c32_pc.calls.jsonl",
+      "sha256": "39c8e04a2b8c306330b2dd2d93e833c4eed2c7b8768987ace0dc85e85788fd31",
+      "bytes": 38063,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/raw/C_with_c32_pc.calls.jsonl"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/raw/C_with_c32_pc.power.csv",
+      "sha256": "01bad389133038271eecba431ec1801f49009887f14d33af57d6472d1955e223",
+      "bytes": 2493,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/raw/C_with_c32_pc.power.csv"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/raw/vllm-bf16-nopc-128.log",
+      "sha256": "5b1e741e004dddf8ada1fdb0739f1e08e7f5881617f76b5d74bda7add80429e6",
+      "bytes": 58996,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/raw/vllm-bf16-nopc-128.log"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/raw/vllm-bf16-pc-128.log",
+      "sha256": "780a45d7e99aed94e38ba70850828cf4b65df9a03247d124997e5ea98611dfbd",
+      "bytes": 44792,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/raw/vllm-bf16-pc-128.log"
+      }
+    },
+    {
+      "file": "blocks/r05-ablate-20261102T145207Z/status.json",
+      "sha256": "e90702abe9ef9e8da6174a7ad1854cc2b20679dfd972f7115b1cbd67387ad5b0",
+      "bytes": 82,
+      "source": {
+        "ref": "data/modal-r05-attribution",
+        "commit": "c66bc9bde61944a2e1cc9fa9379a5f1b829b27fa",
+        "path": "data/modal-full-1101/attachments/r05/r05-ablate-20261102T145207Z/status.json"
+      }
+    },
+    {
+      "file": "events.jsonl",
+      "sha256": "14364eccc6427692c34ef8ad268e049c81937d1d18e18bd0f4a1d25df768738d",
+      "bytes": 525681,
+      "source": null
+    },
+    {
+      "file": "receipt.json",
+      "sha256": "0615ea626bfdf783c14c1b15a724398da2c6d5f3e2aa9a212dd389f38f5b6424",
+      "bytes": 16169,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/r05/features/receipt.json"
+      }
+    },
+    {
+      "file": "receipt.sigstore.json",
+      "sha256": "c4e26658c91ebec5d3adf75200dbeeea0ac3681cedbb2f58dfe2c86564e7c59e",
+      "bytes": 431,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/r05/features/receipt.sigstore.json"
+      }
+    },
+    {
+      "file": "round_eu_report.html",
+      "sha256": "644db679b366bb1ca64eb59d6ee39456c10439104158e230b075f74990b892de",
+      "bytes": 3884,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/r05/features/eu_report.html"
+      }
+    },
+    {
+      "file": "energy-receipt.json",
+      "sha256": "5cd0aa70d31be42b25bd065876e49410659a36748fe7e1319cd0d18a7a406e1e",
+      "bytes": 11236,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/r05/sweep/rcpt_20261101_modal_full_r05.json"
+      }
+    },
+    {
+      "file": "energy-receipt.sigstore.json",
+      "sha256": "553ee55ca4c54f53e2ed19d6ff7718e3c83e0be377ffafb89dec945b3613cfbf",
+      "bytes": 431,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/r05/sweep/rcpt_20261101_modal_full_r05.sigstore.json"
+      }
+    },
+    {
+      "file": "eu_report.html",
+      "sha256": "29306c5733d5cab9968a9ce9ee3fb938bdd0736bd08a8ac809f24ca08976f952",
+      "bytes": 6078,
+      "source": {
+        "generated_by": "wattnot.report.eu.generate_report",
+        "from": "energy-receipt.json"
+      }
+    }
+  ],
+  "launch": "python -m wattnot.dash --replay-only --events replays/modal-r2/events.jsonl"
+}

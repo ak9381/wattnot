@@ -1,0 +1,219 @@
+{
+  "spec": "wattnot.replay-manifest/1",
+  "name": "modal-r1",
+  "title": "Modal round 1 (A100, public gsm8k+humaneval): r04f, LangChain from the r04f rerun",
+  "label": "REPLAY",
+  "provider": "modal",
+  "live_calls": false,
+  "base": {
+    "id": "r04f",
+    "ref": "data/modal-full-1101",
+    "events": [
+      "data/modal-full-1101/r04f.without.events.jsonl",
+      "data/modal-full-1101/r04f.with.events.jsonl"
+    ],
+    "receipt": "data/modal-full-1101/r04f/features/receipt.json",
+    "energy_receipt": "data/modal-full-1101/r04f/sweep/rcpt_20261101_modal_full_r04f.json",
+    "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853"
+  },
+  "blocks": [
+    {
+      "id": "r04f-langchain-20261102T112336Z",
+      "block": "langchain",
+      "ref": "data/modal-full-1101",
+      "dir": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z",
+      "replaces": [
+        [
+          "effort_router",
+          "langchain"
+        ]
+      ],
+      "why": "rerun after fc-tune (final-check tuning, main 95b4431); r04f's own LangChain pass ran before that fix",
+      "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853"
+    }
+  ],
+  "gaps": [
+    "Round verdict is REJECTED on p99 only (88.4 -> 104.6 s, MEASURED). The fix (step-up latency guard, main 0da21ff) was never rerun on a full Modal round 1; round 2 (r05) is the post-fix Modal round. Shown as recorded, not hidden.",
+    "Eye and hearing ran only on the WattNot server in r04f (no stock-server arm)."
+  ],
+  "receipt_signed": true,
+  "events": 2094,
+  "files": [
+    {
+      "file": "blocks/r04f-langchain-20261102T112336Z/attachment.json",
+      "sha256": "f6e77bf6de790d9e2fd1a6bc0afe50cb027e6921a45e4ed69bc8e3692d9e1ad5",
+      "bytes": 1767,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/attachment.json"
+      }
+    },
+    {
+      "file": "blocks/r04f-langchain-20261102T112336Z/attachment.sigstore.json",
+      "sha256": "9a2034865fe40ce85714fe7e2ba38424b74fbab76997d686d1c08574cd3cb40c",
+      "bytes": 431,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/attachment.sigstore.json"
+      }
+    },
+    {
+      "file": "blocks/r04f-langchain-20261102T112336Z/events.jsonl",
+      "sha256": "7fd109d6f3440266f675862cc4a6c1f08ef0a48977982aeb0e669b7624bdef74",
+      "bytes": 6068,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/events.jsonl"
+      }
+    },
+    {
+      "file": "blocks/r04f-langchain-20261102T112336Z/inner.json",
+      "sha256": "0592fc05ec07d4a8d84c6d0d0c79776431447af01ce7eb4e390c633200afb5de",
+      "bytes": 922,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/inner.json"
+      }
+    },
+    {
+      "file": "blocks/r04f-langchain-20261102T112336Z/inner.log",
+      "sha256": "9c771af4dbe073e84d23327b4758628653bd25db31264be8f21adefbe6399a44",
+      "bytes": 268,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/inner.log"
+      }
+    },
+    {
+      "file": "blocks/r04f-langchain-20261102T112336Z/langchain/block.log",
+      "sha256": "5357abc19acafb6f54ca2f7f44ee7174f63116cc8a5644e3a146a8b039144bb1",
+      "bytes": 751,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/langchain/block.log"
+      }
+    },
+    {
+      "file": "blocks/r04f-langchain-20261102T112336Z/langchain/langchain_items.jsonl",
+      "sha256": "829500c180b21be9935cc0aa5b14b9305b1dfaeaf35d640d34e5f8d3c2e1592f",
+      "bytes": 9916,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/langchain/langchain_items.jsonl"
+      }
+    },
+    {
+      "file": "blocks/r04f-langchain-20261102T112336Z/langchain/langchain_pass.json",
+      "sha256": "a192342156ef56e8a61df2e8c3e25e864023d82995a7c84168a108ebba6ff082",
+      "bytes": 14566,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/langchain/langchain_pass.json"
+      }
+    },
+    {
+      "file": "blocks/r04f-langchain-20261102T112336Z/probe/probe.json",
+      "sha256": "2cf4a59c4007168de209e98ff3e5700d4ab25dd2ae3f90eb5de494e2cf2dee65",
+      "bytes": 309,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/probe/probe.json"
+      }
+    },
+    {
+      "file": "blocks/r04f-langchain-20261102T112336Z/raw/vllm-bf16-pc-128.log",
+      "sha256": "4a22a6454917106cf20ce35179d5dc86faea1f856af0a9aaaa4fc84267ffe7be",
+      "bytes": 80710,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/raw/vllm-bf16-pc-128.log"
+      }
+    },
+    {
+      "file": "blocks/r04f-langchain-20261102T112336Z/status.json",
+      "sha256": "139ce5d4a2c29de8ddabbfa60047489a39769e2f6d31be365ec2fc20e20e3c5b",
+      "bytes": 87,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/status.json"
+      }
+    },
+    {
+      "file": "events.jsonl",
+      "sha256": "3dcafb0b890942b9794a9b1d2b3acda4ed49d13505f4225b27100ee30bbe5dac",
+      "bytes": 601817,
+      "source": null
+    },
+    {
+      "file": "receipt.json",
+      "sha256": "de0762391d6f8d10c9a2f9cf8ab5aaa09b7d70d0b811f3ae64d0a0f029c9cc36",
+      "bytes": 16200,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/r04f/features/receipt.json"
+      }
+    },
+    {
+      "file": "receipt.sigstore.json",
+      "sha256": "d3a3f79140449846051a91ae34b19aa7b0c290fec9ff49f7490a06bed0e390ed",
+      "bytes": 431,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/r04f/features/receipt.sigstore.json"
+      }
+    },
+    {
+      "file": "round_eu_report.html",
+      "sha256": "43adff3b763d02d09dcafc35af4dfefaad59321e111999a17cffb082c3c97d7a",
+      "bytes": 4159,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/r04f/features/eu_report.html"
+      }
+    },
+    {
+      "file": "energy-receipt.json",
+      "sha256": "39bcf2962def3d594560e0b9f7ed479a3f1e986e04f6520c7415e521bfbb1e2e",
+      "bytes": 11688,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/r04f/sweep/rcpt_20261101_modal_full_r04f.json"
+      }
+    },
+    {
+      "file": "energy-receipt.sigstore.json",
+      "sha256": "cd8fb3aaea39acd88c9281b5761d4e481d826fe30ef56f8cfae5f58579eedb95",
+      "bytes": 431,
+      "source": {
+        "ref": "data/modal-full-1101",
+        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
+        "path": "data/modal-full-1101/r04f/sweep/rcpt_20261101_modal_full_r04f.sigstore.json"
+      }
+    },
+    {
+      "file": "eu_report.html",
+      "sha256": "2df7e7a58631ae2302d8ee062ec079d9f5fec382fef029ebda541115f1d7657b",
+      "bytes": 6101,
+      "source": {
+        "generated_by": "wattnot.report.eu.generate_report",
+        "from": "energy-receipt.json"
+      }
+    }
+  ],
+  "launch": "python -m wattnot.dash --replay-only --events replays/modal-r1/events.jsonl"
+}
