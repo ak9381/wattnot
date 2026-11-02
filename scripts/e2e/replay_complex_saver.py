@@ -35,7 +35,9 @@ from wattnot.proof.client import Reply  # noqa: E402
 CATALOG = ["gpu-fan", "psu-1600w", "nvlink-bridge", "ssd-4tb", "ram-64gb", "nic-100g"]
 R04E_LOST = {"complex-00", "complex-01", "complex-03", "complex-04", "complex-05",
              "complex-07", "complex-09", "complex-10"}
-OLD_REV = "175509e"
+REVS = {"old": "175509e", "safe": "e3a0415"}   # r04e saver; safe = short turns verbatim only
+ARMS = ("off", "old", "safe", "new")
+STYLES = ("notes", "stateless", "verbose", "verbose-stateless")
 
 
 class LossySummarizer:
@@ -51,14 +53,15 @@ class LossySummarizer:
         return "Summary: " + " ".join(gist.split()[:10])
 
 
-def old_module():
-    src = subprocess.run(["git", "show", f"{OLD_REV}:src/wattnot/context_saver/middleware.py"],
+def old_module(rev: str):
+    src = subprocess.run(["git", "show", f"{rev}:src/wattnot/context_saver/middleware.py"],
                          cwd=ROOT, capture_output=True, text=True, check=True).stdout
-    p = Path("/tmp/_wattnot_mw_old.py")
+    p = Path(f"/tmp/_wattnot_mw_{rev}.py")
     p.write_text(src)
-    spec = importlib.util.spec_from_file_location("_wattnot_mw_old", p)
+    name = f"_wattnot_mw_{rev}"
+    spec = importlib.util.spec_from_file_location(name, p)
     m = importlib.util.module_from_spec(spec)
-    sys.modules["_wattnot_mw_old"] = m
+    sys.modules[name] = m
     spec.loader.exec_module(m)
     return m
 
@@ -68,7 +71,7 @@ def levers(arm: str, shared: dict):
     if arm == "off":
         lv.saver = NEW.ContextSaver(middlewares=[])
         return lv
-    mod = shared.setdefault("_oldmod", old_module()) if arm == "old" else NEW
+    mod = shared.setdefault("_mod" + arm, old_module(REVS[arm])) if arm in REVS else NEW
     if arm not in shared:   # one saver for the whole arm, like the r04e LEVERS singleton
         shared[arm] = mod.ContextSaver(middlewares=[mod.ToolDedupMiddleware(),
                                                     mod.MemoryCompressionMiddleware(summarize=LossySummarizer())])
@@ -132,10 +135,19 @@ class Agent:
         need = {}
 
         def say(line):
-            note = "" if self.style != "notes" else \
+            note = "" if self.style not in ("notes", "verbose") else \
                 "\nNOTE " + json.dumps({"|".join(k): v for k, v in known.items()})
-            return Reply(0.1, 30, line + note, "stop")
+            pre = "" if not self.style.startswith("verbose") else (
+                "Let me think about what the task needs before acting. The goal is to work out the "
+                "restock cost, so I should gather the stock level and the unit price for each item, "
+                "then convert the currency if the question asks for it. I will take this one step at "
+                "a time and check every tool result carefully before moving on to the next step. "
+                "The price service can be flaky, so if it errors I will simply call it again.\n")
+            return Reply(0.1, 30, pre + line + note, "stop")
 
+        sub_hit = next((v for (t, a), v in known.items() if t == "subagent" and items[0] in a), None)
+        if sub_hit is not None:   # read back from a CALL subagent/RESULT pair, also in the recap
+            known[("subagent", items[0])] = sub_hit
         if sub_part and ("subagent", items[0]) not in known:
             # one subagent call for the first item; its answer comes back as RESULT <number>
             for i, m in enumerate(msgs):
@@ -170,7 +182,10 @@ class Chat:
 
     def __call__(self, msgs, max_tokens):
         self.calls += 1
-        nb, _ = self.lv.apply({"messages": msgs, "max_tokens": max_tokens})
+        nb, info = self.lv.apply({"messages": msgs, "max_tokens": max_tokens})
+        sv = info.get("saver") or {}
+        self.tok_before = getattr(self, "tok_before", 0) + int(sv.get("tokens_before", 0) or 0)
+        self.tok_after = getattr(self, "tok_after", 0) + int(sv.get("tokens_after", sv.get("tokens_before", 0)) or 0)
         if nb is None:
             return Reply(0.0, 0, "", "error")
         return self.agent(nb["messages"], max_tokens)
@@ -186,7 +201,8 @@ def run(ids: list[str], arm: str, style: str) -> list[dict]:
         out.append({"id": i, "arm": arm, "style": style, "ok": g.ok, "final": g.detail.get("final"),
                     "answer": tasks[i].answer, "turns": g.detail.get("turns"),
                     "stopped": g.detail.get("stopped"), "no_task_replies": ag.saw_no_task,
-                    "r04e_lost": i in R04E_LOST})
+                    "r04e_lost": i in R04E_LOST, "prompt_tokens_before": getattr(ch, "tok_before", 0),
+                    "prompt_tokens_after": getattr(ch, "tok_after", 0)})
     return out
 
 
@@ -196,18 +212,23 @@ def main(argv=None) -> int:
     ap.add_argument("--json", default="")
     a = ap.parse_args(argv)
     ids = a.ids.split(",")
-    rows = [r for arm in ("off", "old", "new") for style in ("notes", "stateless") for r in run(ids, arm, style)]
-    for style in ("notes", "stateless"):
-        print(f"\n[{style}] item         off  old  new  (r04e lost?)")
+    rows = [r for arm in ARMS for style in STYLES for r in run(ids, arm, style)]
+    f = lambda r: "PASS" if r["ok"] else f"FAIL({r['stopped'] or r['final']})"  # noqa: E731
+    for style in STYLES:
+        print(f"\n[{style}] item        " + "".join(f"{x:>18}" for x in ARMS))
         for i in ids:
             cell = {r["arm"]: r for r in rows if r["id"] == i and r["style"] == style}
-            f = lambda r: ("PASS" if r["ok"] else f"FAIL({r['stopped'] or r['final']})")  # noqa: E731
-            print(f"  {i}  {f(cell['off']):>5} {f(cell['old']):>5} {f(cell['new']):>5}  "
-                  f"{'lost' if i in R04E_LOST else ''} no-task old/new {cell['old']['no_task_replies']}/{cell['new']['no_task_replies']}")
+            print(f"  {i} " + "".join(f"{f(cell[x]):>18}" for x in ARMS) + ("   r04e lost" if i in R04E_LOST else ""))
+        print("  pass / turns / prompt tokens sent (MOCK, est.):")
+        for x in ARMS:
+            rs = [r for r in rows if r["arm"] == x and r["style"] == style]
+            b, af = sum(r["prompt_tokens_before"] for r in rs), sum(r["prompt_tokens_after"] for r in rs)
+            print(f"    {x:6} {sum(r['ok'] for r in rs)}/{len(rs)}  turns {sum(r['turns'] for r in rs)}  "
+                  f"tokens {b} -> {af} (saved {100 * (b - af) / b if b else 0:.1f}%)")
     if a.json:
         Path(a.json).write_text(json.dumps({"label": "MOCK (CPU replay, scripted agent, lossy mock summariser)",
                                             "rows": rows}, indent=2))
-    new_ok = all(r["ok"] for r in rows if r["arm"] == "new" and r["style"] == "notes")
+    new_ok = all(r["ok"] for r in rows if r["arm"] == "new")
     return 0 if new_ok else 1
 
 
