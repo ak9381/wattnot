@@ -397,6 +397,7 @@ def main(argv=None) -> int:
         return 3
     raw = a.raw / a.round
     raw.mkdir(parents=True, exist_ok=True)
+    ledger_n0 = _ledger_n(raw / "baseten_spend.json")
     cap = SafeCap(SpendCap(a.cap_usd, raw / "baseten_spend.json"))
     if a.dry_run:
         tr = DryTransport()
@@ -550,17 +551,10 @@ def main(argv=None) -> int:
                                             "tries", "step_up_reason", "wall_s")} for x in all_ans],
         "raw_dir": str(raw.relative_to(ROOT)) if raw.is_relative_to(ROOT) else str(raw),
     }
-    allr = calls.rows
-    own = {"requests": len(allr), "input_tokens": sum(r["prompt_tokens"] for r in allr),
-           "cached_input_tokens": sum(r["cached_tokens"] for r in allr),
-           "output_tokens": sum(r["completion_tokens"] for r in allr), "usd": round(cap.session_usd, 6)}
     doc["refusal_watch"] = doc_checks
-    doc["provider_usage"] = ({"status": "dry-run, not read", "match": None, "worst_diff_pct": None}
-                             if a.dry_run else provider_usage(started, datetime.now(UTC).isoformat(), own))
     doc["sets"] = list(a.sets)
     if a.dry_run:
         doc["label"], doc["status"] = "MOCK", "dry-run"
-    print("[usage] " + json.dumps({k: doc["provider_usage"].get(k) for k in ("status", "worst_diff_pct", "match")}))
     doc["features"] = feature_table()
     doc["levers_stats"] = {**BasetenChat.levers.stats, "label": "ESTIMATE"}
     doc["feature_stages"] = post_round(raw, doc, mode=("smoke" if a.limit and a.mode == "smoke" else a.mode),
@@ -568,6 +562,13 @@ def main(argv=None) -> int:
                                        do_pr=a.pr, budget_s=a.stage_budget_s or None,
                                        meta_cap_usd=a.meta_cap_usd or None) if not stop else {"status": "skipped", "why": stop}
     doc["spend"]["baseten_usd"]["value"] = round(cap.session_usd, 6)
+    # Usage cross-check AFTER the feature stages: the judge, Code Mode and other stages also call
+    # Baseten on this key and settle into the same cap ledger, so the window and our counts must
+    # cover them too (r02 smoke compared 12 arm calls against 72 workspace requests).
+    own = own_usage(calls.rows, ledger_n0, _ledger_n(raw / "baseten_spend.json"), cap.session_usd)
+    doc["provider_usage"] = ({"status": "dry-run, not read", "match": None, "worst_diff_pct": None}
+                             if a.dry_run else provider_usage(started, datetime.now(UTC).isoformat(), own))
+    print("[usage] " + json.dumps({k: doc["provider_usage"].get(k) for k in ("status", "worst_diff_pct", "match")}))
     BasetenChat.log.emit("run.finished", arm="with_wattnot")
     out = a.out if not a.limit else raw / "smoke-matrix"
     out.mkdir(parents=True, exist_ok=True)
@@ -585,6 +586,26 @@ def main(argv=None) -> int:
                       "baseten_usd": round(cap.session_usd, 4), "meta_usd": round(m1 - m0, 4),
                       "agree": doc["spark_summary"]["agreement"], "errors": calls.errors, "stop": stop}), flush=True)
     return 0 if not stop else 2
+
+
+def _ledger_n(path) -> int:
+    """Number of settled Baseten calls in the round's cap ledger (arms + judge + feature stages)."""
+    try:
+        return len(json.loads(Path(path).read_text())["usd"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return 0
+
+
+def own_usage(arm_rows, ledger_n0: int, ledger_n1: int, session_usd: float) -> dict:
+    """Our side of the provider cross-check. Requests and USD come from the cap ledger, which every
+    Baseten caller in the round settles into; token counts are only kept per call for the arms, so
+    they are reported as arm-only and left out of the match (None)."""
+    return {"requests": max(ledger_n1 - ledger_n0, len(arm_rows)), "usd": round(session_usd, 6),
+            "input_tokens": None, "cached_input_tokens": None, "output_tokens": None,
+            "arm_only": {"requests": len(arm_rows),
+                         "input_tokens": sum(r["prompt_tokens"] for r in arm_rows),
+                         "cached_input_tokens": sum(r["cached_tokens"] for r in arm_rows),
+                         "output_tokens": sum(r["completion_tokens"] for r in arm_rows)}}
 
 
 def spark_one(spark, rec):
