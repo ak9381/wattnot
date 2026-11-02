@@ -1,0 +1,33 @@
+{
+ "round": "r04e",
+ "rc": 0,
+ "pr": null,
+ "pr_review": null,
+ "clips": [
+  {
+   "file": "data/modal-full-1101/clips/modal-r04e-graph-without.mp4",
+   "duration_s": 1408.1,
+   "frames": 14081,
+   "plays": true,
+   "bytes": 11573858
+  },
+  {
+   "file": "data/modal-full-1101/clips/modal-r04e-graph-with.mp4",
+   "duration_s": 7194.2,
+   "frames": 71942,
+   "plays": true,
+   "bytes": 34666838
+  },
+  {
+   "file": "data/modal-full-1101/clips/modal-r04e-matrix.mp4",
+   "duration_s": 18.9,
+   "frames": 189,
+   "plays": true,
+   "bytes": 254752
+  }
+ ],
+ "pr_review_full": {
+  "decision": null,
+  "why": "no PR opened this round"
+ }
+}

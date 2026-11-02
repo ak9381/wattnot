@@ -1,0 +1,411 @@
+{"item": "load@0s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616698162988-1", "t": 1793599616.6981645, "usd": 0.463413}
+{"item": "load@0s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616698162988-1", "seconds": 30.0, "t": 1793599616.6983445, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@30s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616698539362-2", "t": 1793599616.6985407, "usd": 0.463413}
+{"item": "load@30s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616698539362-2", "seconds": 30.0, "t": 1793599616.6992593, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@60s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616700084786-3", "t": 1793599616.700086, "usd": 0.463413}
+{"item": "load@60s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616700084786-3", "seconds": 30.0, "t": 1793599616.7002883, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@90s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616700488583-4", "t": 1793599616.7004895, "usd": 0.463413}
+{"item": "load@90s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616700488583-4", "seconds": 30.0, "t": 1793599616.7006173, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@120s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616700758572-5", "t": 1793599616.7007596, "usd": 0.463413}
+{"item": "load@120s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616700758572-5", "seconds": 30.0, "t": 1793599616.700871, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@150s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616701021377-6", "t": 1793599616.7010221, "usd": 0.463413}
+{"item": "load@150s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616701021377-6", "seconds": 30.0, "t": 1793599616.701125, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@180s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616701272828-7", "t": 1793599616.701274, "usd": 0.463413}
+{"item": "load@180s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616701272828-7", "seconds": 30.0, "t": 1793599616.7013767, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@210s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616701531886-8", "t": 1793599616.7015326, "usd": 0.463413}
+{"item": "load@210s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616701531886-8", "seconds": 30.0, "t": 1793599616.7016373, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@240s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616702780001-9", "t": 1793599616.7027812, "usd": 0.463413}
+{"item": "load@240s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616702780001-9", "seconds": 30.0, "t": 1793599616.702945, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@270s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616703111809-10", "t": 1793599616.703113, "usd": 0.463413}
+{"item": "load@270s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616703111809-10", "seconds": 30.0, "t": 1793599616.70324, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@300s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616703399330-11", "t": 1793599616.7034004, "usd": 0.463413}
+{"item": "load@300s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616703399330-11", "seconds": 30.0, "t": 1793599616.7035074, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@330s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616703667682-12", "t": 1793599616.7036688, "usd": 0.463413}
+{"item": "load@330s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616703667682-12", "seconds": 30.0, "t": 1793599616.7037723, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@360s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616703989072-13", "t": 1793599616.70399, "usd": 0.463413}
+{"item": "load@360s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616703989072-13", "seconds": 30.0, "t": 1793599616.704082, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@390s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616704250259-14", "t": 1793599616.7042513, "usd": 0.463413}
+{"item": "load@390s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616704250259-14", "seconds": 30.0, "t": 1793599616.7043424, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@420s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616704504888-15", "t": 1793599616.704506, "usd": 0.463413}
+{"item": "load@420s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616704504888-15", "seconds": 30.0, "t": 1793599616.704603, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@450s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616704767193-16", "t": 1793599616.7047682, "usd": 0.463413}
+{"item": "load@450s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616704767193-16", "seconds": 30.0, "t": 1793599616.7048702, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@480s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616705048803-17", "t": 1793599616.7050498, "usd": 0.463413}
+{"item": "load@480s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616705048803-17", "seconds": 30.0, "t": 1793599616.705151, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@510s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616705325594-18", "t": 1793599616.7053266, "usd": 0.463413}
+{"item": "load@510s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616705325594-18", "seconds": 30.0, "t": 1793599616.7054265, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@540s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616705609789-19", "t": 1793599616.7056108, "usd": 0.463413}
+{"item": "load@540s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616705609789-19", "seconds": 30.0, "t": 1793599616.705709, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@570s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616705894005-20", "t": 1793599616.705895, "usd": 0.463413}
+{"item": "load@570s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616705894005-20", "seconds": 30.0, "t": 1793599616.7059941, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@600s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616706584321-21", "t": 1793599616.7065866, "usd": 0.463413}
+{"item": "load@600s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616706584321-21", "seconds": 30.0, "t": 1793599616.7068112, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@630s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616707082533-22", "t": 1793599616.707084, "usd": 0.463413}
+{"item": "load@630s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616707082533-22", "seconds": 30.0, "t": 1793599616.7071998, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@660s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616707420661-23", "t": 1793599616.7074223, "usd": 0.463413}
+{"item": "load@660s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616707420661-23", "seconds": 30.0, "t": 1793599616.707532, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "load@690s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616707750163-24", "t": 1793599616.7077513, "usd": 0.463413}
+{"item": "load@690s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616707750163-24", "seconds": 30.0, "t": 1793599616.7079165, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@0s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616708169538-25", "t": 1793599616.7081707, "usd": 0.463413}
+{"item": "k8@0s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616708169538-25", "seconds": 30.0, "t": 1793599616.7082763, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@30s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616708532601-26", "t": 1793599616.708534, "usd": 0.463413}
+{"item": "k8@30s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616708532601-26", "seconds": 30.0, "t": 1793599616.7086747, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@60s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616708914611-27", "t": 1793599616.7089157, "usd": 0.463413}
+{"item": "k8@60s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616708914611-27", "seconds": 30.0, "t": 1793599616.7090394, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@90s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616709273755-28", "t": 1793599616.7092748, "usd": 0.463413}
+{"item": "k8@90s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616709273755-28", "seconds": 30.0, "t": 1793599616.709388, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@120s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616709626132-29", "t": 1793599616.7096274, "usd": 0.463413}
+{"item": "k8@120s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616709626132-29", "seconds": 30.0, "t": 1793599616.7097328, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@150s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616709966020-30", "t": 1793599616.7099671, "usd": 0.463413}
+{"item": "k8@150s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616709966020-30", "seconds": 30.0, "t": 1793599616.710066, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@180s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616710313011-31", "t": 1793599616.7103143, "usd": 0.463413}
+{"item": "k8@180s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616710313011-31", "seconds": 30.0, "t": 1793599616.7104347, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@210s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616710699682-32", "t": 1793599616.710701, "usd": 0.463413}
+{"item": "k8@210s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616710699682-32", "seconds": 30.0, "t": 1793599616.7108178, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@240s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616711051727-33", "t": 1793599616.711053, "usd": 0.463413}
+{"item": "k8@240s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616711051727-33", "seconds": 30.0, "t": 1793599616.7111514, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@270s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616711394398-34", "t": 1793599616.7113953, "usd": 0.463413}
+{"item": "k8@270s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616711394398-34", "seconds": 30.0, "t": 1793599616.7114918, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@300s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616711797031-35", "t": 1793599616.7117987, "usd": 0.463413}
+{"item": "k8@300s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616711797031-35", "seconds": 30.0, "t": 1793599616.7119365, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@330s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616712267194-36", "t": 1793599616.7122686, "usd": 0.463413}
+{"item": "k8@330s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616712267194-36", "seconds": 30.0, "t": 1793599616.712397, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@360s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616712673138-37", "t": 1793599616.7126746, "usd": 0.463413}
+{"item": "k8@360s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616712673138-37", "seconds": 30.0, "t": 1793599616.7128012, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@390s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616713093207-38", "t": 1793599616.7130952, "usd": 0.463413}
+{"item": "k8@390s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616713093207-38", "seconds": 30.0, "t": 1793599616.7132561, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@420s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616713525386-39", "t": 1793599616.7135265, "usd": 0.463413}
+{"item": "k8@420s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616713525386-39", "seconds": 30.0, "t": 1793599616.7141879, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@450s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616714580992-40", "t": 1793599616.7145832, "usd": 0.463413}
+{"item": "k8@450s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616714580992-40", "seconds": 30.0, "t": 1793599616.7147214, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@480s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616714995456-41", "t": 1793599616.714997, "usd": 0.463413}
+{"item": "k8@480s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616714995456-41", "seconds": 30.0, "t": 1793599616.7151186, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@510s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616715399020-42", "t": 1793599616.7154, "usd": 0.463413}
+{"item": "k8@510s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616715399020-42", "seconds": 30.0, "t": 1793599616.7155182, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@540s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616715796829-43", "t": 1793599616.7157977, "usd": 0.463413}
+{"item": "k8@540s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616715796829-43", "seconds": 30.0, "t": 1793599616.7159214, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@570s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616716248010-44", "t": 1793599616.7162492, "usd": 0.463413}
+{"item": "k8@570s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616716248010-44", "seconds": 30.0, "t": 1793599616.71639, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@600s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616716696025-45", "t": 1793599616.7166975, "usd": 0.463413}
+{"item": "k8@600s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616716696025-45", "seconds": 30.0, "t": 1793599616.7168295, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@630s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616717133899-46", "t": 1793599616.717135, "usd": 0.463413}
+{"item": "k8@630s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616717133899-46", "seconds": 30.0, "t": 1793599616.7172465, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@660s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616717534301-47", "t": 1793599616.7175353, "usd": 0.463413}
+{"item": "k8@660s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616717534301-47", "seconds": 30.0, "t": 1793599616.7176592, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@690s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616718008197-48", "t": 1793599616.718009, "usd": 0.463413}
+{"item": "k8@690s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616718008197-48", "seconds": 30.0, "t": 1793599616.7181273, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@720s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616718470941-49", "t": 1793599616.7184722, "usd": 0.463413}
+{"item": "k8@720s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616718470941-49", "seconds": 30.0, "t": 1793599616.7186086, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@750s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616718994084-50", "t": 1793599616.7189949, "usd": 0.463413}
+{"item": "k8@750s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616718994084-50", "seconds": 30.0, "t": 1793599616.7191157, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@780s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616719430054-51", "t": 1793599616.7194312, "usd": 0.463413}
+{"item": "k8@780s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616719430054-51", "seconds": 30.0, "t": 1793599616.719558, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@810s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616719867405-52", "t": 1793599616.7198684, "usd": 0.463413}
+{"item": "k8@810s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616719867405-52", "seconds": 30.0, "t": 1793599616.7199762, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@840s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616720279235-53", "t": 1793599616.7202804, "usd": 0.463413}
+{"item": "k8@840s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616720279235-53", "seconds": 30.0, "t": 1793599616.7203941, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@870s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616720717641-54", "t": 1793599616.7207186, "usd": 0.463413}
+{"item": "k8@870s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616720717641-54", "seconds": 30.0, "t": 1793599616.721114, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@900s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616722004344-55", "t": 1793599616.7220066, "usd": 0.463413}
+{"item": "k8@900s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616722004344-55", "seconds": 30.0, "t": 1793599616.7224603, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@930s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616722991954-56", "t": 1793599616.7229939, "usd": 0.463413}
+{"item": "k8@930s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616722991954-56", "seconds": 30.0, "t": 1793599616.7231498, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@960s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616723541958-57", "t": 1793599616.723544, "usd": 0.463413}
+{"item": "k8@960s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616723541958-57", "seconds": 30.0, "t": 1793599616.7236564, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@990s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616724028812-58", "t": 1793599616.7240303, "usd": 0.463413}
+{"item": "k8@990s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616724028812-58", "seconds": 30.0, "t": 1793599616.7241628, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@1020s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616724536964-59", "t": 1793599616.7245383, "usd": 0.463413}
+{"item": "k8@1020s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616724536964-59", "seconds": 30.0, "t": 1793599616.7249928, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@1050s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616725340153-60", "t": 1793599616.7253416, "usd": 0.463413}
+{"item": "k8@1050s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616725340153-60", "seconds": 30.0, "t": 1793599616.7254498, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@1080s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616725793060-61", "t": 1793599616.725794, "usd": 0.463413}
+{"item": "k8@1080s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616725793060-61", "seconds": 30.0, "t": 1793599616.7259016, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@1110s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616726267430-62", "t": 1793599616.7262688, "usd": 0.463413}
+{"item": "k8@1110s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616726267430-62", "seconds": 30.0, "t": 1793599616.7263844, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@1140s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616726763482-63", "t": 1793599616.726765, "usd": 0.463413}
+{"item": "k8@1140s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616726763482-63", "seconds": 30.0, "t": 1793599616.7268732, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@1170s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616727257972-64", "t": 1793599616.7272592, "usd": 0.463413}
+{"item": "k8@1170s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616727257972-64", "seconds": 30.0, "t": 1793599616.7273726, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@1200s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616727761124-65", "t": 1793599616.7277622, "usd": 0.463413}
+{"item": "k8@1200s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616727761124-65", "seconds": 30.0, "t": 1793599616.7278774, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@1230s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616728294770-66", "t": 1793599616.7282963, "usd": 0.463413}
+{"item": "k8@1230s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616728294770-66", "seconds": 30.0, "t": 1793599616.7284262, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@1260s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616728868938-67", "t": 1793599616.7288702, "usd": 0.463413}
+{"item": "k8@1260s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616728868938-67", "seconds": 30.0, "t": 1793599616.7289956, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8@1290s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616729404087-68", "t": 1793599616.7294052, "usd": 0.463413}
+{"item": "k8@1290s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616729404087-68", "seconds": 30.0, "t": 1793599616.729514, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@0s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616729940116-69", "t": 1793599616.7299411, "usd": 0.463413}
+{"item": "k6@0s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616729940116-69", "seconds": 30.0, "t": 1793599616.7300482, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@30s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616730451490-70", "t": 1793599616.7304525, "usd": 0.463413}
+{"item": "k6@30s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616730451490-70", "seconds": 30.0, "t": 1793599616.7305636, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@60s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616731032473-71", "t": 1793599616.7310336, "usd": 0.463413}
+{"item": "k6@60s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616731032473-71", "seconds": 30.0, "t": 1793599616.7311492, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@90s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616731560452-72", "t": 1793599616.7315617, "usd": 0.463413}
+{"item": "k6@90s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616731560452-72", "seconds": 30.0, "t": 1793599616.7316658, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@120s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616732080444-73", "t": 1793599616.7320814, "usd": 0.463413}
+{"item": "k6@120s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616732080444-73", "seconds": 30.0, "t": 1793599616.7321982, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@150s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616732620355-74", "t": 1793599616.7326212, "usd": 0.463413}
+{"item": "k6@150s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616732620355-74", "seconds": 30.0, "t": 1793599616.7327342, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@180s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616733148436-75", "t": 1793599616.7331498, "usd": 0.463413}
+{"item": "k6@180s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616733148436-75", "seconds": 30.0, "t": 1793599616.7332847, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@210s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616733708008-76", "t": 1793599616.7337093, "usd": 0.463413}
+{"item": "k6@210s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616733708008-76", "seconds": 30.0, "t": 1793599616.7338338, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@240s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616734268761-77", "t": 1793599616.7342699, "usd": 0.463413}
+{"item": "k6@240s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616734268761-77", "seconds": 30.0, "t": 1793599616.7344065, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@270s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616734847900-78", "t": 1793599616.734849, "usd": 0.463413}
+{"item": "k6@270s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616734847900-78", "seconds": 30.0, "t": 1793599616.7349584, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@300s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616735794238-79", "t": 1793599616.7357967, "usd": 0.463413}
+{"item": "k6@300s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616735794238-79", "seconds": 30.0, "t": 1793599616.7360048, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@330s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616736515410-80", "t": 1793599616.7365172, "usd": 0.463413}
+{"item": "k6@330s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616736515410-80", "seconds": 30.0, "t": 1793599616.7366416, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@360s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616737071977-81", "t": 1793599616.7370732, "usd": 0.463413}
+{"item": "k6@360s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616737071977-81", "seconds": 30.0, "t": 1793599616.737532, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@390s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616738115625-82", "t": 1793599616.738119, "usd": 0.463413}
+{"item": "k6@390s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616738115625-82", "seconds": 30.0, "t": 1793599616.7382638, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@420s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616739543935-83", "t": 1793599616.7395463, "usd": 0.463413}
+{"item": "k6@420s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616739543935-83", "seconds": 30.0, "t": 1793599616.7397413, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@450s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616740248044-84", "t": 1793599616.7402499, "usd": 0.463413}
+{"item": "k6@450s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616740248044-84", "seconds": 30.0, "t": 1793599616.740375, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@480s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616740858096-85", "t": 1793599616.7408595, "usd": 0.463413}
+{"item": "k6@480s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616740858096-85", "seconds": 30.0, "t": 1793599616.7414238, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@510s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616742334138-86", "t": 1793599616.7423365, "usd": 0.463413}
+{"item": "k6@510s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616742334138-86", "seconds": 30.0, "t": 1793599616.742957, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@540s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616744249894-87", "t": 1793599616.7442517, "usd": 0.463413}
+{"item": "k6@540s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616744249894-87", "seconds": 30.0, "t": 1793599616.7446651, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@570s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616745217995-88", "t": 1793599616.7452192, "usd": 0.463413}
+{"item": "k6@570s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616745217995-88", "seconds": 30.0, "t": 1793599616.7461488, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@600s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616747636505-89", "t": 1793599616.7476387, "usd": 0.463413}
+{"item": "k6@600s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616747636505-89", "seconds": 30.0, "t": 1793599616.7479985, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@630s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616748603638-90", "t": 1793599616.7486053, "usd": 0.463413}
+{"item": "k6@630s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616748603638-90", "seconds": 30.0, "t": 1793599616.750116, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@660s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616751474795-91", "t": 1793599616.751478, "usd": 0.463413}
+{"item": "k6@660s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616751474795-91", "seconds": 30.0, "t": 1793599616.7524724, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@690s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616753826303-92", "t": 1793599616.7538283, "usd": 0.463413}
+{"item": "k6@690s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616753826303-92", "seconds": 30.0, "t": 1793599616.7546637, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@720s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616756055971-93", "t": 1793599616.7560577, "usd": 0.463413}
+{"item": "k6@720s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616756055971-93", "seconds": 30.0, "t": 1793599616.7562191, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@750s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616756740717-94", "t": 1793599616.7567422, "usd": 0.463413}
+{"item": "k6@750s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616756740717-94", "seconds": 30.0, "t": 1793599616.7575724, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@780s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616758225205-95", "t": 1793599616.7582273, "usd": 0.463413}
+{"item": "k6@780s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616758225205-95", "seconds": 30.0, "t": 1793599616.758378, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@810s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616759029947-96", "t": 1793599616.759032, "usd": 0.463413}
+{"item": "k6@810s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616759029947-96", "seconds": 30.0, "t": 1793599616.7591574, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@840s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616759689362-97", "t": 1793599616.7596908, "usd": 0.463413}
+{"item": "k6@840s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616759689362-97", "seconds": 30.0, "t": 1793599616.7598097, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@870s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616760344844-98", "t": 1793599616.760346, "usd": 0.463413}
+{"item": "k6@870s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616760344844-98", "seconds": 30.0, "t": 1793599616.7604592, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@900s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616760983405-99", "t": 1793599616.7609847, "usd": 0.463413}
+{"item": "k6@900s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616760983405-99", "seconds": 30.0, "t": 1793599616.7612891, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@930s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616761795553-100", "t": 1793599616.7617967, "usd": 0.463413}
+{"item": "k6@930s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616761795553-100", "seconds": 30.0, "t": 1793599616.7620702, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@960s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616762609898-101", "t": 1793599616.7626123, "usd": 0.463413}
+{"item": "k6@960s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616762609898-101", "seconds": 30.0, "t": 1793599616.7628875, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@990s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616763463024-102", "t": 1793599616.7634642, "usd": 0.463413}
+{"item": "k6@990s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616763463024-102", "seconds": 30.0, "t": 1793599616.7635922, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@1020s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616764158776-103", "t": 1793599616.7641613, "usd": 0.463413}
+{"item": "k6@1020s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616764158776-103", "seconds": 30.0, "t": 1793599616.764276, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@1050s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616764793493-104", "t": 1793599616.7647946, "usd": 0.463413}
+{"item": "k6@1050s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616764793493-104", "seconds": 30.0, "t": 1793599616.7649124, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@1080s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616766108319-105", "t": 1793599616.7661095, "usd": 0.463413}
+{"item": "k6@1080s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616766108319-105", "seconds": 30.0, "t": 1793599616.7662666, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@1110s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616766981762-106", "t": 1793599616.7669833, "usd": 0.463413}
+{"item": "k6@1110s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616766981762-106", "seconds": 30.0, "t": 1793599616.7670946, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@1140s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616767648465-107", "t": 1793599616.76765, "usd": 0.463413}
+{"item": "k6@1140s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616767648465-107", "seconds": 30.0, "t": 1793599616.767789, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@1170s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616768345708-108", "t": 1793599616.768347, "usd": 0.463413}
+{"item": "k6@1170s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616768345708-108", "seconds": 30.0, "t": 1793599616.7685332, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@1200s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616769156126-109", "t": 1793599616.7691574, "usd": 0.463413}
+{"item": "k6@1200s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616769156126-109", "seconds": 30.0, "t": 1793599616.7692802, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@1230s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616769845432-110", "t": 1793599616.7698467, "usd": 0.463413}
+{"item": "k6@1230s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616769845432-110", "seconds": 30.0, "t": 1793599616.770486, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@1260s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616771645007-111", "t": 1793599616.7716463, "usd": 0.463413}
+{"item": "k6@1260s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616771645007-111", "seconds": 30.0, "t": 1793599616.7717905, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@1290s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616772363755-112", "t": 1793599616.772365, "usd": 0.463413}
+{"item": "k6@1290s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616772363755-112", "seconds": 30.0, "t": 1793599616.7726645, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@1320s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616773256529-113", "t": 1793599616.7732577, "usd": 0.463413}
+{"item": "k6@1320s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616773256529-113", "seconds": 30.0, "t": 1793599616.7733803, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@1350s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616773951238-114", "t": 1793599616.7739527, "usd": 0.463413}
+{"item": "k6@1350s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616773951238-114", "seconds": 30.0, "t": 1793599616.7740645, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@1380s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616774648207-115", "t": 1793599616.7746496, "usd": 0.463413}
+{"item": "k6@1380s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616774648207-115", "seconds": 30.0, "t": 1793599616.7747607, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@1410s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616775350628-116", "t": 1793599616.7753518, "usd": 0.463413}
+{"item": "k6@1410s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616775350628-116", "seconds": 30.0, "t": 1793599616.7754664, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@1440s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616776080185-117", "t": 1793599616.7760813, "usd": 0.463413}
+{"item": "k6@1440s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616776080185-117", "seconds": 30.0, "t": 1793599616.7761927, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k6@1470s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616777109768-118", "t": 1793599616.777111, "usd": 0.463413}
+{"item": "k6@1470s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616777109768-118", "seconds": 30.0, "t": 1793599616.7772424, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@0s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616777920026-119", "t": 1793599616.7779212, "usd": 0.463413}
+{"item": "k4@0s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616777920026-119", "seconds": 30.0, "t": 1793599616.778045, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@30s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616778733102-120", "t": 1793599616.7787347, "usd": 0.463413}
+{"item": "k4@30s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616778733102-120", "seconds": 30.0, "t": 1793599616.7789366, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@60s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616779596264-121", "t": 1793599616.7795975, "usd": 0.463413}
+{"item": "k4@60s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616779596264-121", "seconds": 30.0, "t": 1793599616.7797172, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@90s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616780335949-122", "t": 1793599616.780337, "usd": 0.463413}
+{"item": "k4@90s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616780335949-122", "seconds": 30.0, "t": 1793599616.7804475, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@120s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616781021484-123", "t": 1793599616.7810225, "usd": 0.463413}
+{"item": "k4@120s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616781021484-123", "seconds": 30.0, "t": 1793599616.7814035, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@150s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616782021254-124", "t": 1793599616.7820227, "usd": 0.463413}
+{"item": "k4@150s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616782021254-124", "seconds": 30.0, "t": 1793599616.7821887, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@180s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616782826358-125", "t": 1793599616.7828276, "usd": 0.463413}
+{"item": "k4@180s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616782826358-125", "seconds": 30.0, "t": 1793599616.782945, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@210s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616783579840-126", "t": 1793599616.783581, "usd": 0.463413}
+{"item": "k4@210s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616783579840-126", "seconds": 30.0, "t": 1793599616.7837048, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@240s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616784342027-127", "t": 1793599616.7843432, "usd": 0.463413}
+{"item": "k4@240s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616784342027-127", "seconds": 30.0, "t": 1793599616.784467, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@270s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616785067276-128", "t": 1793599616.7850683, "usd": 0.463413}
+{"item": "k4@270s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616785067276-128", "seconds": 30.0, "t": 1793599616.7856693, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@300s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616786307946-129", "t": 1793599616.786309, "usd": 0.463413}
+{"item": "k4@300s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616786307946-129", "seconds": 30.0, "t": 1793599616.786554, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@330s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616787225922-130", "t": 1793599616.787227, "usd": 0.463413}
+{"item": "k4@330s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616787225922-130", "seconds": 30.0, "t": 1793599616.7873452, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@360s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616788025674-131", "t": 1793599616.7880268, "usd": 0.463413}
+{"item": "k4@360s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616788025674-131", "seconds": 30.0, "t": 1793599616.788165, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@390s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616788928304-132", "t": 1793599616.7889292, "usd": 0.463413}
+{"item": "k4@390s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616788928304-132", "seconds": 30.0, "t": 1793599616.7892683, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@420s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616789932180-133", "t": 1793599616.7899332, "usd": 0.463413}
+{"item": "k4@420s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616789932180-133", "seconds": 30.0, "t": 1793599616.7902193, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@450s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616790876032-134", "t": 1793599616.790877, "usd": 0.463413}
+{"item": "k4@450s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616790876032-134", "seconds": 30.0, "t": 1793599616.7910173, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@480s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616791654956-135", "t": 1793599616.7916563, "usd": 0.463413}
+{"item": "k4@480s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616791654956-135", "seconds": 30.0, "t": 1793599616.7917697, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@510s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616792418743-136", "t": 1793599616.7924204, "usd": 0.463413}
+{"item": "k4@510s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616792418743-136", "seconds": 30.0, "t": 1793599616.7925305, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@540s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616793252181-137", "t": 1793599616.7932534, "usd": 0.463413}
+{"item": "k4@540s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616793252181-137", "seconds": 30.0, "t": 1793599616.7935736, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@570s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616794257306-138", "t": 1793599616.7942586, "usd": 0.463413}
+{"item": "k4@570s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616794257306-138", "seconds": 30.0, "t": 1793599616.7943676, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@600s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616795078342-139", "t": 1793599616.7950797, "usd": 0.463413}
+{"item": "k4@600s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616795078342-139", "seconds": 30.0, "t": 1793599616.795215, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@630s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616795901453-140", "t": 1793599616.7959027, "usd": 0.463413}
+{"item": "k4@630s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616795901453-140", "seconds": 30.0, "t": 1793599616.796023, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@660s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616797107156-141", "t": 1793599616.7971098, "usd": 0.463413}
+{"item": "k4@660s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616797107156-141", "seconds": 30.0, "t": 1793599616.7973104, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@690s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616798051933-142", "t": 1793599616.7980537, "usd": 0.463413}
+{"item": "k4@690s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616798051933-142", "seconds": 30.0, "t": 1793599616.7981699, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@720s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616798953875-143", "t": 1793599616.7989554, "usd": 0.463413}
+{"item": "k4@720s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616798953875-143", "seconds": 30.0, "t": 1793599616.799079, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@750s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616799818106-144", "t": 1793599616.7998195, "usd": 0.463413}
+{"item": "k4@750s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616799818106-144", "seconds": 30.0, "t": 1793599616.7999606, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@780s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616800691421-145", "t": 1793599616.8006928, "usd": 0.463413}
+{"item": "k4@780s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616800691421-145", "seconds": 30.0, "t": 1793599616.8008049, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@810s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616801522836-146", "t": 1793599616.8015242, "usd": 0.463413}
+{"item": "k4@810s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616801522836-146", "seconds": 30.0, "t": 1793599616.8016272, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@840s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616802334511-147", "t": 1793599616.802336, "usd": 0.463413}
+{"item": "k4@840s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616802334511-147", "seconds": 30.0, "t": 1793599616.8024664, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@870s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616803194009-148", "t": 1793599616.8031955, "usd": 0.463413}
+{"item": "k4@870s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616803194009-148", "seconds": 30.0, "t": 1793599616.803304, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@900s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616804049039-149", "t": 1793599616.8040504, "usd": 0.463413}
+{"item": "k4@900s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616804049039-149", "seconds": 30.0, "t": 1793599616.8041673, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@930s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616804914173-150", "t": 1793599616.8049154, "usd": 0.463413}
+{"item": "k4@930s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616804914173-150", "seconds": 30.0, "t": 1793599616.8052695, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@960s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616805949861-151", "t": 1793599616.8059509, "usd": 0.463413}
+{"item": "k4@960s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616805949861-151", "seconds": 30.0, "t": 1793599616.8060498, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@990s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616806719791-152", "t": 1793599616.8067207, "usd": 0.463413}
+{"item": "k4@990s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616806719791-152", "seconds": 30.0, "t": 1793599616.8071375, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@1020s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616808009649-153", "t": 1793599616.808011, "usd": 0.463413}
+{"item": "k4@1020s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616808009649-153", "seconds": 30.0, "t": 1793599616.8081534, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@1050s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616809045069-154", "t": 1793599616.8090465, "usd": 0.463413}
+{"item": "k4@1050s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616809045069-154", "seconds": 30.0, "t": 1793599616.8094144, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@1080s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616810203897-155", "t": 1793599616.8102052, "usd": 0.463413}
+{"item": "k4@1080s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616810203897-155", "seconds": 30.0, "t": 1793599616.8103306, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@1110s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616811078413-156", "t": 1793599616.8110797, "usd": 0.463413}
+{"item": "k4@1110s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616811078413-156", "seconds": 30.0, "t": 1793599616.8111863, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@1140s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616811921288-157", "t": 1793599616.8119228, "usd": 0.463413}
+{"item": "k4@1140s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616811921288-157", "seconds": 30.0, "t": 1793599616.812034, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@1170s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616812769426-158", "t": 1793599616.8127708, "usd": 0.463413}
+{"item": "k4@1170s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616812769426-158", "seconds": 30.0, "t": 1793599616.812899, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@1200s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616813689048-159", "t": 1793599616.8136904, "usd": 0.463413}
+{"item": "k4@1200s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616813689048-159", "seconds": 30.0, "t": 1793599616.8137994, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@1230s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616814491930-160", "t": 1793599616.8144932, "usd": 0.463413}
+{"item": "k4@1230s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616814491930-160", "seconds": 30.0, "t": 1793599616.814586, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@1260s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616815291119-161", "t": 1793599616.8152924, "usd": 0.463413}
+{"item": "k4@1260s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616815291119-161", "seconds": 30.0, "t": 1793599616.8153932, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@1290s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616816160628-162", "t": 1793599616.8161619, "usd": 0.463413}
+{"item": "k4@1290s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616816160628-162", "seconds": 30.0, "t": 1793599616.8162773, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@1320s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616817028577-163", "t": 1793599616.81703, "usd": 0.463413}
+{"item": "k4@1320s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616817028577-163", "seconds": 30.0, "t": 1793599616.817323, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@1350s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616818266714-164", "t": 1793599616.8182678, "usd": 0.463413}
+{"item": "k4@1350s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616818266714-164", "seconds": 30.0, "t": 1793599616.8183794, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@1380s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616819255616-165", "t": 1793599616.8192568, "usd": 0.463413}
+{"item": "k4@1380s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616819255616-165", "seconds": 30.0, "t": 1793599616.819371, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@1410s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616820133946-166", "t": 1793599616.820135, "usd": 0.463413}
+{"item": "k4@1410s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616820133946-166", "seconds": 30.0, "t": 1793599616.8202486, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@1440s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616821001932-167", "t": 1793599616.821003, "usd": 0.463413}
+{"item": "k4@1440s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616821001932-167", "seconds": 30.0, "t": 1793599616.8213034, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k4@1470s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616822038090-168", "t": 1793599616.8220394, "usd": 0.463413}
+{"item": "k4@1470s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616822038090-168", "seconds": 30.0, "t": 1793599616.8221426, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@0s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616823034225-169", "t": 1793599616.8230352, "usd": 0.463413}
+{"item": "k8-repeat@0s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616823034225-169", "seconds": 30.0, "t": 1793599616.823148, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@30s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616824027460-170", "t": 1793599616.8240287, "usd": 0.463413}
+{"item": "k8-repeat@30s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616824027460-170", "seconds": 30.0, "t": 1793599616.8241699, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@60s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616824963792-171", "t": 1793599616.8249652, "usd": 0.463413}
+{"item": "k8-repeat@60s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616824963792-171", "seconds": 30.0, "t": 1793599616.8253253, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@90s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616826100855-172", "t": 1793599616.8261023, "usd": 0.463413}
+{"item": "k8-repeat@90s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616826100855-172", "seconds": 30.0, "t": 1793599616.826227, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@120s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616827036614-173", "t": 1793599616.8270378, "usd": 0.463413}
+{"item": "k8-repeat@120s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616827036614-173", "seconds": 30.0, "t": 1793599616.8271527, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@150s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616828034779-174", "t": 1793599616.8280365, "usd": 0.463413}
+{"item": "k8-repeat@150s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616828034779-174", "seconds": 30.0, "t": 1793599616.8281853, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@180s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616829169619-175", "t": 1793599616.8291714, "usd": 0.463413}
+{"item": "k8-repeat@180s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616829169619-175", "seconds": 30.0, "t": 1793599616.8297007, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@210s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616830495559-176", "t": 1793599616.8304968, "usd": 0.463413}
+{"item": "k8-repeat@210s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616830495559-176", "seconds": 30.0, "t": 1793599616.8306136, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@240s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616831442868-177", "t": 1793599616.8314443, "usd": 0.463413}
+{"item": "k8-repeat@240s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616831442868-177", "seconds": 30.0, "t": 1793599616.8315535, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@270s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616832357193-178", "t": 1793599616.8323584, "usd": 0.463413}
+{"item": "k8-repeat@270s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616832357193-178", "seconds": 30.0, "t": 1793599616.8324828, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@300s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616833326750-179", "t": 1793599616.8333278, "usd": 0.463413}
+{"item": "k8-repeat@300s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616833326750-179", "seconds": 30.0, "t": 1793599616.833642, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@330s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616834489598-180", "t": 1793599616.8344905, "usd": 0.463413}
+{"item": "k8-repeat@330s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616834489598-180", "seconds": 30.0, "t": 1793599616.8346004, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@360s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616835383121-181", "t": 1793599616.8353844, "usd": 0.463413}
+{"item": "k8-repeat@360s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616835383121-181", "seconds": 30.0, "t": 1793599616.8355021, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@390s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616836378219-182", "t": 1793599616.8363793, "usd": 0.463413}
+{"item": "k8-repeat@390s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616836378219-182", "seconds": 30.0, "t": 1793599616.836495, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@420s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616837389159-183", "t": 1793599616.8373907, "usd": 0.463413}
+{"item": "k8-repeat@420s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616837389159-183", "seconds": 30.0, "t": 1793599616.837682, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@450s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616838662799-184", "t": 1793599616.838664, "usd": 0.463413}
+{"item": "k8-repeat@450s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616838662799-184", "seconds": 30.0, "t": 1793599616.8388155, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@480s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616839795349-185", "t": 1793599616.8397968, "usd": 0.463413}
+{"item": "k8-repeat@480s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616839795349-185", "seconds": 30.0, "t": 1793599616.8399348, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@510s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616840853501-186", "t": 1793599616.840855, "usd": 0.463413}
+{"item": "k8-repeat@510s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616840853501-186", "seconds": 30.0, "t": 1793599616.8409784, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@540s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616841964767-187", "t": 1793599616.8419662, "usd": 0.463413}
+{"item": "k8-repeat@540s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616841964767-187", "seconds": 30.0, "t": 1793599616.8421357, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@570s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616843037214-188", "t": 1793599616.8430386, "usd": 0.463413}
+{"item": "k8-repeat@570s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616843037214-188", "seconds": 30.0, "t": 1793599616.8431487, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@600s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616843983326-189", "t": 1793599616.8439844, "usd": 0.463413}
+{"item": "k8-repeat@600s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616843983326-189", "seconds": 30.0, "t": 1793599616.8440964, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@630s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616844948431-190", "t": 1793599616.8449495, "usd": 0.463413}
+{"item": "k8-repeat@630s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616844948431-190", "seconds": 30.0, "t": 1793599616.8450623, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@660s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616845865774-191", "t": 1793599616.8458667, "usd": 0.463413}
+{"item": "k8-repeat@660s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616845865774-191", "seconds": 30.0, "t": 1793599616.8459754, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@690s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616846773269-192", "t": 1793599616.8467746, "usd": 0.463413}
+{"item": "k8-repeat@690s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616846773269-192", "seconds": 30.0, "t": 1793599616.8468797, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@720s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616847693407-193", "t": 1793599616.8476946, "usd": 0.463413}
+{"item": "k8-repeat@720s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616847693407-193", "seconds": 30.0, "t": 1793599616.8478322, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@750s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616848856222-194", "t": 1793599616.8488576, "usd": 0.463413}
+{"item": "k8-repeat@750s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616848856222-194", "seconds": 30.0, "t": 1793599616.8492987, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@780s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616850288909-195", "t": 1793599616.8502905, "usd": 0.463413}
+{"item": "k8-repeat@780s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616850288909-195", "seconds": 30.0, "t": 1793599616.8504305, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@810s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616851343790-196", "t": 1793599616.8513448, "usd": 0.463413}
+{"item": "k8-repeat@810s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616851343790-196", "seconds": 30.0, "t": 1793599616.8514612, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@840s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616852381418-197", "t": 1793599616.852383, "usd": 0.463413}
+{"item": "k8-repeat@840s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616852381418-197", "seconds": 30.0, "t": 1793599616.8525174, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@870s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616853546590-198", "t": 1793599616.8535478, "usd": 0.463413}
+{"item": "k8-repeat@870s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616853546590-198", "seconds": 30.0, "t": 1793599616.8536742, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@900s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616854525800-199", "t": 1793599616.854527, "usd": 0.463413}
+{"item": "k8-repeat@900s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616854525800-199", "seconds": 30.0, "t": 1793599616.854641, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@930s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616855574276-200", "t": 1793599616.8555758, "usd": 0.463413}
+{"item": "k8-repeat@930s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616855574276-200", "seconds": 30.0, "t": 1793599616.8557115, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@960s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616856601351-201", "t": 1793599616.8566027, "usd": 0.463413}
+{"item": "k8-repeat@960s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616856601351-201", "seconds": 30.0, "t": 1793599616.8567228, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@990s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616857662496-202", "t": 1793599616.8576636, "usd": 0.463413}
+{"item": "k8-repeat@990s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616857662496-202", "seconds": 30.0, "t": 1793599616.8580046, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@1020s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616859021921-203", "t": 1793599616.8590233, "usd": 0.463413}
+{"item": "k8-repeat@1020s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616859021921-203", "seconds": 30.0, "t": 1793599616.859162, "tokens_in": null, "tokens_out": null, "usd": 0.463413}
+{"item": "k8-repeat@1050s", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616860120584-204", "t": 1793599616.860122, "usd": 0.073496}
+{"item": "k8-repeat@1050s", "kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616860120584-204", "seconds": 4.757912302911336, "t": 1793599616.8602524, "tokens_in": null, "tokens_out": null, "usd": 0.073496}
+{"item": "teardown", "kind": "reserve", "provider": "modal", "rid": "modal-844056-1793599616861222384-205", "t": 1793599616.8612242, "usd": 0.0}
+{"kind": "settle", "provider": "modal", "rid": "modal-844056-1793599616861222384-205", "t": 1793599616.8623698, "usd": 1.853653}
+{"kind": "stop", "level": "soft", "provider": "modal", "t": 1793599616.8638227, "why": "modal: committed $94.1463 >= soft $90.0"}

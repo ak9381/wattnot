@@ -1,0 +1,80 @@
+{
+ "held_change": {
+  "kind": "vllm_config",
+  "change": {
+   "vllm_prefix_caching": true,
+   "quantization": "bf16",
+   "max_num_seqs": 128,
+   "router": "cheapest-first",
+   "thinking_budget": "per-tier, two-phase enforcer",
+   "saving_pct": 23.88,
+   "labels": {
+    "saving_pct": "MEASURED",
+    "energy": "MEASURED"
+   }
+  }
+ },
+ "risk": "high",
+ "reasons": [
+  "no new config to review"
+ ],
+ "evidence": {
+  "accuracy_without": 0.974,
+  "accuracy_with": 0.9427,
+  "p99_without": 77.6254,
+  "p99_with": 498.6734,
+  "spark_agreement": 0.964,
+  "j_per_correct_without": 2437.5,
+  "j_per_correct_with": 1855.5,
+  "eye_check": false,
+  "hearing_check": false
+ },
+ "review": {
+  "decision": "rejected",
+  "auto_approve": false,
+  "checks": {
+   "accuracy_vs_baseline": {
+    "ok": false,
+    "drop_pts": 3.13,
+    "rule": "accuracy may drop at most 2 points"
+   },
+   "p99": {
+    "ok": false,
+    "rule": "with-arm item p99 within +10% of without",
+    "without_s": 77.6254,
+    "with_s": 498.6734
+   },
+   "joule_slo": {
+    "ok": true,
+    "rule": "J/correct with <= without",
+    "without": 2437.5,
+    "with": 1855.5
+   },
+   "spark_agreement": {
+    "ok": true,
+    "value": 0.964,
+    "rule": "Spark agrees with the fixed checks on >= 90% of answers"
+   },
+   "fp8_gate": {
+    "ok": true,
+    "rule": "FP8 only if its own gate kept it"
+   },
+   "receipt_hash": {
+    "ok": true,
+    "rule": "receipt re-seals"
+   },
+   "no_fatal": {
+    "ok": true,
+    "value": null
+   }
+  },
+  "failed_checks": [
+   "accuracy_vs_baseline",
+   "p99"
+  ],
+  "skipped_checks": [],
+  "at": "2026-11-02T06:07:28.495307+00:00",
+  "by": "runner verification (rules above), recorded as evidence"
+ },
+ "decision": "rejected"
+}

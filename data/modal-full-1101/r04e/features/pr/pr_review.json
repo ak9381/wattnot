@@ -1,0 +1,72 @@
+{
+ "repo": "ak9381/wattnot-demo-deploy",
+ "started_utc": "2026-11-02T06:08:20.888666+00:00",
+ "steps": [
+  {
+   "step": "muse exec",
+   "rc": 0,
+   "trace": {
+    "session_id": "01a19adf-8bbf-7203-8dee-66bef4651406",
+    "trace_id": "01a19adf-8db6-7242-867c-b65a9aabd1ab",
+    "input_tokens": 76921,
+    "output_tokens": 1152,
+    "total_tokens": 78073,
+    "usage": {
+     "input_tokens": 76921,
+     "output_tokens": 1152,
+     "total_tokens": 78073
+    }
+   },
+   "latency_s": 25.2
+  }
+ ],
+ "review_checks": [
+  {
+   "check": "only values.yaml changed",
+   "ok": true,
+   "detail": [
+    "values.yaml"
+   ]
+  },
+  {
+   "check": "values.yaml parses and hosted block matches the approved change",
+   "ok": true,
+   "detail": {
+    "quantization": "bf16",
+    "maxNumSeqs": 128,
+    "prefixCaching": true,
+    "router": "cheapest-first",
+    "receiptSha256": "13f871ec9ab16fe8fbed5bc60b47e4422b719a59bf5b66deca9a731b3230c36b"
+   }
+  },
+  {
+   "check": "no other values changed",
+   "ok": false,
+   "detail": null
+  },
+  {
+   "check": "launch.sh syntax (bash -n)",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "check": "repo tests/CI",
+   "ok": true,
+   "detail": "repo has no tests or CI workflows; checks above stand in"
+  },
+  {
+   "check": "change was approved after evidence review",
+   "ok": false,
+   "detail": null
+  }
+ ],
+ "pr_url": null,
+ "decision": "not opened (no diff or --open-pr not set)",
+ "clean": false,
+ "files": [
+  "values.yaml"
+ ],
+ "ended_utc": "2026-11-02T06:08:49.135471+00:00",
+ "reviewer": "Akash K Raju (delegated reviewer)",
+ "auto_approve": false
+}

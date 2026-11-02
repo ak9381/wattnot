@@ -1,0 +1,281 @@
+✓ Initialized. View run at 
+https://modal.com/apps/akashkraju218/main/ap-x62nhnCWj5JPFYEtkCVGXA
+✓ Created objects.
+├── ✓ Uploaded /tmp/wn-merge/modal/full_stage.py
+├── ✓ Uploaded pyproject.toml
+├── ✓ Uploaded /tmp/wn-merge/data/public_bench
+├── ✓ Uploaded /tmp/wn-merge/workloads
+├── ✓ Uploaded /tmp/wn-merge/data/voice
+├── ✓ Uploaded /tmp/wn-merge/examples
+├── ✓ Uploaded /tmp/wn-merge/data/vision
+├── ✓ Uploaded /tmp/wn-merge/scripts
+├── ✓ Uploaded /tmp/wn-merge/src
+├── ✓ Created Function gpu_round.
+└── ✓ Created Function gpu_smoke.
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/pkg/modal/_container_entrypoint.py", line 484, in <module>
+    main(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 466, in main
+    run_function(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 438, in run_function
+    service: Service = hydrate_function(
+                       ^^^^^^^^^^^^^^^^^
+  File "/pkg/modal/_container_entrypoint.py", line 380, in hydrate_function
+    raise ExecutionError(
+modal.exception.ExecutionError: Function has 3 dependencies but container got 4 object ids.
+Code deps: [Image(local files), modal.Volume.from_name('wattnot-glimmer-weights'), modal.Volume.from_name('wattnot-results')]
+Object ids: ['st-SReQzAGp8btF1NkpS69o8R', 'im-bDhqLTECuJSB7XAZRtZKj7', 'vo-aru6BYF28qvK3Sw2RnGVLM', 'vo-PYQH5DTPBKRns3LnIG5lq4']
+
+This can happen if you are defining Modal objects under a conditional statement that evaluates differently in the local and remote environments.
+Function fu-n1TaseKyU3engIukyGE9rQ failed during startup.
+Runner failed with exit code: 1
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/pkg/modal/_container_entrypoint.py", line 484, in <module>
+    main(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 466, in main
+    run_function(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 438, in run_function
+    service: Service = hydrate_function(
+                       ^^^^^^^^^^^^^^^^^
+  File "/pkg/modal/_container_entrypoint.py", line 380, in hydrate_function
+    raise ExecutionError(
+modal.exception.ExecutionError: Function has 3 dependencies but container got 4 object ids.
+Code deps: [Image(local files), modal.Volume.from_name('wattnot-glimmer-weights'), modal.Volume.from_name('wattnot-results')]
+Object ids: ['st-SReQzAGp8btF1NkpS69o8R', 'im-bDhqLTECuJSB7XAZRtZKj7', 'vo-aru6BYF28qvK3Sw2RnGVLM', 'vo-PYQH5DTPBKRns3LnIG5lq4']
+
+This can happen if you are defining Modal objects under a conditional statement that evaluates differently in the local and remote environments.
+Function fu-n1TaseKyU3engIukyGE9rQ failed during startup.
+Runner failed with exit code: 1
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/pkg/modal/_container_entrypoint.py", line 484, in <module>
+    main(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 466, in main
+    run_function(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 438, in run_function
+    service: Service = hydrate_function(
+                       ^^^^^^^^^^^^^^^^^
+  File "/pkg/modal/_container_entrypoint.py", line 380, in hydrate_function
+    raise ExecutionError(
+modal.exception.ExecutionError: Function has 3 dependencies but container got 4 object ids.
+Code deps: [Image(local files), modal.Volume.from_name('wattnot-glimmer-weights'), modal.Volume.from_name('wattnot-results')]
+Object ids: ['st-SReQzAGp8btF1NkpS69o8R', 'im-bDhqLTECuJSB7XAZRtZKj7', 'vo-aru6BYF28qvK3Sw2RnGVLM', 'vo-PYQH5DTPBKRns3LnIG5lq4']
+
+This can happen if you are defining Modal objects under a conditional statement that evaluates differently in the local and remote environments.
+Function fu-n1TaseKyU3engIukyGE9rQ failed during startup.
+Runner failed with exit code: 1
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/pkg/modal/_container_entrypoint.py", line 484, in <module>
+    main(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 466, in main
+    run_function(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 438, in run_function
+    service: Service = hydrate_function(
+                       ^^^^^^^^^^^^^^^^^
+  File "/pkg/modal/_container_entrypoint.py", line 380, in hydrate_function
+    raise ExecutionError(
+modal.exception.ExecutionError: Function has 3 dependencies but container got 4 object ids.
+Code deps: [Image(local files), modal.Volume.from_name('wattnot-glimmer-weights'), modal.Volume.from_name('wattnot-results')]
+Object ids: ['st-SReQzAGp8btF1NkpS69o8R', 'im-bDhqLTECuJSB7XAZRtZKj7', 'vo-aru6BYF28qvK3Sw2RnGVLM', 'vo-PYQH5DTPBKRns3LnIG5lq4']
+
+This can happen if you are defining Modal objects under a conditional statement that evaluates differently in the local and remote environments.
+Function fu-n1TaseKyU3engIukyGE9rQ failed during startup.
+Runner failed with exit code: 1
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/pkg/modal/_container_entrypoint.py", line 484, in <module>
+    main(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 466, in main
+    run_function(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 438, in run_function
+    service: Service = hydrate_function(
+                       ^^^^^^^^^^^^^^^^^
+  File "/pkg/modal/_container_entrypoint.py", line 380, in hydrate_function
+    raise ExecutionError(
+modal.exception.ExecutionError: Function has 3 dependencies but container got 4 object ids.
+Code deps: [Image(local files), modal.Volume.from_name('wattnot-glimmer-weights'), modal.Volume.from_name('wattnot-results')]
+Object ids: ['st-SReQzAGp8btF1NkpS69o8R', 'im-bDhqLTECuJSB7XAZRtZKj7', 'vo-aru6BYF28qvK3Sw2RnGVLM', 'vo-PYQH5DTPBKRns3LnIG5lq4']
+
+This can happen if you are defining Modal objects under a conditional statement that evaluates differently in the local and remote environments.
+Function fu-n1TaseKyU3engIukyGE9rQ failed during startup.
+Runner failed with exit code: 1
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/pkg/modal/_container_entrypoint.py", line 484, in <module>
+    main(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 466, in main
+    run_function(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 438, in run_function
+    service: Service = hydrate_function(
+                       ^^^^^^^^^^^^^^^^^
+  File "/pkg/modal/_container_entrypoint.py", line 380, in hydrate_function
+    raise ExecutionError(
+modal.exception.ExecutionError: Function has 3 dependencies but container got 4 object ids.
+Code deps: [Image(local files), modal.Volume.from_name('wattnot-glimmer-weights'), modal.Volume.from_name('wattnot-results')]
+Object ids: ['st-SReQzAGp8btF1NkpS69o8R', 'im-bDhqLTECuJSB7XAZRtZKj7', 'vo-aru6BYF28qvK3Sw2RnGVLM', 'vo-PYQH5DTPBKRns3LnIG5lq4']
+
+This can happen if you are defining Modal objects under a conditional statement that evaluates differently in the local and remote environments.
+Function fu-n1TaseKyU3engIukyGE9rQ failed during startup.
+Runner failed with exit code: 1
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/pkg/modal/_container_entrypoint.py", line 484, in <module>
+    main(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 466, in main
+    run_function(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 438, in run_function
+    service: Service = hydrate_function(
+                       ^^^^^^^^^^^^^^^^^
+  File "/pkg/modal/_container_entrypoint.py", line 380, in hydrate_function
+    raise ExecutionError(
+modal.exception.ExecutionError: Function has 3 dependencies but container got 4 object ids.
+Code deps: [Image(local files), modal.Volume.from_name('wattnot-glimmer-weights'), modal.Volume.from_name('wattnot-results')]
+Object ids: ['st-SReQzAGp8btF1NkpS69o8R', 'im-bDhqLTECuJSB7XAZRtZKj7', 'vo-aru6BYF28qvK3Sw2RnGVLM', 'vo-PYQH5DTPBKRns3LnIG5lq4']
+
+This can happen if you are defining Modal objects under a conditional statement that evaluates differently in the local and remote environments.
+Function fu-n1TaseKyU3engIukyGE9rQ failed during startup.
+Runner failed with exit code: 1
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/pkg/modal/_container_entrypoint.py", line 484, in <module>
+    main(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 466, in main
+    run_function(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 438, in run_function
+    service: Service = hydrate_function(
+                       ^^^^^^^^^^^^^^^^^
+  File "/pkg/modal/_container_entrypoint.py", line 380, in hydrate_function
+    raise ExecutionError(
+modal.exception.ExecutionError: Function has 3 dependencies but container got 4 object ids.
+Code deps: [Image(local files), modal.Volume.from_name('wattnot-glimmer-weights'), modal.Volume.from_name('wattnot-results')]
+Object ids: ['st-SReQzAGp8btF1NkpS69o8R', 'im-bDhqLTECuJSB7XAZRtZKj7', 'vo-aru6BYF28qvK3Sw2RnGVLM', 'vo-PYQH5DTPBKRns3LnIG5lq4']
+
+This can happen if you are defining Modal objects under a conditional statement that evaluates differently in the local and remote environments.
+Function fu-n1TaseKyU3engIukyGE9rQ failed during startup.
+Runner failed with exit code: 1
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/pkg/modal/_container_entrypoint.py", line 484, in <module>
+    main(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 466, in main
+    run_function(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 438, in run_function
+    service: Service = hydrate_function(
+                       ^^^^^^^^^^^^^^^^^
+  File "/pkg/modal/_container_entrypoint.py", line 380, in hydrate_function
+    raise ExecutionError(
+modal.exception.ExecutionError: Function has 3 dependencies but container got 4 object ids.
+Code deps: [Image(local files), modal.Volume.from_name('wattnot-glimmer-weights'), modal.Volume.from_name('wattnot-results')]
+Object ids: ['st-SReQzAGp8btF1NkpS69o8R', 'im-bDhqLTECuJSB7XAZRtZKj7', 'vo-aru6BYF28qvK3Sw2RnGVLM', 'vo-PYQH5DTPBKRns3LnIG5lq4']
+
+This can happen if you are defining Modal objects under a conditional statement that evaluates differently in the local and remote environments.
+Function fu-n1TaseKyU3engIukyGE9rQ failed during startup.
+Runner failed with exit code: 1
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/pkg/modal/_container_entrypoint.py", line 484, in <module>
+    main(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 466, in main
+    run_function(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 438, in run_function
+    service: Service = hydrate_function(
+                       ^^^^^^^^^^^^^^^^^
+  File "/pkg/modal/_container_entrypoint.py", line 380, in hydrate_function
+    raise ExecutionError(
+modal.exception.ExecutionError: Function has 3 dependencies but container got 4 object ids.
+Code deps: [Image(local files), modal.Volume.from_name('wattnot-glimmer-weights'), modal.Volume.from_name('wattnot-results')]
+Object ids: ['st-SReQzAGp8btF1NkpS69o8R', 'im-bDhqLTECuJSB7XAZRtZKj7', 'vo-aru6BYF28qvK3Sw2RnGVLM', 'vo-PYQH5DTPBKRns3LnIG5lq4']
+
+This can happen if you are defining Modal objects under a conditional statement that evaluates differently in the local and remote environments.
+Function fu-n1TaseKyU3engIukyGE9rQ failed during startup.
+Runner failed with exit code: 1
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/pkg/modal/_container_entrypoint.py", line 484, in <module>
+    main(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 466, in main
+    run_function(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 438, in run_function
+    service: Service = hydrate_function(
+                       ^^^^^^^^^^^^^^^^^
+  File "/pkg/modal/_container_entrypoint.py", line 380, in hydrate_function
+    raise ExecutionError(
+modal.exception.ExecutionError: Function has 3 dependencies but container got 4 object ids.
+Code deps: [Image(local files), modal.Volume.from_name('wattnot-glimmer-weights'), modal.Volume.from_name('wattnot-results')]
+Object ids: ['st-SReQzAGp8btF1NkpS69o8R', 'im-bDhqLTECuJSB7XAZRtZKj7', 'vo-aru6BYF28qvK3Sw2RnGVLM', 'vo-PYQH5DTPBKRns3LnIG5lq4']
+
+This can happen if you are defining Modal objects under a conditional statement that evaluates differently in the local and remote environments.
+Function fu-n1TaseKyU3engIukyGE9rQ failed during startup.
+Runner failed with exit code: 1
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/pkg/modal/_container_entrypoint.py", line 484, in <module>
+    main(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 466, in main
+    run_function(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 438, in run_function
+    service: Service = hydrate_function(
+                       ^^^^^^^^^^^^^^^^^
+  File "/pkg/modal/_container_entrypoint.py", line 380, in hydrate_function
+    raise ExecutionError(
+modal.exception.ExecutionError: Function has 3 dependencies but container got 4 object ids.
+Code deps: [Image(local files), modal.Volume.from_name('wattnot-glimmer-weights'), modal.Volume.from_name('wattnot-results')]
+Object ids: ['st-SReQzAGp8btF1NkpS69o8R', 'im-bDhqLTECuJSB7XAZRtZKj7', 'vo-aru6BYF28qvK3Sw2RnGVLM', 'vo-PYQH5DTPBKRns3LnIG5lq4']
+
+This can happen if you are defining Modal objects under a conditional statement that evaluates differently in the local and remote environments.
+Function fu-n1TaseKyU3engIukyGE9rQ failed during startup.
+Runner failed with exit code: 1
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/pkg/modal/_container_entrypoint.py", line 484, in <module>
+    main(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 466, in main
+    run_function(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 438, in run_function
+    service: Service = hydrate_function(
+                       ^^^^^^^^^^^^^^^^^
+  File "/pkg/modal/_container_entrypoint.py", line 380, in hydrate_function
+    raise ExecutionError(
+modal.exception.ExecutionError: Function has 3 dependencies but container got 4 object ids.
+Code deps: [Image(local files), modal.Volume.from_name('wattnot-glimmer-weights'), modal.Volume.from_name('wattnot-results')]
+Object ids: ['st-SReQzAGp8btF1NkpS69o8R', 'im-bDhqLTECuJSB7XAZRtZKj7', 'vo-aru6BYF28qvK3Sw2RnGVLM', 'vo-PYQH5DTPBKRns3LnIG5lq4']
+
+This can happen if you are defining Modal objects under a conditional statement that evaluates differently in the local and remote environments.
+Function full_stage.gpu_round is crash-looping: containers are repeatedly failing to start.
+Function fu-n1TaseKyU3engIukyGE9rQ failed during startup.
+Runner failed with exit code: 1
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/pkg/modal/_container_entrypoint.py", line 484, in <module>
+    main(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 466, in main
+    run_function(container_args, client)
+  File "/pkg/modal/_container_entrypoint.py", line 438, in run_function
+    service: Service = hydrate_function(
+                       ^^^^^^^^^^^^^^^^^
+  File "/pkg/modal/_container_entrypoint.py", line 380, in hydrate_function
+    raise ExecutionError(
+modal.exception.ExecutionError: Function has 3 dependencies but container got 4 object ids.
+Code deps: [Image(local files), modal.Volume.from_name('wattnot-glimmer-weights'), modal.Volume.from_name('wattnot-results')]
+Object ids: ['st-SReQzAGp8btF1NkpS69o8R', 'im-bDhqLTECuJSB7XAZRtZKj7', 'vo-aru6BYF28qvK3Sw2RnGVLM', 'vo-PYQH5DTPBKRns3LnIG5lq4']
+
+This can happen if you are defining Modal objects under a conditional statement that evaluates differently in the local and remote environments.
+Function fu-n1TaseKyU3engIukyGE9rQ failed during startup.
+Runner failed with exit code: 1

@@ -1,0 +1,42 @@
+[
+ {
+  "kind": "spark_call",
+  "step": "probe",
+  "model": "muse-spark-1.3",
+  "status": "ok",
+  "trace_id": "chatcmpl-01a19adf-20c1-7245-8324-576d3fdcd536",
+  "latency_s": 10.249,
+  "text": "No GPU meter: J/correct 2437.5\u21921855.5 is token-estimate only, 0.964 spark agreement, eye/hearing checks false.\np99 77.6\u2192498.7ms blowout + accuracy 0.974\u21920.9427 drop limits real efficiency via wait/rework.",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "proposal",
+  "model": "muse-spark-1.3",
+  "status": "empty",
+  "trace_id": "chatcmpl-01a19adf-479d-75d8-957d-0c67131c40f8",
+  "latency_s": 9.885,
+  "text": "",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "gate",
+  "model": "muse-spark-1.3",
+  "status": "ok",
+  "trace_id": "chatcmpl-01a19adf-64f1-7333-a3ce-b54a4fbebeb9",
+  "latency_s": 7.586,
+  "text": "FAIL - accuracy drops 3.1pp (0.974\u21920.9427) and p99 regresses 6.4x (77.6\u2192498.7), outweighing J/correct improvement.",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "receipt",
+  "model": "muse-spark-1.3",
+  "status": "empty",
+  "trace_id": "chatcmpl-01a19adf-801c-7564-8941-f846af14429b",
+  "latency_s": 6.895,
+  "text": "",
+  "label": "MEASURED"
+ }
+]

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>EU 2024/1364 field export</title>
+<style>
+body{font:14px/1.45 system-ui,sans-serif;margin:2rem;color:#111}
+table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:.35rem .5rem;text-align:left;vertical-align:top}
+th{background:#f3f3f3}tr.estimate td:nth-child(5){color:#8a5a00}tr.not_available td{color:#777}
+tr.measured td:nth-child(5){color:#0a6b2b;font-weight:600}
+</style></head><body>
+<h1>EU 2024/1364 field export</h1>
+<p>This report supports EU Energy Efficiency Directive data-center reporting (Delegated Regulation (EU) 2024/1364). CSRD reporting roadmap item.
+Explicit note: Not a compliance claim; facility-level metrics require operator metering. Every value is labelled MEASURED, ESTIMATE, SIMULATED (fake backend, no GPU) or NOT_AVAILABLE, with its source and method.</p>
+<table><thead><tr><th>receipt_id</th><th>field</th><th>value</th><th>unit</th><th>label</th><th>source</th></tr></thead><tbody>
+<tr class="measured"><td>rcpt_20261101_modal_full_r04e</td><td>it_energy_measured_window</td><td>0.373134</td><td>kWh</td><td>MEASURED</td><td>receipt rcpt_20261101_modal_full_r04e, meter nvml: sum over 4 reps x 192 requests</td></tr>
+<tr class="measured"><td>rcpt_20261101_modal_full_r04e</td><td>energy_per_request</td><td>0.485852</td><td>Wh/request</td><td>MEASURED</td><td>receipt rcpt_20261101_modal_full_r04e, meter nvml</td></tr>
+<tr class="measured"><td>rcpt_20261101_modal_full_r04e</td><td>energy_per_request_baseline</td><td>0.659408</td><td>Wh/request</td><td>MEASURED</td><td>receipt rcpt_20261101_modal_full_r04e, meter nvml</td></tr>
+<tr class="estimate"><td>rcpt_20261101_modal_full_r04e</td><td>energy_saving_billed</td><td>0</td><td>%</td><td>ESTIMATE</td><td>receipt rcpt_20261101_modal_full_r04e, meter nvml: lower bound of 95% bootstrap CI, Welch p=0.318 (not significant)</td></tr>
+<tr class="measured"><td>rcpt_20261101_modal_full_r04e</td><td>idle_power</td><td>66.2</td><td>W</td><td>MEASURED</td><td>receipt rcpt_20261101_modal_full_r04e, meter nvml</td></tr>
+<tr class="estimate"><td>rcpt_20261101_modal_full_r04e</td><td>water_per_request</td><td>0.174907</td><td>mL/request</td><td>ESTIMATE</td><td>Wh/request x WUE (L/kWh); 0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured</td></tr>
+<tr class="estimate"><td>rcpt_20261101_modal_full_r04e</td><td>water_per_request_upper</td><td>0.874534</td><td>mL/request</td><td>ESTIMATE</td><td>Wh/request x WUE (L/kWh); up to 1.8 L/kWh including power-plant water, upper ESTIMATE; not measured</td></tr>
+<tr class="measured"><td>rcpt_20261101_modal_full_r04e</td><td>joules_per_correct_answer</td><td>1855.380503</td><td>J/correct</td><td>MEASURED</td><td>receipt rcpt_20261101_modal_full_r04e, meter nvml: candidate Wh/req x 3600 / pass_rate</td></tr>
+<tr class="estimate"><td>rcpt_20261101_modal_full_r04e</td><td>grid_intensity</td><td>727.0</td><td>gCO2e/kWh</td><td>ESTIMATE</td><td>signed sci block; I=727.0 g/kWh from CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included) (FY 2023-24)</td></tr>
+<tr class="estimate"><td>rcpt_20261101_modal_full_r04e</td><td>sci_per_request</td><td>0.353214404</td><td>gCO2e/request</td><td>ESTIMATE</td><td>SCI (GSF, ISO/IEC 21031:2024) operational part E x I; signed sci block; I=727.0 g/kWh from CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included) (FY 2023-24)</td></tr>
+<tr class="measured"><td>rcpt_20261101_modal_full_r04e</td><td>energy_per_correct</td><td>0.000515383473</td><td>kWh/correct answer</td><td>MEASURED</td><td>receipt energy / graded pass rate</td></tr>
+<tr class="estimate"><td>rcpt_20261101_modal_full_r04e</td><td>sci_per_correct</td><td>0.3746837849</td><td>gCO2e/correct answer</td><td>ESTIMATE</td><td>SCI per R (R = one correct answer), E x I; signed sci block; I=727.0 g/kWh from CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included) (FY 2023-24)</td></tr>
+<tr class="estimate"><td>rcpt_20261101_modal_full_r04e</td><td>water_per_correct</td><td>0.1855380503</td><td>mL/correct answer</td><td>ESTIMATE</td><td>kWh/correct x 0.36 L/kWh; 0.36 L/kWh on-site cooling (LBNL 2024 US Data Center Energy Usage Report)</td></tr>
+<tr class="not_available"><td>rcpt_20261101_modal_full_r04e</td><td>sci_embodied_m</td><td></td><td>gCO2e/correct answer</td><td>NOT_AVAILABLE</td><td>no cited embodied-emissions figure for this GPU and server; SCI shown is operational only (E x I)</td></tr>
+<tr class="not_available"><td>rcpt_20261101_modal_full_r04e</td><td>pue</td><td></td><td>ratio</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="not_available"><td>rcpt_20261101_modal_full_r04e</td><td>renewable_energy_share</td><td></td><td>%</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="not_available"><td>rcpt_20261101_modal_full_r04e</td><td>waste_heat_reused</td><td></td><td>kWh</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="not_available"><td>rcpt_20261101_modal_full_r04e</td><td>total_water_input</td><td></td><td>m3</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="not_available"><td>rcpt_20261101_modal_full_r04e</td><td>rated_it_power</td><td></td><td>kW</td><td>NOT_AVAILABLE</td><td>needs facility data (operator meters); a GPU-level tool cannot see it</td></tr>
+<tr class="estimate"><td>rcpt_20261101_modal_full_r04e</td><td>heat_water_readiness</td><td>0.65</td><td>share of fields</td><td>ESTIMATE</td><td>share of this export&#x27;s fields that are filled (MEASURED or ESTIMATE); a readiness indicator, not a regulatory metric</td></tr>
+</tbody></table></body></html>

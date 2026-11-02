@@ -1,0 +1,22 @@
+receipt_id,field,value,unit,label,source
+rcpt_20261101_modal_full_r04e,it_energy_measured_window,0.373134,kWh,MEASURED,"receipt rcpt_20261101_modal_full_r04e, meter nvml: sum over 4 reps x 192 requests"
+rcpt_20261101_modal_full_r04e,energy_per_request,0.485852,Wh/request,MEASURED,"receipt rcpt_20261101_modal_full_r04e, meter nvml"
+rcpt_20261101_modal_full_r04e,energy_per_request_baseline,0.659408,Wh/request,MEASURED,"receipt rcpt_20261101_modal_full_r04e, meter nvml"
+rcpt_20261101_modal_full_r04e,energy_saving_billed,0,%,ESTIMATE,"receipt rcpt_20261101_modal_full_r04e, meter nvml: lower bound of 95% bootstrap CI, Welch p=0.318 (not significant)"
+rcpt_20261101_modal_full_r04e,idle_power,66.2,W,MEASURED,"receipt rcpt_20261101_modal_full_r04e, meter nvml"
+rcpt_20261101_modal_full_r04e,water_per_request,0.174907,mL/request,ESTIMATE,"Wh/request x WUE (L/kWh); 0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"
+rcpt_20261101_modal_full_r04e,water_per_request_upper,0.874534,mL/request,ESTIMATE,"Wh/request x WUE (L/kWh); up to 1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"
+rcpt_20261101_modal_full_r04e,joules_per_correct_answer,1855.380503,J/correct,MEASURED,"receipt rcpt_20261101_modal_full_r04e, meter nvml: candidate Wh/req x 3600 / pass_rate"
+rcpt_20261101_modal_full_r04e,grid_intensity,727.0,gCO2e/kWh,ESTIMATE,"signed sci block; I=727.0 g/kWh from CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included) (FY 2023-24)"
+rcpt_20261101_modal_full_r04e,sci_per_request,0.353214404,gCO2e/request,ESTIMATE,"SCI (GSF, ISO/IEC 21031:2024) operational part E x I; signed sci block; I=727.0 g/kWh from CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included) (FY 2023-24)"
+rcpt_20261101_modal_full_r04e,energy_per_correct,0.000515383473,kWh/correct answer,MEASURED,receipt energy / graded pass rate
+rcpt_20261101_modal_full_r04e,sci_per_correct,0.3746837849,gCO2e/correct answer,ESTIMATE,"SCI per R (R = one correct answer), E x I; signed sci block; I=727.0 g/kWh from CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included) (FY 2023-24)"
+rcpt_20261101_modal_full_r04e,water_per_correct,0.1855380503,mL/correct answer,ESTIMATE,kWh/correct x 0.36 L/kWh; 0.36 L/kWh on-site cooling (LBNL 2024 US Data Center Energy Usage Report)
+rcpt_20261101_modal_full_r04e,sci_embodied_m,,gCO2e/correct answer,NOT_AVAILABLE,no cited embodied-emissions figure for this GPU and server; SCI shown is operational only (E x I)
+rcpt_20261101_modal_full_r04e,pue,,ratio,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
+rcpt_20261101_modal_full_r04e,renewable_energy_share,,%,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
+rcpt_20261101_modal_full_r04e,waste_heat_reused,,kWh,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
+rcpt_20261101_modal_full_r04e,total_water_input,,m3,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
+rcpt_20261101_modal_full_r04e,rated_it_power,,kW,NOT_AVAILABLE,needs facility data (operator meters); a GPU-level tool cannot see it
+rcpt_20261101_modal_full_r04e,heat_water_readiness,0.65,share of fields,ESTIMATE,"share of this export's fields that are filled (MEASURED or ESTIMATE); a readiness indicator, not a regulatory metric"
+,disclaimer,Not a compliance claim; facility-level metrics require operator metering.,,,supports EU Energy Efficiency Directive data-center reporting; CSRD roadmap

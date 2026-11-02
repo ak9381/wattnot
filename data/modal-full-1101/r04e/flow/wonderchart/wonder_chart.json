@@ -1,0 +1,50 @@
+{
+  "spec": "wattnot.wonderchart/1",
+  "mode": "live",
+  "source": "wonder",
+  "suggestion": {
+    "action": "try",
+    "cap_w": 300,
+    "clock_profile": "base"
+  },
+  "reason": "No real trials yet, so test the lowest cap with base clocks for maximal joules-per-correct reduction while preserving quality headroom.",
+  "trace_id": "wonder-d40dc3e85bf8b15d",
+  "wonder_chart": {
+    "label": "SYNTHETIC",
+    "chart_sha256": "1451f378b56d722e9befba83580e3e5b293ffc9fc7ad2ee0f987dfc742d69688",
+    "source": "wonder",
+    "offline_fallback": false,
+    "model": "muse-wonder-1.0",
+    "suggestion": {
+      "action": "try",
+      "cap_w": 300,
+      "clock_profile": "base"
+    },
+    "reason": "No real trials yet, so test the lowest cap with base clocks for maximal joules-per-correct reduction while preserving quality headroom.",
+    "trace_id": "wonder-d40dc3e85bf8b15d",
+    "est_wh": {
+      "value": 0.5,
+      "label": "ESTIMATE"
+    },
+    "points": [
+      {
+        "setting": "0W/base",
+        "cap_w": 0,
+        "clock_profile": "base",
+        "joules_per_correct": 1.0,
+        "quality": 1.0,
+        "kept": false,
+        "label": "MEASURED"
+      },
+      {
+        "setting": "0W/base",
+        "cap_w": 0,
+        "clock_profile": "base",
+        "joules_per_correct": 1.0,
+        "quality": 1.0,
+        "kept": false,
+        "label": "MEASURED"
+      }
+    ]
+  }
+}
