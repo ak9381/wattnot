@@ -1,0 +1,42 @@
+[
+ {
+  "kind": "spark_call",
+  "step": "probe",
+  "model": "muse-spark-1.3",
+  "status": "empty",
+  "trace_id": "chatcmpl-01a19c54-0a59-7340-9763-78b2ad534ff9",
+  "latency_s": 10.738,
+  "text": "",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "proposal",
+  "model": "muse-spark-1.3",
+  "status": "empty",
+  "trace_id": "chatcmpl-01a19c54-3766-73d8-ac6f-f466422b27f6",
+  "latency_s": 11.536,
+  "text": "",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "gate",
+  "model": "muse-spark-1.3",
+  "status": "empty",
+  "trace_id": "chatcmpl-01a19c54-58c5-743d-a3af-f68b6beff24f",
+  "latency_s": 8.68,
+  "text": "",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "receipt",
+  "model": "muse-spark-1.3",
+  "status": "ok",
+  "trace_id": "chatcmpl-01a19c54-749e-74ca-9e51-a14b685460e8",
+  "latency_s": 7.044,
+  "text": "Accuracy held steady at 0.98 without and with the change, with 98.96% agreement between runs. P99 latency got worse, rising from 11.17 to 13.89, while energy efficiency got much better, dropping from 719.27 to 482.53 joules per correct answer. The hearing check passed but the eye check did not.",
+  "label": "MEASURED"
+ }
+]
