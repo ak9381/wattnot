@@ -533,6 +533,16 @@ def gate(base, cand):
             "acc_drop_pts": round((a0 - a1) * 100, 2), "label": "MEASURED"}
 
 
+def fp8_summary(kept: bool, g: dict, bf: dict, s: dict) -> str:
+    """One-line FP8 verdict that names every failed check (acc, J/correct, eye, hearing)."""
+    j0, j1 = bf["j_per_correct"]["value"], s["j_per_correct"]["value"]
+    jtxt = f"J/correct {j0} -> {j1}" + (f" ({(j1 - j0) / j0 * 100:+.1f}%)" if j0 and j1 else "")
+    why = [n for n, ok in (("accuracy", g.get("accuracy_ok")), ("energy", g.get("energy_ok")),
+                           ("eye", g.get("eye_rc") == 0), ("hearing", g.get("hearing_rc") == 0)) if not ok]
+    head = "FP8 candidate kept" if kept else f"FP8 rejected ({', '.join(why) or 'gate'})"
+    return f"{head}: acc drop {g['acc_drop_pts']} pts, {jtxt}"
+
+
 def block_cmds(limit: int, fake: bool, out: Path) -> dict:
     """The agent-saver / eye / hearing / thinking-budget GPU blocks. In smoke (limit > 0) the
     agentwaste block is shortened (--reps 1 --max-cases 4 --max-tokens 768) so it fits the
@@ -776,7 +786,7 @@ def main(argv=None) -> int:
                 g["eye_rc"], g["hearing_rc"] = eye["rc"], ear["rc"]
                 cand = g["keep"] and eye["rc"] == 0 and ear["rc"] == 0
                 EV.emit("step.finished", node="gates", sub="quality", status="ok" if cand else "bad",
-                        summary=f"FP8 {'candidate kept' if cand else 'rejected'}: acc drop {g['acc_drop_pts']} pts")
+                        summary=fp8_summary(cand, g, bf, s))
                 S["fp8"] = {"bf16": {k: bf[k] for k in ("accuracy", "j_per_correct")}, "fp8": s, "gate": g,
                             "kept": cand, "applied": False, "kind": FP8_KIND(nv.name()),
                             "note": "candidate for next round; this round's with arm stays BF16"}
