@@ -287,7 +287,8 @@ def _live_fallback_reason(sid: str, st: dict, d: Path) -> str | None:
 def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: bool = False,
                demo_repo: Path | None = None, log=None, cap=None, rates=None, do_pr: bool = True, table=None, change: dict | None = None,
                energy_label: str = "ESTIMATE", kind: str = "hosted-e2e", decision: dict | None = None,
-               budget_s: float | None = None, clock=None, meta_cap_usd: float | None = None) -> dict:
+               budget_s: float | None = None, clock=None, meta_cap_usd: float | None = None,
+               prior_checks: dict | None = None) -> dict:
     """Run every post-answer feature stage; returns {stage: result} and writes features.json.
 
     `budget_s` caps the wall time the slow/risky stages (the paid Meta checks and the Muse Code
@@ -337,6 +338,14 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
                                   "without_wattnot": {**o, "effort": "medium (plain)"}}}
         _slow_stage(res, "eye_check", eye_both)
         _slow_stage(res, "hearing_check", hearing_both)
+    elif prior_checks and all(Path(p).exists() for p in prior_checks.values()):
+        # GPU stage: the eye/hearing blocks already ran LIVE on our own server (both arms, NVML).
+        # Reuse those results; never rerun them offline (that printed '[fake]' / 'MOCK' lines).
+        for name, p in prior_checks.items():
+            doc = json.loads(Path(p).read_text())
+            res[name] = {"status": "ok" if doc.get("passed") else "error", "passed": bool(doc.get("passed")),
+                         "reason": doc.get("reason"), "mode": doc.get("mode"), "source": str(p),
+                         "energy": doc.get("energy_arms"), "label": doc.get("answers_label", lab)}
     else:
         _slow_stage(res, "eye_check", lambda: _main("wattnot.vision.run", ["--out", str(d / "eye")] + fk))
         _slow_stage(res, "hearing_check", lambda: _main("wattnot.spokenanswer.run", ["--out", str(d / "voice")] + fk))

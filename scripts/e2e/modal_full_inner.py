@@ -533,7 +533,49 @@ def gate(base, cand):
             "acc_drop_pts": round((a0 - a1) * 100, 2), "label": "MEASURED"}
 
 
-def block_cmds(limit: int, fake: bool, out: Path) -> dict:
+def fp8_summary(kept: bool, g: dict, bf: dict, s: dict) -> str:
+    """One-line FP8 verdict that names every failed check (acc, J/correct, eye, hearing)."""
+    j0, j1 = bf["j_per_correct"]["value"], s["j_per_correct"]["value"]
+    jtxt = f"J/correct {j0} -> {j1}" + (f" ({(j1 - j0) / j0 * 100:+.1f}%)" if j0 and j1 else "")
+    why = [n for n, ok in (("accuracy", g.get("accuracy_ok")), ("energy", g.get("energy_ok")),
+                           ("eye", g.get("eye_rc") == 0), ("hearing", g.get("hearing_rc") == 0)) if not ok]
+    head = "FP8 candidate kept" if kept else f"FP8 rejected ({', '.join(why) or 'gate'})"
+    return f"{head}: acc drop {g['acc_drop_pts']} pts, {jtxt}"
+
+
+def energy_arms(out: Path, S: dict) -> None:
+    """Stamp both arms' NVML energy into eye/eye_test.json and spoken/spoken_answer.json."""
+    for k, fn in (("eye", "eye_test.json"), ("spoken", "spoken_answer.json")):
+        wp, op = out / k / fn, out / f"{k}_plain" / fn
+        if not wp.exists():
+            continue
+        doc = json.loads(wp.read_text())
+        arms = {}
+        for arm, p, blk in (("with_wattnot", wp, (S.get("blocks") or {}).get(k)),
+                            ("without_wattnot", op, (S.get("plain_checks") or {}).get(k))):
+            if not blk or not p.exists():
+                continue
+            d = doc if p == wp else json.loads(p.read_text())
+            rows = (d.get("detail") or {}).get("items") or (d.get("detail") or {}).get("images") or []
+            ok = sum(1 for r in rows if r.get("ok"))
+            j = (blk.get("energy_j") or {}).get("value")
+            arms[arm] = {"correct": ok, "items": len(rows), "passed": d.get("passed"), "energy_j": j,
+                         "j_per_correct": round(j / ok, 1) if j and ok else None,
+                         "label": (blk.get("energy_j") or {}).get("label"),
+                         "method": "NVML total-energy counter around the block (incl. idle draw)"}
+        doc["energy_arms"] = arms
+        w = arms.get("with_wattnot") or {}
+        if w.get("energy_j") and w.get("items"):   # replace the flat 0.5 Wh/image ESTIMATE placeholder
+            per = {"value": round(w["energy_j"] / w["items"] / 3600, 6), "label": w["label"],
+                   "method": "with-arm block NVML energy / items"}
+            for r in (doc.get("detail") or {}).get("images") or []:
+                r["energy_wh"] = per
+            if "est_wh_per_image" in (doc.get("detail") or {}):
+                doc["detail"]["est_wh_per_image"] = None
+        wp.write_text(json.dumps(doc, indent=2) + "\n")
+
+
+def block_cmds(limit: int, fake: bool, out: Path, suffix: str = "") -> dict:
     """The agent-saver / eye / hearing / thinking-budget GPU blocks. In smoke (limit > 0) the
     agentwaste block is shortened (--reps 1 --max-cases 4 --max-tokens 768) so it fits the
     container budget; the full round (limit == 0) runs 12 of the 30 cases once per arm at 768 tokens: r04 showed
@@ -550,10 +592,10 @@ def block_cmds(limit: int, fake: bool, out: Path) -> dict:
         "langchain": [sys.executable, "scripts/langchain_pass.py", "--dataset", "own", "--n",
                       str(limit or 20), "--out", str(out / "langchain"), "--route", "final-check"]
                      + (["--fake"] if fake else ["--base-url", BASE]),
-        "eye": [sys.executable, "-m", "wattnot.vision.run", "--base-url", BASE, "--out", str(out / "eye"),
+        "eye": [sys.executable, "-m", "wattnot.vision.run", "--base-url", BASE, "--out", str(out / f"eye{suffix}"),
                 "--budget-s", "90"] + fk,
         "spoken": [sys.executable, "-m", "wattnot.spokenanswer.run", "--base-url", BASE, "--out",
-                    str(out / "spoken"), "--budget-s", "90"] + fk,
+                    str(out / f"spoken{suffix}"), "--budget-s", "90"] + fk,
     }
 
 
@@ -677,6 +719,16 @@ def main(argv=None) -> int:
                 mode="mock" if a.fake else "live", baseline_nodes=BASELINE_NODES)
         S["without_server"] = srv.start(fp8=False, prefix=False, max_seqs=64)
         S["without"], _ = run_arm(b, nv, "without_wattnot", its, 4, raw, "without")
+        # eye + hearing on the STOCK server too, so both checks get a MEASURED without-WattNot arm
+        S["plain_checks"] = {}
+        for k, cmd in block_cmds(a.limit, a.fake, out, suffix="_plain").items():
+            if k not in ("eye", "spoken") or k in a.skip:
+                continue
+            e0 = nv.energy_j()
+            r = sub(cmd, out / f"{k}_plain", min(block_cap(k, a.limit), max(120, left() - 240)))
+            r["energy_j"] = {"value": round(nv.energy_j() - e0, 1), "label": "SIMULATED" if a.fake else "MEASURED"}
+            S["plain_checks"][k] = r
+        save()
         save()
         EV.emit("run.finished", arm="without_wattnot")
         EV.emit("run.started", arm="with_wattnot", run=f"modal {out.name} with WattNot", model=MODEL,
@@ -755,6 +807,8 @@ def main(argv=None) -> int:
             r["energy_j"] = {"value": round(nv.energy_j() - e0, 1), "label": "SIMULATED" if a.fake else "MEASURED"}
             S["blocks"][k] = r
             save()
+        energy_arms(out, S)
+        save()
         # 5. FP8 keep/reject gate LAST: candidate for next round only; this round's with arm stays BF16.
         #    Only start FP8 if the container can still give the server its ~3-min startup.
         if "fp8" not in a.skip and sweep and left() < (8 if a.limit else 25) * 60:
@@ -776,7 +830,7 @@ def main(argv=None) -> int:
                 g["eye_rc"], g["hearing_rc"] = eye["rc"], ear["rc"]
                 cand = g["keep"] and eye["rc"] == 0 and ear["rc"] == 0
                 EV.emit("step.finished", node="gates", sub="quality", status="ok" if cand else "bad",
-                        summary=f"FP8 {'candidate kept' if cand else 'rejected'}: acc drop {g['acc_drop_pts']} pts")
+                        summary=fp8_summary(cand, g, bf, s))
                 S["fp8"] = {"bf16": {k: bf[k] for k in ("accuracy", "j_per_correct")}, "fp8": s, "gate": g,
                             "kept": cand, "applied": False, "kind": FP8_KIND(nv.name()),
                             "note": "candidate for next round; this round's with arm stays BF16"}
