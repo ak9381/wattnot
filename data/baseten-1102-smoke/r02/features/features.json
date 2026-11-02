@@ -1,0 +1,436 @@
+{
+ "table": [
+  {
+   "id": "effort_routing",
+   "name": "Reasoning-effort + cheapest-first routing (low, step up on a failed check)",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "thinking_budget",
+   "name": "Thinking-budget enforcer (max_tokens per effort)",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "router",
+   "name": "Backend/effort router",
+   "status": "ON",
+   "reason": "effort leg only; one hosted backend on this stage"
+  },
+  {
+   "id": "context_saver",
+   "name": "Agent saver: tool-output dedup + memory compression",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "waste_guard",
+   "name": "Agent-waste proxy (repeat/no-op/cycle/overspend detectors)",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "code_mode",
+   "name": "Code Mode with locked sandbox + network boundary",
+   "status": "ON",
+   "reason": "runs on the box over recorded traces"
+  },
+  {
+   "id": "prefix_cache_provider",
+   "name": "Prefix caching (provider side, reported cached tokens)",
+   "status": "ON",
+   "reason": "MEASURED cached_tokens from the API; we cannot control the cache"
+  },
+  {
+   "id": "concurrency_batching",
+   "name": "Concurrency batching (client side)",
+   "status": "ON",
+   "reason": "client concurrency only"
+  },
+  {
+   "id": "gates",
+   "name": "Noise gate, fixed answer gate, LLM judge, reasoning-leak strip",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "spark_grades",
+   "name": "Muse Spark grades every answer",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "joule_slo",
+   "name": "Joule-SLO + user p99 limit",
+   "status": "ON",
+   "reason": "energy ESTIMATE from tokens"
+  },
+  {
+   "id": "eye_check",
+   "name": "Eye check: vision gate on the SYNTHETIC Muse Image set",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "sam_hotspot",
+   "name": "SAM 3.1 hotspot audit",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "hearing_check",
+   "name": "Hearing check: Muse Voice Transcribe on spoken answers",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "wonder_planner",
+   "name": "Muse Wonder planner + Wonderchart",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "spark_trace",
+   "name": "Spark 4-call trace (probe, proposal, gate, receipt)",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "approvals",
+   "name": "Approve-before-apply with risk classifier, undo",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "musecode_pr",
+   "name": "Muse Code PR flow (ak9381/wattnot-demo-deploy only)",
+   "status": "ON",
+   "reason": "patch always built; PR opened only with --open-pr at stage time"
+  },
+  {
+   "id": "receipt",
+   "name": "Signed receipt + SCI carbon/water + joules per good answer",
+   "status": "ON",
+   "reason": "local signing key"
+  },
+  {
+   "id": "eu_report",
+   "name": "EU report",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "label_lint",
+   "name": "Label-honesty lint",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "spend_guard",
+   "name": "Spend guards (Baseten hard cap, Meta soft cap, ledger)",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "power_caps",
+   "name": "Power-cap sweep + J/correct gate",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "fp8",
+   "name": "FP8 quantization keep/reject gate",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "kv_batch",
+   "name": "Batch-size + KV-cache sweep",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "vllm_prefix",
+   "name": "vLLM prefix-cache control",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "clock_sidecar",
+   "name": "Phase-aware clock sidecar, marginal-joule knee",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "moe",
+   "name": "MoE top-k / per-expert pinning",
+   "status": "OFF",
+   "reason": "needs Spark Open self-served (8x B200)"
+  },
+  {
+   "id": "measured_energy",
+   "name": "MEASURED GPU energy (NVML)",
+   "status": "OFF",
+   "reason": "hosted API exposes no power meter; energy is ESTIMATE"
+  },
+  {
+   "id": "flex",
+   "name": "Flex grid-event load shedding",
+   "status": "OFF",
+   "reason": "simulator only"
+  },
+  {
+   "id": "rekor",
+   "name": "Rekor publish",
+   "status": "OFF",
+   "reason": "only after the long run, with Akash's yes"
+  },
+  {
+   "id": "own_gpu_serving",
+   "name": "Own-GPU vLLM serving + E2E rig",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  }
+ ],
+ "stages": {
+  "mode": "live",
+  "label": "MEASURED",
+  "eye_check": {
+   "status": "ok",
+   "passed": false,
+   "reason": "vision misread 1/10 image(s): gauge-reading",
+   "arms": {
+    "with_wattnot": {
+     "passed": false,
+     "reason": "vision misread 1/10 image(s): gauge-reading",
+     "effort": "low+step-up (WattNot)"
+    },
+    "without_wattnot": {
+     "passed": false,
+     "reason": "vision misread 2/10 image(s): plate-bus789, gauge-reading",
+     "effort": "medium (plain)"
+    }
+   },
+   "route": "baseten:meta-models/muse-spark-open",
+   "live_label": "LIVE"
+  },
+  "hearing_check": {
+   "status": "ok",
+   "passed": true,
+   "reason": "all 20 spoken answers correct",
+   "transcribe_usd_est": 0.002588,
+   "arms": {
+    "with_wattnot": {
+     "passed": true,
+     "reason": "all 20 spoken answers correct",
+     "transcribe_usd_est": 0.002588,
+     "effort": "low+step-up (WattNot)"
+    },
+    "without_wattnot": {
+     "passed": false,
+     "reason": "spoken misheard 1/20 answer(s): q-bay-datacenter",
+     "transcribe_usd_est": 0.002588,
+     "effort": "medium (plain)"
+    }
+   },
+   "route": "meta-api:muse-voice-transcribe-1.0 + baseten:meta-models/muse-spark-open",
+   "live_label": "LIVE"
+  },
+  "sam_hotspot": {
+   "status": "ok",
+   "argv": [
+    "--out",
+    "data/baseten-1102-smoke/r02/features/sam",
+    "--live"
+   ],
+   "route": "meta-api:sam-3.1",
+   "live_label": "LIVE",
+   "without_wattnot": "not applicable (WattNot feature)"
+  },
+  "wonder_chart": {
+   "status": "ok",
+   "argv": [
+    "--sweep",
+    "data/baseten-1102-smoke/r02/features/trials.json",
+    "--out",
+    "data/baseten-1102-smoke/r02/features/wonder",
+    "--live"
+   ],
+   "route": "meta-api:muse-wonder-1.0",
+   "live_label": "LIVE",
+   "without_wattnot": "not applicable (WattNot feature)"
+  },
+  "spark_trace": {
+   "status": "ok",
+   "steps": 4,
+   "ok": 2,
+   "route": "meta-api:muse-spark-1.3",
+   "live_label": "LIVE"
+  },
+  "approvals": {
+   "status": "ok",
+   "held_change": {
+    "kind": "reasoning_effort",
+    "change": {
+     "reasoning_effort": "low",
+     "step_up": "medium"
+    }
+   },
+   "risk": "low",
+   "reasons": [
+    "request-level reasoning-effort knob, reversible, no hardware touched"
+   ],
+   "evidence": {
+    "accuracy_without": 1.0,
+    "accuracy_with": 1.0,
+    "p99_without": 8.1587,
+    "p99_with": 6.0286,
+    "spark_agreement": 1.0,
+    "j_per_correct_without": 760.5,
+    "j_per_correct_with": 456.13,
+    "eye_check": false,
+    "hearing_check": true
+   },
+   "review": {
+    "who": "Akash K Raju (delegated reviewer)",
+    "what": {
+     "reasoning_effort": "low",
+     "step_up": "medium"
+    },
+    "risk": "low",
+    "checks": [
+     {
+      "check": "accuracy (with >= without - 1 pt)",
+      "ok": true,
+      "detail": {
+       "without": 1.0,
+       "with": 1.0,
+       "label": "MEASURED"
+      }
+     },
+     {
+      "check": "p99 limit (with <= 1.10 x without)",
+      "ok": true,
+      "detail": {
+       "without_s": 8.1587,
+       "with_s": 6.0286,
+       "label": "MEASURED"
+      }
+     },
+     {
+      "check": "Spark agreement >= 0.90",
+      "ok": true,
+      "detail": {
+       "agreement": 1.0
+      }
+     },
+     {
+      "check": "joule-SLO (J/correct with <= without)",
+      "ok": true,
+      "detail": {
+       "without": 760.5,
+       "with": 456.13,
+       "label": "ESTIMATE"
+      }
+     },
+     {
+      "check": "eye_check gate passed",
+      "ok": false,
+      "detail": {
+       "passed": false
+      }
+     },
+     {
+      "check": "hearing_check gate passed",
+      "ok": true,
+      "detail": {
+       "passed": true
+      }
+     }
+    ],
+    "decision": "rejected",
+    "failed_checks": [
+     "eye_check gate passed"
+    ],
+    "skipped_checks": [],
+    "why": "failed: eye_check gate passed",
+    "started_utc": "2026-11-02T12:37:40.120163+00:00",
+    "decided_utc": "2026-11-02T12:37:40.120370+00:00",
+    "auto_approve": false
+   }
+  },
+  "musecode_pr": {
+   "status": "skipped",
+   "why": "one PR per stage, opened after the last round"
+  },
+  "code_mode": {
+   "status": "ok",
+   "runs": 144,
+   "label": "ESTIMATE"
+  },
+  "receipt": {
+   "status": "ok",
+   "path": "data/baseten-1102-smoke/r02/features/receipt.json",
+   "signer": "offline:cc61d7cb91526c69",
+   "bundle": "data/baseten-1102-smoke/r02/features/receipt.sigstore.json"
+  },
+  "eu_report": {
+   "status": "ok",
+   "wording_issues": []
+  },
+  "label_lint": {
+   "status": "ok",
+   "issues": []
+  },
+  "no_mocks": true,
+  "feature_audit": {
+   "eye_check": {
+    "route": "baseten:meta-models/muse-spark-open",
+    "label": "LIVE",
+    "status": "ok",
+    "fell_back": null,
+    "without_wattnot": "compared in both arms"
+   },
+   "hearing_check": {
+    "route": "meta-api:muse-voice-transcribe-1.0 + baseten:meta-models/muse-spark-open",
+    "label": "LIVE",
+    "status": "ok",
+    "fell_back": null,
+    "without_wattnot": "compared in both arms"
+   },
+   "sam_hotspot": {
+    "route": "meta-api:sam-3.1",
+    "label": "LIVE",
+    "status": "ok",
+    "fell_back": null,
+    "without_wattnot": "not applicable (WattNot feature)"
+   },
+   "wonder_chart": {
+    "route": "meta-api:muse-wonder-1.0",
+    "label": "LIVE",
+    "status": "ok",
+    "fell_back": null,
+    "without_wattnot": "not applicable (WattNot feature)"
+   },
+   "spark_trace": {
+    "route": "meta-api:muse-spark-1.3",
+    "label": "LIVE",
+    "status": "ok",
+    "fell_back": null,
+    "without_wattnot": "compared in both arms"
+   }
+  },
+  "meta_guard": {
+   "ok": true,
+   "why": "within caps",
+   "ledger_total_usd": 29.457,
+   "worst_meta_usd": 0.1244,
+   "soft_cap_usd": 100.0,
+   "meta_cap_usd": 1.0,
+   "basis": "SAM 6x$0.0025/img + Wonder 1 call + Spark trace 4 calls + voice 40 clips@$0.0005 + Spark grades 12x$0.0021575",
+   "label": "ESTIMATE"
+  }
+ },
+ "no_mocks": true
+}

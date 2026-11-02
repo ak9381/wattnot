@@ -1,0 +1,151 @@
+<h1>EU 2024/1364 fields (hosted stage)</h1><pre>{
+ "round": "r02",
+ "results": {
+  "accuracy_without": 1.0,
+  "accuracy_with": 1.0,
+  "j_per_correct_without": 760.5,
+  "j_per_correct_with": 456.13,
+  "energy_saved_pct": {
+   "value": 40.02,
+   "label": "ESTIMATE"
+  },
+  "usd_saved_pct": {
+   "value": 43.95,
+   "label": "MEASURED"
+  },
+  "per_arm": {
+   "without_wattnot": {
+    "answers": 6,
+    "correct": 6,
+    "accuracy": 1.0,
+    "per_set": {
+     "gsm8k": {
+      "correct": 3,
+      "answers": 3,
+      "accuracy": 1.0
+     },
+     "humaneval": {
+      "correct": 3,
+      "answers": 3,
+      "accuracy": 1.0
+     }
+    },
+    "calls": 6,
+    "errors": 0,
+    "tokens": {
+     "prompt": 1441,
+     "cached": 128,
+     "completion": 4174,
+     "label": "MEASURED"
+    },
+    "usd": {
+     "value": 0.0194,
+     "label": "MEASURED",
+     "method": "tokens x Baseten list price"
+    },
+    "energy_wh": {
+     "value": 1.2675,
+     "low": 0.2305,
+     "high": 2.3045,
+     "label": "ESTIMATE",
+     "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+    },
+    "j_per_correct": {
+     "value": 760.5,
+     "label": "ESTIMATE"
+    },
+    "item_latency_s": {
+     "p50": 3.8408,
+     "p95": 8.1587,
+     "p99": 8.1587,
+     "label": "MEASURED"
+    },
+    "call_latency_s": {
+     "p50": 3.7947,
+     "p99": 8.1579,
+     "mean": 5.027,
+     "label": "MEASURED"
+    },
+    "stepped_up": 0
+   },
+   "with_wattnot": {
+    "answers": 6,
+    "correct": 6,
+    "accuracy": 1.0,
+    "per_set": {
+     "gsm8k": {
+      "correct": 3,
+      "answers": 3,
+      "accuracy": 1.0
+     },
+     "humaneval": {
+      "correct": 3,
+      "answers": 3,
+      "accuracy": 1.0
+     }
+    },
+    "calls": 6,
+    "errors": 0,
+    "tokens": {
+     "prompt": 1441,
+     "cached": 384,
+     "completion": 2234,
+     "label": "MEASURED"
+    },
+    "usd": {
+     "value": 0.010873,
+     "label": "MEASURED",
+     "method": "tokens x Baseten list price"
+    },
+    "energy_wh": {
+     "value": 0.7602,
+     "low": 0.1382,
+     "high": 1.3822,
+     "label": "ESTIMATE",
+     "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+    },
+    "j_per_correct": {
+     "value": 456.13,
+     "label": "ESTIMATE"
+    },
+    "item_latency_s": {
+     "p50": 2.6867,
+     "p95": 6.0286,
+     "p99": 6.0286,
+     "label": "MEASURED"
+    },
+    "call_latency_s": {
+     "p50": 2.5252,
+     "p99": 6.0116,
+     "mean": 3.2064,
+     "label": "MEASURED"
+    },
+    "stepped_up": 0
+   }
+  },
+  "latency_verdict": {
+   "rule": "with-arm item p99 within +10% of without; note allowed if p95 passes and dropping <= 2 with-arm items above the without p99 fixes p99",
+   "p99_without_s": 8.1587,
+   "p99_with_s": 6.0286,
+   "p95_without_s": 8.1587,
+   "p95_with_s": 6.0286,
+   "items": [],
+   "label": "MEASURED",
+   "strict_ok": true,
+   "p95_ok": true,
+   "verdict": "pass"
+  }
+ },
+ "sci": {
+  "grid": {
+   "gco2e_per_kwh": 727.0,
+   "label": "ESTIMATE",
+   "region": "IN (India national grid)",
+   "year": "FY 2023-24",
+   "source": "CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included)",
+   "url": "https://cea.nic.in/cdm-co2-baseline-database/?lang=en"
+  },
+  "label": "ESTIMATE",
+  "gco2_per_arm": null
+ }
+}</pre>
