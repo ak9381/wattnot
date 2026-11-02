@@ -58,3 +58,47 @@ def test_block_run_is_detached_and_waits_for_the_app():
     never = B.wait_app_stopped(120, lister=lambda: ["ap-1"], sleep=lambda s: None,
                                now=iter(range(0, 1000, 60)).__next__)
     assert never["stopped"] is False and never["why"] == "deadline"
+
+
+def test_langchain_items_written_incrementally_and_scored(tmp_path):
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import langchain_pass as LP
+    w = LP.progress_writer(tmp_path, "saver_off")
+    w({"i": 0, "correct": True, "steps": 2})
+    w({"i": 1, "correct": False, "steps": 6})
+    LP.progress_writer(tmp_path, "saver_on")({"i": 0, "correct": True, "steps": 1})
+    assert LP.partial_scores(tmp_path) == {"saver_off": {"correct": 1, "done": 2},
+                                           "saver_on": {"correct": 1, "done": 1}}
+
+
+def test_fake_langchain_block_leaves_per_item_lines(tmp_path):
+    import subprocess
+    out = tmp_path / "lc"
+    subprocess.run([sys.executable, str(ROOT / "scripts" / "langchain_pass.py"), "--fake", "--n", "3",
+                    "--route", "final-check", "--out", str(out)], check=True, cwd=ROOT,
+                   env={**__import__("os").environ, "PYTHONPATH": f"{ROOT}:{ROOT / 'src'}"},
+                   capture_output=True, timeout=300)
+    lines = (out / "langchain_items.jsonl").read_text().splitlines()
+    assert len(lines) == 6 and {json.loads(x)["arm"] for x in lines} == {"saver_off", "saver_on"}
+
+
+def test_cut_run_keeps_partial_scores(tmp_path):
+    got = tmp_path / "inc" / "r-1"
+    (got / "langchain").mkdir(parents=True)
+    (got / "langchain" / "langchain_items.jsonl").write_text(
+        json.dumps({"arm": "saver_off", "i": 0, "correct": True}) + "\n")
+    dest = tmp_path / "att" / "r-1"
+    dest.parent.mkdir()
+    assert B.partial_out(got, dest, "r04e", "r-1", {}, 1) == 5
+    p = json.loads((dest / "partial.json").read_text())
+    assert p["scores_so_far"] == {"saver_off": {"correct": 1, "done": 1}} and p["status"] == "partial"
+
+
+def test_detach_prefetch_and_cap():
+    full = (ROOT / "scripts" / "e2e" / "modal_full_round.py").read_text()
+    assert '"modal", "run", "--detach"' in full and "wait_app_stopped(t0 + cap_s + 600)" in full
+    inner = (ROOT / "scripts" / "e2e" / "modal_full_inner.py").read_text()
+    assert '"--safetensors-load-strategy", "prefetch"' in inner
+    assert B.FS.BLOCK_CAP_S == 90 * 60 and B.plan(["langchain"])["worst_usd"] <= B.FS.ROUND_HARD_USD
+    sh = (ROOT / "scripts" / "e2e" / "launch_detached.sh").read_text()
+    assert "setsid nohup" in sh

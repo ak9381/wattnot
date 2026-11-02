@@ -28,7 +28,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path[:0] = [str(ROOT), str(ROOT / "src"), str(ROOT / "scripts" / "e2e")]
+sys.path[:0] = [str(ROOT), str(ROOT / "src"), str(ROOT / "scripts" / "e2e"), str(ROOT / "scripts")]
 import modal_full_round as R  # noqa: E402
 
 FS = R.full_stage
@@ -50,23 +50,7 @@ def plan(only: list[str]) -> dict:
                       "worst = container cap"}
 
 
-def wait_app_stopped(deadline: float, lister=None, poll_s: float = 60, sleep=time.sleep,
-                     now=time.time) -> dict:
-    """Wait until no wattnot-full-stage app is running (or the deadline).
-
-    The run is launched with ``modal run --detach``: if the local client drops (r04e LangChain
-    run, 13:18 IST: "Stopping app - local client disconnected" after missed heartbeats), the
-    container keeps going and still syncs its results to the volume. So a non-zero client exit
-    is not the end of the run: wait for the app to stop, then recover from the volume."""
-    lister = lister or R.app_running
-    polls = 0
-    while now() < deadline:
-        live = lister()
-        polls += 1
-        if live == []:
-            return {"stopped": True, "polls": polls}
-        sleep(poll_s)
-    return {"stopped": False, "polls": polls, "why": "deadline"}
+wait_app_stopped = R.wait_app_stopped   # shared with full rounds (modal_full_round)
 
 
 def attachment(rdir: Path, attach: str, run_id: str, only: list[str], fake: bool, spend: dict) -> Path:
@@ -104,6 +88,21 @@ def attachment(rdir: Path, attach: str, run_id: str, only: list[str], fake: bool
     from wattnot.receipt.certkey import require_cert_key
     sign(path, no_rekor=True, key_path=R.KEY if fake else require_cert_key())
     return path
+
+
+def partial_out(got: Path, dest: Path, attach: str, run_id: str, spend: dict, rc: int) -> int:
+    """A cut run: keep whatever synced (per-item LangChain lines included) and score it, unsigned."""
+    import langchain_pass as LP
+    if not got.exists():
+        return 5
+    shutil.move(str(got), str(dest))
+    scores = LP.partial_scores(dest / "langchain")
+    (dest / "partial.json").write_text(json.dumps(
+        {"run_id": run_id, "attaches_to": attach, "status": "partial", "label": "MEASURED", "client_rc": rc,
+         "scores_so_far": scores, "spend": spend,
+         "note": "Cut before the block finished; scores are items finished so far (not signed)."}, indent=1))
+    print(f"[partial] {json.dumps(scores)} -> {dest}")
+    return 5
 
 
 def main(argv=None) -> int:
@@ -180,7 +179,7 @@ def main(argv=None) -> int:
         if rc != 0 or not (inc / run_id / "inner.json").exists():
             if R.recover_partial(run_id, inc) is None:
                 print(f"[fail] modal run rc={rc}")
-                return 5
+                return partial_out(inc / run_id, dest, a.attach, run_id, spend, rc)
         shutil.move(str(inc / run_id), str(dest))
     path = attachment(dest, a.attach, run_id, a.only, a.fake, spend)
     print(f"[attached] {path} -> round {a.attach}")
