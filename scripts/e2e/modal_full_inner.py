@@ -552,9 +552,11 @@ def block_cmds(limit: int, fake: bool, out: Path) -> dict:
 
 def block_cap(k: str, limit: int) -> int:
     """Per-block wall cap. Smoke caps agentwaste hardest (it is the long pole), other blocks at
-    5 min; the full round keeps the 15-min cap for every block."""
+    5 min; the full round takes each block's limit from the modal provider profile, sized so the
+    block's worst case fits in 80% of it."""
     if not limit:
-        return 900
+        from wattnot.providers import block_limit_s
+        return block_limit_s("modal", k)
     return 240 if k == "agentwaste" else 300
 
 
