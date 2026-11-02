@@ -40,3 +40,19 @@ def test_sweep_receipt_summary(tmp_path):
 def test_unknown_or_unhashed_still_404(tmp_path):
     assert _client(tmp_path, {"kind": "x", "round": "r1"}).get("/api/dash/run/receipt").status_code == 404
     assert _client(tmp_path, {"hello": 1, "integrity": INTEG}).get("/api/dash/run/receipt").status_code == 404
+
+
+def test_replay_only_voice_ask_never_goes_live(tmp_path, monkeypatch):
+    import wattnot.meta.voiceguide as vg
+    seen = {}
+
+    def fake(**kw):
+        seen.update(kw)
+        return {"intent": "answer", "label": "MOCK", "text": "ok"}
+
+    monkeypatch.setattr(vg, "process_voice_query", fake)
+    monkeypatch.delenv("WATTNOT_META_MOCK", raising=False)
+    ev = tmp_path / "events.jsonl"
+    ev.write_text("{}\n")
+    r = TestClient(create_app(events=ev, replay_only=True)).post("/api/voiceguide", json={"query": "what is p99"})
+    assert r.status_code == 200 and seen["mock"] is True and seen["spark_live"] is False and seen["live"] is False
