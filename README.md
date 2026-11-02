@@ -1,5 +1,18 @@
 # WattNot
 
+## Submission overview
+
+- **Track:** Indie (solo, Akash K Raju). **Problem statement:** Push the Frontier (energy).
+- **Built during the hackathon:** all code here was written Oct 26 to Nov 4, 2026. Before Oct 26
+  there were only planning docs. Commit history shows the rest.
+- **Meta models at runtime:** Muse Spark 1.3 (planner and judge), Muse Wonder (trial planner and
+  chart reader), Muse Voice Transcribe (spoken Ask), SAM 3.1 (rack hotspots), and the open-weights
+  models we serve and tune: **Muse Glimmer 30B** on an H100 and **Muse Spark Open** on Baseten. Both
+  are load-bearing: they are the models whose watts we measure and cut. Llama 3.1 8B is a comparison model.
+- **Bonus categories we are aiming for:** Best Build on Meta Open Weight Models, Best Agentic Use-Case.
+- **Try it without any keys:** see [Keyless replay](#keyless-replay). Every number is labelled
+  MEASURED, ESTIMATE, MOCK or REPLAY.
+
 ## Meta models at work
 
 Each layer of WattNot is driven by a Meta model. In a live run every call below is a real API
@@ -21,7 +34,7 @@ from an earlier run is labelled REPLAY; nothing is shown that did not happen.
 
 Full list with costs: [Meta models used](#meta-models-used).
 
-WattNot is an agent that cuts the energy and cost of each LLM inference request without making the model worse. It tries serving changes (batching, KV-cache settings, FP8, GPU power caps), keeps a change only if quality and p99 latency hold, and writes a signed receipt (Wh and $ per request) that anyone can re-check with the open verifier. It is built on Meta models: Muse Spark picks each step, and the default served model is Meta's open-weights Muse Glimmer 30B (`meta-models/Muse-Glimmer-30B`, Apache 2.0) on vLLM, with Llama 3.1 8B Instruct (`meta-llama/Llama-3.1-8B-Instruct`) as a comparison model. We also tune Muse Spark Open (NVFP4) on a large multi-GPU box, because it needs 700 GB+ of VRAM, more than one H100.
+WattNot is an agent that cuts the energy and cost of each LLM inference request without making the model worse. It tries one serving change at a time (GPU power cap, batching, KV-cache settings, FP8, prefix caching) and keeps it only if three fixed checks pass: a quality gate on a fixed prompt set (accuracy may drop by at most 1 point by default), a p99 latency budget, and a Welch noise test so a saving has to beat run-to-run jitter. The model can explain a verdict but never overrides it; the rule decides. Each kept change becomes a hash-chained receipt signed offline (Ed25519) with before and after Wh and $ per request, and `wattnot verify` re-checks it: change one number and verification fails. It is built on Meta models: Muse Spark picks each step, and the default served model is Meta's open-weights Muse Glimmer 30B (`meta-models/Muse-Glimmer-30B`, Apache 2.0) on vLLM, with Llama 3.1 8B Instruct (`meta-llama/Llama-3.1-8B-Instruct`) as a comparison model. We also tune Muse Spark Open (NVFP4) on a large multi-GPU box, because it needs 700 GB+ of VRAM, more than one H100.
 
 Token trimmers cut your bill, but not your watts. WattNot measures the joules each request burns on the GPU, and checks quality before it keeps any change.
 
@@ -146,6 +159,36 @@ with the reason, never faked. When you trust what you see:
 wattnot preflight          # re-check the machine any time (--json for scripts)
 wattnot init --act         # allow WattNot to apply approved changes
 ```
+
+### Meta API key (for live Muse Spark, Wonder and Voice Transcribe)
+
+Watch-only mode, the tests and replays need no key. For live Meta model calls, give WattNot
+your Meta Model API key one of two ways (it is only held in memory and never written to a receipt):
+
+```bash
+export META_API_KEY=...    # in your shell; never commit it
+# or log in once with the Muse CLI, which stores it in ~/.config/muse/auth.json
+muse login
+```
+
+To exercise the Meta paths without a key or any spend, set `WATTNOT_META_MOCK=1`; every answer
+is then labelled MOCK. The dashboard in replay mode (`python -m wattnot.dash --replay-only`) always uses the mock.
+
+### Keyless replay
+
+No GPU, no keys, no spend. This replays a real recorded round (labels kept, plus REPLAY):
+
+```bash
+pip install -e .
+PYTHONPATH=src WATTNOT_META_MOCK=1 python -m wattnot.dash --replay-only \
+  --events replays/modal-r2/events.jsonl --port 8795
+# open http://127.0.0.1:8795/index.html
+```
+
+### Environment variables
+
+Every variable the code reads is listed, names only, in [`.env.example`](.env.example). Copy it to
+`.env` (gitignored), fill in only what you need, and load it with `set -a; . ./.env; set +a`.
 
 ### Docker
 

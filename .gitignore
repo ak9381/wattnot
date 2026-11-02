@@ -20,6 +20,7 @@ node_modules/
 # Env and secrets
 .env
 .env.*
+!.env.example
 
 # Data and large artifacts
 # Repo-root run output only; recorded test fixtures under tests/fixtures/runs/ stay tracked.
