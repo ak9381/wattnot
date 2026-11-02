@@ -27,8 +27,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 TOK_S = 906 / 32.05          # MEASURED on Modal A100 r04b (one stream); H100 assumed no faster (conservative)
 CALLS_PER_AGENT_CASE = 4     # ESTIMATE, react/stop-rule/planner loops
-# Modal r04-try1 langchain block (n 20): saver off 786.69 s + saver on 111.43 s (MEASURED)
-LANGCHAIN_S_PER_ITEM = (786.69 + 111.43) / 20
+# Modal r04c langchain block (n 20, both arms full): 1903.3 s MEASURED; final-check adds at most one
+# thinking-on step-up per item at 938.06 s / 65 calls (r04c saver_off, MEASURED)
+LANGCHAIN_S_PER_ITEM = (786.69 + 111.43) / 20   # r04-try1 (H100 plan basis, unchanged)
+MODAL_LANGCHAIN_S_PER_ITEM = 1903.3 / 20 + 938.06 / 65
+# Modal container: before the GPU blocks r04c spent 52 min (baseline arm, sweep, with arm, MEASURED);
+# FP8 only starts with >= 25 min left; ~5 min image/container start (ESTIMATE)
+MODAL_PRE_BLOCKS_S, MODAL_FP8_S, MODAL_START_S = 52 * 60, 25 * 60, 5 * 60
 HEADROOM = 0.8               # worst-case work must fit in 80% of the kill limit
 MIN_DISK_GB = 15.0
 IMPORTS = {
@@ -126,12 +131,20 @@ def check_block_time_modal() -> dict:
     (modal_full_inner.block_cap); its worst case must fit in HEADROOM of that limit."""
     from wattnot.providers import PROFILES, block_fit_problems
     lim = PROFILES["modal"]["block_limits_s"]
-    lang = 20 * LANGCHAIN_S_PER_ITEM * 1.3
+    lang = 20 * MODAL_LANGCHAIN_S_PER_ITEM
     agent = 12 * 1 * 2 * CALLS_PER_AGENT_CASE * 768 / TOK_S
     rows = [f"langchain n20 worst {lang / 60:.0f} min vs kill {lim['langchain'] / 60:.0f} min",
             f"agentwaste 12x1x768 worst {agent / 60:.0f} min vs kill {lim['agentwaste'] / 60:.0f} min"]
     bad = [r for r, w, k in zip(rows, (lang, agent), ("langchain", "agentwaste")) if w > HEADROOM * lim[k]]
     bad += block_fit_problems("modal")
+    import re as _re
+    src = (ROOT / "modal" / "full_stage.py").read_text()
+    m = _re.search(r"ROUND_CAP_S = int\(([\d.]+) \* 3600\)", src)
+    cap = float(m.group(1)) * 3600 if m else 0
+    need = MODAL_START_S + MODAL_PRE_BLOCKS_S + sum(lim.values()) + MODAL_FP8_S
+    rows.append(f"container: blocks at their limits need {need / 60:.0f} min vs ceiling {cap / 60:.0f} min")
+    if need > cap:
+        bad.append(rows[-1])
     return _r("block_time", "agentwaste rc 124 at the 900 s cap (r04-try1)", not bad,
               "; ".join(rows + bad[2:] if bad else rows), "src/wattnot/providers.py modal block_limits_s")
 
@@ -401,12 +414,30 @@ def check_meta_key(provider: str) -> dict:
     META_API_KEY, so every transcription got HTTP 401. Checks the key exists locally (value never
     read out) and, for Modal, that full_stage hands it to the container as a Secret."""
     from wattnot.meta.client import load_key
+    if provider != "modal":   # H100 and Baseten carry their own key path (live._transcribe on the VM)
+        return _r("meta_key", "Meta key missing in the container (hearing 401, r04c)", True,
+                  f"n/a for {provider}", "modal/full_stage.py _meta_secrets")
     have = bool(load_key())
     wired = True
     if provider == "modal":
         wired = "secrets=_meta_secrets()" in (ROOT / "modal" / "full_stage.py").read_text()
     return _r("meta_key", "Meta key missing in the container (hearing 401, r04c)", have and wired,
               f"local key present={have}; container wiring={wired}", "modal/full_stage.py _meta_secrets")
+
+
+def check_cert_key(env=None) -> dict:
+    """Live receipts and certificates sign with the real key and fail closed without it: the key
+    file must exist and its public half must be in verifier/trusted-keys.json as ed25519-wattnot.
+    Only the signer id is shown, never key material."""
+    from wattnot.receipt.certkey import SIGNER_KIND, cert_key_path, signer_id, trusted_kinds
+    p = cert_key_path(env)
+    if not p.is_file():
+        return _r("cert_key", "certificates signed with the public test key (WNC-0001)", False,
+                  f"no signing key at {p}", "src/wattnot/receipt/certkey.py")
+    sid = signer_id(p)
+    kind = trusted_kinds().get(sid)
+    return _r("cert_key", "certificates signed with the public test key (WNC-0001)", kind == SIGNER_KIND,
+              f"key present, signer {sid}, trusted-keys kind={kind}", "verifier/trusted-keys.json")
 
 
 def run(provider: str, *, dash: bool = True) -> dict:
@@ -422,7 +453,7 @@ def run(provider: str, *, dash: bool = True) -> dict:
         lambda: check_tool_calling(provider), lambda: check_v1(provider), check_reasoning_effort,
         lambda: check_imports(provider), lambda: check_dashboard(dash), check_eye, check_hearing,
         lambda: check_mock(provider), lambda: check_fp8(provider), lambda: check_context_saver(provider),
-        check_certificate, lambda: check_disk(provider), lambda: check_meta_key(provider),
+        check_certificate, lambda: check_disk(provider), lambda: check_meta_key(provider), check_cert_key,
     ]
     for f in fns:
         try:

@@ -269,6 +269,12 @@ def _schema(receipt):
     return True, {"spec": SPEC}
 
 
+# what a trusted signer's kind means to a reader; anything the public sample key signed
+# (WNC-0001 and every receipt before Modal round r04d) proves nothing about who ran it
+TRUST_LABELS = {"ed25519-test": "test-signed (public sample key)",
+                "ed25519-wattnot": "signed (WattNot certificate key)"}
+
+
 def _signature(receipt, bundle, trusted):
     if not isinstance(bundle, dict):
         return False, {"error": "no bundle given"}
@@ -291,7 +297,11 @@ def _signature(receipt, bundle, trusted):
                                 f"bundle is {signer}"}
     if trusted is not None and signer not in trusted:
         return False, {"error": f"signer {signer} is not a trusted key"}
-    return True, {"signer": signer}
+    kind = trusted.get(signer, "") if isinstance(trusted, dict) else ""
+    out = {"signer": signer}
+    if kind:
+        out["trust"] = TRUST_LABELS.get(kind, kind)
+    return True, out
 
 
 def _claimed_grade(receipt, rekor):
@@ -553,7 +563,8 @@ def format_report(r):
         if n == "sha256":
             info = "expected {}  got {}".format(s.get("expected"), s.get("got", s.get("error")))
         elif n == "signature":
-            info = "signer {}".format(s["signer"]) if s["ok"] else s.get("error", "")
+            info = ("signer {}".format(s["signer"]) + (" [{}]".format(s["trust"]) if s.get("trust") else "")
+                    if s["ok"] else s.get("error", ""))
         elif n == "rekor":
             info = "log_index {}".format(s["log_index"]) if s["ok"] else s.get("note", "")
             mark = "ok  " if s["ok"] else "none"
@@ -585,7 +596,8 @@ def load_trusted(path=None):
     p = Path(path) if path else Path(__file__).resolve().with_name("trusted-keys.json")
     if not p.exists():
         return None
-    return {k["signer"] for k in json.loads(p.read_text())["keys"]}
+    # signer -> kind (a dict, so `signer in trusted` still works like the old set)
+    return {k["signer"]: k.get("kind", "") for k in json.loads(p.read_text())["keys"]}
 
 
 def verify_path(receipt_path, bundle_path=None, trusted=None):

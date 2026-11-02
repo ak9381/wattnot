@@ -541,7 +541,7 @@ def block_cmds(limit: int, fake: bool, out: Path) -> dict:
                          else ["--reps", "1", "--max-cases", "12", "--max-tokens", "768"])
                       + ["--out", str(out / "agentwaste")] + fk,
         "langchain": [sys.executable, "scripts/langchain_pass.py", "--dataset", "own", "--n",
-                      str(limit or 20), "--out", str(out / "langchain"), "--route", "think-on"]
+                      str(limit or 20), "--out", str(out / "langchain"), "--route", "final-check"]
                      + (["--fake"] if fake else ["--base-url", BASE]),
         "eye": [sys.executable, "-m", "wattnot.vision.run", "--base-url", BASE, "--out", str(out / "eye"),
                 "--budget-s", "90"] + fk,

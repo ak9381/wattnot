@@ -101,7 +101,8 @@ def tools():
     return [calculator, style_guide]
 
 
-def run_agent(base_url: str, model: str, rows: list[dict], max_steps: int, framework_tag: str):
+def run_agent(base_url: str, model: str, rows: list[dict], max_steps: int, framework_tag: str,
+              kind: str = "math"):
     from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
     from langchain_openai import ChatOpenAI
 
@@ -113,7 +114,8 @@ def run_agent(base_url: str, model: str, rows: list[dict], max_steps: int, frame
         # items 13-20 (r04-try1: guard answered 17 of 29 calls, saver arm 2/20 correct)
         llm = ChatOpenAI(base_url=base_url, api_key="unused", model=model, max_tokens=2048,
                          timeout=600, default_headers={"X-WattNot-Framework": "langchain",
-                                                       "X-WattNot-Run": f"{framework_tag}-{i}"}).bind_tools(tl)
+                                                       "X-WattNot-Run": f"{framework_tag}-{i}",
+                                                       "X-WattNot-Kind": kind}).bind_tools(tl)
         msgs = [SystemMessage("You are a careful agent. Use the tools when they help."),
                 HumanMessage(r["prompt"])]
         text, steps = "", 0
@@ -127,11 +129,13 @@ def run_agent(base_url: str, model: str, rows: list[dict], max_steps: int, frame
                 t = by_name.get(tc["name"])
                 res = t.invoke(tc.get("args") or {}) if t else f"unknown tool {tc['name']}"
                 msgs.append(ToolMessage(str(res), tool_call_id=tc["id"]))
-        out.append({"i": i, "steps": steps, "correct": bool(r["ok"](r["item"], text))})
+        # final text kept (trimmed) so a later CPU test can REPLAY this round's answers
+        out.append({"i": i, "steps": steps, "correct": bool(r["ok"](r["item"], text)),
+                    "final_text": (text or "")[-1500:]})
     return out
 
 
-def serve(upstream, saver_on: bool, label: str, tiers):
+def serve(upstream, saver_on: bool, label: str, tiers, final_check: bool = False, max_stepups: int = 1):
     import uvicorn
     from wattnot.agentwaste.config import WasteConfig
     from wattnot.agentwaste.frameworks import free_port
@@ -143,7 +147,8 @@ def serve(upstream, saver_on: bool, label: str, tiers):
                       inject_done=False)
     app = create_app(upstream, WasteConfig() if saver_on else big,
                      context_saver=ContextSaver() if saver_on else None,
-                     tiers=tiers if saver_on else None, label=label)
+                     tiers=tiers if saver_on else None, label=label,
+                     final_check=final_check and saver_on, max_stepups=max_stepups)
     port = free_port()
     server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning"))
     threading.Thread(target=server.run, daemon=True).start()
@@ -171,11 +176,11 @@ def main(argv=None) -> int:
     ap.add_argument("--n", type=int, default=20)
     ap.add_argument("--max-steps", type=int, default=6)
     ap.add_argument("--base-url", help="served model, e.g. http://127.0.0.1:8000/v1 (live)")
-    ap.add_argument("--route", choices=("think-off-first", "think-on"), default="think-off-first",
-                    help="saver-on arm tiers. think-on keeps the guard and saver but answers with "
-                         "thinking on, like the off arm (r04c Modal: think-off-first answered 70 of 71 "
-                         "calls without thinking, 11/20 vs 19/20, because a tool-using agent reply "
-                         "always passes the answer gate)")
+    ap.add_argument("--route", choices=("gate", "final-check"), default="gate",
+                    help="saver-on arm routing. final-check judges only the agent's FINAL answer "
+                         "(tool-call turns are never a pass) and steps a shaky one up to thinking on "
+                         "(r04c Modal: 'gate' passed every tool turn, 70/71 calls thinking off, 11/20 vs 19/20)")
+    ap.add_argument("--max-stepups", type=int, default=1, help="step-up cap per agent run (final-check)")
     ap.add_argument("--fake", action="store_true", help="local mock upstream, MOCK numbers")
     a = ap.parse_args(argv)
     from wattnot.agentwaste.frameworks import mock_upstream
@@ -188,8 +193,6 @@ def main(argv=None) -> int:
     model = GLIMMER if live else "mock-model"
     tiers = [{"name": "glimmer-think-off", "model": model, "body_extra": {"chat_template_kwargs": {"enable_thinking": False}}},
              {"name": "glimmer-think-on", "model": model, "reasoning": True}]
-    if a.route == "think-on":
-        tiers = tiers[1:]
     rows = items(a.dataset, a.start, a.n)
     nv = Nvml() if live else None
     res = {"spec": "wattnot.langchain-pass/1", "label": label, "dataset": a.dataset,
@@ -197,10 +200,11 @@ def main(argv=None) -> int:
            "routing": "effort routing on one served model (thinking off -> on); model routing "
                       "needs a second model and is in the multi-provider block", "route": a.route, "arms": {}}
     for arm, on in (("saver_off", False), ("saver_on", True)):
-        base, server = serve(upstream, on, label, tiers)
+        base, server = serve(upstream, on, label, tiers, a.route == "final-check", a.max_stepups)
         try:
             e0, t0 = (nv.mj() if nv else None), time.time()
-            per = run_agent(base, model, rows, a.max_steps, f"lc-{arm}")
+            per = run_agent(base, model, rows, a.max_steps, f"lc-{arm}",
+                            "code" if a.dataset == "humaneval164" else "math")
             e1, t1 = (nv.mj() if nv else None), time.time()
             import urllib.request
             with urllib.request.urlopen(base + "/wattnot/receipt", timeout=10) as r:

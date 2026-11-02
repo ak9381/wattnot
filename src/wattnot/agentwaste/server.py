@@ -142,6 +142,8 @@ def create_app(
     context_saver: object | None = None,
     tiers: Sequence[Mapping] | None = None,
     label: str = "MEASURED",
+    final_check: bool = False,
+    max_stepups: int = 1,
 ) -> FastAPI:
     """Build the proxy app. upstream(body, headers) returns parsed JSON.
 
@@ -153,12 +155,17 @@ def create_app(
       is mid-task). The last tier always answers.
     Every call is logged per run with the framework name, so ``/v1/wattnot/receipt`` can say
     which framework drove it. ``label`` is MOCK or REPLAY when the upstream is not a real model.
+    * ``final_check`` (flag, off by default): agent mode. Tool-call turns are mid-task and never
+      judged; only a FINAL answer (no tool calls) is checked by ``route.final_check`` and, when
+      shaky, retried on the next tier. At most ``max_stepups`` step-ups per run id.
     """
+    from wattnot.route import final_check as fc
     from wattnot.route.escalate import gate as answer_gate
 
     cfg = config or WasteConfig()
     calls: list[dict] = []
     guards: OrderedDict[str, WasteGuard] = OrderedDict()
+    stepups: dict[str, int] = {}
     app = FastAPI()
 
     def guard_for(run: str) -> WasteGuard:
@@ -227,7 +234,21 @@ def create_app(
                 body_t = tier_body(out_body, tier)
                 response = upstream(body_t, headers)
                 text, finish, tool = _answer(response)
-                if tool:
+                if final_check:
+                    if tool:   # mid-task: not a pass, not a fail, never stepped up
+                        attempts.append({"tier": None if tier is None else tier["name"],
+                                         "passed": None, "reason": "tool call (not judged)"})
+                        break
+                    k = request.headers.get("x-wattnot-kind") or fc.infer_kind(out_body.get("messages") or [])
+                    ok, why = fc.check(k, text, finish, out_body.get("messages") or [], response)
+                    if not ok and i < len(chain) - 1 and stepups.get(run, 0) >= max_stepups:
+                        why = f"{why}; step-up cap {max_stepups} reached, kept"
+                        attempts.append({"tier": None if tier is None else tier["name"],
+                                         "passed": False, "reason": why})
+                        break
+                    if not ok and i < len(chain) - 1:
+                        stepups[run] = stepups.get(run, 0) + 1
+                elif tool:
                     ok, why = True, "tool call"
                 elif reasoning_cutoff(response, text, finish):
                     ok, why = answer_gate(kind, text, None)
@@ -253,7 +274,7 @@ def create_app(
             )
         rec["attempts"] = attempts
         rec["answered_by"] = attempts[-1]["tier"] if attempts else None
-        rec["gate_passed"] = bool(attempts and attempts[-1]["passed"])
+        rec["gate_passed"] = bool(attempts and (attempts[-1]["passed"] or attempts[-1]["passed"] is None))
         rec["escalated_tokens"] = esc_tokens
         calls.append(rec)
         out = guard.after(response)
@@ -309,6 +330,15 @@ def create_app(
                      if answered else None, "answered_calls": len(answered),
                      "stopped_by_guard": sum(1 for c in calls if c.get("stopped")),
                      "upstream_errors": sum(1 for c in calls if c.get("error"))},
+            "final_check": {"enabled": final_check, "max_stepups_per_run": max_stepups,
+                            "tool_turns_not_judged": sum(1 for c in calls if c["attempts"]
+                                                         and c["attempts"][0]["passed"] is None),
+                            "final_answers": sum(1 for c in calls if c["attempts"]
+                                                 and c["attempts"][0]["passed"] is not None),
+                            "stepped_up": sum(1 for c in calls if len(c["attempts"]) > 1),
+                            "reasons": {r: sum(1 for c in calls for a in c["attempts"][:1] if a["reason"] == r)
+                                        for r in {a["reason"] for c in calls for a in c["attempts"][:1]
+                                                  if a["passed"] is False}}},
             "escalated_attempt_tokens": sum(c.get("escalated_tokens", 0) for c in calls),
             "context_saver": {"enabled": context_saver is not None, "tokens_before": tb,
                               "tokens_after": ta, "tokens_saved": tb - ta, "label": "ESTIMATE"},
