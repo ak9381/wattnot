@@ -96,6 +96,25 @@ def app_running() -> list[str] | None:
     return out
 
 
+def wait_app_stopped(deadline: float, lister=None, poll_s: float = 60, sleep=time.sleep,
+                     now=time.time) -> dict:
+    """Wait until no wattnot-full-stage app is running (or the deadline).
+
+    The run is launched with ``modal run --detach``: if the local client drops (r04e LangChain
+    run, 13:18 IST: "Stopping app - local client disconnected" after missed heartbeats), the
+    container keeps going and still syncs its results to the volume. So a non-zero client exit
+    is not the end of the run: wait for the app to stop, then recover from the volume."""
+    lister = lister or app_running
+    polls = 0
+    while now() < deadline:
+        live = lister()
+        polls += 1
+        if live == []:
+            return {"stopped": True, "polls": polls}
+        sleep(poll_s)
+    return {"stopped": False, "polls": polls, "why": "deadline"}
+
+
 OWNER = Path(os.environ.get("WATTNOT_MODAL_OWNER", "/tmp/wattnot-modal-owner.json"))
 
 
@@ -397,7 +416,7 @@ def main(argv=None) -> int:
         inc = DATA / "_incoming"
         t0, rc = time.time(), 1
         try:
-            rc = subprocess.run(["modal", "run", "modal/full_stage.py::round_", "--round", tag, "--limit",
+            rc = subprocess.run(["modal", "run", "--detach", "modal/full_stage.py::round_", "--round", tag, "--limit",
                                  str(a.limit), "--skip", a.skip, "--out", str(inc), "--events", str(a.events)]
                                 + (["--sets", ",".join(a.sets)] if a.sets else []), cwd=ROOT,
                                 timeout=cap_s + 900).returncode
@@ -405,6 +424,8 @@ def main(argv=None) -> int:
             print(f"[fail] modal run: {type(e).__name__}")
             rc = 1
         finally:
+            if rc != 0:   # detached: a dropped client does not stop the app; wait for it to finish
+                print("[wait] " + json.dumps(wait_app_stopped(t0 + cap_s + 600)), flush=True)
             mins = (time.time() - t0) / 60
             add_spend(tag, mins / 60 * full_stage.GPU_USD_H, mins)
             reserve(tag, None)

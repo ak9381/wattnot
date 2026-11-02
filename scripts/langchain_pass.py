@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import threading
 import time
@@ -102,7 +103,7 @@ def tools():
 
 
 def run_agent(base_url: str, model: str, rows: list[dict], max_steps: int, framework_tag: str,
-              kind: str = "math"):
+              kind: str = "math", on_item=None):
     from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
     from langchain_openai import ChatOpenAI
 
@@ -132,7 +133,39 @@ def run_agent(base_url: str, model: str, rows: list[dict], max_steps: int, frame
         # final text kept (trimmed) so a later CPU test can REPLAY this round's answers
         out.append({"i": i, "steps": steps, "correct": bool(r["ok"](r["item"], text)),
                     "final_text": (text or "")[-1500:]})
+        if on_item:   # per-item progress: a run cut mid-block still returns the scores so far
+            on_item(out[-1])
     return out
+
+
+def progress_writer(out_dir: Path, arm: str):
+    """Append each finished item to <out>/langchain_items.jsonl (flushed + fsynced). The Modal
+    container copies <out> to the results volume every 30 s, so a cut run keeps these lines
+    (r04e LangChain-only run, 13:18 IST: the client disconnect lost all 17 min of answers)."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / "langchain_items.jsonl"
+
+    def write(row: dict):
+        with path.open("a") as f:
+            f.write(json.dumps({"arm": arm, "t": round(time.time(), 1), **row}, default=str) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
+    return write
+
+
+def partial_scores(out_dir: Path) -> dict:
+    """Scores from langchain_items.jsonl (for a cut run): correct / done per arm."""
+    path = Path(out_dir) / "langchain_items.jsonl"
+    arms: dict = {}
+    for ln in path.read_text().splitlines() if path.exists() else []:
+        try:
+            r = json.loads(ln)
+        except ValueError:
+            continue
+        a = arms.setdefault(r["arm"], {"correct": 0, "done": 0})
+        a["done"] += 1
+        a["correct"] += bool(r.get("correct"))
+    return arms
 
 
 def serve(upstream, saver_on: bool, label: str, tiers, final_check: bool = False, max_stepups: int = 1):
@@ -204,7 +237,8 @@ def main(argv=None) -> int:
         try:
             e0, t0 = (nv.mj() if nv else None), time.time()
             per = run_agent(base, model, rows, a.max_steps, f"lc-{arm}",
-                            "code" if a.dataset == "humaneval164" else "math")
+                            "code" if a.dataset == "humaneval164" else "math",
+                            on_item=progress_writer(Path(a.out), arm))
             e1, t1 = (nv.mj() if nv else None), time.time()
             import urllib.request
             with urllib.request.urlopen(base + "/wattnot/receipt", timeout=10) as r:

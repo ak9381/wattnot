@@ -28,7 +28,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path[:0] = [str(ROOT), str(ROOT / "src"), str(ROOT / "scripts" / "e2e")]
+sys.path[:0] = [str(ROOT), str(ROOT / "src"), str(ROOT / "scripts" / "e2e"), str(ROOT / "scripts")]
 import modal_full_round as R  # noqa: E402
 
 FS = R.full_stage
@@ -48,6 +48,9 @@ def plan(only: list[str]) -> dict:
             "meta_usd": 0.0, "label": "ESTIMATE",
             "method": f"r04e MEASURED block wall + server start, x ${usd_h}/h A100-80GB list price; "
                       "worst = container cap"}
+
+
+wait_app_stopped = R.wait_app_stopped   # shared with full rounds (modal_full_round)
 
 
 def attachment(rdir: Path, attach: str, run_id: str, only: list[str], fake: bool, spend: dict) -> Path:
@@ -85,6 +88,21 @@ def attachment(rdir: Path, attach: str, run_id: str, only: list[str], fake: bool
     from wattnot.receipt.certkey import require_cert_key
     sign(path, no_rekor=True, key_path=R.KEY if fake else require_cert_key())
     return path
+
+
+def partial_out(got: Path, dest: Path, attach: str, run_id: str, spend: dict, rc: int) -> int:
+    """A cut run: keep whatever synced (per-item LangChain lines included) and score it, unsigned."""
+    import langchain_pass as LP
+    if not got.exists():
+        return 5
+    shutil.move(str(got), str(dest))
+    scores = LP.partial_scores(dest / "langchain")
+    (dest / "partial.json").write_text(json.dumps(
+        {"run_id": run_id, "attaches_to": attach, "status": "partial", "label": "MEASURED", "client_rc": rc,
+         "scores_so_far": scores, "spend": spend,
+         "note": "Cut before the block finished; scores are items finished so far (not signed)."}, indent=1))
+    print(f"[partial] {json.dumps(scores)} -> {dest}")
+    return 5
 
 
 def main(argv=None) -> int:
@@ -138,12 +156,15 @@ def main(argv=None) -> int:
         events = DATA / "attachments" / a.attach / f"{run_id}.events.jsonl"
         t0, rc = time.time(), 1
         try:
-            rc = subprocess.run(["modal", "run", "modal/full_stage.py::round_", "--round", run_id,
+            rc = subprocess.run(["modal", "run", "--detach", "modal/full_stage.py::round_", "--round", run_id,
                                  "--only", ",".join(a.only), "--out", str(inc), "--events", str(events)],
                                 cwd=ROOT, timeout=FS.BLOCK_CAP_S + 900).returncode
         except Exception as e:  # noqa: BLE001
             print(f"[fail] modal run: {type(e).__name__}")
         finally:
+            if rc != 0:   # client gone or call failed: the detached app may still be working
+                print(f"[wait] client rc={rc}; waiting for the detached app to stop", flush=True)
+                print("[wait] " + json.dumps(wait_app_stopped(t0 + FS.BLOCK_CAP_S + 600)), flush=True)
             mins = (time.time() - t0) / 60
             R.add_spend(run_id, mins / 60 * FS.GPU_USD_H, mins)
             R.reserve(run_id, None)
@@ -158,7 +179,7 @@ def main(argv=None) -> int:
         if rc != 0 or not (inc / run_id / "inner.json").exists():
             if R.recover_partial(run_id, inc) is None:
                 print(f"[fail] modal run rc={rc}")
-                return 5
+                return partial_out(inc / run_id, dest, a.attach, run_id, spend, rc)
         shutil.move(str(inc / run_id), str(dest))
     path = attachment(dest, a.attach, run_id, a.only, a.fake, spend)
     print(f"[attached] {path} -> round {a.attach}")
