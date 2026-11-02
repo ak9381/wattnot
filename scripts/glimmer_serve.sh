@@ -35,6 +35,20 @@ EXTRA=()
 if [ "$PREC" = fp8 ]; then EXTRA+=(--quantization fp8); fi
 if [ -n "$KV_CACHE_DTYPE" ]; then EXTRA+=(--kv-cache-dtype "$KV_CACHE_DTYPE"); fi
 # e.g. GLIMMER_EXTRA_ARGS="--enable-prefix-caching" (prefix_cache_ab.py sets it per arm)
+# Prefix caching: unless the caller already forces it (the A/B arms do), pick it per workload at
+# launch with the same switch as the Modal runner: on for repeated-context workloads (long chats,
+# agent loops), off for short single questions. PREFIX_CACHE_WORKLOAD = prompt file(s), space
+# separated; WATTNOT_PREFIX_CACHE=on|off|auto and WATTNOT_PREFIX_CACHE_THRESHOLD as on Modal.
+# The record goes to $LOG/prefix_cache_switch-$PREC.json for the run record and receipt.
+case " ${GLIMMER_EXTRA_ARGS:-} " in
+  *prefix-caching*) echo "[glimmer] prefix caching forced by caller: ${GLIMMER_EXTRA_ARGS}" ;;
+  *)
+    PC_ARGS=(); for w in ${PREFIX_CACHE_WORKLOAD:-}; do PC_ARGS+=(--workload "$w"); done
+    PC_FLAG="$(PYTHONPATH="$(dirname "$0")/../src${PYTHONPATH:+:$PYTHONPATH}" "${PYTHON:-python3}" -m wattnot.context_saver.prefix_switch \
+      "${PC_ARGS[@]}" --out "$LOG/prefix_cache_switch-$PREC.json")" \
+      || { echo "[glimmer] prefix cache switch failed"; exit 25; }
+    EXTRA+=("$PC_FLAG"); echo "[glimmer] prefix cache switch: $PC_FLAG (record $LOG/prefix_cache_switch-$PREC.json)" ;;
+esac
 # shellcheck disable=SC2206
 if [ -n "${GLIMMER_EXTRA_ARGS:-}" ]; then EXTRA+=(${GLIMMER_EXTRA_ARGS}); fi
 echo "[glimmer] $PREC seqs=$MAX_NUM_SEQS mem_util=$GPU_MEM_UTIL kv_dtype=${KV_CACHE_DTYPE:-auto} limit_mm_image=$LIMIT_MM_IMAGE"

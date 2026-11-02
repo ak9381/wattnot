@@ -90,3 +90,35 @@ def choose(prompts: Iterable, *, mode: str | None = None, threshold: float | Non
             "prompts": len(texts), "workload": workload, "reason": reason,
             "vllm_flag": "--enable-prefix-caching" if enabled else "--no-enable-prefix-caching",
             "label": "MEASURED"}
+
+
+def _load(path: str) -> list:
+    import json
+    from pathlib import Path
+    p = Path(path)
+    if p.suffix == ".jsonl":
+        return [json.loads(l) for l in p.read_text().splitlines() if l.strip()]
+    d = json.loads(p.read_text())
+    return d if isinstance(d, list) else d.get("items") or d.get("prompts") or []
+
+
+def main(argv=None) -> int:
+    """CLI for shell launchers (scripts/glimmer_serve.sh): writes the record, prints the vLLM flag."""
+    import argparse
+    import json
+    from pathlib import Path
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--workload", action="append", default=[], help="jsonl/json prompt file(s)")
+    ap.add_argument("--out", help="write the decision record here (json)")
+    o = ap.parse_args(argv)
+    prompts = [x for w in o.workload for x in _load(w)]
+    d = choose(prompts, workload=",".join(Path(w).name for w in o.workload) or "none given")
+    if o.out:
+        Path(o.out).parent.mkdir(parents=True, exist_ok=True)
+        Path(o.out).write_text(json.dumps(d, indent=1))
+    print(d["vllm_flag"])
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

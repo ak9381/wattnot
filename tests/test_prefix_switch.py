@@ -78,3 +78,41 @@ def test_fake_inner_forced_on_uses_cache(tmp_path):
     S = json.loads((out / "inner.json").read_text())["steps"]
     assert S["prefix_cache_switch"]["enabled"] is True and S["with_server"]["prefix_caching"] is True
     assert S["without_server"]["prefix_caching"] is False
+
+
+def test_cli_writes_record_and_prints_flag(tmp_path, capsys):
+    from wattnot.context_saver.prefix_switch import main
+    out = tmp_path / "logs" / "prefix_cache_switch-bf16.json"
+    assert main(["--workload", str(ROOT / "workloads" / "prefix-cache-v1.jsonl"), "--out", str(out)]) == 0
+    assert capsys.readouterr().out.strip() == "--enable-prefix-caching"
+    assert json.loads(out.read_text())["enabled"] is True
+    assert main(["--workload", str(ROOT / "workloads" / "tiers-v1.jsonl")]) == 0
+    assert capsys.readouterr().out.strip() == "--no-enable-prefix-caching"
+
+
+def test_glimmer_serve_uses_switch_unless_forced():
+    sh = (ROOT / "scripts" / "glimmer_serve.sh").read_text()
+    assert "wattnot.context_saver.prefix_switch" in sh and "PREFIX_CACHE_WORKLOAD" in sh
+    assert "*prefix-caching*)" in sh          # the A/B arms' explicit flag wins
+    import subprocess
+    assert subprocess.run(["bash", "-n", str(ROOT / "scripts" / "glimmer_serve.sh")]).returncode == 0
+
+
+def test_shell_snippet_runs_end_to_end(tmp_path):
+    """Run the switch exactly as glimmer_serve.sh calls it (no docker, no GPU)."""
+    import os, subprocess, sys
+    env = {**os.environ, "PYTHONPATH": str(ROOT / "src")}
+    r = subprocess.run([sys.executable, "-m", "wattnot.context_saver.prefix_switch", "--out",
+                        str(tmp_path / "pcs.json")], env=env, capture_output=True, text=True, check=True)
+    assert r.stdout.strip() == "--no-enable-prefix-caching"   # no workload given -> safe default off
+
+
+def test_block_receipt_records_prefix_choice(tmp_path):
+    from wattnot.longrun import driver as D
+    d = tmp_path / "blk" / "logs"
+    d.mkdir(parents=True)
+    (d / "prefix_cache_switch-bf16.json").write_text(json.dumps({"enabled": False, "mode": "auto"}))
+    fake = type("R", (), {"state": {}, "label": "MOCK", "vm": object()})()
+    D.Driver._receipt(fake, tmp_path / "blk", "t1")
+    rec = json.loads((tmp_path / "blk" / "receipt.json").read_text())
+    assert rec["server_config"]["prefix_cache"]["bf16"]["enabled"] is False
