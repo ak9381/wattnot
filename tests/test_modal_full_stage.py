@@ -25,7 +25,11 @@ def test_inner_fake_runs_every_step(tmp_path):
         assert k in S, k
     assert set(S["blocks"]) == {"agentwaste", "langchain", "eye", "spoken", "think"}
     assert "MEASURED" not in (out / "inner.json").read_text()      # fake never reads as MEASURED
-    assert S["without_server"]["prefix_caching"] is False and S["with_server"]["prefix_caching"] is True
+    # stock stays off; the with arm follows the per-workload switch (short questions -> off)
+    pcs = S["prefix_cache_switch"]
+    assert S["without_server"]["prefix_caching"] is False
+    assert S["with_server"]["prefix_caching"] is pcs["enabled"] is False
+    assert pcs["mode"] == "auto" and pcs["prompts"] == doc["items"]
     assert doc["cap_probe"]["writable"] is False
 
 

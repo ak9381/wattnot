@@ -465,7 +465,8 @@ def post_round(run_dir: Path, round_doc: dict, *, mode: str = "smoke", open_pr: 
                "musecode_pr": res.get("musecode_pr"), "feature_stages": {k: v.get("status") for k, v in res.items()
                                                                           if isinstance(v, dict)}, "round": round_doc.get("round"), "model": round_doc.get("model"),
                "features": (table or feature_table)(), "results": round_doc.get("results"),
-               "spend": round_doc.get("spend"), "provider_usage": round_doc.get("provider_usage"), "labels": {"energy": energy_label, "tokens": "MEASURED"},
+               "spend": round_doc.get("spend"), "provider_usage": round_doc.get("provider_usage"),
+               "server_config": round_doc.get("server_config"), "labels": {"energy": energy_label, "tokens": "MEASURED"},
                "integrity": {"signer": None}}
         body = {k: v for k, v in rec.items() if k != "integrity"}
         rec["sha256"] = hashlib.sha256(json.dumps(body, sort_keys=True, default=str).encode()).hexdigest()

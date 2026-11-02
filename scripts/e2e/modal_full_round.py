@@ -542,7 +542,8 @@ def main(argv=None) -> int:
                        "j_per_correct_saved_pct": {"value": pct(wo["j_per_correct"]["value"],
                                                                 wi["j_per_correct"]["value"]), "label": lab},
                        "per_arm": {"without_wattnot": wo, "with_wattnot": wi}},
-           "levers_detail": {k: S.get(k) for k in ("batch_kv", "fp8", "limits", "blocks")},
+           "levers_detail": {k: S.get(k) for k in ("batch_kv", "fp8", "limits", "blocks", "prefix_cache_switch")},
+           "server_config": {"prefix_cache": S.get("prefix_cache_switch")},
            "cap_probe": inner["cap_probe"], "spark_summary": spark,
            "receipt": str(receipt.relative_to(ROOT)) if receipt else None, "raw_dir": str(rdir.relative_to(ROOT)), "spend": stage}
     if recovered:   # the with arm ran but the tar was lost; results came back off the volume
@@ -564,7 +565,7 @@ def main(argv=None) -> int:
       summary=f"held change {decision['decision']} after checks" + (f" (failed: {', '.join(decision['failed_checks'])})"
                                                                     if decision["failed_checks"] else ""))
     S0 = inner["steps"]
-    change = {"vllm_prefix_caching": True,
+    change = {"vllm_prefix_caching": bool((S0.get("prefix_cache_switch") or {"enabled": True})["enabled"]),
               "quantization": "fp8" if (S0.get("fp8") or {}).get("applied") else "bf16",
               "max_num_seqs": S0["with_server"]["max_num_seqs"], "router": "cheapest-first",
               "thinking_budget": "per-tier, two-phase enforcer",

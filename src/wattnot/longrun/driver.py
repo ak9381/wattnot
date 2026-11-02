@@ -1007,6 +1007,15 @@ class Driver:
         prev = self.state.get("last_receipt")
         body = {"format": "wattnot.block-receipt/1", "block": block_id, "label": self.label,
                 "files": files, "prev": prev}
+        # the launch-time prefix-cache choice (scripts/glimmer_serve.sh), as the Modal runner records it
+        pcs = {}
+        for p in sorted(d.rglob("prefix_cache_switch*.json")):
+            try:
+                pcs[p.stem.replace("prefix_cache_switch", "").lstrip("-") or "server"] = json.loads(p.read_text())
+            except (OSError, ValueError) as e:
+                pcs[p.stem] = {"error": f"unreadable: {type(e).__name__}"}
+        if pcs:
+            body["server_config"] = {"prefix_cache": pcs}
         bad = list(getattr(self.vm, "copy_mismatched", None) or [])
         if bad:
             body["copy_verify"] = {"status": "FLAGGED", "mismatched": bad}
