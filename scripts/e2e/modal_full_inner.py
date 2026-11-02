@@ -634,6 +634,17 @@ def only_blocks(a, out: Path, srv, nv, doc: dict, save) -> int:
     S["only"] = list(a.only)
     rc_all = 0
     try:
+        checks = [k for k in a.only if k in ("eye", "spoken")]
+        if checks:   # eye/hearing get a without-WattNot arm on the stock server first (same as a full round)
+            S["without_server"] = srv.start(fp8=False, prefix=False, max_seqs=64)
+            S["plain_checks"] = {}
+            plain = block_cmds(a.limit, a.fake, out, suffix="_plain")
+            for k in checks:
+                e0 = nv.energy_j()
+                r = sub(plain[k], out / f"{k}_plain", min(block_cap(k, a.limit), max(120.0, left() - 240)))
+                r["energy_j"] = {"value": round(nv.energy_j() - e0, 1), "label": "SIMULATED" if a.fake else "MEASURED"}
+                S["plain_checks"][k] = r
+                save()
         S["with_server"] = srv.start(**ONLY_SERVER)
         blocks = block_cmds(a.limit, a.fake, out)
         S["blocks"] = {}
@@ -656,6 +667,9 @@ def only_blocks(a, out: Path, srv, nv, doc: dict, save) -> int:
             if r["rc"] != 0:
                 fail(k, f"{k} GPU block exited rc={r['rc']} (see {k}/block.log)")
                 rc_all = rc_all or 1
+            save()
+        if checks:
+            energy_arms(out, S)
             save()
     except Exception as e:  # noqa: BLE001 - record, never hang the container
         doc["fatal"] = f"{type(e).__name__}: {e}"[:300]

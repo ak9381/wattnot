@@ -102,3 +102,24 @@ def test_detach_prefetch_and_cap():
     assert B.FS.BLOCK_CAP_S == 90 * 60 and B.plan(["langchain"])["worst_usd"] <= B.FS.ROUND_HARD_USD
     sh = (ROOT / "scripts" / "e2e" / "launch_detached.sh").read_text()
     assert "setsid nohup" in sh
+
+
+def test_plan_counts_both_arms_for_eye_and_hearing():
+    one = B.plan(["langchain"])["expected_usd"]
+    both = B.plan(["eye", "spoken"])
+    assert both["label"] == "ESTIMATE" and both["expected_usd"] < one
+
+
+def test_fake_eye_hearing_block_runs_both_arms(tmp_path, monkeypatch):
+    monkeypatch.setattr(B, "DATA", tmp_path)
+    rdir = tmp_path / "r05"
+    rdir.mkdir()
+    (rdir / "round.json").write_text('{"round": "r05"}')
+    assert B.main(["--attach", "r05", "--only", "eye", "spoken", "--fake", "--run-id", "r05-eh-t"]) == 0
+    att = tmp_path / "fake" / "attachments" / "r05" / "r05-eh-t"
+    inner = json.loads((att / "inner.json").read_text())
+    assert set(inner["steps"]["plain_checks"]) == {"eye", "spoken"}
+    assert set(inner["steps"]["blocks"]) == {"eye", "spoken"}
+    for k, fn in (("eye", "eye_test.json"), ("spoken", "spoken_answer.json")):
+        arms = json.loads(next(att.rglob(f"{k}/{fn}")).read_text())["energy_arms"]
+        assert set(arms) == {"with_wattnot", "without_wattnot"}

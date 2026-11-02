@@ -34,14 +34,19 @@ import modal_full_round as R  # noqa: E402
 FS = R.full_stage
 DATA = R.DATA
 SERVER_START_S = 117.1          # MEASURED r04e without_server start (inner.json)
-BLOCK_EST_S = {"langchain": 2320.1}   # MEASURED r04e langchain wall (both arms); the fix adds <=20 finalize calls
+BLOCK_EST_S = {"langchain": 2320.1,   # MEASURED r04e langchain wall (both arms); the fix adds <=20 finalize calls
+               "eye": 30.6, "spoken": 46.1}   # MEASURED r05 with-arm block walls (run once per arm)
+WITH_SERVER_START_S = 84.0      # MEASURED r05 with_server start (inner.json)
 FINALIZE_EXTRA_S = 20 * 14.4    # ESTIMATE: <=1 finalize call per item at ~14.4 s (r04c thinking-on mean)
 OVERHEAD_S = 6 * 60             # ESTIMATE: image + container start + tar pull + teardown
 
 
 def plan(only: list[str]) -> dict:
+    checks = [k for k in only if k in ("eye", "spoken")]
     run_s = SERVER_START_S + sum(BLOCK_EST_S.get(k, 900) for k in only) + \
         (FINALIZE_EXTRA_S if "langchain" in only else 0) + OVERHEAD_S
+    if checks:   # eye/hearing also run once on the stock server (second server start)
+        run_s += WITH_SERVER_START_S + sum(BLOCK_EST_S[k] for k in checks)
     usd_h = FS.GPU_USD_H
     return {"expected_min": round(run_s / 60, 1), "expected_usd": round(run_s / 3600 * usd_h, 2),
             "worst_min": FS.BLOCK_CAP_S / 60, "worst_usd": round(FS.BLOCK_CAP_S / 3600 * usd_h, 2),
