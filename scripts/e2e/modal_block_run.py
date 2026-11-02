@@ -35,7 +35,10 @@ FS = R.full_stage
 DATA = R.DATA
 SERVER_START_S = 117.1          # MEASURED r04e without_server start (inner.json)
 BLOCK_EST_S = {"langchain": 2320.1,   # MEASURED r04e langchain wall (both arms); the fix adds <=20 finalize calls
-               "eye": 30.6, "spoken": 46.1}   # MEASURED r05 with-arm block walls (run once per arm)
+                "eye": 30.6, "spoken": 46.1,   # MEASURED r05 with-arm block walls (run once per arm)
+               # ablate: 2nd server start 117 s + arm A ~400 s (r05 without 869 s at c4; ESTIMATE ~2x
+               # faster at c32, kept conservative) + B ~200 s + C 199.1 s (r05 with arm, MEASURED)
+               "ablate": 117.1 + 400 + 200 + 199.1}
 WITH_SERVER_START_S = 84.0      # MEASURED r05 with_server start (inner.json)
 FINALIZE_EXTRA_S = 20 * 14.4    # ESTIMATE: <=1 finalize call per item at ~14.4 s (r04c thinking-on mean)
 OVERHEAD_S = 6 * 60             # ESTIMATE: image + container start + tar pull + teardown
@@ -82,7 +85,16 @@ def attachment(rdir: Path, attach: str, run_id: str, only: list[str], fake: bool
                   "arms": {a: {"correct": v.get("correct"), "n": v.get("n"), "gpu_j": v.get("gpu_j"),
                                "j_per_correct": v.get("j_per_correct")}
                            for a, v in ((doc or {}).get("arms") or {}).items()}}
-    ok = all(r["rc"] == 0 and r["quality_held"] for r in res.values())
+    if only == ["ablate"]:
+        ab = inner["steps"].get("ablate") or {}
+        res["ablate"] = {"arms": {t: {k: v.get(k) for k in ("answers", "correct", "accuracy", "energy_j",
+                                                         "j_per_correct", "wall_s", "partial", "server")}
+                                  for t, v in (ab.get("arms") or {}).items()},
+                         "rc": 3 if inner.get("fatal") else 0, "fatal": inner.get("fatal")}
+        ok = len(ab.get("arms") or {}) == 3 and not inner.get("fatal") and \
+            not any(v.get("partial") for v in ab["arms"].values())
+    else:
+        ok = all(r["rc"] == 0 and r["quality_held"] for r in res.values())
     lc = res.get("langchain") or {}
     arms = lc.get("arms") or {}
     summary = (f"LangChain saver {arms.get('saver_on', {}).get('correct')}/{arms.get('saver_on', {}).get('n')} "

@@ -685,6 +685,51 @@ def only_blocks(a, out: Path, srv, nv, doc: dict, save) -> int:
     return 0 if doc.get("fatal") is None else rc_all
 
 
+ABLATE_MAX_S = 15 * 60                  # per-arm time cap for the r05 attribution run
+
+
+def ablate(a, out: Path, srv, nv, doc: dict, save, b) -> int:
+    """r05 attribution run (Akash, 2 Nov 20:10 IST): split the r05 cut into batching, prefix cache
+    and WattNot request levers on the same 100 public items (GSM8K 60 + HumanEval 40).
+      A  stock arm (full thinking, no levers), prefix cache OFF, --max-num-seqs 128, concurrency 32
+      B  WattNot arm (router + thinking budget + levers), prefix cache OFF, 128 seqs, concurrency 32
+      C  WattNot arm, prefix cache ON, 128 seqs, concurrency 32 (same-container rerun of r05's with arm)
+    r05 without (c4, nopc, s64) -> A = batching; A -> B = WattNot levers; B -> C = prefix cache."""
+    S = doc["steps"]
+    S["ablate"] = {"arms": {}, "design": "A stock c32 nopc s128; B with c32 nopc s128; C with c32 pc s128",
+                   "label": "MEASURED"}
+    its = items(b, a.limit, ("gsm8k", "humaneval"))
+    doc["items"] = len(its)
+    try:
+        for srv_cfg, arms in (({"prefix": False}, (("A_stock_c32_nopc", "without_wattnot"),
+                                                    ("B_with_c32_nopc", "with_wattnot"))),
+                              ({"prefix": True}, (("C_with_c32_pc", "with_wattnot"),))):
+            S["ablate"].setdefault("servers", []).append(srv.start(fp8=False, max_seqs=128, **srv_cfg))
+            for tag, arm in arms:
+                for k in LEVERS.stats:
+                    LEVERS.stats[k] = 0
+                EV.emit("run.started", arm=arm, run=f"modal {out.name} {tag}", model=MODEL,
+                        mode="mock" if a.fake else "live")
+                s, _ = run_arm(b, nv, arm, its, 32, out / "raw", tag, ABLATE_MAX_S)
+                s["server"] = dict(srv.cfg)
+                if arm == "with_wattnot":
+                    s["request_levers"] = dict(LEVERS.stats)
+                S["ablate"]["arms"][tag] = s
+                EV.emit("run.finished", arm=arm, summary=f"{tag}: J/correct {s['j_per_correct']['value']}")
+                save()
+    except Exception as e:  # noqa: BLE001
+        doc["fatal"] = f"{type(e).__name__}: {e}"[:300]
+    finally:
+        try:
+            srv.stop()
+        except Exception:  # noqa: BLE001
+            pass
+        doc["ended_utc"] = datetime.now(UTC).isoformat()
+        save()
+        EV.emit("gpu.done", fatal=doc.get("fatal"))
+    return 0 if doc.get("fatal") is None else 3
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, required=True)
@@ -725,6 +770,8 @@ def main(argv=None) -> int:
             txt = txt.replace('"MEASURED"', '"MOCK"')
         (out / "inner.json").write_text(txt)
 
+    if a.only == ["ablate"]:
+        return ablate(a, out, srv, nv, doc, save, b)
     if a.only:
         return only_blocks(a, out, srv, nv, doc, save)
     try:

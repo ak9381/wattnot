@@ -135,3 +135,8 @@ def test_attachment_reads_eye_hearing_arms(tmp_path, monkeypatch):
     assert doc["status"] == "passed"
     for k in ("eye", "spoken"):
         assert set(doc["results"][k]["arms"]) == {"with_wattnot", "without_wattnot"}
+
+
+def test_ablate_plan_is_labelled_and_capped():
+    p = B.plan(["ablate"])
+    assert p["label"] == "ESTIMATE" and p["expected_usd"] < p["worst_usd"] <= B.FS.ROUND_HARD_USD
