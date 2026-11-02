@@ -42,6 +42,7 @@ import os
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "src")]
 
+from wattnot.e2e.latency_guard import allow_step_up  # noqa: E402
 from wattnot.cloud import MODEL  # noqa: E402
 from wattnot.cloud import energy as cloud_energy  # noqa: E402
 from wattnot.cloud.efforts import max_tokens_for  # noqa: E402
@@ -222,7 +223,9 @@ def run_item(b, tr, cap, calls, arm, it):
     reason = None
     # Keep the low answer when it is usable; only step up when it is not, and record WHY
     # (length/format/wrong) - same rule as scripts/e2e/baseten_round.py.
-    if not r["deterministic"]:
+    if not r["deterministic"] and not allow_step_up(r["wall_s"]):
+        r["stepup_skipped"] = "latency_guard"
+    elif not r["deterministic"]:
         reason = step_up_reason(r)
         r2 = attempt(b, tr, cap, calls, arm, "medium", ds, iid, obj)
         r2["wall_s"] = round(r2["wall_s"] + r["wall_s"], 4)

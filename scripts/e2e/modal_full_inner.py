@@ -45,6 +45,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "src")]
 
+from wattnot.e2e.latency_guard import allow_step_up  # noqa: E402
 from wattnot.longrun.grade import grade_one  # noqa: E402
 from wattnot.longrun.tasks import build  # noqa: E402
 from wattnot.longrun.thinking_budget import budget_tokens  # noqa: E402
@@ -432,7 +433,9 @@ def _run_item(b, calls, arm, it):
     first = budget_tokens(obj, 0.5) if ds == "ours" else PUB_BUDGET[ds] // 2
     r = attempt(b, calls, arm, ds, iid, obj, False, first)
     r["tries"] = ["low"]
-    if not r["deterministic"]:
+    if not r["deterministic"] and not allow_step_up(r["wall_s"]):
+        r["stepup_skipped"] = "latency_guard"
+    elif not r["deterministic"]:
         bud = budget_tokens(obj, THINK_X) if ds == "ours" else PUB_BUDGET[ds] * 4
         r2 = attempt(b, calls, arm, ds, iid, obj, True, bud)
         r2["wall_s"] = round(r2["wall_s"] + r["wall_s"], 4)
