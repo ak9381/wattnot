@@ -396,6 +396,19 @@ def check_disk(provider: str) -> dict:
     return _r("disk", "disk below 15 GB", ok, detail, "longrun/driver.py DISK_FREE_FLOOR_GB; this check (box)")
 
 
+def check_meta_key(provider: str) -> dict:
+    """Hearing transcribes live through the Meta API. r04c: the Modal container had no
+    META_API_KEY, so every transcription got HTTP 401. Checks the key exists locally (value never
+    read out) and, for Modal, that full_stage hands it to the container as a Secret."""
+    from wattnot.meta.client import load_key
+    have = bool(load_key())
+    wired = True
+    if provider == "modal":
+        wired = "secrets=_meta_secrets()" in (ROOT / "modal" / "full_stage.py").read_text()
+    return _r("meta_key", "Meta key missing in the container (hearing 401, r04c)", have and wired,
+              f"local key present={have}; container wiring={wired}", "modal/full_stage.py _meta_secrets")
+
+
 def run(provider: str, *, dash: bool = True) -> dict:
     if provider == "combined":
         legs = {p: run(p, dash=dash and p == "baseten") for p in ("h100", "baseten", "modal")}
@@ -409,7 +422,7 @@ def run(provider: str, *, dash: bool = True) -> dict:
         lambda: check_tool_calling(provider), lambda: check_v1(provider), check_reasoning_effort,
         lambda: check_imports(provider), lambda: check_dashboard(dash), check_eye, check_hearing,
         lambda: check_mock(provider), lambda: check_fp8(provider), lambda: check_context_saver(provider),
-        check_certificate, lambda: check_disk(provider),
+        check_certificate, lambda: check_disk(provider), lambda: check_meta_key(provider),
     ]
     for f in fns:
         try:

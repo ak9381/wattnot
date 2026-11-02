@@ -152,3 +152,9 @@ def test_one_command_passes(p):
     rep = L.run(p, dash=False)
     assert rep["ok"], [c for c in rep["checks"] if not c["ok"]]
     assert rep["cost_usd"] == 0.0 and len(rep["checks"]) == 13
+
+
+def test_meta_key_wired_into_modal_container():
+    from wattnot.launch_check import check_meta_key
+    r = check_meta_key("modal")
+    assert "container wiring=True" in r["detail"]

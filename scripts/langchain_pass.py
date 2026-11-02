@@ -171,6 +171,11 @@ def main(argv=None) -> int:
     ap.add_argument("--n", type=int, default=20)
     ap.add_argument("--max-steps", type=int, default=6)
     ap.add_argument("--base-url", help="served model, e.g. http://127.0.0.1:8000/v1 (live)")
+    ap.add_argument("--route", choices=("think-off-first", "think-on"), default="think-off-first",
+                    help="saver-on arm tiers. think-on keeps the guard and saver but answers with "
+                         "thinking on, like the off arm (r04c Modal: think-off-first answered 70 of 71 "
+                         "calls without thinking, 11/20 vs 19/20, because a tool-using agent reply "
+                         "always passes the answer gate)")
     ap.add_argument("--fake", action="store_true", help="local mock upstream, MOCK numbers")
     a = ap.parse_args(argv)
     from wattnot.agentwaste.frameworks import mock_upstream
@@ -183,12 +188,14 @@ def main(argv=None) -> int:
     model = GLIMMER if live else "mock-model"
     tiers = [{"name": "glimmer-think-off", "model": model, "body_extra": {"chat_template_kwargs": {"enable_thinking": False}}},
              {"name": "glimmer-think-on", "model": model, "reasoning": True}]
+    if a.route == "think-on":
+        tiers = tiers[1:]
     rows = items(a.dataset, a.start, a.n)
     nv = Nvml() if live else None
     res = {"spec": "wattnot.langchain-pass/1", "label": label, "dataset": a.dataset,
            "start": a.start, "n": len(rows), "framework": "langchain",
            "routing": "effort routing on one served model (thinking off -> on); model routing "
-                      "needs a second model and is in the multi-provider block", "arms": {}}
+                      "needs a second model and is in the multi-provider block", "route": a.route, "arms": {}}
     for arm, on in (("saver_off", False), ("saver_on", True)):
         base, server = serve(upstream, on, label, tiers)
         try:
