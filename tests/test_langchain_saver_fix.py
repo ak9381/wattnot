@@ -27,7 +27,7 @@ def _convo(task=TASK, turns=6):
 
 
 def test_task_survives_compression():
-    mw = MemoryCompressionMiddleware(summarize=_summ)
+    mw = MemoryCompressionMiddleware(summarize=_summ, min_tokens=0)
     out, st = mw.apply(_convo())
     assert st["applied"]
     users = [m["content"] for m in out if m["role"] == "user"]
@@ -36,14 +36,14 @@ def test_task_survives_compression():
 
 
 def test_no_chunks_leak_between_conversations():
-    mw = MemoryCompressionMiddleware(summarize=lambda t: t)   # verbatim "summaries"
+    mw = MemoryCompressionMiddleware(summarize=lambda t: t, min_tokens=0)   # verbatim "summaries"
     mw.apply(_convo(task="Other item: 999 widgets", turns=6))
     out, _ = mw.apply(_convo())
     assert "999" not in " ".join(str(m["content"]) for m in out)
 
 
 def test_saver_end_to_end_keeps_task():
-    cs = ContextSaver([ToolDedupMiddleware(), MemoryCompressionMiddleware(summarize=_summ)])
+    cs = ContextSaver([ToolDedupMiddleware(), MemoryCompressionMiddleware(summarize=_summ, min_tokens=0)])
     out, _ = cs.transform(_convo(turns=8))
     assert any(m.get("content") == TASK for m in out)
 

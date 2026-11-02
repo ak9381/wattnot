@@ -572,6 +572,8 @@ def sub(argv, out: Path, timeout: float) -> dict:
         rc, tail = p.returncode, (p.stdout + p.stderr)[-3000:]
     except subprocess.TimeoutExpired:
         rc, tail = 124, "timeout"
+    except Exception as e:  # noqa: BLE001 - one block's crash (e.g. LangChain) never stops the round
+        rc, tail = 125, f"{type(e).__name__}: {e}"[:3000]
     out.mkdir(parents=True, exist_ok=True)
     (out / "block.log").write_text(tail)
     return {"rc": rc, "wall_s": round(time.time() - t0, 1), "out": out.name}

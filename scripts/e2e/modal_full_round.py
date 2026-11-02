@@ -283,6 +283,7 @@ def recover_partial(tag: str, inc: Path, fetch=None) -> Path | None:
                 subprocess.run(base, capture_output=True, text=True, timeout=300)
         except Exception:  # noqa: BLE001 - recovery is best-effort; absence is handled by the caller
             pass
+    full_stage.ensure_dir(inc)   # a missing dest makes `modal volume get` write a 0-byte FILE there
     (fetch or _default_fetch)(tag, inc)
     return (inc / tag) if (inc / tag / "inner.json").exists() else None
 
@@ -414,6 +415,7 @@ def main(argv=None) -> int:
         reserve(tag, worst)
         take_owner(tag)
         inc = DATA / "_incoming"
+        full_stage.ensure_dir(inc)
         t0, rc = time.time(), 1
         try:
             rc = subprocess.run(["modal", "run", "--detach", "modal/full_stage.py::round_", "--round", tag, "--limit",
