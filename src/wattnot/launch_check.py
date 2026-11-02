@@ -122,15 +122,18 @@ def check_block_time_baseten() -> dict:
 
 
 def check_block_time_modal() -> dict:
-    """Modal full round: every block is killed at 900 s (modal_full_inner.block_cap)."""
-    cap = 900
+    """Modal full round: each block's kill limit comes from the modal provider profile
+    (modal_full_inner.block_cap); its worst case must fit in HEADROOM of that limit."""
+    from wattnot.providers import PROFILES, block_fit_problems
+    lim = PROFILES["modal"]["block_limits_s"]
     lang = 20 * LANGCHAIN_S_PER_ITEM * 1.3
     agent = 12 * 1 * 2 * CALLS_PER_AGENT_CASE * 768 / TOK_S
-    rows = [f"langchain n20 worst {lang / 60:.0f} min (MEASURED 898 s in r04-try1, 2 s under the cap)",
-            f"agentwaste 12x1x768 worst {agent / 60:.0f} min"]
-    bad = [r for r, w in zip(rows, (lang, agent)) if w > HEADROOM * cap]
+    rows = [f"langchain n20 worst {lang / 60:.0f} min vs kill {lim['langchain'] / 60:.0f} min",
+            f"agentwaste 12x1x768 worst {agent / 60:.0f} min vs kill {lim['agentwaste'] / 60:.0f} min"]
+    bad = [r for r, w, k in zip(rows, (lang, agent), ("langchain", "agentwaste")) if w > HEADROOM * lim[k]]
+    bad += block_fit_problems("modal")
     return _r("block_time", "agentwaste rc 124 at the 900 s cap (r04-try1)", not bad,
-              f"kill {cap / 60:.0f} min per block; " + "; ".join(rows), "scripts/e2e/modal_full_inner.py block_cap")
+              "; ".join(rows + bad[2:] if bad else rows), "src/wattnot/providers.py modal block_limits_s")
 
 
 # ---------------------------------------------------------------- tool calling flags

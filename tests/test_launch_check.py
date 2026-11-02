@@ -40,8 +40,15 @@ def test_baseten_block_time():
     _ok(L.check_block_time_baseten())
 
 
-def test_modal_block_time_flags_the_tight_caps():
-    assert not L.check_block_time_modal()["ok"]   # langchain 898 s vs 900 s cap in r04-try1
+def test_modal_block_time_flags_the_tight_caps(monkeypatch):
+    from wattnot import providers as pv
+    monkeypatch.setitem(pv.PROFILES["modal"], "block_limits_s",
+                        {k: 900 for k in pv.PROFILES["modal"]["block_limits_s"]})
+    assert not L.check_block_time_modal()["ok"]   # the old flat 900 s cap: langchain 898 s in r04-try1
+
+
+def test_modal_block_time_passes_with_profile_limits():
+    assert L.check_block_time_modal()["ok"]
 
 
 # 2 tool calling

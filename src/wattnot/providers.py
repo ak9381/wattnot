@@ -59,8 +59,8 @@ PROFILES: dict[str, dict] = {
         # langchain 898 s MEASURED in r04-try1 with the guard cutting the saver arm short, so ~2x that
         # once every item runs (ESTIMATE); think 446 s MEASURED; eye 32 s, spoken 15 s MEASURED.
         # The container ceiling (225 min, $9.38 worst) is unchanged, so the round still fits $10.
-        "block_worst_s": {"agentwaste": 2580, "langchain": 1720, "think": 450, "eye": 120, "spoken": 120},
-        "block_limits_s": {"agentwaste": 3240, "langchain": 2160, "think": 900, "eye": 300, "spoken": 300},
+        "block_worst_s": {"agentwaste": 2610, "langchain": 1720, "think": 450, "eye": 120, "spoken": 120},
+        "block_limits_s": {"agentwaste": 3300, "langchain": 2160, "think": 900, "eye": 300, "spoken": 300},
     },
     "baseten": {
         "where": "Baseten Model API (hosted)", "model": "meta-models/muse-spark-open",
