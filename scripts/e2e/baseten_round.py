@@ -40,7 +40,11 @@ HARD_CAP_USD = 8.0  # Baseten hard cap per round, cannot be raised from the CLI
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "src")]
 
-from wattnot.e2e.latency_guard import allow_step_up, latency_verdict  # noqa: E402
+from wattnot.e2e.latency_guard import allow_step_up, latency_verdict, rerun_factor  # noqa: E402
+
+# A Baseten step-up reruns the whole item at medium, which takes about as long as the low try
+# (r03 own-set, MEASURED), so only step up when low + rerun fits the latency guard.
+BASETEN_RERUN_FACTOR = 1.0
 from wattnot.cloud import MODEL  # noqa: E402
 from wattnot.cloud import energy as cloud_energy  # noqa: E402
 from wattnot.cloud.efforts import DEFAULT_ALLOWANCE, max_tokens_for  # noqa: E402
@@ -266,7 +270,7 @@ def run_item(b, tr, cap, calls, arm, it):
     # Keep the low answer when it is usable (finished and passed the check). Only step up when it is
     # not, and record WHY (length/format/wrong) so a runaway low cut by the cap is told apart from a
     # genuine low-confidence miss.
-    if not r["deterministic"] and not allow_step_up(r["wall_s"]):
+    if not r["deterministic"] and not allow_step_up(r["wall_s"], rerun=rerun_factor(BASETEN_RERUN_FACTOR)):
         r["stepup_skipped"] = "latency_guard"
     elif not r["deterministic"]:
         reason = step_up_reason(r)

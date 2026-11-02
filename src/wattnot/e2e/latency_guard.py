@@ -25,10 +25,29 @@ def max_low_s() -> float:
         return DEFAULT_MAX_LOW_S
 
 
-def allow_step_up(low_wall_s: float, limit: float | None = None) -> bool:
-    """True when a step-up is allowed after a low attempt that took `low_wall_s` seconds."""
+RERUN_ENV = "WATTNOT_STEPUP_RERUN_FACTOR"
+
+
+def rerun_factor(default: float = 0.0) -> float:
+    raw = os.environ.get(RERUN_ENV, "").strip()
+    try:
+        return max(0.0, float(raw)) if raw else default
+    except ValueError:
+        return default
+
+
+def allow_step_up(low_wall_s: float, limit: float | None = None, rerun: float | None = None) -> bool:
+    """True when a step-up is allowed after a low attempt that took `low_wall_s` seconds.
+
+    `rerun` projects the step-up: the medium rerun is assumed to take `rerun` x the low time, so the
+    step-up is allowed only when low + projected rerun fits the limit. 0 keeps the old rule (low
+    alone vs the limit). Baseten r03 own-set: all 8 step-ups were 10-step agent items whose medium
+    rerun took about as long as the low try (low 16-24 s, rerun 19-36 s), so the old rule let them
+    all through and the with-arm p95 went 23 s -> 42 s.
+    """
     lim = max_low_s() if limit is None else limit
-    return lim <= 0 or float(low_wall_s or 0.0) <= lim
+    f = rerun_factor() if rerun is None else max(0.0, float(rerun))
+    return lim <= 0 or float(low_wall_s or 0.0) * (1.0 + f) <= lim
 
 
 P99_LIMIT = 1.10

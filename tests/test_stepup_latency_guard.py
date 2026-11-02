@@ -117,3 +117,47 @@ def test_p99_check_in_stage_verdict(tmp_path):
     c = m.p99_check({"p99_ok": False}, S, tmp_path)
     assert c["strict_ok"] is False and c["verdict"] in ("pass_with_latency_note", "fail")
     assert m.p99_check({"p99_ok": False}, S, None)["ok"] is False
+
+
+def test_projected_rerun_rule(monkeypatch):
+    monkeypatch.delenv(lg.RERUN_ENV, raising=False)
+    assert lg.allow_step_up(20, limit=30)  # old rule by default
+    assert not lg.allow_step_up(20, limit=30, rerun=1.0)
+    assert lg.allow_step_up(14, limit=30, rerun=1.0)
+    monkeypatch.setenv(lg.RERUN_ENV, "1")
+    assert not lg.allow_step_up(20, limit=30)
+    assert lg.allow_step_up(500, limit=0, rerun=1.0)  # guard off
+
+
+def test_baseten_round_uses_projected_rule(monkeypatch):
+    import importlib.util
+    root = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location("btr", root / "scripts/e2e/baseten_round.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    efforts = []
+
+    def fake_attempt(b, tr, cap, calls, arm, effort, ds, iid, obj):
+        efforts.append(effort)
+        return {"id": iid, "deterministic": False, "wall_s": 20.0, "finish": "stop", "answer": "x"}
+    monkeypatch.setattr(m, "attempt", fake_attempt)
+    monkeypatch.delenv(lg.ENV, raising=False)
+    monkeypatch.delenv(lg.RERUN_ENV, raising=False)
+    r = m.run_item(None, None, None, None, "with_wattnot", ("ours", "complex-00", object()))
+    assert efforts == ["low"] and r["stepup_skipped"] == "latency_guard" and r["wall_s"] == 20.0
+
+
+def test_baseten_r03_replay():
+    d = json.load(open(Path(__file__).resolve().parent / "fixtures/baseten_r03/walls.json"))["items"]
+    wo = [a for a in d if a["arm"] == "without_wattnot"]
+    w = [a for a in d if a["arm"] == "with_wattnot"]
+    stepped = [a for a in w if len(a["tries"]) > 1]
+    # every step-up was a complex agent item and none was fixed by the medium rerun (MEASURED)
+    assert len(stepped) == 8 and all(a["tier"] == "complex" and not a["deterministic"] for a in stepped)
+    assert lg.latency_verdict(wo, w)["verdict"] == "fail"
+    replay = [dict(a, wall_s=a["low_s"], tries=["low"]) if len(a["tries"]) > 1
+              and not lg.allow_step_up(a["low_s"], limit=30, rerun=1.0) else a for a in w]
+    assert all(len(a["tries"]) == 1 for a in replay)
+    assert sum(a["deterministic"] for a in replay) == sum(a["deterministic"] for a in w)  # no accuracy lost
+    v = lg.latency_verdict(wo, replay)
+    assert v["p95_ok"] and v["verdict"] == "pass"
