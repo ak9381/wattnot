@@ -123,3 +123,15 @@ def test_fake_eye_hearing_block_runs_both_arms(tmp_path, monkeypatch):
     for k, fn in (("eye", "eye_test.json"), ("spoken", "spoken_answer.json")):
         arms = json.loads(next(att.rglob(f"{k}/{fn}")).read_text())["energy_arms"]
         assert set(arms) == {"with_wattnot", "without_wattnot"}
+
+
+def test_attachment_reads_eye_hearing_arms(tmp_path, monkeypatch):
+    monkeypatch.setattr(B, "DATA", tmp_path)
+    rdir = tmp_path / "r05"
+    rdir.mkdir()
+    (rdir / "round.json").write_text('{"round": "r05"}')
+    assert B.main(["--attach", "r05", "--only", "eye", "spoken", "--fake", "--run-id", "r05-eh-a"]) == 0
+    doc = json.loads((tmp_path / "fake" / "attachments" / "r05" / "r05-eh-a" / "attachment.json").read_text())
+    assert doc["status"] == "passed"
+    for k in ("eye", "spoken"):
+        assert set(doc["results"][k]["arms"]) == {"with_wattnot", "without_wattnot"}

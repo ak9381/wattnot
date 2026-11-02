@@ -65,8 +65,16 @@ def attachment(rdir: Path, attach: str, run_id: str, only: list[str], fake: bool
     blocks = inner["steps"].get("blocks") or {}
     res = {}
     for k in only:
-        f = {"langchain": rdir / "langchain" / "langchain_pass.json"}.get(k)
+        f = {"langchain": rdir / "langchain" / "langchain_pass.json", "eye": rdir / "eye" / "eye_test.json",
+             "spoken": rdir / "spoken" / "spoken_answer.json"}.get(k)
         doc = json.loads(f.read_text()) if f and f.exists() else None
+        if doc and k in ("eye", "spoken"):   # per-arm results live in energy_arms (both arms, NVML)
+            ea = doc.get("energy_arms") or {}
+            w, o = ea.get("with_wattnot") or {}, ea.get("without_wattnot") or {}
+            doc = {"quality_held": bool(doc.get("passed")) and bool(w) and bool(o)
+                   and (w.get("correct") or 0) >= (o.get("correct") or 0),
+                   "arms": {a: {"correct": v.get("correct"), "n": v.get("items"), "gpu_j": v.get("energy_j"),
+                                "j_per_correct": v.get("j_per_correct")} for a, v in ea.items()}}
         res[k] = {"rc": (blocks.get(k) or {}).get("rc"), "energy_j": (blocks.get(k) or {}).get("energy_j"),
                   "file": f.relative_to(ROOT).as_posix() if f and f.exists() and f.is_relative_to(ROOT) else None,
                   "file_sha256": hashlib.sha256(f.read_bytes()).hexdigest() if f and f.exists() else None,
@@ -79,7 +87,9 @@ def attachment(rdir: Path, attach: str, run_id: str, only: list[str], fake: bool
     arms = lc.get("arms") or {}
     summary = (f"LangChain saver {arms.get('saver_on', {}).get('correct')}/{arms.get('saver_on', {}).get('n')} "
                f"vs {arms.get('saver_off', {}).get('correct')}/{arms.get('saver_off', {}).get('n')} without"
-               if arms else ", ".join(f"{k}: rc {v['rc']}" for k, v in res.items()))
+               if arms else "; ".join(
+                   f"{k}: " + (" vs ".join(f"{a} {v2.get('correct')}/{v2.get('n')} {v2.get('j_per_correct')} J/correct"
+                                          for a, v2 in v["arms"].items()) or f"rc {v['rc']}") for k, v in res.items()))
     doc = {"spec": "wattnot.round-attachment/1", "run_id": run_id, "attaches_to": attach,
            "block": ",".join(only), "status": "passed" if ok else "failed",
            "label": "MOCK" if fake else "MEASURED", "summary": summary,
