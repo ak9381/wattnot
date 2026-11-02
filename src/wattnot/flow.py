@@ -386,7 +386,12 @@ def _flow_receipt(F: Flow, receipt: Path | None) -> str:
 
 
 def _offline_key(out: Path) -> Path:
-    """The local test key if present; on a fresh clone, a throwaway Ed25519 key in out/."""
+    """Live rounds (WATTNOT_REQUIRE_CERT_KEY=1): the WattNot certificate key, fail closed.
+    Otherwise the local test key if present; on a fresh clone, a throwaway Ed25519 key in out/."""
+    import os
+    if os.environ.get("WATTNOT_REQUIRE_CERT_KEY") == "1":
+        from wattnot.receipt.certkey import require_cert_key
+        return require_cert_key()
     if TEST_KEY.exists():
         return TEST_KEY
     from cryptography.hazmat.primitives import serialization

@@ -228,14 +228,19 @@ def build_receipt_for(rdir: Path, round_id: str, inner: dict, fake: bool) -> Pat
                         "batch_kv": S.get("batch_kv", {}).get("kept"),
                         "fp8": {"kept": S.get("fp8", {}).get("kept"), "gate": S.get("fp8", {}).get("gate")},
                         "limits": S.get("limits"),
-                        "note": "Signed locally with the public TEST key; not published to Rekor."}
+                        "note": ("Signed locally with the public TEST key (fake run); not published to Rekor."
+                                 if fake else "Signed locally with the WattNot certificate key "
+                                 "(ed25519-wattnot, verifier/trusted-keys.json); not published to Rekor.")}
     r["integrity"]["sha256"] = canonical_sha256(r)
     assert verify_hash(r)[0], "hash did not re-seal"
     d = rdir / "sweep"
     d.mkdir(exist_ok=True)
     path = d / f"{r['receipt_id']}.json"
     path.write_text(json.dumps(r, indent=2) + "\n")
-    sign(path, no_rekor=True, key_path=KEY)
+    # live rounds sign with the real certificate key and fail closed without it; only fake runs
+    # (tests, samples) use the public test key
+    from wattnot.receipt.certkey import require_cert_key
+    sign(path, no_rekor=True, key_path=KEY if fake else require_cert_key())
     return path
 
 
@@ -476,7 +481,8 @@ def main(argv=None) -> int:
     flow = [sys.executable, "-m", "wattnot.flow", "--out", str(rdir / "flow"), "--gpu-dir", str(rdir),
             "--tag", tag] + (["--live-meta"] if a.live_meta else [])
     fr = subprocess.run(flow, cwd=ROOT, capture_output=True, text=True, timeout=3600,
-                        env={**os.environ, "PYTHONPATH": f"{ROOT}:{ROOT / 'src'}"})
+                        env={**os.environ, "PYTHONPATH": f"{ROOT}:{ROOT / 'src'}",
+                             **({} if a.fake else {"WATTNOT_REQUIRE_CERT_KEY": "1"})})
     (rdir / "flow.log").write_text((fr.stdout + fr.stderr)[-100000:])
     stage["flow_rc"] = fr.returncode
     S = inner["steps"]

@@ -131,7 +131,7 @@ def test_fp8_catches_a_too_short_block(monkeypatch):
     assert not L.check_fp8("h100")["ok"]
 
 
-# 12 certificate, 13 disk
+# 12 certificate, 13 disk, 14 meta_key, 15 cert_key
 def test_certificate_noise_declines_with_exit_0():
     _ok(L.check_certificate())
 
@@ -151,4 +151,17 @@ def test_disk_floor(monkeypatch):
 def test_one_command_passes(p):
     rep = L.run(p, dash=False)
     assert rep["ok"], [c for c in rep["checks"] if not c["ok"]]
-    assert rep["cost_usd"] == 0.0 and len(rep["checks"]) == 13
+    assert rep["cost_usd"] == 0.0 and len(rep["checks"]) == 15
+
+
+def test_meta_key_wired_into_modal_container():
+    from wattnot.launch_check import check_meta_key
+    r = check_meta_key("modal")
+    assert "container wiring=True" in r["detail"]
+
+
+def test_modal_langchain_limit_and_container_fit():
+    from wattnot.providers import PROFILES
+    assert PROFILES["modal"]["block_limits_s"]["langchain"] == 3000
+    r = L.check_block_time_modal()
+    assert r["ok"] and "ceiling 225 min" in r["detail"]

@@ -138,6 +138,18 @@ try:  # pragma: no cover - only with modal installed
              .add_local_dir("data/voice", "/app/data/voice")
              .add_local_file("pyproject.toml", "/app/pyproject.toml"))
 
+    def _meta_secrets() -> list:
+        """The hearing block transcribes live through the Meta API, so the container needs
+        META_API_KEY (r04c: no key in the container -> HTTP 401, hearing_check failed). Read
+        locally at launch (env or the Muse login file), never printed; empty inside the container."""
+        try:
+            sys.path.insert(0, str(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src")))
+            from wattnot.meta.client import load_key
+            key = load_key()
+        except Exception:  # noqa: BLE001
+            key = ""
+        return [modal.Secret.from_dict({"META_API_KEY": key})] if key else []
+
     def _tail_events(path: str, q, stop):
         """Stream the container's events.jsonl to the local graph page through a Modal Queue."""
         import time
@@ -241,13 +253,15 @@ try:  # pragma: no cover - only with modal installed
         return buf.getvalue()
 
     @app.function(image=image, gpu=GPU, timeout=ROUND_CAP_S,
-                  volumes={"/weights": weights, "/results": results}, scaledown_window=10)
+                  volumes={"/weights": weights, "/results": results}, scaledown_window=10,
+                  secrets=_meta_secrets())
     def gpu_round(round_id: str, limit: int = 0, skip: list[str] | None = None, q=None,
                   sets: str = "") -> bytes:
         return _body(round_id, limit, skip or [], ROUND_CAP_S, q, sets)
 
     @app.function(image=image, gpu=GPU, timeout=SMOKE_CAP_S,
-                  volumes={"/weights": weights, "/results": results}, scaledown_window=10)
+                  volumes={"/weights": weights, "/results": results}, scaledown_window=10,
+                  secrets=_meta_secrets())
     def gpu_smoke(round_id: str, limit: int = 1, skip: list[str] | None = None, q=None,
                   sets: str = "") -> bytes:
         return _body(round_id, limit, skip or [], SMOKE_CAP_S, q, sets)
