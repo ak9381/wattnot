@@ -282,6 +282,35 @@ def pr_spec(change: dict, receipt_sha: str = "") -> dict:
                      f"`{f['router']}`; measured saving {change.get('saving_pct')}% J per correct answer.")}
 
 
+RECEIPT_KEY = "receiptSha256"
+
+
+def other_values_unchanged(old: dict | None, new: dict | None, block: str, fields: dict) -> bool:
+    """True when nothing changed except the approved fields of `block` and its receipt hash.
+    The receipt hash changes on every apply, so it is the only extra key allowlisted."""
+    allowed = set(fields) | {RECEIPT_KEY}
+
+    def strip(d):
+        d = dict(d or {})
+        b = d.get(block)
+        if isinstance(b, dict):
+            d[block] = {k: v for k, v in b.items() if k not in allowed}
+            if not d[block]:
+                d.pop(block)
+        elif b is None:
+            d.pop(block, None)
+        return d
+    return strip(old) == strip(new)
+
+
+def pr_body(spec: dict, receipt_sha: str, review: dict) -> str:
+    who = review.get("who") or "Akash K Raju (delegated reviewer)"
+    why = review.get("why")
+    tail = f"; {why}" if why else ""
+    return (f"{spec['body']}\n\nReceipt sha256: `{receipt_sha}`\n\nEvidence review: {review.get('decision')} "
+            f"by {who}{tail}.\n\nEdited by Muse Code (`muse exec`).\n")
+
+
 def musecode_pr(out: Path, change: dict, receipt_sha: str, *, log: EventLog | None, open_pr: bool,
                 review: dict) -> dict:
     """Muse Code edits the demo repo (values.yaml hosted block), opens a PR, we review and merge
@@ -328,7 +357,7 @@ def musecode_pr(out: Path, change: dict, receipt_sha: str, *, log: EventLog | No
         checks.append({"check": "values.yaml parses and hosted block matches the approved change", "ok": ok, "detail": h})
         old = subprocess.run(["git", "show", "HEAD:values.yaml"], cwd=repo, capture_output=True, text=True).stdout
         yo = yaml.safe_load(old)
-        same = {k: v for k, v in (y or {}).items() if k != spec["block"]} == yo
+        same = other_values_unchanged(yo, y, spec["block"], spec["fields"])
         checks.append({"check": "no other values changed", "ok": same, "detail": None})
     except Exception as e:  # noqa: BLE001
         checks.append({"check": "values.yaml parses", "ok": False, "detail": f"{type(e).__name__}"})
@@ -346,8 +375,7 @@ def musecode_pr(out: Path, change: dict, receipt_sha: str, *, log: EventLog | No
         _sh(["git", "commit", "-q", "-m", f"{spec['title']} (receipt {receipt_sha[:8]})"], cwd=repo)
         rc, so, se = _sh(["git", "push", "-q", "-u", "origin", branch], cwd=repo)
         body = out / "pr_body.md"
-        body.write_text(f"{spec['body']}\n\nReceipt sha256: `{receipt_sha}`\n\nEvidence review: {review.get('decision')} "
-                        f"({review.get('why')}).\n\nEdited by Muse Code (`muse exec`).\n")
+        body.write_text(pr_body(spec, receipt_sha, review))
         rc, so, se = _sh(["gh", "pr", "create", "--repo", DEMO_REPO, "--head", branch, "--title",
                           f"WattNot {spec['title']}", "--body-file", str(body)])
         pr_url = so.strip().splitlines()[-1] if rc == 0 and so.strip() else None
