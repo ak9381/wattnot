@@ -52,7 +52,20 @@ def _goto(pg, path):
     # Let async content settle, then nudge a resize so the full-bleed footer refits the final layout.
     pg.wait_for_timeout(300)
     pg.evaluate("window.dispatchEvent(new Event('resize'))")
-    pg.wait_for_timeout(200)
+    # A fixed sleep is not enough on a loaded machine: wait until the footer's box has stopped
+    # moving for three animation frames in a row (or 10 s), so we measure the settled layout.
+    pg.wait_for_function(
+        """() => {
+            const f = document.querySelector('footer.wn-footer');
+            if (!f) return false;
+            const r = f.getBoundingClientRect();
+            const k = [r.left, r.width, r.top].map(v => Math.round(v)).join(',');
+            if (window.__wnFootKey === k) { window.__wnFootSame = (window.__wnFootSame || 0) + 1; }
+            else { window.__wnFootKey = k; window.__wnFootSame = 0; }
+            return window.__wnFootSame >= 3;
+        }""",
+        polling="raf", timeout=10000,
+    )
 
 
 def _rect(pg, sel):
