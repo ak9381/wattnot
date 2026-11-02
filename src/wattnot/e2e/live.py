@@ -77,19 +77,49 @@ def baseten_client(cap, rates, log: EventLog | None, effort: str = "low"):
     return call
 
 
+def _counting(client):
+    """Wrap a Baseten call so the eye/hearing checks record their own billed tokens."""
+    tot = {"prompt": 0, "cached": 0, "completion": 0, "calls": 0}
+
+    def call(*a, **k):
+        d = client(*a, **k)
+        u = (d or {}).get("usage") or {}
+        tot["prompt"] += int(u.get("prompt_tokens", 0) or 0)
+        tot["cached"] += int((u.get("prompt_tokens_details") or {}).get("cached_tokens", 0) or 0)
+        tot["completion"] += int(u.get("completion_tokens", 0) or 0)
+        tot["calls"] += 1
+        return d
+    return call, tot
+
+
+def token_energy(tot: dict, correct: int) -> dict:
+    """Hosted energy ESTIMATE from billed tokens (same J/token as the hosted arms)."""
+    from wattnot.spark_open.hosted_ab import J_PER_TOKEN
+    j = (tot["prompt"] + tot["completion"]) * J_PER_TOKEN
+    return {"tokens": dict(tot), "energy_j": round(j, 1), "energy_wh": round(j / 3600, 4),
+            "j_per_correct": round(j / correct, 1) if correct else None, "label": "ESTIMATE",
+            "method": f"billed prompt+completion tokens x {round(J_PER_TOKEN, 3)} J/token"}
+
+
 def live_eye(out: Path, client) -> dict:
     from wattnot.vision.assets import load_eye_test
     from wattnot.vision.client import ServedVisionAnswerer, answer_eye_test
     from wattnot.vision.gate import vision_gate
     eye = load_eye_test(None, require_files=True)
-    ans = ServedVisionAnswerer(eye.base_dir, client=client)
+    cc, tot = _counting(client)
+    ans = ServedVisionAnswerer(eye.base_dir, client=cc)
     answers, meta = answer_eye_test(eye, ans, concurrency=4)
     r = vision_gate(answers, eye.items, wh_per_image=eye.wh_per_image)
-    doc = {"label": "SYNTHETIC", "answers_label": "MEASURED", "model": "meta-models/muse-spark-open (Baseten)",
+    en = token_energy(tot, sum(1 for x in (r.detail.get("items") or r.detail.get("images") or []) if x.get("ok")))
+    n_img = len(r.detail.get("images") or []) or 1
+    for row in r.detail.get("images") or []:   # replace the flat 0.5 Wh/image placeholder
+        row["energy_wh"] = {"value": round(en["energy_wh"] / n_img, 6), "label": "ESTIMATE",
+                            "method": "billed tokens x J/token / images"}
+    doc = {"energy": en, "label": "SYNTHETIC", "answers_label": "MEASURED", "model": "meta-models/muse-spark-open (Baseten)",
            "passed": r.passed, "reason": r.reason, "run": meta, "detail": r.detail}
     out.mkdir(parents=True, exist_ok=True)
     (out / "eye_test.json").write_text(json.dumps(doc, indent=1, default=str))
-    return {"passed": r.passed, "reason": r.reason}
+    return {"passed": r.passed, "reason": r.reason, "energy": en}
 
 
 def _transcribe(path: Path, *, ledger=None, urlopen=None, timeout_s: float = 120.0) -> tuple[str, float]:
@@ -125,15 +155,17 @@ def live_hearing(out: Path, client, log: EventLog | None) -> dict:
             log.emit("step.finished", node="models", sub="voice", model="muse-voice-transcribe-1.0", status="ok",
                      latency_s=round(time.time() - t0, 3), usd=u, usd_label="ESTIMATE", label="MEASURED",
                      summary=f"transcribed {it.id}")
-    ans = ServedSpokenAnswerer(tr, client=client, context=load_context(None))
+    cc, tot = _counting(client)
+    ans = ServedSpokenAnswerer(tr, client=cc, context=load_context(None))
     answers, meta = answer_spoken_set(sp, ans, concurrency=4)
     r = spoken_answer_gate(answers, sp.items)
-    doc = {"label": "SYNTHETIC", "answers_label": "MEASURED", "transcriber": "muse-voice-transcribe-1.0 (live)",
+    en = token_energy(tot, sum(1 for x in (r.detail.get("items") or r.detail.get("images") or []) if x.get("ok")))
+    doc = {"energy": en, "label": "SYNTHETIC", "answers_label": "MEASURED", "transcriber": "muse-voice-transcribe-1.0 (live)",
            "transcripts": tr, "transcribe_usd": {"value": round(usd, 6), "label": "ESTIMATE"},
            "passed": r.passed, "reason": r.reason, "run": meta, "detail": r.detail}
     out.mkdir(parents=True, exist_ok=True)
     (out / "spoken_answer.json").write_text(json.dumps(doc, indent=1, default=str))
-    return {"passed": r.passed, "reason": r.reason, "transcribe_usd_est": round(usd, 6)}
+    return {"passed": r.passed, "reason": r.reason, "transcribe_usd_est": round(usd, 6), "energy": en}
 
 
 # ---- Spark 4-call trace: four real Muse Spark operator calls ----
