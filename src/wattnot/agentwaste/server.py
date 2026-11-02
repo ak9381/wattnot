@@ -74,6 +74,26 @@ def _only_done_call(response: dict, done_tool: str) -> str | None:
         return str(raw)
 
 
+def _as_answer(response: dict, text: str) -> dict:
+    """The reply rewritten as a plain final answer (no tool calls), same usage."""
+    try:
+        ch = dict((response.get("choices") or [])[0])
+    except (IndexError, AttributeError):
+        return response
+    ch["message"] = {"role": "assistant", "content": text}
+    ch["finish_reason"] = "stop"
+    return {**response, "choices": [ch, *(response.get("choices") or [])[1:]]}
+
+
+def _done_with_answer(tool: dict, done_tool: str) -> dict:
+    fn = (tool or {}).get("function") or {}
+    if fn.get("name") != done_tool:
+        return tool
+    desc = (str(fn.get("description") or "") + " Put your final answer in `reason`, in the format "
+            "the task asks for (for math, end with '#### <number>').")
+    return {**tool, "function": {**fn, "description": desc}}
+
+
 FINALIZE_NOTE = ("Give your final answer now, in the format the task asks for (for math, the "
                  "final number on the last line as '#### <number>'). Do not call any tool.")
 
@@ -268,6 +288,9 @@ def create_app(
             )
         headers = dict(request.headers)
         out_body = verdict.body
+        if final_check and isinstance(out_body, dict) and isinstance(out_body.get("tools"), list):
+            # ask for the answer inside done(reason): a done() with the answer needs no finalize
+            out_body = {**out_body, "tools": [_done_with_answer(t, cfg.done_tool) for t in out_body["tools"]]}
         rec: dict = {"run": run[:16], "framework": detect_framework(request.headers),
                      "tokens_before": None, "tokens_after": None,
                "dropped_fields": dropped, "stream": stream}
@@ -287,25 +310,43 @@ def create_app(
                 text, finish, tool = _answer(response)
                 done_reason = _only_done_call(response, cfg.done_tool) if final_check else None
                 if done_reason is not None:
-                    # `done` ends the run: judge it like a final answer; a shaky one gets one
-                    # finalize call (tools off, format restated) instead of reaching the caller
+                    # `done` ends the run: judge it like a final answer. Tuned after the r04e
+                    # LangChain run (13 of 14 step-ups were done() with no number, each paid a
+                    # finalize on the thinking-on tier): first salvage an answer already in the
+                    # reply or the reason (zero calls); else finalize on the CHEAPEST tier (a
+                    # format fix, not a reasoning fix); the last tier only if that is still shaky,
+                    # and never past the run's step-up cap.
                     k = request.headers.get("x-wattnot-kind") or fc.infer_kind(out_body.get("messages") or [])
-                    ok, why = fc.check(k, done_reason, finish, out_body.get("messages") or [], response)
-                    if not ok:
-                        guard.charge(response)
-                        u = response.get("usage") or {}
-                        esc_tokens += int(u.get("prompt_tokens") or 0) + int(u.get("completion_tokens") or 0)
-                        fin_tier = chain[-1]
+                    msgs = out_body.get("messages") or []
+                    ok, why = fc.check(k, done_reason, finish, msgs, response)
+                    tname = None if tier is None else tier["name"]
+                    if not ok and text and fc.check(k, text, finish, msgs, response)[0]:
+                        response = _as_answer(response, text)
+                        ok, why = True, "answer salvaged from the done reply's text"
+                    if ok:
+                        attempts.append({"tier": tname, "passed": True, "reason": f"done call judged: {why}"})
+                        break
+                    guard.charge(response)
+                    u = response.get("usage") or {}
+                    esc_tokens += int(u.get("prompt_tokens") or 0) + int(u.get("completion_tokens") or 0)
+                    attempts.append({"tier": tname, "passed": False, "reason": f"done call judged: {why}"})
+                    fin_chain = [chain[0]] + ([chain[-1]] if len(chain) > 1 else [])
+                    for j, fin_tier in enumerate(fin_chain):
+                        if j and stepups.get(run, 0) >= max_stepups:
+                            attempts[-1]["reason"] += f"; step-up cap {max_stepups} reached, kept"
+                            break
+                        if j:
+                            stepups[run] = stepups.get(run, 0) + 1
+                            guard.charge(response)
+                            u = response.get("usage") or {}
+                            esc_tokens += int(u.get("prompt_tokens") or 0) + int(u.get("completion_tokens") or 0)
                         response = upstream(tier_body(finalize_body(out_body, cfg.done_tool), fin_tier), headers)
                         text, finish, tool = _answer(response)
-                        ok2, why2 = fc.check(k, text, finish, out_body.get("messages") or [], response)
-                        attempts.append({"tier": None if tier is None else tier["name"], "passed": False,
-                                         "reason": f"done call judged: {why}"})
+                        ok2, why2 = fc.check(k, text, finish, msgs, response)
                         attempts.append({"tier": None if fin_tier is None else fin_tier["name"],
                                          "passed": ok2, "reason": f"finalize: {why2}", "finalize": True})
-                    else:
-                        attempts.append({"tier": None if tier is None else tier["name"],
-                                         "passed": True, "reason": f"done call judged: {why}"})
+                        if ok2:
+                            break
                     break
                 if final_check:
                     if tool:   # mid-task: not a pass, not a fail, never stepped up
