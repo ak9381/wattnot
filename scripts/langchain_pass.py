@@ -220,31 +220,63 @@ def main(argv=None) -> int:
                     help="agent calls under this many tokens pass through untouched (no done tool, "
                          "final check only on an empty reply). Default: the saver's gate (500); 0 = off")
     ap.add_argument("--fake", action="store_true", help="local mock upstream, MOCK numbers")
+    ap.add_argument("--provider", choices=("vllm", "baseten"), default="vllm",
+                    help="vllm = our own GPU server (--base-url); baseten = Baseten Model API on "
+                         "BASETEN_METRICS_KEY, effort routing low -> medium, token energy ESTIMATE")
+    ap.add_argument("--model", default=None,
+                    help="model slug (baseten default meta-models/muse-spark-open)")
+    ap.add_argument("--baseten-url", default=None, help="override Baseten base URL (mock tests)")
+    ap.add_argument("--hard-usd", type=float, default=2.0, help="Baseten spend hard stop")
+    ap.add_argument("--ledger", default=None, help="Baseten spend ledger (default <out>/baseten_spend.ledger.jsonl)")
+    ap.add_argument("--baseline-effort", default="medium",
+                    help="effort for the saver-off arm on Baseten (the plain caller, as in the Baseten round)")
     a = ap.parse_args(argv)
     from wattnot.agentwaste.frameworks import mock_upstream
     from wattnot.agentwaste.server import http_upstream
 
-    live = bool(a.base_url) and not a.fake
-    label = "MEASURED" if live else "MOCK"
-    # http_upstream appends /v1/chat/completions itself; a base URL ending in /v1 gave /v1/v1 (502 on Modal)
-    upstream = http_upstream(upstream_base(a.base_url)) if live else mock_upstream
-    model = GLIMMER if live else "mock-model"
-    tiers = [{"name": "glimmer-think-off", "model": model, "body_extra": {"chat_template_kwargs": {"enable_thinking": False}}},
-             {"name": "glimmer-think-on", "model": model, "reasoning": True}]
+    bt = None
+    if a.provider == "baseten" and not a.fake:
+        from wattnot.agentwaste import baseten_upstream as B
+        from wattnot.cloud import MODEL as SPARK
+        from wattnot.cloud.transport import read_key   # refuses the dead BASETEN_API_KEY
+        model = a.model or SPARK
+        guard = B.make_guard(a.ledger or Path(a.out) / "baseten_spend.ledger.jsonl", a.hard_usd)
+        bt = B.BasetenUpstream(read_key(), guard, model=model, base_url=a.baseten_url,
+                               baseline_effort=a.baseline_effort)
+        upstream, tiers, live = bt, B.tiers(model), True
+        label = "MEASURED" if not a.baseten_url else "MOCK"
+    else:
+        live = bool(a.base_url) and not a.fake
+        label = "MEASURED" if live else "MOCK"
+        # http_upstream appends /v1/chat/completions itself; a base URL ending in /v1 gave /v1/v1 (502 on Modal)
+        upstream = http_upstream(upstream_base(a.base_url)) if live else mock_upstream
+        model = (a.model or GLIMMER) if live else "mock-model"
+        tiers = [{"name": "glimmer-think-off", "model": model, "body_extra": {"chat_template_kwargs": {"enable_thinking": False}}},
+                 {"name": "glimmer-think-on", "model": model, "reasoning": True}]
     rows = items(a.dataset, a.start, a.n)
-    nv = Nvml() if live else None
+    nv = Nvml() if (live and bt is None) else None
     res = {"spec": "wattnot.langchain-pass/1", "label": label, "dataset": a.dataset,
-           "start": a.start, "n": len(rows), "framework": "langchain",
+           "start": a.start, "n": len(rows), "framework": "langchain", "provider": a.provider,
+           "model": model,
            "routing": "effort routing on one served model (thinking off -> on); model routing "
                       "needs a second model and is in the multi-provider block", "route": a.route, "arms": {}}
     for arm, on in (("saver_off", False), ("saver_on", True)):
         base, server = serve(upstream, on, label, tiers, a.route == "final-check", a.max_stepups,
                              a.short_bypass_tokens)
+        if bt is not None:
+            bt.arm = arm
         try:
             e0, t0 = (nv.mj() if nv else None), time.time()
-            per = run_agent(base, model, rows, a.max_steps, f"lc-{arm}",
-                            "code" if a.dataset == "humaneval164" else "math",
-                            on_item=progress_writer(Path(a.out), arm))
+            try:
+                per = run_agent(base, model, rows, a.max_steps, f"lc-{arm}",
+                                "code" if a.dataset == "humaneval164" else "math",
+                                on_item=progress_writer(Path(a.out), arm))
+            except Exception as e:  # noqa: BLE001 - Baseten stop: keep what finished, end cleanly
+                if bt is None or not bt.stopped:
+                    raise
+                per = [json.loads(ln) for ln in (Path(a.out) / "langchain_items.jsonl").read_text().splitlines()
+                       if ln.strip() and json.loads(ln).get("arm") == arm]
+                res["stopped"] = f"{bt.stopped} ({type(e).__name__})"
             e1, t1 = (nv.mj() if nv else None), time.time()
             import urllib.request
             with urllib.request.urlopen(base + "/wattnot/receipt", timeout=10) as r:
@@ -259,6 +291,21 @@ def main(argv=None) -> int:
                             "j_per_correct": (j / ok) if (j and ok) else None,
                             "steps": sum(p["steps"] for p in per), "proxy_receipt": proxy,
                             "per_item": per}
+        if bt is not None:
+            res["arms"][arm]["baseten"] = bt.arm_summary(arm)
+            if bt.stopped:
+                res["stopped"] = bt.stopped
+                break
+    if bt is not None:
+        res["routing"] = "effort routing on Baseten Spark: reasoning_effort low, step-up to medium"
+        res["energy_label"] = "ESTIMATE (from tokens); no GPU energy on a hosted API"
+        res["spend_usd"] = round(bt.guard.committed(), 6)
+        res["hard_usd"] = a.hard_usd
+        if "saver_on" not in res["arms"]:
+            Path(a.out).mkdir(parents=True, exist_ok=True)
+            (Path(a.out) / "langchain_pass.json").write_text(json.dumps(res, indent=2, default=str))
+            print(json.dumps({"stopped": res.get("stopped"), "spend_usd": res["spend_usd"]}))
+            return 6
     off, on = res["arms"]["saver_off"], res["arms"]["saver_on"]
     if off["gpu_j"] is not None and on["gpu_j"] is not None:
         res["gpu_j_saved"] = off["gpu_j"] - on["gpu_j"]
@@ -268,7 +315,8 @@ def main(argv=None) -> int:
     (out / "langchain_pass.json").write_text(json.dumps(res, indent=2, default=str))
     print(json.dumps({k: v for k, v in res.items() if k != "arms"} | {
         a_: {k: v for k, v in d.items() if k in ("correct", "n", "gpu_j", "steps")}
-        for a_, d in res["arms"].items()}, default=str))
+        for a_, d in res["arms"].items()} | ({"baseten": {a_: d.get("baseten") for a_, d in res["arms"].items()}}
+                                            if bt is not None else {}), default=str))
     return 0 if res["quality_held"] else 5   # a saver that loses answers is a failed block
 
 
