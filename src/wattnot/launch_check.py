@@ -2,7 +2,7 @@
 
     python scripts/e2e/preflight.py --provider baseten|h100|modal|combined [--json]
 
-It makes NO network call and starts nothing paid. It reads the repo, imports packages, starts the
+It starts nothing paid; the only network call is the Modal CPU startup probe (modal_deps, cents). It reads the repo, imports packages, starts the
 local dashboard for a few seconds on a spare port, and runs small pure functions. Exit 0 = every
 check for that provider passed; exit 1 = at least one failed (the runner must not launch).
 
@@ -420,9 +420,39 @@ def check_meta_key(provider: str) -> dict:
     have = bool(load_key())
     wired = True
     if provider == "modal":
-        wired = "secrets=_meta_secrets()" in (ROOT / "modal" / "full_stage.py").read_text()
+        src = (ROOT / "modal" / "full_stage.py").read_text()
+        wired = "modal.Secret.from_name(META_SECRET)" in src and src.count("**_deps()") >= 3
     return _r("meta_key", "Meta key missing in the container (hearing 401, r04c)", have and wired,
               f"local key present={have}; container wiring={wired}", "modal/full_stage.py _meta_secrets")
+
+
+def check_modal_deps(provider: str, runner=None, env=None) -> dict:
+    """r04d: gpu_round crash-looped at container startup ("3 dependencies but container got 4
+    object ids"), found only on a paid GPU. This starts a CPU-only container (deps_probe) with
+    gpu_round's exact dependency set and requires it to start and see the Meta key (bool only).
+    Costs cents (ESTIMATE). WATTNOT_NO_REMOTE_PROBE=1 skips it in unit tests only."""
+    import json as _j
+    import subprocess
+    name, what = "modal_deps", "Modal container fails at startup (dependency mismatch, r04d)"
+    if provider != "modal":
+        return _r(name, what, True, f"n/a for {provider}", "modal/full_stage.py deps_probe")
+    env = os.environ if env is None else env
+    if env.get("WATTNOT_NO_REMOTE_PROBE") == "1" and runner is None:
+        return _r(name, what, True, "skipped (unit tests: WATTNOT_NO_REMOTE_PROBE=1)", "modal/full_stage.py deps_probe")
+    if runner is None:
+        def runner():
+            p = subprocess.run(["modal", "run", "modal/full_stage.py::probe_"], cwd=ROOT,
+                               capture_output=True, text=True, timeout=600)
+            return p.returncode, p.stdout + p.stderr
+    rc, out = runner()
+    line = next((x for x in out.splitlines() if x.startswith("[deps_probe] ")), "")
+    try:
+        got = _j.loads(line[len("[deps_probe] "):]) if line else {}
+    except ValueError:
+        got = {}
+    ok = rc == 0 and bool(got) and all(got.values())
+    tail = "" if ok else " | " + " ".join(out.strip().splitlines()[-2:])[:300]
+    return _r(name, what, ok, f"rc={rc} probe={got}{tail}", "modal/full_stage.py deps_probe")
 
 
 def check_cert_key(env=None) -> dict:
@@ -454,6 +484,7 @@ def run(provider: str, *, dash: bool = True) -> dict:
         lambda: check_imports(provider), lambda: check_dashboard(dash), check_eye, check_hearing,
         lambda: check_mock(provider), lambda: check_fp8(provider), lambda: check_context_saver(provider),
         check_certificate, lambda: check_disk(provider), lambda: check_meta_key(provider), check_cert_key,
+        lambda: check_modal_deps(provider),
     ]
     for f in fns:
         try:

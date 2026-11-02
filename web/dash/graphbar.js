@@ -77,6 +77,7 @@ function build() {
       <button type="button" data-pc="pc-fit" title="Fit to screen">Fit</button>
       <button type="button" data-pc="pc-goto" title="Go to the current step">Go to step</button>
       <button type="button" data-pc="pc-follow" class="on" title="Follow the active step">Follow</button>
+      <button type="button" id="gFull" title="Full screen (Esc closes)" aria-label="Open the graph full screen" aria-pressed="false">⛶ Full screen</button>
     </div>
     <div class="gbar-grp seg" role="group" aria-label="Replay arm">
       <button type="button" data-arm="off" aria-pressed="${arm === "off"}">Without WattNot</button>
@@ -186,6 +187,84 @@ function build() {
     if (inf.classList.contains("open")) closeInfo();
     else if (dr.classList.contains("open")) open(false);
   });
+
+  // ---- full screen: the same live graph (#amap), lifted into a full-viewport overlay, so it keeps
+  // updating with no second copy. X or Esc closes. Camera: show the whole flow for ~3 s, glide in to
+  // the active stage, and every 25 s (or on a stage change) glide out to the whole flow for 4 s and
+  // back. A small switch pins "Whole flow" or "Follow stage" instead of Auto.
+  const gFull = $("#gFull", bar);
+  const pc = (id) => document.querySelector("#amap #" + id)?.click();
+  const glide = (fn) => {
+    const inner = document.querySelector("#amap .pc-inner");
+    if (inner) { inner.classList.add("wn-glide"); clearTimeout(glide.t); glide.t = setTimeout(() => inner.classList.remove("wn-glide"), 1300); }
+    fn();
+  };
+  const follow = (on) => {   // the live view re-centres on each event while Follow is on
+    const f = document.querySelector("#amap #pc-follow");
+    if (f && (f.getAttribute("aria-pressed") === "true") !== on) f.click();
+    bar.querySelector('[data-pc="pc-follow"]')?.classList.toggle("on", on);
+  };
+  const whole = () => glide(() => { follow(false); pc("pc-fit"); });
+  const stageIn = () => glide(() => { follow(true); pc("pc-goto"); });
+  const cam = { mode: "auto", timers: [], lastStep: null };
+  const clearCam = () => { cam.timers.forEach(clearTimeout); clearInterval(cam.iv); cam.timers = []; cam.iv = 0; };
+  const later = (fn, ms) => cam.timers.push(setTimeout(fn, ms));
+  const tour = (holdMs) => { whole(); later(() => { if (cam.mode === "auto") stageIn(); }, holdMs); };
+  const startCam = () => {
+    clearCam();
+    if (cam.mode === "whole") return void whole();
+    if (cam.mode === "follow") return void stageIn();
+    tour(3000);
+    cam.iv = setInterval(() => tour(4000), 25000);
+  };
+  const onStep = (e) => {
+    if (!document.body.classList.contains("wn-graph-full") || cam.mode === "whole") return;
+    const step = e?.detail?.node || e?.detail?.step || null;
+    if (step && step !== cam.lastStep) {
+      const first = cam.lastStep === null; cam.lastStep = step;
+      if (!first && cam.mode === "auto") { clearCam(); tour(3000); cam.iv = setInterval(() => tour(4000), 25000); }
+      else if (cam.mode === "follow") stageIn();
+    }
+  };
+  window.addEventListener("wn:archevent", onStep);
+  const camBar = () => {
+    const d = document.createElement("div");
+    d.id = "gFullCam"; d.className = "gfull-cam"; d.setAttribute("role", "group"); d.setAttribute("aria-label", "Camera");
+    d.innerHTML = [["auto", "Auto"], ["whole", "Whole flow"], ["follow", "Follow stage"]].map(([k, t]) =>
+      `<button type="button" data-cam="${k}" aria-pressed="${cam.mode === k}">${t}</button>`).join("");
+    d.querySelectorAll("[data-cam]").forEach((btn) => btn.addEventListener("click", () => {
+      cam.mode = btn.dataset.cam;
+      d.querySelectorAll("[data-cam]").forEach((x) => x.setAttribute("aria-pressed", String(x === btn)));
+      startCam();
+    }));
+    return d;
+  };
+  const setFull = (on) => {
+    document.body.classList.toggle("wn-graph-full", on);
+    gFull.setAttribute("aria-pressed", String(on));
+    let x = document.getElementById("gFullX");
+    if (on && !x) {
+      x = document.createElement("button");
+      x.id = "gFullX"; x.type = "button"; x.className = "gfull-x";
+      x.title = "Close full screen (Esc)"; x.setAttribute("aria-label", "Close full screen");
+      x.textContent = "×";
+      x.addEventListener("click", () => setFull(false));
+      document.body.appendChild(x);
+      document.body.appendChild(camBar());
+      x.focus();
+      requestAnimationFrame(() => requestAnimationFrame(startCam));
+    } else if (!on && x) {
+      x.remove(); document.getElementById("gFullCam")?.remove(); clearCam();
+      gFull.focus();
+      requestAnimationFrame(() => requestAnimationFrame(() => pc("pc-fit")));
+    }
+  };
+  gFull.addEventListener("click", () => setFull(!document.body.classList.contains("wn-graph-full")));
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && document.body.classList.contains("wn-graph-full")) { e.stopImmediatePropagation(); setFull(false); }
+  }, true);
+  window.__wnGraphFull = setFull;
+  window.__wnGraphCam = (m) => document.querySelector(`#gFullCam [data-cam="${m}"]`)?.click();
 
   // ---- live: follow the run's real events so the badges and the drawer show the active item.
   window.addEventListener("wn:archevent", onArchEvent);

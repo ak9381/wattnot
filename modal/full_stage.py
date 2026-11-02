@@ -138,17 +138,20 @@ try:  # pragma: no cover - only with modal installed
              .add_local_dir("data/voice", "/app/data/voice")
              .add_local_file("pyproject.toml", "/app/pyproject.toml"))
 
+    META_SECRET = "wattnot-meta"
+
     def _meta_secrets() -> list:
         """The hearing block transcribes live through the Meta API, so the container needs
-        META_API_KEY (r04c: no key in the container -> HTTP 401, hearing_check failed). Read
-        locally at launch (env or the Muse login file), never printed; empty inside the container."""
-        try:
-            sys.path.insert(0, str(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src")))
-            from wattnot.meta.client import load_key
-            key = load_key()
-        except Exception:  # noqa: BLE001
-            key = ""
-        return [modal.Secret.from_dict({"META_API_KEY": key})] if key else []
+        META_API_KEY (r04c: HTTP 401 without it). A NAMED Modal secret, created once from the local
+        key (never printed): the object list is identical locally and in the container. r04d
+        crash-looped because a from_dict secret was only added when the key was found locally."""
+        return [modal.Secret.from_name(META_SECRET)]
+
+    # one dependency set for every function, so the CPU startup probe hydrates exactly what
+    # gpu_round hydrates (a mismatch fails there, free, not on a paid GPU)
+    def _deps() -> dict:
+        return dict(image=image, volumes={"/weights": weights, "/results": results},
+                    secrets=_meta_secrets())
 
     def _tail_events(path: str, q, stop):
         """Stream the container's events.jsonl to the local graph page through a Modal Queue."""
@@ -252,19 +255,26 @@ try:  # pragma: no cover - only with modal installed
             t.add(out, arcname=round_id)
         return buf.getvalue()
 
-    @app.function(image=image, gpu=GPU, timeout=ROUND_CAP_S,
-                  volumes={"/weights": weights, "/results": results}, scaledown_window=10,
-                  secrets=_meta_secrets())
+    @app.function(gpu=GPU, timeout=ROUND_CAP_S, scaledown_window=10, **_deps())
     def gpu_round(round_id: str, limit: int = 0, skip: list[str] | None = None, q=None,
                   sets: str = "") -> bytes:
         return _body(round_id, limit, skip or [], ROUND_CAP_S, q, sets)
 
-    @app.function(image=image, gpu=GPU, timeout=SMOKE_CAP_S,
-                  volumes={"/weights": weights, "/results": results}, scaledown_window=10,
-                  secrets=_meta_secrets())
+    @app.function(gpu=GPU, timeout=SMOKE_CAP_S, scaledown_window=10, **_deps())
     def gpu_smoke(round_id: str, limit: int = 1, skip: list[str] | None = None, q=None,
                   sets: str = "") -> bytes:
         return _body(round_id, limit, skip or [], SMOKE_CAP_S, q, sets)
+
+    @app.function(timeout=300, scaledown_window=2, **_deps())   # CPU only: no gpu=
+    def deps_probe() -> dict:
+        """Starts a container with gpu_round's exact dependencies; returns names only, no values."""
+        return {"meta_key": bool(os.environ.get("META_API_KEY")),
+                "weights": os.path.isdir("/weights"), "results": os.path.isdir("/results")}
+
+    @app.local_entrypoint()
+    def probe_():
+        import json as _j
+        print("[deps_probe] " + _j.dumps(deps_probe.remote()))
 
     @app.local_entrypoint()
     def round_(round: str, limit: int = 0, skip: str = "", out: str = "data/modal-full-1101/_incoming",
