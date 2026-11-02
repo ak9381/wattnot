@@ -131,7 +131,7 @@ def test_fp8_catches_a_too_short_block(monkeypatch):
     assert not L.check_fp8("h100")["ok"]
 
 
-# 12 certificate, 13 disk, 14 meta_key, 15 cert_key
+# 12 certificate, 13 disk, 14 meta_key, 15 cert_key, 16 modal_deps
 def test_certificate_noise_declines_with_exit_0():
     _ok(L.check_certificate())
 
@@ -151,7 +151,7 @@ def test_disk_floor(monkeypatch):
 def test_one_command_passes(p):
     rep = L.run(p, dash=False)
     assert rep["ok"], [c for c in rep["checks"] if not c["ok"]]
-    assert rep["cost_usd"] == 0.0 and len(rep["checks"]) == 15
+    assert rep["cost_usd"] == 0.0 and len(rep["checks"]) == 16
 
 
 def test_meta_key_wired_into_modal_container():
@@ -165,3 +165,19 @@ def test_modal_langchain_limit_and_container_fit():
     assert PROFILES["modal"]["block_limits_s"]["langchain"] == 3000
     r = L.check_block_time_modal()
     assert r["ok"] and "ceiling 225 min" in r["detail"]
+
+
+def test_modal_deps_probe_parses_and_fails_closed():
+    ok = L.check_modal_deps("modal", runner=lambda: (0, 'x\n[deps_probe] {"meta_key": true, "weights": true, "results": true}\n'))
+    assert ok["ok"]
+    crash = L.check_modal_deps("modal", runner=lambda: (1, "ExecutionError: Function has 3 dependencies but container got 4 object ids."))
+    assert not crash["ok"] and "object ids" in crash["detail"]
+    nokey = L.check_modal_deps("modal", runner=lambda: (0, '[deps_probe] {"meta_key": false, "weights": true, "results": true}'))
+    assert not nokey["ok"]
+    assert L.check_modal_deps("h100")["ok"]
+
+
+def test_full_stage_functions_share_one_dependency_set():
+    src = (L.ROOT / "modal" / "full_stage.py").read_text()
+    assert "Secret.from_dict" not in src and "modal.Secret.from_name(META_SECRET)" in src
+    assert src.count("**_deps()") == 3

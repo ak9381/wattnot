@@ -90,3 +90,30 @@ body.story .wn-legend{ display:none; }
 /* Re-show legend content once it is INSIDE the drawer (overrides the page-level hide above). */
 body.story #legdrawer .wn-legend{ display:block; }
 body.story #legdrawer .lab-legend{ display:inline-flex; }
+
+/* ---- full screen: the live graph (#amap) fills the viewport above everything; same palette */
+body.story.wn-graph-full #stage #amap{ position:fixed !important; inset:0 !important; top:0 !important; left:0 !important;
+  width:100vw !important; height:100vh !important; z-index:1000; background:var(--bg,#0b0d12); }
+body.story.wn-graph-full{ overflow:hidden; }
+.gfull-x{ position:fixed; top:12px; right:14px; z-index:1001; width:36px; height:36px; border-radius:8px;
+  font:20px/1 var(--mono,ui-monospace,monospace); color:var(--ink,#fff); cursor:pointer;
+  background:rgba(8,11,16,.9); border:1px solid var(--hair2,rgba(255,255,255,.16)); }
+.gfull-x:hover,.gfull-x:focus-visible{ border-color:var(--cy,#7fd1c9); color:var(--cy,#7fd1c9); }
+body.story.wn-graph-full #stage{ z-index:1000 !important; transform:none !important; filter:none !important; }
+
+/* ---- marching ants on the live graph: golden and glowing, normal and full-screen views. */
+body.story{ --wn-ant:#FFC940; --wn-ant2:#F5B700; }
+body.story .av-edges .e{ stroke:var(--ln2,#3B3A54); stroke-width:1.8; opacity:1; }
+body.story .av-edges .e.flow{ stroke:var(--wn-ant); stroke-width:3.2; opacity:1; stroke-dasharray:8 7;
+  filter:drop-shadow(0 0 2px var(--wn-ant)) drop-shadow(0 0 8px var(--wn-ant2)); }
+body.story .av-edges .e.done{ stroke:var(--wn-ant2); stroke-width:2.2; opacity:.8;
+  filter:drop-shadow(0 0 3px rgba(245,183,0,.5)); }
+
+/* full-screen camera: smooth glides for the automatic zoom out / in, and the small mode switch */
+body.story.wn-graph-full #amap .pc-inner.wn-glide{ transition:transform 1.2s cubic-bezier(.4,0,.2,1); }
+.gfull-cam{ position:fixed; top:12px; right:60px; z-index:1001; display:flex; gap:2px; padding:2px;
+  background:rgba(8,11,16,.9); border:1px solid var(--hair2,rgba(255,255,255,.16)); border-radius:8px; }
+.gfull-cam button{ font:12px var(--mono,ui-monospace,monospace); color:var(--ink2,#cdd3dd); background:transparent;
+  border:1px solid transparent; border-radius:6px; padding:6px 10px; cursor:pointer; }
+.gfull-cam button[aria-pressed="true"]{ border-color:var(--wn-ant,#FFC940); color:var(--wn-ant,#FFC940); }
+@media (prefers-reduced-motion:reduce){ body.story.wn-graph-full #amap .pc-inner.wn-glide{ transition:none; } }
