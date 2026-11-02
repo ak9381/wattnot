@@ -110,3 +110,37 @@ def test_guard_stop_still_answers():
                json={"model": "m", "messages": loop}).json()
     assert r["choices"][0]["message"]["content"] == "#### 42"
     assert seen and "tools" not in seen[-1]
+
+
+# --- final-check tune (r04e LangChain: 14 step-ups, 17,768 escalated tokens MEASURED) ---
+
+def test_done_finalize_uses_cheapest_tier_first():
+    c, seen = _client(lambda b, n: _done("Calculations completed.") if n == 1 else _ans("#### 42"))
+    _post(c)
+    assert len(seen) == 2 and seen[1]["chat_template_kwargs"] == {"enable_thinking": False}
+
+
+def test_done_answer_salvaged_from_reply_text_no_extra_call():
+    def r(b, n):
+        x = _done("Calculations completed.")
+        x["choices"][0]["message"]["content"] = "17+25=42\n#### 42"
+        return x
+    c, seen = _client(r)
+    out = _post(c).json()
+    assert len(seen) == 1 and out["choices"][0]["message"]["content"].endswith("#### 42")
+
+
+def test_done_tool_asks_for_answer_in_reason():
+    c, seen = _client(lambda b, n: _done("#### 42"))
+    _post(c)
+    d = [t for t in seen[0]["tools"] if t["function"]["name"] == "done"][0]
+    assert "####" in d["function"]["description"]
+
+
+def test_finalize_escalates_once_then_cap():
+    c, seen = _client(lambda b, n: _done("Calculations completed.") if n in (1, 4) else _ans("not sure"))
+    _post(c)
+    assert len(seen) == 3 and seen[2].get("max_completion_tokens")
+    c2, seen2 = c, seen
+    _post(c2)  # same run, cap spent: done + cheap finalize only
+    assert len(seen2) == 5
