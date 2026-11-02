@@ -168,7 +168,8 @@ def partial_scores(out_dir: Path) -> dict:
     return arms
 
 
-def serve(upstream, saver_on: bool, label: str, tiers, final_check: bool = False, max_stepups: int = 1):
+def serve(upstream, saver_on: bool, label: str, tiers, final_check: bool = False, max_stepups: int = 1,
+          short_bypass_tokens: int | None = None):
     import uvicorn
     from wattnot.agentwaste.config import WasteConfig
     from wattnot.agentwaste.frameworks import free_port
@@ -181,7 +182,8 @@ def serve(upstream, saver_on: bool, label: str, tiers, final_check: bool = False
     app = create_app(upstream, WasteConfig() if saver_on else big,
                      context_saver=ContextSaver() if saver_on else None,
                      tiers=tiers if saver_on else None, label=label,
-                     final_check=final_check and saver_on, max_stepups=max_stepups)
+                     final_check=final_check and saver_on, max_stepups=max_stepups,
+                     short_bypass_tokens=short_bypass_tokens)
     port = free_port()
     server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning"))
     threading.Thread(target=server.run, daemon=True).start()
@@ -214,6 +216,9 @@ def main(argv=None) -> int:
                          "(tool-call turns are never a pass) and steps a shaky one up to thinking on "
                          "(r04c Modal: 'gate' passed every tool turn, 70/71 calls thinking off, 11/20 vs 19/20)")
     ap.add_argument("--max-stepups", type=int, default=1, help="step-up cap per agent run (final-check)")
+    ap.add_argument("--short-bypass-tokens", type=int, default=None,
+                    help="agent calls under this many tokens pass through untouched (no done tool, "
+                         "final check only on an empty reply). Default: the saver's gate (500); 0 = off")
     ap.add_argument("--fake", action="store_true", help="local mock upstream, MOCK numbers")
     a = ap.parse_args(argv)
     from wattnot.agentwaste.frameworks import mock_upstream
@@ -233,7 +238,8 @@ def main(argv=None) -> int:
            "routing": "effort routing on one served model (thinking off -> on); model routing "
                       "needs a second model and is in the multi-provider block", "route": a.route, "arms": {}}
     for arm, on in (("saver_off", False), ("saver_on", True)):
-        base, server = serve(upstream, on, label, tiers, a.route == "final-check", a.max_stepups)
+        base, server = serve(upstream, on, label, tiers, a.route == "final-check", a.max_stepups,
+                             a.short_bypass_tokens)
         try:
             e0, t0 = (nv.mj() if nv else None), time.time()
             per = run_agent(base, model, rows, a.max_steps, f"lc-{arm}",
