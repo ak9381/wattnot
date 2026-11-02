@@ -36,6 +36,7 @@ meter. It opens no socket, launches nothing on Modal and spends no money.
 """
 from __future__ import annotations
 import json, sys, time
+from pathlib import Path
 
 MODEL = "meta-models/Muse-Spark-Open-816B-A42B-NVFP4"   # 533 GB (HF API, 29 Oct), Meta official
 SMOKE_MODEL = "meta-llama/Llama-3.2-1B-Instruct"
@@ -390,7 +391,8 @@ def dry_run(out_dir, *, sign_key=None, now=None, guard=None) -> list[dict]:
     return sprint(out_dir=out_dir, make_transport=make_transport,
                   serve=lambda topk, model, t: {"base_url": "", "started": True},
                   wait_serving=lambda h, clk, start, dl: True,
-                  guard=guard or guard_for(B200_8_USD_H), mode="replay-synthetic",
+                  guard=guard or guard_for(B200_8_USD_H, ledger=str(Path(out_dir) / "dry-run.ledger.jsonl")),
+                  mode="replay-synthetic",
                   sign_key=sign_key, now=now, meter=fake_meter(), teardown=lambda: [],
                   make_timer=lambda s, name: kill_timer(s, name, stop=lambda: None,
                                                         exit_=lambda code: None))
