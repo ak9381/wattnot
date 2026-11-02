@@ -53,7 +53,7 @@ def test_memory_compression_summarises_old_turns_and_retrieves():
     for i in range(6):
         msgs.append({"role": "user", "content":
                      f"Turn {i} about the power cap controller and nvml energy sampling detail {i}. "
-                         + "Extra measured context that the summary can drop. " * 3})
+                         + "Extra measured context that the summary can drop. " * 6})
     msgs.append({"role": "user", "content": "Tell me about the power cap controller."})
     out, st = mw.apply(msgs)
     assert st["applied"] and st["summarize_calls"] > 0

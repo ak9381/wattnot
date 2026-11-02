@@ -186,6 +186,7 @@ class MemoryCompressionMiddleware:
     keep_last: int = 4
     min_old: int = 2
     retrieve_k: int = 3
+    verbatim_chars: int = 240
     store: ChunkStore = field(default_factory=ChunkStore)
     name: str = "memory_compression"
     _cache: dict = field(default_factory=dict, repr=False)
@@ -221,16 +222,27 @@ class MemoryCompressionMiddleware:
         for c in self.store._chunks:   # noqa: SLF001 - seeded chunks (tests) only
             store.add(c.text, c.role)
         calls0 = getattr(self.summarize, "calls", 0)
+        verbatim = []   # short turns (tool calls, tool results) are kept word for word, never summarised
         for m in old:
             text = _text(m.get("content")) or _text(m.get("tool_calls") or [{}])
-            if text.strip():
-                key = hashlib.sha256(text.encode()).hexdigest()
-                if key not in self._cache:
-                    self._cache[key] = self.summarize(text)
-                store.add(self._cache[key], str(m.get("role", "")))
+            if not text.strip():
+                continue
+            if len(text) <= self.verbatim_chars:
+                # a summary of "RESULT 37" saves nothing and drops the number the agent needs
+                # (CPU replay of r04e complex items: a lossy summary made the agent re-call tools
+                # until the turn limit)
+                verbatim.append(store.add(text, str(m.get("role", ""))))
+                continue
+            key = hashlib.sha256(text.encode()).hexdigest()
+            if key not in self._cache:
+                self._cache[key] = self.summarize(text)
+            store.add(self._cache[key], str(m.get("role", "")))
         query = next((_text(m.get("content")) for m in reversed(recent)
                       if m.get("role") == "user"), _text(recent[-1].get("content")) if recent else "")
-        picked = store.retrieve(query, self.retrieve_k)
+        got = store.retrieve(query, self.retrieve_k)
+        keep = set(verbatim)
+        picked = [*[c for c in store._chunks if c.ref in keep],   # noqa: SLF001
+                  *[c for c in got if c.ref not in keep]]
         recap_body = "Earlier context (compressed, retrieved by relevance):\n" + \
             "\n".join(f"- [{c.ref}] {c.text}" for c in picked)
         recap = {"role": "system", "content": recap_body}
