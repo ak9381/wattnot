@@ -1,0 +1,134 @@
+{
+  "spec": "wattnot.replay-manifest/1",
+  "name": "baseten-r1",
+  "title": "Baseten round 1 (Muse Spark open, public gsm8k+humaneval): r02 full",
+  "label": "REPLAY",
+  "provider": "baseten",
+  "live_calls": false,
+  "base": {
+    "id": "r02",
+    "ref": "data/baseten-1102-full",
+    "events": [
+      "data/baseten-1102-full/r02/events-without_wattnot.jsonl",
+      "data/baseten-1102-full/r02/events-with_wattnot.jsonl"
+    ],
+    "receipt": "data/baseten-1102-full/r02/features/receipt.json",
+    "commit": "9bc7662247ed0da1c500030eddddd4ba9770701e"
+  },
+  "blocks": [
+    {
+      "id": "r02-langchain",
+      "block": "langchain",
+      "ref": "data/baseten-1102-langchain",
+      "dir": "data/baseten-1102-langchain/r02-langchain",
+      "replaces": [],
+      "summary_from": "langchain_pass.json",
+      "why": "LangChain pass on Baseten (own 0..20), run separately from the r02 round",
+      "commit": "102a9b535471b0d1c4020a58611017a99237a283"
+    }
+  ],
+  "gaps": [
+    "The LangChain block wrote no events file; the replay shows one summary event built from its langchain_pass.json (numbers and label copied as recorded)."
+  ],
+  "receipt_signed": true,
+  "events": 724,
+  "files": [
+    {
+      "file": "blocks/r02-langchain/baseten_spend.ledger.jsonl",
+      "sha256": "25b286dff305e9353f480fbbfe6eb90d114dc2d9865965d436c977a44dd4d656",
+      "bytes": 46020,
+      "source": {
+        "ref": "data/baseten-1102-langchain",
+        "commit": "102a9b535471b0d1c4020a58611017a99237a283",
+        "path": "data/baseten-1102-langchain/r02-langchain/baseten_spend.ledger.jsonl"
+      }
+    },
+    {
+      "file": "blocks/r02-langchain/langchain_items.jsonl",
+      "sha256": "4369149519405a1371ce4cf584995d003eee96b4123b5fe8ccb7d71f21143c6c",
+      "bytes": 12207,
+      "source": {
+        "ref": "data/baseten-1102-langchain",
+        "commit": "102a9b535471b0d1c4020a58611017a99237a283",
+        "path": "data/baseten-1102-langchain/r02-langchain/langchain_items.jsonl"
+      }
+    },
+    {
+      "file": "blocks/r02-langchain/langchain_pass.json",
+      "sha256": "875f18971312e6941ed0027b350f84f4f0641e9c26b7d05f31428a8b7eafa6d3",
+      "bytes": 17649,
+      "source": {
+        "ref": "data/baseten-1102-langchain",
+        "commit": "102a9b535471b0d1c4020a58611017a99237a283",
+        "path": "data/baseten-1102-langchain/r02-langchain/langchain_pass.json"
+      }
+    },
+    {
+      "file": "blocks/r02-langchain/run.log",
+      "sha256": "2e2e75c569fa1c851c2ffbfc95f42666616f0b414773ca2cffd656d8dcbb7929",
+      "bytes": 1178,
+      "source": {
+        "ref": "data/baseten-1102-langchain",
+        "commit": "102a9b535471b0d1c4020a58611017a99237a283",
+        "path": "data/baseten-1102-langchain/r02-langchain/run.log"
+      }
+    },
+    {
+      "file": "blocks/r02-langchain/usage_crosscheck.json",
+      "sha256": "7cf56e23cfe6da1239e37284f7ab61f762695b47e52bdce0f8b246d467598d00",
+      "bytes": 310,
+      "source": {
+        "ref": "data/baseten-1102-langchain",
+        "commit": "102a9b535471b0d1c4020a58611017a99237a283",
+        "path": "data/baseten-1102-langchain/r02-langchain/usage_crosscheck.json"
+      }
+    },
+    {
+      "file": "events.jsonl",
+      "sha256": "7b2795e0b35fb2c96587679dad365a43992e68b9a4baf40a054ce8c710419e5a",
+      "bytes": 290955,
+      "source": null
+    },
+    {
+      "file": "receipt.json",
+      "sha256": "6e886b2eab8bba871e567507cd1db1f8498fb92c37ffebf7dbcff5fb2351a90d",
+      "bytes": 14341,
+      "source": {
+        "ref": "data/baseten-1102-full",
+        "commit": "9bc7662247ed0da1c500030eddddd4ba9770701e",
+        "path": "data/baseten-1102-full/r02/features/receipt.json"
+      }
+    },
+    {
+      "file": "receipt.sigstore.json",
+      "sha256": "0a33e00dc17f427aba41005bb4e5ca08061fb2b8a35a1431c108aa2555f08446",
+      "bytes": 431,
+      "source": {
+        "ref": "data/baseten-1102-full",
+        "commit": "9bc7662247ed0da1c500030eddddd4ba9770701e",
+        "path": "data/baseten-1102-full/r02/features/receipt.sigstore.json"
+      }
+    },
+    {
+      "file": "round_eu_report.html",
+      "sha256": "ebf7d9795bdede26b9fc953e95b933d40af5ea36b678eee0c2c6b7eb5edb18bf",
+      "bytes": 3810,
+      "source": {
+        "ref": "data/baseten-1102-full",
+        "commit": "9bc7662247ed0da1c500030eddddd4ba9770701e",
+        "path": "data/baseten-1102-full/r02/features/eu_report.html"
+      }
+    },
+    {
+      "file": "eu_report.html",
+      "sha256": "ebf7d9795bdede26b9fc953e95b933d40af5ea36b678eee0c2c6b7eb5edb18bf",
+      "bytes": 3810,
+      "source": {
+        "ref": "data/baseten-1102-full",
+        "commit": "9bc7662247ed0da1c500030eddddd4ba9770701e",
+        "path": "data/baseten-1102-full/r02/features/eu_report.html"
+      }
+    }
+  ],
+  "launch": "python -m wattnot.dash --replay-only --events replays/baseten-r1/events.jsonl"
+}
