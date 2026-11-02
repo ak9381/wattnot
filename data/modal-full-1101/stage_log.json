@@ -1,31 +1,31 @@
 [
  {
-  "round": "r04e",
-  "rc": 0,
+  "round": "r04f",
   "pr": null,
   "pr_review": null,
   "clips": [
    {
-    "file": "data/modal-full-1101/clips/modal-r04e-graph-without.mp4",
-    "duration_s": 1408.1,
-    "frames": 14081,
+    "file": "data/modal-full-1101/clips/modal-r04f-graph-without.mp4",
+    "duration_s": 1392.7,
+    "frames": 13927,
     "plays": true,
-    "bytes": 11573858
+    "bytes": 13760388
    },
    {
-    "file": "data/modal-full-1101/clips/modal-r04e-graph-with.mp4",
-    "duration_s": 7194.2,
-    "frames": 71942,
+    "file": "data/modal-full-1101/clips/modal-r04f-graph-with.mp4",
+    "duration_s": 5163.3,
+    "frames": 51633,
     "plays": true,
-    "bytes": 34666838
+    "bytes": 32702690
    },
    {
-    "file": "data/modal-full-1101/clips/modal-r04e-matrix.mp4",
+    "file": "data/modal-full-1101/clips/modal-r04f-matrix.mp4",
     "duration_s": 18.9,
     "frames": 189,
     "plays": true,
-    "bytes": 254752
+    "bytes": 239124
    }
-  ]
+  ],
+  "rc": 0
  }
 ]

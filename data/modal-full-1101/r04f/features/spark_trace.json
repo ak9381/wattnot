@@ -1,0 +1,42 @@
+[
+ {
+  "kind": "spark_call",
+  "step": "probe",
+  "model": "muse-spark-1.3",
+  "status": "empty",
+  "trace_id": "chatcmpl-01a19bed-2233-77a5-9097-075f23d3e2d0",
+  "latency_s": 14.8,
+  "text": "",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "proposal",
+  "model": "muse-spark-1.3",
+  "status": "empty",
+  "trace_id": "chatcmpl-01a19bed-40a5-75a0-b5d3-5161d2088610",
+  "latency_s": 7.816,
+  "text": "",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "gate",
+  "model": "muse-spark-1.3",
+  "status": "empty",
+  "trace_id": "chatcmpl-01a19bed-5eb3-7201-acaa-4118f10a393e",
+  "latency_s": 7.712,
+  "text": "",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "receipt",
+  "model": "muse-spark-1.3",
+  "status": "ok",
+  "trace_id": "chatcmpl-01a19bed-8411-74ea-8136-4e01d21667cf",
+  "latency_s": 9.593,
+  "text": "Accuracy improved from 97.4% to 98.44% with the change. The tradeoff is higher tail latency, with p99 rising from 88.38 to 104.65, but much better efficiency, with joules per correct dropping ~3x from 2017.3 to",
+  "label": "MEASURED"
+ }
+]

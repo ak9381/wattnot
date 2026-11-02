@@ -1,0 +1,384 @@
+{
+  "spec": "wattnot.langchain-pass/1",
+  "label": "MEASURED",
+  "dataset": "own",
+  "start": 0,
+  "n": 20,
+  "framework": "langchain",
+  "routing": "effort routing on one served model (thinking off -> on); model routing needs a second model and is in the multi-provider block",
+  "route": "final-check",
+  "arms": {
+    "saver_off": {
+      "correct": 19,
+      "n": 20,
+      "wall_s": 862.8,
+      "gpu_j": 257473.094,
+      "gpu_j_label": "MEASURED",
+      "j_per_correct": 13551.215473684211,
+      "steps": 62,
+      "proxy_receipt": {
+        "spec": "wattnot.proxy-receipt/1",
+        "label": "MEASURED",
+        "frameworks": [
+          "langchain"
+        ],
+        "framework": "langchain",
+        "calls": 62,
+        "routing": {
+          "enabled": false,
+          "routed_calls": 0,
+          "escalation_rate": null,
+          "small_model_pass_rate": null,
+          "answered_by": {
+            "null": 62
+          }
+        },
+        "gate": {
+          "pass_pct": 100.0,
+          "answered_calls": 62,
+          "stopped_by_guard": 0,
+          "upstream_errors": 0
+        },
+        "final_check": {
+          "enabled": false,
+          "max_stepups_per_run": 1,
+          "tool_turns_not_judged": 0,
+          "final_answers": 62,
+          "stepped_up": 0,
+          "reasons": {}
+        },
+        "escalated_attempt_tokens": 0,
+        "context_saver": {
+          "enabled": false,
+          "tokens_before": 0,
+          "tokens_after": 0,
+          "tokens_saved": 0,
+          "label": "ESTIMATE"
+        },
+        "agent_waste": {
+          "upstream_calls": 62,
+          "prompt_tokens": 39263,
+          "completion_tokens": 23347,
+          "reasoning_tokens": 0,
+          "nudges": 0,
+          "runs": 20,
+          "runs_stopped_early": 0
+        },
+        "billed_upstream_calls": 62,
+        "streamed_calls": 0,
+        "dropped_fields": []
+      },
+      "per_item": [
+        {
+          "i": 0,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Jewelry profit:\n5000 \u00d7 2.5% = 5000 \u00d7 0.025 = 125\n\nElectronic gadgets profit:\n8000 \u00d7 1.2% = 8000 \u00d7 0.012 = 96\n\nMaximum profit is obtained with the jewelry purchase.\n\n#### 125"
+        },
+        {
+          "i": 1,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Total pieces baked = 5 pies \u00d7 8 pieces per pie\n= 40 pieces\n\nPieces remaining = 14\n\nPieces taken by guests = 40 \u2212 14\n= 26\n\n#### 26"
+        },
+        {
+          "i": 2,
+          "steps": 3,
+          "correct": true,
+          "final_text": "There are 60 girls.\n\nBoys = 2 \u00d7 girls = 2 \u00d7 60 = 120\n\nTotal students = girls + boys = 60 + 120 = 180\n\nStudents per teacher = 5\n\nTeachers = total students / 5 = 180 / 5 = 36\n\n#### 36"
+        },
+        {
+          "i": 3,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Budget = \u20ac1500\n\nCost of machine = \u20ac1090\nCost of scanner = \u20ac157\nCost of CD burner = \u20ac74\nCost of printer = \u20ac102\n\nTotal spent = 1090 + 157 + 74 + 102 = 1423\n\nMoney left = 1500 - 1423 = 77\n\n#### 77"
+        },
+        {
+          "i": 4,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Pancho walks 20 miles per day on weekdays.\nWeekdays in a week = 5\nMiles on weekdays = 5 \u00d7 20\n\nWeekend days = 2\nMiles per weekend day = 10\nMiles on weekend = 2 \u00d7 10\n\nTotal miles = 5 \u00d7 20 + 2 \u00d7 10 = 100 + 20\n#### 120"
+        },
+        {
+          "i": 5,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Per duck per week: 3.5 lb\nFor 10 ducks per week: 3.5 \u00d7 10 = 35 lb\nPer day: 35 \u00f7 7 = 5 lb\n\n#### 5"
+        },
+        {
+          "i": 6,
+          "steps": 4,
+          "correct": true,
+          "final_text": "Total cost = $4.20 + $9.45 + $1.35\n= $13.65 + $1.35\n= $15.00\n\nChange = $20.00 - $15.00\n= $5.00\n\n#### 5"
+        },
+        {
+          "i": 7,
+          "steps": 3,
+          "correct": false,
+          "final_text": "Total weight required\n= 80 flagstones \u00d7 75 lb/flagstone\n= 6 000 lb\n\nWeight capacity per truck = 2 000 lb\n\nMaximum whole flagstones per truck\n= floor( 2 000 lb / 75 lb per stone )\n= floor( 26.67 ) = 26 stones\n\nStones that can be moved with 3 trucks\n= 3 \u00d7 26 = 78 stones < 80 stones\n\nHence 3 trucks are insufficient for whole stones.  \n4 trucks are required, 3 trucks carrying 26 stones and the 4th carrying the remaining 2 stones.\n\nBy weight alone 6 000 lb / 2 000 lb per truck = 3.0 trucks.\n\nRealizable whole-stone requirement:\n#### 4"
+        },
+        {
+          "i": 8,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Target = 120 crates\n\nCrates sold:\nTuesday = 15\nWednesday = 12\nThursday = 18\nWeekend = 20\nMonday = 0, Friday = 0 (closed)\n\nTotal sold = 15 + 12 + 18 + 20 = 65\n\nOff target = 120 - 65 = 55 crates short\n\n#### 55"
+        },
+        {
+          "i": 9,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Joey's weekly loss = 8 pounds / 4 weeks\n\nJoey's weekly loss = 2 lb/week\n\nSandy needs 4 weeks to lose Joey's weekly loss:\nSandy's weekly rate = 2 lb / 4 weeks = 0.5 lb/week\n\nWeight Sandy wants to lose = weight Joey loses in 4 weeks = 8 lb\n\nWeeks for Sandy = 8 lb / 0.5 lb/week = 16 weeks\n\n#### 16"
+        },
+        {
+          "i": 10,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Each new record requires 2 old records in trade.\n\nOld records traded = new records received \u00d7 2 old / new\n\nOld records traded = 7 \u00d7 2\n\nOld records traded = 14\n\n#### 14"
+        },
+        {
+          "i": 11,
+          "steps": 4,
+          "correct": true,
+          "final_text": "First two tests total:\n15 + 18 = 33\n\nRequired total is at least 42, so points needed on third test:\n42 - 33 = 9\n\n#### 9"
+        },
+        {
+          "i": 12,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Total socks to wash = 50\n\nSocks washed from pairs:\n10 pairs \u00d7 2 = 20 socks\n\nSocks washed loose:\n15 socks\n\nTotal washed = 20 + 15 = 35\n\nSocks missed = 50 - 35 = 15\n\n#### 15"
+        },
+        {
+          "i": 13,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Each ride costs 2 tickets \u00d7 $2/ticket = $4 per ride.\n\nCost with tickets for 9 rides:\n9 rides \u00d7 $4/ride = $36\n\nCost with bracelet:\n$30\n\nSavings vs tickets:\n$36 \u2212 $30 = $6\n\n#### 6"
+        },
+        {
+          "i": 14,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Let $c$ be the number of carrot sticks.\n\nCookies allowed = $\\frac12 c + 2$\n\nSet equal to 5 cookies:\n\n$\\frac12 c + 2 = 5$\n\n$\\frac12 c = 5 - 2 = 3$\n\n$c = 3 \\times 2 = 6$\n\n#### 6"
+        },
+        {
+          "i": 15,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Total puppies = 27\n\nPomeranians = 2/3 of 27\n= 27 \u00d7 2/3\n= 18\n\nGirl Pomeranians = 1/3 of Pomeranians\n= 18 \u00d7 1/3\n= 6\n\n#### 6"
+        },
+        {
+          "i": 16,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Cost of toy car = $12\nAlready saved = $4\n\nRemaining amount to save = 12 - 4 = $8\n\nDaily saving = $2\n\nNumber of days = 8 / 2 = 4\n\n#### 4"
+        },
+        {
+          "i": 17,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Farm cows = 30\nZoo sheep = 20\n\nZoo cows = 2 \u00d7 farm cows = 2 \u00d7 30\nFarm sheep = \u00bd \u00d7 zoo sheep = \u00bd \u00d7 20\n\nTotal animals = farm cows + farm sheep + zoo cows + zoo sheep\n= 30 + 10 + 60 + 20\n= 120\n\n#### 120"
+        },
+        {
+          "i": 18,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Red tulips: 36 \u00f7 6 = 6 rows\nBlue tulips: 24 \u00f7 8 = 3 rows\n\nTotal rows = 6 + 3 = 9\n\n#### 9"
+        },
+        {
+          "i": 19,
+          "steps": 3,
+          "correct": true,
+          "final_text": "George's candies after eating:\n3 left + 5 eaten = 8 before eating\n\nNick's initial amount:\n2 \u00d7 George's initial amount = 2 \u00d7 8\n\n2 \u00d7 8 = 16\n\n#### 16"
+        }
+      ]
+    },
+    "saver_on": {
+      "correct": 20,
+      "n": 20,
+      "wall_s": 970.87,
+      "gpu_j": 290273.069,
+      "gpu_j_label": "MEASURED",
+      "j_per_correct": 14513.653450000002,
+      "steps": 70,
+      "proxy_receipt": {
+        "spec": "wattnot.proxy-receipt/1",
+        "label": "MEASURED",
+        "frameworks": [
+          "langchain"
+        ],
+        "framework": "langchain",
+        "calls": 70,
+        "routing": {
+          "enabled": true,
+          "routed_calls": 70,
+          "escalation_rate": 0.1714,
+          "small_model_pass_rate": 0.1143,
+          "answered_by": {
+            "glimmer-think-off": 58,
+            "glimmer-think-on": 12
+          }
+        },
+        "gate": {
+          "pass_pct": 97.14,
+          "answered_calls": 70,
+          "stopped_by_guard": 0,
+          "upstream_errors": 0
+        },
+        "final_check": {
+          "enabled": true,
+          "max_stepups_per_run": 1,
+          "tool_turns_not_judged": 50,
+          "final_answers": 20,
+          "stepped_up": 12,
+          "reasons": {
+            "done call judged: malformed: no parseable final number": 11,
+            "disagreement: final number differs from the calculator result": 1
+          }
+        },
+        "escalated_attempt_tokens": 13882,
+        "context_saver": {
+          "enabled": true,
+          "tokens_before": 10123,
+          "tokens_after": 10123,
+          "tokens_saved": 0,
+          "label": "ESTIMATE"
+        },
+        "agent_waste": {
+          "upstream_calls": 82,
+          "prompt_tokens": 55644,
+          "completion_tokens": 26324,
+          "reasoning_tokens": 0,
+          "nudges": 0,
+          "runs": 20,
+          "runs_stopped_early": 0
+        },
+        "billed_upstream_calls": 82,
+        "streamed_calls": 0,
+        "dropped_fields": []
+      },
+      "per_item": [
+        {
+          "i": 0,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Jewelry profit = $5,000 \u00d7 2.5% = $5,000 \u00d7 0.025\nElectronic gadgets profit = $8,000 \u00d7 1.2% = $8,000 \u00d7 0.012\n\n$5,000 \u00d7 0.025 = $125\n$8,000 \u00d7 0.012 = $96\n\nMaximum profit is from jewelry: $125\n\n#### 125"
+        },
+        {
+          "i": 1,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Grandma baked 5 pies \u00d7 8 pieces per pie = 40 pieces total.\nRemaining pieces = 14\nTaken = 40 \u2212 14 = 26\n\n#### 26"
+        },
+        {
+          "i": 2,
+          "steps": 3,
+          "correct": true,
+          "final_text": "There are 60 girls.\nBoys = 2 \u00d7 60 = 120\nTotal students = 60 + 120 = 180\nTeachers = 180 / 5 = 36\n\n#### 36"
+        },
+        {
+          "i": 3,
+          "steps": 6,
+          "correct": true,
+          "final_text": "Budget: \u20ac1500\n\nComputer = \u20ac1090\nScanner = \u20ac157\nCD burner = \u20ac74\nPrinter = \u20ac102\n\nTotal spent = 1090 + 157 + 74 + 102 = \u20ac1423\n\nMoney left = 1500 - 1423 = \u20ac77\n\n#### 77"
+        },
+        {
+          "i": 4,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Pancho walks 20 miles per day on weekdays.\n\nWeekdays = 5 days\nMiles on weekdays = 5 \u00d7 20 = 100 miles\n\nWeekend = 2 days at 10 miles each\nMiles on weekend = 2 \u00d7 10 = 20 miles\n\nTotal miles in a week = 100 + 20 = 120 miles\n\n#### 120"
+        },
+        {
+          "i": 5,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Ducks per week: 3.5 lb\nFlock of ten: 3.5 \u00d7 10 = 35 lb per week\nPer day: 35 \u00f7 7 = 5 lb per day\n\n#### 5"
+        },
+        {
+          "i": 6,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Total cost = 4.20 + 9.45 + 1.35\nTotal cost = 13.65 + 1.35 = 15.00\n\nChange = 20.00 \u2212 15.00\nChange = 5.00\n\n#### 5"
+        },
+        {
+          "i": 7,
+          "steps": 4,
+          "correct": true,
+          "final_text": "Total weight of flagstones = number of flagstones \u00d7 weight per flagstone\n= 80 \u00d7 75 lb\n= 6,000 lb\n\nCapacity per truck = 2,000 lb\n\nNumber of trucks needed = Total weight / Capacity per truck\n= 6,000 / 2,000\n= 3\n\n#### 3"
+        },
+        {
+          "i": 8,
+          "steps": 4,
+          "correct": true,
+          "final_text": "Target = 120 crates\nSold:\nWeekend = 20\nTuesday = 15\nWednesday = 12\nThursday = 18\n\nTotal sold = 20 + 15 + 12 + 18 = 65\n\nOff target = 120 - 65 = 55 crates short\n\n#### 55"
+        },
+        {
+          "i": 9,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Joey's rate = 8 pounds / 4 weeks = 2 pounds/week\nSandy's rate = 2 pounds / 4 weeks = 0.5 pounds/week\n\nTime for Sandy to lose 8 pounds = 8 / 0.5 = 16 weeks\n\n#### 16"
+        },
+        {
+          "i": 10,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Each new record requires 2 old records to be traded.\n\nOld records used = 2 \u00d7 new records received\nOld records used = 2 \u00d7 7 = 14\n\n#### 14"
+        },
+        {
+          "i": 11,
+          "steps": 4,
+          "correct": true,
+          "final_text": "Total needed = 42 points  \nPoints already earned = 15 + 18 = 33 points  \nPoints still needed = 42 \u2212 33 = 9 points\n\n#### 9"
+        },
+        {
+          "i": 12,
+          "steps": 5,
+          "correct": true,
+          "final_text": "There are 50 socks that need washing.\n\nSocks washed in pairs:\n10 pairs = 10 \u00d7 2 = 20 socks\n\nSocks washed loose:\n15 socks\n\nTotal washed = 20 + 15 = 35 socks\n\nSocks missed = 50 \u2212 35 = 15\n\n#### 15"
+        },
+        {
+          "i": 13,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Each ride costs 2 tickets \u00d7 $2/ticket = $4 per ride\nCost with tickets for 9 rides = 9 \u00d7 $4 = $36\nCost with bracelet = $30\n\nSaving = $36 \u2212 $30 = $6\n#### 6"
+        },
+        {
+          "i": 14,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Let cookies = $C$ and carrot sticks = $s$\n\n$C = \\frac{s}{2} + 2$\n\nSet $C = 5$:\n\n$5 = \\frac{s}{2} + 2$\n\n$\\frac{s}{2} = 5 - 2 = 3$\n\n$s = 2 \\times 3 = 6$\n\n#### 6"
+        },
+        {
+          "i": 15,
+          "steps": 4,
+          "correct": true,
+          "final_text": "Two thirds of Jana's puppies are Pomeranians:\n\n27 \u00d7 2/3 = 18 Pomeranians\n\nOne third of the Pomeranians are girls:\n\n18 \u00d7 1/3 = 6 girl Pomeranians\n\n#### 6"
+        },
+        {
+          "i": 16,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Cost of toy car = $12\nAlready saved = $4\nRemaining amount needed = $12 - $4 = $8\n\nDaily saving = $2\n\nNumber of days required = $8 \u00f7 $2 = 4 days\n\n#### 4"
+        },
+        {
+          "i": 17,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Farm cows = 30\nZoo sheep = 20\n\nZoo cows = 2 \u00d7 farm cows = 2 \u00d7 30 = 60\nFarm sheep = \u00bd \u00d7 zoo sheep = \u00bd \u00d7 20 = 10\n\nFarm total = 30 + 10 = 40\nZoo total = 60 + 20 = 80\n\nCombined = 40 + 80 = 120\n#### 120"
+        },
+        {
+          "i": 18,
+          "steps": 3,
+          "correct": true,
+          "final_text": "Red rows = 36 \u00f7 6 = 6 rows\nBlue rows = 24 \u00f7 8 = 3 rows\n\nTotal rows = 6 + 3 = 9\n\n#### 9"
+        },
+        {
+          "i": 19,
+          "steps": 4,
+          "correct": true,
+          "final_text": "George ate 5 candies and now has 3 left, so before eating he had:\n3 + 5 = 8 candies\n\nNick had twice as many candies as George:\n2 \u00d7 8 = 16 candies\n\n#### 16"
+        }
+      ]
+    }
+  },
+  "gpu_j_saved": -32799.975000000006,
+  "quality_held": true
+}

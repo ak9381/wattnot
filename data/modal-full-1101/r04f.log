@@ -1,0 +1,119 @@
+Note that running a local entrypoint in detached mode only keeps the last triggered Modal function alive after the parent process has been killed or disconnected.
+✓ Initialized. View run at 
+https://modal.com/apps/akashkraju218/main/ap-bLy21A62rHPRWlMBfua9RA
+✓ Created objects.
+├── ✓ Uploaded /workspace/wn-main/modal/full_stage.py
+├── ✓ Uploaded pyproject.toml
+├── ✓ Uploaded /workspace/wn-main/data/public_bench
+├── ✓ Uploaded /workspace/wn-main/workloads
+├── ✓ Uploaded /workspace/wn-main/data/voice
+├── ✓ Uploaded /workspace/wn-main/examples
+├── ✓ Uploaded /workspace/wn-main/data/vision
+├── ✓ Uploaded /workspace/wn-main/scripts
+├── ✓ Uploaded /workspace/wn-main/src
+├── ✓ Created Function gpu_round.
+├── ✓ Created Function gpu_smoke.
+├── ✓ Created Function gpu_block.
+└── ✓ Created Function deps_probe.
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+[full_stage] r04f: results in 
+/workspace/wn-main/data/modal-full-1101/_incoming/r04f
+[modal-client] 2026-11-02T10:57:09+0000 Detected 1 background thread(s) [Thread-2] still running after container exit. This will prevent runner shutdown for up to 30 seconds.
+Exception ignored in: <module 'threading' from '/usr/lib/python3.12/threading.py'>
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/threading.py", line 1622, in _shutdown
+    lock.acquire()
+KeyboardInterrupt: 
+Runner terminated.
+✓ App completed. View run at 
+https://modal.com/apps/akashkraju218/main/ap-bLy21A62rHPRWlMBfua9RA
+[teardown] {"stopped": [], "still_running": [], "verified_empty": true, "checked_at": "2026-11-02T10:57:19.179242+00:00"}
+[approval] held change rejected: failed checks ['p99']
+eye test [fake]: all 10 eye-test images read correctly
+spoken answer [fake]: all 20 spoken answers correct
+  energy [MOCK]: 1260.0 J/correct spoken, 210.0 J/token, 42.0 J/correct answer
+hotspot set [live] (SYNTHETIC tests): SAM 3.1 found all 6 SYNTHETIC hotspots
+wonder chart [live · wonder]: next = 300W/locked-mid — No real trials yet, so test the lowest cap with a stable mid clock to probe the best joules-per-correct frontier while preserving quality.
+{"round": "r04f", "acc": [0.974, 0.9844], "j_per_correct": [2017.3, 653.8], "saved_pct": {"value": 67.59, "label": "MEASURED"}, "spark": {"label": "LIVE", "graded": 364, "disagreements": 17, "agreement": 0.9533, "stopped": null}, "flow_rc": 0, "musecode": {"status": "ok", "repo": "ak9381/wattnot-demo-deploy", "started_utc": "2026-11-02T11:03:16.867172+00:00", "steps": [{"step": "muse exec", "rc": 0, "trace": {"session_id": "01a19bed-99cb-7b60-bc37-cd32a516ce62", "trace_id": "01a19bed-9f59-7402-bcd9-8e597eb19125", "input_tokens": 76698, "output_tokens": 931, "total_tokens": 77629, "usage": {"input_tokens": 76698, "output_tokens": 931, "total_tokens": 77629}}, "latency_s": 15.8}], "review_checks": [{"check": "only values.yaml changed", "ok": true, "detail": ["values.yaml"]}, {"check": "values.yaml parses and hosted block matches the approved change", "ok": true, "detail": {"quantization": "bf16", "maxNumSeqs": 128, "prefixCaching": true, "router": "cheapest-first", "receiptSha256": "fe559452461b5d4964c100899f56ec09f6b8a6902a6dd449554ffeb5c6016ec3"}}, {"check": "no other values changed", "ok": false, "detail": null}, {"check": "launch.sh syntax (bash -n)", "ok": true, "detail": null}, {"check": "repo tests/CI", "ok": true, "detail": "repo has no tests or CI workflows; checks above stand in"}, {"check": "change was approved after evidence review", "ok": false, "detail": null}], "pr_url": null, "decision": "not opened (no diff or --open-pr not set)", "clean": false, "files": ["values.yaml"], "ended_utc": "2026-11-02T11:03:37.852989+00:00", "reviewer": "Akash K Raju (delegated reviewer)", "auto_approve": false}, "modal_usd": {"value": 4.2779, "label": "ESTIMATE", "method": "wall minutes incl. image and container start x list price"}, "approval": "rejected", "failed": []}
