@@ -1,4 +1,7 @@
-"""Run the paid Modal stage round by round, with screen clips (one dashboard server at a time).
+"""Launch paid stages detached: scripts/e2e/launch_detached.sh LOG -- python scripts/e2e/modal_stage.py ...
+(setsid nohup; each round's `modal run --detach` survives a dropped client and the runner waits
+for the app to stop before teardown; inner.json and per-item LangChain lines sync every 30 s).
+Run the paid Modal stage round by round, with screen clips (one dashboard server at a time).
 
 For each round: starts the round runner (scripts/e2e/modal_full_round.py) with a live events file
 that the Modal container streams back through a Modal Queue; records /graph.html?live=1 for the
