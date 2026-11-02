@@ -6,7 +6,7 @@ import pytest
 
 from wattnot.e2e import latency_guard as lg
 
-R04F = Path(__file__).resolve().parents[1] / "data/modal-full-1101/r04f/raw"
+R04F = Path(__file__).resolve().parent / "fixtures/r04f"
 
 
 def test_default_and_env(monkeypatch):
