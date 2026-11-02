@@ -656,6 +656,10 @@ def main(argv=None) -> int:
            "cap_probe": nv.cap_probe(), "items": len(its), "slice": len(sl), "steps": {}, "failed": FAILED,
            "deadline_s": a.deadline_s or None}
     S = doc["steps"]
+    # prefix caching is a launch-time choice: on for repeated-context workloads, off for short questions
+    from wattnot.context_saver.prefix_switch import choose as choose_prefix  # noqa: PLC0415
+    S["prefix_cache_switch"] = choose_prefix([it[2] for it in its], workload=",".join(a.sets))
+    pc = S["prefix_cache_switch"]["enabled"]
     from wattnot.e2e.fullstack import gpu_feature_table  # noqa: PLC0415
     EV.path, EV.run, EV.label = out / "events.jsonl", f"modal {out.name}", "MOCK" if a.fake else "MEASURED"
     EV.emit("stage.features", stage="modal", features=gpu_feature_table(), off_nodes=OFF_NODES)
@@ -681,7 +685,7 @@ def main(argv=None) -> int:
         EV.emit("run.finished", arm="without_wattnot")
         EV.emit("run.started", arm="with_wattnot", run=f"modal {out.name} with WattNot", model=MODEL,
                 mode="mock" if a.fake else "live")
-        # 2. batch / KV sweep (WattNot lever) on the slice, BF16 + prefix cache
+        # 2. batch / KV sweep (WattNot lever) on the slice, BF16, prefix cache per the switch
         sweep, sweep_err = [], []
         for conc, seqs in (SMOKE_GRID if a.limit else BATCH_GRID):
             if "batch" in a.skip:
@@ -692,7 +696,7 @@ def main(argv=None) -> int:
             try:
                 EV.emit("step.started", node="optimizer", sub="sweep", summary=f"batch/KV: concurrency {conc}, "
                         f"--max-num-seqs {seqs}")
-                srv.start(fp8=False, prefix=True, max_seqs=seqs)
+                srv.start(fp8=False, prefix=pc, max_seqs=seqs)
                 s, _ = run_arm(b, nv, "with_wattnot", sl, conc, raw, f"batch-c{conc}-s{seqs}", SLICE_MAX_S)
                 EV.emit("step.finished", node="optimizer", sub="sweep", status="ok",
                         summary=f"c{conc}/s{seqs}: J/correct {s['j_per_correct']['value']}")
@@ -711,13 +715,13 @@ def main(argv=None) -> int:
         conc, seqs = best["concurrency"], best["max_num_seqs"]
         # 3. with WattNot: every lever on, BF16 + best seqs (FP8 is a next-round candidate, checked last)
         EV.emit("step.started", node="apply", sub="restart",
-                summary=f"vLLM restart: BF16, prefix cache on, --max-num-seqs {seqs}")
+                summary=f"vLLM restart: BF16, prefix cache {'on' if pc else 'off'}, --max-num-seqs {seqs}")
         try:
-            S["with_server"] = srv.start(fp8=False, prefix=True, max_seqs=seqs)
+            S["with_server"] = srv.start(fp8=False, prefix=pc, max_seqs=seqs)
         except Exception as e:  # noqa: BLE001 - fall back to the stock-safe config once
             fail("kv_batch", f"with-arm server failed ({e}); fell back to BF16, 64 seqs")
             seqs = 64
-            S["with_server"] = srv.start(fp8=False, prefix=True, max_seqs=64)
+            S["with_server"] = srv.start(fp8=False, prefix=pc, max_seqs=64)
         for k in LEVERS.stats:   # count the with arm alone (the sweep slice also used the levers)
             LEVERS.stats[k] = 0
         S["with"], _ = run_arm(b, nv, "with_wattnot", its, conc, raw, "with")
@@ -762,7 +766,7 @@ def main(argv=None) -> int:
         elif "fp8" not in a.skip and sweep:
             bf = next(x for x in sweep if x["concurrency"] == conc)
             try:
-                srv.start(fp8=True, prefix=True, max_seqs=seqs)
+                srv.start(fp8=True, prefix=pc, max_seqs=seqs)
                 s, _ = run_arm(b, nv, "with_wattnot", sl, conc, raw, "fp8", SLICE_MAX_S)
                 if not s["answers"] or s["errors"] >= max(1, s["calls"]) * 0.5:
                     raise RuntimeError(f"FP8 server answered badly ({s['errors']}/{s['calls']} errors)")
