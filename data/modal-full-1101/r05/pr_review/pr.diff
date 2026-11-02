@@ -1,0 +1,14 @@
+diff --git a/values.yaml b/values.yaml
+index 315f0ac..3f6af94 100644
+--- a/values.yaml
++++ b/values.yaml
+@@ -19,7 +19,7 @@ resources:
+ # Applied by WattNot after review (own-GPU e2e stage)
+ selfHosted:
+   quantization: bf16
+-  maxNumSeqs: 64
++  maxNumSeqs: 128
+   prefixCaching: true
+   router: cheapest-first
+-  receiptSha256: 9eb74d573731fc615ae7693b3bf06f6e0f45bdb4d2b69389f8ce1b4ad294297e
++  receiptSha256: c976bf9a181b75fbb1805b31fab9237749221b2583d163cc817a7547ce93a56a

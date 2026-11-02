@@ -1,0 +1,6 @@
+[SIMULATED] FULL: asked 25%, delivered 26.86% in 20s; p99 2463.8 ms vs budget 2709.2 ms; ramp-back 4.0s
+  /workspace/wn-main/data/modal-full-1101/r05/flow/flex/rcpt_flex_9201c41d840e.json  grade SIMULATED  sha256 7b1625c1df35ed66...
+[SIMULATED] PARTIAL: asked 35%, delivered 26.76%, stopped by cap_floor; p99 2459 ms vs budget 2709.2 ms; ramp-back 4.0s
+  /workspace/wn-main/data/modal-full-1101/r05/flow/flex/rcpt_flex_203cc8a96563.json  grade SIMULATED  sha256 20e1f42d62913fc1...
+
+--- stderr ---

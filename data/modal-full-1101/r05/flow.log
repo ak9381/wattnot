@@ -1,0 +1,44 @@
+[flow] preflight        ok     off-gpu-live   MEASURED  
+[flow] nvml-probe       ok     gpu-live       MEASURED  read /workspace/wn-main/data/modal-full-1101/r05/probe
+[flow] spend-guard      ok     off-gpu-live   SIMULATED  
+[flow] gpu-sweep        ok     gpu-live       MEASURED  receipt rcpt_20261101_modal_full_r05.json
+[flow] thinking-budget  ok     gpu-live       MEASURED  read /workspace/wn-main/data/modal-full-1101/r05/think
+[flow] tiers            ok     off-gpu-fake   SIMULATED  
+[flow] eye-gate         ok     gpu-live       MEASURED  read /workspace/wn-main/data/modal-full-1101/r05/eye
+[flow] spoken-gate      ok     gpu-live       MEASURED  read /workspace/wn-main/data/modal-full-1101/r05/spoken
+[flow] phase-clock      ok     off-gpu-fake   SIMULATED  
+[flow] langchain        ok     gpu-live       MEASURED  read /workspace/wn-main/data/modal-full-1101/r05/langchain
+[flow] agentwaste-gpu   ok     gpu-live       MEASURED  read /workspace/wn-main/data/modal-full-1101/r05/agentwaste
+[flow] points           ok     off-gpu-live   MEASURED  2 points
+[flow] knee             ok     off-gpu-live   MEASURED  
+[flow] joule-slo        ok     off-gpu-live   MEASURED  
+[flow] optuna-planner   ok     off-gpu-live   SYNTHETIC  8 trials per arm on the SYNTHETIC objective
+[flow] flex-shed        ok     off-gpu-live   SIMULATED  
+[flow] fleet-impact     ok     off-gpu-live   ESTIMATE  
+[flow] codemode         ok     off-gpu-live   MEASURED  2 candidates run in the sandbox (traces REPLAY of Muse Spark runs)
+[flow] cloud-router     ok     replay         REPLAY  
+[flow] multi-provider   ok     replay         REPLAY  
+[flow] sam-hotspot      ok     off-gpu-live   MEASURED  
+[flow] wonderchart      ok     off-gpu-live   MEASURED  
+[flow] muse-code-pr     ok     replay         REPLAY  no PR opened; replay of the 27 Oct live PR
+[flow] narrator         ok     replay         REPLAY  replay of the 31 Oct narration
+[flow] voice-tuner      ok     off-gpu-live   MEASURED  intent=answer
+approved prop_20261102_135702_58934bf4 by user:flow-operator (hash 086a560fa02d)
+nothing is applied yet. Apply with: wattnot proposals apply prop_20261102_135702_58934bf4
+applied prop_20261102_135702_58934bf4; to undo: wattnot proposals rollback prop_20261102_135702_58934bf4
+rolled back prop_20261102_135702_58934bf4
+audit trail ok: 4 entries, hash chain intact
+[flow] approvals        ok     off-gpu-live   SIMULATED  prop_20261102_135702_58934bf4: approved, applied, rolled back, audit chain verif
+[flow] spark-trace      ok     off-gpu-live   MEASURED  
+[flow] flow-receipt     ok     off-gpu-live   MEASURED  signed offline (27 layers)
+[flow] verify           ok     off-gpu-live   MEASURED  
+[flow] verify-standalone ok     off-gpu-live   MEASURED  
+[flow] label-lint       ok     off-gpu-live   MEASURED  clean
+[flow] eu-report        ok     off-gpu-live   MEASURED  
+[flow] certificate      ok     off-gpu-live   MEASURED  minted WNC-0001 [MEASURED]
+[flow] flow-verify      ok     off-gpu-live   MEASURED  offline:a10d641cddc104d8
+[flow] receipts-api     ok     off-gpu-live   MEASURED  GET /api/runs -> 200
+[flow] dashboard        ok     off-gpu-live   MEASURED  run_20261102_135713_7355bc
+[flow] 36 steps, 0 failed []
+/workspace/wn-main/src/wattnot/flow.py:418: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient

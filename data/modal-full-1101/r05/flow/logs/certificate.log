@@ -1,0 +1,6 @@
+certificate WNC-0001 for receipt rcpt_20261101_modal_full_r05 [ESTIMATE, MEASURED]
+  /workspace/wn-main/data/modal-full-1101/r05/flow/certificate/WNC-0001.json
+  /workspace/wn-main/data/modal-full-1101/r05/flow/certificate/WNC-0001.html
+  register: /workspace/wn-main/data/modal-full-1101/r05/flow/certificate/register.json
+
+--- stderr ---

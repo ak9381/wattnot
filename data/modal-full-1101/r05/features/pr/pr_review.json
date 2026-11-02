@@ -1,0 +1,82 @@
+{
+ "repo": "ak9381/wattnot-demo-deploy",
+ "started_utc": "2026-11-02T13:57:59.735014+00:00",
+ "steps": [
+  {
+   "step": "muse exec",
+   "rc": 0,
+   "trace": {
+    "session_id": "01a19c8d-8517-76d2-a0bf-98ae27064ce1",
+    "trace_id": "01a19c8d-8b88-7a60-bd40-dee21458b077",
+    "input_tokens": 76588,
+    "output_tokens": 747,
+    "total_tokens": 77335,
+    "usage": {
+     "input_tokens": 76588,
+     "output_tokens": 747,
+     "total_tokens": 77335
+    }
+   },
+   "latency_s": 15.6
+  },
+  {
+   "step": "gh pr create",
+   "rc": 0,
+   "url": "https://github.com/ak9381/wattnot-demo-deploy/pull/3",
+   "err": null
+  },
+  {
+   "step": "gh pr comment",
+   "rc": 0
+  }
+ ],
+ "review_checks": [
+  {
+   "check": "only values.yaml changed",
+   "ok": true,
+   "detail": [
+    "values.yaml"
+   ]
+  },
+  {
+   "check": "values.yaml parses and hosted block matches the approved change",
+   "ok": true,
+   "detail": {
+    "quantization": "bf16",
+    "maxNumSeqs": 128,
+    "prefixCaching": true,
+    "router": "cheapest-first",
+    "receiptSha256": "c976bf9a181b75fbb1805b31fab9237749221b2583d163cc817a7547ce93a56a"
+   }
+  },
+  {
+   "check": "no other values changed",
+   "ok": false,
+   "detail": null
+  },
+  {
+   "check": "launch.sh syntax (bash -n)",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "check": "repo tests/CI",
+   "ok": true,
+   "detail": "repo has no tests or CI workflows; checks above stand in"
+  },
+  {
+   "check": "change was approved after evidence review",
+   "ok": true,
+   "detail": null
+  }
+ ],
+ "pr_url": "https://github.com/ak9381/wattnot-demo-deploy/pull/3",
+ "decision": "left open with review comment",
+ "clean": false,
+ "files": [
+  "values.yaml"
+ ],
+ "ended_utc": "2026-11-02T13:58:30.689328+00:00",
+ "reviewer": "Akash K Raju (delegated reviewer)",
+ "auto_approve": false
+}
