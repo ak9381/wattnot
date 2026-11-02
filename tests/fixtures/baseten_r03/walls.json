@@ -1,0 +1,2130 @@
+{
+"source": "data/baseten-1102-own/r03 @ 0be15e3",
+"label": "MEASURED",
+"items": [
+{
+"id": "easy-00",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 1.7624,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-01",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 2.5598,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-02",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 2.1898,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-03",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 2.7813,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-04",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 4.9985,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-05",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 4.0352,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-06",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 21.102,
+"tries": [
+"medium"
+],
+"deterministic": false
+},
+{
+"id": "easy-07",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 3.3089,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-08",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 2.0578,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-09",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 1.8586,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-10",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 2.6475,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-11",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 1.9199,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-12",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 1.8749,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-13",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 20.2245,
+"tries": [
+"medium"
+],
+"deterministic": false
+},
+{
+"id": "easy-14",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 2.2333,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-15",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 2.3422,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-16",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 1.7615,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-17",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 2.6785,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-18",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 2.2162,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-19",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 1.8938,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-20",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 2.8975,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-21",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 1.7929,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-22",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 2.0036,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-23",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 3.0101,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-24",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 19.6376,
+"tries": [
+"medium"
+],
+"deterministic": false
+},
+{
+"id": "easy-25",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 1.9376,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-26",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 1.8856,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-27",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 1.7882,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-28",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 1.9712,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "easy-29",
+"set": "ours",
+"tier": "easy",
+"arm": "without_wattnot",
+"wall_s": 2.3166,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-00",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.5046,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-01",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.7264,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-02",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.337,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-03",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.1027,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-04",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.2521,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-05",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.2943,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-06",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.4445,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-07",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.4721,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-08",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.7182,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-09",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.1793,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-10",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.5481,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-11",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.8521,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-12",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.1159,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-13",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.4284,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-14",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.6323,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-15",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.2094,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-16",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.9341,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-17",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.1399,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-18",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.054,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-19",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.6591,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-20",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.0583,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-21",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.2844,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-22",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.3257,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-23",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 1.9731,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-24",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 3.1952,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-25",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.5608,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-26",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.2117,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-27",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.3744,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-28",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 2.9856,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "medium-29",
+"set": "ours",
+"tier": "medium",
+"arm": "without_wattnot",
+"wall_s": 1.9543,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-00",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 2.6868,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-01",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 2.4555,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-02",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 2.2355,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-03",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 2.208,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-04",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 3.2552,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-05",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 2.5845,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-06",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 2.8935,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-07",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 10.1617,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-08",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 3.3897,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-09",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 2.618,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-10",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 4.4349,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-11",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 3.0954,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-12",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 2.3843,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-13",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 2.7719,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-14",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 2.6447,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-15",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 3.2409,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-16",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 2.2685,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-17",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 1.9857,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-18",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 2.8255,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "hard-19",
+"set": "ours",
+"tier": "hard",
+"arm": "without_wattnot",
+"wall_s": 2.7118,
+"tries": [
+"medium"
+],
+"deterministic": true
+},
+{
+"id": "complex-00",
+"set": "ours",
+"tier": "complex",
+"arm": "without_wattnot",
+"wall_s": 17.3312,
+"tries": [
+"medium"
+],
+"deterministic": false
+},
+{
+"id": "complex-01",
+"set": "ours",
+"tier": "complex",
+"arm": "without_wattnot",
+"wall_s": 32.3094,
+"tries": [
+"medium"
+],
+"deterministic": false
+},
+{
+"id": "complex-02",
+"set": "ours",
+"tier": "complex",
+"arm": "without_wattnot",
+"wall_s": 19.6594,
+"tries": [
+"medium"
+],
+"deterministic": false
+},
+{
+"id": "complex-03",
+"set": "ours",
+"tier": "complex",
+"arm": "without_wattnot",
+"wall_s": 42.3739,
+"tries": [
+"medium"
+],
+"deterministic": false
+},
+{
+"id": "complex-04",
+"set": "ours",
+"tier": "complex",
+"arm": "without_wattnot",
+"wall_s": 23.089,
+"tries": [
+"medium"
+],
+"deterministic": false
+},
+{
+"id": "complex-05",
+"set": "ours",
+"tier": "complex",
+"arm": "without_wattnot",
+"wall_s": 22.6501,
+"tries": [
+"medium"
+],
+"deterministic": false
+},
+{
+"id": "complex-06",
+"set": "ours",
+"tier": "complex",
+"arm": "without_wattnot",
+"wall_s": 35.9438,
+"tries": [
+"medium"
+],
+"deterministic": false
+},
+{
+"id": "complex-07",
+"set": "ours",
+"tier": "complex",
+"arm": "without_wattnot",
+"wall_s": 25.9229,
+"tries": [
+"medium"
+],
+"deterministic": false
+},
+{
+"id": "complex-08",
+"set": "ours",
+"tier": "complex",
+"arm": "without_wattnot",
+"wall_s": 21.4719,
+"tries": [
+"medium"
+],
+"deterministic": false
+},
+{
+"id": "complex-09",
+"set": "ours",
+"tier": "complex",
+"arm": "without_wattnot",
+"wall_s": 16.7918,
+"tries": [
+"medium"
+],
+"deterministic": false
+},
+{
+"id": "complex-10",
+"set": "ours",
+"tier": "complex",
+"arm": "without_wattnot",
+"wall_s": 29.9877,
+"tries": [
+"medium"
+],
+"deterministic": false
+},
+{
+"id": "complex-11",
+"set": "ours",
+"tier": "complex",
+"arm": "without_wattnot",
+"wall_s": 22.2695,
+"tries": [
+"medium"
+],
+"deterministic": false
+},
+{
+"id": "easy-00",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.7035,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.5278
+},
+{
+"id": "easy-01",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.5792,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.4041
+},
+{
+"id": "easy-02",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.4957,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.3206
+},
+{
+"id": "easy-03",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.3773,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.3744
+},
+{
+"id": "easy-04",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.5371,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.5364
+},
+{
+"id": "easy-05",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.2734,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.2727
+},
+{
+"id": "easy-06",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.5761,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.575
+},
+{
+"id": "easy-07",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.5048,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.5042
+},
+{
+"id": "easy-08",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.3136,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.3129
+},
+{
+"id": "easy-09",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.2212,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.2205
+},
+{
+"id": "easy-10",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.1509,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.1498
+},
+{
+"id": "easy-11",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.4895,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.4888
+},
+{
+"id": "easy-12",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.5169,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.516
+},
+{
+"id": "easy-13",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.9157,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.915
+},
+{
+"id": "easy-14",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.3189,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.3183
+},
+{
+"id": "easy-15",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.4244,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.4238
+},
+{
+"id": "easy-16",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 3.0227,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 3.0217
+},
+{
+"id": "easy-17",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 2.9846,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.9839
+},
+{
+"id": "easy-18",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.6716,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.6709
+},
+{
+"id": "easy-19",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.5733,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.5727
+},
+{
+"id": "easy-20",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.1939,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.1933
+},
+{
+"id": "easy-21",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.1392,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.1386
+},
+{
+"id": "easy-22",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.6477,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.6471
+},
+{
+"id": "easy-23",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.5463,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.5455
+},
+{
+"id": "easy-24",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.4221,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.4215
+},
+{
+"id": "easy-25",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.3572,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.3566
+},
+{
+"id": "easy-26",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.4176,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.417
+},
+{
+"id": "easy-27",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.5567,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.5561
+},
+{
+"id": "easy-28",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.3046,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.3039
+},
+{
+"id": "easy-29",
+"set": "ours",
+"tier": "easy",
+"arm": "with_wattnot",
+"wall_s": 1.4109,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.4101
+},
+{
+"id": "medium-00",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 1.6417,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.6409
+},
+{
+"id": "medium-01",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 2.8155,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.8147
+},
+{
+"id": "medium-02",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 1.7388,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.7381
+},
+{
+"id": "medium-03",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 1.5535,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.5528
+},
+{
+"id": "medium-04",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 1.4478,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.4471
+},
+{
+"id": "medium-05",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 1.4379,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.4371
+},
+{
+"id": "medium-06",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 2.0959,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.0952
+},
+{
+"id": "medium-07",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 3.2447,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 3.244
+},
+{
+"id": "medium-08",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 2.0592,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.0584
+},
+{
+"id": "medium-09",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 2.1443,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.1435
+},
+{
+"id": "medium-10",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 2.2586,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.2575
+},
+{
+"id": "medium-11",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 2.4176,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.4169
+},
+{
+"id": "medium-12",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 1.4675,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.4667
+},
+{
+"id": "medium-13",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 1.7172,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.7164
+},
+{
+"id": "medium-14",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 1.4451,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.4444
+},
+{
+"id": "medium-15",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 1.4403,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.4395
+},
+{
+"id": "medium-16",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 3.0893,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 3.0885
+},
+{
+"id": "medium-17",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 2.3191,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.3183
+},
+{
+"id": "medium-18",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 1.7402,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.7395
+},
+{
+"id": "medium-19",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 2.6574,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.6566
+},
+{
+"id": "medium-20",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 1.5837,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.583
+},
+{
+"id": "medium-21",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 1.359,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.3583
+},
+{
+"id": "medium-22",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 2.4444,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.4438
+},
+{
+"id": "medium-23",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 2.5486,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.5479
+},
+{
+"id": "medium-24",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 1.5554,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.5548
+},
+{
+"id": "medium-25",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 2.408,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.4073
+},
+{
+"id": "medium-26",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 1.7453,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.7446
+},
+{
+"id": "medium-27",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 1.4912,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.4903
+},
+{
+"id": "medium-28",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 2.8677,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.8668
+},
+{
+"id": "medium-29",
+"set": "ours",
+"tier": "medium",
+"arm": "with_wattnot",
+"wall_s": 1.4844,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.4837
+},
+{
+"id": "hard-00",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 1.9201,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.9058
+},
+{
+"id": "hard-01",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 2.8497,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.8391
+},
+{
+"id": "hard-02",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 1.3278,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.317
+},
+{
+"id": "hard-03",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 2.0238,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.0135
+},
+{
+"id": "hard-04",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 2.0621,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.0513
+},
+{
+"id": "hard-05",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 2.5191,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.5043
+},
+{
+"id": "hard-06",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 2.5268,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.5151
+},
+{
+"id": "hard-07",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 2.7661,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.7543
+},
+{
+"id": "hard-08",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 2.9326,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.92
+},
+{
+"id": "hard-09",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 1.3233,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.3119
+},
+{
+"id": "hard-10",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 2.7292,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.7161
+},
+{
+"id": "hard-11",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 2.4958,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.4855
+},
+{
+"id": "hard-12",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 2.1038,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.0923
+},
+{
+"id": "hard-13",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 1.4873,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.4747
+},
+{
+"id": "hard-14",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 2.8281,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.8174
+},
+{
+"id": "hard-15",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 1.6553,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.6455
+},
+{
+"id": "hard-16",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 1.3581,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.3464
+},
+{
+"id": "hard-17",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 1.8957,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.8854
+},
+{
+"id": "hard-18",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 2.0469,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 2.0357
+},
+{
+"id": "hard-19",
+"set": "ours",
+"tier": "hard",
+"arm": "with_wattnot",
+"wall_s": 1.9003,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 1.8899
+},
+{
+"id": "complex-00",
+"set": "ours",
+"tier": "complex",
+"arm": "with_wattnot",
+"wall_s": 36.1144,
+"tries": [
+"low",
+"medium"
+],
+"deterministic": false,
+"low_s": 16.4155
+},
+{
+"id": "complex-01",
+"set": "ours",
+"tier": "complex",
+"arm": "with_wattnot",
+"wall_s": 48.6603,
+"tries": [
+"low",
+"medium"
+],
+"deterministic": false,
+"low_s": 18.5901
+},
+{
+"id": "complex-02",
+"set": "ours",
+"tier": "complex",
+"arm": "with_wattnot",
+"wall_s": 36.1129,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 36.0855
+},
+{
+"id": "complex-03",
+"set": "ours",
+"tier": "complex",
+"arm": "with_wattnot",
+"wall_s": 16.4372,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 16.4287
+},
+{
+"id": "complex-04",
+"set": "ours",
+"tier": "complex",
+"arm": "with_wattnot",
+"wall_s": 36.458,
+"tries": [
+"low"
+],
+"deterministic": true,
+"low_s": 36.4411
+},
+{
+"id": "complex-05",
+"set": "ours",
+"tier": "complex",
+"arm": "with_wattnot",
+"wall_s": 44.2172,
+"tries": [
+"low",
+"medium"
+],
+"deterministic": false,
+"low_s": 23.3266
+},
+{
+"id": "complex-06",
+"set": "ours",
+"tier": "complex",
+"arm": "with_wattnot",
+"wall_s": 43.27,
+"tries": [
+"low",
+"medium"
+],
+"deterministic": false,
+"low_s": 24.1875
+},
+{
+"id": "complex-07",
+"set": "ours",
+"tier": "complex",
+"arm": "with_wattnot",
+"wall_s": 41.6481,
+"tries": [
+"low",
+"medium"
+],
+"deterministic": false,
+"low_s": 15.9366
+},
+{
+"id": "complex-08",
+"set": "ours",
+"tier": "complex",
+"arm": "with_wattnot",
+"wall_s": 47.6601,
+"tries": [
+"low"
+],
+"deterministic": false,
+"low_s": 47.6314
+},
+{
+"id": "complex-09",
+"set": "ours",
+"tier": "complex",
+"arm": "with_wattnot",
+"wall_s": 36.047,
+"tries": [
+"low",
+"medium"
+],
+"deterministic": false,
+"low_s": 16.7729
+},
+{
+"id": "complex-10",
+"set": "ours",
+"tier": "complex",
+"arm": "with_wattnot",
+"wall_s": 37.7616,
+"tries": [
+"low",
+"medium"
+],
+"deterministic": false,
+"low_s": 16.9138
+},
+{
+"id": "complex-11",
+"set": "ours",
+"tier": "complex",
+"arm": "with_wattnot",
+"wall_s": 52.4089,
+"tries": [
+"low",
+"medium"
+],
+"deterministic": false,
+"low_s": 16.9126
+}
+]
+}

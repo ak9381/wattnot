@@ -186,7 +186,10 @@ def spark_trace(out: Path, evidence: dict, log: EventLog | None) -> dict:
     rows = []
     for step, prompt in asks.items():
         t0 = time.time()
-        body = {"model": model, "max_tokens": 1500, "temperature": 0,
+        # Baseten r03: all 4 calls came back empty because hidden reasoning used the whole 1500-token
+        # cap (reasoning_tokens 1498 of 1500, MEASURED in the Meta ledger). Cap the reasoning and
+        # leave room for the visible answer, like the other short operator calls.
+        body = {"model": model, "reasoning_effort": "low", "max_tokens": 4000, "temperature": 0,
                 "messages": [{"role": "user", "content": prompt}]}
         try:
             d = cl(body, purpose=f"e2e:spark-trace:{step}")
