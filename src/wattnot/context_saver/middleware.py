@@ -137,6 +137,44 @@ def default_summarizer() -> Callable[[str], str]:
     return MockSummarizer() if meta_mock_on() else SparkSummarizer()
 
 
+_FACT = re.compile(r"\d|\b(RESULT|FINAL|CALL|ANSWER|NOTE|ERROR|Error|Exception|Traceback|def|return|import)\b"
+                   r"|####|`|[\w.-]*/[\w./-]+|\b\w+\.(py|json|jsonl|md|txt|yaml|yml|toml|csv|sh)\b"
+                   r"|\b[A-Za-z]+[-_][A-Za-z0-9_-]*\d|\{.*\}")
+_SENT = re.compile(r"(?<=[.!?])\s+(?=[A-Z])")
+
+
+def key_facts(text: str) -> tuple[list[str], str]:
+    """Split a turn into key-fact lines kept word for word and the wordy prose around them.
+
+    Kept verbatim: code blocks (whole), and any line or sentence with a number, an id, a tool
+    line (CALL/RESULT/FINAL/NOTE), an answer marker, an error, a file path or JSON. Everything
+    else is prose for the summariser."""
+    facts, prose, code = [], [], None
+    for line in text.splitlines():
+        if line.strip().startswith("```"):
+            if code is None:
+                code = [line]
+            else:
+                code.append(line)
+                facts.append("\n".join(code))
+                code = None
+            continue
+        if code is not None:
+            code.append(line)
+            continue
+        if not line.strip():
+            continue
+        st = line.strip()
+        if "{" in st or "`" in st or re.match(r"(CALL|RESULT|FINAL|NOTE|ANSWER|ERROR|Traceback)\b", st):
+            facts.append(st)   # a tool line / JSON stays whole (a sentence split broke a CALL's JSON)
+            continue
+        for sent in _SENT.split(line):
+            (facts if _FACT.search(sent) else prose).append(sent.strip())
+    if code is not None:
+        facts.append("\n".join(code))
+    return facts, " ".join(prose)
+
+
 @dataclass
 class _Chunk:
     ref: str
@@ -187,6 +225,7 @@ class MemoryCompressionMiddleware:
     min_old: int = 2
     retrieve_k: int = 3
     verbatim_chars: int = 240
+    smart: bool = True   # keep key facts (numbers, ids, RESULT/CALL/FINAL, code, paths, errors) verbatim
     store: ChunkStore = field(default_factory=ChunkStore)
     name: str = "memory_compression"
     _cache: dict = field(default_factory=dict, repr=False)
@@ -227,6 +266,19 @@ class MemoryCompressionMiddleware:
             text = _text(m.get("content")) or _text(m.get("tool_calls") or [{}])
             if not text.strip():
                 continue
+            if self.smart and len(text) > self.verbatim_chars:
+                facts, prose = key_facts(text)
+                if facts:
+                    gist = ""
+                    if prose.strip():
+                        key = hashlib.sha256(prose.encode()).hexdigest()
+                        if key not in self._cache:
+                            self._cache[key] = self.summarize(prose)
+                        gist = self._cache[key]
+                    # the facts stay word for word; only the wordy text around them is summarised
+                    verbatim.append(store.add("\n".join(([gist] if gist else []) + facts),
+                                              str(m.get("role", ""))))
+                    continue
             if len(text) <= self.verbatim_chars:
                 # a summary of "RESULT 37" saves nothing and drops the number the agent needs
                 # (CPU replay of r04e complex items: a lossy summary made the agent re-call tools
