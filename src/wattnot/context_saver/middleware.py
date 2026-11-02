@@ -225,6 +225,11 @@ class MemoryCompressionMiddleware:
     min_old: int = 2
     retrieve_k: int = 3
     verbatim_chars: int = 240
+    # long-conversation gate: below this many (estimated) tokens the call passes through untouched,
+    # exactly as with the saver off -- no summariser calls, no store, no rewrite. 500 sits above the
+    # r04e LangChain items (~141 tokens per call on average, MEASURED by the saver's own counter)
+    # and below every replay call where compression saved anything (smallest 505, MOCK replay).
+    min_tokens: int = 500
     smart: bool = True   # keep key facts (numbers, ids, RESULT/CALL/FINAL, code, paths, errors) verbatim
     store: ChunkStore = field(default_factory=ChunkStore)
     name: str = "memory_compression"
@@ -232,6 +237,11 @@ class MemoryCompressionMiddleware:
 
     def apply(self, messages: list[dict]) -> tuple[list[dict], dict]:
         before = conversation_tokens(messages)
+        if before < self.min_tokens:
+            return messages, {"name": self.name, "applied": False, "gated": "below_min_tokens",
+                              "min_tokens": self.min_tokens, "tokens_before": before,
+                              "tokens_after": before, "chunks_made": 0, "chunks_retrieved": 0,
+                              "summarize_calls": 0, "model": getattr(self.summarize, "model", "summarizer")}
         head = [m for m in messages if isinstance(m, dict) and m.get("role") == "system"]
         rest = [m for m in messages if isinstance(m, dict) and m.get("role") != "system"]
         # pin the task: the first user message is never summarised away
