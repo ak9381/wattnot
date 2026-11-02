@@ -404,6 +404,15 @@ export class Product {
       v = await r.json();
     } catch { el.remove(); return; }
     if (!v?.hash) { el.remove(); return; }
+    if (v.kind === "summary") {
+      const sg = v.signature?.signed ? `Signed offline by ${v.signature.signer || "–"}${v.signature.rekor ? ` · public log entry ${v.signature.rekor}` : " · no public log entry"}` : "Not signed";
+      const rows = (v.facts || []).map((f) => `<tr><th scope="row">${esc(f.name)}</th><td class="num"><b>${num(f.value, 2)}${f.unit ? ` ${esc(f.unit)}` : ""}</b></td><td>${tagOf(f.label)}</td></tr>`).join("");
+      el.innerHTML = `<section class="rc" aria-label="from the signed receipt"><header><h2>From the signed receipt</h2><span class="lb"><code>${esc(v.receipt_id || "–")}</code></span> ${tagOf(v.label)}</header>
+        ${rows ? `<table class="cmpt"><tbody>${rows}</tbody></table>` : ""}
+        <p class="hnt">Receipt type <code>${esc(v.spec || "–")}</code>${v.model ? ` · ${esc(v.model)}` : ""}</p>
+        <p class="hnt">sha256 <code>${esc(v.hash)}</code></p><p class="hnt">${esc(sg)}</p></section>`;
+      return;
+    }
     const e = v.energy_j_per_req, c = v.cost_usd_per_1m, w = v.water_l_per_1m, p = v.p99_s, q = v.quality_pct;
     const row = (k, b, a, tag) => `<tr><th scope="row">${esc(k)}</th><td class="num">${b}</td><td class="num"><b>${a}</b></td><td>${tagOf(tag)}</td></tr>`;
     const sig = v.signature?.signed ? `Signed offline by ${v.signature.signer || "–"}${v.signature.rekor ? ` · public log entry ${v.signature.rekor}` : " · no public log entry"}` : "Not signed";

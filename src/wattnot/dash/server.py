@@ -503,7 +503,7 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         if events is None:
             raise HTTPException(404, "no events file is being followed (start with --events FILE)")
         try:
-            return receiptview.view(receiptview.load_receipt(receiptview.find_receipt(events)))
+            return receiptview.view_any(receiptview.load_any(receiptview.find_receipt(events)))
         except FileNotFoundError:
             raise HTTPException(404, "no signed receipt in this run folder yet") from None
         except (ValueError, OSError) as e:
