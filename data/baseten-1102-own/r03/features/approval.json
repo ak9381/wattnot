@@ -1,0 +1,92 @@
+{
+ "held_change": {
+  "kind": "reasoning_effort",
+  "change": {
+   "reasoning_effort": "low",
+   "step_up": "medium"
+  }
+ },
+ "risk": "low",
+ "reasons": [
+  "request-level reasoning-effort knob, reversible, no hardware touched"
+ ],
+ "evidence": {
+  "accuracy_without": 0.837,
+  "accuracy_with": 0.9022,
+  "p99_without": 35.9438,
+  "p99_with": 48.6603,
+  "spark_agreement": 0.9889,
+  "j_per_correct_without": 1415.21,
+  "j_per_correct_with": 1096.41,
+  "eye_check": false,
+  "hearing_check": true
+ },
+ "review": {
+  "who": "Akash K Raju (delegated reviewer)",
+  "what": {
+   "reasoning_effort": "low",
+   "step_up": "medium"
+  },
+  "risk": "low",
+  "checks": [
+   {
+    "check": "accuracy (with >= without - 1 pt)",
+    "ok": true,
+    "detail": {
+     "without": 0.837,
+     "with": 0.9022,
+     "label": "MEASURED"
+    }
+   },
+   {
+    "check": "p99 limit (with <= 1.10 x without)",
+    "ok": false,
+    "detail": {
+     "without_s": 35.9438,
+     "with_s": 48.6603,
+     "label": "MEASURED"
+    }
+   },
+   {
+    "check": "Spark agreement >= 0.90",
+    "ok": true,
+    "detail": {
+     "agreement": 0.9889
+    }
+   },
+   {
+    "check": "joule-SLO (J/correct with <= without)",
+    "ok": true,
+    "detail": {
+     "without": 1415.21,
+     "with": 1096.41,
+     "label": "ESTIMATE"
+    }
+   },
+   {
+    "check": "eye_check gate passed",
+    "ok": false,
+    "detail": {
+     "passed": false
+    }
+   },
+   {
+    "check": "hearing_check gate passed",
+    "ok": true,
+    "detail": {
+     "passed": true
+    }
+   }
+  ],
+  "decision": "rejected",
+  "failed_checks": [
+   "p99 limit (with <= 1.10 x without)",
+   "eye_check gate passed"
+  ],
+  "skipped_checks": [],
+  "why": "failed: p99 limit (with <= 1.10 x without); eye_check gate passed",
+  "started_utc": "2026-11-02T15:00:41.989399+00:00",
+  "decided_utc": "2026-11-02T15:00:41.989611+00:00",
+  "auto_approve": false
+ }
+}

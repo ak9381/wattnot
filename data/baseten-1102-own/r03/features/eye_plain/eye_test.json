@@ -1,0 +1,180 @@
+{
+ "energy": {
+  "tokens": {
+   "prompt": 32273,
+   "cached": 1280,
+   "completion": 1747,
+   "calls": 10
+  },
+  "energy_j": 267310.6,
+  "energy_wh": 74.2529,
+  "j_per_correct": 29701.2,
+  "label": "ESTIMATE",
+  "method": "billed prompt+completion tokens x 7.857 J/token"
+ },
+ "label": "SYNTHETIC",
+ "answers_label": "MEASURED",
+ "model": "meta-models/muse-spark-open (Baseten)",
+ "passed": false,
+ "reason": "vision misread 1/10 image(s): gauge-reading",
+ "run": {
+  "answered": 10,
+  "total": 10,
+  "budget_s": null,
+  "budget_hit": false,
+  "concurrency": 4,
+  "elapsed_s": 17.026432
+ },
+ "detail": {
+  "checked": 10,
+  "passed_count": 9,
+  "missed": [
+   "gauge-reading"
+  ],
+  "images": [
+   {
+    "id": "plate-bus789",
+    "kind": "text",
+    "question": "What is the number-plate text?",
+    "expected": "BUS-789",
+    "got": "BUS-789",
+    "ok": true,
+    "label": "SYNTHETIC",
+    "energy_wh": {
+     "value": 7.42529,
+     "label": "ESTIMATE",
+     "method": "billed tokens x J/token / images"
+    }
+   },
+   {
+    "id": "plate-van204",
+    "kind": "text",
+    "question": "What is the number-plate text?",
+    "expected": "VAN-204",
+    "got": "VAN-204",
+    "ok": true,
+    "label": "SYNTHETIC",
+    "energy_wh": {
+     "value": 7.42529,
+     "label": "ESTIMATE",
+     "method": "billed tokens x J/token / images"
+    }
+   },
+   {
+    "id": "invoice-total",
+    "kind": "number",
+    "question": "What is the invoice total in dollars?",
+    "expected": "1284.50",
+    "got": "$1,284.50",
+    "ok": true,
+    "label": "SYNTHETIC",
+    "energy_wh": {
+     "value": 7.42529,
+     "label": "ESTIMATE",
+     "method": "billed tokens x J/token / images"
+    }
+   },
+   {
+    "id": "invoice-subtotal",
+    "kind": "number",
+    "question": "What is the subtotal in dollars?",
+    "expected": "990.00",
+    "got": "$990.00",
+    "ok": true,
+    "label": "SYNTHETIC",
+    "energy_wh": {
+     "value": 7.42529,
+     "label": "ESTIMATE",
+     "method": "billed tokens x J/token / images"
+    }
+   },
+   {
+    "id": "count-cubes",
+    "kind": "count",
+    "question": "How many cubes are in the image?",
+    "expected": "7",
+    "got": "7",
+    "ok": true,
+    "label": "SYNTHETIC",
+    "energy_wh": {
+     "value": 7.42529,
+     "label": "ESTIMATE",
+     "method": "billed tokens x J/token / images"
+    }
+   },
+   {
+    "id": "count-bottles",
+    "kind": "count",
+    "question": "How many bottles are in the image?",
+    "expected": "4",
+    "got": "4",
+    "ok": true,
+    "label": "SYNTHETIC",
+    "energy_wh": {
+     "value": 7.42529,
+     "label": "ESTIMATE",
+     "method": "billed tokens x J/token / images"
+    }
+   },
+   {
+    "id": "color-chart-top",
+    "kind": "color",
+    "question": "What colour is the top swatch?",
+    "expected": "magenta",
+    "got": "MAGENTA",
+    "ok": true,
+    "label": "SYNTHETIC",
+    "energy_wh": {
+     "value": 7.42529,
+     "label": "ESTIMATE",
+     "method": "billed tokens x J/token / images"
+    }
+   },
+   {
+    "id": "color-chart-bottom",
+    "kind": "color",
+    "question": "What colour is the bottom swatch?",
+    "expected": "teal",
+    "got": "TEAL",
+    "ok": true,
+    "label": "SYNTHETIC",
+    "energy_wh": {
+     "value": 7.42529,
+     "label": "ESTIMATE",
+     "method": "billed tokens x J/token / images"
+    }
+   },
+   {
+    "id": "gauge-reading",
+    "kind": "number",
+    "question": "What number does the gauge read?",
+    "expected": "60",
+    "got": "58",
+    "ok": false,
+    "label": "SYNTHETIC",
+    "energy_wh": {
+     "value": 7.42529,
+     "label": "ESTIMATE",
+     "method": "billed tokens x J/token / images"
+    }
+   },
+   {
+    "id": "sign-exit",
+    "kind": "text",
+    "question": "What does the road sign say?",
+    "expected": "EXIT 12B",
+    "got": "ROUTE 45 WEST EXIT 12B",
+    "ok": true,
+    "label": "SYNTHETIC",
+    "energy_wh": {
+     "value": 7.42529,
+     "label": "ESTIMATE",
+     "method": "billed tokens x J/token / images"
+    }
+   }
+  ],
+  "label": "SYNTHETIC",
+  "est_wh_per_image": 0.5,
+  "blocks_musecode_pr": true
+ }
+}

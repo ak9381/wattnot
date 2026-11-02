@@ -1,0 +1,21 @@
+[guard] Meta worst $0.4955 (SAM 6x$0.0025/img + Wonder 1 call + Spark trace 4 calls + voice 40 clips@$0.0005 + Spark grades 184x$0.0021575) -> within caps
+[r03] 92 items x 2 arms, Meta ledger $30.0187 (MEASURED)
+[r03] without_wattnot 20/92 errors=0 baseten=$0.1384
+[r03] without_wattnot 40/92 errors=0 baseten=$0.2173
+[r03] without_wattnot 60/92 errors=0 baseten=$0.2537
+[r03] without_wattnot 80/92 errors=0 baseten=$0.2990
+[r03] without_wattnot done in 155s: 77/92 correct
+[watch] billing after without_wattnot: {'at': '2026-11-02T14:50:57.063519+00:00', 'endpoint': '/v1/billing/model_apis', 'status': 200, 'refusal': False, 'words': [], 'day': '2026-11-02', 'day_subtotal_usd': 1.1536441, 'label': 'MEASURED'}
+[r03] with_wattnot 20/92 errors=0 baseten=$0.4831
+[r03] with_wattnot 40/92 errors=0 baseten=$0.4971
+[r03] with_wattnot 60/92 errors=0 baseten=$0.5229
+[r03] with_wattnot 80/92 errors=0 baseten=$0.5510
+[r03] with_wattnot done in 180s: 83/92 correct
+[watch] billing after with_wattnot: {'at': '2026-11-02T14:55:59.975620+00:00', 'endpoint': '/v1/billing/model_apis', 'status': 200, 'refusal': False, 'words': [], 'day': '2026-11-02', 'day_subtotal_usd': 1.528098, 'label': 'MEASURED'}
+hotspot set [live] (SYNTHETIC tests): SAM 3.1 found all 6 SYNTHETIC hotspots
+wonder chart [live · wonder]: next = 375W/base — No real measurements exist yet, so start with the highest base cap to establish a quality and efficiency baseline.
+[usage] {"status": "ok", "worst_diff_pct": 0.0, "match": true}
+{"round": "r03", "status": "done", "acc": [0.837, 0.9022], "wh": [30.2698, 25.2783], "p50": [2.5608, 1.7402], "baseten_usd": 0.9356, "meta_usd": 0.1679, "agree": 0.9889, "errors": 0, "stop": null}
+ROUND_RC 0
+{"spec": "wattnot.langchain-pass/1", "label": "MEASURED", "dataset": "own", "start": 0, "n": 20, "framework": "langchain", "provider": "baseten", "model": "meta-models/muse-spark-open", "routing": "effort routing on Baseten Spark: reasoning_effort low, step-up to medium", "route": "final-check", "energy_label": "ESTIMATE (from tokens); no GPU energy on a hosted API", "spend_usd": 0.193024, "hard_usd": 0.6, "quality_held": true, "saver_off": {"correct": 20, "n": 20, "gpu_j": null, "steps": 59}, "saver_on": {"correct": 20, "n": 20, "gpu_j": null, "steps": 55}, "baseten": {"saver_off": {"calls": 60, "errors": 1, "prompt_tokens": 52262, "cached_tokens": 37760, "completion_tokens": 20636, "usd": 0.120633, "efforts": {"medium": 60}, "usd_label": "MEASURED tokens x list price", "energy_wh": {"low": 1.4758, "high": 14.758, "mid": 8.1169, "label": "ESTIMATE (from tokens)"}}, "saver_on": {"calls": 55, "errors": 0, "prompt_tokens": 47991, "cached_tokens": 36608, "completion_tokens": 12393, "usd": 0.072388, "efforts": {"low": 55}, "usd_label": "MEASURED tokens x list price", "energy_wh": {"low": 0.9986, "high": 9.9859, "mid": 5.4923, "label": "ESTIMATE (from tokens)"}}}}
+LC_RC 0
