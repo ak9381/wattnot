@@ -1,0 +1,91 @@
+{
+ "held_change": {
+  "kind": "reasoning_effort",
+  "change": {
+   "reasoning_effort": "low",
+   "step_up": "medium"
+  }
+ },
+ "risk": "low",
+ "reasons": [
+  "request-level reasoning-effort knob, reversible, no hardware touched"
+ ],
+ "evidence": {
+  "accuracy_without": 0.7935,
+  "accuracy_with": 0.9022,
+  "p99_without": 41.8032,
+  "p99_with": 34.7311,
+  "spark_agreement": 0.9945,
+  "j_per_correct_without": 2087.33,
+  "j_per_correct_with": 684.97,
+  "eye_check": false,
+  "hearing_check": true
+ },
+ "review": {
+  "who": "Akash K Raju (delegated reviewer)",
+  "what": {
+   "reasoning_effort": "low",
+   "step_up": "medium"
+  },
+  "risk": "low",
+  "checks": [
+   {
+    "check": "accuracy (with >= without - 1 pt)",
+    "ok": true,
+    "detail": {
+     "without": 0.7935,
+     "with": 0.9022,
+     "label": "MEASURED"
+    }
+   },
+   {
+    "check": "p99 limit (with <= 1.10 x without)",
+    "ok": true,
+    "detail": {
+     "without_s": 41.8032,
+     "with_s": 34.7311,
+     "label": "MEASURED"
+    }
+   },
+   {
+    "check": "Spark agreement >= 0.90",
+    "ok": true,
+    "detail": {
+     "agreement": 0.9945
+    }
+   },
+   {
+    "check": "joule-SLO (J/correct with <= without)",
+    "ok": true,
+    "detail": {
+     "without": 2087.33,
+     "with": 684.97,
+     "label": "ESTIMATE"
+    }
+   },
+   {
+    "check": "eye_check gate passed",
+    "ok": false,
+    "detail": {
+     "passed": false
+    }
+   },
+   {
+    "check": "hearing_check gate passed",
+    "ok": true,
+    "detail": {
+     "passed": true
+    }
+   }
+  ],
+  "decision": "rejected",
+  "failed_checks": [
+   "eye_check gate passed"
+  ],
+  "skipped_checks": [],
+  "why": "failed: eye_check gate passed",
+  "started_utc": "2026-11-02T16:02:27.860659+00:00",
+  "decided_utc": "2026-11-02T16:02:27.861301+00:00",
+  "auto_approve": false
+ }
+}
