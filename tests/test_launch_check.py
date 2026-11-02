@@ -180,4 +180,4 @@ def test_modal_deps_probe_parses_and_fails_closed():
 def test_full_stage_functions_share_one_dependency_set():
     src = (L.ROOT / "modal" / "full_stage.py").read_text()
     assert "Secret.from_dict" not in src and "modal.Secret.from_name(META_SECRET)" in src
-    assert src.count("**_deps()") == 3
+    assert src.count("**_deps()") == 4   # gpu_round, gpu_smoke, gpu_block, deps_probe

@@ -558,7 +558,25 @@ def rounds() -> list[dict]:
                     "features": table["table"], "drift": table["drift"],
                     "source": f.relative_to(ROOT).as_posix(),
                     "receipt": (feats / "receipt.json").relative_to(ROOT).as_posix() if (feats / "receipt.json").exists() else None,
-                    "events": sorted(p.relative_to(ROOT).as_posix() for p in rdir.rglob("events*.jsonl"))[:4]})
+                    "events": sorted(p.relative_to(ROOT).as_posix() for p in rdir.rglob("events*.jsonl"))[:4],
+                    "attachments": round_attachments(rdir)})
+    return out
+
+
+def round_attachments(rdir: Path) -> list[dict]:
+    """Separate signed runs attached to a round (e.g. a LangChain-only rerun of r04e). They live
+    in <data>/attachments/<round>/<run_id>/, never inside the round's own folder."""
+    out = []
+    for f in sorted((rdir.parent / "attachments" / rdir.name).glob("*/attachment.json")):
+        try:
+            d = json.loads(f.read_text())
+        except (OSError, ValueError):
+            continue
+        sig = f.with_name("attachment.sigstore.json")
+        out.append({"run_id": d.get("run_id"), "block": d.get("block"), "status": d.get("status"),
+                    "label": d.get("label"), "summary": d.get("summary"),
+                    "sha256": (d.get("integrity") or {}).get("sha256"), "signed": sig.exists(),
+                    "source": f.relative_to(ROOT).as_posix() if f.is_relative_to(ROOT) else str(f)})
     return out
 
 
