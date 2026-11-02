@@ -40,6 +40,7 @@ HARD_CAP_USD = 8.0  # Baseten hard cap per round, cannot be raised from the CLI
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "src")]
 
+from wattnot.e2e.latency_guard import allow_step_up, latency_verdict  # noqa: E402
 from wattnot.cloud import MODEL  # noqa: E402
 from wattnot.cloud import energy as cloud_energy  # noqa: E402
 from wattnot.cloud.efforts import DEFAULT_ALLOWANCE, max_tokens_for  # noqa: E402
@@ -265,7 +266,9 @@ def run_item(b, tr, cap, calls, arm, it):
     # Keep the low answer when it is usable (finished and passed the check). Only step up when it is
     # not, and record WHY (length/format/wrong) so a runaway low cut by the cap is told apart from a
     # genuine low-confidence miss.
-    if not r["deterministic"]:
+    if not r["deterministic"] and not allow_step_up(r["wall_s"]):
+        r["stepup_skipped"] = "latency_guard"
+    elif not r["deterministic"]:
         reason = step_up_reason(r)
         r2 = attempt(b, tr, cap, calls, arm, "medium", ds, iid, obj)
         r2["wall_s"] = round(r2["wall_s"] + r["wall_s"], 4)
@@ -320,7 +323,7 @@ def arm_summary(answers, rows):
             "energy_wh": {"value": round(wh, 4), "low": round(lo, 4), "high": round(hi, 4), "label": "ESTIMATE",
                           "method": cloud_energy.METHOD},
             "j_per_correct": {"value": round(wh * 3600 / correct, 2) if correct else None, "label": "ESTIMATE"},
-            "item_latency_s": {"p50": pctl(walls, 0.5), "p99": pctl(walls, 0.99), "label": "MEASURED"},
+            "item_latency_s": {"p50": pctl(walls, 0.5), "p95": pctl(walls, 0.95), "p99": pctl(walls, 0.99), "label": "MEASURED"},
             "call_latency_s": {"p50": pctl(lat, 0.5), "p99": pctl(lat, 0.99),
                                "mean": round(statistics.mean(lat), 4) if lat else None, "label": "MEASURED"},
             "stepped_up": sum(len(a.get("tries", [])) > 1 for a in answers)}
@@ -534,7 +537,8 @@ def main(argv=None) -> int:
             "j_per_correct_without": wo["j_per_correct"]["value"], "j_per_correct_with": wi["j_per_correct"]["value"],
             "energy_saved_pct": {"value": pct(wo["energy_wh"]["value"], wi["energy_wh"]["value"]), "label": "ESTIMATE"},
             "usd_saved_pct": {"value": pct(wo["usd"]["value"], wi["usd"]["value"]), "label": "MEASURED"},
-            "per_arm": summ},
+            "per_arm": summ,
+            "latency_verdict": latency_verdict(answers.get("without_wattnot", []), answers.get("with_wattnot", []))},
         "spend": {"baseten_usd": {"value": round(cap.session_usd, 6), "label": "MEASURED",
                                   "method": "tokens x list price (not yet checked against the invoice)"},
                   "meta_usd": {"value": round(m1 - m0, 6), "label": "MEASURED", "source": "Meta spend ledger"},
