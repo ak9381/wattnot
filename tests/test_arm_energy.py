@@ -92,3 +92,10 @@ def test_best_cap_file(tmp_path, monkeypatch):
     monkeypatch.setattr(ae, "BEST_CAP_FILE", f)
     monkeypatch.delenv("WATTNOT_BEST_CAP_W", raising=False)
     assert ae.best_cap_w() == 350
+
+
+def test_phase_metrics_base_strips_v1():
+    from wattnot.control.phase_clock import metrics_base
+    assert metrics_base("http://127.0.0.1:8000/v1") == "http://127.0.0.1:8000"
+    assert metrics_base("http://127.0.0.1:8000/v1/") == "http://127.0.0.1:8000"
+    assert metrics_base("http://127.0.0.1:8000") == "http://127.0.0.1:8000"
