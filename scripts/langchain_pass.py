@@ -4,8 +4,8 @@ traffic through the WattNot agent-waste proxy to the served model, saver OFF the
 
 * OFF arm: the proxy only forwards and logs (no guard limits, no context saver, no routing).
 * ON arm: waste guard + context saver + routing. On one H100 there is one model, so routing is
-  between two settings of the same Glimmer: thinking off first, thinking on if the answer gate
-  fails. That is effort routing, not model routing, and the receipt says so.
+  between two settings of the same Glimmer: a thinking budget first, the full budget if the
+  answer gate fails (Glimmer ignores enable_thinking, so there is no real thinking-off switch). That is effort routing, not model routing, and the receipt says so.
 
 Datasets are only the three we already run: our own set (proof-v1 math items), GSM8K (pinned
 300) and HumanEval (pinned 164). Pick one with --dataset and a slice with --start/--n so the
@@ -303,7 +303,7 @@ def main(argv=None) -> int:
     res = {"spec": "wattnot.langchain-pass/1", "label": label, "dataset": a.dataset,
            "start": a.start, "n": len(rows), "framework": "langchain", "provider": a.provider,
            "model": model,
-           "routing": "effort routing on one served model (thinking off -> on); model routing "
+           "routing": "effort routing on one served model (thinking budget -> full budget on a failed check); model routing "
                       "needs a second model and is in the multi-provider block", "route": a.route, "arms": {}}
     for arm, on in (("saver_off", False), ("saver_on", True)):
         base, server = serve(upstream, on, label, tiers, a.route == "final-check", a.max_stepups,

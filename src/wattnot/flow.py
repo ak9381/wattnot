@@ -157,7 +157,7 @@ def run_flow(a) -> int:
           "--summary", str(out / "phase/summary.json"), "--log", str(out / "phase/log.jsonl")]),
         ("langchain", "langchain", ["A9 agent-waste proxy", "LangChain app through the proxy",
                                     "Tool-output dedup", "Memory compression",
-                                    "Effort routing (thinking off -> on)"],
+                                    "Effort routing (thinking budget, step up on a failed check)"],
          [PY, "scripts/langchain_pass.py", "--fake", "--dataset", a.dataset, "--n", "5",
           "--out", str(out / "langchain")]),
         ("agentwaste-gpu", "agentwaste", ["Agent-waste saver on the GPU (OFF vs ON)"],
