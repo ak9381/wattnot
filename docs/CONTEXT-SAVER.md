@@ -70,3 +70,21 @@ rate and cache hit rate **before and after**, each with its own label, plus the 
 
 `tests/test_context_saver.py`, `tests/test_prefix_cache_ab.py`, `tests/test_waste_proxy_saver.py`,
 and a MOCK block each in the RUN3 rehearsal (`tests/test_rehearse_run3.py`).
+
+## Turning it on or off, and the long-conversation threshold
+
+The saver only rewrites a call once the conversation is long enough to be worth it. Below the
+threshold the call goes through untouched, exactly as with the saver off. The default is 500
+estimated tokens: above the r04e LangChain calls (~141 tokens per call on average, MEASURED by
+the saver's own counter) and below every replay call where compression saved anything.
+
+```bash
+wattnot saver                       # show the current setting
+wattnot saver --min-tokens 2000     # only compress long agent sessions
+wattnot saver --off                 # turn it off (agent calls pass through as-is)
+wattnot saver --on
+```
+
+The same two keys work in the config file (`"context_saver": true`, `"saver_min_tokens": 500`)
+and as env vars for one run (`WATTNOT_SAVER=off`, `WATTNOT_SAVER_MIN_TOKENS=2000`). Env wins
+over the file. The with-WattNot arm of the e2e rounds reads these settings.

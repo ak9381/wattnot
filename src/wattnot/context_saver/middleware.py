@@ -373,10 +373,24 @@ class ToolDedupMiddleware:
 class ContextSaver:
     """Run the context-saver middlewares in order and account for the tokens cut (ESTIMATE)."""
 
-    def __init__(self, middlewares: Sequence[object] | None = None) -> None:
+    def __init__(self, middlewares: Sequence[object] | None = None, *,
+                 min_tokens: int | None = None) -> None:
         if middlewares is None:
-            middlewares = [ToolDedupMiddleware(), MemoryCompressionMiddleware()]
+            mc = MemoryCompressionMiddleware() if min_tokens is None \
+                else MemoryCompressionMiddleware(min_tokens=int(min_tokens))
+            middlewares = [ToolDedupMiddleware(), mc]
         self.middlewares = list(middlewares)
+
+    @classmethod
+    def from_settings(cls, cfg: dict | None = None) -> "ContextSaver | None":
+        """The saver the user configured (config file `context_saver` / `saver_min_tokens`, or
+        WATTNOT_SAVER / WATTNOT_SAVER_MIN_TOKENS). None when they turned it off."""
+        if cfg is None:
+            from wattnot import settings
+            cfg = settings.load()
+        if not cfg.get("context_saver", True):
+            return None
+        return cls(min_tokens=cfg.get("saver_min_tokens", 500))
 
     def transform(self, messages: list[dict]) -> tuple[list[dict], dict]:
         before = conversation_tokens(messages)
