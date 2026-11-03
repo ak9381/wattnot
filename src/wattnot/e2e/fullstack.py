@@ -118,7 +118,8 @@ class RequestLevers:
         import threading
         from wattnot.cloud import supports_tool_calling
         from wattnot.context_saver.middleware import ContextSaver
-        self.saver = ContextSaver()
+        # the user's on/off and threshold; off = a pass-through saver so the totals still add up
+        self.saver = ContextSaver.from_settings() or ContextSaver(middlewares=[])
         self.lock = threading.Lock()
         self.tools_supported = supports_tool_calling() if tools_supported is None else bool(tools_supported)
         self.stats = {"calls": 0, "tokens_saved_est": 0, "guard_stops": 0, "guard_flags": 0,

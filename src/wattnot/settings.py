@@ -31,6 +31,11 @@ DEFAULTS: dict[str, Any] = {
     # only `wattnot init --act`, WATTNOT_MODE=act, an edit to the config, or a command's own
     # --act flag (the long-run VM path passes it) turns acting on. Watch is the safe default.
     "mode": "watch",
+    # Context saver on the agent path (tool-output dedup + memory compression).
+    # saver_min_tokens is the long-conversation threshold: calls shorter than this (estimated
+    # tokens) pass through untouched. 500 is the measured sweet spot from r04e (see middleware).
+    "context_saver": True,
+    "saver_min_tokens": 500,
 }
 
 
@@ -62,7 +67,38 @@ def load() -> dict[str, Any]:
     if out.get("mode") not in ("watch", "act"):
         raise ValueError(f"mode must be 'watch' or 'act' (got {out.get('mode')!r})")
     out["max_p99_increase"] = check_p99(out["max_p99_increase"])
+    if os.environ.get("WATTNOT_SAVER"):
+        out["context_saver"] = os.environ["WATTNOT_SAVER"]
+    if os.environ.get("WATTNOT_SAVER_MIN_TOKENS"):
+        out["saver_min_tokens"] = os.environ["WATTNOT_SAVER_MIN_TOKENS"]
+    out["context_saver"] = check_on_off(out["context_saver"])
+    out["saver_min_tokens"] = check_min_tokens(out["saver_min_tokens"])
     return out
+
+
+def check_on_off(v: Any) -> bool:
+    """Accept true/false, on/off, 1/0, yes/no."""
+    if isinstance(v, bool):
+        return v
+    t = str(v).strip().lower()
+    if t in ("1", "true", "on", "yes"):
+        return True
+    if t in ("0", "false", "off", "no"):
+        return False
+    raise ValueError(f"context_saver must be on or off (got {v!r})")
+
+
+def check_min_tokens(v: Any) -> int:
+    """The saver's long-conversation threshold: a whole number of tokens, 0 to 1,000,000."""
+    if isinstance(v, bool):
+        raise ValueError(f"saver_min_tokens must be a number (got {v!r})")
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        raise ValueError(f"saver_min_tokens must be a number (got {v!r})") from None
+    if f != int(f) or not 0 <= f <= 1_000_000:
+        raise ValueError(f"saver_min_tokens must be a whole number from 0 to 1000000 (got {v!r})")
+    return int(f)
 
 
 def watch_only() -> bool:
