@@ -104,3 +104,24 @@ def test_cap_kept_for_agent_when_measured_energy_down(tmp_path):
 def test_req_class_from_shape():
     assert tr.req_class({"messages": [{"role": "user", "content": "hi"}]}) == "text"
     assert tr.req_class({"tools": [{}], "messages": []}) == "agent"
+
+
+def test_probe_skips_gate_warmup_requests(tmp_path):
+    from wattnot.gateway import monitor as mon
+    g = FakeGpu()
+    n = [0]
+    def call(b, *_):
+        n[0] += 1
+        if g.lim == 375 and n[0] <= 23:     # first 3 with-arm calls: saver on, shadow-checked, costly
+            g.e += 1000 * 1000
+            mon.SHADOW_METER["calls"] += 1
+        else:
+            g.e += 1000 * (400 if g.lim == 375 else 500)
+        return {"text": "x", "tokens": 50, "usd": 0}
+    run = tr.TrafficRun(call, direct=call, gpu=g, cap_w=375, answer_check=lambda: Check(True),
+                        result_path=tmp_path / "sequential.json")
+    run.start("agent", 20, "fast", True)
+    run.thread.join(5)
+    r = json.loads((tmp_path / "sequential.json").read_text())
+    assert r["cap_decision"]["agent"]["keep_cap"] is True
+    assert r["with"]["gate_warmup"]["requests"] == 3 and r["with"]["gate_warmup"]["joules"] == 3000

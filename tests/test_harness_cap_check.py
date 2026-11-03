@@ -48,3 +48,24 @@ def test_rejects_wrong_answers_and_no_energy_drop():
     assert not r["accepted"] and r["why_not"][0].startswith("quality")
     assert r["quality"]["holdout_paired"]["discordant"]["stock_only"] == 1
     assert any("energy" in w for w in _check(j_cap=0.99)[0]["why_not"])
+
+
+def test_one_flip_never_refuses_cap_noninferiority():
+    from wattnot.node.answercheck import paired_noninferior
+    for n in (20, 111, 222):
+        st = [True] * (n // 2) + [False] * (n - n // 2)
+        cap = list(st); cap[0] = False
+        assert paired_noninferior(st, cap)["passed"]
+
+
+def test_noninferiority_refuses_a_real_drop():
+    from wattnot.node.answercheck import paired_noninferior
+    st = [True] * 100 + [False] * 11
+    cap = [False] * 20 + [True] * 80 + [False] * 11
+    assert not paired_noninferior(st, cap)["passed"]
+
+
+def test_check_uses_holdout_max_tokens():
+    from wattnot.node.answercheck import HOLDOUT_MAX_TOKENS
+    from wattnot.longrun.holdout import FROZEN_STACK
+    assert HOLDOUT_MAX_TOKENS == FROZEN_STACK["max_tokens"] == 1536

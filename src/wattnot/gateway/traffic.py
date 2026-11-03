@@ -320,16 +320,18 @@ class TrafficRun:
             cls = req_class(body)
             if ctl is not None:
                 ctl.before(cls)
-            ej, sj = g.energy_mj(), _mon.SHADOW_METER["excluded_mj"]
+            ej, sj, sc = g.energy_mj(), _mon.SHADOW_METER["excluded_mj"], _mon.SHADOW_METER["calls"]
             try:
                 r = call(body, i) or {}
             except Exception:  # noqa: BLE001
                 self.state["errors"] += 1
                 r = {}
             rj = (g.energy_mj() - ej - (_mon.SHADOW_METER["excluded_mj"] - sj)) / 1000
-            per_j.append([cls, round(rj, 2)])
+            # the gate shadow-checks every saver-on call while it is warming up: that is gate warm-up
+            warm = name == "with" and _mon.SHADOW_METER["calls"] > sc
+            per_j.append([cls, round(rj, 2)] + (["gate warm-up"] if warm else []))
             if ctl is not None:
-                ctl.after(cls, i, rj)
+                ctl.after(cls, i, rj, warmup=warm)
             texts.append(str(r.get("text") or ""))
             toks += int(r.get("tokens") or 0)
             usd += float(r.get("usd") or 0)
@@ -352,7 +354,12 @@ class TrafficRun:
                "t0": round(t0, 3), "t1": round(time.time(), 3),
                "cap_w": g.limit_w(), "tokens": toks, "usd": round(usd, 6),
                "label": "MEASURED (NVML energy counter over the arm's window)", "texts": texts,
-               "per_request_j": per_j}
+               "per_request_j": per_j,
+               "gate_warmup": {"requests": sum(1 for p in per_j if len(p) > 2),
+                               "joules": round(sum(p[1] for p in per_j if len(p) > 2), 1),
+                               "label": "gate warm-up: saver-on requests the per-model gate shadow-checked "
+                                        "(MEASURED, counted in this arm, left out of the cap probe)"}
+               if name == "with" else None}
         self.event(step="arm_end", arm=name, **{k: v for k, v in out.items() if k != "texts"})
         return out
 
@@ -504,8 +511,10 @@ class CapController:
         if g.limit_w() != w:
             g.set_w(w)
 
-    def after(self, cls, i, joules):
-        if not self.cap_on or cls in self.decisions:
+    def after(self, cls, i, joules, warmup=False):
+        # the probe starts once the gate's warm-up for this class is over: warm-up requests (a
+        # saver on and shadow-checked, possibly switched off after) would mix the saver into the cap
+        if not self.cap_on or cls in self.decisions or warmup:
             return
         self.seen.setdefault(cls, []).append((i, joules))
         if len(self.seen[cls]) < CAP_PROBE_N:

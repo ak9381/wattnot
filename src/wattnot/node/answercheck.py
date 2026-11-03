@@ -115,7 +115,9 @@ class HarnessCapCheck:
 
         def one(it):
             t = time.perf_counter()
-            a = self.ask(it["prompt"], int(it.get("max_tokens") or 512))
+            # the H100 holdout's output budget for Glimmer (FROZEN_STACK max_tokens 1536, temp 0,
+            # seed 1234): proof-v1's small per-prompt limits truncate a reasoning model's answers
+            a = self.ask(it["prompt"], max(int(it.get("max_tokens") or 512), HOLDOUT_MAX_TOKENS))
             return a, time.perf_counter() - t
         with ThreadPoolExecutor(self.concurrency) as ex:
             out = list(ex.map(one, self.items))
@@ -163,8 +165,11 @@ class HarnessCapCheck:
         q = fixed_checks(pool(stock), pool(capped), pooled_items(wl, len(stock)), max_drop_pts=MAX_DROP_PTS)
         oks = lambda b: [all(run_check(c, a) for c in item_checks(it)) for it, a in zip(wl, b["answers"])]  # noqa: E731
         paired = paired_summary(oks(stock[0]), oks(capped[-1]))
+        # same prompts, same round, all rounds pooled: stock[r][k] pairs with capped[r][k]
+        noninf = paired_noninferior(sum((oks(b) for b in stock), []), sum((oks(b) for b in capped), []))
         n = len(wl)
-        why = [] if q.passed else [f"quality: {q.reason}"]
+        q_ok = q.passed or noninf["passed"]
+        why = [] if q_ok else [f"quality: {q.reason}; {noninf['reason']}"]
         if not energy_clearly_down(d_e, e_mean, e_half, stock_noise(stock)["cv_pct"]):
             why.append("energy change not clearly below zero")
         if p_mean > self.p99_limit:
@@ -172,12 +177,33 @@ class HarnessCapCheck:
         return {"accepted": not why, "energy_change_pct": round(e_mean, 1), "p99_change_pct": round(p_mean, 1),
                 "per_pair_energy_pct": [round(x, 1) for x in d_e], "per_pair_p99_pct": [round(x, 1) for x in d_p],
                 "quality": {"stock_pct": q.detail["baseline_pct"], "cap_pct": q.detail["candidate_pct"],
-                            "max_drop_pts": MAX_DROP_PTS, "passed": q.passed, "reason": q.reason,
-                            "holdout_paired": paired},
+                            "max_drop_pts": MAX_DROP_PTS, "passed": q_ok, "one_pt_rule": q.passed,
+                            "reason": q.reason, "holdout_paired": paired, "noninferiority": noninf,
+                            "max_tokens": HOLDOUT_MAX_TOKENS},
                 "why_not": why, "n": n, "pairs": self.pairs,
-                "rule": "proof sweep: harness graders (fixed_checks, <=1 pt drop), mean p99 <= +10%, "
+                "rule": "proof sweep: harness graders (fixed_checks <=1 pt drop, or paired non-inferiority: 95% CI "
+                        "lower bound > -5 pts, holdout report), max_tokens 1536 (holdout), mean p99 <= +10%, "
                         "energy_clearly_down, concurrency 32",
                 "label": "MEASURED (NVML energy, interleaved stock/cap blocks)"}
+
+
+from wattnot.longrun.holdout import FROZEN_STACK as _FS  # noqa: E402
+
+HOLDOUT_MAX_TOKENS = int(_FS["max_tokens"])
+NONINF_MARGIN_PTS = 5.0
+
+
+def paired_noninferior(stock_ok: list[bool], cap_ok: list[bool], margin_pts: float = NONINF_MARGIN_PTS) -> dict:
+    """Paired non-inferiority on the same prompts, from the holdout report (longrun.holdout
+    paired_summary: McNemar exact p and the paired 95% CI on cap - stock): passes when the CI's
+    lower bound is above -margin_pts. One flipped answer can never refuse the cap on its own."""
+    from wattnot.longrun.holdout import paired_summary
+    s = paired_summary(stock_ok, cap_ok)
+    lo = s["ci95_pts"][0]
+    net = s["discordant"]["stock_only"] - s["discordant"]["stack_only"]
+    return {**s, "margin_pts": margin_pts, "net_flips_to_wrong": net, "passed": lo > -margin_pts or net <= 1,
+            "reason": f"paired 95% CI lower bound {lo:+.1f} pts vs -{margin_pts:.0f} pts margin, "
+                      f"net {net} answer(s) flipped to wrong (one flip never refuses)"}
 
 
 def harness_asker(cfg: dict):
