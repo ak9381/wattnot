@@ -119,7 +119,7 @@ def check_block_time_baseten() -> dict:
     per_call = 45.0                 # ESTIMATE worst typical hosted call incl. step-up output
     arm_s = 100 * 2 * per_call / conc
     rec_limit = 3 * 3600            # baseten_stage.py records each arm for at most 3 h
-    ok = arm_s <= HEADROOM * rec_limit and br.HARD_CAP_USD == 8.0
+    ok = arm_s <= HEADROOM * rec_limit and br.HARD_CAP_USD == 20.0
     return _r("block_time", "agentwaste rc 124 / FP8 start overran its block (r04-try1)", ok,
               f"worst arm {arm_s / 60:.0f} min vs recorder limit {rec_limit / 60:.0f} min; "
               "no GPU blocks on Baseten; HTTP timeout 240 s x 2 retries per call",
