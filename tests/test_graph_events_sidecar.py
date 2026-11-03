@@ -55,3 +55,13 @@ def test_lifecycle_shape_and_sweep_skipped(tmp_path):
 
 def test_missing_files_never_raise(tmp_path):
     sc.Sidecar(tmp_path).tick()
+
+
+def test_block_start_beat_without_note(tmp_path):
+    s = sc.Sidecar(tmp_path, run_id="t")
+    _w(tmp_path, {"p1-agentwaste": {"status": "done"}}, {"block": "p1-agentwaste", "note": None})
+    s.tick()
+    assert not (tmp_path / "live.jsonl").exists()
+    _w(tmp_path, {"p1-langchain": {"status": "pending"}}, {"block": "p1-langchain", "note": None})
+    s.tick()
+    assert [e["step_id"] for e in _events(tmp_path)] == ["p1-langchain"]

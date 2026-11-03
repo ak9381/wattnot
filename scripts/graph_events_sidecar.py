@@ -31,6 +31,7 @@ NODE_KEYWORDS: tuple[tuple[str, tuple[str, str]], ...] = (
     ("langchain", ("agent", "langchain")), ("agentwaste", ("agent", "waste")),
     ("combined", ("apply", "combined")), ("copy", ("e2e_rig", "copy")),
 )
+PASSED = {"done", "skipped", "dropped"}
 FINAL = {"done", "failed", "lost", "skipped", "dropped"}
 
 
@@ -103,7 +104,11 @@ class Sidecar:
         state = read_json(self.out / "driver_state.json")
         hb = read_json(self.out / "heartbeat.json")
         blocks = state.get("blocks") or {}
-        cur = hb.get("block") if hb.get("note") == "in-block" else None
+        # The driver beats block=<id>, note=None at the top of every block (also for ones it is
+        # about to pass over as done/skipped), then note="in-block" every 60 s while it runs.
+        cur = hb.get("block")
+        if hb.get("note") != "in-block" and (blocks.get(cur) or {}).get("status") in PASSED:
+            cur = None
         for bid in list(self.open):
             info = blocks.get(bid) or {}
             if bid != cur or info.get("attempt") != self.attempt.get(bid):
