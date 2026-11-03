@@ -14,10 +14,12 @@ def _driver(tmp_path, vm, **kw):
                   log=lambda m: None, **kw)
 
 
-def test_low_disk_aborts_cleanly_and_deletes_vm(tmp_path):
+def test_low_disk_aborts_cleanly_and_keeps_vm(tmp_path):
+    # a failure never deletes the VM (Akash, 3 Nov): the pass stops, the VM stays for a person
     vm = FakeVm()
     st = _driver(tmp_path, vm, disk_floor_gb=15.0, disk_free_gb=lambda: 3.0).go()
-    assert st["stopped"].startswith("disk low") and vm.deleted
+    assert st["stopped"].startswith("disk low") and not vm.deleted
+    assert any(e["kind"] == "vm-kept" for e in st["events"])
     assert any(e["kind"] == "disk-low" for e in st["events"])
 
 
@@ -66,3 +68,18 @@ def test_audit_results_skips_own_reports(tmp_path):
                         tmp_path / "nomock-preflight.json")
     rep = nomock.audit_results(tmp_path)
     assert rep["ok"]
+
+
+def test_driver_crash_keeps_vm(tmp_path):
+    from wattnot.longrun.driver import Driver
+    vm = FakeVm()
+    d = _driver(tmp_path, vm, disk_floor_gb=0, disk_free_gb=lambda: 500.0)
+    d._teardown(why="driver crashed", finished=True)
+    assert not vm.deleted
+    assert any(e["kind"] == "vm-kept" for e in d.state["events"])
+
+
+def test_end_of_plan_still_deletes(tmp_path):
+    vm = FakeVm()
+    st = _driver(tmp_path, vm, disk_floor_gb=15.0, disk_free_gb=lambda: 500.0).go()
+    assert st["stopped"] == "finished" and vm.deleted
