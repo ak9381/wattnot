@@ -60,3 +60,23 @@ def test_round_without_results_is_schema_fail(tmp_path):
     p.write_text(json.dumps(doc))
     r = verify_receipt(p, trusted=load_trusted())
     assert not r.steps[0].ok and r.grade == "UNVERIFIABLE"
+
+
+ATTACH = sorted((ROOT / "replays").glob("*/blocks/*/attachment.json"))
+
+
+@pytest.mark.parametrize("path", ATTACH, ids=lambda p: p.parent.name)
+def test_replay_attachments_pass(path):
+    r = verify_receipt(path, trusted=load_trusted())
+    assert r.steps[0].ok and r.grade == "ESTIMATE"
+
+
+def test_edited_attachment_fails(tmp_path):
+    src = ATTACH[0]
+    shutil.copy(src, tmp_path / "attachment.json")
+    shutil.copy(src.with_name("attachment.sigstore.json"), tmp_path / "attachment.sigstore.json")
+    p = tmp_path / "attachment.json"
+    doc = json.loads(p.read_text())
+    doc["block"] = "edited"
+    p.write_text(json.dumps(doc))
+    assert verify_receipt(p, trusted=load_trusted()).grade == "UNVERIFIABLE"

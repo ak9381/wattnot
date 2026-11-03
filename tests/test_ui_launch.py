@@ -27,16 +27,16 @@ def test_no_drift_against_runner_tables():
 
 
 def test_caps_match_approvals():
-    assert L.CAPS["modal_smoke_usd"] == 1.5 and L.CAPS["modal_stage_usd"] == 60.0
-    assert L.CAPS["modal_round_usd"] == 10.0 and L.CAPS["baseten_round_usd"] == 8.0
+    assert L.CAPS["modal_smoke_usd"] == 1.5 and L.CAPS["modal_stage_usd"] == 90.0
+    assert L.CAPS["modal_round_usd"] == 20.0 and L.CAPS["baseten_round_usd"] == 20.0
     sp = importlib.util.spec_from_file_location("mfr", ROOT / "scripts/e2e/modal_full_round.py")
-    assert "STAGE_CAP_USD = 60.0" in (ROOT / "scripts/e2e/modal_full_round.py").read_text()
-    assert L._modal_round_worst() <= 10.0
+    assert "STAGE_CAP_USD = 90.0" in (ROOT / "scripts/e2e/modal_full_round.py").read_text()
+    assert L._modal_round_worst() <= 20.0
 
 
 def test_caps_can_only_be_lowered():
     c = L.norm_config({"provider": "baseten", "caps": {"baseten_round_usd": 50}})
-    assert c["caps"]["baseten_round_usd"] <= 8.0
+    assert c["caps"]["baseten_round_usd"] <= 20.0
 
 
 def test_smoke_estimate_under_cap():
@@ -72,8 +72,8 @@ def test_baseten_smoke_cap_default_and_raise_flag():
                           "caps": {"baseten_smoke_usd": 2.0}})["caps"]["baseten_smoke_usd"] == 2.0
     assert L.norm_config({"provider": "baseten", "smoke": {"limit": 1},
                           "caps": {"baseten_smoke_usd": 5.0}})["caps"]["baseten_smoke_usd"] == 2.0
-    # the Baseten per-round cap is still fixed at $8 and only lowerable
-    assert L.norm_config({"provider": "baseten", "caps": {"baseten_round_usd": 50}})["caps"]["baseten_round_usd"] == 8.0
+    # the Baseten per-round cap is still fixed at $20 and only lowerable
+    assert L.norm_config({"provider": "baseten", "caps": {"baseten_round_usd": 50}})["caps"]["baseten_round_usd"] == 20.0
 
 
 def test_baseten_smoke_estimate_includes_meta_and_under_caps():

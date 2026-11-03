@@ -23,9 +23,12 @@ def test_full_plan_with_link_drop_keeps_vm_and_finishes(tmp_path):
 
 def test_dead_vm_is_deleted_only_after_the_window(tmp_path):
     st = dry_run(tmp_path, dead_after="b1-baseline-350", runner=ok)
-    assert st["stopped"] == "VM dead"
+    # Akash's rule: a failure never deletes the VM; the run stops and the VM is kept
+    assert st["stopped"] == "VM dead (kept, not deleted)"
     d = next(e for e in st["events"] if e["kind"] == "teardown-decision")
     assert d["delete"] and d["probes"] >= 5 and "SSH dead" in d["reason"]
+    assert any(e["kind"] == "vm-kept" for e in st["events"])
+    assert not any(e["kind"] == "vm-deleted" for e in st["events"]) and not st["sim"]["vm_deleted"]
     assert st["blocks"]["b1-baseline-350"]["status"] == "lost"
 
 

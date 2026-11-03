@@ -15,4 +15,4 @@
   Rebuild: `python scripts/build_eu_report.py --help`.
 - **Receipt panel**: `/api/dash/run/receipt` now shows round and sweep receipts too (summary view,
   numbers copied exactly from the receipt), merged into main as 523ccfb (that branch was deleted after the merge).
-- Verify any receipt: `wattnot verify <receipt.json>` (offline Ed25519; Rekor is never used). This covers energy receipts and the round receipts in `replays/*/receipt.json`. Round receipts are signed with the run's own key, so the signer shows `warn` and the grade tops out at ESTIMATE.
+- Verify any receipt: `wattnot verify <receipt.json>` (offline Ed25519; Rekor is never used). This covers energy receipts, the round receipts in `replays/*/receipt.json` and the block attachments in `replays/*/blocks/*/attachment.json`. Round receipts are signed with the run's own key, so the signer shows `warn` and the grade tops out at ESTIMATE.

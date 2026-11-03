@@ -8,7 +8,7 @@
 
 Without --dry-run this script only PRINTS the live commands; it never launches a paid run. A live
 round is started by running the printed command by hand, after Akash's go, inside each runner's
-own guards (WATTNOT_MODAL_GO, the $8 Baseten hard stop, ctl.py's VM lifetime and Rs cap).
+own guards (WATTNOT_MODAL_GO, the $20 Baseten hard stop, ctl.py's VM lifetime and Rs cap).
 See docs/PROVIDERS.md.
 """
 from __future__ import annotations
