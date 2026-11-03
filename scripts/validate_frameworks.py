@@ -95,8 +95,8 @@ def validate_one(ex_name: str, fw_name: str, probe: str, dist: str) -> tuple[dic
     finally:
         server.should_exit = True
 
-    easy_ok = "llama-3.1-8b" in (easy or "").lower()       # small model kept the easy one
-    hard_escalated = "llama-3.1-8b" not in (hard or "").lower()  # hard one escalated past it
+    easy_ok = "(fast)" in (easy or "").lower()       # cheap first tier kept the easy one
+    hard_escalated = "(fast)" not in (hard or "").lower()  # hard one escalated past it
     entry = {
         "framework": fw_name,
         "status": "validated",
