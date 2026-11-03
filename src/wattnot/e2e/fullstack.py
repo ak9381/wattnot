@@ -177,7 +177,7 @@ MODAL_GPU_OVERRIDES: dict[str, tuple[str, str]] = {
     "prefix_cache_provider": ("ON", "our own vLLM; cached_tokens MEASURED from usage"),
     "measured_energy": ("ON", "NVML total-energy counter brackets each arm and each chunk of items"),
     "concurrency_batching": ("ON", "server-side batching via the kept --max-num-seqs"),
-    "router": ("ON", "thinking off first, per-tier thinking budget on a failed check; one backend"),
+    "router": ("ON", "output budget first (Glimmer has no thinking switch), full budget on a failed check; one backend"),
     "joule_slo": ("ON", "Joule-SLO + p99 limit on MEASURED energy"),
     "power_caps": ("OFF", "Modal refuses NVML power-limit writes (probed each round, recorded)"),
     "clock_sidecar": ("OFF", "needs GPU clock writes, which Modal also refuses"),

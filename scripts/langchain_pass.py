@@ -4,8 +4,10 @@ traffic through the WattNot agent-waste proxy to the served model, saver OFF the
 
 * OFF arm: the proxy only forwards and logs (no guard limits, no context saver, no routing).
 * ON arm: waste guard + context saver + routing. On one H100 there is one model, so routing is
-  between two settings of the same Glimmer: thinking off first, thinking on if the answer gate
-  fails. That is effort routing, not model routing, and the receipt says so.
+  between two settings of the same Glimmer. Glimmer's chat template has no thinking switch
+  (thinking-off-smoke-1103), so tier 0 is an output budget (max_tokens cap) and a cut-off or
+  shaky answer steps up to the full budget; a model whose template reads enable_thinking gets
+  thinking off -> on instead. Both arms run at temperature 0 with a fixed seed. That is effort routing, not model routing, and the receipt says so.
 
 Datasets are only the three we already run: our own set (proof-v1 math items), GSM8K (pinned
 300) and HumanEval (pinned 164). Pick one with --dataset and a slice with --start/--n so the
@@ -31,6 +33,7 @@ sys.path.insert(0, str(ROOT / "src"))
 import public_bench_ab as pb  # noqa: E402
 
 GLIMMER = "meta-models/Muse-Glimmer-30B"
+SEED = 1234          # fixed seed + temperature 0: both arms compare on the same sampling
 DATASETS = ("own", "gsm8k300", "humaneval164")
 
 
@@ -116,6 +119,7 @@ def run_agent(base_url: str, model: str, rows: list[dict], max_steps: int, frame
         # one guard run per item: a shared run id let the step/token budget of the whole pass stop
         # items 13-20 (r04-try1: guard answered 17 of 29 calls, saver arm 2/20 correct)
         llm = ChatOpenAI(base_url=base_url, api_key="unused", model=model, max_tokens=2048,
+                         temperature=0, seed=SEED,
                          timeout=600, default_headers={"X-WattNot-Framework": "langchain",
                                                        "X-WattNot-Run": f"{framework_tag}-{i}",
                                                        "X-WattNot-Kind": kind}).bind_tools(tl)
@@ -163,6 +167,16 @@ def step_row(item: int, step: int, ai, wall_s: float) -> dict:
             "completion_tokens": usage.get("completion_tokens", um.get("output_tokens")),
             "reasoning_tokens": reasoning, "finish": meta.get("finish_reason"),
             "tool_calls": len(getattr(ai, "tool_calls", None) or [])}
+
+
+def step_totals(rows: list[dict]) -> dict:
+    """Sum of one arm's agent calls (tokens and wall time, MEASURED on a live server)."""
+    def tot(k):
+        return sum(int(r.get(k) or 0) for r in rows)
+    return {"calls": len(rows), "prompt_tokens": tot("prompt_tokens"),
+            "completion_tokens": tot("completion_tokens"), "reasoning_tokens": tot("reasoning_tokens"),
+            "wall_s": round(sum(float(r.get("wall_s") or 0) for r in rows), 2),
+            "finish_length": sum(1 for r in rows if r.get("finish") == "length")}
 
 
 def step_writer(out_dir: Path, arm: str, thinking: str):
@@ -263,6 +277,11 @@ def main(argv=None) -> int:
     ap.add_argument("--short-bypass-tokens", type=int, default=None,
                     help="agent calls under this many tokens pass through untouched (no done tool, "
                          "final check only on an empty reply). Default: the saver's gate (500); 0 = off")
+    ap.add_argument("--chat-template", default=None,
+                    help="model dir or template file; thinking off is used only if the template "
+                         "reads a thinking switch, else the output budget")
+    ap.add_argument("--out-budget", type=int, default=None,
+                    help="tier-0 max_tokens cap when the model has no thinking switch (default 448)")
     ap.add_argument("--fake", action="store_true", help="local mock upstream, MOCK numbers")
     ap.add_argument("--provider", choices=("vllm", "baseten"), default="vllm",
                     help="vllm = our own GPU server (--base-url); baseten = Baseten Model API on "
@@ -295,16 +314,20 @@ def main(argv=None) -> int:
         # http_upstream appends /v1/chat/completions itself; a base URL ending in /v1 gave /v1/v1 (502 on Modal)
         upstream = http_upstream(upstream_base(a.base_url)) if live else mock_upstream
         model = (a.model or GLIMMER) if live else "mock-model"
-        tiers = [{"name": "glimmer-think-off", "model": model, "body_extra": {"chat_template_kwargs": {"enable_thinking": False}}},
-                 {"name": "glimmer-think-on", "model": model, "reasoning": True,
-                  "max_output_cap": a.stepup_max_tokens or None}]
+        from wattnot import reasoning as RZ
+        tiers, route_desc = RZ.saver_tiers(model, RZ.read_chat_template(a.chat_template),
+                                           budget=a.out_budget or RZ.OUTPUT_BUDGET_TOKENS,
+                                           stepup_max_tokens=a.stepup_max_tokens)
+    if bt is not None:
+        route_desc = "reasoning_effort low -> medium"
     rows = items(a.dataset, a.start, a.n)
     nv = Nvml() if (live and bt is None) else None
     res = {"spec": "wattnot.langchain-pass/1", "label": label, "dataset": a.dataset,
            "start": a.start, "n": len(rows), "framework": "langchain", "provider": a.provider,
            "model": model,
-           "routing": "effort routing on one served model (thinking off -> on); model routing "
-                      "needs a second model and is in the multi-provider block", "route": a.route, "arms": {}}
+           "routing": f"effort routing on one served model ({route_desc}); model routing "
+                      "needs a second model and is in the multi-provider block", "route": a.route, "tiers": [t["name"] for t in tiers],
+           "sampling": {"temperature": 0, "seed": SEED}, "arms": {}}
     for arm, on in (("saver_off", False), ("saver_on", True)):
         base, server = serve(upstream, on, label, tiers, a.route == "final-check", a.max_stepups,
                              a.short_bypass_tokens)
@@ -312,12 +335,17 @@ def main(argv=None) -> int:
             bt.arm = arm
         try:
             e0, t0 = (nv.mj() if nv else None), time.time()
+            arm_steps: list[dict] = []
+            wstep = step_writer(Path(a.out), arm, route_desc if on else "model default")
+
+            def on_step(row, _w=wstep, _acc=arm_steps):
+                _acc.append(row)
+                _w(row)
             try:
                 per = run_agent(base, model, rows, a.max_steps, f"lc-{arm}",
                                 "code" if a.dataset == "humaneval164" else "math",
                                 on_item=progress_writer(Path(a.out), arm),
-                                on_step=step_writer(Path(a.out), arm,
-                                                    "off, steps up to on" if on else "model default"))
+                                on_step=on_step)
             except Exception as e:  # noqa: BLE001 - Baseten stop: keep what finished, end cleanly
                 if bt is None or not bt.stopped:
                     raise
@@ -336,7 +364,8 @@ def main(argv=None) -> int:
         res["arms"][arm] = {"correct": ok, "n": len(per), "wall_s": round(t1 - t0, 2),
                             "gpu_j": j, "gpu_j_label": "MEASURED" if j is not None else "not measured",
                             "j_per_correct": (j / ok) if (j and ok) else None,
-                            "steps": sum(p["steps"] for p in per), "proxy_receipt": proxy,
+                            "steps": sum(p["steps"] for p in per), "step_totals": step_totals(arm_steps),
+                            "proxy_receipt": proxy,
                             "per_item": per}
         if bt is not None:
             res["arms"][arm]["baseten"] = bt.arm_summary(arm)
@@ -361,7 +390,9 @@ def main(argv=None) -> int:
     out.mkdir(parents=True, exist_ok=True)
     (out / "langchain_pass.json").write_text(json.dumps(res, indent=2, default=str))
     print(json.dumps({k: v for k, v in res.items() if k != "arms"} | {
-        a_: {k: v for k, v in d.items() if k in ("correct", "n", "gpu_j", "steps")}
+        a_: {k: v for k, v in d.items() if k in ("correct", "n", "gpu_j", "j_per_correct", "steps", "step_totals")}
+        | {"stepped_up": ((d.get("proxy_receipt") or {}).get("final_check") or {}).get("stepped_up"),
+           "answered_by": ((d.get("proxy_receipt") or {}).get("routing") or {}).get("answered_by")}
         for a_, d in res["arms"].items()} | ({"baseten": {a_: d.get("baseten") for a_, d in res["arms"].items()}}
                                             if bt is not None else {}), default=str))
     return 0 if res["quality_held"] else 5   # a saver that loses answers is a failed block

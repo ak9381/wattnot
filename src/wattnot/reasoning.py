@@ -137,3 +137,59 @@ def write_caps(verdict: dict, path: str | os.PathLike | None = None) -> Path:
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(verdict, indent=2) + "\n")
     return p
+
+
+# --- output-length budget (Glimmer ignores enable_thinking; thinking-off-smoke-1103) ---------
+# Tier-0 cap for agent calls on a model without a thinking switch. Chosen from the r04 LangChain
+# rerun (r04-langchain-20261103T103719Z, MEASURED): completion tokens of steps in correct items,
+# p75 = 363 (saver off) / 437 (saver on), p90 607 / 529. 448 sits at ~p75 pooled; a cut-off or
+# shaky final answer steps up to the agent's full budget, so quality is protected.
+OUTPUT_BUDGET_TOKENS = 448
+THINKING_SWITCHES = ("enable_thinking",)
+
+
+def read_chat_template(path: str | os.PathLike | None) -> str:
+    """Chat template text from a model dir (tokenizer_config.json / chat_template.jinja) or a
+    file. Empty string when nothing is found. Never raises."""
+    if not path:
+        return ""
+    p = Path(path)
+    texts = []
+    try:
+        cands = [p] if p.is_file() else [p / "chat_template.jinja", p / "tokenizer_config.json"]
+        for c in cands:
+            if not c.is_file():
+                continue
+            s = c.read_text(errors="replace")
+            if c.suffix == ".json":
+                ct = json.loads(s).get("chat_template", "")
+                s = ct if isinstance(ct, str) else json.dumps(ct)
+            texts.append(s)
+    except Exception:  # noqa: BLE001 - detection only
+        return ""
+    return "\n".join(texts)
+
+
+def template_thinking_switch(template: str) -> str | None:
+    """The chat_template_kwargs flag the template really reads, or None (then a thinking-off
+    tier is a no-op and the output budget is used instead)."""
+    for k in THINKING_SWITCHES:
+        if k in (template or ""):
+            return k
+    return None
+
+
+def saver_tiers(model: str, template: str = "", *, budget: int = OUTPUT_BUDGET_TOKENS,
+                stepup_max_tokens: int | None = None) -> tuple[list[dict], str]:
+    """Two routing tiers on one served model, and a short description.
+    * template has a thinking switch -> thinking off first, thinking on (capped) on a step-up.
+    * no switch (Glimmer) -> output budget (max_tokens <= budget) first, full budget on a step-up."""
+    sw = template_thinking_switch(template)
+    if sw:
+        return ([{"name": "think-off", "model": model, "body_extra": {"chat_template_kwargs": {sw: False}}},
+                 {"name": "think-on", "model": model, "reasoning": True,
+                  "max_output_cap": stepup_max_tokens or None}],
+                f"thinking off ({sw}=false) -> on")
+    return ([{"name": "out-budget", "model": model, "max_output_cap": int(budget)},
+             {"name": "full-budget", "model": model}],
+            f"output budget (max_tokens<={int(budget)}) -> full budget")

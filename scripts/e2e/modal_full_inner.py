@@ -13,7 +13,7 @@ Runs against a vLLM OpenAI server on 127.0.0.1:8000 that this script starts and 
               accuracy holds (-2 pts) and J/correct drops (MEASURED). Eye + hearing re-checked
               on the candidate before keeping it.
   with        WattNot serving: kept precision, prefix caching ON, kept batch size, cheapest-first
-              router (thinking OFF first, step up to a per-tier thinking budget only when the fixed
+              router (output budget first, as Glimmer has no thinking switch; step up to the full budget only when the fixed
               check fails), reasoning-leak strip, joule-SLO + p99 limit checked after.
   agent       agent saver blocks on the WattNot server: agentwaste_gpu_ab (dedup, memory
               compression, Code Mode sandbox), langchain_pass (waste proxy OFF vs ON).
@@ -56,6 +56,7 @@ LEVERS = RequestLevers()
 
 MODEL = "meta-models/Muse-Glimmer-30B"
 PORT = 8000
+MODEL_PATH = ""   # set in main(); langchain reads its chat template to pick the saver tier
 BASE = f"http://127.0.0.1:{PORT}/v1"
 PUB_N = {"gsm8k": 60, "humaneval": 40}
 PUB_BUDGET = {"gsm8k": 512, "humaneval": 768}
@@ -591,7 +592,7 @@ def block_cmds(limit: int, fake: bool, out: Path, suffix: str = "") -> dict:
                       + ["--out", str(out / "agentwaste")] + fk,
         "langchain": [sys.executable, "scripts/langchain_pass.py", "--dataset", "own", "--n",
                       str(limit or 20), "--out", str(out / "langchain"), "--route", "final-check"]
-                     + (["--fake"] if fake else ["--base-url", BASE]),
+                     + (["--fake"] if fake else ["--base-url", BASE, "--chat-template", MODEL_PATH]),
         "eye": [sys.executable, "-m", "wattnot.vision.run", "--base-url", BASE, "--out", str(out / f"eye{suffix}"),
                 "--budget-s", "90"] + fk,
         "spoken": [sys.executable, "-m", "wattnot.spokenanswer.run", "--base-url", BASE, "--out",
@@ -748,6 +749,8 @@ def main(argv=None) -> int:
     raw.mkdir(parents=True, exist_ok=True)
     nv = Nvml(a.fake)
     NV[0] = nv
+    global MODEL_PATH
+    MODEL_PATH = a.model_path
     srv = Server(a.model_path, raw, a.fake)
     b = _bench()
     its = items(b, a.limit, tuple(a.sets))
