@@ -1048,6 +1048,67 @@ class Driver:
         deadline_s = max(1.0, left_h * 3600.0)
         return max(1.0, min(budget_s, deadline_s))
 
+    def _all_failed(self, block_id: str) -> str | None:
+        """Check result JSON files for zero-pass evidence. Return reason string if all items
+        failed or empty, None otherwise. Conservative: only flags when clear zero-pass evidence
+        exists; missing/unparseable files never flag."""
+        cands = [self.out / "runs" / block_id, self.out / "pulled" / "run2" / "results" / block_id]
+        for block_dir in (c for c in cands if c.exists()):
+            why = self._zero_pass_in(block_dir)
+            if why:
+                return why
+        return None
+
+    @staticmethod
+    def _zero_pass_in(block_dir) -> str | None:
+
+        try:
+            # Check tiers_summary.json: all tiers have pass_pct == 0
+            tiers_file = block_dir / "tiers_summary.json"
+            if tiers_file.exists():
+                tiers = json.loads(tiers_file.read_text())
+                if "tiers" in tiers and isinstance(tiers["tiers"], list) and len(tiers["tiers"]) > 0:
+                    # Each tier has a "cap" section with pass_pct
+                    all_zero = all(
+                        tier.get(arm, {}).get("pass_pct", 1) == 0
+                        for tier in tiers["tiers"] for arm in ("stock", "cap")
+                    )
+                    if all_zero:
+                        return f"tiers_summary: all {len(tiers['tiers'])} tiers have 0% pass rate"
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+
+        try:
+            # Check eye_test.json: detail.passed_count == 0 with checked > 0
+            eye_file = block_dir / "eye_test.json"
+            if eye_file.exists():
+                eye = json.loads(eye_file.read_text())
+                detail = eye.get("detail", {})
+                if isinstance(detail, dict):
+                    checked = detail.get("checked", 0)
+                    passed = detail.get("passed_count", 0)
+                    if checked > 0 and passed == 0:
+                        return f"eye_test: {passed}/{checked} passed (0%)"
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+
+        try:
+            # Check phase/summary.json: all windows counts are 0
+            summary_file = block_dir / "summary.json"
+            if not summary_file.exists():
+                summary_file = block_dir / "phase" / "summary.json"
+            if summary_file.exists():
+                summary = json.loads(summary_file.read_text())
+                windows = summary.get("windows", {})
+                if isinstance(windows, dict) and len(windows) > 0:
+                    all_zero = all(v == 0 for v in windows.values() if isinstance(v, int))
+                    if all_zero and any(v == 0 for v in windows.values()):
+                        return f"phase/summary: all window counts are 0"
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+
+        return None
+
     def go(self) -> dict:
         self._heartbeat(note="start")
         for b in self.blocks:
@@ -1145,6 +1206,12 @@ class Driver:
                 d = self.rec.end(result)
                 self._receipt(d, b.id)
                 ok = rc == 0 and not linkdown
+                zero_pass_reason = None
+                if ok:
+                    zero_pass_reason = self._all_failed(b.id)
+                    if zero_pass_reason:
+                        ok = False
+                        result["zero_pass"] = zero_pass_reason
                 self.state["blocks"][b.id] = {"status": "done" if ok else "failed", **result}
                 self._save()
                 if ok:
