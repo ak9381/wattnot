@@ -378,6 +378,11 @@ class TrafficRun:
                                        f"proof-v1 prompts, stock vs {self.cap_w} W")
                 check.stock()                      # stock answers at stock power
                 g.set_w(self.cap_w)
+                if hasattr(check, "warmup") and not getattr(check, "warm", None):
+                    self.state["phase"] = "GPU warm-up (not measured)"
+                    wu = check.warmup()
+                    self.event(step="gpu_warmup", **wu)
+                    self.state["phase"] = (f"answer check: {len(check.items)} proof-v1 prompts, stock vs {self.cap_w} W")
                 st = check.at(self.cap_w)
                 res["answer_check"] = st
                 self.event(step="quality_check", cap_w=self.cap_w, **{k: v for k, v in st.items() if k != "label"})

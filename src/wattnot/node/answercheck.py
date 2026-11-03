@@ -96,6 +96,8 @@ def proof_prompts(n: int | None = None) -> list[dict]:
 # 4 interleaved stock/cap pairs: with 2-3 pairs energy_clearly_down falls back to "every pair beats
 # 2x stock noise", which refused a steady -25%/-37% drop; from 4 pairs it uses the 95% CI rule
 CHECK_PAIRS = 4
+# proof.profile "standard": settle_s 4, warmup 16, warmup_s 10, burn_in 1
+WARMUP = {"settle_s": 4.0, "requests": 16, "load_s": 10.0, "burn_in_blocks": 1}
 
 
 class HarnessCapCheck:
@@ -131,6 +133,28 @@ class HarnessCapCheck:
         return {"answers": [a for a, _ in out], "j_per_req": j / max(1, len(out)),
                 "p99_s": percentile(lat, 99), "cap_w": w}
 
+    def warmup(self) -> dict:
+        """GPU warm-up (not measured), copied from the proof sweep's "standard" profile
+        (proof.rig.block + proof.profile): settle 4 s at the cap, 16 warm-up requests, 10 s of
+        concurrent load, then one burn-in block that is thrown away. All at stock power."""
+        from concurrent.futures import ThreadPoolExecutor
+        t0 = time.time()
+        self.set_cap(self.stock_w)
+        time.sleep(WARMUP["settle_s"])
+        mt = lambda it: max(int(it.get("max_tokens") or 512), HOLDOUT_MAX_TOKENS)  # noqa: E731
+        for k in range(WARMUP["requests"]):
+            it = self.items[k % len(self.items)]
+            self.ask(it["prompt"], mt(it))
+        tw = time.perf_counter()
+        with ThreadPoolExecutor(self.concurrency) as ex:
+            while time.perf_counter() - tw < WARMUP["load_s"]:
+                list(ex.map(lambda it: self.ask(it["prompt"], mt(it)), self.items[:self.concurrency]))
+        for _ in range(WARMUP["burn_in_blocks"]):
+            self._block(self.stock_w)
+        self.warm = {**WARMUP, "seconds": round(time.time() - t0, 1), "cap_w": self.stock_w,
+                     "label": "GPU warm-up (not measured)"}
+        return self.warm
+
     def stock(self) -> dict:
         # stock answers are asked inside each interleaved pair (at()); report the real count here
         return {"n": len(self.items), "joules_per_answer": None}
@@ -140,6 +164,8 @@ class HarnessCapCheck:
         from wattnot.proof.session import energy_clearly_down, stock_noise
         from wattnot.proof.stats import ci95, mean_sd
         stock, capped = [], []
+        if not getattr(self, "warm", None):
+            self.warmup()                 # UI power check and sequential mode both come through here
         try:
             for r in range(self.pairs):
                 order = [("stock", self.stock_w), ("cap", int(cap))]
@@ -185,7 +211,7 @@ class HarnessCapCheck:
                             "max_drop_pts": MAX_DROP_PTS, "passed": q_ok, "one_pt_rule": q.passed,
                             "reason": q.reason, "holdout_paired": paired, "noninferiority": noninf,
                             "max_tokens": HOLDOUT_MAX_TOKENS},
-                "why_not": why, "n": n, "pairs": self.pairs,
+                "why_not": why, "n": n, "pairs": self.pairs, "warmup": self.warm,
                 "rule": "proof sweep: harness graders (fixed_checks <=1 pt drop, or paired non-inferiority: 95% CI "
                         "lower bound > -5 pts, holdout report), max_tokens 1536 (holdout), mean p99 <= +10%, "
                         "energy_clearly_down, concurrency 32",

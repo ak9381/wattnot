@@ -47,7 +47,7 @@ def test_rejects_wrong_answers_and_no_energy_drop():
     r, _ = _check(wrong_cap=1)
     assert not r["accepted"] and r["why_not"][0].startswith("quality")
     assert r["quality"]["holdout_paired"]["discordant"]["stock_only"] == 1
-    assert any("energy" in w for w in _check(j_cap=0.99)[0]["why_not"])
+    assert any("energy" in w for w in _check(j_cap=1.0)[0]["why_not"])
 
 
 def test_one_flip_never_refuses_cap_noninferiority():
@@ -80,3 +80,10 @@ def test_check_runs_four_pairs_so_energy_uses_ci_rule():
     import statistics as st, math
     m, half = st.mean(d), 3.182 * st.stdev(d) / math.sqrt(4)
     assert energy_clearly_down(d, m, half, 20.0)
+
+
+def test_gpu_warmup_runs_at_stock_before_check_and_is_labelled():
+    r, g = _check()
+    assert r["warmup"]["label"] == "GPU warm-up (not measured)" and r["warmup"]["cap_w"] == 700
+    assert r["warmup"]["requests"] == 2 and r["warmup"]["burn_in_blocks"] == 1
+    assert r["accepted"]
