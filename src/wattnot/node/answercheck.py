@@ -99,7 +99,7 @@ class HarnessCapCheck:
     p99 latency per block (wattnot.proof.stats.percentile), accept when the MEAN per-pair p99
     change is <= p99_limit (10%, wattnot.settings default) and energy is clearly down by
     wattnot.proof.session.energy_clearly_down (with 2-3 pairs every pair below max(3%, 2x stock cv)).
-    The answer-match rule is unchanged from AnswerCheck: every capped answer agrees with stock."""
+    Quality uses the sweep's harness graders (gates.fixed.fixed_checks), not exact text."""
 
     def __init__(self, ask, gpu, set_cap, stock_w: int, n: int = 111, pairs: int = 2,
                  concurrency: int = 32, p99_limit: float = 10.0):
@@ -147,20 +147,35 @@ class HarnessCapCheck:
         e_mean, _ = mean_sd(d_e)
         _, e_half = ci95(d_e)
         p_mean, _ = mean_sd(d_p)
-        ref = stock[0]["answers"]
-        n = len(ref)
-        ok = min(sum(agree(a, b) for a, b in zip(c["answers"], ref)) for c in capped)
-        why = []
-        if ok < n:
-            why.append(f"{n - ok} of {n} answers changed")
+        # Quality exactly as the proof sweep scored proof-v1: harness graders (gates.answers via
+        # gates.fixed: math = same number, qa = alias/word match, code = run the tests), pooled
+        # stock vs pooled cap, cap pass rate no more than MAX_DROP_PTS below stock. Not exact text.
+        from wattnot.gates.fixed import fixed_checks
+        from wattnot.longrun.holdout import paired_summary
+        from wattnot.proof.rig import pooled_items
+        from wattnot.proof.session import MAX_DROP_PTS
+        from wattnot.gates.fixed import item_checks, run_check
+        from wattnot.runner.workload import load_workload
+        wl = list(load_workload(PROOF_V1))[:len(self.items)]
+        pool = lambda bs: {f"{it.id}#{r}": a for r, b in enumerate(bs)  # noqa: E731
+                           for it, a in zip(wl, b["answers"])}
+        q = fixed_checks(pool(stock), pool(capped), pooled_items(wl, len(stock)), max_drop_pts=MAX_DROP_PTS)
+        oks = lambda b: [all(run_check(c, a) for c in item_checks(it)) for it, a in zip(wl, b["answers"])]  # noqa: E731
+        paired = paired_summary(oks(stock[0]), oks(capped[-1]))
+        n = len(wl)
+        why = [] if q.passed else [f"quality: {q.reason}"]
         if not energy_clearly_down(d_e, e_mean, e_half, stock_noise(stock)["cv_pct"]):
             why.append("energy change not clearly below zero")
         if p_mean > self.p99_limit:
             why.append(f"p99 up {p_mean:.1f}% (limit {self.p99_limit:.0f}%)")
         return {"accepted": not why, "energy_change_pct": round(e_mean, 1), "p99_change_pct": round(p_mean, 1),
                 "per_pair_energy_pct": [round(x, 1) for x in d_e], "per_pair_p99_pct": [round(x, 1) for x in d_p],
-                "answers_same": f"{ok}/{n}", "why_not": why, "n": n, "pairs": self.pairs,
-                "rule": "proof sweep: mean p99 change <= +10%, energy_clearly_down, concurrency 32",
+                "quality": {"stock_pct": q.detail["baseline_pct"], "cap_pct": q.detail["candidate_pct"],
+                            "max_drop_pts": MAX_DROP_PTS, "passed": q.passed, "reason": q.reason,
+                            "holdout_paired": paired},
+                "why_not": why, "n": n, "pairs": self.pairs,
+                "rule": "proof sweep: harness graders (fixed_checks, <=1 pt drop), mean p99 <= +10%, "
+                        "energy_clearly_down, concurrency 32",
                 "label": "MEASURED (NVML energy, interleaved stock/cap blocks)"}
 
 
