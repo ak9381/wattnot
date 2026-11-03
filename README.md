@@ -93,6 +93,8 @@ switch). The headline below is MEASURED.
   pip install -e .
   wattnot verify --chain verifier/samples/chain/      # hash, signature, labels, hash chain
   wattnot verify --rekor-online receipt.json          # also look the entry up in the public Rekor log
+  wattnot verify replays/baseten-r1/receipt.json      # a round receipt: signed with that run's own key, so
+                                                      # it shows 'warn' on the signer and grades ESTIMATE
   python verifier/wattnot_verify.py --chain verifier/samples/chain/   # standalone, stdlib only
   ```
 

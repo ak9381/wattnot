@@ -73,7 +73,7 @@ Driver command: `PYTHONPATH=src python -m wattnot.longrun.driver --dry-run --out
 | Prefix cache auto/on/off (`context_saver.prefix_switch.choose`) | PASS | auto turns it on for a shared prompt prefix (87%) and off for unique prompts (0%); on and off force the vLLM flag either way |
 | `wattnot report eu --receipts receipts/rerun-1031/...cap325.json` | PASS | CSV and HTML written |
 | `wattnot verify` on the H100 rerun receipt and the modal-r1/r2 energy receipts | PASS | every check ok |
-| Round receipts of all 4 replays (signature check) | PASS | `check_receipt_file` is signed=True. `wattnot verify` covers energy receipts only, so it reports schema FAIL on round receipts. That is a documentation gap, not a broken receipt. |
+| Round receipts of all 4 replays (signature check) | PASS | `check_receipt_file` is signed=True. Since 3 Nov (branch `fix/verify-round-receipts`) `wattnot verify` also reads round receipts: schema, sha256 and signature ok, signer flagged as a per-run key, grade ESTIMATE, exit 0. |
 
 The mock tier gates show "blocked: p99 +12%". That comes from the synthetic latency model, not a real measurement.
 

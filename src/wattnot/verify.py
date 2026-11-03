@@ -54,6 +54,21 @@ def _is_flow(receipt) -> bool:
     return isinstance(receipt, dict) and receipt.get("spec") == FLOW_SPEC
 
 
+ROUND_FIELDS = ("kind", "round", "results", "labels", "integrity")
+
+
+def _is_round(receipt) -> bool:
+    """A round receipt (written by e2e post_round: kind hosted-e2e, modal-own-gpu-e2e, ...).
+    It has no `spec` field; it sums one round's arms and is signed with the run's key."""
+    return (isinstance(receipt, dict) and "spec" not in receipt
+            and isinstance(receipt.get("kind"), str) and receipt["kind"].endswith("e2e")
+            and "round" in receipt)
+
+
+def _self_signed_ok(receipt) -> bool:
+    return _is_flow(receipt) or _is_round(receipt)
+
+
 def _schema_step(receipt) -> Step:
     if _is_flow(receipt):
         # a flow receipt: one row per layer, the layer artifacts hashed; it carries no
@@ -63,6 +78,12 @@ def _schema_step(receipt) -> Step:
                 or not isinstance(receipt.get("integrity"), dict):
             return Step("schema", False, {"error": "flow receipt needs layers[{id,...}] and integrity"})
         return Step("schema", True, {"spec": FLOW_SPEC, "layers": len(lay)})
+    if _is_round(receipt):
+        missing = [k for k in ROUND_FIELDS if k not in receipt]
+        if missing or not isinstance(receipt.get("results"), dict) \
+                or not isinstance(receipt.get("integrity"), dict):
+            return Step("schema", False, {"error": f"round receipt missing or bad: {missing or 'results/integrity'}"})
+        return Step("schema", True, {"spec": f"round receipt ({receipt['kind']} {receipt['round']})"})
     if not isinstance(receipt, dict) or receipt.get("spec") != SPEC:
         spec = receipt.get("spec") if isinstance(receipt, dict) else None
         return Step("schema", False, {"error": f"spec is {spec!r}, want {SPEC}"})
@@ -136,8 +157,8 @@ def verify_document(receipt, bundle: dict | None, *, trusted: set[str] | None = 
             ok, detail = False, {"error": f"receipt names signer {integ.get('signer')}, "
                                           f"bundle is {why}"}
         if ok and trusted is not None and why not in trusted:
-            if _is_flow(receipt):
-                # the flow signs with a per-run (or local test) key: the signature is checked,
+            if _self_signed_ok(receipt):
+                # the flow and each e2e round sign with a per-run (or local test) key: the signature is checked,
                 # but the key proves only that this file was not changed since the run
                 detail = {"signer": why, "trusted": False,
                           "note": "per-run key, not in trusted-keys.json: self-signed, grade at most "
@@ -163,7 +184,15 @@ def verify_document(receipt, bundle: dict | None, *, trusted: set[str] | None = 
             steps.append(Step("joules", derived_ok,
                               {"error": jd["error"]} if not derived_ok else {"matches": True}))
     sci_out = None
-    if isinstance(receipt, dict) and "sci" in receipt:
+    if _is_round(receipt) and "sci" in receipt:
+        # a round receipt carries only the grid factor it used; the per-answer SCI lives in the
+        # energy receipt, so here we just check the factor is a labelled number
+        grid = (receipt.get("sci") or {}).get("grid") or {}
+        g_ok = isinstance(grid.get("gco2e_per_kwh"), (int, float)) and grid.get("label") in KNOWN_LABELS
+        steps.append(Step("sci", g_ok, {"matches": True, "summary": f"grid {grid.get('gco2e_per_kwh')} gCO2e/kWh [{grid.get('label')}]"}
+                          if g_ok else {"error": "round sci.grid needs a labelled gco2e_per_kwh"}))
+        derived_ok = derived_ok and g_ok
+    elif isinstance(receipt, dict) and "sci" in receipt:
         sci_ok, sd = check_sci(receipt)
         steps.append(Step("sci", sci_ok, {"error": sd["error"]} if not sci_ok
                           else {"matches": True, "summary": summary_line(receipt["sci"])}))
@@ -172,7 +201,8 @@ def verify_document(receipt, bundle: dict | None, *, trusted: set[str] | None = 
     if isinstance(receipt, dict):
         steps.append(labels_step(receipt))
     sha_ok, sig_ok = steps[1].ok, steps[2].ok
-    if _is_flow(receipt):
+    if _self_signed_ok(receipt):
+        # no measurement block of its own and a per-run key: never above ESTIMATE
         g = "ESTIMATE" if steps[0].ok and sha_ok and sig_ok else "UNVERIFIABLE"
     else:
         g = grade(receipt, sha_ok=steps[0].ok and sha_ok, sig_ok=sig_ok,
@@ -265,7 +295,8 @@ def format_report(r: Report) -> str:
         elif s.name == "joules":
             info = "matches the receipt's numbers" if s.ok else d.get("error", "")
         elif s.name == "sci":
-            info = "E x I and water match the receipt's numbers" if s.ok else d.get("error", "")
+            info = (d.get("summary") if d.get("summary", "").startswith("grid") else
+                    "E x I and water match the receipt's numbers") if s.ok else d.get("error", "")
         elif s.name == "grade":
             info = f"{d['grade']}" + (f"  (receipt claims {d['claimed']})"
                                       if d.get("claimed") and d["claimed"] != d["grade"] else "")
