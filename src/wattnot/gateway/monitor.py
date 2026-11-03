@@ -27,6 +27,11 @@ def agree(a: str, b: str) -> bool:
     return bool(norm(a)) and norm(a) == norm(b)
 
 
+# Sequential side by side on one GPU: the with-arm sets read (NVML energy, mJ) and sync, so each
+# shadow call to stock runs alone and its energy is bracketed and taken out of the arm's window.
+SHADOW_METER: dict = {"read": None, "sync": False, "excluded_mj": 0, "calls": 0}
+
+
 def tool_key(calls) -> list:
     """Tool calls as sorted (name, canonical args) pairs, for comparing two agent turns."""
     out = []
@@ -79,11 +84,21 @@ class Monitor:
             return False
         t = threading.Thread(target=self._shadow, args=(body, small, receipt_id), daemon=True)
         t.start()
-        if self.sync:
+        if self.sync or SHADOW_METER["sync"]:
             t.join()
         return True
 
     def _shadow(self, body: dict, small: dict, receipt_id: str) -> None:
+        read = SHADOW_METER["read"]
+        e0 = read() if read else None
+        try:
+            self._shadow_call(body, small, receipt_id)
+        finally:
+            if e0 is not None:
+                SHADOW_METER["excluded_mj"] += read() - e0
+                SHADOW_METER["calls"] += 1
+
+    def _shadow_call(self, body: dict, small: dict, receipt_id: str) -> None:
         from wattnot.agentwaste.server import sanitize, tier_body
         clean, _, _ = sanitize(body)
         try:

@@ -273,6 +273,9 @@ class TrafficRun:
     def _arm(self, name, items, gap, call) -> dict:
         """One arm, alone on the GPU: NVML energy counter read before and after (MEASURED)."""
         g = self.gpu
+        from wattnot.gateway import monitor as _mon
+        if name == "with":   # shadow calls to stock run alone and are taken out of this window
+            _mon.SHADOW_METER.update(read=g.energy_mj, sync=True, excluded_mj=0, calls=0)
         self.event(step="arm_start", arm=name, cap_w=g.limit_w())
         self.state["phase"] = (f"without WattNot at {g.limit_w()} W" if name == "without"
                                else f"with WattNot at {g.limit_w()} W")
@@ -299,7 +302,14 @@ class TrafficRun:
             if gap:
                 time.sleep(gap)
         j = (g.energy_mj() - e0) / 1000
-        out = {"requests": len(texts), "joules": round(j, 1), "seconds": round(time.time() - t0, 1),
+        sh_j, sh_n = _mon.SHADOW_METER["excluded_mj"] / 1000, _mon.SHADOW_METER["calls"]
+        if name == "with":
+            _mon.SHADOW_METER.update(read=None, sync=False, excluded_mj=0, calls=0)
+            j -= sh_j
+        out = {"requests": len(texts), "joules": round(j, 1),
+               "shadow_excluded": {"calls": sh_n, "joules": round(sh_j, 1),
+                                   "label": "MEASURED NVML energy of the gateway's shadow calls to stock, "
+                                            "run one at a time and taken out of this arm"} if name == "with" else None, "seconds": round(time.time() - t0, 1),
                "t0": round(t0, 3), "t1": round(time.time(), 3),
                "cap_w": g.limit_w(), "tokens": toks, "usd": round(usd, 6),
                "label": "MEASURED (NVML energy counter over the arm's window)", "texts": texts}

@@ -52,3 +52,17 @@ def test_tool_call_turns_agree_on_same_tool_and_args():
     assert agree_turn("", t, "", t2)
     assert not agree_turn("", t, "", [{"function": {"name": "inventory", "arguments": "{}"}}])
     assert agree_turn("#### 42", None, "so 42", None)
+
+
+def test_shadow_energy_is_bracketed_and_excluded():
+    from wattnot.gateway import monitor as mon
+    e = [0]
+    mon.SHADOW_METER.update(read=lambda: e[0], sync=True, excluded_mj=0, calls=0)
+    class M(mon.Monitor):
+        def __init__(self): pass
+        def _shadow_call(self, *a): e[0] += 5000
+    try:
+        M()._shadow({}, {}, "gw_x")
+        assert mon.SHADOW_METER["excluded_mj"] == 5000 and mon.SHADOW_METER["calls"] == 1
+    finally:
+        mon.SHADOW_METER.update(read=None, sync=False, excluded_mj=0, calls=0)
