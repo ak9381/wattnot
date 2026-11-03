@@ -15,7 +15,7 @@
 <main class="plug">
   <nav class="tabs"><a href="#setup" id="tSetup">Plug in</a><a href="#live" id="tLive">Live savings</a></nav>
   <section id="setup">
-    <div class="cards two"><a class="card" href="v2.html#pCfg"><b>Test on my prompts</b><small>Run your prompts with and without WattNot and get receipts that prove the savings.</small></a>
+    <div class="cards two"><a class="card" href="v2.html#pCfg" id="testCard"><b>Test on my prompts</b><small>Run your prompts with and without WattNot and get receipts that prove the savings.</small></a>
       <a class="card on" href="#setup"><b>Go live</b><small>Put WattNot in front of your app or your GPUs. Same settings file.</small></a></div>
     <p id="fromTest" class="note" hidden>Filled in from your passing test: only the savers that passed are on.</p>
     <h1>Plug WattNot in</h1><p class="lead">Three steps. Safe settings are already picked.</p>
@@ -62,7 +62,7 @@
       <div class="row"><label>Workload <select id="tWork"><option value="mixed">Mixed</option><option value="text">Text chat</option><option value="agent">Agent tasks</option><option value="langchain">LangChain agent</option><option value="images">Images</option><option value="voice">Voice</option></select></label>
         <label>Requests <select id="tN"><option>20</option><option selected>60</option><option>200</option></select></label>
         <label>Speed <select id="tSpeed"><option value="slow">Slow</option><option value="normal" selected>Normal</option><option value="fast">Fast</option></select></label>
-        <label><input type="checkbox" id="tAB"> Also run without WattNot, side by side</label></div>
+        <label><input type="checkbox" id="tAB"> Also run without WattNot, side by side</label> <span class="hint" data-wn-full>Side by side is for this demo. In production all traffic goes through WattNot once.</span></div>
       <p><b id="tCost">Estimated cost: …</b> <small>Real API calls. A run stops itself at $1.</small></p>
       <p><button id="tStart" class="pri">Start</button> <button id="tStop">Stop</button> <span id="tState" class="small" role="status"></span></p>
       <p id="tAbOut" class="small"></p></section>

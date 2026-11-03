@@ -99,7 +99,8 @@ async function drawLive() {
   $("#nodeSteps").innerHTML = ev.length ? ev.map((e) => `<li>${esc(stepText(e))}</li>`).join("") : `<li class="small">No GPU helper yet. Press "Add GPU helper" to start one.</li>`;
   $("#receipts").innerHTML = (f && f.receipts || []).slice(0, 20).map((r) => `<li data-id="${esc(r.receipt_id)}">${esc(r.receipt_id)} · ${fmtWh((r.baseline.joules - r.actual.joules) / 3600)} saved · ${esc(r.labels.joules)}${r.stepped_up ? " · stepped up" : ""}${r.guard_stopped ? " · loop stopped" : ""}</li>`).join("")
     || `<li class="small">No receipts yet. Each request through the gateway adds one here.</li>`;
-  $$all("#receipts li[data-id]").forEach((li) => (li.onclick = () => window.open(`/api/dash/plug/receipt/${li.dataset.id}`, "_blank")));
+  $$all("#receipts li[data-id]").forEach((li) => (li.onclick = () => (window.parent?.__wnShowReceipt && window.parent !== window
+    ? window.parent.__wnShowReceipt(li.dataset.id) : window.open(`/api/dash/plug/receipt/${li.dataset.id}`, "_blank"))));
 }
 function stepText(e) {
   const L = e.gpu_label === "MEASURED" ? "MEASURED" : "REPLAY";
@@ -138,7 +139,7 @@ function nodeResultText(res) {
 }
 $("#addNode").onclick = () => addNode(false);
 $("#approveNode").onclick = () => addNode(true);
-const tChoice = () => ({ workload: $("#tWork").value, n: Number($("#tN").value), speed: $("#tSpeed").value, with_without: $("#tAB").checked });
+const tChoice = () => ({ workload: $("#tWork").value, n: Number($("#tN").value), speed: $("#tSpeed").value, with_without: $("#tAB").checked, mode: $("#tAB").checked ? "test" : "live" });
 async function tEstimate() {
   const r = await post("/api/dash/traffic/estimate", tChoice()).catch(() => null);
   if (r && r.ok) { const e = await r.json(); $("#tCost").textContent = e.self_hosted
@@ -162,3 +163,11 @@ async function drawTraffic() {
 function route() { const live = location.hash === "#live"; $("#live").hidden = !live; $("#setup").hidden = live; if (live) drawLive(); }
 window.addEventListener("hashchange", route);
 drawSetup(); route(); tEstimate(); setInterval(() => { if (location.hash === "#live") { drawLive(); drawTraffic(); } }, 3000);
+
+// inside the live graph's Go live drawer, "Test on my prompts" switches the drawer tab
+if (document.documentElement.classList.contains("embed")) {
+  const tc = document.getElementById("testCard");
+  if (tc) tc.onclick = (e) => { const b = window.parent?.document.querySelector('[data-gl^="v2.html"]'); if (b) { e.preventDefault(); b.click(); } };
+}
+{ const eu = document.getElementById("eu");
+  if (eu) { eu.textContent = "EU report (from these requests)"; eu.onclick = (e) => { if (window.parent !== window && window.parent.__wnShowEU) { e.preventDefault(); window.parent.__wnShowEU(); } }; } }

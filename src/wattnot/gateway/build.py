@@ -27,11 +27,12 @@ DEFAULTS: dict[str, Any] = {
               {"name": "big", "model": "muse-spark-1.3", "body_extra": {"reasoning_effort": "high"}}],
     "baseline": {"tier": "big", "shadow_rate": 0.1, "min_agreement": 0.8, "min_samples": 10},
     "savers": {
-        "agent_waste": {"enabled": True, "preset": "second_layer"},
+        "agent_waste": {"enabled": True, "preset": "harness"},   # WasteConfig(): what the H100 agentwaste block ran
         "routing": {"enabled": True, "final_check": False, "max_stepups": 1},
         "context_saver": {"enabled": True, "min_tokens": 500},
-        # the H100 sealed holdout's kept stack: reasoning_effort low + a 1536-token output budget
-        "thinking_cap": {"enabled": True, "reasoning_effort": "low", "max_tokens": 1536},
+        # the H100 sealed holdout's kept stack (wattnot.longrun.holdout.FROZEN_STACK), applied with
+        # the harness's own apply_stack: reasoning_effort low + a 1536-token output budget
+        "thinking_cap": {"enabled": True, "reasoning_effort": "low", "max_tokens": 1536, "harness": "holdout"},
         "vision": {"enabled": True, "max_side_px": 768},
         "voice": {"enabled": True},
     },
@@ -208,10 +209,14 @@ def build_app(cfg: dict, upstream=None, log: SavingsLog | None = None):
         if tc["enabled"] and first and gate.allow("thinking_cap", gate_key) \
                 and not (mon is not None and mon.rolled_back):   # canary rollback covers the same lever
             eff = tc.get("reasoning_effort")
-            if eff and body.get("reasoning_effort") != eff:
-                body = {**body, "reasoning_effort": eff}
-                info["thinking_low"] = True
-            body = cap_thinking(body, int(tc["max_tokens"]))
+            had = body.get("reasoning_effort")
+            if tc.get("harness") == "holdout":
+                from wattnot.longrun.holdout import apply_stack
+                body = apply_stack(body, {"savers": {"reasoning_effort": eff} if eff else {},
+                                          "max_tokens": int(tc["max_tokens"])})
+            else:
+                body = cap_thinking({**body, "reasoning_effort": eff} if eff else body, int(tc["max_tokens"]))
+            info["thinking_low"] = bool(eff) and had != eff
         if sv["vision"]["enabled"] and gate.allow("vision", gate_key):
             body, info["images_shrunk"] = shrink_images(body, int(sv["vision"]["max_side_px"]))
         resp = raw_up(body, headers)

@@ -397,7 +397,7 @@ def test_ui_start_gateway_then_simulated_traffic_side_by_side(tmp_path, monkeypa
     est = c.post("/api/dash/traffic/estimate", json={"workload": "mixed", "n": 60}).json()
     assert est["under_1_usd"] and est["label"] == "ESTIMATE"
     assert c.post("/api/dash/traffic/start", json={"n": 7}).status_code == 400
-    r = c.post("/api/dash/traffic/start", json={"workload": "text", "n": 20, "speed": "fast", "with_without": True})
+    r = c.post("/api/dash/traffic/start", json={"workload": "text", "n": 20, "speed": "fast", "with_without": True, "mode": "test"})
     assert r.status_code == 200 and r.json()["label"] == "Simulated traffic"
     t = _wait(c, "/api/dash/traffic/status")
     assert t["done"] == 20 and t["errors"] == 0 and t["without_totals"]["requests"] == 20
@@ -417,7 +417,7 @@ def test_traffic_hard_stop_and_over_1_needs_confirm(tmp_path, monkeypatch):
     c, _ = _ui_client(tmp_path, monkeypatch)
     c.post("/api/dash/gateway/start")
     if not big["under_1_usd"]:
-        assert c.post("/api/dash/traffic/start", json={"workload": "images", "n": 200, "with_without": True}).status_code == 402
+        assert c.post("/api/dash/traffic/start", json={"workload": "images", "n": 200, "with_without": True, "mode": "test"}).status_code == 402
 
 
 def test_traffic_workloads_build():

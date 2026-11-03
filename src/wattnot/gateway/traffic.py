@@ -183,7 +183,15 @@ class TrafficRun:
         self._stop = threading.Event()
         self.thread: threading.Thread | None = None
 
-    def start(self, workload="mixed", n=60, speed="normal", with_without=False, base_url=None) -> dict:
+    def start(self, workload="mixed", n=60, speed="normal", with_without=False, base_url=None,
+              mode="test") -> dict:
+        """mode "live" (Go live, connected): every request goes through WattNot only, like
+        production; savings are read against the stock baseline (ESTIMATE). The side-by-side
+        without-WattNot arm exists only in mode "test" (Test on my prompts)."""
+        if mode not in ("live", "test"):
+            raise ValueError("mode must be live or test")
+        if mode == "live" and with_without:
+            raise ValueError("Go live sends all traffic through WattNot; side by side is only in Test on my prompts")
         self.base_url = base_url
         if self.thread and self.thread.is_alive():
             raise RuntimeError("traffic is already running")
@@ -194,7 +202,7 @@ class TrafficRun:
         items = plan(workload, n)
         self._stop.clear()
         self.state.update(running=True, done=0, total=len(items), errors=0, usd=0.0, stopped=None,
-                          workload=workload, with_without=bool(with_without), without={"done": 0, "usd": 0.0})
+                          workload=workload, mode=mode, with_without=bool(with_without), without={"done": 0, "usd": 0.0})
         self.thread = threading.Thread(target=self._run, args=(items, SPEEDS[speed], with_without), daemon=True)
         self.thread.start()
         return dict(self.state)

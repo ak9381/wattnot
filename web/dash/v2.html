@@ -15,7 +15,9 @@
 <link rel="stylesheet" href="voiceguide.css">
 <link rel="stylesheet" href="metatools.css">
 <link rel="stylesheet" href="eulink.css">
-<script src="chrome.js" defer></script>
+<script>if (new URLSearchParams(location.search).get("embed") === "1" || window.top !== window.self) document.documentElement.classList.add("embed");</script>
+<script>if (!document.documentElement.classList.contains("embed")) document.write('<script src="chrome.js" defer><\/script>');</script>
+<style>html.embed body{background:transparent;color:#e7eaf0} html.embed .wn-nav,html.embed .wn-side,html.embed .wn-footer{display:none!important}</style>
 <script type="module" src="voiceguide.js"></script>
 <script type="module" src="explainmap.js"></script>
 </head>

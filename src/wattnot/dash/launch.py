@@ -605,7 +605,8 @@ def _get(d, *ks):
 def rounds() -> list[dict]:
     files = sorted((ROOT / "data" / "baseten-1101").glob("*/smoke-matrix/*.json")) + \
         sorted((ROOT / "out" / "matrix").glob("r0*.json")) + \
-        sorted((ROOT / "data" / "modal-full-1101").glob("*/round.json"))
+        sorted((ROOT / "data" / "modal-full-1101").glob("*/round.json")) + \
+        sorted((ROOT / "out" / "gateway-runs").glob("*/round.json"))
     out = []
     for f in files:
         try:
@@ -613,7 +614,7 @@ def rounds() -> list[dict]:
         except (OSError, ValueError):
             continue
         rdir = f.parent.parent if f.parent.name == "smoke-matrix" else f.parent
-        prov = "modal_a100" if "modal" in f.as_posix() else "baseten"
+        prov = d.get("provider") or ("modal_a100" if "modal" in f.as_posix() else "baseten")
         res = d.get("results") or {}
         pa = res.get("per_arm") or {}
         arms = {}

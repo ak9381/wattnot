@@ -935,6 +935,24 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
             raise HTTPException(404, "no such receipt")
         return r
 
+    @app.get("/api/dash/plug/receipt/{rid}/verify")
+    def plug_receipt_verify(rid: str) -> dict:
+        r = _plug.verify_receipt(logs[0], rid)
+        if r is None:
+            raise HTTPException(404, "no such receipt")
+        return r
+
+    @app.get("/api/dash/plug/quality")
+    def plug_quality() -> dict:
+        mon = None
+        if gw.app is not None:
+            try:
+                st = gw.app.state.monitor.status()
+                mon = {**st, "gate": gw.app.state.gate.status()}
+            except AttributeError:
+                mon = None
+        return _plug.quality(logs[0], mon)
+
     @app.get("/api/dash/plug/eu")
     def plug_eu() -> dict:
         return _plug.eu_report(*logs)
@@ -1045,7 +1063,7 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
             if not traffic.state.get("running"):
                 traffic_t0[0] = time.time()
             return traffic.start(body.get("workload", "mixed"), int(body.get("n", 60)), body.get("speed", "normal"),
-                                 bool(body.get("with_without")),
+                                 bool(body.get("with_without")), mode=body.get("mode", "live"),
                                  base_url=str(request.base_url).rstrip("/") + "/gw/v1")
         except (RuntimeError, ValueError) as e:
             raise HTTPException(400, str(e)) from e

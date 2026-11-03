@@ -45,6 +45,17 @@ FROZEN_STACK = {
     "savers": {"reasoning_effort": "low"},   # thinking budget as applied (reasoning_caps.json)
     "max_tokens": 1536, "temperature": 0, "seed": 1234,
 }
+
+
+def apply_stack(body: dict, stack: dict = FROZEN_STACK) -> dict:
+    """The holdout's request transform for the stack arm: its savers (reasoning_effort low) and its
+    output budget. The gateway's thinking saver calls this, so both apply the same tested change."""
+    out = {**body, **stack["savers"]}
+    asked = out.pop("max_tokens", None) or out.get("max_completion_tokens")
+    out["max_completion_tokens"] = min(int(asked), int(stack["max_tokens"])) if asked else int(stack["max_tokens"])
+    return out
+
+
 # Every GSM8K test item a tuning or gate set has touched.
 USED_PREFIX = 300   # gsm8k_test_first60/first300 (LangChain p2, public bench, matrix rounds)
 SCAN_DIRS = ("workloads", "data")   # text scan: any other file quoting a GSM8K question

@@ -156,10 +156,110 @@ function build() {
   // The plug screens load in a frame (plug.html?embed=1) so their ids never clash with the graph's.
   const gl = document.createElement("aside");
   gl.id = "golivedrawer"; gl.className = "legdrawer golive"; gl.setAttribute("aria-hidden", "true");
-  gl.innerHTML = `<div class="legdrawer-head"><b>Go live</b><button type="button" class="legdrawer-x" id="goliveX" aria-label="Close Go live">Close</button></div>
+  gl.innerHTML = `<div class="legdrawer-head"><span class="golive-tabs" role="tablist">
+      <button type="button" role="tab" data-gl="plug.html?embed=1#setup" aria-selected="true">Go live</button>
+      <button type="button" role="tab" data-gl="v2.html?embed=1#pCfg" aria-selected="false">Test on my prompts</button></span>
+      <button type="button" class="legdrawer-x" id="goliveX" aria-label="Close Go live">Close</button></div>
     <iframe id="goliveFrame" title="Plug WattNot in: start gateway, connect GPU, simulate traffic, live savings"></iframe>`;
   document.body.appendChild(gl);
   const gLive = $("#gLive", bar);
+  gl.querySelectorAll("[data-gl]").forEach((b) => b.addEventListener("click", () => {
+    gl.querySelectorAll("[data-gl]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+    $("#goliveFrame", gl).src = b.dataset.gl;
+  }));
+  // ---- the gateway's own live feed, drawn ON the graph (bottom-left), so the graph keeps
+  // moving while you connect and send traffic from the drawer. Real receipts only.
+  const gwl = document.createElement("div");
+  gwl.id = "gwLive"; gwl.className = "gwlive"; gwl.hidden = true; gwl.dataset.wnFull = "1";   // keep the MEASURED/ESTIMATE words (no dot shorthand)
+  gwl.innerHTML = `<div class="gwlive-h"><b>Gateway live</b> <span id="gwlLab" class="wnlab m">LIVE</span></div>
+    <div id="gwlTxt" class="gwlive-t"></div><canvas id="gwlC" width="320" height="70"></canvas>
+    <div class="gwlive-k"><i class="k1"></i>with WattNot <i class="k2"></i>without (stock)</div>
+    <div id="gwlQ" class="gwlive-q"></div>
+    <div class="gwlive-r"><span>Receipts:</span> <span id="gwlRc"></span></div>
+    <div class="gwlive-b"><button type="button" id="gwlEu">EU report</button></div>`;
+  document.body.appendChild(gwl);
+  // ---- Receipt / EU report viewer: a modal over the graph; every number carries its label.
+  const rv = document.createElement("div");
+  rv.id = "gwView"; rv.className = "gwview"; rv.hidden = true; rv.dataset.wnFull = "1";
+  rv.innerHTML = `<div class="gwview-box" role="dialog" aria-modal="true" aria-labelledby="gwvT">
+    <div class="legdrawer-head"><b id="gwvT">Receipt</b><button type="button" class="legdrawer-x" id="gwvX">Close</button></div>
+    <div id="gwvB" class="gwview-body"></div></div>`;
+  document.body.appendChild(rv);
+  const esc = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const chip = (l) => l ? ` <span class="wnlab ${/MEASURED/.test(l) ? "m" : "e"}">${esc(l)}</span>` : "";
+  const row = (k, v, l) => `<tr><th>${esc(k)}</th><td>${esc(v)}${chip(l)}</td></tr>`;
+  const show = (title, html) => { $("#gwvT", rv).textContent = title; $("#gwvB", rv).innerHTML = html; rv.hidden = false; };
+  $("#gwvX", rv).addEventListener("click", () => (rv.hidden = true));
+  rv.addEventListener("click", (e) => { if (e.target === rv) rv.hidden = true; });
+  window.__wnShowReceipt = async (id) => {
+    const r = await fetch(`/api/dash/plug/receipt/${encodeURIComponent(id)}`).then((x) => (x.ok ? x.json() : null)).catch(() => null);
+    if (!r) return show("Receipt", `<p>Receipt ${esc(id)} not found.</p>`);
+    const a = r.actual || {}, b = r.baseline || {}, L = r.labels || {};
+    const v = await fetch(`/api/dash/plug/receipt/${encodeURIComponent(id)}/verify`).then((x) => (x.ok ? x.json() : null)).catch(() => null);
+    show(`Receipt ${r.receipt_id}`, `<table>${[
+      row("time", new Date(r.ts * 1000).toLocaleString()), row("request", r.run), row("status", r.status),
+      row("model calls", r.upstream_calls), row("stepped up", r.stepped_up), row("agent guard stopped", r.guard_stopped),
+      row("images shrunk", r.images_shrunk),
+      row("tokens with WattNot", `${a.prompt_tokens} in / ${a.completion_tokens} out`, L.tokens),
+      row("tokens stock", `${b.prompt_tokens} in / ${b.completion_tokens} out`, b.label),
+      row("energy with WattNot", `${(a.joules / 3600).toFixed(3)} Wh`, L.joules),
+      row("energy stock", `${(b.joules / 3600).toFixed(3)} Wh`, b.label),
+      row("cost with WattNot", `$${Number(a.usd).toFixed(5)}`, L.usd), row("cost stock", `$${Number(b.usd).toFixed(5)}`, L.usd),
+      row("chained to", r.prev_receipt_id || "(first)"),
+      ...(v ? [row("hash check", v.id_matches && v.chain_ok ? `OK (id = sha256 of the record; ${v.position} of ${v.of} in the chain)` : "FAILED", v.id_matches && v.chain_ok ? "MEASURED" : ""),
+               row("signature", v.signer === "UNSIGNED" ? "UNSIGNED (no local signing key on this server)" : `${v.signer} · ${v.signature.slice(0, 24)}…`)] : [])].join("")}</table>
+      <p class="note"><a href="/api/dash/plug/receipt/${esc(r.receipt_id)}" target="_blank" rel="noopener">Raw receipt (JSON)</a></p>`);
+  };
+  window.__wnShowEU = async () => {
+    const r = await fetch("/api/dash/plug/eu").then((x) => x.json()).catch(() => null);
+    if (!r || r.source === "replay") return show("EU efficiency report", `<p>${esc((r && r.note) || "No live gateway traffic yet.")} (REPLAY)</p>`);
+    const v = (o) => (o && typeof o === "object" ? o.value : o), l = (o) => (o && typeof o === "object" ? o.label : "");
+    show("EU efficiency report", `<p class="note">Inference-level fields toward an EU 2024/1364 report, built from this gateway's savings log and the GPU helper's NVML log. ${esc(r.basis)}.</p><table>${[
+      row("requests", r.requests), row("energy used", `${v(r.energy_kwh)} kWh`, l(r.energy_kwh)),
+      row("energy saved vs stock", `${v(r.energy_saved_kwh)} kWh`, l(r.energy_saved_kwh)),
+      row("water", `${v(r.water_litres)} L`, l(r.water_litres)),
+      row("receipts", `${r.first_receipt} … ${r.last_receipt}`)].join("")}</table>
+      <p class="note"><a href="/api/dash/plug/eu" target="_blank" rel="noopener">Download JSON</a></p>`);
+  };
+  $("#gwlEu", gwl).addEventListener("click", () => window.__wnShowEU());
+  const drawGwl = (f, t) => {
+    const s = f.series || [];
+    if (!s.length && !(t && t.running)) { gwl.hidden = true; return; }
+    gwl.hidden = false;
+    const last = s[s.length - 1] || {};
+    const w = last.wh || 0, b = last.wh_baseline || 0;
+    $("#gwlLab", gwl).textContent = last.label || "LIVE";
+    $("#gwlTxt", gwl).textContent = `${s.length} requests · ${(w * 1000).toFixed(1)} mWh with vs ${(b * 1000).toFixed(1)} mWh stock`
+      + (b ? ` (${(100 * (b - w) / b).toFixed(0)}% ${b >= w ? "saved" : "MORE"})` : "")
+      + (t && t.running ? ` · sending ${t.done}/${t.total}` : "");
+    $("#gwlRc", gwl).innerHTML = (f.receipts || []).slice(0, 4).map((r) =>
+      `<button type="button" class="rc" data-rid="${r.receipt_id}">${r.receipt_id.slice(-6)}</button>`).join(" ");
+    gwl.querySelectorAll("[data-rid]").forEach((b) => (b.onclick = () => window.__wnShowReceipt(b.dataset.rid)));
+    const c = $("#gwlC", gwl), x = c.getContext("2d"), mx = Math.max(1e-9, ...s.map((r) => Math.max(r.wh, r.wh_baseline)));
+    x.clearRect(0, 0, c.width, c.height);
+    [["wh_baseline", "#8a93a3"], ["wh", "#7fd1c9"]].forEach(([k, col]) => {
+      x.beginPath(); x.strokeStyle = col; x.lineWidth = 2;
+      s.forEach((r, i) => { const px = s.length < 2 ? 0 : (i / (s.length - 1)) * c.width, py = c.height - 4 - (r[k] / mx) * (c.height - 8);
+        i ? x.lineTo(px, py) : x.moveTo(px, py); });
+      x.stroke();
+    });
+  };
+  const pollGw = async () => {
+    try {
+      fetch("/api/dash/plug/quality").then((r) => (r.ok ? r.json() : null)).then((q) => {
+        if (!q || !q.requests) return;
+        $("#gwlQ", gwl).innerHTML = `Quality gate: ${q.shadow_pairs} shadow pairs, agreement ${q.agreement == null ? "n/a" : Math.round(q.agreement * 100) + "%"}`
+          + (q.gate_off.length ? ` · off: ${q.gate_off.map((g) => g.saver).join(", ")}` : " · all savers on")
+          + `<br>J per correct answer: ${q.j_per_correct ?? "n/a"} J (stock ${q.j_per_correct_stock ?? "n/a"} J/request) <span class="wnlab e">ESTIMATE</span>`
+          + `<br>Spend: $${q.spend_usd.toFixed(4)} <span class="wnlab e">${q.spend_label}</span>`;
+      }).catch(() => {});
+      const [f, t] = await Promise.all([fetch("/api/dash/plug?last=500").then((r) => r.json()),
+        fetch("/api/dash/traffic/status").then((r) => (r.ok ? r.json() : null)).catch(() => null)]);
+      if (f && f.source !== "replay") drawGwl(f, t); else if (!gl.classList.contains("open")) gwl.hidden = true;
+    } catch { /* not served here: no gateway, nothing to draw */ }
+    setTimeout(pollGw, gl.classList.contains("open") ? 1500 : 5000);
+  };
+  pollGw();
   const openLive = (on) => {
     if (on) { open(false); closeInfo(); const f = $("#goliveFrame", gl); if (!f.src) f.src = "plug.html?embed=1#setup"; }
     gl.classList.toggle("open", on); gl.setAttribute("aria-hidden", String(!on));
