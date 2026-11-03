@@ -18,3 +18,23 @@
 button.pri{font-weight:600}
 html,body{overflow-x:hidden}.plug{overflow-wrap:anywhere}.plug pre,.plug code{max-width:100%}
 .plug section,.plug li,.plug h2,#graph,#traffic{scroll-margin-top:90px}
+
+/* embedded in graph.html's Go live drawer: the graph app's dark glass style */
+html.embed,html.embed body{background:transparent;color:#e7eaf0;font:14px Inter,system-ui,sans-serif}
+html.embed .plug{margin:0;padding:6px 14px 28px;max-width:none}
+html.embed #wn-mic-slot,html.embed .wn-nav,html.embed .wn-side,html.embed .wn-footer{display:none!important}
+html.embed .tabs{position:sticky;top:0;z-index:2;padding:8px 0;background:rgba(23,23,36,.96)}
+html.embed .tabs a{color:#7fd1c9;text-decoration:none;border-bottom:2px solid transparent;padding-bottom:3px}
+html.embed .tabs a.on{border-color:#7fd1c9}
+html.embed h1{font-size:20px;margin:8px 0 2px}html.embed h2{font-size:15px;margin:0 0 8px}
+html.embed .steps li,html.embed .panel{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.12);border-radius:12px}
+html.embed .cards label,html.embed .cards a.card{border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.02)}
+html.embed button{font:12px ui-monospace,monospace;color:#cdd3dd;background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:7px;padding:5px 10px;cursor:pointer}
+html.embed button.pri{border-color:#7fd18a;color:#7fd18a;font-weight:700}
+html.embed button:hover{border-color:#8a93a3;color:#fff}
+html.embed select,html.embed input{background:#151826;color:#e7eaf0;border:1px solid rgba(255,255,255,.2);border-radius:6px}
+html.embed pre{background:#0b0e14;border:1px solid rgba(255,255,255,.1)}
+html.embed #graph{background:rgba(255,255,255,.03);height:200px}
+html.embed .tag{background:rgba(127,209,138,.15);color:#7fd18a}
+html.embed .big{font-size:2.1em}
+html.embed .plug section,html.embed .plug li,html.embed #graph,html.embed #traffic{scroll-margin-top:44px}

@@ -47,6 +47,16 @@ class NodeLog:
         return rec
 
 
+def boxes_from_raw(raw: str) -> list:
+    """Rack ids and boxes from SAM's raw text without decoding the masks (no vision extra)."""
+    from types import SimpleNamespace
+
+    from wattnot.sam.room import _REC
+    recs = sorted(((int(x1), int(y1), int(x2), int(y2)) for _, x1, y1, x2, y2, *_ in _REC.findall(raw)),
+                  key=lambda b: (b[0] + b[2], b[1]))
+    return [SimpleNamespace(id=f"R{i + 1:02d}", box=b) for i, b in enumerate(recs)]
+
+
 def rack_check(sam_client=None, photo: Path = PHOTO, rack: str | None = None) -> dict:
     """SAM 3.1 finds the racks it can see. Returns the visible rack ids and the one we act on."""
     from wattnot.sam.room import PROMPT, masks_from_raw
@@ -60,8 +70,12 @@ def rack_check(sam_client=None, photo: Path = PHOTO, rack: str | None = None) ->
         if not masks:
             raise ValueError("SAM found no racks")
     except Exception as e:  # noqa: BLE001  no key, budget, network, bad output
-        masks = masks_from_raw(SAVED_RAW.read_text())
         label, note = "REPLAY (saved SAM 3.1 output)", f"live call not used: {type(e).__name__}"
+        try:
+            masks = masks_from_raw(SAVED_RAW.read_text())
+        except Exception:  # noqa: BLE001  no mask decoder here: the saved boxes are enough to find racks
+            masks = boxes_from_raw(SAVED_RAW.read_text())
+            note += "; boxes only (mask decoder not installed)"
     visible = [m.id for m in masks]
     target = rack or (visible[0] if visible else None)
     ok = target in visible
@@ -75,7 +89,10 @@ def caps_to_try(lo: int, hi: int, step: int = 25) -> list[int]:
 
 
 def run(cfg: dict, *, approve: bool = False, gpu=None, sam_client=None, samples_per_step: int = 20,
-        sleep_s: float = 0.0, log_path=None, p99_limit: float = 10.0) -> dict:
+        sleep_s: float = 0.0, log_path=None, p99_limit: float = 10.0, answer_check=None) -> dict:
+    """answer_check: optional object with .stock() and .at(cap) -> {"accepted", "energy_change_pct",
+    "p99_change_pct", "why_not", "label"}; on a real GPU it re-asks a sample at each cap and compares
+    with the stock answers. Without it, a real GPU never keeps a lower cap (rolls back to stock)."""
     node = cfg.get("node") or {}
     log = NodeLog(log_path or node.get("log") or "out/gateway/node.jsonl")
     gpu = gpu or open_gpu()
@@ -105,6 +122,18 @@ def run(cfg: dict, *, approve: bool = False, gpu=None, sam_client=None, samples_
 
     stock = gpu.nvmlDeviceGetPowerManagementLimit(None) // 1000
     sample(stock, samples_per_step)
+    if answer_check is not None and not sim:
+        ref = answer_check.stock()
+        ev("stock_answers", n=ref.get("n"), joules_per_answer=ref.get("joules_per_answer"), label="MEASURED")
+    try:
+        return _sweep(cfg, node, gpu, sim, glabel, ev, sample, stock, samples_per_step, p99_limit, answer_check)
+    except BaseException:
+        gpu.nvmlDeviceSetPowerManagementLimit(None, stock * 1000)   # any failure: back to stock first
+        ev("rolled_back", to_cap_w=stock, failed=["error during the power check"])
+        raise
+
+
+def _sweep(cfg, node, gpu, sim, glabel, ev, sample, stock, samples_per_step, p99_limit, answer_check):
     good, results = stock, []
     for cap in caps_to_try(node.get("cap_min_w", 300), node.get("cap_max_w", 375)):
         gpu.nvmlDeviceSetPowerManagementLimit(None, cap * 1000)
@@ -112,9 +141,11 @@ def run(cfg: dict, *, approve: bool = False, gpu=None, sam_client=None, samples_
         sample(cap, samples_per_step)
         if sim:
             st = step_at(gpu.steps, cap, p99_limit)
-        else:  # real GPU: the live quality check is the gateway monitor; not wired to this loop yet
+        elif answer_check is not None:   # real GPU: re-ask the sample at this cap, compare with stock
+            st = {"cap_w": cap, **answer_check.at(cap)}
+        else:
             st = {"cap_w": cap, "accepted": None, "label": "MEASURED power only",
-                  "why_not": ["quality check on a real GPU is read from the gateway monitor (not wired yet)"]}
+                  "why_not": ["no live answer check given: a real GPU stays at stock"]}
         results.append(st)
         ev("quality_check", **{k: v for k, v in st.items() if k != "label"}, check_label=st["label"])
         if st["accepted"]:

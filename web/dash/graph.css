@@ -117,3 +117,9 @@ body.story.wn-graph-full #amap .pc-inner.wn-glide{ transition:transform 1.2s cub
   border:1px solid transparent; border-radius:6px; padding:6px 10px; cursor:pointer; }
 .gfull-cam button[aria-pressed="true"]{ border-color:var(--wn-ant,#FFC940); color:var(--wn-ant,#FFC940); }
 @media (prefers-reduced-motion:reduce){ body.story.wn-graph-full #amap .pc-inner.wn-glide{ transition:none; } }
+
+/* ---- Go live drawer: the plug screens (start gateway, connect GPU, simulate traffic, live savings) */
+.legdrawer.golive{ top:var(--wn-gbar-bottom,112px); width:min(620px,96vw); display:flex; flex-direction:column; overflow:hidden; }
+.legdrawer.golive iframe{ flex:1; width:100%; border:0; background:transparent; }
+.gbar .golive-btn{ border-color:rgba(127,209,138,.5); color:var(--green,#7fd18a); font-weight:600; }
+.gbar .golive-btn.on{ border-color:var(--green,#7fd18a); box-shadow:0 0 0 2px rgba(127,209,138,.2); }

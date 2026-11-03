@@ -84,6 +84,7 @@ function build() {
       <button type="button" data-arm="on" aria-pressed="${arm === "on"}">With WattNot</button>
     </div>
     <span class="gbar-chip ${liveRun ? "live" : "replay"}">${liveRun ? "Live run" : "Replay"}</span>
+    <button type="button" id="gLive" class="gbar-badge golive-btn" aria-expanded="false" aria-controls="golivedrawer">⚡ Go live</button>
     <button type="button" id="gMeta" class="gbar-badge" aria-expanded="false" aria-controls="infodrawer">Meta models</button>
     <button type="button" id="gFeat" class="gbar-badge" aria-expanded="false" aria-controls="infodrawer">WattNot features</button>
     <button type="button" id="gLegend" class="gbar-legend" aria-expanded="false" aria-controls="legdrawer">Legend</button>`;
@@ -150,6 +151,26 @@ function build() {
     u.searchParams.set("arm", b.dataset.arm);
     location.href = u.toString(); // reload the arm, keeping ?live and the rest
   }));
+
+  // ---- Go live drawer: Start gateway, Connect GPU, Simulate traffic and Live savings, in this app.
+  // The plug screens load in a frame (plug.html?embed=1) so their ids never clash with the graph's.
+  const gl = document.createElement("aside");
+  gl.id = "golivedrawer"; gl.className = "legdrawer golive"; gl.setAttribute("aria-hidden", "true");
+  gl.innerHTML = `<div class="legdrawer-head"><b>Go live</b><button type="button" class="legdrawer-x" id="goliveX" aria-label="Close Go live">Close</button></div>
+    <iframe id="goliveFrame" title="Plug WattNot in: start gateway, connect GPU, simulate traffic, live savings"></iframe>`;
+  document.body.appendChild(gl);
+  const gLive = $("#gLive", bar);
+  const openLive = (on) => {
+    if (on) { open(false); closeInfo(); const f = $("#goliveFrame", gl); if (!f.src) f.src = "plug.html?embed=1#setup"; }
+    gl.classList.toggle("open", on); gl.setAttribute("aria-hidden", String(!on));
+    gLive.setAttribute("aria-expanded", String(on)); gLive.classList.toggle("on", on);
+    if (on && location.hash !== "#golive") history.replaceState(null, "", "#golive");
+    if (!on && location.hash === "#golive") history.replaceState(null, "", location.pathname + location.search);
+    layout();
+  };
+  gLive.addEventListener("click", () => openLive(!gl.classList.contains("open")));
+  $("#goliveX", gl).addEventListener("click", () => openLive(false));
+  if (location.hash === "#golive") setTimeout(() => openLive(true), 0);
 
   const lbtn = $("#gLegend", bar);
   const open = (on) => {

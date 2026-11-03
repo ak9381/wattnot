@@ -60,7 +60,7 @@ def test_easy_prompt_stays_small_and_records_savings(tmp_path):
     r = ask(c, "easy one: 6*7?")
     assert r.status_code == 200 and r.headers["x-wattnot-receipt"].startswith("gw_")
     assert len(calls) == 1 and calls[0]["reasoning_effort"] == "low"
-    assert calls[0]["max_completion_tokens"] == 1024          # thinking cap applied
+    assert calls[0]["max_completion_tokens"] == 1536          # thinking cap (H100 holdout budget)
     s = c.get("/v1/wattnot/savings").json()
     assert s["requests"] == 1 and s["energy_wh"]["label"] == "ESTIMATE"
     assert s["energy_wh"]["actual"] <= s["energy_wh"]["baseline"]   # no shadow data yet: ratio 1.0

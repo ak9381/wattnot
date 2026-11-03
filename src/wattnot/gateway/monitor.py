@@ -28,7 +28,9 @@ def agree(a: str, b: str) -> bool:
 
 
 class Monitor:
-    def __init__(self, cfg: dict, upstream, base_tier: dict, path: Path, rng=None, sync: bool = False):
+    def __init__(self, cfg: dict, upstream, base_tier: dict, path: Path, rng=None, sync: bool = False,
+                 gate=None, gate_key: str | None = None):
+        self.gate, self.gate_key = gate, gate_key
         b = cfg["baseline"]
         self.rate = float(b.get("shadow_rate", 0.0))
         self.min_agree = float(b.get("min_agreement", 0.8))
@@ -48,7 +50,10 @@ class Monitor:
         return round(bg / sm, 3) if sm and bg else None
 
     def maybe_shadow(self, body: dict, small: dict, receipt_id: str) -> bool:
-        if self.rate <= 0 or self.rng.random() >= self.rate:
+        if self.rate <= 0:   # monitor off: no shadows, so the gate has no pairs either
+            return False
+        warm = self.gate is not None and self.gate.warming(self.gate_key, small.get("applied"))
+        if not warm and self.rng.random() >= self.rate:
             return False
         t = threading.Thread(target=self._shadow, args=(body, small, receipt_id), daemon=True)
         t.start()
@@ -69,7 +74,11 @@ class Monitor:
                 "small_out": int(small["usage"].get("completion_tokens") or 0),
                 "base_out": int(u.get("completion_tokens") or 0),
                 "base_in": int(u.get("prompt_tokens") or 0),
+                "small_in": int(small["usage"].get("prompt_tokens") or 0),
                 "agree": agree(small.get("text", ""), text), "label": "MEASURED (shadow pair)"}
+        if self.gate is not None:
+            self.gate.record_pair(self.gate_key, pair["small_in"] + pair["small_out"],
+                                  pair["base_in"] + pair["base_out"], pair["agree"], small.get("applied"))
         with self._lock:
             self.pairs.append(pair)
             recent = self.pairs[-self.min_n:]

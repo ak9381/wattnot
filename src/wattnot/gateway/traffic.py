@@ -129,16 +129,39 @@ def plan(workload: str, n: int) -> list[tuple[str, dict]]:
     return out
 
 
-def estimate(workload: str, n: int, with_without: bool = False) -> dict:
-    """Upper-end $ for a run, before Start. ESTIMATE from the live demo's token counts."""
-    usd = 0.0
-    for kind, _ in plan(workload, n) if workload != "voice" else [("voice", {})] * int(n):
+def load_calib(path) -> dict:
+    """Per-kind measured $/request from earlier runs on this gateway: {"with": {kind: [sum, n]}, "without": ...}."""
+    try:
+        return json.loads(Path(path).read_text()) if path and Path(path).exists() else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def estimate(workload: str, n: int, with_without: bool = False, calib: dict | None = None,
+             self_hosted: bool = False) -> dict:
+    """Upper-end $ for a run, before Start (ESTIMATE). Uses the $/request measured on this gateway's
+    earlier runs for each request kind when there is one (x1.15 headroom); otherwise the built-in
+    token counts (x1.6). The without arm is priced on its own (measured or x1.4 of the with arm).
+    self_hosted: the model runs on your own GPU, so the real API bill is $0; $ is list-price equivalent."""
+    calib = calib or {}
+    kinds = [k for k, _ in plan(workload, n)] if workload != "voice" else ["voice"] * int(n)
+    usd_w = usd_o = 0.0
+    measured = 0
+    for kind in kinds:
         tin, tout = TOKENS.get(kind, TOKENS["text"])
-        usd += (tin * PRICE_IN + tout * PRICE_OUT) / 1e6
-    usd *= 1.6          # headroom: step-ups and the 10% shadow sample
-    if with_without:
-        usd *= 2.2      # the without arm runs the baseline (high effort) tier, longer answers
-    return {"usd": round(usd, 4), "label": "ESTIMATE", "requests": int(n) * (2 if with_without else 1),
+        default = (tin * PRICE_IN + tout * PRICE_OUT) / 1e6 * 1.6
+        cw = (calib.get("with") or {}).get(kind)
+        co = (calib.get("without") or {}).get(kind)
+        w = cw[0] / cw[1] * 1.15 if cw and cw[1] else default
+        measured += bool(cw and cw[1])
+        usd_w += w
+        if with_without:
+            usd_o += co[0] / co[1] * 1.15 if co and co[1] else w * 1.4
+    usd = usd_w + usd_o
+    return {"usd": round(usd, 4), "with_usd": round(usd_w, 4), "without_usd": round(usd_o, 4),
+            "label": "ESTIMATE", "basis": f"measured on this gateway for {measured}/{len(kinds)} requests"
+            if measured else "built-in token counts", "requests": int(n) * (2 if with_without else 1),
+            "api_usd": 0.0 if self_hosted else round(usd, 4), "self_hosted": bool(self_hosted),
             "under_1_usd": usd < 1.0}
 
 
@@ -147,7 +170,8 @@ class TrafficRun:
     it straight to the upstream for the without arm; ``transcribe`` turns a wav into text."""
 
     def __init__(self, send, *, direct=None, transcribe=None, without_log: Path | None = None,
-                 max_usd: float = 1.0, lc_runner=None, spent=None):
+                 max_usd: float = 1.0, lc_runner=None, spent=None, calib_path: Path | None = None):
+        self.calib_path = Path(calib_path) if calib_path else None
         self.lc_runner = lc_runner or langchain_agent
         self.spent = spent            # callable(run_prefix) -> $ billed through the gateway so far
         self.base_url = None
@@ -177,6 +201,15 @@ class TrafficRun:
 
     def stop(self) -> None:
         self._stop.set()
+
+    def _calib(self, arm: str, kind: str, usd: float) -> None:
+        if not self.calib_path:
+            return
+        c = load_calib(self.calib_path)
+        s = c.setdefault(arm, {}).setdefault(kind, [0.0, 0])
+        s[0], s[1] = s[0] + usd, s[1] + 1
+        self.calib_path.parent.mkdir(parents=True, exist_ok=True)
+        self.calib_path.write_text(json.dumps(c))
 
     def _run(self, items, gap, with_without) -> None:
         try:
@@ -214,6 +247,7 @@ class TrafficRun:
                 try:
                     rec = self.send(body, {"x-wattnot-run": f"sim-{i}", "x-wattnot-traffic": "simulated"})
                     self.state["usd"] += float((rec or {}).get("usd") or 0)
+                    self._calib("with", kind, float((rec or {}).get("usd") or 0))
                 except Exception:  # noqa: BLE001
                     self.state["errors"] += 1
                 if with_without and self.direct:
@@ -221,6 +255,7 @@ class TrafficRun:
                         w = self.direct(body)
                         self.state["without"]["done"] += 1
                         self.state["without"]["usd"] += float(w.get("usd") or 0)
+                        self._calib("without", kind, float(w.get("usd") or 0))
                         if self.without_log:
                             self.without_log.parent.mkdir(parents=True, exist_ok=True)
                             with self.without_log.open("a") as f:

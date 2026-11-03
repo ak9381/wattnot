@@ -36,6 +36,7 @@ class TrialParams:
     block_size: int = 16
     quantization: str = "none"
     gpu_mem_util: float = 0.9
+    kv_cache_dtype: str = "auto"
     power_cap_w: int | None = None
     sm_clock_mhz: int | None = None
 
@@ -46,6 +47,8 @@ class TrialParams:
             raise ValueError("block_size must be 8, 16 or 32")
         if self.quantization not in QUANTIZATIONS:
             raise ValueError(f"quantization must be one of {sorted(QUANTIZATIONS)}")
+        if self.kv_cache_dtype not in ("auto", "fp8", "fp8_e4m3", "fp8_e5m2"):
+            raise ValueError("kv_cache_dtype must be auto or an fp8 variant")
         if not 0 < self.gpu_mem_util <= 1:
             raise ValueError("gpu_mem_util must be in (0, 1]")
 
@@ -69,6 +72,8 @@ def server_args(model: str = DEFAULT_MODEL, params: TrialParams | None = None, *
                 else "--no-enable-prefix-caching")
     if params.quantization != "none":
         args += ["--quantization", params.quantization]
+    if params.kv_cache_dtype != "auto":
+        args += ["--kv-cache-dtype", params.kv_cache_dtype]
     return args
 
 

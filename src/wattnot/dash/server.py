@@ -864,12 +864,13 @@ class _GatewayHolder:
 
     def start(self, app, cfg: dict, path) -> None:
         self.app, self.cfg, self.path, self.started = app, cfg, path, time.time()
+        self.ui_started = False
 
     def stop(self) -> None:
         self.app = None
 
     def status(self) -> dict:
-        return {"running": self.app is not None, "config": str(self.path) if self.path else "defaults",
+        return {"running": self.app is not None, "ui_started": bool(getattr(self, "ui_started", False)), "config": str(self.path) if self.path else "defaults",
                 "upstream": (self.cfg or {}).get("upstream", {}).get("base_url"),
                 "savers_on": [k for k, v in ((self.cfg or {}).get("savers") or {}).items() if v.get("enabled")]}
 
@@ -959,7 +960,9 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
     @app.post("/api/dash/gateway/start")
     def gateway_start(request: Request) -> dict:
         try:
-            st = _start_gateway(saved_yaml if saved_yaml.exists() else (Path(gateway) if gateway else None))
+            _start_gateway(saved_yaml if saved_yaml.exists() else (Path(gateway) if gateway else None))
+            gw.ui_started = True
+            st = gw.status()
         except (OSError, ValueError) as e:
             raise HTTPException(400, f"could not start: {e}") from e
         return {**st, **_snippets(str(request.base_url).rstrip("/") + "/gw/v1")}
@@ -1012,13 +1015,22 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
                          if str(r.get("run") or "").startswith("sim-") and r.get("ts", 0) >= traffic_t0[0]), 6)
 
     traffic_t0 = [0.0]
-    traffic = _traffic.TrafficRun(_send, direct=_direct, transcribe=_transcribe, without_log=without_log, spent=_spent)
+    calib_path = Path(logs[0]).with_name(Path(logs[0]).stem + ".traffic-calib.json")
+    traffic = _traffic.TrafficRun(_send, direct=_direct, transcribe=_transcribe, without_log=without_log, spent=_spent,
+                                  calib_path=calib_path)
+
+    def _est(body: dict) -> dict:
+        from urllib.parse import urlparse
+        host = urlparse(((gw.cfg or cfg).get("upstream") or {}).get("base_url", "")).hostname or ""
+        own = host in ("localhost", "127.0.0.1", "::1") or host.startswith(("10.", "192.168."))
+        return _traffic.estimate(body.get("workload", "mixed"), int(body.get("n", 60)), bool(body.get("with_without")),
+                                 calib=_traffic.load_calib(calib_path), self_hosted=own)
     app.state.traffic = traffic
 
     @app.post("/api/dash/traffic/estimate")
     def traffic_estimate(body: dict = Body(default={})) -> dict:
         try:
-            return _traffic.estimate(body.get("workload", "mixed"), int(body.get("n", 60)), bool(body.get("with_without")))
+            return _est(body)
         except ValueError as e:
             raise HTTPException(400, str(e)) from e
 
@@ -1026,7 +1038,7 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
     def traffic_start(request: Request, body: dict = Body(default={})) -> dict:
         if gw.app is None:
             raise HTTPException(409, "Start the gateway first (step 3).")
-        est = _traffic.estimate(body.get("workload", "mixed"), int(body.get("n", 60)), bool(body.get("with_without")))
+        est = _est(body)
         if not est["under_1_usd"] and not body.get("confirm_over_1"):
             raise HTTPException(402, f"estimated ${est['usd']} is over $1; confirm to run")
         try:
@@ -1062,14 +1074,26 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
         if t is not None and t.is_alive():
             raise HTTPException(409, "the node agent is already running")
         ncfg = load_config(gateway) if gateway else load_config(None)
+        ov = os.environ.get("WATTNOT_PLUG_OVERLAY")
+        if ov:
+            from wattnot.gateway.build import _merge
+            import yaml as _y
+            ncfg = _merge(ncfg, _y.safe_load(Path(ov).read_text()) or {})
         ncfg["node"]["approval"] = "manual"
 
         def job() -> None:
             try:
+                from wattnot.node.answercheck import AnswerCheck, gateway_asker
+                from wattnot.node.simgpu import SimulatedH100, open_gpu
+                gpu = open_gpu()
+                chk = None
+                if not isinstance(gpu, SimulatedH100) and ncfg.get("upstream"):
+                    chk = AnswerCheck(gateway_asker(ncfg), gpu)   # live re-ask at each cap (MEASURED)
                 node_job["result"] = _agent.run(ncfg, approve=bool(body.get("approve")), log_path=logs[1],
-                                                sleep_s=float(body.get("sleep_s", 0.25)))
+                                                sleep_s=float(body.get("sleep_s", 0.25)), gpu=gpu,
+                                                answer_check=chk)
             except Exception as e:  # noqa: BLE001
-                node_job["result"] = {"status": "error", "why": type(e).__name__}
+                node_job["result"] = {"status": "error", "why": f"{type(e).__name__}: {e}"[:300]}
         node_job["result"] = None
         node_job["thread"] = threading.Thread(target=job, daemon=True)
         node_job["thread"].start()

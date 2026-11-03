@@ -30,7 +30,8 @@ DEFAULTS: dict[str, Any] = {
         "agent_waste": {"enabled": True, "preset": "second_layer"},
         "routing": {"enabled": True, "final_check": False, "max_stepups": 1},
         "context_saver": {"enabled": True, "min_tokens": 500},
-        "thinking_cap": {"enabled": True, "max_tokens": 1024},
+        # the H100 sealed holdout's kept stack: reasoning_effort low + a 1536-token output budget
+        "thinking_cap": {"enabled": True, "reasoning_effort": "low", "max_tokens": 1536},
         "vision": {"enabled": True, "max_side_px": 768},
         "voice": {"enabled": True},
     },
@@ -41,6 +42,7 @@ DEFAULTS: dict[str, Any] = {
     "integrations": {"langfuse": {"enabled": False}},
     "deployment": "gateway",
     "port": 8780,
+    "gate": {"min_pairs": 3, "done_window": 10},   # per-model saver gate (gateway/gate.py)
 }
 
 _calls: contextvars.ContextVar[list | None] = contextvars.ContextVar("wn_gw_calls", default=None)
@@ -65,7 +67,8 @@ def load_config(path: str | Path | None) -> dict:
     unknown = set(raw.get("savers") or {}) - set(DEFAULTS["savers"])
     if unknown:
         raise ValueError(f"unknown savers in config: {sorted(unknown)}")
-    cfg = _merge(DEFAULTS, raw)
+    import copy
+    cfg = _merge(copy.deepcopy(DEFAULTS), raw)   # deep copy: callers may edit nested keys
     for t in cfg["tiers"]:
         if t.get("reasoning") or t.get("max_output"):
             raise ValueError(f"tier {t.get('name')}: output-budget tiers were dropped; use body_extra")
@@ -173,25 +176,43 @@ def build_app(cfg: dict, upstream=None, log: SavingsLog | None = None):
     base_tier_ref = [next(t for t in cfg["tiers"] if t["name"] == cfg["baseline"]["tier"])]
     raw_up = upstream or http_upstream(cfg)
     log = log or SavingsLog(cfg["savings_log"])
+    from wattnot.gateway.gate import SaverGate
+    gcfg = cfg.get("gate") or {}
+    gate = SaverGate(min_pairs=int(gcfg.get("min_pairs", 3)), done_window=int(gcfg.get("done_window", 10)),
+                     min_agreement=float(cfg["baseline"].get("min_agreement", 0.8)))
+    gate_key = base_tier_ref[0]["model"]   # one served model per gateway: the gate is per model
     from wattnot.gateway.langfuse import LangfuseSink
     lf = LangfuseSink.from_config(cfg)
 
     def wrapped(body: dict, headers: dict) -> dict:
         mon = state.get("monitor")
-        if mon is not None and mon.rolled_back and body.get("model") is not None:
+        if mon is not None and (mon.rolled_back or not gate.allow("routing", gate_key)) \
+                and body.get("model") is not None:
             # canary rollback: routing failed the live agreement check, so every call goes to
             # the baseline tier (tier extras of the small tier are replaced by the baseline's)
             from wattnot.agentwaste.server import tier_body as _tb
             small_extra = set().union(*[set((t.get("body_extra") or {})) for t in cfg["tiers"]])
             body = _tb({k: v for k, v in body.items() if k not in small_extra}, base_tier_ref[0])
+        done_name = "done"
         info: dict = {"model": body.get("model"), "images_shrunk": 0,
+                      "done_injected": isinstance(body.get("tools"), list) and any(
+                          (t.get("function") or {}).get("name") == done_name for t in body["tools"] if isinstance(t, dict)),
+                      "n_messages": len(body.get("messages") or []),
                       "model_tier": next((t["name"] for t in cfg["tiers"]
                                           if t["model"] == body.get("model")
                                           and all(body.get(k) == v for k, v in (t.get("body_extra") or {}).items())),
                                          None)}
-        if sv["thinking_cap"]["enabled"]:
-            body = cap_thinking(body, int(sv["thinking_cap"]["max_tokens"]))
-        if sv["vision"]["enabled"]:
+        tc = sv["thinking_cap"]
+        sink0 = _calls.get()
+        first = not sink0                       # a step-up (2nd call) keeps its own tier's effort
+        if tc["enabled"] and first and gate.allow("thinking_cap", gate_key) \
+                and not (mon is not None and mon.rolled_back):   # canary rollback covers the same lever
+            eff = tc.get("reasoning_effort")
+            if eff and body.get("reasoning_effort") != eff:
+                body = {**body, "reasoning_effort": eff}
+                info["thinking_low"] = True
+            body = cap_thinking(body, int(tc["max_tokens"]))
+        if sv["vision"]["enabled"] and gate.allow("vision", gate_key):
             body, info["images_shrunk"] = shrink_images(body, int(sv["vision"]["max_side_px"]))
         resp = raw_up(body, headers)
         info["usage"] = dict((resp or {}).get("usage") or {})
@@ -216,10 +237,13 @@ def build_app(cfg: dict, upstream=None, log: SavingsLog | None = None):
     app = create_app(wrapped, wcfg, context_saver=saver, tiers=tiers,
                      label="MEASURED" if cfg["energy"]["source"] == "nvml" else "LIVE-API",
                      final_check=bool(ro.get("final_check")), max_stepups=int(ro.get("max_stepups", 1)),
-                     short_bypass_tokens=None if saver else 0)
+                     short_bypass_tokens=None if saver else 0,
+                     waste_gate=lambda b: gate.allow("agent_waste", gate_key))
     base_tier = next(t for t in cfg["tiers"] if t["name"] == cfg["baseline"]["tier"])
     from wattnot.gateway.monitor import Monitor
-    monitor = Monitor(cfg, raw_up, base_tier, log.path.with_name(log.path.stem + ".shadow.jsonl"))
+    monitor = Monitor(cfg, raw_up, base_tier, log.path.with_name(log.path.stem + ".shadow.jsonl"),
+                      gate=gate, gate_key=gate_key)
+    app.state.gate = gate
     app.state.monitor = monitor
     state["monitor"] = monitor
 
@@ -240,7 +264,22 @@ def build_app(cfg: dict, upstream=None, log: SavingsLog | None = None):
             body = {}
         rec = log.append(record_for(body, sink, resp.status_code, base_tier, cfg,
                                     run=request.headers.get("x-wattnot-run"), ratio=monitor.ratio()))
-        if resp.status_code == 200 and sink and sink[-1]["model_tier"] != base_tier["name"]:
+        changed = False
+        tc_eff = sv["thinking_cap"]["enabled"] and sv["thinking_cap"].get("reasoning_effort")
+        if isinstance(body.get("tools"), list) and body["tools"]:
+            n_in = len(body.get("messages") or [])
+            changed = any(i.get("done_injected") or i.get("n_messages", n_in) > n_in for i in sink)
+            gate.record_agent_call(gate_key, changed, bool(rec.get("guard_stopped")))
+        for i in sink:
+            i["applied"] = (["agent_waste"] if changed else []) + (
+                ["routing"] if i.get("model_tier") != base_tier["name"] else []) + (
+                # routing's small tier at the thinking saver's effort is the same lever: judge both
+                ["thinking_cap"] if i.get("thinking_low") or (
+                    tc_eff and i.get("model_tier") != base_tier["name"] and next(
+                        (t for t in cfg["tiers"] if t["name"] == i.get("model_tier")), {}
+                    ).get("body_extra", {}).get("reasoning_effort") == tc_eff) else []) + (
+                ["vision"] if i.get("images_shrunk") else [])
+        if resp.status_code == 200 and sink and sink[-1].get("applied"):
             monitor.maybe_shadow(body, sink[-1], rec["receipt_id"])
         lf.send(rec)
         resp.headers["x-wattnot-receipt"] = rec["receipt_id"]
@@ -252,12 +291,14 @@ def build_app(cfg: dict, upstream=None, log: SavingsLog | None = None):
 
     @app.get("/v1/wattnot/monitor")
     def monitor_view() -> JSONResponse:
-        return JSONResponse(monitor.status())
+        return JSONResponse({**monitor.status(), "gate": gate.status()})
 
     @app.get("/v1/wattnot/config")
     def config_view() -> JSONResponse:
         safe = {k: v for k, v in cfg.items() if k != "upstream"}
         safe["upstream"] = {"base_url": cfg["upstream"]["base_url"]}
+        # server-side levers the H100 run did not prove: the gateway never turns these on
+        safe["not_proven_on_h100"] = {"fp8": "off", "batching": "off", "kv_cache": "off"}
         return JSONResponse(safe)
 
     if sv["voice"]["enabled"]:

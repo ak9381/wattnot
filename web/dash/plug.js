@@ -37,7 +37,20 @@ $("#sam").onchange = (e) => { C.sam_rack_check = e.target.checked; save(); };
 $("#lf").onchange = (e) => { C.langfuse = e.target.checked; save(); };
 $("#osPosix").onclick = () => { os = "posix"; $("#osPosix").classList.add("on"); $("#osPs").classList.remove("on"); render(); };
 $("#osPs").onclick = () => { os = "powershell"; $("#osPs").classList.add("on"); $("#osPosix").classList.remove("on"); render(); };
-const copied = (b, t) => { navigator.clipboard?.writeText(t); const o = b.textContent; b.textContent = "Copied"; setTimeout(() => (b.textContent = o), 1500); };
+// Copy: the async clipboard first; inside a frame or on plain http it can be missing or refused,
+// so fall back to a hidden textarea + execCommand. The button says "Copied" only when one worked.
+function copyText(t) {
+  const legacy = () => { const a = document.createElement("textarea"); a.value = t; a.setAttribute("readonly", "");
+    a.style.cssText = "position:fixed;left:-9999px;top:0"; document.body.appendChild(a); a.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch { ok = false; } a.remove(); return ok; };
+  if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(t).then(() => true, legacy);
+  return Promise.resolve(legacy());
+}
+const copied = (b, t) => {
+  const o = b.dataset.label || (b.dataset.label = b.textContent);
+  copyText(t).then((ok) => { b.textContent = ok ? "Copied" : "Copy failed: select the text"; b.classList.toggle("ok", ok);
+    clearTimeout(b._t); b._t = setTimeout(() => { b.textContent = o; b.classList.remove("ok"); }, 1500); });
+};
 $("#copy").onclick = (e) => copied(e.target, $("#cmds").textContent);
 let snipKey = "langchain", gwInfo = null;
 const post = (u, b) => fetch(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b || {}) });
@@ -45,7 +58,7 @@ function drawGw(st) {
   gwInfo = st || gwInfo; if (!gwInfo) return;
   $("#gwLight").className = `light ${gwInfo.running ? "on" : "off"}`;
   $("#gwState").textContent = gwInfo.running ? `Running · savers on: ${gwInfo.savers_on.map((i) => (SAVERS.find((x) => x.id === i) || { t: i }).t).join(", ")}` : "Not running";
-  $("#gwStart").textContent = gwInfo.running ? "Restart gateway" : "Start gateway";
+  $("#gwStart").textContent = gwInfo.running && gwInfo.ui_started ? "Restart gateway" : "Start gateway";
   $("#gwConn").hidden = !gwInfo.running; $("#gwNote").hidden = !!gwInfo.running;
   $("#baseUrl").textContent = gwInfo.base_url; $("#snip").textContent = gwInfo.snippets[snipKey];
 }
@@ -96,21 +109,41 @@ function stepText(e) {
     case "waiting_approval": return "Waiting for your OK before any power change";
     case "cap_applied": return `Power limit set to ${e.cap_w} W (${L})`;
     case "quality_check": return `${e.cap_w} W: ${e.accepted ? "answers OK" : "refused"}${e.energy_change_pct != null ? `, energy ${e.energy_change_pct}%` : ""}${e.p99_change_pct != null ? `, slowest answers +${e.p99_change_pct}%` : ""}${e.accepted ? "" : ` (${(e.why_not || []).join("; ")})`} (${e.check_label})`;
-    case "rolled_back": return `Rolled back to ${e.to_cap_w} W`;
-    case "kept": return `Kept ${e.cap_w} W (${e.label})`;
-    default: return e.step;
+    case "stock_answers": return `Asked ${e.n} sample questions at stock power: ${e.joules_per_answer != null ? `${Math.round(e.joules_per_answer)} J per answer` : "answers saved"} (${e.label})`;
+    case "rolled_back": return `Rolled back to ${e.to_cap_w} W${(e.failed || []).length ? ` (${e.failed.join("; ")})` : ""}`;
+    case "kept": return `Kept ${e.cap_w} W (${e.label})${e.note ? `: ${e.note}` : ""}`;
+    default: return e.note ? `${e.step}: ${e.note}` : e.step;
   }
 }
 async function addNode(approve) {
   const r = await fetch("/api/dash/node/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ approve }) }).catch(() => null);
   $("#nodeMsg").textContent = !r ? "The dashboard server is not reachable." : r.ok ? (approve ? "Running the power check…" : "Checking the rack photo…") : (await r.json()).detail;
+  if (r && r.ok) pollNode();
+}
+// Follow the GPU helper job until it ends, then show its result or its error (never stuck on "Running…").
+async function pollNode() {
+  clearTimeout(pollNode._t);
+  const r = await fetch("/api/dash/node/status").catch(() => null);
+  const s = r && r.ok ? await r.json() : null;
+  if (!s) { $("#nodeMsg").textContent = "Lost the dashboard server while checking the GPU helper."; return; }
+  if (s.running) { pollNode._t = setTimeout(pollNode, 1500); return; }
+  $("#nodeMsg").textContent = nodeResultText(s.result);
+}
+function nodeResultText(res) {
+  if (!res) return "";
+  if (res.status === "error") return `The power check stopped: ${res.why}. The power limit was put back to stock.`;
+  if (res.status === "waiting_approval") return "Rack photo OK. Press Approve to start the power check.";
+  if (res.status === "stopped") return `Not started: ${res.why || "rack check refused"}.`;
+  return res.cap_w != null ? `Done: power limit ${res.cap_w} W (${res.label || "MEASURED"}).` : `Done (${res.status || "ok"}).`;
 }
 $("#addNode").onclick = () => addNode(false);
 $("#approveNode").onclick = () => addNode(true);
 const tChoice = () => ({ workload: $("#tWork").value, n: Number($("#tN").value), speed: $("#tSpeed").value, with_without: $("#tAB").checked });
 async function tEstimate() {
   const r = await post("/api/dash/traffic/estimate", tChoice()).catch(() => null);
-  if (r && r.ok) { const e = await r.json(); $("#tCost").textContent = `Estimated cost: about $${e.usd.toFixed(2)} (${e.requests} requests, ESTIMATE)`; }
+  if (r && r.ok) { const e = await r.json(); $("#tCost").textContent = e.self_hosted
+    ? `API cost: $0 (your own GPU). List-price equivalent about $${e.usd.toFixed(2)} (${e.requests} requests, ESTIMATE, ${e.basis})`
+    : `Estimated cost: about $${e.usd.toFixed(2)} (${e.requests} requests, ESTIMATE, ${e.basis})`; }
 }
 ["#tWork", "#tN", "#tAB"].forEach((id) => ($(id).onchange = tEstimate));
 $("#tStart").onclick = async () => {
