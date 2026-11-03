@@ -274,6 +274,8 @@ class TrafficRun:
         """One arm, alone on the GPU: NVML energy counter read before and after (MEASURED)."""
         g = self.gpu
         self.event(step="arm_start", arm=name, cap_w=g.limit_w())
+        self.state["phase"] = (f"without WattNot at {g.limit_w()} W" if name == "without"
+                               else f"with WattNot at {g.limit_w()} W")
         t0, e0 = time.time(), g.energy_mj()
         texts, toks, usd = [], 0, 0.0
         for i, (kind, body) in enumerate(items):
@@ -290,6 +292,10 @@ class TrafficRun:
             toks += int(r.get("tokens") or 0)
             usd += float(r.get("usd") or 0)
             self.state[name + "_done"] = i + 1
+            self.state["done"] = i + 1             # live progress for the UI (it reads done/total)
+            if name == "without":
+                self.state["without"]["done"] = i + 1
+                self.state["without"]["usd"] = round(usd, 6)
             if gap:
                 time.sleep(gap)
         j = (g.energy_mj() - e0) / 1000
@@ -308,6 +314,8 @@ class TrafficRun:
             res["without"] = wo = self._arm("without", items, gap, lambda b, i: self.direct(b))
             check = self.answer_check() if self.answer_check else None
             if check is not None:
+                self.state["phase"] = (f"answer check: {getattr(check, 'items', None) and len(check.items)} "
+                                       f"proof-v1 prompts, stock vs {self.cap_w} W")
                 check.stock()                      # stock answers at stock power
                 g.set_w(self.cap_w)
                 st = check.at(self.cap_w)
@@ -348,6 +356,7 @@ class TrafficRun:
                 if self.result_path:
                     self.result_path.parent.mkdir(parents=True, exist_ok=True)
                     self.result_path.write_text(json.dumps(res, indent=1))
+                self.state["phase"] = "done"
                 self.state["running"] = False
 
     def _run(self, items, gap, with_without) -> None:

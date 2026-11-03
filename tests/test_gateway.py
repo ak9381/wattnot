@@ -532,3 +532,79 @@ def test_ui_add_gpu_helper_ok_runs_harness_cap_check_on_a_real_gpu(tmp_path, mon
     steps = [e for e in c.get("/api/dash/plug").json()["node"]["events"] if e["step"] == "quality_check"]
     assert steps and all("quality" in e for e in steps)
     assert "harness graders" in steps[0]["rule"]
+
+
+def test_ui_sequence_power_check_then_side_by_side_traffic_completes(tmp_path, monkeypatch):
+    """Exact UI order: start gateway, Connect GPU, Add GPU helper, OK power check (keeps a cap),
+    then Simulate traffic, Text chat, side by side. It must send (live progress) and finish with
+    per-arm MEASURED joules and the limit back at stock."""
+    import time as _t
+
+    import wattnot.dash.server as srv
+    import wattnot.gateway.traffic as trm
+    import wattnot.node.answercheck as ac
+    import wattnot.node.simgpu as sg
+    c, _ = _ui_client(tmp_path, monkeypatch)
+    monkeypatch.delenv("WATTNOT_GPU", raising=False)
+    monkeypatch.delenv("WATTNOT_NO_NVML", raising=False)
+    monkeypatch.setattr(node_agent, "rack_check", lambda *a, **k: {"ok": True, "rack": "R01",
+                        "visible_racks": ["R01"], "label": "REPLAY", "boxes": {}, "note": None, "why": None})
+
+    class FakeNvml:
+        label = "MEASURED"
+        def __init__(self): self.mw, self.e = 700_000, 0
+        def nvmlDeviceGetName(self, h=None): return "Fake H100"
+        def nvmlDeviceGetCount(self): return 1
+        def nvmlDeviceGetPowerManagementLimit(self, h=None): return self.mw
+        def nvmlDeviceSetPowerManagementLimit(self, h, mw): self.mw = int(mw)
+        def nvmlDeviceGetPowerUsage(self, h=None): return self.mw
+        def nvmlDeviceGetTotalEnergyConsumption(self, h=None): return self.e
+    nv = FakeNvml()
+
+    class FakeGpu:   # traffic's NvmlGpu view of the same device
+        def energy_mj(self): nv.e += int(1000 * nv.mw / 700_000); return nv.e
+        def limit_w(self): return nv.mw // 1000
+        def default_w(self): return 700
+        def set_w(self, w): nv.mw = int(w) * 1000
+    monkeypatch.setattr(sg, "open_gpu", lambda *a, **k: nv)
+    monkeypatch.setattr(trm, "NvmlGpu", FakeGpu)
+    want = {p["prompt"]: p["checks"][0]["value"] for p in ac.proof_prompts()}
+
+    def asker(cfg):
+        def ask(prompt, mt):
+            _t.sleep(0.02)
+            nv.e += int(1000 * nv.mw / 700_000)
+            return f"#### {want[prompt]}"
+        return ask
+    monkeypatch.setattr(ac, "harness_asker", asker)
+    y = tmp_path / "gw.yaml"
+    y.write_text("node:\n  enabled: true\n  cap_max_w: 375\n")   # Connect GPU (node.enabled)
+    c = TestClient(srv.create_app(gateway=str(y)))
+
+    assert c.post("/api/dash/gateway/start").status_code == 200
+    c.post("/api/dash/node/run", json={"approve": False})                       # Connect GPU / Add GPU helper
+    assert _wait(c, "/api/dash/node/status")["result"]["status"] == "waiting_approval"
+    c.post("/api/dash/node/run", json={"approve": True, "sleep_s": 0})         # OK, start the power check
+    res = _wait(c, "/api/dash/node/status")["result"]
+    assert res.get("status") != "error", res
+    stock_ev = [e for e in c.get("/api/dash/plug").json()["node"]["events"] if e["step"] == "stock_answers"]
+    assert stock_ev and stock_ev[-1]["n"] == 111                                  # not "null sample questions"
+    kept = nv.mw // 1000                                                          # GPU left at the kept cap
+    r = c.post("/api/dash/traffic/start", json={"workload": "text", "n": 20, "speed": "fast",
+                                                "with_without": True, "mode": "test", "confirm_over_1": True})
+    assert r.status_code == 200, r.text
+    assert r.json()["sequential"]
+    seen_progress = False
+    for _ in range(600):
+        st = c.get("/api/dash/traffic/status").json()
+        seen_progress |= st["running"] and (st["done"] > 0 or bool(st.get("phase")))
+        if not st["running"]:
+            break
+        _t.sleep(0.05)
+    assert not st["running"] and seen_progress, st
+    seq = st["sequential_result"]
+    assert "error" not in seq, seq
+    assert seq["without"]["requests"] == 20 and seq["with"]["requests"] == 20
+    assert seq["without"]["joules"] > 0 and seq["with"]["joules"] > 0
+    assert seq["without"]["cap_w"] == 700 and seq["final_limit_w"] == 700 and nv.mw == 700_000
+    assert st["done"] == 20 and kept in (300, 325, 350, 375, 700)

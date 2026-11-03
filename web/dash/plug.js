@@ -82,6 +82,7 @@ window.addEventListener("wn:prefill-deploy", (e) => { C = applyPrefill(C, e.deta
 
 async function drawLive() {
   const f = await fetch("/api/dash/plug").then((r) => r.json()).catch(() => null);
+  if (!f) { $("#heroSub").textContent = "Server not reachable, retrying (last view kept)."; return; }
   const h = (f && !f.summary && nodeHeadline(f)) || headline(f);
   if (f && f.simulated_traffic) h.sub = `${h.sub || ""} · includes Simulated traffic`;
   $("#big").textContent = h.big + (h.pct != null ? ` (${h.pct}%)` : "");
@@ -110,7 +111,7 @@ function stepText(e) {
     case "waiting_approval": return "Waiting for your OK before any power change";
     case "cap_applied": return `Power limit set to ${e.cap_w} W (${L})`;
     case "quality_check": return `${e.cap_w} W: ${e.accepted ? "answers OK" : "refused"}${e.energy_change_pct != null ? `, energy ${e.energy_change_pct}%` : ""}${e.p99_change_pct != null ? `, slowest answers +${e.p99_change_pct}%` : ""}${e.accepted ? "" : ` (${(e.why_not || []).join("; ")})`} (${e.check_label})`;
-    case "stock_answers": return `Asked ${e.n} sample questions at stock power: ${e.joules_per_answer != null ? `${Math.round(e.joules_per_answer)} J per answer` : "answers saved"} (${e.label})`;
+    case "stock_answers": return `Asked ${e.n} sample questions at stock power: ${e.joules_per_answer != null ? `${Math.round(e.joules_per_answer)} J per answer` : "stock and capped answers are asked in interleaved pairs"} (${e.label})`;
     case "rolled_back": return `Rolled back to ${e.to_cap_w} W${(e.failed || []).length ? ` (${e.failed.join("; ")})` : ""}`;
     case "kept": return `Kept ${e.cap_w} W (${e.label})${e.note ? `: ${e.note}` : ""}`;
     default: return e.note ? `${e.step}: ${e.note}` : e.step;
@@ -156,7 +157,7 @@ $("#tStop").onclick = () => post("/api/dash/traffic/stop");
 async function drawTraffic() {
   const t = await fetch("/api/dash/traffic/status").then((r) => r.json()).catch(() => null);
   if (!t) return;
-  if (t.total) $("#tState").textContent = `${t.running ? "Sending" : "Done"}: ${t.done} of ${t.total} · spent $${Number(t.usd).toFixed(4)}${t.errors ? ` · ${t.errors} errors` : ""}${t.stopped ? ` · ${t.stopped}` : ""} (Simulated traffic)`;
+  if (t.total) $("#tState").textContent = `${t.running ? "Sending" : "Done"}: ${t.done} of ${t.total} · spent $${Number(t.usd).toFixed(4)}${t.errors ? ` · ${t.errors} errors` : ""}${t.stopped ? ` · ${t.stopped}` : ""}${t.running && t.phase ? ` · ${t.phase}` : ""} (Simulated traffic)`;
   const w = t.without_totals;
   $("#tAbOut").textContent = w && w.requests ? `Without WattNot (same requests): ${fmtWh(w.wh)}, $${w.usd.toFixed(4)} (${w.label}).` : "";
 }

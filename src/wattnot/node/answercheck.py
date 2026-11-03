@@ -125,7 +125,8 @@ class HarnessCapCheck:
                 "p99_s": percentile(lat, 99), "cap_w": w}
 
     def stock(self) -> dict:
-        return {}
+        # stock answers are asked inside each interleaved pair (at()); report the real count here
+        return {"n": len(self.items), "joules_per_answer": None}
 
     def at(self, cap) -> dict:
         from wattnot.gateway.monitor import agree
