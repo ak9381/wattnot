@@ -1,5 +1,5 @@
 {
- "started_utc": "2026-11-02T11:51:32.458192+00:00",
+ "started_utc": "2026-11-02T14:08:21.381438+00:00",
  "gpu": "NVIDIA A100-SXM4-80GB",
  "fake": false,
  "sets": [
@@ -8,7 +8,7 @@
   "humaneval"
  ],
  "idle_w": {
-  "value": 71.2,
+  "value": 71.9,
   "label": "MEASURED",
   "when": "before vLLM start"
  },
@@ -28,17 +28,17 @@
    "prefix_caching": true,
    "max_num_seqs": 128,
    "start_s": {
-    "value": 111.1,
+    "value": 108.1,
     "label": "MEASURED"
    }
   },
   "blocks": {
    "langchain": {
     "rc": 0,
-    "wall_s": 1924.0,
+    "wall_s": 1687.6,
     "out": "langchain",
     "energy_j": {
-     "value": 727207.8,
+     "value": 622524.6,
      "label": "MEASURED"
     }
    }
@@ -46,5 +46,5 @@
  },
  "failed": {},
  "deadline_s": 4500.0,
- "ended_utc": "2026-11-02T12:25:34.235021+00:00"
+ "ended_utc": "2026-11-02T14:38:23.716349+00:00"
 }

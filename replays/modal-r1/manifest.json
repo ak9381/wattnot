@@ -1,214 +1,407 @@
 {
   "spec": "wattnot.replay-manifest/1",
   "name": "modal-r1",
-  "title": "Modal round 1 (A100, public gsm8k+humaneval): r04f, LangChain from the r04f rerun",
+  "title": "Modal round 1 (A100, public gsm8k+humaneval): r04c (approved), LangChain and eye+hearing from the later fixed block runs",
   "label": "REPLAY",
   "provider": "modal",
   "live_calls": false,
   "base": {
-    "id": "r04f",
+    "id": "r04c",
     "ref": "data/modal-full-1101",
     "events": [
-      "data/modal-full-1101/r04f.without.events.jsonl",
-      "data/modal-full-1101/r04f.with.events.jsonl"
+      "data/modal-full-1101/r04c.without.events.jsonl",
+      "data/modal-full-1101/r04c.with.events.jsonl"
     ],
-    "receipt": "data/modal-full-1101/r04f/features/receipt.json",
-    "energy_receipt": "data/modal-full-1101/r04f/sweep/rcpt_20261101_modal_full_r04f.json",
+    "receipt": "data/modal-full-1101/r04c/features/receipt.json",
+    "energy_receipt": "data/modal-full-1101/r04c/sweep/rcpt_20261101_modal_full_r04c.json",
     "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853"
   },
   "blocks": [
     {
-      "id": "r04f-langchain-20261102T112336Z",
+      "id": "r05-langchain-20261102T140740Z",
       "block": "langchain",
-      "ref": "data/modal-full-1101",
-      "dir": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z",
+      "ref": "data/modal-r05-langchain-fix",
+      "dir": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z",
       "replaces": [
         [
           "effort_router",
           "langchain"
         ]
       ],
-      "why": "rerun after fc-tune (final-check tuning, main 95b4431); r04f's own LangChain pass ran before that fix",
-      "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853"
+      "why": "r04c's LangChain failed (rc 5, saver_on 11/20); this is the block rerun on the saver fixes and the short-conversation bypass (db7f925)",
+      "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde"
+    },
+    {
+      "id": "r05-eye-hearing-20261102T153519Z",
+      "block": "eye+hearing",
+      "ref": "data/modal-r05-eye-hearing",
+      "dir": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z",
+      "replaces": [
+        [
+          "gates",
+          "eye"
+        ],
+        [
+          "gates",
+          "spoken"
+        ],
+        [
+          "gates",
+          "hearing"
+        ]
+      ],
+      "why": "r04c's hearing failed (Meta key not in the container, fixed in 175509e); this is the block-only both-arms rerun with NVML energy",
+      "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36"
     }
   ],
   "gaps": [
-    "Round verdict is REJECTED on p99 only (88.4 -> 104.6 s, MEASURED). The fix (step-up latency guard, main 0da21ff) was never rerun on a full Modal round 1; round 2 (r05) is the post-fix Modal round. Shown as recorded, not hidden.",
-    "Eye and hearing ran only on the WattNot server in r04f (no stock-server arm)."
+    "The LangChain and eye+hearing blocks were run on 2 Nov after r04c, attached to round r05 (same A100 setup, same Glimmer 30B server image). They are not from the r04c container itself.",
+    "r04c's receipt.json and energy receipt are copied as recorded: they still count r04c's failed LangChain and hearing blocks. The replaced block results carry their own signed attachments.",
+    "r04f (the later Modal round 1, REJECTED on p99 only, 88.4 -> 104.6 s, MEASURED) is kept in data/archive/INDEX.md, not hidden."
   ],
   "receipt_signed": true,
-  "events": 2094,
+  "events": 2102,
   "files": [
     {
-      "file": "blocks/r04f-langchain-20261102T112336Z/attachment.json",
-      "sha256": "f6e77bf6de790d9e2fd1a6bc0afe50cb027e6921a45e4ed69bc8e3692d9e1ad5",
-      "bytes": 1767,
+      "file": "blocks/r05-langchain-20261102T140740Z/attachment.json",
+      "sha256": "7d6321c01a0b3ea2007c1c326378f1d722f31fb9d10ace6b5904e1496dbeffce",
+      "bytes": 1770,
       "source": {
-        "ref": "data/modal-full-1101",
-        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
-        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/attachment.json"
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/attachment.json"
       }
     },
     {
-      "file": "blocks/r04f-langchain-20261102T112336Z/attachment.sigstore.json",
-      "sha256": "9a2034865fe40ce85714fe7e2ba38424b74fbab76997d686d1c08574cd3cb40c",
+      "file": "blocks/r05-langchain-20261102T140740Z/attachment.sigstore.json",
+      "sha256": "3fb1c9ef5c81e5cc2c57c0c8cd59ce1aef4affc47f5083573d88d4c55ebeae5b",
       "bytes": 431,
       "source": {
-        "ref": "data/modal-full-1101",
-        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
-        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/attachment.sigstore.json"
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/attachment.sigstore.json"
       }
     },
     {
-      "file": "blocks/r04f-langchain-20261102T112336Z/events.jsonl",
-      "sha256": "7fd109d6f3440266f675862cc4a6c1f08ef0a48977982aeb0e669b7624bdef74",
-      "bytes": 6068,
+      "file": "blocks/r05-langchain-20261102T140740Z/events.jsonl",
+      "sha256": "27af3ad8b29ffb44197a6362484a28113a284119961aac6abe9d868aeb904852",
+      "bytes": 6064,
       "source": {
-        "ref": "data/modal-full-1101",
-        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
-        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/events.jsonl"
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/events.jsonl"
       }
     },
     {
-      "file": "blocks/r04f-langchain-20261102T112336Z/inner.json",
-      "sha256": "0592fc05ec07d4a8d84c6d0d0c79776431447af01ce7eb4e390c633200afb5de",
+      "file": "blocks/r05-langchain-20261102T140740Z/inner.json",
+      "sha256": "e5ab0837aa3565db0bfaf6c006e1763dd472e2eb99b82cf4ab3d6c822d548cdc",
       "bytes": 922,
       "source": {
-        "ref": "data/modal-full-1101",
-        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
-        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/inner.json"
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/inner.json"
       }
     },
     {
-      "file": "blocks/r04f-langchain-20261102T112336Z/inner.log",
-      "sha256": "9c771af4dbe073e84d23327b4758628653bd25db31264be8f21adefbe6399a44",
+      "file": "blocks/r05-langchain-20261102T140740Z/inner.log",
+      "sha256": "251c2fbad522d889f608d660f47d60049bfc1a3fc94730df07dbe6b01d974acb",
       "bytes": 268,
       "source": {
-        "ref": "data/modal-full-1101",
-        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
-        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/inner.log"
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/inner.log"
       }
     },
     {
-      "file": "blocks/r04f-langchain-20261102T112336Z/langchain/block.log",
-      "sha256": "5357abc19acafb6f54ca2f7f44ee7174f63116cc8a5644e3a146a8b039144bb1",
-      "bytes": 751,
+      "file": "blocks/r05-langchain-20261102T140740Z/langchain/block.log",
+      "sha256": "6686b46c0d83221e9c3f489a66cba2a35ee3bea63ed17e83a4d1b43a8195a9a3",
+      "bytes": 749,
       "source": {
-        "ref": "data/modal-full-1101",
-        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
-        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/langchain/block.log"
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/langchain/block.log"
       }
     },
     {
-      "file": "blocks/r04f-langchain-20261102T112336Z/langchain/langchain_items.jsonl",
-      "sha256": "829500c180b21be9935cc0aa5b14b9305b1dfaeaf35d640d34e5f8d3c2e1592f",
-      "bytes": 9916,
+      "file": "blocks/r05-langchain-20261102T140740Z/langchain/langchain_items.jsonl",
+      "sha256": "475cd8a12ec1850e75c0ce0b0287b0a81926bda5e28c093a4aab4dcbc43afd6a",
+      "bytes": 11249,
       "source": {
-        "ref": "data/modal-full-1101",
-        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
-        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/langchain/langchain_items.jsonl"
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/langchain/langchain_items.jsonl"
       }
     },
     {
-      "file": "blocks/r04f-langchain-20261102T112336Z/langchain/langchain_pass.json",
-      "sha256": "a192342156ef56e8a61df2e8c3e25e864023d82995a7c84168a108ebba6ff082",
-      "bytes": 14566,
+      "file": "blocks/r05-langchain-20261102T140740Z/langchain/langchain_pass.json",
+      "sha256": "53309ce17166ef3eaee32c9051635cd39c0b1272b6047e947cb964b998450840",
+      "bytes": 15752,
       "source": {
-        "ref": "data/modal-full-1101",
-        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
-        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/langchain/langchain_pass.json"
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/langchain/langchain_pass.json"
       }
     },
     {
-      "file": "blocks/r04f-langchain-20261102T112336Z/probe/probe.json",
-      "sha256": "2cf4a59c4007168de209e98ff3e5700d4ab25dd2ae3f90eb5de494e2cf2dee65",
+      "file": "blocks/r05-langchain-20261102T140740Z/probe/probe.json",
+      "sha256": "ccc6831eb14ecb0a9e61bedf2e77cde09977a0fd9b10c9e11de1a7718136b791",
       "bytes": 309,
       "source": {
-        "ref": "data/modal-full-1101",
-        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
-        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/probe/probe.json"
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/probe/probe.json"
       }
     },
     {
-      "file": "blocks/r04f-langchain-20261102T112336Z/raw/vllm-bf16-pc-128.log",
-      "sha256": "4a22a6454917106cf20ce35179d5dc86faea1f856af0a9aaaa4fc84267ffe7be",
-      "bytes": 80710,
+      "file": "blocks/r05-langchain-20261102T140740Z/raw/vllm-bf16-pc-128.log",
+      "sha256": "07fe0c90a21e8fd8079024cfab318e2becd12148034944c965e95d69bc073fcc",
+      "bytes": 73749,
       "source": {
-        "ref": "data/modal-full-1101",
-        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
-        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/raw/vllm-bf16-pc-128.log"
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/raw/vllm-bf16-pc-128.log"
       }
     },
     {
-      "file": "blocks/r04f-langchain-20261102T112336Z/status.json",
-      "sha256": "139ce5d4a2c29de8ddabbfa60047489a39769e2f6d31be365ec2fc20e20e3c5b",
-      "bytes": 87,
+      "file": "blocks/r05-langchain-20261102T140740Z/status.json",
+      "sha256": "e8feeb27167511fa939b06cabfecda1d853a1ac4d27e3ad608b486ae65290ecc",
+      "bytes": 86,
       "source": {
-        "ref": "data/modal-full-1101",
-        "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
-        "path": "data/modal-full-1101/attachments/r04f/r04f-langchain-20261102T112336Z/status.json"
+        "ref": "data/modal-r05-langchain-fix",
+        "commit": "d9111ad9aaf8500cc6aa968067a90582a74cffde",
+        "path": "data/modal-full-1101/attachments/r05/r05-langchain-20261102T140740Z/status.json"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/attachment.json",
+      "sha256": "50a4a4034b93302c325060eea610bececdbf43ea9f55de223b40ebbce78d585f",
+      "bytes": 2517,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/attachment.json"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/attachment.sigstore.json",
+      "sha256": "bf2e5cfafb06c9c56e5518e31818f60f4bc144cc418c7e0e3d2e3e30c3203881",
+      "bytes": 431,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/attachment.sigstore.json"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/events.jsonl",
+      "sha256": "b834c990031b6c61b1663e7d1603bfc00d45b0968df9e8bddfee6b9b5512a56a",
+      "bytes": 6556,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/events.jsonl"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/eye/block.log",
+      "sha256": "f644cce7262e636c8dc9d569394f42e3ef387e50ffb08967f747b3faf64b63e2",
+      "bytes": 55,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/eye/block.log"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/eye/eye_test.json",
+      "sha256": "7e4f87ad21b0577bfc2a3ade2365b5a850241a59a9d40aa240d03d0f6c8aa6df",
+      "bytes": 4926,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/eye/eye_test.json"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/eye_plain/block.log",
+      "sha256": "f644cce7262e636c8dc9d569394f42e3ef387e50ffb08967f747b3faf64b63e2",
+      "bytes": 55,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/eye_plain/block.log"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/eye_plain/eye_test.json",
+      "sha256": "7d1a88a2cb0d190de4cd88d4e0d1717ee61bcf1c4045e4fb32781d90b2229b9e",
+      "bytes": 3765,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/eye_plain/eye_test.json"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/inner.json",
+      "sha256": "d086fb41c737d93ed0566c8522ed2b61bb3676c232b0f65542b5ed1e31f0a8db",
+      "bytes": 1539,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/inner.json"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/inner.log",
+      "sha256": "251c2fbad522d889f608d660f47d60049bfc1a3fc94730df07dbe6b01d974acb",
+      "bytes": 268,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/inner.log"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/probe/probe.json",
+      "sha256": "7e0534946c104be4739c19d70930e6a955d6e9c40729117d2133bb280e519abf",
+      "bytes": 309,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/probe/probe.json"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/raw/vllm-bf16-nopc-64.log",
+      "sha256": "b4268270652e0c6e075f85021c33b4ce313fe73022222ee93fe8a576083eff72",
+      "bytes": 24463,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/raw/vllm-bf16-nopc-64.log"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/raw/vllm-bf16-pc-128.log",
+      "sha256": "dafd7b92c96b27b52c6802cb94dcb541b6d6be8c13a3e903b5c0a0b4d6661ea8",
+      "bytes": 26287,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/raw/vllm-bf16-pc-128.log"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/spoken/block.log",
+      "sha256": "57179b8c0adc64175923b6a88cb6d555aeb78946fc192fbbac5e88b815018038",
+      "bytes": 71,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/spoken/block.log"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/spoken/spoken_answer.json",
+      "sha256": "ac2208ef17cd86210c4cc5519b178db8644875d67037436d57c0a40295fa26e1",
+      "bytes": 6347,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/spoken/spoken_answer.json"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/spoken_plain/block.log",
+      "sha256": "57179b8c0adc64175923b6a88cb6d555aeb78946fc192fbbac5e88b815018038",
+      "bytes": 71,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/spoken_plain/block.log"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/spoken_plain/spoken_answer.json",
+      "sha256": "f64853035b5fadd1a343878c6ca35321d9bb3fe0ac2570de976810937213e775",
+      "bytes": 5814,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/spoken_plain/spoken_answer.json"
+      }
+    },
+    {
+      "file": "blocks/r05-eye-hearing-20261102T153519Z/status.json",
+      "sha256": "adb6207d3a1680aa0dfaecf706b84e1302cae247932f74a21ba7ace42a283d8b",
+      "bytes": 88,
+      "source": {
+        "ref": "data/modal-r05-eye-hearing",
+        "commit": "521c71c01eb9d28e800ee92715871a4a2bc02b36",
+        "path": "data/modal-full-1101/attachments/r05/r05-eye-hearing-20261102T153519Z/status.json"
       }
     },
     {
       "file": "events.jsonl",
-      "sha256": "3dcafb0b890942b9794a9b1d2b3acda4ed49d13505f4225b27100ee30bbe5dac",
-      "bytes": 601817,
+      "sha256": "05a67c3ba2bc9f3ee0b9e10828baa5cee2efc86d249c1f31280d466148f601bd",
+      "bytes": 604211,
       "source": null
     },
     {
       "file": "receipt.json",
-      "sha256": "de0762391d6f8d10c9a2f9cf8ab5aaa09b7d70d0b811f3ae64d0a0f029c9cc36",
-      "bytes": 16200,
+      "sha256": "1eec701b2884bd4d4406f0c44aab2ed6a9bd730f7f6d954386d9a67ab5cd81ca",
+      "bytes": 16592,
       "source": {
         "ref": "data/modal-full-1101",
         "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
-        "path": "data/modal-full-1101/r04f/features/receipt.json"
+        "path": "data/modal-full-1101/r04c/features/receipt.json"
       }
     },
     {
       "file": "receipt.sigstore.json",
-      "sha256": "d3a3f79140449846051a91ae34b19aa7b0c290fec9ff49f7490a06bed0e390ed",
+      "sha256": "bdb9aafb73f6a2623ea360cad699a35122cbe379559bbde5efc26a5375d5c6b0",
       "bytes": 431,
       "source": {
         "ref": "data/modal-full-1101",
         "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
-        "path": "data/modal-full-1101/r04f/features/receipt.sigstore.json"
+        "path": "data/modal-full-1101/r04c/features/receipt.sigstore.json"
       }
     },
     {
       "file": "round_eu_report.html",
-      "sha256": "43adff3b763d02d09dcafc35af4dfefaad59321e111999a17cffb082c3c97d7a",
-      "bytes": 4159,
+      "sha256": "4094252c6dd36921e4fc064053477e10473a410f1e38e97badbc301f2c7841be",
+      "bytes": 4196,
       "source": {
         "ref": "data/modal-full-1101",
         "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
-        "path": "data/modal-full-1101/r04f/features/eu_report.html"
+        "path": "data/modal-full-1101/r04c/features/eu_report.html"
       }
     },
     {
       "file": "energy-receipt.json",
-      "sha256": "39bcf2962def3d594560e0b9f7ed479a3f1e986e04f6520c7415e521bfbb1e2e",
-      "bytes": 11688,
+      "sha256": "3fcadbb52317f684266acfe0a5cb8dbe3ecf32f94f2685437c96e9a0670ff6cf",
+      "bytes": 11378,
       "source": {
         "ref": "data/modal-full-1101",
         "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
-        "path": "data/modal-full-1101/r04f/sweep/rcpt_20261101_modal_full_r04f.json"
+        "path": "data/modal-full-1101/r04c/sweep/rcpt_20261101_modal_full_r04c.json"
       }
     },
     {
       "file": "energy-receipt.sigstore.json",
-      "sha256": "cd8fb3aaea39acd88c9281b5761d4e481d826fe30ef56f8cfae5f58579eedb95",
+      "sha256": "fbf1773b26e0dd8ace75208f1d45bd0b4066cd1cfbc38d95ad309d86da306b1e",
       "bytes": 431,
       "source": {
         "ref": "data/modal-full-1101",
         "commit": "3041ebdeacc20dba8ec7e7d783bfeb8b9ddc4853",
-        "path": "data/modal-full-1101/r04f/sweep/rcpt_20261101_modal_full_r04f.sigstore.json"
+        "path": "data/modal-full-1101/r04c/sweep/rcpt_20261101_modal_full_r04c.sigstore.json"
       }
     },
     {
       "file": "eu_report.html",
-      "sha256": "2df7e7a58631ae2302d8ee062ec079d9f5fec382fef029ebda541115f1d7657b",
-      "bytes": 6101,
+      "sha256": "ed92663db95e93d9269313fd196d92dffef4591e7dda2c8eda53ac3007585a40",
+      "bytes": 6104,
       "source": {
         "generated_by": "wattnot.report.eu.generate_report",
         "from": "energy-receipt.json"

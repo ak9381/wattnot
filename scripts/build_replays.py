@@ -37,25 +37,36 @@ def _src(ref, path):
 # fix/eye-hearing-energy), so they go too when the block-only eye+hearing run replaces them.
 ROUNDS: dict[str, dict] = {
     "modal-r1": {
-        "title": "Modal round 1 (A100, public gsm8k+humaneval): r04f, LangChain from the r04f rerun",
+        "title": "Modal round 1 (A100, public gsm8k+humaneval): r04c (approved), LangChain and "
+                 "eye+hearing from the later fixed block runs",
         "provider": "modal",
-        "base": {"id": "r04f", "ref": "data/modal-full-1101",
-                 "events": [f"{MF}/r04f.without.events.jsonl", f"{MF}/r04f.with.events.jsonl"],
-                 "receipt": f"{MF}/r04f/features/receipt.json",
-                 "energy_receipt": f"{MF}/r04f/sweep/rcpt_20261101_modal_full_r04f.json"},
+        "base": {"id": "r04c", "ref": "data/modal-full-1101",
+                 "events": [f"{MF}/r04c.without.events.jsonl", f"{MF}/r04c.with.events.jsonl"],
+                 "receipt": f"{MF}/r04c/features/receipt.json",
+                 "energy_receipt": f"{MF}/r04c/sweep/rcpt_20261101_modal_full_r04c.json"},
         "blocks": [
-            {"id": "r04f-langchain-20261102T112336Z", "block": "langchain",
-             "ref": "data/modal-full-1101",
-             "dir": f"{MF}/attachments/r04f/r04f-langchain-20261102T112336Z",
+            {"id": "r05-langchain-20261102T140740Z", "block": "langchain",
+             "ref": "data/modal-r05-langchain-fix",
+             "dir": f"{MF}/attachments/r05/r05-langchain-20261102T140740Z",
              "replaces": [["effort_router", "langchain"]],
-             "why": "rerun after fc-tune (final-check tuning, main 95b4431); r04f's own LangChain "
-                    "pass ran before that fix"},
+             "why": "r04c's LangChain failed (rc 5, saver_on 11/20); this is the block rerun on "
+                    "the saver fixes and the short-conversation bypass (db7f925)"},
+            {"id": "r05-eye-hearing-20261102T153519Z", "block": "eye+hearing",
+             "ref": "data/modal-r05-eye-hearing",
+             "dir": f"{MF}/attachments/r05/r05-eye-hearing-20261102T153519Z",
+             "replaces": [["gates", "eye"], ["gates", "spoken"], ["gates", "hearing"]],
+             "why": "r04c's hearing failed (Meta key not in the container, fixed in 175509e); "
+                    "this is the block-only both-arms rerun with NVML energy"},
         ],
         "gaps": [
-            "Round verdict is REJECTED on p99 only (88.4 -> 104.6 s, MEASURED). The fix "
-            "(step-up latency guard, main 0da21ff) was never rerun on a full Modal round 1; "
-            "round 2 (r05) is the post-fix Modal round. Shown as recorded, not hidden.",
-            "Eye and hearing ran only on the WattNot server in r04f (no stock-server arm).",
+            "The LangChain and eye+hearing blocks were run on 2 Nov after r04c, attached to "
+            "round r05 (same A100 setup, same Glimmer 30B server image). They are not from the "
+            "r04c container itself.",
+            "r04c's receipt.json and energy receipt are copied as recorded: they still count "
+            "r04c's failed LangChain and hearing blocks. The replaced block results carry their "
+            "own signed attachments.",
+            "r04f (the later Modal round 1, REJECTED on p99 only, 88.4 -> 104.6 s, MEASURED) is "
+            "kept in data/archive/INDEX.md, not hidden.",
         ],
     },
     "modal-r2": {
