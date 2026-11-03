@@ -424,6 +424,16 @@ def checklist(cfg: dict, *, skip_network: bool = False) -> dict:
 
 
 # ---------------------------------------------------------------- jobs
+RUNNER_SETS = ("ours", "gsm8k", "humaneval")
+
+
+def _sets(cfg: dict) -> list[str]:
+    """The datasets picked in the UI, as the stage runners' --sets flag. Only the sets the runners
+    know are passed; when none of them is picked the runner keeps its own default."""
+    picked = [d for d in cfg.get("datasets") or [] if d in RUNNER_SETS]
+    return ["--sets", *picked] if picked else []
+
+
 def command(cfg: dict, mode: str) -> tuple[list[str], dict, str]:
     env = {**os.environ, "PYTHONPATH": f"{ROOT}:{ROOT / 'src'}"}
     n = cfg["rounds"]
@@ -438,7 +448,7 @@ def command(cfg: dict, mode: str) -> tuple[list[str], dict, str]:
             return ([PY, "scripts/e2e/modal_full_round.py", "--round", "ui-" + rounds[0], "--fake", "--limit", "3"],
                     env, "MOCK")
         env.update(WATTNOT_MODAL_GO="1", WN_PY="/usr/bin/python3", WN_DASH_PY=sys.executable)
-        cmd = ["/usr/bin/python3", "scripts/e2e/modal_stage.py", "--rounds", *rounds]
+        cmd = ["/usr/bin/python3", "scripts/e2e/modal_stage.py", "--rounds", *rounds, *_sets(cfg)]
         return (cmd + ([] if cfg["open_pr"] else ["--no-pr"]), env, "MEASURED")
     if cfg["provider"] == "baseten":
         rounds = ["r01", "r02", "r03"][:n]
@@ -456,7 +466,8 @@ def command(cfg: dict, mode: str) -> tuple[list[str], dict, str]:
                      "--cap-usd", f"{cap:.2f}", "--meta-cap-usd", f"{meta_cap:.2f}",
                      "--stage-budget-s", "900",
                      "--raw", "{job}", "--events-dir", "{job}"], env, "MEASURED")
-        cmd = [PY, "scripts/e2e/baseten_stage.py", "--rounds", *rounds, "--pr-round", rounds[-1] if cfg["open_pr"] else "none"]
+        cmd = [PY, "scripts/e2e/baseten_stage.py", "--rounds", *rounds, "--pr-round",
+               rounds[-1] if cfg["open_pr"] else "none", *_sets(cfg)]
         return (cmd, env, "MEASURED")
     raise ValueError("no runner for this provider")
 
