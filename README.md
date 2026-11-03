@@ -1,5 +1,39 @@
 # WattNot
 
+## Built during the hackathon (Oct 26 – Nov 4, 2026)
+
+Before the event: brainstorming notes only, no code. Everything in this repo was built Oct 26 – Nov 4. The repo was created on Oct 26, 2026 (first commit `043ce2c`, 10:06 PM IST), and the git history shows every step.
+
+What we wrote:
+- The WattNot framework: the try-one-change loop, the quality gate (pass rate, p99, noise test) and the hash-chained, signed receipts with `wattnot verify`.
+- The power-cap and clock controller on NVML, which always restores the stock limit.
+- The token savers: the thinking budget, the context saver, cheapest-first effort routing with step-up, and the agentwaste proxy for agent loops (with LangChain drop-in).
+- The long-run driver, recorder, watchdogs and the sealed GSM8K holdout.
+- The dashboard (`web/`), replays, EU efficiency report export, `wattnot doctor` and `run-local.sh`.
+- Our prompt sets (`workloads/proof-v1`, `tiers-v1`, agent tasks) and all run results and receipts in `replays/` and `data/`.
+
+What we use but did not write (open source, used as is):
+
+| Project | Used for | License |
+|---|---|---|
+| vLLM | Serving Muse Glimmer 30B | Apache 2.0 |
+| NVIDIA NVML (driver library, loaded with ctypes) | Power readings and power caps | NVIDIA driver license |
+| LangChain (`langchain-core`, `langchain-openai`) | Agent framework drop-in tests | MIT |
+| FastAPI, Uvicorn | Dashboard server | MIT, BSD-3 |
+| Optuna | Picking the next cap to try | MIT |
+| jsonschema, cryptography | Schema checks, Ed25519 signing | MIT, Apache 2.0 / BSD |
+| GSM8K, HumanEval (OpenAI) | Public test prompts, licenses in `data/public_bench/` and `data/holdout/` | MIT |
+| Inter, JetBrains Mono, Lucide | Fonts and icons in `web/run/vendor/` | OFL 1.1, OFL 1.1, ISC |
+
+## Open weights
+
+**Muse Glimmer 30B served via vLLM on our own rented H100 80GB.** It's the model whose answers WattNot measures. Every power cap, thinking budget, saver and agentwaste arm runs on Glimmer's real replies, and the quality gate grades them against the stock run. It was served in BF16 (`bash scripts/glimmer_serve.sh bf16`, with `--reasoning-parser muse_glimmer`). FP8 was tested on Modal's A100-80GB: it kept eye and hearing accuracy but lost 4.16 points on the full round (MEASURED), so the gate rejected it and the H100 stayed on BF16.
+
+Run logs and recordings:
+- H100 3 Nov long run (pass 1, pass 2, sealed holdout): [`replays/h100-max-1103/`](replays/h100-max-1103/manifest.json), with the event log, a receipt for each block and the signed sweep receipts.
+- Modal and Baseten rounds: [`replays/INDEX.md`](replays/INDEX.md).
+- Every run with its commit, cost and verdict: [`docs/RUN_HISTORY.md`](docs/RUN_HISTORY.md).
+
 ## Submission overview
 
 - **Track:** Indie (solo, Akash K Raju). **Problem statement:** Push the Frontier (energy).

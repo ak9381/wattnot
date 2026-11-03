@@ -19,8 +19,10 @@ OUT="out/judge-$(date -u +%Y%m%d-%H%M%S)"
 say() { printf '\n== %s\n' "$*"; }
 
 # venv + install, once
-if [ ! -x .venv/bin/python ]; then
-  bash scripts/setup.sh >/dev/null || { echo "setup failed: run 'bash scripts/setup.sh' to see why"; exit 1; }
+if ! { [ -x .venv/bin/python ] && .venv/bin/python -c "import wattnot" 2>/dev/null; }; then
+  echo "First run: installing WattNot into .venv (about a minute)..."
+  bash scripts/setup.sh >/tmp/wattnot-setup.log 2>&1 \
+    || { tail -20 /tmp/wattnot-setup.log; echo "setup failed (full log: /tmp/wattnot-setup.log)"; exit 1; }
   if [ -f requirements-lock.txt ]; then
     .venv/bin/python -m pip install -q -r requirements-lock.txt \
       || echo "note: pinned versions did not install here; using the ranges in pyproject.toml"
