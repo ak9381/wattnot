@@ -814,6 +814,28 @@ def matrix_leg_blocks(out: Path) -> list[Block]:
     return bl
 
 
+# Sealed holdout (3 Nov, Akash): instead of the pass-1 rerun, the frozen full stack (cap + savers,
+# wattnot.longrun.holdout.FROZEN_STACK) vs stock runs ONCE on GSM8K test items no tuning set used.
+# Opt-in with WATTNOT_MAX_HOLDOUT=1 so the running max plan is unchanged. The block verifies the
+# seal (hashes of the workload, every item and the frozen stack) and refuses a second opening.
+HOLDOUT_MIN = 35   # ESTIMATE: 2 arms x 977 prompts at ~3 req/s (MEASURED p2 gate rate) + margin
+
+
+def holdout_enabled() -> bool:
+    return os.environ.get("WATTNOT_MAX_HOLDOUT", "") == "1"
+
+
+def holdout_block(out: Path) -> Block:
+    return Block(
+        "h1-holdout", "Sealed holdout, run once: frozen full stack vs stock on 977 never-seen "
+        "GSM8K prompts, paired McNemar + MDE (MEASURED)", _m(HOLDOUT_MIN),
+        _py("wattnot.longrun.holdout", "run", "--fake", "--url", "fake",
+            "--out", str(out / "runs" / "h1-holdout")),
+        live=_rpy("wattnot.longrun.holdout", "run", "--url", f"{HOST_BASE_URL}/chat/completions",
+                  "--out", f"{REMOTE_RESULTS}/h1-holdout"),
+        host=True, depends_on=("t0-probe",), skip_if_short=True)
+
+
 def plan_glimmer_max(out: Path) -> list[Block]:
     """The max plan: setup once, then three full E2E passes (own set, GSM8K, HumanEval), then the
     dedicated blocks that need a serving restart or many reps (serverless idle, FP8 + its gates,
@@ -825,6 +847,9 @@ def plan_glimmer_max(out: Path) -> list[Block]:
     setup = replace(long_blocks["t0-setup"], hours=_m(70))
     blocks = [setup, long_blocks["t0-probe"]]
     for i, (pas, tag, grid, ds) in enumerate(MAX_PASSES):
+        if pas == "p1r" and holdout_enabled():
+            blocks.append(holdout_block(out))   # 3 Nov (Akash): sealed holdout replaces p1r
+            continue
         blocks += pass_blocks(out, pas, tag, grid, ds, optional=i > 0,
                               sweep_dry=long_blocks["t1-sweep"].dry)
     sets = list(MAX_PUBLIC_SETS)
