@@ -205,6 +205,36 @@ def estimate(workload: str, n: int, with_without: bool = False, calib: dict | No
             "under_1_usd": usd < 1.0}
 
 
+CAP_PROBE_N = 4   # paired requests per workload class before the cap is kept or rolled back
+_T975 = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262}
+
+
+def req_class(body: dict) -> str:
+    """Workload class from the request shape: tool/agent traffic vs plain text."""
+    msgs = body.get("messages") or []
+    return "agent" if body.get("tools") or any(m.get("role") == "tool" or m.get("tool_calls") for m in msgs) else "text"
+
+
+def cap_decision(stock_j: list[float], cap_j: list[float]) -> dict:
+    """Keep the cap for a class only if MEASURED energy per request is clearly down (same rule as
+    the harness: energy_clearly_down over paired requests, same prompt at stock vs at the cap)."""
+    import math
+    import statistics as st
+    from wattnot.proof.session import energy_clearly_down
+    pairs = [(a, b) for a, b in zip(stock_j, cap_j) if a > 0]
+    d = [100 * (b - a) / a for a, b in pairs]
+    n = len(d)
+    mean = st.mean(d) if d else float("nan")
+    ci = _T975.get(n - 1, 2.0) * st.stdev(d) / math.sqrt(n) if n >= 2 else float("inf")
+    cv = 100 * st.stdev(stock_j) / st.mean(stock_j) if len(stock_j) >= 2 and st.mean(stock_j) else float("nan")
+    keep = energy_clearly_down(d, mean, ci, cv)
+    return {"keep_cap": bool(keep), "pairs": n, "mean_pct": round(mean, 2) if d else None,
+            "ci95_half_pct": round(ci, 2) if math.isfinite(ci) else None,
+            "stock_j_per_req": round(st.mean(a for a, _ in pairs), 1) if pairs else None,
+            "cap_j_per_req": round(st.mean(b for _, b in pairs), 1) if pairs else None,
+            "label": "MEASURED NVML energy per request, paired with the same request at stock"}
+
+
 class TrafficRun:
     """One background run. ``send`` posts a chat body to the gateway; ``direct`` (optional) sends
     it straight to the upstream for the without arm; ``transcribe`` turns a wav into text."""
@@ -248,7 +278,7 @@ class TrafficRun:
             raise ValueError(f"speed must be one of {list(SPEEDS)}")
         items = plan(workload, n)
         self._stop.clear()
-        self.state.update(running=True, done=0, total=len(items), errors=0, usd=0.0, stopped=None,
+        self.state.update(running=True, done=0, total=len(items), errors=0, usd=0.0, stopped=None, cap_rollback=None,
                           workload=workload, mode=mode, with_without=bool(with_without), without={"done": 0, "usd": 0.0})
         target = self._run
         if with_without and self.direct and self.gpu is not None:
@@ -280,17 +310,26 @@ class TrafficRun:
         self.state["phase"] = (f"without WattNot at {g.limit_w()} W" if name == "without"
                                else f"with WattNot at {g.limit_w()} W")
         t0, e0 = time.time(), g.energy_mj()
-        texts, toks, usd = [], 0, 0.0
+        texts, toks, usd, per_j = [], 0, 0.0, []
+        ctl = getattr(self, "_cap_ctl", None) if name == "with" else None
         for i, (kind, body) in enumerate(items):
             if self._stop.is_set():
                 self.state["stopped"] = "stopped by you"
                 break
             body = {"model": "muse-spark-1.3", **SAMPLING, **body}
+            cls = req_class(body)
+            if ctl is not None:
+                ctl.before(cls)
+            ej, sj = g.energy_mj(), _mon.SHADOW_METER["excluded_mj"]
             try:
                 r = call(body, i) or {}
             except Exception:  # noqa: BLE001
                 self.state["errors"] += 1
                 r = {}
+            rj = (g.energy_mj() - ej - (_mon.SHADOW_METER["excluded_mj"] - sj)) / 1000
+            per_j.append([cls, round(rj, 2)])
+            if ctl is not None:
+                ctl.after(cls, i, rj)
             texts.append(str(r.get("text") or ""))
             toks += int(r.get("tokens") or 0)
             usd += float(r.get("usd") or 0)
@@ -312,7 +351,8 @@ class TrafficRun:
                                             "run one at a time and taken out of this arm"} if name == "with" else None, "seconds": round(time.time() - t0, 1),
                "t0": round(t0, 3), "t1": round(time.time(), 3),
                "cap_w": g.limit_w(), "tokens": toks, "usd": round(usd, 6),
-               "label": "MEASURED (NVML energy counter over the arm's window)", "texts": texts}
+               "label": "MEASURED (NVML energy counter over the arm's window)", "texts": texts,
+               "per_request_j": per_j}
         self.event(step="arm_end", arm=name, **{k: v for k, v in out.items() if k != "texts"})
         return out
 
@@ -339,8 +379,12 @@ class TrafficRun:
                     self.event(step="rolled_back", to_cap_w=stock, failed=st.get("why_not"))
             else:
                 res["answer_check"] = {"accepted": False, "why_not": ["no live answer check: cap not applied"]}
+            self._cap_ctl = CapController(self, wo.get("per_request_j") or [],
+                                          cap_on=g.limit_w() != stock, stock=stock)
             res["with"] = w = self._arm("with", items, gap,
                                         lambda b, i: self.send(b, {"x-wattnot-run": f"sim-{i}", "x-wattnot-traffic": "simulated"}))
+            res["cap_decision"] = self._cap_ctl.decisions
+            self._cap_ctl = None
             wants = [EASY_ANS[EASY.index(b["messages"][-1]["content"])]
                      if k == "text" and b["messages"][-1]["content"] in EASY else None for k, b in items]
             for arm in (wo, w):
@@ -374,7 +418,7 @@ class TrafficRun:
                 self.state["phase"] = "done"
                 self.state["running"] = False
 
-    def _run(self, items, gap, with_without) -> None:
+    def _run(self, items, gap, with_without) -> None:  # noqa: D401
         try:
             for i, (kind, body) in enumerate(items):
                 if self._stop.is_set():
@@ -435,3 +479,45 @@ class TrafficRun:
             self.state["usd"] = round(self.state["usd"], 5)
             self.state["without"]["usd"] = round(self.state["without"]["usd"], 5)
             self.state["running"] = False
+
+
+class CapController:
+    """With arm only: the cap stays on for a workload class until CAP_PROBE_N of its requests have
+    run at the cap; their MEASURED joules are paired with the same requests at stock (without arm).
+    If energy is not clearly down, that class goes back to stock power for the rest of the arm."""
+
+    def __init__(self, run, stock_per_req, *, cap_on: bool, stock: int):
+        self.run, self.cap_on, self.stock = run, cap_on, stock
+        self.stock_j = [j for _, j in stock_per_req]
+        self.seen: dict = {}
+        self.decisions: dict = {}
+
+    def _want_w(self, cls):
+        d = self.decisions.get(cls)
+        return self.stock if (d and not d["keep_cap"]) else self.run.cap_w
+
+    def before(self, cls):
+        if not self.cap_on:
+            return
+        g = self.run.gpu
+        w = self._want_w(cls)
+        if g.limit_w() != w:
+            g.set_w(w)
+
+    def after(self, cls, i, joules):
+        if not self.cap_on or cls in self.decisions:
+            return
+        self.seen.setdefault(cls, []).append((i, joules))
+        if len(self.seen[cls]) < CAP_PROBE_N:
+            return
+        idx = [k for k, _ in self.seen[cls]]
+        d = cap_decision([self.stock_j[k] for k in idx if k < len(self.stock_j)],
+                         [j for k, j in self.seen[cls] if k < len(self.stock_j)])
+        self.decisions[cls] = d
+        if d["keep_cap"]:
+            self.run.event(step="cap_kept", workload_class=cls, cap_w=self.run.cap_w, **d)
+        else:
+            d["message"] = f"cap rolled back for {cls} traffic: no energy saving (MEASURED)"
+            self.run.event(step="rolled_back", to_cap_w=self.stock, workload_class=cls,
+                           failed=[d["message"]], **{k: v for k, v in d.items() if k != "message"})
+            self.run.state["cap_rollback"] = d["message"]

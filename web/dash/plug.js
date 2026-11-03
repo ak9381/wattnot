@@ -157,7 +157,7 @@ $("#tStop").onclick = () => post("/api/dash/traffic/stop");
 async function drawTraffic() {
   const t = await fetch("/api/dash/traffic/status").then((r) => r.json()).catch(() => null);
   if (!t) return;
-  if (t.total) $("#tState").textContent = `${t.running ? "Sending" : "Done"}: ${t.done} of ${t.total} · spent $${Number(t.usd).toFixed(4)}${t.errors ? ` · ${t.errors} errors` : ""}${t.stopped ? ` · ${t.stopped}` : ""}${t.running && t.phase ? ` · ${t.phase}` : ""} (Simulated traffic)`;
+  if (t.total) $("#tState").textContent = `${t.running ? "Sending" : "Done"}: ${t.done} of ${t.total} · spent $${Number(t.usd).toFixed(4)}${t.errors ? ` · ${t.errors} errors` : ""}${t.stopped ? ` · ${t.stopped}` : ""}${t.running && t.phase ? ` · ${t.phase}` : ""}${t.cap_rollback ? ` · ${t.cap_rollback}` : ""} (Simulated traffic)`;
   const w = t.without_totals;
   $("#tAbOut").textContent = w && w.requests ? `Without WattNot (same requests): ${fmtWh(w.wh)}, $${w.usd.toFixed(4)} (${w.label}).` : "";
 }

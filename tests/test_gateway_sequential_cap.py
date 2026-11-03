@@ -65,3 +65,42 @@ def test_answer_check_fail_keeps_stock(tmp_path):
 def test_error_restores_stock(tmp_path):
     g, r, _ = _run(tmp_path, boom=True)
     assert r["final_limit_w"] == 700 and g.lim == 700
+
+
+def _agent_run(tmp_path, cap_costs_more=True):
+    g = FakeGpu()
+    def call(b, *_):
+        if tr.req_class(b) == "agent":
+            g.e += 1000 * (550 if (g.lim == 375 and cap_costs_more) else 500 if g.lim == 700 else 400)
+        else:
+            g.e += 1000 * (g.lim // 10)
+        return {"text": "x", "tokens": 50, "usd": 0}
+    ev = []
+    run = tr.TrafficRun(call, direct=call, gpu=g, cap_w=375, answer_check=lambda: Check(True),
+                        event=lambda **k: ev.append(k), result_path=tmp_path / "sequential.json")
+    run.start("agent", 20, "fast", True)
+    run.thread.join(5)
+    return g, json.loads((tmp_path / "sequential.json").read_text()), ev, run
+
+
+def test_cap_rolled_back_for_agent_when_measured_energy_not_down(tmp_path):
+    g, r, ev, run = _agent_run(tmp_path)
+    d = r["cap_decision"]["agent"]
+    assert d["keep_cap"] is False and d["pairs"] == tr.CAP_PROBE_N
+    assert d["message"] == "cap rolled back for agent traffic: no energy saving (MEASURED)"
+    assert any(e["step"] == "rolled_back" and e.get("workload_class") == "agent" for e in ev)
+    # probe at the cap (4 x 550 J), rest back at stock (16 x 500 J): no worse than probe cost
+    assert r["with"]["joules"] == 4 * 550 + 16 * 500
+    assert run.state["cap_rollback"].startswith("cap rolled back for agent")
+    assert r["final_limit_w"] == 700
+
+
+def test_cap_kept_for_agent_when_measured_energy_down(tmp_path):
+    g, r, ev, _ = _agent_run(tmp_path, cap_costs_more=False)
+    assert r["cap_decision"]["agent"]["keep_cap"] is True
+    assert r["with"]["joules"] == 20 * 400
+
+
+def test_req_class_from_shape():
+    assert tr.req_class({"messages": [{"role": "user", "content": "hi"}]}) == "text"
+    assert tr.req_class({"tools": [{}], "messages": []}) == "agent"
