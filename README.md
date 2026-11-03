@@ -112,11 +112,17 @@ switch). The headline below is MEASURED.
 | WattNot power cap 400 W | 13.81 ± 0.01 (MEASURED) | -18.9% | +4.7% | passed |
 | WattNot power cap 350 W | 12.42 ± 0.00 (MEASURED) | -27.1% | +7.7% | passed |
 | WattNot power cap 325 W | 11.84 ± 0.01 (MEASURED) | -30.5% | +10.9% | failed: p99 up 10.9% (limit 10%) |
-| WattNot small model first (Llama 3.1 8B, escalate to Muse Spark Open) | pending (MEASURED when run) |  |  |  |
-| WattNot cap + token trimmer, same workload | pending (MEASURED when run) |  |  |  |
-| Muse Spark Open, fewer experts | pending (MEASURED when run) |  |  |  |
-| Baseten hosted Muse Spark Open | pending (ESTIMATE when run) |  |  |  |
-| Modal hosted Muse Spark Open | pending (ESTIMATE when run) |  |  |  |
+
+Hosted rounds (2 Nov, our set plus public GSM8K + HumanEval, stock vs WattNot on the same items;
+replays in [replays/INDEX.md](replays/INDEX.md)):
+
+| Round | J / correct, stock -> WattNot | Accuracy, stock -> WattNot | Verdict | Cost |
+|---|---|---|---|---|
+| Modal A100, Glimmer 30B, r04c (modal-r1) | 2254.7 -> 821.6 J, -63.6% (MEASURED, NVML) | 95.8% -> 99.0% (MEASURED) | approved (2 blocks failed, replaced by later reruns) | $4.87 (MEASURED) |
+| Modal A100, Glimmer 30B, r04f | -67.6% (MEASURED) | held | rejected: p99 88.4 -> 104.6 s (MEASURED), a safety catch | $4.42 (MEASURED) |
+| Modal A100, Glimmer 30B, r05 (modal-r2) | 2954.6 -> 678.4 J, -77.0% (MEASURED, NVML) | 96% -> 97% (MEASURED) | see replay | ~$3.47 (ESTIMATE) |
+| Baseten, Muse Spark Open, r02 public (baseten-r1) | 719.3 -> 482.5 J (ESTIMATE: hosted API, no GPU meter) | 98% -> 98% (MEASURED) | see replay | $0.54 Baseten + $0.21 Meta (MEASURED) |
+| Baseten, Muse Spark Open, r03 own set (baseten-r2) | 2087.3 -> 685.0 J (ESTIMATE) | 79.4% -> 90.2% (MEASURED) | see replay | $0.88 Baseten + $0.16 Meta (MEASURED) |
 
 - **Signed receipts on the replay:** https://ak9381.github.io/wattnot/receipts/ . They are signed offline with the repo's public test key, so grades stop at ESTIMATE. The RUN2 receipt carries the Spark trace ID and joules per model.
 - **If the live demo's server times out,** the dashboard switches to the published replay and says so.
@@ -127,7 +133,7 @@ Every Meta model WattNot uses, and what we built on top of each:
 
 | Model | What we built on it | Measured cost |
 |---|---|---|
-| Muse Spark (`muse-spark-1.3`, hosted) | the planner that picks the next power cap and explains gate failures; judge; agent-waste and coding-set runs; the voice guide's intent step; narrator notes | $23.08 over 3459 calls (MEASURED, API ledger total on 2026-10-28) |
+| Muse Spark (`muse-spark-1.3`, hosted) | the planner that picks the next power cap and explains gate failures; judge; agent-waste and coding-set runs; the voice guide's intent step; narrator notes | $23.08 over 3459 calls by 2026-10-28 (MEASURED, API ledger); $30.46 in total by 2 Nov 9:32 PM IST (MEASURED, API ledger, all Meta models) |
 | Muse Wonder (`muse-wonder-1.0`, hosted) | the sweep supervisor (`--planner wonder`) and the Wonder chart that reads the sweep and plots the knee | from the API ledger (MEASURED when run) |
 | SAM 3.1 (`sam-3.1`, hosted) | hotspot finder: segments rack photos into units (kept off the main path) | $0.12 over 47 calls (MEASURED, API ledger) |
 | Muse Voice (`muse-voice-transcribe-1.0`, hosted) | Ask by voice: speech to text for the voice guide, which answers from signed receipts only | from the API ledger (MEASURED when run) |
@@ -186,6 +192,28 @@ PYTHONPATH=src WATTNOT_META_MOCK=1 python -m wattnot.dash --replay-only \
   --events replays/modal-r2/events.jsonl --port 8795
 # open http://127.0.0.1:8795/index.html
 ```
+
+### Run it live on your own account
+
+Judges use their own keys. Keys stay in the shell that starts WattNot (or `~/.config/wattnot/env`
+on your machine); the dashboard shows key names and present/missing, never values, and never
+sends them anywhere except the provider's own API. Every path has a free `--dry-run` (MOCK
+numbers, $0). Live runs cost real money on your account: check the estimate first.
+
+| Platform | Minimum env | Preflight | Dry run ($0) | Live command | Cost (ESTIMATE) |
+|---|---|---|---|---|---|
+| Own GPU (H100/A100 with vLLM) | `META_API_KEY`, `WATTNOT_BASE_URL` (your vLLM), `HF_TOKEN` for gated weights | `wattnot preflight` | `python scripts/e2e/round.py --provider h100 --dry-run` | `wattnot init --act`, then the sweep in [docs/runbooks](docs/runbooks) | your GPU hours |
+| Modal | `META_API_KEY`, Modal token (`modal token new`, stored in `~/.modal.toml`) | `python scripts/e2e/preflight.py --provider modal` | `python scripts/e2e/round.py --provider modal --dry-run` | `WATTNOT_MODAL_GO=1 python scripts/e2e/modal_stage.py --rounds r05 --sets gsm8k humaneval` | ~$4.6 per public round, hard stop $20 per round |
+| Baseten | `META_API_KEY`, `BASETEN_METRICS_KEY` (a Baseten workspace key with your own Muse Spark Open deployment) | `python scripts/e2e/preflight.py --provider baseten` | `python scripts/e2e/baseten_round.py --round r02 --mode smoke --limit 2 --dry-run` | `python scripts/e2e/baseten_stage.py --rounds r02 --pr-round none --sets gsm8k humaneval` (`--pr-round none` = no pull request) | ~$1 Baseten + ~$0.6 Meta per public round, hard stop $20 |
+| Docker (own GPU) | same as own GPU, passed with `-e` | `docker run --gpus all wattnot-agent preflight --json` | n/a | see [Docker](#docker) | your GPU hours |
+
+From the dashboard: start it (`wattnot demo --no-browser`, or `python -m wattnot.dash`), open the
+**Configure** page, pick the platform (Baseten or Modal A100) and datasets (`ours`, `gsm8k`,
+`humaneval`), then walk the steps. The last steps run the free pre-launch checks (keys, model,
+caps, git) and show the cost estimate; a live start needs every required check to pass and the
+cost to be confirmed. Mock mode spends nothing. The H100/own-GPU path is not wired to the
+dashboard yet: start it from the command line above. Caps: $20 per round (Modal and Baseten),
+$90 total for a Modal stage, Meta $120 hard / $100 warning.
 
 ### Environment variables
 
@@ -277,7 +305,7 @@ What is and isn't checked yet is listed in [docs/runbooks/BASETEN.md](docs/runbo
 
 Muse Spark makes WattNot's agent decisions: the next knob to try, the order of reasoning-effort levels, the judge verdicts and plain-words receipt notes. Every call goes through a spend guard that keeps a ledger (`~/.wattnot/meta_spend.json`), refuses a call that would pass **$120**, and warns at $100 (Meta credits: $150). `wattnot meta spend` shows the total, a per-purpose breakdown and what is left; `wattnot meta check` confirms the model answers. Details, the price used and the recorded session: [docs/runbooks/META-USAGE.md](docs/runbooks/META-USAGE.md).
 
-**Spend to date (MEASURED, 2026-10-28).** The Meta API ledger totals **$23.20** (3,506 billed calls: $23.08 for the Muse Spark planner, $0.12 for SAM), well under the cap (now **$120**). Hosted endpoints are billed separately and tracked in their own small ledgers: the Baseten head-to-head (one planner call plus the compare) is about **$0.005**, and the hosted A/B (Baseten + Modal arms of Muse Spark Open) totals **$0.14**. All three are MEASURED from billed token counts at list price.
+**Spend snapshot (MEASURED, 2026-10-28; newer: the Meta ledger reads $30.46 MEASURED on 2 Nov, and each hosted round's cost is in its receipt, see [replays/INDEX.md](replays/INDEX.md)).** The Meta API ledger totals **$23.20** (3,506 billed calls: $23.08 for the Muse Spark planner, $0.12 for SAM), well under the cap (now **$120**). Hosted endpoints are billed separately and tracked in their own small ledgers: the Baseten head-to-head (one planner call plus the compare) is about **$0.005**, and the hosted A/B (Baseten + Modal arms of Muse Spark Open) totals **$0.14**. All three are MEASURED from billed token counts at list price.
 
 ## Flex mode (grid events, SIMULATED until the H100 run)
 
