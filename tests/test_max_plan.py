@@ -204,13 +204,16 @@ def test_p1r_rerun_after_pass2_reads_its_own_sweep(tmp_path):
     assert not any(i.startswith("p3-") for i in ids)
     assert ids.index("p2-agentwaste") < ids.index("p1r-sweep") < ids.index("p1r-agentwaste")
     assert by["p1r-tiers"].sweep_tag == "p1r-sweep" and "p1r-sweep" in by["p1r-tiers"].depends_on
-    assert by["p2-tiers"].sweep_tag == "t1-sweep" and by["p1-tiers"].sweep_tag == "t1-sweep"
+    assert by["p2-tiers"].sweep_tag == "p2-sweep" and "p2-sweep" in by["p2-tiers"].depends_on
+    assert by["p1-tiers"].sweep_tag == "t1-sweep"
     assert any("runs/p1r-sweep" in a for a in by["p1r-sweep"].live)
     assert any("/p1r-tiers" in a for a in by["p1r-tiers"].live)
     import json
-    for tag, cap in (("t1-sweep", 350), ("p1r-sweep", 325)):
+    for tag, cap in (("t1-sweep", 350), ("p1r-sweep", 325), ("p2-sweep", 300)):
         f = tmp_path / "runs" / tag / "vm" / "results.json"
         f.parent.mkdir(parents=True)
         f.write_text(json.dumps({"best_cap_w": cap}))
     assert driver.best_cap_from_sweep(tmp_path, "p1r-sweep") == 325
     assert driver.best_cap_from_sweep(tmp_path) == 350
+    assert driver.best_cap_from_sweep(tmp_path, by["p2-tiers"].sweep_tag) == 300
+    assert driver.best_cap_from_sweep(tmp_path, "p3-sweep") is None   # no file: clean skip

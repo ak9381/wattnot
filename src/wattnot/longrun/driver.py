@@ -631,11 +631,11 @@ MAX_PASSES = (
     ("p2", "p2-sweep", "300,325,350,375", "gsm8k300"),
     # RUN1103 (3 Nov, Akash): pass 3 dropped; instead a full pass-1 rerun on the fixed code
     # after pass 2. Its own block ids and folders (p1r-*), and its {BEST_CAP} comes from its own
-    # sweep (runs/p1r-sweep), not t1-sweep. Passes 1 and 2 keep reading t1-sweep as before.
+    # sweep (runs/p1r-sweep), not t1-sweep. Pass 2 also reads its own (runs/p2-sweep); pass 1 keeps t1-sweep.
     ("p1r", "p1r-sweep", "375,350,325,300", "own"),
 )
 # which sweep a pass's {BEST_CAP} and tiers dependency read (default t1-sweep)
-OWN_CAP_PASSES = ("p1r",)
+OWN_CAP_PASSES = ("p2", "p1r")
 MAX_PASS_LAYERS_MIN = {"sweep": 95, "think": 15, "tiers": 25, "eye": 3, "spoken": 3,
                        "phase": 5, "langchain": 25, "agentwaste": 20}   # ESTIMATE, 191 min
 MAX_LANGCHAIN_ITEMS = 40
