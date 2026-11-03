@@ -993,6 +993,14 @@ class Driver:
                           sleep=self.sleep, clock=self.clock, **kw)
         self._note(kind="teardown-decision", **{k: v for k, v in d.as_dict().items()
                                                 if k != "probes"}, probes=len(d.probes))
+        # Akash's rule (3 Nov): never delete or stop the VM on a failure. Only the normal end of
+        # the plan (after t3-copy) and the money rules (balance floor, hard deadline) may delete;
+        # link loss, low disk or a driver crash keep the VM for a person to look at.
+        allowed = kw.get("why") == "end of plan" or kw.get("balance_low") or kw.get("hard_deadline_hit")
+        if d.delete and not allowed:
+            self._note(kind="vm-kept", reason=f"failure ({kw.get('why')}): VM kept, never deleted on a failure")
+            d = replace(d, delete=False)
+            self._kept_dead = True
         if d.delete:
             self.vm.delete()
             self._note(kind="vm-deleted", reason=d.reason)
@@ -1103,10 +1111,12 @@ class Driver:
                 if linkdown:
                     d = self._teardown(why=f"{b.id} link lost (rc {rc})")
                     result["teardown"] = d.reason
-                    if d.delete:
+                    kept_dead = getattr(self, "_kept_dead", False)
+                    self._kept_dead = False
+                    if d.delete or kept_dead:
                         self.rec.end(result)
                         self.state["blocks"][b.id] = {"status": "lost", **result}
-                        self.state["stopped"] = "VM dead"
+                        self.state["stopped"] = "VM dead" + (" (kept, not deleted)" if kept_dead else "")
                         self._save()
                         return self.state
                 copied = self.vm.pull()
