@@ -2,7 +2,7 @@
 
 ## Built during the hackathon (Oct 26 – Nov 4, 2026)
 
-Before the event: brainstorming notes only, no code. Everything in this repo was built Oct 26 – Nov 4. The repo was created on Oct 26, 2026 (first commit `043ce2c`, 10:06 PM IST), and the git history shows every step.
+Everything in this repo was built during the hackathon, Oct 26 – Nov 4, 2026.
 
 What we wrote:
 - The WattNot framework: the try-one-change loop, the quality gate (pass rate, p99, noise test) and the hash-chained, signed receipts with `wattnot verify`.
@@ -86,7 +86,7 @@ git clone https://github.com/ak9381/wattnot.git && cd wattnot
 ./run-local.sh            # with a key in .env: live Meta API run. Without one: replay of our real runs
 ```
 
-On Windows, run the same commands in WSL or Git Bash.
+On Windows, use WSL (Ubuntu) and run the same commands there. Native PowerShell and Git Bash are not supported by the launcher.
 
 ### Your settings
 
@@ -97,7 +97,7 @@ cp .env.example .env            # macOS / Linux / WSL
 ```
 
 ```powershell
-Copy-Item .env.example .env     # Windows PowerShell
+Copy-Item .env.example .env     # Windows PowerShell, if you keep the clone on the Windows side
 ```
 
 ### The modes
