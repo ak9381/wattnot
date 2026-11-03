@@ -19,7 +19,7 @@ the GPU-side levers below. Feature table = `gpu_feature_table()`.
 |---|---|---|
 | Reasoning-effort + cheapest-first routing (low, step up on a failed check) | ON | hosted API (per-token, no GPU access) |
 | Thinking-budget enforcer (max_tokens per effort) | ON | hosted API (per-token, no GPU access) |
-| Backend/effort router | ON | thinking off first, per-tier thinking budget on a failed check; one backend |
+| Backend/effort router | ON | per-tier thinking budget, step up on a failed check (Glimmer has no thinking-off switch); one backend |
 | Agent saver: tool-output dedup + memory compression | ON | hosted API (per-token, no GPU access) |
 | Agent-waste proxy (repeat/no-op/cycle/overspend detectors) | ON | hosted API (per-token, no GPU access) |
 | Code Mode with locked sandbox + network boundary | ON | runs on the box over recorded traces |
