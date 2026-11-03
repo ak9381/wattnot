@@ -54,3 +54,26 @@ def test_savers_disabled_bodies_byte_identical(tmp_path):
 def test_savers_gated_off_bodies_byte_identical(tmp_path):
     a, b = _bodies(tmp_path, gate_off=True, disabled=False)
     assert a == b and '"temperature": 0' in a and '"seed": 1234' in a
+
+
+def test_context_saver_is_gated_per_model(tmp_path):
+    cfg = load_config(None)
+    cfg["savings_log"] = str(tmp_path / "s.jsonl")
+    for k in cfg["savers"]:
+        cfg["savers"][k]["enabled"] = k == "context_saver"
+    cfg["savers"]["context_saver"]["min_tokens"] = 1
+    w = []
+    app = build_app(cfg, upstream=fake(w))
+    base = next(t for t in cfg["tiers"] if t["name"] == cfg["baseline"]["tier"])
+    long_tool = "H100 SXM default power limit: 700 W. " * 200
+    body = {"model": "m", **tr.SAMPLING, "messages": [{"role": "user", "content": "q"}] + sum(
+        [[{"role": "assistant", "content": None, "tool_calls": [{"id": f"c{i}", "type": "function",
+           "function": {"name": "s", "arguments": "{}"}}]},
+          {"role": "tool", "tool_call_id": f"c{i}", "content": long_tool}] for i in range(4)], [])}
+    stock = json.dumps(tier_body(sanitize(body)[0], base), sort_keys=True)
+    with TestClient(app) as c:
+        c.post("/v1/chat/completions", json=body)
+        app.state.gate._switch_off("context_saver", base["model"], "test")
+        c.post("/v1/chat/completions", json=body)
+    sent = [json.dumps(b, sort_keys=True) for h, b in w if not h.get("x-wattnot-shadow")]
+    assert sent[-1] == stock                      # gated off: byte-identical to stock

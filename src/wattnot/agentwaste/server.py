@@ -203,6 +203,7 @@ def create_app(
     max_stepups: int = 1,
     short_bypass_tokens: int | None = None,
     waste_gate: Callable[[dict], bool] | None = None,
+    context_gate: Callable[[dict], bool] | None = None,
 ) -> FastAPI:
     """Build the proxy app. upstream(body, headers) returns parsed JSON.
 
@@ -319,7 +320,8 @@ def create_app(
         rec: dict = {"run": run[:16], "framework": detect_framework(request.headers),
                      "tokens_before": None, "tokens_after": None,
                "dropped_fields": dropped, "stream": stream, "short_bypass": short}
-        if context_saver is not None and isinstance(out_body, dict) and out_body.get("messages"):
+        if context_saver is not None and isinstance(out_body, dict) and out_body.get("messages") \
+                and (context_gate is None or context_gate(out_body)):   # per-model gate: off = body untouched
             saved, acct = context_saver.transform(list(out_body["messages"]))
             out_body = {**out_body, "messages": saved}
             rec["tokens_before"], rec["tokens_after"] = acct["tokens_before"], acct["tokens_after"]

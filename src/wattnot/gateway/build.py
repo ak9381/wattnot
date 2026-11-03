@@ -46,6 +46,7 @@ DEFAULTS: dict[str, Any] = {
     "gate": {"min_pairs": 3, "done_window": 10},   # per-model saver gate (gateway/gate.py)
 }
 
+_ctx_changed_box: contextvars.ContextVar[dict | None] = contextvars.ContextVar("wn_gw_ctx", default=None)
 _calls: contextvars.ContextVar[list | None] = contextvars.ContextVar("wn_gw_calls", default=None)
 
 
@@ -239,11 +240,22 @@ def build_app(cfg: dict, upstream=None, log: SavingsLog | None = None):
     ro = sv["routing"]
     tiers = cfg["tiers"] if ro["enabled"] else [t for t in cfg["tiers"] if t["name"] == cfg["baseline"]["tier"]]
     saver = ContextSaver(min_tokens=int(sv["context_saver"]["min_tokens"])) if sv["context_saver"]["enabled"] else None
+    if saver is not None:   # note when it really rewrote messages, so the gate judges it as a saver
+        _tf = saver.transform
+
+        def _transform(msgs, _tf=_tf):
+            out, acct = _tf(msgs)
+            box = _ctx_changed_box.get()
+            if out != msgs and box is not None:
+                box["changed"] = True
+            return out, acct
+        saver.transform = _transform
     app = create_app(wrapped, wcfg, context_saver=saver, tiers=tiers,
                      label="MEASURED" if cfg["energy"]["source"] == "nvml" else "LIVE-API",
                      final_check=bool(ro.get("final_check")), max_stepups=int(ro.get("max_stepups", 1)),
                      short_bypass_tokens=None if saver else 0,
-                     waste_gate=lambda b: gate.allow("agent_waste", gate_key))
+                     waste_gate=lambda b: gate.allow("agent_waste", gate_key),
+                     context_gate=lambda b: gate.allow("context_saver", gate_key))
     base_tier = next(t for t in cfg["tiers"] if t["name"] == cfg["baseline"]["tier"])
     from wattnot.gateway.monitor import Monitor
     monitor = Monitor(cfg, raw_up, base_tier, log.path.with_name(log.path.stem + ".shadow.jsonl"),
@@ -259,10 +271,13 @@ def build_app(cfg: dict, upstream=None, log: SavingsLog | None = None):
         raw = await request.body()
         sink: list = []
         token = _calls.set(sink)
+        ctx_box = {"changed": False}
+        ctx_token = _ctx_changed_box.set(ctx_box)
         try:
             resp = await call_next(request)
         finally:
             _calls.reset(token)
+            _ctx_changed_box.reset(ctx_token)
         try:
             body = json.loads(raw or b"{}")
         except ValueError:
@@ -283,7 +298,8 @@ def build_app(cfg: dict, upstream=None, log: SavingsLog | None = None):
                     tc_eff and i.get("model_tier") != base_tier["name"] and next(
                         (t for t in cfg["tiers"] if t["name"] == i.get("model_tier")), {}
                     ).get("body_extra", {}).get("reasoning_effort") == tc_eff) else []) + (
-                ["vision"] if i.get("images_shrunk") else [])
+                ["vision"] if i.get("images_shrunk") else []) + (
+                ["context_saver"] if ctx_box["changed"] else [])
         if resp.status_code == 200 and sink and sink[-1].get("applied"):
             monitor.maybe_shadow(body, sink[-1], rec["receipt_id"])
         lf.send(rec)
