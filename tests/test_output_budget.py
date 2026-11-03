@@ -53,3 +53,54 @@ def test_fake_pass_writes_totals_and_sampling(tmp_path):
     assert res["tiers"] == ["out-budget", "full-budget"]
     for arm in ("saver_off", "saver_on"):
         assert res["arms"][arm]["step_totals"]["calls"] >= 1
+
+
+# --- step-up on a cut or empty answer (v3 LangChain: 3 answers lost to the 448 cap) ---------
+def _proxy(replies_by_cap, max_stepups=1):
+    from fastapi.testclient import TestClient
+    from wattnot.agentwaste.server import create_app
+    seen = []
+
+    def upstream(body, headers):
+        cap = body.get("max_tokens")
+        seen.append(cap)
+        text, fin = replies_by_cap(cap)
+        return {"id": "x", "model": body["model"], "choices": [{"index": 0, "finish_reason": fin,
+                "message": {"role": "assistant", "content": text}}],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 5}}
+    tiers, _ = RZ.saver_tiers("m", "")
+    app = create_app(upstream, tiers=tiers, final_check=True, max_stepups=max_stepups,
+                     short_bypass_tokens=0)
+    return TestClient(app), seen
+
+
+def _ask(c):
+    r = c.post("/v1/chat/completions", json={"model": "m", "max_tokens": 2048,
+               "messages": [{"role": "user", "content": "What is 2+3? End with #### n"}]},
+               headers={"x-wattnot-run": "r1", "x-wattnot-kind": "math"})
+    return r.json()
+
+
+def test_cut_answer_is_retried_at_full_budget_and_becomes_the_answer():
+    c, seen = _proxy(lambda cap: ("5 + 3 is" , "length") if cap == 448 else ("2+3=5\n#### 5", "stop"))
+    out = _ask(c)
+    assert seen == [448, 2048]
+    assert out["choices"][0]["message"]["content"].endswith("#### 5")
+    assert out["choices"][0]["finish_reason"] == "stop"
+    fc = c.get("/v1/wattnot/receipt").json()["final_check"]
+    assert fc["budget_retries"] == 1
+
+
+def test_empty_answer_is_retried_even_past_the_stepup_cap():
+    c, seen = _proxy(lambda cap: ("", "stop") if cap == 448 else ("#### 5", "stop"), max_stepups=0)
+    out = _ask(c)
+    assert seen == [448, 2048]
+    assert out["choices"][0]["message"]["content"] == "#### 5"
+
+
+def test_normal_answer_is_not_retried():
+    c, seen = _proxy(lambda cap: ("2+3=5\n#### 5", "stop"))
+    out = _ask(c)
+    assert seen == [448]
+    assert out["choices"][0]["message"]["content"].endswith("#### 5")
+    assert c.get("/v1/wattnot/receipt").json()["final_check"]["budget_retries"] == 0

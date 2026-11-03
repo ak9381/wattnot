@@ -158,6 +158,13 @@ def reasoning_cutoff(response: dict, text: str | None, finish: str | None) -> bo
     return comp > 0 and reas >= 0.5 * comp
 
 
+def budget_cut(response: dict) -> bool:
+    """True when a reply was cut by the output budget: finish=length, or no text and no tool
+    call (an empty answer). Such a reply is never shown; it is retried at the full budget."""
+    text, finish, tool = _answer(response)
+    return finish == "length" or (not tool and not (text or "").strip())
+
+
 def sse_chunks(response: dict, include_usage: bool):
     """Replay one buffered completion as OpenAI SSE chunks."""
     cid = response.get("id", "wattnot")
@@ -326,10 +333,28 @@ def create_app(
         attempts = []
         response: dict = {}
         esc_tokens = 0
+        budget_retries = 0
+
+        def call_tier(b: dict, tier):
+            """One upstream call. When the tier has an output budget (max_output_cap) and the
+            reply comes back cut (length) or empty, retry the same body at the last tier's full
+            budget and return THAT reply. Not a gate step-up: it ignores the step-up cap, since a
+            cut answer is a budget artefact, not a shaky one (v3 LangChain, 3 answers lost)."""
+            nonlocal esc_tokens, budget_retries
+            r = upstream(tier_body(b, tier), headers)
+            full = chain[-1]
+            if tier is None or not tier.get("max_output_cap") or tier is full or not budget_cut(r):
+                return r
+            guard.charge(r)
+            u = r.get("usage") or {}
+            esc_tokens += int(u.get("prompt_tokens") or 0) + int(u.get("completion_tokens") or 0)
+            budget_retries += 1
+            attempts.append({"tier": tier["name"], "passed": False, "budget_retry": True,
+                             "reason": "cut by output budget (length or empty), retried at full budget"})
+            return upstream(tier_body(b, full), headers)
         try:
             for i, tier in enumerate(chain):
-                body_t = tier_body(out_body, tier)
-                response = upstream(body_t, headers)
+                response = call_tier(out_body, tier)
                 text, finish, tool = _answer(response)
                 done_reason = _only_done_call(response, cfg.done_tool) if final_check and not short else None
                 if done_reason is not None:
@@ -363,7 +388,7 @@ def create_app(
                             guard.charge(response)
                             u = response.get("usage") or {}
                             esc_tokens += int(u.get("prompt_tokens") or 0) + int(u.get("completion_tokens") or 0)
-                        response = upstream(tier_body(finalize_body(out_body, cfg.done_tool), fin_tier), headers)
+                        response = call_tier(finalize_body(out_body, cfg.done_tool), fin_tier)
                         text, finish, tool = _answer(response)
                         ok2, why2 = fc.check(k, text, finish, msgs, response)
                         attempts.append({"tier": None if fin_tier is None else fin_tier["name"],
@@ -419,6 +444,7 @@ def create_app(
         rec["answered_by"] = attempts[-1]["tier"] if attempts else None
         rec["gate_passed"] = bool(attempts and (attempts[-1]["passed"] or attempts[-1]["passed"] is None))
         rec["escalated_tokens"] = esc_tokens
+        rec["budget_retries"] = budget_retries
         calls.append(rec)
         out = guard.after(response)
         if esc_tokens and isinstance(out, dict):
@@ -479,6 +505,7 @@ def create_app(
                             "final_answers": sum(1 for c in calls if c["attempts"]
                                                  and c["attempts"][0]["passed"] is not None),
                             "stepped_up": sum(1 for c in calls if len(c["attempts"]) > 1),
+                            "budget_retries": sum(int(c.get("budget_retries") or 0) for c in calls),
                             "reasons": {r: sum(1 for c in calls for a in c["attempts"][:1] if a["reason"] == r)
                                         for r in {a["reason"] for c in calls for a in c["attempts"][:1]
                                                   if a["passed"] is False}}},
