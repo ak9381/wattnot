@@ -6,7 +6,9 @@ agrees with stock, energy per answer went down, and p99 latency rose no more tha
 """
 from __future__ import annotations
 
+import json
 import time
+from pathlib import Path
 
 SAMPLE = [
     "What is 17 * 23? Reply with the number only.",
@@ -77,5 +79,100 @@ def gateway_asker(cfg: dict):
     def ask(prompt: str) -> str:
         r = up(tier_body({"messages": [{"role": "user", "content": prompt}], "max_completion_tokens": 512}, base),
                {"x-wattnot-kind": "node-check"})
+        return str(((r.get("choices") or [{}])[0].get("message") or {}).get("content") or "")
+    return ask
+
+
+# ---------------------------------------------------------------- the harness's own cap rule
+PROOF_V1 = Path(__file__).resolve().parents[3] / "workloads" / "proof-v1.jsonl"
+
+
+def proof_prompts(n: int | None = None) -> list[dict]:
+    """The proof-v1 workload the H100 sweep judged 375 W on (111 prompts), first n of them."""
+    rows = [json.loads(ln) for ln in PROOF_V1.read_text().splitlines() if ln.strip()]
+    return rows[:n] if n else rows
+
+
+class HarnessCapCheck:
+    """The cap rule of the H100 sweep that picked 375 W (wattnot.proof.session.summarize):
+    interleaved stock/cap blocks of the proof-v1 prompts at concurrency 32 (the sweep's default),
+    p99 latency per block (wattnot.proof.stats.percentile), accept when the MEAN per-pair p99
+    change is <= p99_limit (10%, wattnot.settings default) and energy is clearly down by
+    wattnot.proof.session.energy_clearly_down (with 2-3 pairs every pair below max(3%, 2x stock cv)).
+    The answer-match rule is unchanged from AnswerCheck: every capped answer agrees with stock."""
+
+    def __init__(self, ask, gpu, set_cap, stock_w: int, n: int = 111, pairs: int = 2,
+                 concurrency: int = 32, p99_limit: float = 10.0):
+        self.ask, self.gpu, self.set_cap, self.stock_w = ask, gpu, set_cap, int(stock_w)
+        self.items, self.pairs, self.concurrency, self.p99_limit = proof_prompts(n), pairs, concurrency, p99_limit
+        self.ref = None
+
+    def _block(self, w: int) -> dict:
+        from concurrent.futures import ThreadPoolExecutor
+        from wattnot.proof.stats import percentile
+        self.set_cap(w)
+        e0 = self.gpu.nvmlDeviceGetTotalEnergyConsumption(None)
+
+        def one(it):
+            t = time.perf_counter()
+            a = self.ask(it["prompt"], int(it.get("max_tokens") or 512))
+            return a, time.perf_counter() - t
+        with ThreadPoolExecutor(self.concurrency) as ex:
+            out = list(ex.map(one, self.items))
+        j = (self.gpu.nvmlDeviceGetTotalEnergyConsumption(None) - e0) / 1000
+        lat = [t for _, t in out]
+        return {"answers": [a for a, _ in out], "j_per_req": j / max(1, len(out)),
+                "p99_s": percentile(lat, 99), "cap_w": w}
+
+    def stock(self) -> dict:
+        return {}
+
+    def at(self, cap) -> dict:
+        from wattnot.gateway.monitor import agree
+        from wattnot.proof.session import energy_clearly_down, stock_noise
+        from wattnot.proof.stats import ci95, mean_sd
+        stock, capped = [], []
+        try:
+            for r in range(self.pairs):
+                order = [("stock", self.stock_w), ("cap", int(cap))]
+                if r % 2:
+                    order = order[::-1]   # cap first on odd rounds, as the sweep does
+                for arm, w in order:
+                    (stock if arm == "stock" else capped).append(self._block(w))
+        finally:
+            self.set_cap(int(cap))        # the caller decides what stays; it restores stock on reject
+        pct = lambda c, s: 100 * (c - s) / s if s else float("nan")  # noqa: E731
+        d_e = [pct(c["j_per_req"], s["j_per_req"]) for s, c in zip(stock, capped)]
+        d_p = [pct(c["p99_s"], s["p99_s"]) for s, c in zip(stock, capped)]
+        e_mean, _ = mean_sd(d_e)
+        _, e_half = ci95(d_e)
+        p_mean, _ = mean_sd(d_p)
+        ref = stock[0]["answers"]
+        n = len(ref)
+        ok = min(sum(agree(a, b) for a, b in zip(c["answers"], ref)) for c in capped)
+        why = []
+        if ok < n:
+            why.append(f"{n - ok} of {n} answers changed")
+        if not energy_clearly_down(d_e, e_mean, e_half, stock_noise(stock)["cv_pct"]):
+            why.append("energy change not clearly below zero")
+        if p_mean > self.p99_limit:
+            why.append(f"p99 up {p_mean:.1f}% (limit {self.p99_limit:.0f}%)")
+        return {"accepted": not why, "energy_change_pct": round(e_mean, 1), "p99_change_pct": round(p_mean, 1),
+                "per_pair_energy_pct": [round(x, 1) for x in d_e], "per_pair_p99_pct": [round(x, 1) for x in d_p],
+                "answers_same": f"{ok}/{n}", "why_not": why, "n": n, "pairs": self.pairs,
+                "rule": "proof sweep: mean p99 change <= +10%, energy_clearly_down, concurrency 32",
+                "label": "MEASURED (NVML energy, interleaved stock/cap blocks)"}
+
+
+def harness_asker(cfg: dict):
+    """ask(prompt, max_tokens) at the baseline tier with the holdout's sampling (temperature 0, seed)."""
+    from wattnot.agentwaste.server import tier_body
+    from wattnot.gateway.build import http_upstream
+    up = http_upstream(cfg)
+    base = next(t for t in cfg["tiers"] if t["name"] == cfg["baseline"]["tier"])
+
+    def ask(prompt: str, max_tokens: int = 512) -> str:
+        r = up(tier_body({"messages": [{"role": "user", "content": prompt}], "max_tokens": max_tokens,
+                          "temperature": 0, "seed": 1234}, base), {"x-wattnot-kind": "node-check"})
         return str(((r.get("choices") or [{}])[0].get("message") or {}).get("content") or "")
     return ask

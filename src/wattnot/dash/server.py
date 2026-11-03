@@ -1065,14 +1065,15 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
             g = _traffic.NvmlGpu()
         except Exception:  # noqa: BLE001 - no NVML: stays concurrent, energy ESTIMATE
             return
-        from wattnot.node.answercheck import AnswerCheck, gateway_asker
+        from wattnot.node.answercheck import HarnessCapCheck, harness_asker
 
         class _A:   # NVML-shaped view for AnswerCheck
             def nvmlDeviceGetTotalEnergyConsumption(self, _h):
                 return g.energy_mj()
         traffic.gpu = g
         traffic.cap_w = int((c.get("node") or {}).get("cap_max_w", 375))
-        traffic.answer_check = lambda: AnswerCheck(gateway_asker(c), _A())
+        n = int((c.get("node") or {}).get("check_prompts", 111))
+        traffic.answer_check = lambda: HarnessCapCheck(harness_asker(c), _A(), g.set_w, g.default_w(), n=n)
 
     def _est(body: dict) -> dict:
         from urllib.parse import urlparse
@@ -1139,7 +1140,7 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
 
         def job() -> None:
             try:
-                from wattnot.node.answercheck import AnswerCheck, gateway_asker
+                from wattnot.node.answercheck import HarnessCapCheck, harness_asker
                 from wattnot.node.simgpu import SimulatedH100, open_gpu
                 gpu = open_gpu()
                 chk = None
