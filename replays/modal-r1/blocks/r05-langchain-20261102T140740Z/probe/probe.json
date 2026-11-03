@@ -6,7 +6,7 @@
  },
  "gpu": "NVIDIA A100-SXM4-80GB",
  "idle_w": {
-  "value": 71.2,
+  "value": 71.9,
   "label": "MEASURED",
   "when": "before vLLM start"
  }

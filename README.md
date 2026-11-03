@@ -187,6 +187,11 @@ PYTHONPATH=src WATTNOT_META_MOCK=1 python -m wattnot.dash --replay-only \
 # open http://127.0.0.1:8795/index.html
 ```
 
+All four replays are listed in [replays/INDEX.md](replays/INDEX.md). Modal round 1 (`modal-r1`) is
+built on the approved r04c round. The later round r04f is kept in
+[data/archive/INDEX.md](data/archive/INDEX.md) as a safety catch: it cut joules per correct answer
+by 67.6% (MEASURED), but p99 latency rose from 88.4 s to 104.6 s (MEASURED), so WattNot refused it.
+
 ### Environment variables
 
 Every variable the code reads is listed, names only, in [`.env.example`](.env.example). Copy it to
