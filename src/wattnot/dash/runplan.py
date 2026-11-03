@@ -59,7 +59,7 @@ WORKLOADS = [
      "desc": "Fifteen prompts in five classes (extract, classify, trace, arith, logic), each repeated five times."},
 ]
 CREDITS = {
-    "cap": [("meta", "Muse Glimmer 30B or Llama 3.1 8B was the model served"), ("e2e", "Rented the H100 the sweep ran on"),
+    "cap": [("meta", "Muse Glimmer 30B was the model served"), ("e2e", "Rented the H100 the sweep ran on"),
             ("nvidia", "NVML read power 10 times a second and set the cap")],
     "topk": [("hf", "Transformers loaded the model; hooks on the routers kept fewer experts"), ("nvidia", "NVML read the energy"),
              ("e2e", "Rented the H100")],
