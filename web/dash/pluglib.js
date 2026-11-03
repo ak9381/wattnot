@@ -16,7 +16,7 @@ export const UPSTREAMS = [
   { v: "meta", t: "Meta API (Muse Spark)" }, { v: "vllm", t: "My vLLM server" }, { v: "baseten", t: "Baseten" },
 ];
 export function defaultChoice() {
-  return { deployment: "gateway", upstream: "meta", port: 8780, savers: Object.fromEntries(SAVERS.map((s) => [s.id, true])),
+  return { deployment: "both", upstream: "meta", port: 8780, savers: Object.fromEntries(SAVERS.map((s) => [s.id, true])),
     gpus: "all", cap_min_w: 300, cap_max_w: 375, sam_rack_check: true, approval: "manual", langfuse: false };
 }
 // Fold a voice-guide deploy prefill into a choice. Unknown (null) fields keep their value.

@@ -20,7 +20,7 @@
       <li><h2>2. Pick savers</h2><div id="savers"></div></li>
       <li><h2>3. Start it</h2>
         <div id="startGw"><p><button id="gwStart" class="pri">Start gateway</button> <span id="gwLight" class="light off" aria-hidden="true"></span> <span id="gwState" class="small" role="status">Not running</span></p>
-          <small>Starts WattNot here with these settings. Your key stays on the server.</small>
+          <small id="gwNote">Starts WattNot here with these settings. Your key stays on the server.</small>
           <div id="gwConn" hidden><p>Point your app here: <code id="baseUrl"></code> <button data-copy="#baseUrl">Copy</button></p>
             <div class="os"><button data-snip="langchain" class="on">LangChain</button><button data-snip="openai">OpenAI SDK</button><button data-snip="curl">curl</button></div>
             <pre id="snip"></pre><button data-copy="#snip">Copy</button></div></div>

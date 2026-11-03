@@ -16,3 +16,5 @@
 .light{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle}.light.on{background:#2a9;box-shadow:0 0 6px #2a9}.light.off{background:#999}
 .panel{border:1px solid #8884;border-radius:10px;padding:10px 12px;margin:14px 0}.tag{font-size:12px;padding:2px 6px;border-radius:6px;background:#f0b42933}
 button.pri{font-weight:600}
+html,body{overflow-x:hidden}.plug{overflow-wrap:anywhere}.plug pre,.plug code{max-width:100%}
+.plug section,.plug li,.plug h2,#graph,#traffic{scroll-margin-top:90px}

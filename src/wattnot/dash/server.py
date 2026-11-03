@@ -908,6 +908,11 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
 
     def _start_gateway(path: Path | None) -> dict:
         c = load_config(path) if path else load_config(None)
+        ov = os.environ.get("WATTNOT_PLUG_OVERLAY")   # site settings (tiers, upstream) on top of the UI choice
+        if ov:
+            from wattnot.gateway.build import _merge
+            import yaml as _y
+            c = _merge(c, _y.safe_load(Path(ov).read_text()) or {})
         c["savings_log"], c["node"]["log"] = logs
         gw.start(build_app(c, upstream=GATEWAY_UPSTREAM(c) if GATEWAY_UPSTREAM else None), c, path)
         return gw.status()

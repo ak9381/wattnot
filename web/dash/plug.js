@@ -1,9 +1,9 @@
 import { SAVERS, MODES, UPSTREAMS, defaultChoice, applyPrefill, headline, path, fmtWh, fromQuery, nodeHeadline } from "./pluglib.js";
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-let C = JSON.parse(localStorage.getItem("wn-plug") || "null") || defaultChoice();
+let C = JSON.parse(localStorage.getItem("wn-plug2") || "null") || defaultChoice();
 const fromTest = fromQuery(location.search);
-if (fromTest) { C = fromTest; localStorage.setItem("wn-plug", JSON.stringify(C)); }
+if (fromTest) { C = fromTest; localStorage.setItem("wn-plug2", JSON.stringify(C)); }
 let os = /Win/.test(navigator.platform) ? "powershell" : "posix", last = null;
 
 function drawSetup() {
@@ -23,7 +23,7 @@ function drawSetup() {
   render();
 }
 function $$all(s) { return [...document.querySelectorAll(s)]; }
-function save() { localStorage.setItem("wn-plug", JSON.stringify(C)); drawSetup(); }
+function save() { localStorage.setItem("wn-plug2", JSON.stringify(C)); drawSetup(); }
 async function render() {
   const r = await fetch("/api/dash/deploy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(C) }).catch(() => null);
   if (!r || !r.ok) { $("#err").textContent = r ? (await r.json()).detail : "The dashboard server is not reachable."; return; }
@@ -37,15 +37,16 @@ $("#sam").onchange = (e) => { C.sam_rack_check = e.target.checked; save(); };
 $("#lf").onchange = (e) => { C.langfuse = e.target.checked; save(); };
 $("#osPosix").onclick = () => { os = "posix"; $("#osPosix").classList.add("on"); $("#osPs").classList.remove("on"); render(); };
 $("#osPs").onclick = () => { os = "powershell"; $("#osPs").classList.add("on"); $("#osPosix").classList.remove("on"); render(); };
-$("#copy").onclick = () => navigator.clipboard?.writeText($("#cmds").textContent);
+const copied = (b, t) => { navigator.clipboard?.writeText(t); const o = b.textContent; b.textContent = "Copied"; setTimeout(() => (b.textContent = o), 1500); };
+$("#copy").onclick = (e) => copied(e.target, $("#cmds").textContent);
 let snipKey = "langchain", gwInfo = null;
 const post = (u, b) => fetch(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b || {}) });
 function drawGw(st) {
   gwInfo = st || gwInfo; if (!gwInfo) return;
   $("#gwLight").className = `light ${gwInfo.running ? "on" : "off"}`;
-  $("#gwState").textContent = gwInfo.running ? `Running · savers on: ${gwInfo.savers_on.join(", ")}` : "Not running";
+  $("#gwState").textContent = gwInfo.running ? `Running · savers on: ${gwInfo.savers_on.map((i) => (SAVERS.find((x) => x.id === i) || { t: i }).t).join(", ")}` : "Not running";
   $("#gwStart").textContent = gwInfo.running ? "Restart gateway" : "Start gateway";
-  $("#gwConn").hidden = !gwInfo.running;
+  $("#gwConn").hidden = !gwInfo.running; $("#gwNote").hidden = !!gwInfo.running;
   $("#baseUrl").textContent = gwInfo.base_url; $("#snip").textContent = gwInfo.snippets[snipKey];
 }
 $("#gwStart").onclick = async () => {
@@ -56,7 +57,7 @@ $("#gwStart").onclick = async () => {
   drawGw(await r.json());
 };
 $$all("[data-snip]").forEach((b) => (b.onclick = () => { snipKey = b.dataset.snip; $$all("[data-snip]").forEach((x) => x.classList.toggle("on", x === b)); drawGw(); }));
-$$all("[data-copy]").forEach((b) => (b.onclick = () => navigator.clipboard?.writeText($(b.dataset.copy).textContent)));
+$$all("[data-copy]").forEach((b) => (b.onclick = () => copied(b, $(b.dataset.copy).textContent)));
 $("#gpuConnect").onclick = async () => {
   await post("/api/dash/deploy/save", C);
   const r = await post("/api/dash/node/run", { approve: false }).catch(() => null);
