@@ -575,6 +575,11 @@ def energy_arms(out: Path, S: dict) -> None:
         wp.write_text(json.dumps(doc, indent=2) + "\n")
 
 
+# The eye block reads the Muse Image generated set (gauges, racks, charts, documents) when it ships.
+_EYESET = Path(__file__).resolve().parents[2] / "data" / "vision" / "eyeset-museimage"
+EYE_ASSETS_ARGS = ["--assets", str(_EYESET)] if (_EYESET / "answers.json").exists() else []
+
+
 def block_cmds(limit: int, fake: bool, out: Path, suffix: str = "") -> dict:
     """The agent-saver / eye / hearing / thinking-budget GPU blocks. In smoke (limit > 0) the
     agentwaste block is shortened (--reps 1 --max-cases 4 --max-tokens 768) so it fits the
@@ -593,7 +598,7 @@ def block_cmds(limit: int, fake: bool, out: Path, suffix: str = "") -> dict:
                       str(limit or 20), "--out", str(out / "langchain"), "--route", "final-check"]
                      + (["--fake"] if fake else ["--base-url", BASE]),
         "eye": [sys.executable, "-m", "wattnot.vision.run", "--base-url", BASE, "--out", str(out / f"eye{suffix}"),
-                "--budget-s", "90"] + fk,
+                "--budget-s", "90"] + EYE_ASSETS_ARGS + fk,
         "spoken": [sys.executable, "-m", "wattnot.spokenanswer.run", "--base-url", BASE, "--out",
                     str(out / f"spoken{suffix}"), "--budget-s", "90"] + fk,
     }

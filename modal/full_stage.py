@@ -26,7 +26,7 @@ SMOKE_CAP_S = 32 * 60         # smoke tests: 32 min x $2.50 = $1.33 worst case (
 SMOKE_HARD_USD = 1.50
 # block-only run (r04e LangChain rerun): server start (up to 15 min cold) + LangChain limit 3000 s + pull;
 # 90 min x $2.50 = $3.75 worst case (ESTIMATE), under the $10 round cap
-BLOCK_CAP_S = 90 * 60
+BLOCK_CAP_S = int(os.environ.get("WATTNOT_BLOCK_CAP_S") or 90 * 60)   # lower it for a tighter hard stop
 assert SMOKE_CAP_S / 3600 * GPU_USD_H <= SMOKE_HARD_USD
 VOL = "wattnot-glimmer-weights"
 RESULTS_VOL = "wattnot-results"   # incremental/recoverable results; a crash leaves partials here
