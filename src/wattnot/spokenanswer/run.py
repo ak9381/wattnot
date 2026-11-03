@@ -105,8 +105,21 @@ def main(argv: list[str] | None = None) -> int:
                                         max_completion_tokens=args.max_completion_tokens)
         mode = "live"
 
-    answers, run_meta = answer_spoken_set(spoken, answerer, budget_s=args.budget_s,
-                                          concurrency=args.concurrency)
+    def _once(budget):
+        a, m = answer_spoken_set(spoken, answerer, budget_s=budget, concurrency=args.concurrency)
+        rs = spoken_answer_gate(a, spoken.items).detail["items"]
+        ok = sum(1 for r in rs if r["ok"])
+        return (a, m), ok, bool(rs) and ok == len(rs)
+
+    energy_doc = None
+    try:
+        from wattnot.meter.arm_energy import two_arms
+        (answers, run_meta), energy_doc = two_arms(
+            _once, items=len(spoken.items), unit="clip", budget_s=args.budget_s,
+            live=mode == "live")
+    except Exception:  # noqa: BLE001  energy must never fail the block
+        if "answers" not in locals():
+            (answers, run_meta) = _once(args.budget_s)[0]
 
     rows = spoken_answer_gate(answers, spoken.items).detail["items"]
     pass_rate = (sum(1 for r in rows if r["ok"]) / len(rows)) if rows else 0.0
@@ -144,6 +157,8 @@ def main(argv: list[str] | None = None) -> int:
         "run": run_meta,
         "detail": result.detail,
     }
+    if energy_doc:
+        summary.update(energy_doc)
     if args.out:
         out = Path(args.out)
         out.mkdir(parents=True, exist_ok=True)

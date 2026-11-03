@@ -52,9 +52,20 @@ def main(argv: list[str] | None = None) -> int:
                                         max_completion_tokens=args.max_completion_tokens)
         mode = "live"
 
-    answers, run_meta = answer_eye_test(eye, answerer, budget_s=args.budget_s,
-                                        concurrency=args.concurrency)
-    result = vision_gate(answers, eye.items, wh_per_image=eye.wh_per_image)
+    def _once(budget):
+        a, m = answer_eye_test(eye, answerer, budget_s=budget, concurrency=args.concurrency)
+        r = vision_gate(a, eye.items, wh_per_image=eye.wh_per_image)
+        ok = sum(1 for row in r.detail.get("images", []) if row.get("ok"))
+        return (a, m, r), ok, r.passed
+
+    energy_doc = None
+    try:
+        from wattnot.meter.arm_energy import two_arms
+        (answers, run_meta, result), energy_doc = two_arms(
+            _once, items=len(eye.items), unit="image", budget_s=args.budget_s, live=mode == "live")
+    except Exception:  # noqa: BLE001  energy must never fail the block
+        if energy_doc is None and "result" not in locals():
+            (answers, run_meta, result) = _once(args.budget_s)[0]
 
     summary = {
         "spec": "wattnot.eyetest/1",
@@ -67,6 +78,12 @@ def main(argv: list[str] | None = None) -> int:
         "run": run_meta,
         "detail": result.detail,
     }
+    if energy_doc:
+        summary.update(energy_doc)
+        w = (energy_doc.get("energy_arms") or {}).get("without_wattnot") or {}
+        if w.get("wh") and w.get("items"):   # replace the flat 0.5 Wh/image placeholder
+            summary["detail"]["est_wh_per_image"] = None
+            summary["wh_per_image"] = {"value": round(w["wh"] / w["items"], 6), "label": "MEASURED"}
     if args.out:
         out = Path(args.out)
         out.mkdir(parents=True, exist_ok=True)
