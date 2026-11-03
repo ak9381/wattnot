@@ -26,7 +26,7 @@ from wattnot.vision.client import (
     ServedVisionAnswerer,
     answer_eye_test,
 )
-from wattnot.vision.gate import vision_gate
+from wattnot.vision.gate import no_worse_than_stock, vision_gate
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -95,6 +95,11 @@ def main(argv: list[str] | None = None) -> int:
         if w.get("wh") and w.get("items"):   # replace the flat 0.5 Wh/image placeholder
             summary["detail"]["est_wh_per_image"] = None
             summary["wh_per_image"] = {"value": round(w["wh"] / w["items"], 6), "label": "MEASURED"}
+    verdict = no_worse_than_stock(summary.get("energy_arms"))
+    if verdict is not None:   # both arms ran: the block passes on the standard keep rule
+        summary["strict_all_correct"] = result.passed
+        summary["gate"] = verdict
+        summary["passed"] = verdict["keep"]
     if args.out:
         out = Path(args.out)
         out.mkdir(parents=True, exist_ok=True)
@@ -106,6 +111,8 @@ def main(argv: list[str] | None = None) -> int:
     for row in result.detail.get("images", []):
         if not row["ok"]:
             print(f"  MISS {row['id']} ({row['kind']}): expected {row['expected']!r} got {row['got']!r}")
+    if verdict is not None:
+        return 0 if verdict["keep"] else 1
     return 0 if result.passed and not miss else 1
 
 

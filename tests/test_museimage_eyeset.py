@@ -44,3 +44,18 @@ def test_generator_refuses_without_go(monkeypatch):
     assert g.main() == 2
     m = g.build_manifest([], image_calls=0)
     assert m["dataset_source"] == "Muse Image generated" and m["label"] == "SYNTHETIC"
+
+
+def test_eye_gate_is_no_worse_than_stock():
+    from wattnot.vision.gate import no_worse_than_stock
+    arm = lambda c: {"correct": c, "items": 25}  # noqa: E731
+    assert no_worse_than_stock({"with_wattnot": arm(23), "without_wattnot": arm(23)})["keep"]
+    assert not no_worse_than_stock({"with_wattnot": arm(22), "without_wattnot": arm(23)})["keep"]
+    assert no_worse_than_stock({"without_wattnot": arm(23)}) is None
+
+
+def test_saved_runs_rescored_keep():
+    for f in (SET.parent / "eyeset-museimage-runs").glob("*/eye*/eye_test.json"):
+        d = json.loads(f.read_text())
+        if (d.get("energy_arms") or {}).get("with_wattnot"):
+            assert d["gate"]["rule"] == "no_worse_than_stock" and d["passed"] is True

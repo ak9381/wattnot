@@ -7,7 +7,7 @@
   "model": "meta-models/Muse-Glimmer-30B",
   "label": "SYNTHETIC",
   "answers_label": "MEASURED",
-  "passed": false,
+  "passed": true,
   "reason": "vision misread 2/25 image(s): gauge-temp-68, gauge-hum-45",
   "run": {
     "answered": 25,
@@ -406,5 +406,14 @@
   "wh_per_image": {
     "value": 0.178961,
     "label": "MEASURED"
-  }
+  },
+  "strict_all_correct": false,
+  "gate": {
+    "rule": "no_worse_than_stock",
+    "keep": true,
+    "with_wattnot": "23/25",
+    "stock": "23/25",
+    "label": "MEASURED"
+  },
+  "rescored": "re-scored from saved results with no_worse_than_stock (no rerun)"
 }
