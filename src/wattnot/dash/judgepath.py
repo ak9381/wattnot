@@ -72,13 +72,13 @@ def build(root: Path) -> dict:
     return {
         "spec": SPEC,
         "run2": run2,
-        "meta_judge": {"label": "PENDING", "judge": "Muse Spark (hosted on Baseten, low thinking); Llama 3.1 8B fallback",
+        "meta_judge": {"label": "PENDING", "judge": "Muse Spark (hosted on Baseten, low thinking); local Muse Glimmer 30B fallback",
                        "note": "measured in the long GPU run; kept apart from RUN2"},
         "trace": _trace.from_file(ev) if ev.exists() else None,
         "explain": _load(root / "data/explain/run2.json"),
         "health": _load(health[-1]) if health else None,
         "stack": stack_block(root, run2),
-        "escalation": {"label": "PENDING", "small": "Llama-3.1-8B-Instruct",
+        "escalation": {"label": "PENDING", "small": "Muse-Glimmer-30B",
                        "big": "Muse-Spark-Open-816B-A42B",
                        "note": "per-item small and big answers are measured in the long GPU run; "
                                "the card reports escalation rate, the small model's own pass rate "

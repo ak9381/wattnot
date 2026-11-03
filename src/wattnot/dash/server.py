@@ -367,7 +367,8 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         live = not mock
         try:
             out = await asyncio.to_thread(process_voice_query, query_text=query, audio_data=audio,
-                                          live=live and bool(audio), mock=not live, spark_live=live)
+                                          live=live and bool(audio), mock=not live, spark_live=live,
+                                          screen=body.get("screen"))
         except Exception as exc:  # noqa: BLE001
             return JSONResponse({"intent": "answer", "label": "ERROR", "code": "voice_failed",
                                  "text": f"Voice Ask failed ({type(exc).__name__}). No answer was generated."},

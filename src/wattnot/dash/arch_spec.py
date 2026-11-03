@@ -251,14 +251,14 @@ NODES = [
       "a kit script", "results folder", {"e2e": "Provides the H100 80GB in Delhi and the VM it runs on."}, lane="Rig"),
 
     N("models", "Meta open-weight models", ["meta", "hf"],
-      "The models under test: Llama 3.1 8B and Muse Glimmer 30B, served with vLLM.",
+      "The model under test: Muse Glimmer 30B, served with vLLM.",
       "models.py", 1, 3,
       [S("fit", "Check it fits", "Compares weights to GPU memory before downloading.", "models.py::fits",
          "model, GPU memory", "fits or not"),
        S("serve", "Serve it", "vLLM serves the model with the trial's settings.", "runner/vllm_server.py::server_args",
          "TrialParams", "an endpoint", "hf")],
       "weights from Hugging Face", "an endpoint",
-      {"meta": "Llama 3.1 8B and Muse Glimmer 30B are Meta's open weights.", "hf": "The weights are downloaded from Hugging Face."},
+      {"meta": "Muse Glimmer 30B is Meta's open weights.", "hf": "The weights are downloaded from Hugging Face."},
       lane="Rig"),
 
     N("adaptive", "Adaptive top-k", ["hf"],

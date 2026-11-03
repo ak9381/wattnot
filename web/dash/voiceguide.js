@@ -1,6 +1,7 @@
 import { answerFromReceipts, loadReceiptDocs } from "./receiptanswers.js";
 import { isTuneResponse, renderTunePlanHTML, stopSpeaking } from "./tunervoice.js";
 import { startAskCards, askByName, stopGlow } from "./askcards.js";
+import { afterAnswer, collectScreen, isPageExplainQuery } from "./voiceactions.js";
 // Voice Guide Self-Mounting Component - Meta Tools v5
 
 // A spoken tuning command ("try 350W with FP8") is planned by Spark and run through the
@@ -204,7 +205,8 @@ export function mountVoiceGuide(customMountEl = null) {
   async function handleQuery(query) {
     if (!query || !query.trim()) return;
     // A question that names a card on this page: Spark explains that card, highlighted.
-    if (askByName(query, displayResponse)) return;
+    const pageExplain = isPageExplainQuery(query);
+    if (!pageExplain && askByName(query, displayResponse)) return;
 
     // Fast quick ack within <300ms
     const quick = quickAckForQuery(query);
@@ -215,7 +217,7 @@ export function mountVoiceGuide(customMountEl = null) {
     panelRoute.style.display = "none";
     panel.classList.add("active");
 
-    if (quick.intent === "explain" && typeof window !== "undefined" && window.WattNotExplain) {
+    if (!pageExplain && quick.intent === "explain" && typeof window !== "undefined" && window.WattNotExplain) {
       const expRes = window.WattNotExplain.handleExplainQuery(query);
       if (expRes && expRes.status !== "none") {
         displayResponse({
@@ -232,14 +234,16 @@ export function mountVoiceGuide(customMountEl = null) {
       const res = await fetch("/api/voiceguide", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ query, screen: collectScreen() }),
       });
       if (res.ok) {
         const full = await res.json();
-        if (full.intent === "explain" && typeof window !== "undefined" && window.WattNotExplain) {
+        // A whole-page explain never goes through element explain (that one can change the run).
+        if (full.intent === "explain" && full.scope !== "page" && typeof window !== "undefined" && window.WattNotExplain) {
           window.WattNotExplain.handleExplainQuery(query);
         }
         displayResponse(full);
+        afterAnswer(full);
       } else if (res.status === 502 || res.status === 503) {
         const err = await res.json().catch(() => ({}));
         displayResponse({ intent: "answer", label: "ERROR", text: err.text || "Live Ask failed. No answer was generated." });
@@ -347,7 +351,7 @@ export function mountVoiceGuide(customMountEl = null) {
       const res = await fetch("/api/voiceguide", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audio_b64: btoa(bin) }),
+        body: JSON.stringify({ audio_b64: btoa(bin), screen: collectScreen() }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => null);
@@ -357,6 +361,7 @@ export function mountVoiceGuide(customMountEl = null) {
       const out = await res.json();
       if (out && out.transcript) inputEl.value = out.transcript;
       displayResponse(out);
+      afterAnswer(out);
     } catch {
       // No transcription available offline: say so rather than invent a query.
       displayResponse({ intent: "answer", label: "MOCK",

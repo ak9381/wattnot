@@ -1,5 +1,5 @@
 // Meta Tools v5 UI Component
-// Renders glass card for Muse Wonder, Muse Code, and the quality judge (hosted Muse Spark; Llama 3.1 8B fallback).
+// Renders glass card for Muse Wonder, Muse Code, and the quality judge (hosted Muse Spark; local Muse Glimmer fallback).
 // Palette: lavender scale (#F3F0F7 to #171724) on black, Montserrat headings, Fira numbers.
 
 function escapeHtml(str) {
@@ -55,7 +55,7 @@ export function extractMetaToolsData(receipt, validation) {
   const wonder = receipt?.wonder || {};
   const musecode = receipt?.musecode || {};
 
-  // Quality judge: hosted Muse Spark by default, Llama 3.1 8B only as the fallback
+  // Quality judge: hosted Muse Spark by default, local Muse Glimmer 30B only as the fallback
   const judgeVerdict = m.judge_verdict || candQuality.judge_verdict || (candQuality.judge_score >= 0.9 ? "pass" : "fail");
   const judgeScore = m.judge_score != null ? m.judge_score : candQuality.judge_score ?? null;
   const judgeModel = m.judge_model || "not recorded";
@@ -365,7 +365,7 @@ export function compareRows(receipts) {
       })
     },
     {
-      metric: "Llama 8B Agreement Score",
+      metric: "Glimmer fallback agreement score",
       values: receipts.map((r) => {
         const d = extractMetaToolsData(r);
         return { text: d.judgeScore == null ? "not recorded" : `${(d.judgeScore * 100).toFixed(1)}%`, tag: d.judgeLabel };

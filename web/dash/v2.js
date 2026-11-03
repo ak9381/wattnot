@@ -5,6 +5,8 @@ import { init as initPanCanvas } from "./pancanvas.js";
 import { overviewHtml, openPowerGraph, wireR7, metaInRun, branchPopup, cmpHeadHtml, openWhere, methodPopup, branchInfo, savedPct, childSaved, CHILDREN, CHILD_ONLY, DERIVED_HINT, BUNDLED_ID, compareState, bundledRecord, emptyStateHtml, bundledBanner, TREE, treeChildren, treeFind, treeValue, contextSaver, WATER_L_PER_KWH, WATER_L_PER_KWH_UPPER } from "./v2r7.js";
 import { compareRows } from "./metatools.js";
 import * as LS from "./launchsteps.js";
+import { applyPrefill, takePrefill, VOICE_FIELDS } from "./voiceactions.js";
+import { saveConfig } from "./elig.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -33,6 +35,40 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeInfo();
 });
 const ctrl = () => `<div class="ctrl noprint"><button class="btn" data-all="open">Expand all</button><button class="btn" data-all="close">Collapse all</button><span style="color:var(--mu);font-size:13px">Click any card to open it. Each card opens a level deeper, down to the raw data.</span></div>`;
+
+// ---------- voice pre-fill ----------
+// The mic's "configure a run" lands here: the values go into the form and stay visible and
+// editable in a box at the top. Start is never pressed for you.
+function voicePfHtml(v) {
+  const row = ([k, label, unit]) => {
+    if (v[k] === undefined || v[k] === null) return "";
+    const ctl = unit === "toggle"
+      ? `<input type="checkbox" data-vk="${k}" ${v[k] ? "checked" : ""}> ${v[k] ? "on" : "off"}`
+      : `<input type="${typeof v[k] === "number" ? "number" : "text"}" data-vk="${k}" value="${esc(String(v[k]))}" style="width:9em"> ${esc(unit === "toggle" ? "" : unit)}`;
+    return `<div class="fld"><label>${esc(label)}</label>${ctl}</div>`;
+  };
+  return `<div class="glass tile" id="voicePf" role="status" aria-live="polite"><h3>From your voice request</h3>
+    <p class="lock">Filled in from what you said. Check each value; the run starts only when you press Start yourself.</p>
+    ${VOICE_FIELDS.map(row).join("")}</div>`;
+}
+function applyVoicePrefill() {
+  const pf = takePrefill();
+  if (!pf) return;
+  const set = applyPrefill(pf, S.choice, LS.L.cfg);
+  saveConfig(LS.L.cfg);
+  show("pCfg");
+  renderCfg();
+  const host = $("#pCfg");
+  if (!host || !set.length) return;
+  host.insertAdjacentHTML("afterbegin", voicePfHtml(LS.L.cfg.voice));
+  $$("#voicePf [data-vk]").forEach((i) => (i.onchange = () => {
+    const k = i.dataset.vk;
+    LS.L.cfg.voice[k] = i.type === "checkbox" ? i.checked : i.type === "number" ? +i.value : i.value;
+    if (k === "p99_pct") LS.L.cfg.p99_pct = +i.value;
+    if (k === "rounds") LS.L.cfg.rounds = +i.value;
+    saveConfig(LS.L.cfg);
+  }));
+}
 
 // ---------- tabs ----------
 function show(p) {
@@ -1535,6 +1571,8 @@ function renderLearn() {
   const firstRun = runs?.runs?.[0]?.id;
   if (firstRun) S.radRecs[firstRun] = await fetch(`/api/dash/v2/runs/${encodeURIComponent(firstRun)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   renderCfg(); renderHome(); renderRun(); renderLearn(); wireIllus($("#illusBtn"));
+  applyVoicePrefill();
+  window.addEventListener("wn:voice-prefill", applyVoicePrefill);
   const h = location.hash.slice(1); if (h && $(`#${h}`)) show(h);
   window.addEventListener("hashchange", () => {
     const curH = location.hash.slice(1);

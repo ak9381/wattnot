@@ -207,6 +207,7 @@ def _parse_cap_w(text: str) -> int | None:
 def _parse_workload(text: str) -> str | None:
     """Extract '<name> workload' or a known workload id. Returns None when unknown."""
     t = text.lower().replace("_", "-")
+    t = re.sub(r"\bgsm[\s-]*8\s*k\b", "gsm8k", t)  # 'GSM 8k' as transcribed
     m = re.search(r"([a-z0-9][a-z0-9\-]*)\s+workload", t)
     if m:
         name = m.group(1).strip("-")
@@ -235,17 +236,130 @@ def _parse_framework(text: str) -> str | None:
     return None
 
 
+_ON_WORDS = ("on", "enabled", "enable", "yes", "true")
+_OFF_WORDS = ("off", "disabled", "disable", "no", "none", "false", "without")
+
+
+def _parse_toggle(text: str, names: tuple[str, ...]) -> bool | None:
+    """'thinking budget on' / 'turn off prefix caching' / 'without FP8' -> True/False; None if not named.
+    Each setting is read inside its own clause, so 'thinking off, prefix caching on' keeps both."""
+    for clause in re.split(r"[,;.]|\band\b|\bwith\b(?=\s+\w+\s+\w+\s+(?:on|off))", text.lower()):
+        c = re.sub(r"\s+", " ", re.sub(r"[^a-z0-9 ]", " ", clause)).strip()
+        for name in names:
+            if name in c:
+                words = c.replace(name, " ").split()
+                return not any(w in _OFF_WORDS for w in words)
+    return None
+
+
+_PROVIDERS = (("baseten", "baseten"), ("base ten", "baseten"), ("base den", "baseten"), ("modal", "modal_a100"), ("a100", "modal_a100"),
+              ("h100", "own_gpu"), ("own gpu", "own_gpu"), ("my gpu", "own_gpu"), ("replay", "replay"))
+_MODELS = (("glimmer", "meta-models/Muse-Glimmer-30B"), ("spark open", "muse-spark-open"),
+           ("spark", "muse-spark-1.3"))
+
+
+def _parse_number_after(text: str, pattern: str) -> float | None:
+    m = re.search(pattern, text.lower())
+    if not m:
+        return None
+    try:
+        return float(m.group(1))
+    except (TypeError, ValueError):
+        return None
+
+
 def parse_run_setup(text: str) -> dict[str, Any]:
     """Parse spoken run setup into a pre-fill dict.
 
-    Returns {"cap_w": int|None, "workload": str|None, "framework": str|None}.
-    Unknown fields stay None. Never starts, stops, or changes a run.
+    Keys: cap_w, workload, framework, thinking_budget, prefix_cache, fp8, provider, model,
+    p99_pct, rounds, max_spend_usd. Unknown fields stay None. Never starts, stops, or changes a run.
     """
+    t = text.lower()
+    provider = next((v for k, v in _PROVIDERS if k in t), None)
+    model = next((v for k, v in _MODELS if k in t), None)
+    p99 = _parse_number_after(t, r"(?:p ?99|latency)[^0-9]{0,20}(\d{1,2})\s*(?:%|percent)")
+    rounds = _parse_number_after(t, r"(\d)\s*rounds?\b")
+    if rounds is None:
+        m = re.search(r"\b(one|two|three)\s+rounds?\b", t)
+        rounds = {"one": 1, "two": 2, "three": 3}[m.group(1)] if m else None
+    spend = _parse_number_after(t, r"(?:\$|spend(?:ing)?\D{0,12}\$?)\s*(\d+(?:\.\d+)?)")
     return {
         "cap_w": _parse_cap_w(text),
         "workload": _parse_workload(text),
         "framework": _parse_framework(text),
+        "thinking_budget": _parse_toggle(text, ("thinking budget", "thinking")),
+        "prefix_cache": _parse_toggle(text, ("prefix caching", "prefix cache")),
+        "fp8": _parse_toggle(text, ("fp8", "fp 8")),
+        "provider": provider,
+        "model": model,
+        "p99_pct": int(p99) if p99 is not None else None,
+        "rounds": int(rounds) if rounds is not None else None,
+        "max_spend_usd": spend,
     }
+
+
+_SETTING_WORDS = {"cap_w": "power cap {} W", "workload": "workload {}", "framework": "framework {}",
+                  "provider": "platform {}", "model": "model {}", "p99_pct": "p99 limit {}%",
+                  "rounds": "{} round(s)", "max_spend_usd": "spend cap ${}"}
+
+
+def describe_setup(parsed: Mapping[str, Any]) -> str:
+    bits = []
+    for k, v in parsed.items():
+        if v is None:
+            continue
+        if isinstance(v, bool):
+            bits.append(f"{k.replace('_', ' ').replace('fp8', 'FP8')} {'on' if v else 'off'}")
+        else:
+            v = f"{v:g}" if isinstance(v, float) else v
+            bits.append(_SETTING_WORDS.get(k, k + " {}").format(v))
+    return ", ".join(bits)
+
+
+def explicit_intent(text: str) -> str | None:
+    """Fast path: an explicit 'configure/set up' or 'explain the page' request needs no Spark call."""
+    t = text.lower().strip()
+    if any(k in t for k in ("configure", "set up a run", "setup a run", "set up run", "prefill", "prepare a run")):
+        return "configure"
+    if re.match(r"^(please )?explain\b", t) or re.search(r"explain (the|this|my) (dashboard|page|screen|view)", t):
+        return "explain"
+    return None
+
+
+def is_page_explain(text: str) -> bool:
+    t = text.lower()
+    return bool(re.search(r"(dashboard|page|screen|view|everything|what am i looking at|what's on)", t))
+
+
+_NUM_RE = re.compile(r"[-+−]?\$?\d[\d,]*(?:\.\d+)?(?:/\d[\d,]*)?\s*(?:%|W|J|s|ms|Wh|kJ|pts?)?")
+
+
+def summarize_screen(cards: Any, limit: int = 4) -> str:
+    """A short spoken summary of what is on screen, built only from the card text the page sent."""
+    items = []
+    for c in cards if isinstance(cards, list) else []:
+        if not isinstance(c, Mapping):
+            continue
+        title = str(c.get("title") or "").strip()[:60]
+        body = re.sub(r"\s+", " ", str(c.get("text") or "")).strip()
+        if not title and not body:
+            continue
+        nums = [n.strip() for n in _NUM_RE.findall(body) if any(ch.isdigit() for ch in n)][:2]
+        label = next((w for w in ("MEASURED", "ESTIMATE", "SIMULATED", "MOCK", "REPLAY") if w in body), "")
+        items.append((title or body[:40], nums, label))
+    if not items:
+        return ""
+    parts = []
+    for title, nums, label in items[:limit]:
+        p = title
+        if nums:
+            p += ": " + " and ".join(nums)
+        if label:
+            p += f" ({label.lower()})"
+        parts.append(p)
+    more = f" Plus {len(items) - limit} more cards." if len(items) > limit else ""
+    return (f"This page has {len(items)} card{'s' if len(items) != 1 else ''}. " + ". ".join(parts) + "." + more +
+            " Lower energy per correct answer with the pass rate held is the win; MEASURED numbers come from the GPU meter.")
 
 
 def _has_run_setup_signals(t: str) -> bool:
@@ -483,6 +597,7 @@ def process_voice_query(
     mock: bool | None = None,
     ledger: Any = None,
     spark_live: bool | None = None,
+    screen: Any = None,
 ) -> dict[str, Any]:
     """Execute voice guide workflow: Audio/Text -> Spark intent -> Guarded Read-Only Action.
 
@@ -511,7 +626,10 @@ def process_voice_query(
         }
 
     intent_source = "keywords (MOCK)"
-    if spark_live:
+    fast = explicit_intent(text)
+    if fast:
+        intent, intent_source = fast, "explicit request (no model call)"
+    elif spark_live:
         try:
             intent = spark_classify_intent(text, ledger=ledger)
             intent_source = "Muse Spark (LIVE)"
@@ -524,6 +642,8 @@ def process_voice_query(
     quick = get_quick_ack(intent, text)
     # Top-level label describes the voice path; numbers carry their own receipt labels.
     label = "MOCK" if (mock or not live) else "LIVE"
+    if fast and not mock and live and audio_data:
+        label = "LIVE"
     if spark_live and intent_source.startswith("Muse Spark"):
         label = "LIVE"
 
@@ -573,13 +693,16 @@ def process_voice_query(
         parsed = parse_run_setup(text)
         cap_w = parsed["cap_w"]
         framework = parsed["framework"]
+        said = describe_setup(parsed)
         result = {
             "intent": "configure",
             "action": "prefill",
-            "text": "Run setup parameters prepared. Please review workload, stack, and power caps, then press Start.",
+            "route": "/dash/v2.html#pCfg",
+            "starts_run": False,
+            "text": (f"I filled the Set up a run form with: {said}. Check it and press Start yourself."
+                     if said else "I opened Set up a run, but heard no settings. Say a cap, e.g. 375 watts, thinking budget on."),
             "prefill": {
-                "cap_w": cap_w,
-                "workload": parsed["workload"],
+                **parsed,
                 "framework": framework,
                 "stack": framework if framework is not None else "vllm",
                 "vllm_flags": {
@@ -597,11 +720,17 @@ def process_voice_query(
         }
 
     elif intent == "explain":
+        page = is_page_explain(text)
+        summary = summarize_screen(screen) if page else ""
         result = {
             "intent": "explain",
             "action": "explain",
+            "scope": "page" if page else "element",
             "target_query": text,
-            "text": f"Found element matching '{text}' on current page. Highlighting element and showing explanation.",
+            "speak": summary or None,
+            "text": summary or (
+                "I could not read the cards on this page. Hover a card and tap Ask for its explanation."
+                if page else f"Explaining '{text}' on this page."),
             "quick_ack": quick["ack"],
             "label": label,
         }
