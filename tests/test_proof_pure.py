@@ -246,3 +246,22 @@ def test_ask_records_a_refused_connection_as_an_error():
     reply = client.ask("Capital of France?", 8)
     assert reply.finish == "error" and reply.tokens == 0
     assert reply.text.startswith("[request failed: ")
+
+
+def test_energy_small_n_steady_drop_passes():
+    # the run-1103 350 W step: two pairs, -28% and -37%, stock cv 7.1% (MEASURED)
+    assert psess.energy_clearly_down([-28.1, -36.6], -32.4, 53.8, 7.1)
+    assert psess.energy_clearly_down([-25.8, -19.9], -22.9, 37.3, 6.0)
+
+
+def test_energy_small_n_rejects_noise_and_mixed():
+    assert not psess.energy_clearly_down([-10.0, -30.0], -20.0, 120.0, 7.0)   # one pair inside 2x cv
+    assert not psess.energy_clearly_down([-30.0, 2.0], -14.0, 200.0, 1.0)     # mixed sign
+    assert not psess.energy_clearly_down([-2.0, -2.5], -2.25, 3.0, 0.5)       # under the 3% floor
+    assert not psess.energy_clearly_down([-40.0], -40.0, float("nan"), 1.0)   # one pair never enough
+    assert not psess.energy_clearly_down([-20.0, -20.0], -20.0, float("nan"), float("nan"))
+
+
+def test_energy_large_n_still_uses_interval():
+    assert not psess.energy_clearly_down([-30.0, -30.0, -30.0, 5.0], -18.75, 25.0, 1.0)
+    assert psess.energy_clearly_down([-30.0, -31.0, -29.0, -30.0], -30.0, 1.3, 1.0)
