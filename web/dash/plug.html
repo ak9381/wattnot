@@ -18,11 +18,19 @@
         <div id="gwFields" class="row"><label>Your model <select id="upstream"></select></label>
           <small>Where WattNot sends requests after saving.</small></div></li>
       <li><h2>2. Pick savers</h2><div id="savers"></div></li>
-      <li><h2>3. Copy the command and go</h2>
+      <li><h2>3. Start it</h2>
+        <div id="startGw"><p><button id="gwStart" class="pri">Start gateway</button> <span id="gwLight" class="light off" aria-hidden="true"></span> <span id="gwState" class="small" role="status">Not running</span></p>
+          <small>Starts WattNot here with these settings. Your key stays on the server.</small>
+          <div id="gwConn" hidden><p>Point your app here: <code id="baseUrl"></code> <button data-copy="#baseUrl">Copy</button></p>
+            <div class="os"><button data-snip="langchain" class="on">LangChain</button><button data-snip="openai">OpenAI SDK</button><button data-snip="curl">curl</button></div>
+            <pre id="snip"></pre><button data-copy="#snip">Copy</button></div></div>
+        <div id="startGpu"><p><button id="gpuConnect" class="pri">Connect GPU</button> <span id="gpuState" class="small" role="status"></span></p>
+          <small>Checks the rack photo, then attaches your GPU (or the recorded H100 if none is here).</small></div>
+        <details><summary>Run it yourself instead</summary>
         <div class="os"><button id="osPosix" class="on">Mac / Linux</button><button id="osPs">Windows PowerShell</button></div>
         <pre id="cmds"></pre><button id="copy">Copy</button>
         <p id="clientLine" class="small"></p>
-        <p><button id="dl">Download wattnot.yaml</button> <small>The gateway reads this file. No keys are saved in it.</small></p>
+        <p><button id="dl">Download wattnot.yaml</button> <small>The same file the Start button uses. No keys in it.</small></p></details>
         <p id="err" class="err" role="alert"></p></li>
     </ol>
     <details id="adv"><summary>Advanced</summary>
@@ -43,6 +51,15 @@
     <svg id="graph" viewBox="0 0 600 180" role="img" aria-label="Energy over time, with and without WattNot"></svg>
     <p class="small legend"><span class="k a"></span> with WattNot <span class="k b"></span> without (estimate)</p>
     <div id="power"></div>
+    <section id="traffic" class="panel"><h2>Simulate traffic <span class="tag">Simulated traffic</span></h2>
+      <p class="small">Sends real requests through your gateway from here, so you can watch savings without an app.</p>
+      <div class="row"><label>Workload <select id="tWork"><option value="mixed">Mixed</option><option value="text">Text chat</option><option value="agent">Agent tasks</option><option value="langchain">LangChain agent</option><option value="images">Images</option><option value="voice">Voice</option></select></label>
+        <label>Requests <select id="tN"><option>20</option><option selected>60</option><option>200</option></select></label>
+        <label>Speed <select id="tSpeed"><option value="slow">Slow</option><option value="normal" selected>Normal</option><option value="fast">Fast</option></select></label>
+        <label><input type="checkbox" id="tAB"> Also run without WattNot, side by side</label></div>
+      <p><b id="tCost">Estimated cost: …</b> <small>Real API calls. A run stops itself at $1.</small></p>
+      <p><button id="tStart" class="pri">Start</button> <button id="tStop">Stop</button> <span id="tState" class="small" role="status"></span></p>
+      <p id="tAbOut" class="small"></p></section>
     <h2>GPU helper</h2><p class="small">For data centers: checks the rack photo, then lowers the power limit step by step while checking answers.</p>
     <p><button id="addNode">Add GPU helper</button> <button id="approveNode">OK, start the power check</button> <span id="nodeMsg" class="small" role="status"></span></p>
     <ol id="nodeSteps"></ol>

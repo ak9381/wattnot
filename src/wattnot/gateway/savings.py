@@ -59,7 +59,8 @@ def record_for(body: dict, calls: list, status: int, base_tier: dict, cfg: dict,
         b_out = 0
     b_usd = _usd(bmodel, b_in, b_out)
     b_j = _jpt(cfg, bmodel) * (b_in + b_out)
-    label = "MEASURED" if cfg["energy"]["source"] == "nvml" else "ESTIMATE"
+    # per-request joules are tokens x J/token; the node agent's NVML samples are reported separately
+    label = "ESTIMATE"
     return {
         "ts": round(time.time(), 3), "run": (run or "")[:32], "status": status,
         "upstream_calls": len(calls), "stepped_up": max(0, len(calls) - 1),

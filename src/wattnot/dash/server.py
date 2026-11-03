@@ -853,6 +853,42 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
     return app
 
 
+GATEWAY_UPSTREAM = None   # tests set a factory cfg -> upstream callable; None means the real upstream
+
+
+class _GatewayHolder:
+    """ASGI app at /gw: answers 503 until the gateway is started from the UI (or --gateway)."""
+
+    def __init__(self) -> None:
+        self.app, self.cfg, self.path, self.started = None, None, None, None
+
+    def start(self, app, cfg: dict, path) -> None:
+        self.app, self.cfg, self.path, self.started = app, cfg, path, time.time()
+
+    def stop(self) -> None:
+        self.app = None
+
+    def status(self) -> dict:
+        return {"running": self.app is not None, "config": str(self.path) if self.path else "defaults",
+                "upstream": (self.cfg or {}).get("upstream", {}).get("base_url"),
+                "savers_on": [k for k, v in ((self.cfg or {}).get("savers") or {}).items() if v.get("enabled")]}
+
+    async def __call__(self, scope, receive, send):
+        if self.app is None:
+            from starlette.responses import JSONResponse as _J
+            return await _J({"detail": "gateway not started: press Start gateway"}, status_code=503)(scope, receive, send)
+        return await self.app(scope, receive, send)
+
+
+def _snippets(base: str) -> dict:
+    return {"base_url": base, "snippets": {
+        "langchain": f'ChatOpenAI(base_url="{base}", api_key="unused", model="muse-spark-1.3")',
+        "openai": f'from openai import OpenAI\nclient = OpenAI(base_url="{base}", api_key="unused")\n'
+                  'client.chat.completions.create(model="muse-spark-1.3", messages=[{"role": "user", "content": "hi"}])',
+        "curl": f"curl {base}/chat/completions -H 'Content-Type: application/json' "
+                '-d \'{"model":"muse-spark-1.3","messages":[{"role":"user","content":"hi"}]}\''}}
+
+
 def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
     """Live plug routes: the gateway itself (/gw/v1, only with --gateway), the live feed, receipts,
     the EU fields and the deploy-config writer. Without a gateway the feed says REPLAY."""
@@ -865,13 +901,25 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
     cfg = load_config(gateway) if gateway else load_config(None)
     logs = (os.environ.get("WATTNOT_SAVINGS_LOG") or cfg["savings_log"],
             os.environ.get("WATTNOT_NODE_LOG") or cfg["node"]["log"])
+    gw = _GatewayHolder()
+    app.mount("/gw", gw, name="gateway")
+    app.state.gateway_holder = gw
+    saved_yaml = Path(os.environ.get("WATTNOT_PLUG_YAML") or "out/gateway/wattnot.yaml")
+
+    def _start_gateway(path: Path | None) -> dict:
+        c = load_config(path) if path else load_config(None)
+        c["savings_log"], c["node"]["log"] = logs
+        gw.start(build_app(c, upstream=GATEWAY_UPSTREAM(c) if GATEWAY_UPSTREAM else None), c, path)
+        return gw.status()
+
     if gateway:
-        app.mount("/gw", build_app(cfg), name="gateway")
+        _start_gateway(Path(gateway))
 
     @app.get("/api/dash/plug")
     def plug_feed(last: int = 50) -> dict:
         out = _plug.feed(*logs, last=last)
-        out["gateway_mounted"] = bool(gateway)
+        out["gateway_mounted"] = gw.app is not None
+        out["traffic"] = traffic.state
         return out
 
     @app.get("/api/dash/plug/receipt/{rid}")
@@ -891,6 +939,111 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
             return _deploy.render(choice)
         except (TypeError, ValueError) as e:
             raise HTTPException(400, str(e)) from e
+
+    @app.post("/api/dash/deploy/save")
+    def deploy_save(choice: dict = Body(...)) -> dict:
+        """Write the choice to the saved wattnot.yaml the Start button uses. No keys are written."""
+        try:
+            r = _deploy.render(choice)
+        except (TypeError, ValueError) as e:
+            raise HTTPException(400, str(e)) from e
+        saved_yaml.parent.mkdir(parents=True, exist_ok=True)
+        saved_yaml.write_text(r["yaml"])
+        return {"saved": str(saved_yaml)}
+
+    @app.post("/api/dash/gateway/start")
+    def gateway_start(request: Request) -> dict:
+        try:
+            st = _start_gateway(saved_yaml if saved_yaml.exists() else (Path(gateway) if gateway else None))
+        except (OSError, ValueError) as e:
+            raise HTTPException(400, f"could not start: {e}") from e
+        return {**st, **_snippets(str(request.base_url).rstrip("/") + "/gw/v1")}
+
+    @app.post("/api/dash/gateway/stop")
+    def gateway_stop() -> dict:
+        traffic.stop()
+        gw.stop()
+        return gw.status()
+
+    @app.get("/api/dash/gateway/status")
+    def gateway_status(request: Request) -> dict:
+        return {**gw.status(), **_snippets(str(request.base_url).rstrip("/") + "/gw/v1")}
+
+    from wattnot.gateway import traffic as _traffic
+
+    def _send(body: dict, headers: dict) -> dict:
+        if gw.app is None:
+            raise RuntimeError("gateway is not started")
+        from starlette.testclient import TestClient as _TC
+        with _TC(gw.app) as cl:   # in-process HTTP into the running gateway
+            r = cl.post("/v1/chat/completions", json=body, headers=headers)
+        rid = r.headers.get("x-wattnot-receipt")
+        rec = _plug.receipt(logs[0], rid) if rid else None
+        return {"receipt_id": rid, "status": r.status_code, "usd": (rec or {}).get("actual", {}).get("usd", 0)}
+
+    def _direct(body: dict) -> dict:
+        """The without-WattNot arm: same request, straight to the upstream at the baseline tier."""
+        from wattnot.agentwaste.server import sanitize, tier_body
+        from wattnot.gateway.build import http_upstream
+        from wattnot.gateway.savings import _jpt, _usd
+        c = gw.cfg or load_config(None)
+        base = next(t for t in c["tiers"] if t["name"] == c["baseline"]["tier"])
+        up = GATEWAY_UPSTREAM(c) if GATEWAY_UPSTREAM else http_upstream(c)
+        clean, _, _ = sanitize(body)
+        resp = up(tier_body(clean, base), {"x-wattnot-arm": "without"})
+        u = resp.get("usage") or {}
+        pin, pout = int(u.get("prompt_tokens") or 0), int(u.get("completion_tokens") or 0)
+        return {"model": base["model"], "prompt_tokens": pin, "completion_tokens": pout,
+                "usd": round(_usd(base["model"], pin, pout), 7),
+                "joules": round(_jpt(c, base["model"]) * (pin + pout), 2), "joules_label": "ESTIMATE"}
+
+    def _transcribe(wav: bytes) -> str:
+        from wattnot.spokenanswer.client import transcribe_wav_live
+        return transcribe_wav_live(wav)
+
+    without_log = Path(logs[0]).with_name(Path(logs[0]).stem + ".without.jsonl")
+    def _spent() -> float:
+        return round(sum(r["actual"]["usd"] for r in _plug._read(logs[0])
+                         if str(r.get("run") or "").startswith("sim-") and r.get("ts", 0) >= traffic_t0[0]), 6)
+
+    traffic_t0 = [0.0]
+    traffic = _traffic.TrafficRun(_send, direct=_direct, transcribe=_transcribe, without_log=without_log, spent=_spent)
+    app.state.traffic = traffic
+
+    @app.post("/api/dash/traffic/estimate")
+    def traffic_estimate(body: dict = Body(default={})) -> dict:
+        try:
+            return _traffic.estimate(body.get("workload", "mixed"), int(body.get("n", 60)), bool(body.get("with_without")))
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from e
+
+    @app.post("/api/dash/traffic/start")
+    def traffic_start(request: Request, body: dict = Body(default={})) -> dict:
+        if gw.app is None:
+            raise HTTPException(409, "Start the gateway first (step 3).")
+        est = _traffic.estimate(body.get("workload", "mixed"), int(body.get("n", 60)), bool(body.get("with_without")))
+        if not est["under_1_usd"] and not body.get("confirm_over_1"):
+            raise HTTPException(402, f"estimated ${est['usd']} is over $1; confirm to run")
+        try:
+            if not traffic.state.get("running"):
+                traffic_t0[0] = time.time()
+            return traffic.start(body.get("workload", "mixed"), int(body.get("n", 60)), body.get("speed", "normal"),
+                                 bool(body.get("with_without")),
+                                 base_url=str(request.base_url).rstrip("/") + "/gw/v1")
+        except (RuntimeError, ValueError) as e:
+            raise HTTPException(400, str(e)) from e
+
+    @app.post("/api/dash/traffic/stop")
+    def traffic_stop() -> dict:
+        traffic.stop()
+        return traffic.state
+
+    @app.get("/api/dash/traffic/status")
+    def traffic_status() -> dict:
+        w = _plug._read(without_log)
+        return {**traffic.state, "without_totals": {
+            "requests": len(w), "usd": round(sum(x.get("usd", 0) for x in w), 6),
+            "wh": round(sum(x.get("joules", 0) for x in w) / 3600, 4), "label": "ESTIMATE"}}
 
     node_job: dict = {"thread": None, "result": None}
 

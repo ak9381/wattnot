@@ -62,7 +62,12 @@ def feed(savings_log: str | Path | None, node_log: str | Path | None = None, las
     nlabels = sorted({p["label"] for p in power})
     node_label = "MEASURED" if nlabels == ["MEASURED"] else "/".join(nlabels) or "REPLAY"
     node_j = sum(float(n.get("joules") or 0) for n in node)
-    return {"source": "live", "label": s["energy_wh"]["label"] if s else "MEASURED",
+    wo = _read(Path(savings_log).with_name(Path(savings_log).stem + ".without.jsonl")) if savings_log else []
+    without = {"requests": len(wo), "wh": round(sum(x.get("joules", 0) for x in wo) / 3600, 4),
+               "usd": round(sum(x.get("usd", 0) for x in wo), 6),
+               "label": "ESTIMATE · Simulated traffic, without WattNot"} if wo else None
+    return {"source": "live", "label": s["energy_wh"]["label"] if s else "MEASURED", "without": without,
+            "simulated_traffic": any(str(r.get("run") or "").startswith("sim-") for r in recs),
             "summary": s, "series": series[-500:], "power": power,
             "node": {"samples": len(node), "joules": round(node_j, 1), "label": node_label,
                      "events": node_events[-50:]} if node_all else None,

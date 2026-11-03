@@ -13,3 +13,6 @@
 .cards.two{margin-bottom:14px}.cards a.card{flex:1;min-width:200px;padding:12px;border:1px solid #8884;border-radius:10px;text-decoration:none;color:inherit}
 .cards a.card.on{border-color:#2a9;box-shadow:0 0 0 2px #2a93}.cards a.card small{display:block;opacity:.75}
 .note{padding:8px 10px;border-left:3px solid #2a9;background:#2a91}
+.light{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle}.light.on{background:#2a9;box-shadow:0 0 6px #2a9}.light.off{background:#999}
+.panel{border:1px solid #8884;border-radius:10px;padding:10px 12px;margin:14px 0}.tag{font-size:12px;padding:2px 6px;border-radius:6px;background:#f0b42933}
+button.pri{font-weight:600}

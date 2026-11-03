@@ -50,3 +50,11 @@ test("plug page offers Test vs Go live and the GPU helper; report has Use these 
   const v2 = fs.readFileSync(new URL("../../web/dash/v2.js", import.meta.url), "utf8");
   assert.match(v2, /Use these settings live/);
 });
+test("Go live has Start gateway, Connect GPU, snippets and a labelled traffic panel", async () => {
+  const fs = await import("node:fs");
+  const html = fs.readFileSync(new URL("../../web/dash/plug.html", import.meta.url), "utf8");
+  for (const t of ["Start gateway", "Connect GPU", "OpenAI SDK", "LangChain", "curl", "Simulate traffic", "Simulated traffic", "Estimated cost", "without WattNot"])
+    assert.ok(html.includes(t), t);
+  assert.ok(html.indexOf(">LangChain<") < html.indexOf(">OpenAI SDK<"), "LangChain first");
+  for (const v of ["mixed", "text", "agent", "langchain", "images", "voice"]) assert.match(html, new RegExp(`value="${v}"`));
+});

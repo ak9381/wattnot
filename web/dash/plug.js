@@ -12,6 +12,7 @@ function drawSetup() {
   $("#upstream").innerHTML = UPSTREAMS.map((u) => `<option value="${u.v}" ${C.upstream === u.v ? "selected" : ""}>${esc(u.t)}</option>`).join("");
   const gw = C.deployment !== "gpu";
   $("#gwFields").hidden = !gw;
+  $("#startGw").hidden = !gw; $("#startGpu").hidden = C.deployment === "gateway";
   $("#savers").innerHTML = gw ? SAVERS.map((s) => `<label class="sv"><input type="checkbox" data-s="${s.id}" ${C.savers[s.id] ? "checked" : ""}> ${esc(s.t)}<small>${esc(s.h)}</small></label>`).join("")
     : `<p class="small">The GPU helper picks a safe power limit inside your range and checks answers stay right. Set the range under Advanced.</p>`;
   $("#gpuFields").hidden = C.deployment === "gateway";
@@ -37,12 +38,38 @@ $("#lf").onchange = (e) => { C.langfuse = e.target.checked; save(); };
 $("#osPosix").onclick = () => { os = "posix"; $("#osPosix").classList.add("on"); $("#osPs").classList.remove("on"); render(); };
 $("#osPs").onclick = () => { os = "powershell"; $("#osPs").classList.add("on"); $("#osPosix").classList.remove("on"); render(); };
 $("#copy").onclick = () => navigator.clipboard?.writeText($("#cmds").textContent);
+let snipKey = "langchain", gwInfo = null;
+const post = (u, b) => fetch(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b || {}) });
+function drawGw(st) {
+  gwInfo = st || gwInfo; if (!gwInfo) return;
+  $("#gwLight").className = `light ${gwInfo.running ? "on" : "off"}`;
+  $("#gwState").textContent = gwInfo.running ? `Running · savers on: ${gwInfo.savers_on.join(", ")}` : "Not running";
+  $("#gwStart").textContent = gwInfo.running ? "Restart gateway" : "Start gateway";
+  $("#gwConn").hidden = !gwInfo.running;
+  $("#baseUrl").textContent = gwInfo.base_url; $("#snip").textContent = gwInfo.snippets[snipKey];
+}
+$("#gwStart").onclick = async () => {
+  $("#gwState").textContent = "Starting…";
+  await post("/api/dash/deploy/save", C);
+  const r = await post("/api/dash/gateway/start").catch(() => null);
+  if (!r || !r.ok) { $("#gwState").textContent = r ? (await r.json()).detail : "Server not reachable."; return; }
+  drawGw(await r.json());
+};
+$$all("[data-snip]").forEach((b) => (b.onclick = () => { snipKey = b.dataset.snip; $$all("[data-snip]").forEach((x) => x.classList.toggle("on", x === b)); drawGw(); }));
+$$all("[data-copy]").forEach((b) => (b.onclick = () => navigator.clipboard?.writeText($(b.dataset.copy).textContent)));
+$("#gpuConnect").onclick = async () => {
+  await post("/api/dash/deploy/save", C);
+  const r = await post("/api/dash/node/run", { approve: false }).catch(() => null);
+  $("#gpuState").textContent = !r ? "Server not reachable." : r.ok ? "Checking the rack photo… then open Live savings to OK the power check." : (await r.json()).detail;
+};
+fetch("/api/dash/gateway/status").then((r) => r.json()).then(drawGw).catch(() => {});
 $("#dl").onclick = () => { if (!last) return; const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([last.yaml], { type: "text/yaml" })); a.download = "wattnot.yaml"; a.click(); };
 window.addEventListener("wn:prefill-deploy", (e) => { C = applyPrefill(C, e.detail); location.hash = "#setup"; save(); });
 
 async function drawLive() {
   const f = await fetch("/api/dash/plug").then((r) => r.json()).catch(() => null);
   const h = (f && !f.summary && nodeHeadline(f)) || headline(f);
+  if (f && f.simulated_traffic) h.sub = `${h.sub || ""} · includes Simulated traffic`;
   $("#big").textContent = h.big + (h.pct != null ? ` (${h.pct}%)` : "");
   $("#bigLabel").textContent = h.label; $("#heroSub").textContent = h.sub;
   $("#usd").textContent = h.usd != null ? `$${h.usd.toFixed(4)} saved (ESTIMATE)` : "";
@@ -79,6 +106,25 @@ async function addNode(approve) {
 }
 $("#addNode").onclick = () => addNode(false);
 $("#approveNode").onclick = () => addNode(true);
+const tChoice = () => ({ workload: $("#tWork").value, n: Number($("#tN").value), speed: $("#tSpeed").value, with_without: $("#tAB").checked });
+async function tEstimate() {
+  const r = await post("/api/dash/traffic/estimate", tChoice()).catch(() => null);
+  if (r && r.ok) { const e = await r.json(); $("#tCost").textContent = `Estimated cost: about $${e.usd.toFixed(2)} (${e.requests} requests, ESTIMATE)`; }
+}
+["#tWork", "#tN", "#tAB"].forEach((id) => ($(id).onchange = tEstimate));
+$("#tStart").onclick = async () => {
+  let r = await post("/api/dash/traffic/start", tChoice()).catch(() => null);
+  if (r && r.status === 402 && confirm((await r.json()).detail + "?")) r = await post("/api/dash/traffic/start", { ...tChoice(), confirm_over_1: true });
+  $("#tState").textContent = !r ? "Server not reachable." : r.ok ? "Sending…" : (await r.json()).detail;
+};
+$("#tStop").onclick = () => post("/api/dash/traffic/stop");
+async function drawTraffic() {
+  const t = await fetch("/api/dash/traffic/status").then((r) => r.json()).catch(() => null);
+  if (!t) return;
+  if (t.total) $("#tState").textContent = `${t.running ? "Sending" : "Done"}: ${t.done} of ${t.total} · spent $${Number(t.usd).toFixed(4)}${t.errors ? ` · ${t.errors} errors` : ""}${t.stopped ? ` · ${t.stopped}` : ""} (Simulated traffic)`;
+  const w = t.without_totals;
+  $("#tAbOut").textContent = w && w.requests ? `Without WattNot (same requests): ${fmtWh(w.wh)}, $${w.usd.toFixed(4)} (${w.label}).` : "";
+}
 function route() { const live = location.hash === "#live"; $("#live").hidden = !live; $("#setup").hidden = live; if (live) drawLive(); }
 window.addEventListener("hashchange", route);
-drawSetup(); route(); setInterval(() => { if (location.hash === "#live") drawLive(); }, 3000);
+drawSetup(); route(); tEstimate(); setInterval(() => { if (location.hash === "#live") { drawLive(); drawTraffic(); } }, 3000);

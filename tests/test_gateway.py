@@ -358,3 +358,136 @@ def test_dash_node_run_route(tmp_path, monkeypatch):
         _t.sleep(0.05)
     assert st["result"]["cap_w"] == 350
     assert c.get("/api/dash/plug").json()["node"]["label"] == "REPLAY"
+
+
+# ---- UI-only flow: start gateway, simulated traffic, connect GPU ----
+from wattnot.gateway import traffic as tr  # noqa: E402
+
+
+def _ui_client(tmp_path, monkeypatch):
+    import wattnot.dash.server as srv
+    from wattnot.dash.server import create_app
+    monkeypatch.setenv("WATTNOT_SAVINGS_LOG", str(tmp_path / "s.jsonl"))
+    monkeypatch.setenv("WATTNOT_NODE_LOG", str(tmp_path / "n.jsonl"))
+    monkeypatch.setenv("WATTNOT_PLUG_YAML", str(tmp_path / "plug.yaml"))
+    calls = []
+    monkeypatch.setattr(srv, "GATEWAY_UPSTREAM", lambda cfg: fake_upstream(calls))
+    return TestClient(create_app()), calls
+
+
+def _wait(c, url, key="running"):
+    import time as _t
+    for _ in range(200):
+        st = c.get(url).json()
+        if not st[key]:
+            return st
+        _t.sleep(0.05)
+    raise AssertionError("still running")
+
+
+def test_ui_start_gateway_then_simulated_traffic_side_by_side(tmp_path, monkeypatch):
+    c, calls = _ui_client(tmp_path, monkeypatch)
+    assert c.get("/gw/v1/wattnot/savings").status_code == 503        # not started yet
+    assert c.post("/api/dash/traffic/start", json={}).status_code == 409
+    assert c.post("/api/dash/deploy/save", json={"deployment": "gateway", "savers": {"vision": False}}).status_code == 200
+    st = c.post("/api/dash/gateway/start").json()
+    assert st["running"] and "vision" not in st["savers_on"] and st["base_url"].endswith("/gw/v1")
+    assert 'base_url="' in st["snippets"]["openai"] and "ChatOpenAI" in st["snippets"]["langchain"]
+    assert st["snippets"]["curl"].startswith("curl ")
+    est = c.post("/api/dash/traffic/estimate", json={"workload": "mixed", "n": 60}).json()
+    assert est["under_1_usd"] and est["label"] == "ESTIMATE"
+    assert c.post("/api/dash/traffic/start", json={"n": 7}).status_code == 400
+    r = c.post("/api/dash/traffic/start", json={"workload": "text", "n": 20, "speed": "fast", "with_without": True})
+    assert r.status_code == 200 and r.json()["label"] == "Simulated traffic"
+    t = _wait(c, "/api/dash/traffic/status")
+    assert t["done"] == 20 and t["errors"] == 0 and t["without_totals"]["requests"] == 20
+    f = c.get("/api/dash/plug").json()
+    assert f["source"] == "live" and f["summary"]["requests"] == 20 and f["simulated_traffic"]
+    assert f["without"]["requests"] == 20 and "Simulated traffic" in f["without"]["label"]
+    assert c.post("/api/dash/gateway/stop").json()["running"] is False
+
+
+def test_traffic_hard_stop_and_over_1_needs_confirm(tmp_path, monkeypatch):
+    run = tr.TrafficRun(lambda b, h: {"usd": 0.4}, max_usd=1.0)
+    run.start("text", 20, "fast")
+    run.thread.join(5)
+    assert run.state["done"] == 3 and "hard stop" in run.state["stopped"]
+    assert tr.estimate("mixed", 60)["usd"] < 1
+    big = tr.estimate("images", 200, True)
+    c, _ = _ui_client(tmp_path, monkeypatch)
+    c.post("/api/dash/gateway/start")
+    if not big["under_1_usd"]:
+        assert c.post("/api/dash/traffic/start", json={"workload": "images", "n": 200, "with_without": True}).status_code == 402
+
+
+def test_traffic_workloads_build():
+    for w in tr.WORKLOADS:
+        items = tr.plan(w, 20)
+        assert len(items) == 20
+    kinds = {k for k, _ in tr.plan("mixed", 12)}
+    assert kinds == {"text", "agent", "langchain", "long", "images", "voice"}
+    with pytest.raises(ValueError):
+        tr.plan("nope", 5)
+
+
+def test_ui_connect_gpu_runs_rack_check_then_waits_for_ok(tmp_path, monkeypatch):
+    c, _ = _ui_client(tmp_path, monkeypatch)
+    monkeypatch.setenv("WATTNOT_GPU", "sim")
+    monkeypatch.setattr(node_agent, "rack_check", lambda *a, **k: {"ok": True, "rack": "R01",
+                        "visible_racks": ["R01"], "label": "REPLAY", "boxes": {}, "note": None, "why": None})
+    c.post("/api/dash/node/run", json={"approve": False})
+    st = _wait(c, "/api/dash/node/status")
+    assert st["result"]["status"] == "waiting_approval"
+    ev = [e["step"] for e in c.get("/api/dash/plug").json()["node"]["events"]]
+    assert ev == ["gpu_found", "rack_check", "waiting_approval"]
+
+
+def test_langchain_agent_workload_runs_through_real_http_gateway(tmp_path):
+    import socket
+    import threading
+    import time as _t
+
+    import uvicorn
+
+    def up(body, headers):
+        has_tool_result = any(m.get("role") == "tool" for m in body["messages"])
+        if body.get("tools") and not has_tool_result:
+            msg = {"role": "assistant", "content": None, "tool_calls": [{"id": "t1", "type": "function",
+                   "function": {"name": "multiply", "arguments": json.dumps({"a": 8, "b": 350})}}]}
+        else:
+            msg = {"role": "assistant", "content": "The rack draws 2800 W."}
+        return {"id": "x", "object": "chat.completion", "model": body["model"], "created": 0,
+                "choices": [{"index": 0, "finish_reason": "stop", "message": msg}],
+                "usage": {"prompt_tokens": 50, "completion_tokens": 10, "total_tokens": 60}}
+
+    cfg = load_config(None)
+    cfg["savings_log"] = str(tmp_path / "s.jsonl")
+    cfg["savers"]["routing"]["enabled"] = False
+    app = build_app(cfg, upstream=up)
+    sock = socket.socket(); sock.bind(("127.0.0.1", 0)); port = sock.getsockname()[1]; sock.close()
+    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error"))
+    th = threading.Thread(target=server.run, daemon=True); th.start()
+    for _ in range(100):
+        if server.started:
+            break
+        _t.sleep(0.05)
+    try:
+        out = tr.langchain_agent(f"http://127.0.0.1:{port}/v1", tr.LC_TASKS[0], "sim-lc-0")
+        assert out["llm_calls"] == 2 and "2800" in out["answer"]
+        recs = [json.loads(x) for x in (tmp_path / "s.jsonl").read_text().splitlines()]
+        assert len(recs) == 2 and all(r["run"] == "sim-lc-0" for r in recs)
+        run = tr.TrafficRun(lambda b, h: {}, lc_runner=tr.langchain_agent)
+        run.start("langchain", 20, "fast", base_url=f"http://127.0.0.1:{port}/v1")
+        run.thread.join(60)
+        assert run.state["done"] == 20 and run.state["errors"] == 0 and len(run.state["langchain"]) == 20
+    finally:
+        server.should_exit = True
+        th.join(5)
+
+
+def test_per_request_energy_is_never_labelled_measured(tmp_path):
+    p = tmp_path / "w.yaml"
+    p.write_text(deploy.render({"deployment": "both"})["yaml"] + f"\nsavings_log: {tmp_path / 's.jsonl'}\n")
+    c = TestClient(build_app(load_config(p), upstream=fake_upstream([])))
+    ask(c, "easy")
+    assert c.get("/v1/wattnot/savings").json()["energy_wh"]["label"] == "ESTIMATE"
