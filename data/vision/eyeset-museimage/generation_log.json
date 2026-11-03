@@ -1,0 +1,209 @@
+{
+ "generated": "2026-11-03T17:09:51Z",
+ "image_calls": 28,
+ "generated_ok": 28,
+ "kept": 25,
+ "dropped": [
+  "gauge-pdu-347",
+  "gauge-flow-125",
+  "gauge-amp-16"
+ ],
+ "rows": [
+  {
+   "id": "gauge-pdu-347",
+   "category": "gauge",
+   "expected": "347",
+   "verifier_got": "348",
+   "kept": false
+  },
+  {
+   "id": "gauge-temp-68",
+   "category": "gauge",
+   "expected": "68",
+   "verifier_got": "68",
+   "kept": true
+  },
+  {
+   "id": "gauge-flow-125",
+   "category": "gauge",
+   "expected": "125",
+   "verifier_got": "12.5 L/min",
+   "kept": false
+  },
+  {
+   "id": "gauge-volt-230",
+   "category": "gauge",
+   "expected": "230",
+   "verifier_got": "230 V",
+   "kept": true
+  },
+  {
+   "id": "gauge-pue-14",
+   "category": "gauge",
+   "expected": "1.4",
+   "verifier_got": "1.4",
+   "kept": true
+  },
+  {
+   "id": "gauge-hum-45",
+   "category": "gauge",
+   "expected": "45",
+   "verifier_got": "45%",
+   "kept": true
+  },
+  {
+   "id": "gauge-amp-16",
+   "category": "gauge",
+   "expected": "16",
+   "verifier_got": "1.6",
+   "kept": false
+  },
+  {
+   "id": "gauge-fan-72",
+   "category": "gauge",
+   "expected": "72",
+   "verifier_got": "72%",
+   "kept": true
+  },
+  {
+   "id": "rack-count-4",
+   "category": "rack",
+   "expected": "4",
+   "verifier_got": "4",
+   "kept": true
+  },
+  {
+   "id": "rack-count-6",
+   "category": "rack",
+   "expected": "6",
+   "verifier_got": "6",
+   "kept": true
+  },
+  {
+   "id": "rack-count-3",
+   "category": "rack",
+   "expected": "3",
+   "verifier_got": "3",
+   "kept": true
+  },
+  {
+   "id": "rack-label-b07",
+   "category": "rack",
+   "expected": "RACK-B07",
+   "verifier_got": "RACK-B07",
+   "kept": true
+  },
+  {
+   "id": "rack-label-c12",
+   "category": "rack",
+   "expected": "ROW-C12",
+   "verifier_got": "ROW-C12",
+   "kept": true
+  },
+  {
+   "id": "rack-led-red",
+   "category": "rack",
+   "expected": "red",
+   "verifier_got": "red",
+   "kept": true
+  },
+  {
+   "id": "rack-cable-blue",
+   "category": "rack",
+   "expected": "blue",
+   "verifier_got": "blue",
+   "kept": true
+  },
+  {
+   "id": "chart-bar-tallest-green",
+   "category": "chart",
+   "expected": "green",
+   "verifier_got": "green",
+   "kept": true
+  },
+  {
+   "id": "chart-bar-count-5",
+   "category": "chart",
+   "expected": "5",
+   "verifier_got": "5",
+   "kept": true
+  },
+  {
+   "id": "chart-value-82",
+   "category": "chart",
+   "expected": "82",
+   "verifier_got": "82",
+   "kept": true
+  },
+  {
+   "id": "chart-title-energy",
+   "category": "chart",
+   "expected": "ENERGY",
+   "verifier_got": "ENERGY",
+   "kept": true
+  },
+  {
+   "id": "chart-pie-largest-purple",
+   "category": "chart",
+   "expected": "purple",
+   "verifier_got": "purple",
+   "kept": true
+  },
+  {
+   "id": "chart-kpi-267",
+   "category": "chart",
+   "expected": "26.7",
+   "verifier_got": "26.7%",
+   "kept": true
+  },
+  {
+   "id": "doc-invoice-total-4520",
+   "category": "document",
+   "expected": "4520.00",
+   "verifier_got": "$4,520.00",
+   "kept": true
+  },
+  {
+   "id": "doc-po-number",
+   "category": "document",
+   "expected": "PO-5531",
+   "verifier_got": "PO-5531",
+   "kept": true
+  },
+  {
+   "id": "doc-receipt-kwh-918",
+   "category": "document",
+   "expected": "918",
+   "verifier_got": "918 kWh",
+   "kept": true
+  },
+  {
+   "id": "doc-ticket-id",
+   "category": "document",
+   "expected": "WO-2207",
+   "verifier_got": "WO-2207",
+   "kept": true
+  },
+  {
+   "id": "doc-stamp-approved",
+   "category": "document",
+   "expected": "APPROVED",
+   "verifier_got": "APPROVED",
+   "kept": true
+  },
+  {
+   "id": "doc-sticky-colour",
+   "category": "document",
+   "expected": "yellow",
+   "verifier_got": "yellow",
+   "kept": true
+  },
+  {
+   "id": "doc-checkboxes-3",
+   "category": "document",
+   "expected": "3",
+   "verifier_got": "3",
+   "kept": true
+  }
+ ]
+}

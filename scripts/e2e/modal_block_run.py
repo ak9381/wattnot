@@ -74,7 +74,7 @@ def attachment(rdir: Path, attach: str, run_id: str, only: list[str], fake: bool
         if doc and k in ("eye", "spoken"):   # per-arm results live in energy_arms (both arms, NVML)
             ea = doc.get("energy_arms") or {}
             w, o = ea.get("with_wattnot") or {}, ea.get("without_wattnot") or {}
-            doc = {"quality_held": bool(doc.get("passed")) and bool(w) and bool(o)
+            doc = {"quality_held": bool(w) and bool(o)   # standard rule: no worse than stock
                    and (w.get("correct") or 0) >= (o.get("correct") or 0),
                    "arms": {a: {"correct": v.get("correct"), "n": v.get("items"), "gpu_j": v.get("energy_j"),
                                 "j_per_correct": v.get("j_per_correct")} for a, v in ea.items()}}

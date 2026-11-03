@@ -1,0 +1,5 @@
+eye test [live]: vision misread 2/25 image(s): gauge-temp-68, gauge-hum-45
+  MISS gauge-temp-68 (number): expected '68' got '88'
+  MISS gauge-hum-45 (number): expected '45' got '95'
+/app/src/wattnot/meter/arm_energy.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # noqa: PLC0415

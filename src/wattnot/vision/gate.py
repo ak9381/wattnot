@@ -95,3 +95,18 @@ def vision_gate(answers: Mapping[str, str], items: Sequence[EyeTestItem], *,
     show = ", ".join(missed[:6]) + (" …" if len(missed) > 6 else "")
     return GateResult("vision", False,
                       f"vision misread {len(missed)}/{checked} image(s): {show}", detail)
+
+
+def no_worse_than_stock(energy_arms: Mapping | None) -> dict | None:
+    """The project's standard keep rule (same as the sealed holdout): keep the WattNot change
+    only if its correct count is >= the stock arm's on the same items. Returns None when either
+    arm is missing (the strict per-image gate then stands alone)."""
+
+    arms = energy_arms or {}
+    w, o = arms.get("with_wattnot") or {}, arms.get("without_wattnot") or {}
+    if w.get("correct") is None or o.get("correct") is None:
+        return None
+    keep = int(w["correct"]) >= int(o["correct"]) and int(w.get("items") or 0) == int(o.get("items") or 0)
+    return {"rule": "no_worse_than_stock", "keep": keep,
+            "with_wattnot": f"{w['correct']}/{w.get('items')}",
+            "stock": f"{o['correct']}/{o.get('items')}", "label": "MEASURED"}
