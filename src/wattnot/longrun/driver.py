@@ -375,7 +375,10 @@ def plan_glimmer_test(out: Path) -> list[Block]:
               live=None, infra="setup"),
         Block("t0-probe", "Probe / go-no-go: power-cap write + image acceptance on the server",
               _m(8), _py("wattnot.vision.imageprobe", "--fake"),
-              live=["bash", "scripts/glimmer_probe.sh", HOST_BASE_URL], host=True),
+              live=["bash", "-c", "for i in $(seq 1 90); do curl -sf -m 5 "
+                    + shlex.quote(HOST_BASE_URL.rsplit('/v1', 1)[0] + "/health")
+                    + " >/dev/null && break; sleep 10; done; exec bash scripts/glimmer_probe.sh "
+                    + shlex.quote(HOST_BASE_URL)], host=True),  # wait up to 15 min for vLLM health
         Block("t1-sweep", "Glimmer BF16 power-cap sweep + live SAM 3.1 rack scan + signed receipt "
               "(quick, 2 control blocks)", _m(35), sweep_dry, live=sweep_live,
               depends_on=("t0-probe",)),   # no cap write / no images = no sweep
