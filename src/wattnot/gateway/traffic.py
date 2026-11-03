@@ -18,6 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 VOICE_DIR = ROOT / "data" / "voice" / "spoken"
 WORKLOADS = ("mixed", "text", "agent", "langchain", "images", "voice")
+SAMPLING = {"temperature": 0, "top_p": 1, "seed": 1234, "max_tokens": 1536}
 SPEEDS = {"slow": 2.0, "normal": 0.5, "fast": 0.0}
 # per-request token guesses from the 60-request live demo (MEASURED there; ESTIMATE here)
 TOKENS = {"langchain": (700, 300), "text": (60, 250), "agent": (330, 120), "images": (900, 60), "voice": (80, 200), "long": (1600, 40)}
@@ -251,7 +252,9 @@ class TrafficRun:
                     if gap:
                         time.sleep(gap)
                     continue   # no without arm: the agent's own calls are the workload
-                body = {"model": "muse-spark-1.3", **body}
+                # both arms get the same sampling params (the holdout's temperature 0 / seed 1234 /
+                # 1536-token budget), so any difference is a saver's doing, not sampling noise
+                body = {"model": "muse-spark-1.3", **SAMPLING, **body}
                 try:
                     rec = self.send(body, {"x-wattnot-run": f"sim-{i}", "x-wattnot-traffic": "simulated"})
                     self.state["usd"] += float((rec or {}).get("usd") or 0)
