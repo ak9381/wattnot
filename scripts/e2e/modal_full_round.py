@@ -40,7 +40,7 @@ def _load_stage():
 full_stage = _load_stage()
 
 DATA = ROOT / "data" / "modal-full-1101"
-STAGE_CAP_USD = 60.0   # raised from $40 with Akash's yes (1 Nov, 5:39 PM IST); covers the later combined stage too
+STAGE_CAP_USD = 90.0   # $40 -> $60 (1 Nov) -> $90 with Akash's yes (3 Nov, 7:45 AM IST); covers the combined stage too
 SOFT_META_USD = 100.0
 SPEND = DATA / "stage_spend.json"
 KEY = ROOT / "verifier" / "samples" / "test-key.pem"

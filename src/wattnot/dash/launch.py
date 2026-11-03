@@ -47,7 +47,7 @@ REVIEWS = ROOT / "data" / "reviews"
 SECRET = secrets.token_bytes(32)
 TOKEN_TTL_S = 600
 CAPS = {"modal_smoke_usd": 1.5, "baseten_smoke_usd": 1.0, "baseten_smoke_max_usd": 2.0, "meta_smoke_usd": 1.0,
-        "baseten_round_usd": 8.0, "modal_round_usd": 10.0, "modal_stage_usd": 60.0, "meta_hard_usd": 120.0, "meta_soft_usd": 100.0}
+        "baseten_round_usd": 20.0, "modal_round_usd": 20.0, "modal_stage_usd": 90.0, "meta_hard_usd": 120.0, "meta_soft_usd": 100.0}
 DATASETS = ["ours", "gsm8k", "humaneval", "mixed", "custom JSONL", "let WattNot decide"]
 KEY_FILES = {"META_API_KEY": [Path.home() / ".config" / "wattnot" / "env"],
              "MODAL_PROXY_TOKEN_ID": [Path.home() / ".config" / "wattnot" / "modal.env"],
@@ -292,7 +292,7 @@ def check_caps(cfg):
         if cfg["caps"]["baseten_round_usd"] > 8:
             state = "fail"
     return _item("caps", "Spend caps and ledger headroom", state, "; ".join(notes),
-                 "lower the rounds or raise nothing: caps are fixed at Baseten $8/round, Modal $10/round worst case, Modal $60 stage, Modal smoke $1.50, Meta $120/$100"
+                 "lower the rounds or raise nothing: caps are fixed at Baseten $20/round, Modal $20/round, Modal $90 stage, Modal smoke $1.50, Meta $120/$100"
                  if state != "pass" else "")
 
 
@@ -326,7 +326,7 @@ def check_modal(cfg):
     st = "pass" if gpu else "fail"
     return _item("modal", "Modal credits and GPU type", st,
                  f"GPU in the stage file: {gpu or 'not found'}; Modal CLI {'found' if cli else 'missing'}; "
-                 "credit balance is not exposed by Modal's API, so it is checked against the $60 stage cap",
+                 "credit balance is not exposed by Modal's API, so it is checked against the $90 stage cap",
                  "" if st == "pass" else "set gpu='A100-80GB' in modal/full_stage.py", label="ESTIMATE")
 
 

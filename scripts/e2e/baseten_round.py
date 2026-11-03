@@ -36,7 +36,7 @@ from pathlib import Path
 
 import os
 os.environ.pop("BASETEN_API_KEY", None)  # 1 Nov: hackathon key is dead (401); paid route is BASETEN_METRICS_KEY only
-HARD_CAP_USD = 8.0  # Baseten hard cap per round, cannot be raised from the CLI
+HARD_CAP_USD = 20.0  # Baseten hard cap per round ($8 -> $20 with Akash's yes, 3 Nov), cannot be raised from the CLI
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "src")]
 
@@ -353,7 +353,7 @@ def main(argv=None) -> int:
     ap.add_argument("--round", required=True, choices=["r01", "r02", "r03"])
     ap.add_argument("--limit", type=int, default=0, help="items per set (smoke test)")
     ap.add_argument("--conc", type=int, default=4)
-    ap.add_argument("--cap-usd", type=float, default=HARD_CAP_USD, help="Baseten hard stop (max $8)")
+    ap.add_argument("--cap-usd", type=float, default=HARD_CAP_USD, help="Baseten hard stop (max $20)")
     ap.add_argument("--meta-cap-usd", type=float, default=0.0,
                     help="per-run Meta hard stop for the live feature stages (0 = only the soft cap)")
     ap.add_argument("--mode", choices=["live", "smoke"], default="live", help="feature stages: live Meta calls or MOCK")
