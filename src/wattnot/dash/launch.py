@@ -53,7 +53,8 @@ KEY_FILES = {"META_API_KEY": [Path.home() / ".config" / "wattnot" / "env"],
              "MODAL_PROXY_TOKEN_ID": [Path.home() / ".config" / "wattnot" / "modal.env"],
              "BASETEN_METRICS_KEY": [Path.home() / ".config" / "wattnot" / "env"]}
 NEEDS = {"baseten": ["BASETEN_METRICS_KEY", "META_API_KEY"], "modal_a100": ["META_API_KEY", "MODAL"],
-         "e2e_h100": ["META_API_KEY"], "combined": ["BASETEN_METRICS_KEY", "META_API_KEY", "MODAL"]}
+         "e2e_h100": ["META_API_KEY"], "combined": ["BASETEN_METRICS_KEY", "META_API_KEY", "MODAL"],
+         "own_gpu": []}
 PY = os.environ.get("WN_PY") or sys.executable
 
 JOBS: dict[str, dict] = {}
@@ -61,6 +62,59 @@ JOBS: dict[str, dict] = {}
 
 def now() -> str:
     return datetime.now(UTC).isoformat()
+
+
+# ---------------------------------------------------------------- own GPU (H100 long-run driver)
+# The exact --plan choices wattnot.longrun.driver's argparse accepts (read from driver.py, not
+# guessed): full is the 18 h plan-B block list, the rest are glimmer-test sized sub-plans.
+OWN_GPU_PLANS = ("full", "retest", "long", "max", "public")
+OWN_GPU_DEFAULT_PLAN = "retest"  # the smallest/safest plan (sized to a 2 h VM)
+OWN_GPU_GO_ENV = "WATTNOT_OWN_GPU_GO"
+
+
+def own_gpu_config(c: dict) -> dict:
+    """Validate the own-GPU inputs: the long-run plan, the VM host and the SSH key *path* (never
+    its contents). dry_run defaults True: the free path only ever builds `--dry-run` commands."""
+    plan = str(c.get("plan") or OWN_GPU_DEFAULT_PLAN)
+    if plan not in OWN_GPU_PLANS:
+        raise ValueError(f"unknown plan {plan!r}; choose one of {', '.join(OWN_GPU_PLANS)}")
+    dry_run = bool(c.get("dry_run", True))
+    host = str(c.get("host") or "").strip()
+    key_path = str(c.get("key_path") or "~/.ssh/e2e_h100").strip()
+    if not dry_run and not host:
+        raise ValueError("a live own-GPU launch needs the VM host (IP)")
+    return {"plan": plan, "host": host, "key_path": key_path, "dry_run": dry_run}
+
+
+def own_gpu_command(cfg: dict, out_dir: str, *, live: bool) -> list[str]:
+    """The exact `python -m wattnot.longrun.driver` invocation for this configuration. `live`
+    (not the config's own dry_run) decides --dry-run vs --live, so a caller can force the free
+    path even when the stored config asks for live. Never carries a secret value: the SSH key is
+    passed by path only, same as the driver's own --key flag."""
+    og = cfg["own_gpu"]
+    argv = [PY, "-m", "wattnot.longrun.driver", "--live" if live else "--dry-run",
+            "--model", "glimmer", "--plan", og["plan"], "--out", out_dir]
+    if live:
+        argv += ["--host", og["host"], "--key", og["key_path"]]
+    return argv
+
+
+def own_gpu_preview(cfg: dict) -> dict:
+    """The free dry-run path: validate the inputs and show the exact command, spending nothing.
+    Never starts a process."""
+    out_dir = str(JOBS_DIR / "preview" / "longrun")
+    og = cfg["own_gpu"]
+    go = os.environ.get(OWN_GPU_GO_ENV) == "1"
+    return {"command": own_gpu_command(cfg, out_dir, live=False), "dry_run": True,
+            "checks": [
+                _item("plan", "Plan is one of the long-run driver's choices", "pass", f"plan={og['plan']}"),
+                _item("key", "SSH key path set (the key itself is never read or logged here)",
+                     "pass", og["key_path"]),
+                _item("host", "VM host set for a live launch", "pass" if og["host"] else "warn",
+                     og["host"] or "not set (fine for this free dry run)", required=False),
+                _item("go", f"{OWN_GPU_GO_ENV}=1 present in the server's environment", "pass" if go else "warn",
+                     "set" if go else "not set: a real launch will be refused", required=False),
+            ]}
 
 
 # ---------------------------------------------------------------- config + estimate
@@ -82,7 +136,8 @@ def norm_config(c: dict) -> dict:
             # keeps Spark off.
             "smoke": ({"limit": max(1, min(int((c.get("smoke") or {}).get("limit") or 2), smoke_max)),
                        "spark": prov == "baseten"} if c.get("smoke") and prov in ("modal_a100", "baseten") else None),
-            "caps": {**CAPS, **{k: _clamp_cap(k, v) for k, v in (c.get("caps") or {}).items() if k in CAPS}}}
+            "caps": {**CAPS, **{k: _clamp_cap(k, v) for k, v in (c.get("caps") or {}).items() if k in CAPS}},
+            **({"own_gpu": own_gpu_config(c.get("own_gpu") or {})} if prov == "own_gpu" else {})}
 
 
 def _clamp_cap(k: str, v) -> float:
@@ -396,11 +451,20 @@ def check_eligibility(cfg):
                  "fix the model choice or the runner table" if bad else "")
 
 
+def _runner_script(argv: list[str]) -> str:
+    """The runner script or module in a built command, for display in the checklist."""
+    for i, a in enumerate(argv):
+        if str(a).endswith(".py"):
+            return Path(a).relative_to(ROOT).as_posix() if Path(a).is_absolute() else str(a)
+        if a == "-m" and i + 1 < len(argv):
+            return str(argv[i + 1])
+    return "?"
+
+
 def check_runner(cfg):
     ok = E.PROVIDERS[cfg["provider"]]["runner"] is not None
     return _item("runner", "A runner exists for this configuration", "pass" if ok else "fail",
-                 next((Path(a).relative_to(ROOT).as_posix() if Path(a).is_absolute() else a)
-                      for a in command(cfg, "live")[0] if str(a).endswith(".py"))
+                 _runner_script(command(cfg, "live")[0])
                  if ok else "E2E H100 and combined stages are not wired to the UI yet",
                  "" if ok else "pick Baseten or Modal A100")
 
@@ -469,6 +533,13 @@ def command(cfg: dict, mode: str) -> tuple[list[str], dict, str]:
         cmd = [PY, "scripts/e2e/baseten_stage.py", "--rounds", *rounds, "--pr-round",
                rounds[-1] if cfg["open_pr"] else "none", *_sets(cfg)]
         return (cmd, env, "MEASURED")
+    if cfg["provider"] == "own_gpu":
+        og = cfg["own_gpu"]
+        live_wanted = mode == "live" and not og["dry_run"]
+        if live_wanted and os.environ.get(OWN_GPU_GO_ENV) != "1":
+            raise PermissionError(f"a real own-GPU launch needs {OWN_GPU_GO_ENV}=1 in the server's environment")
+        return (own_gpu_command(cfg, "{job}/longrun", live=live_wanted), env,
+                "MEASURED" if live_wanted else "MOCK")
     raise ValueError("no runner for this provider")
 
 
@@ -760,6 +831,17 @@ def router() -> APIRouter:
         if e.get("available"):
             e["confirm_token"] = sign(cfg, int(time.time()) + TOKEN_TTL_S)
         return {"config": cfg, **e}
+
+    @r.post("/own_gpu/preview")
+    async def own_gpu_preview_ep(request: Request):
+        """Free: validate the own-GPU inputs and show the exact driver command. Starts nothing."""
+        try:
+            cfg = norm_config((await body(request)).get("config") or {})
+        except ValueError as e:
+            return JSONResponse({"error": str(e)}, 400)
+        if cfg["provider"] != "own_gpu":
+            return JSONResponse({"error": "preview is for the own_gpu provider only"}, 400)
+        return own_gpu_preview(cfg)
 
     @r.post("/start")
     async def start(request: Request):

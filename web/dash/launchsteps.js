@@ -54,11 +54,39 @@ export async function init() {
 const save = () => { if (L.cfg.provider !== "modal_a100") L.cfg.smoke = null; saveConfig(L.cfg); L.checks = L.est = null; };
 const needServer = `<p class="lock">This step needs the local WattNot server (<code>python -m wattnot.dash</code>).</p>`;
 
+const OWN_GPU_PLANS = ["full", "retest", "long", "max", "public"];
+
+function ownGpuFields(el) {
+  const og = L.cfg.own_gpu || (L.cfg.own_gpu = { plan: "retest", host: "", key_path: "~/.ssh/e2e_h100", dry_run: true });
+  el.innerHTML = `<div class="lgrid">
+    <div class="fld"><label for="og-plan">Long-run plan</label><select id="og-plan">${OWN_GPU_PLANS.map((p) => `<option value="${p}" ${p === og.plan ? "selected" : ""}>${p}</option>`).join("")}</select></div>
+    <div class="fld"><label for="og-host">VM host (IP)<small>only needed for a real launch</small></label><input id="og-host" type="text" value="${esc(og.host)}" placeholder="203.0.113.10"></div>
+    <div class="fld"><label for="og-key">SSH key path<small>a path on this machine; never the key itself</small></label><input id="og-key" type="text" value="${esc(og.key_path)}"></div>
+    </div>
+  <label class="ltog"><input id="og-dry" type="checkbox" ${og.dry_run ? "checked" : ""}> Free dry run (CPU + mocks, no VM; a real launch also needs <code>WATTNOT_OWN_GPU_GO=1</code> on the server)</label>
+  <div class="lact"><button type="button" class="btn sm" id="og-preview">Preview the exact command</button></div>
+  <pre class="og-cmd" hidden></pre>`;
+  const sync = () => {
+    og.plan = q("#og-plan", el).value; og.host = q("#og-host", el).value.trim();
+    og.key_path = q("#og-key", el).value.trim(); og.dry_run = q("#og-dry", el).checked;
+    save();
+  };
+  qa("select,input", el).forEach((i) => (i.onchange = sync));
+  q("#og-preview", el).onclick = async () => {
+    sync();
+    const pre = q(".og-cmd", el); pre.hidden = false;
+    const r = await post("/api/launch/own_gpu/preview", { config: L.cfg });
+    pre.textContent = r.ok ? r.body.command.join(" ") + "\n\n" + r.body.checks.map((c) => `${c.state.toUpperCase()}: ${c.title} — ${c.reason}`).join("\n")
+      : (r.body.error || `failed (${r.status})`);
+  };
+}
+
 export function where(el) {
   if (!L.opt) { el.innerHTML = needServer; return; }
   el.innerHTML = `<div class="picks" role="radiogroup" aria-label="Where it runs">${Object.entries(L.opt.providers).map(([k, p]) => `<label class="pick"><input type="radio" name="lprov" value="${k}" ${L.cfg.provider === k ? "checked" : ""}>
-      <span class="pick-c"><span class="pick-t"><b>${esc(p.label)}</b><small>${esc(p.spend)} · energy ${lab(p.energy_label)}</small>${p.wired ? "" : '<small class="ex">No runner wired to the UI yet: eligibility only.</small>'}</span></span></label>`).join("")}</div>`;
-  qa("input[name=lprov]", el).forEach((r) => (r.onchange = () => { L.cfg.provider = r.value; L.cfg.model = L.opt.providers[r.value].default_model; save(); }));
+      <span class="pick-c"><span class="pick-t"><b>${esc(p.label)}</b><small>${esc(p.spend)} · energy ${lab(p.energy_label)}</small>${p.wired ? "" : '<small class="ex">No runner wired to the UI yet: eligibility only.</small>'}</span></span></label>`).join("")}</div><div class="og-fields"></div>`;
+  if (L.cfg.provider === "own_gpu") ownGpuFields(q(".og-fields", el));
+  qa("input[name=lprov]", el).forEach((r) => (r.onchange = () => { L.cfg.provider = r.value; L.cfg.model = L.opt.providers[r.value].default_model; save(); where(el); }));
 }
 
 export function datasets(el) {
