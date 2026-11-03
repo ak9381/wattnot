@@ -533,3 +533,7 @@ wattnot impact --wh-delta 0.01 --requests-per-gpu-per-day 100000 --gpus 8
 Defaults: tariff 0.12 USD/kWh (an assumption), PUE 1.0, 30 days. All are flags.
 Water: 0.36 L/kWh (on-site cooling, ESTIMATE); up to 1.8 L/kWh including power-plant water (ESTIMATE).
 Every output line is labelled ESTIMATE; only the Wh delta is measured.
+
+## Branches
+
+`main` is the canonical branch. `sim-main` was a temporary working branch used while the H100 run was going; it is kept for history only and is no longer updated.
