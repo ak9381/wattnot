@@ -576,3 +576,16 @@ def test_setup_passes_a_timeout_just_under_the_block_budget(tmp_path, monkeypatc
     assert "--timeout" in argv
     assert argv[argv.index("--timeout") + 1] == str(int(max(60, budget_s - 120)))
     assert captured["timeout"] == budget_s
+
+
+def test_max_plan_agentwaste_kill_limit_is_one_hour(tmp_path):
+    from wattnot.longrun import driver as drv
+    blocks = {b.id: b for b in drv.plan_glimmer_max(tmp_path)}
+    limit = lambda b: b.hours * 3600.0 * drv.OVERRUN_FACTOR  # noqa: E731
+    aw = [k for k in blocks if k.endswith("-agentwaste")]
+    assert "p1r-agentwaste" in aw
+    for k in aw:
+        assert abs(limit(blocks[k]) - 3600.0) < 1e-6, k
+    for k in ("p1r-langchain", "p1r-think", "p1r-tiers"):
+        assert abs(limit(blocks[k]) - 3600.0) > 1, k
+    assert abs(limit(blocks["p1r-langchain"]) - 2250.0) < 1e-6

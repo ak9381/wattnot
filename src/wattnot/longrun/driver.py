@@ -676,8 +676,10 @@ MAX_PASSES = (
 )
 # which sweep a pass's {BEST_CAP} and tiers dependency read (default t1-sweep)
 OWN_CAP_PASSES = ("p2", "p1r")
+# agentwaste 20 -> 40 min (kill limit 1,800 -> 3,600 s): p1-agentwaste took 2,262 s (MEASURED)
+# and p2-agentwaste was killed at the old 1,800 s limit on both tries (3 Nov).
 MAX_PASS_LAYERS_MIN = {"sweep": 95, "think": 15, "tiers": 25, "eye": 3, "spoken": 3,
-                       "phase": 5, "langchain": 25, "agentwaste": 20}   # ESTIMATE, 191 min
+                       "phase": 5, "langchain": 25, "agentwaste": 40}   # ESTIMATE, 211 min
 MAX_LANGCHAIN_ITEMS = 40
 MAX_PUBLIC_SETS = ("gsm8k300", "humaneval164")   # 300 GSM8K + all 164 HumanEval
 MAX_PUBLIC_REPS = 3
