@@ -265,7 +265,23 @@ def _m(minutes: float) -> float:
     return minutes / 60.0
 
 
+def only_blocks() -> set[str]:
+    """WATTNOT_ONLY_BLOCKS=a,b: run just these block ids (others are left out of the plan)."""
+    return {x.strip() for x in os.environ.get("WATTNOT_ONLY_BLOCKS", "").split(",") if x.strip()}
+
+
+def keep_vm_forced() -> bool:
+    """WATTNOT_KEEP_VM=1: teardown never deletes the VM, not even at the end of the plan."""
+    return os.environ.get("WATTNOT_KEEP_VM", "") == "1"
+
+
 def plan(out: Path, model: str = "llama", plan_name: str = "full") -> list[Block]:
+    blocks = _plan(out, model, plan_name)
+    keep = only_blocks()
+    return [b for b in blocks if b.id in keep] if keep else blocks
+
+
+def _plan(out: Path, model: str = "llama", plan_name: str = "full") -> list[Block]:
     """The block list. model="llama" is plan A (Llama 8B main, Glimmer optional);
     model="glimmer" is plan B (Glimmer 30B main; Llama RUN2 stays as prior evidence).
     plan_name="retest" (glimmer-test only) re-runs just setup, probe, the sweep and the RUN3
@@ -1249,6 +1265,9 @@ class Driver:
             self._note(kind="vm-kept", reason=f"failure ({kw.get('why')}): VM kept, never deleted on a failure")
             d = replace(d, delete=False)
             self._kept_dead = True
+        if d.delete and keep_vm_forced():
+            self._note(kind="vm-kept", reason="WATTNOT_KEEP_VM=1: VM kept, never deleted")
+            d = replace(d, delete=False)
         if d.delete:
             self.vm.delete()
             self._note(kind="vm-deleted", reason=d.reason)
