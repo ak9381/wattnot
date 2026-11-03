@@ -30,7 +30,7 @@ def test_max_plan_fits_booking_with_margin(tmp_path):
     by = {b.id: b for b in blocks}
     assert all(by[x].skip_if_short for x in driver.MAX_EXTRA_BLOCKS)
     # BF16-only blocks (every pass) run before the FP8 swap
-    for b in ("p2-sweep", "p3-agentwaste", "p1-langchain", "t2g-serverless"):
+    for b in ("p2-sweep", "p1r-agentwaste", "p1-langchain", "t2g-serverless"):
         assert ids.index(b) < ids.index("t2-fp8")
     assert ids[-1] == "t3-copy"
     # off-GPU work is not on the VM
@@ -46,7 +46,7 @@ def test_each_pass_has_every_gpu_layer_and_own_dataset(tmp_path):
             if layer != "sweep":
                 assert f"{pas}-{layer}" in ids
         seen.add(ds)
-    assert seen == {"own", "gsm8k300", "humaneval164"}
+    assert seen == {"own", "gsm8k300"}
 
 
 def test_max_plan_cost_under_cap_and_floor():
@@ -195,3 +195,22 @@ def test_model_glimmer_maps_to_the_h100_setting(tmp_path, monkeypatch):
     except SystemExit as e:
         assert e.code in (0, None)
     assert seen.get("model") == "glimmer-test" and seen.get("plan_name") == "max"
+
+
+def test_p1r_rerun_after_pass2_reads_its_own_sweep(tmp_path):
+    blocks = driver.plan(tmp_path, "glimmer-test", "max")
+    ids = [b.id for b in blocks]
+    by = {b.id: b for b in blocks}
+    assert not any(i.startswith("p3-") for i in ids)
+    assert ids.index("p2-agentwaste") < ids.index("p1r-sweep") < ids.index("p1r-agentwaste")
+    assert by["p1r-tiers"].sweep_tag == "p1r-sweep" and "p1r-sweep" in by["p1r-tiers"].depends_on
+    assert by["p2-tiers"].sweep_tag == "t1-sweep" and by["p1-tiers"].sweep_tag == "t1-sweep"
+    assert any("runs/p1r-sweep" in a for a in by["p1r-sweep"].live)
+    assert any("/p1r-tiers" in a for a in by["p1r-tiers"].live)
+    import json
+    for tag, cap in (("t1-sweep", 350), ("p1r-sweep", 325)):
+        f = tmp_path / "runs" / tag / "vm" / "results.json"
+        f.parent.mkdir(parents=True)
+        f.write_text(json.dumps({"best_cap_w": cap}))
+    assert driver.best_cap_from_sweep(tmp_path, "p1r-sweep") == 325
+    assert driver.best_cap_from_sweep(tmp_path) == 350

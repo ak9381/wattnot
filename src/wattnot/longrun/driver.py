@@ -118,6 +118,7 @@ class Block:
     host: bool = False             # live: run `live` on the GPU host over SSH (else on control)
     infra: str = ""                # live: a driver-run infra step: "setup" | "pull"
     skip_if_short: bool = False    # time left can't cover it -> log "skipped: time" and move on
+    sweep_tag: str = "t1-sweep"    # live: {BEST_CAP} comes from runs/<sweep_tag>/vm/results.json
 
 
 def _py(*args: str) -> list[str]:
@@ -130,11 +131,11 @@ def _rpy(*args: str) -> list[str]:
     return ["python", "-m", *args]
 
 
-def best_cap_from_sweep(out: Path) -> int | None:
+def best_cap_from_sweep(out: Path, sweep_tag: str = "t1-sweep") -> int | None:
     """The best accepted cap from the sweep's results.json (written on the control box by
     orchestrate), for the combined block's prefix-ON arm. None when the sweep produced no passing
     cap — the combined block then skips cleanly instead of measuring against nothing."""
-    p = out / "runs" / "t1-sweep" / "vm" / "results.json"
+    p = out / "runs" / sweep_tag / "vm" / "results.json"
     try:
         bc = json.loads(p.read_text()).get("best_cap_w")
     except (OSError, ValueError):
@@ -628,8 +629,13 @@ MAX_PASSES = (
     # (pass, sweep tag, cap order, dataset)
     ("p1", "t1-sweep", "375,350,325,300", "own"),
     ("p2", "p2-sweep", "300,325,350,375", "gsm8k300"),
-    ("p3", "p3-sweep", "360,340,320,300", "humaneval164"),
+    # RUN1103 (3 Nov, Akash): pass 3 dropped; instead a full pass-1 rerun on the fixed code
+    # after pass 2. Its own block ids and folders (p1r-*), and its {BEST_CAP} comes from its own
+    # sweep (runs/p1r-sweep), not t1-sweep. Passes 1 and 2 keep reading t1-sweep as before.
+    ("p1r", "p1r-sweep", "375,350,325,300", "own"),
 )
+# which sweep a pass's {BEST_CAP} and tiers dependency read (default t1-sweep)
+OWN_CAP_PASSES = ("p1r",)
 MAX_PASS_LAYERS_MIN = {"sweep": 95, "think": 15, "tiers": 25, "eye": 3, "spoken": 3,
                        "phase": 5, "langchain": 25, "agentwaste": 20}   # ESTIMATE, 191 min
 MAX_LANGCHAIN_ITEMS = 40
@@ -659,7 +665,7 @@ MAX_REQUIRED_BLOCKS = ("t1-sweep", "p1-think", "p1-tiers", "p1-eye", "p1-spoken"
                        "p1-langchain", "p1-agentwaste", "t2-fp8", "t2-eye", "t2-spoken",
                        "t2b-batch", "t2c-prefix")
 MAX_EXTRA_BLOCKS = tuple(f"{p}-{l}" for p, *_ in MAX_PASSES[1:] for l in MAX_PASS_LAYERS_MIN
-                         if l != "sweep") + ("p2-sweep", "p3-sweep", "t2g-serverless",
+                         if l != "sweep") + ("p2-sweep", "p1r-sweep", "t2g-serverless",
                                              "t2d-combined", "t2e-public")
 
 
@@ -672,6 +678,7 @@ def pass_blocks(out: Path, pas: str, sweep_tag: str, grid: str, dataset: str,
     R = lambda layer: f"{REMOTE_RESULTS}/{pas}-{layer}"  # noqa: E731
     D = lambda layer: str(out / "runs" / f"{pas}-{layer}")  # noqa: E731
     start = 0
+    cap_tag = sweep_tag if pas in OWN_CAP_PASSES else "t1-sweep"
     sweep = Block(
         sweep_tag, f"Pass {pas}: BF16 power-cap sweep ({grid}), Wonder planner, gates, approvals, "
         "SAM, signed receipt", _m(M["sweep"]),
@@ -693,7 +700,8 @@ def pass_blocks(out: Path, pas: str, sweep_tag: str, grid: str, dataset: str,
               live=_rpy("wattnot.longrun.harness", "--cap", "{BEST_CAP}", "--out", R("tiers"),
                         "--model-config", "muse-glimmer-30b", "--per-tier",
                         str(MAX_TIERS_PER_TIER), "--reps", "2", "--url", url),
-              host=True, depends_on=("t1-sweep", "t0-probe"), skip_if_short=optional),
+              host=True, depends_on=(cap_tag, "t0-probe"), skip_if_short=optional,
+              sweep_tag=cap_tag),
         Block(f"{pas}-eye", f"Pass {pas}: eye test gate", _m(M["eye"]),
               _py("wattnot.vision.run", "--fake", "--out", D("eye"), "--budget-s",
                   str(EYE_TEST_BUDGET_S)),
@@ -728,7 +736,7 @@ def pass_blocks(out: Path, pas: str, sweep_tag: str, grid: str, dataset: str,
                     "--out", R("agentwaste")], host=True, depends_on=("t0-probe",),
               skip_if_short=optional),
     ]
-    return bl
+    return [replace(b, sweep_tag=cap_tag) for b in bl]
 
 
 def _matrix_round_sh(rid: str, cap: str, public_only: bool = False) -> str:
@@ -1372,12 +1380,12 @@ def _live_runner(out: Path, host: str, key: str, vm: RemoteVm, log=print):
     No block ever uses --fake: the live argv is the real command."""
     env = dict(os.environ)
 
-    def fill(argv: list[str]) -> list[str]:
+    def fill(argv: list[str], sweep_tag: str = "t1-sweep") -> list[str]:
         best = None
         if any("{BEST_CAP}" in a for a in argv):
             # resolve the best passing cap from the sweep results on the control box; "NONE" makes
             # the combined block skip cleanly when the sweep found no passing cap
-            bc = best_cap_from_sweep(out)
+            bc = best_cap_from_sweep(out, sweep_tag)
             best = str(bc) if bc else "NONE"
         return [a.replace("{HOST}", host).replace("{KEY}", key)
                  .replace("{BEST_CAP}", best) if best is not None
@@ -1397,13 +1405,13 @@ def _live_runner(out: Path, host: str, key: str, vm: RemoteVm, log=print):
             return 7 if vm.copy_mismatched else 0   # copied, but sha256 mismatch: block fails
         if b.live is None:
             return 0
-        if any("{BEST_CAP}" in a for a in b.live) and not best_cap_from_sweep(out) \
+        if any("{BEST_CAP}" in a for a in b.live) and not best_cap_from_sweep(out, b.sweep_tag) \
                 and not any("prefix_cache_ab.py" in a for a in b.live):
             # only prefix_cache_ab.py understands "NONE"; the harness and public_bench_ab.py take
             # an int cap, so with no passing cap these blocks have nothing to compare: skip
             log(f"[live] {b.id}: skipped, the sweep found no passing cap")
             return 0
-        argv = fill(b.live)
+        argv = fill(b.live, b.sweep_tag)
         logf = out / "logs" / f"{b.id}.log"
         logf.parent.mkdir(parents=True, exist_ok=True)
         if b.host:
