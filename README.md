@@ -42,6 +42,85 @@ H100 run: `bash scripts/h100_run.sh --dry-run` first, then see [docs/runbooks/H1
 
 **Every model WattNot runs is a Meta model (Glimmer, Llama, Spark, Spark Open, Wonder, SAM 3.1, Voice, Code, plus Muse Image for pre-generated SYNTHETIC test sets). See [Meta models used](#meta-models-used).**
 
+## Run it in 2 minutes
+
+You need Python 3.11, 3.12 or 3.13 and git. No GPU. A Meta Model API key is optional: with one you run WattNot live, without one you get the recorded real runs.
+
+```bash
+git clone https://github.com/ak9381/wattnot.git && cd wattnot
+./run-local.sh smoke      # about a minute: doctor, a simulated run, the dashboard up and down
+./run-local.sh            # with a key in .env: live Meta API run. Without one: replay of our real runs
+```
+
+On Windows, run the same commands in WSL or Git Bash.
+
+### Your settings
+
+Copy the example file and fill in what you have. `.env` is gitignored, and WattNot never prints its values.
+
+```bash
+cp .env.example .env            # macOS / Linux / WSL
+```
+
+```powershell
+Copy-Item .env.example .env     # Windows PowerShell
+```
+
+### The modes
+
+| Command | What runs | Needs | Numbers |
+|---|---|---|---|
+| `./run-local.sh doctor` | Checks Python, disk, GPU, driver, NVML, power-limit permission, vLLM and your key. Each line says PASS, WARN or FAIL, plus the fix. Changes nothing. | nothing | - |
+| `./run-local.sh gpu` (optional) | The full framework on your GPU. Stock vs a power cap on 4 prompt tiers, with the quality gate (pass rate drop of 2 points or less, p99 within +10%). Then the token savers if a key is set. | NVIDIA GPU you control, root, a vLLM server, `WATTNOT_VLLM_URL` | energy MEASURED (NVML); water and $ ESTIMATE |
+| `./run-local.sh savers` | Cheapest-first routing with step-up and the thinking budget, then the agentwaste proxy and context saver on agent tasks, all on live Meta models. Spend is capped by `WATTNOT_MAX_SPEND` (default $0.50). | `META_API_KEY` | tokens, latency, cost MEASURED; energy ESTIMATE |
+| `./run-local.sh sim` | The same harness with a fake GPU and an oracle model | nothing | all MOCK |
+| `./run-local.sh replay [name]` | Dashboard on one of our recorded runs: `h100-max-1103` (default), `modal-r1`, `modal-r2`, `baseten-r1`, `baseten-r2` | nothing | MEASURED replay |
+
+`make judge` and `make doctor` do the same as the first two commands. Results go to `out/judge-<time>/`.
+
+### GPU prerequisites
+
+- NVIDIA driver installed. `nvidia-smi` must work.
+- Root, or sudo, to change power limits. Run `sudo -E ./run-local.sh gpu`.
+- vLLM serving Muse Glimmer 30B (Meta open weights) on the same box: `vllm serve meta-models/Muse-Glimmer-30B --port 8000 --reasoning-parser muse_glimmer` (or `bash scripts/glimmer_serve.sh`, which we used). Keep `WATTNOT_MODEL_CONFIG=muse-glimmer-30b`. Only Meta models count for this hackathon, so the judge path never calls anything else.
+- The stock power limit goes back on at exit, on Ctrl-C and on error, both from the harness and from the launcher. If anything kills the process hard, run `sudo nvidia-smi -i 0 -pl <stock W>` (doctor shows the stock range).
+
+When doctor finds no GPU, an untested GPU or no permission, the power-cap features turn off with a message saying why. The token savers still run.
+
+### Meta models used, and where each runs
+
+| Model | Where it runs | What it does in WattNot |
+|---|---|---|
+| Muse Glimmer 30B (open weights) | vLLM on a rented NVIDIA H100 80GB, BF16. FP8 was also tried on Modal A100-80GB: it kept accuracy on eye and hearing but was rejected on the full round (accuracy -4.16 pts, MEASURED), so the H100 stays BF16 | The model being served. Every power cap, thinking budget, saver and agentwaste arm is measured on its answers |
+| Muse Spark (Meta Model API) | Hosted | Cheapest-first effort routing with step-up, answer grading for the quality gate, and the judge `savers` mode |
+| Muse Spark Open (open weights) | Baseten, hosted | The hosted-API round: effort routing and the LangChain saver |
+| Muse Wonder (Meta Model API) | Hosted | Plans which cap and clock to try next |
+| SAM 3.1 (Meta Model API) | Hosted | Rack photo to a map of the servers a run touched, used as a cross-check |
+| Muse Code | Hosted | Opened the 375 W cap PR from a run result |
+
+Provenance for the H100 run: the full event log, per-block receipts and signed sweep receipts are in [`replays/h100-max-1103/`](replays/h100-max-1103/manifest.json) (`./run-local.sh replay` plays it). Modal and Baseten runs are in [`replays/INDEX.md`](replays/INDEX.md). Run history with commits and costs: [`docs/RUN_HISTORY.md`](docs/RUN_HISTORY.md).
+
+### Tested on
+
+| Where | What we ran | Power cap |
+|---|---|---|
+| NVIDIA H100 80GB (bare cloud VM with root access) | The full stack: power caps through NVML, vLLM serving, quality gate, signed receipts, LangChain, agentwaste, eye and spoken arms, sealed GSM8K holdout | yes |
+| Modal (hosted A100-80GB) | Glimmer 30B served on Modal, with LangChain and context saver runs | no, the platform owns the GPU |
+| Baseten (hosted Muse Spark Open API) | Effort routing, with the LangChain saver | no, we don't control the GPU |
+
+The power-cap features need root and NVML on a GPU you control. The token savers work on any OpenAI-compatible endpoint. Any other GPU is untested: doctor flags it, and caps stay off unless you set `WATTNOT_ALLOW_UNTESTED_GPU=1`.
+
+### Troubleshooting
+
+- **`setup failed`**: run `bash scripts/setup.sh` to see the error. Most often Python is older than 3.11.
+- **`HTTP 401` / `403`**: the key is wrong or expired. Check `META_API_KEY` in `.env`, with no quotes and no spaces.
+- **`HTTP 429`**: WattNot retries 3 times (2, 5 and 10 s). If it still fails, wait a minute or lower `WATTNOT_PER_TIER`.
+- **`request failed: TimeoutError`**: no network, or `META_BASE_URL` is wrong. Timeouts are not retried, because the call may already have been billed.
+- **doctor says `vllm FAIL`**: the server isn't up yet, or the URL is wrong. `curl http://127.0.0.1:8000/v1/models` (your host and port) should list a model.
+- **`power-limit permission FAIL`**: run with `sudo -E`. On serverless GPUs this can't work, so use `savers`.
+- **Port busy**: a free port is picked and printed. Set `WATTNOT_PORT` to choose one.
+- **Ctrl-C**: safe at any point. The power limit is restored and nothing is left running.
+
 ## For judges
 
 **Fastest path — one command, then `wattnot demo`.** Clone the repo and run the

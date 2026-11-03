@@ -1,0 +1,28 @@
+{
+ "events": 2,
+ "types": {
+  "step.finished": 1,
+  "step.started": 1
+ },
+ "first_ts": "2026-11-03T13:16:06.681Z",
+ "last_ts": "2026-11-03T13:16:06.681Z",
+ "steps": {
+  "p2-phase": {
+   "type": "step.finished",
+   "ts": "2026-11-03T13:16:06.681Z",
+   "status": "ok"
+  },
+  "p2-langchain": {
+   "type": "step.started",
+   "ts": "2026-11-03T13:16:06.681Z",
+   "status": null
+  }
+ },
+ "result": {
+  "rc": 0,
+  "attempt": 1,
+  "wall_s": 1883.9,
+  "capture": false,
+  "copied": false
+ }
+}

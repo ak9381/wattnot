@@ -1,0 +1,13 @@
+{
+ "block": "p1-langchain",
+ "label": "MEASURED",
+ "started": 1793697995.7395878,
+ "ended": 1793700648.3151257,
+ "byte_range": [
+  482469,
+  483200
+ ],
+ "events": 2,
+ "replay": "replays/h100-max-1103/blocks/p1-langchain/timeline.jsonl",
+ "screen": null
+}

@@ -1,0 +1,12 @@
+{
+ "format": "wattnot.block-receipt/1",
+ "block": "p1-think",
+ "label": "MEASURED",
+ "files": {
+  "meta.json": "0f64c2341725ba68cb4485078ebff5430a52c9d6c6ccb51b1b88dc5606d45423",
+  "state.json": "2faa6c0c8be95dd374ffbc682875d766df784e3e5c2c2ee9dd0f4c4e9f72f8db",
+  "timeline.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+ },
+ "prev": "ed538e8dbe8539450da2a796a262956e2b73938d9ac4527a3890d4e302738751",
+ "sha256": "913c8e5240cd721e349a21b0e593a7259140a9f96b8b7d6baf1563356ac8e8ab"
+}

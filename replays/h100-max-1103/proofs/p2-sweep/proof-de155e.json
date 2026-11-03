@@ -1,0 +1,690 @@
+{
+  "spec": "wattnot.proof-receipt/1",
+  "receipt_id": "proof-de155e",
+  "run_id": "run_20261103_102948_de155e",
+  "created": "2026-11-03T11:42:39+00:00",
+  "label": "MEASURED",
+  "mode": "live",
+  "hardware": {
+    "gpu": "NVIDIA H100 80GB HBM3",
+    "default_cap_w": 700,
+    "cap_range_w": [
+      200,
+      700
+    ]
+  },
+  "model": "meta-models/Muse-Glimmer-30B",
+  "workload": {
+    "name": "proof-v1",
+    "prompts": 111,
+    "sha256": "279ccc4a5f29fdc507ffd64d059cc51a906cbec0082e3de58255aaa87b534c5f"
+  },
+  "method": {
+    "energy": "NVML total_energy_mj counter, before and after each block",
+    "design": "interleaved stock/cap blocks, 2 rounds per cap",
+    "accept": "quality drop <= 1 pt, mean p99 change <= +10%, 95% CI of the J/request change entirely below 0"
+  },
+  "control": {
+    "label": "MEASURED",
+    "stock_pass_pct": 93.69369369369369,
+    "stock2_pass_pct": 94.14414414414415,
+    "truncated_pass_pct": 0.0,
+    "token_scale": 0.2,
+    "bad_setting_rejected": true,
+    "stock_vs_stock_accepted": true,
+    "stock_vs_stock_j_per_req_change_pct": -0.5204484508418004,
+    "stock_blocks": 4,
+    "stock_j_per_req": [
+      177.96762162162162,
+      177.0413918918919,
+      169.73271621621623,
+      179.15802252252251
+    ],
+    "stock_noise_cv_pct": 2.415517098417542,
+    "stock_range_pct": 5.356050361517157
+  },
+  "steps": [
+    {
+      "cap_w": 375,
+      "repeats": 2,
+      "label": "MEASURED",
+      "j_per_req_stock": [
+        163.92566216216218,
+        179.4405900900901
+      ],
+      "j_per_req_cap": [
+        119.96348198198199,
+        124.49703153153153
+      ],
+      "energy_change_pct": {
+        "per_pair": [
+          -26.818363641374805,
+          -30.619359048570644
+        ],
+        "mean": -28.718861344972723,
+        "sd": 2.6877096276870995,
+        "ci95_half": 24.147723821915154
+      },
+      "p99_change_pct": {
+        "per_pair": [
+          6.710012129461069,
+          6.72268817264674
+        ],
+        "mean": 6.716350151053905,
+        "sd": 0.008963316095201455
+      },
+      "p50_change_pct": {
+        "per_pair": [
+          4.806050192627701,
+          8.165758969247527
+        ],
+        "mean": 6.485904580937614
+      },
+      "j_per_token_change_pct": {
+        "mean": -29.136353951796423
+      },
+      "stock_noise": {
+        "label": "MEASURED",
+        "blocks": 2,
+        "cv_pct": 6.390092605489256
+      },
+      "welch_per_block": {
+        "t": 6.118993516033294,
+        "df": 1.1695323129102282,
+        "p_value": 0.03941551627787447,
+        "n_stock_blocks": 2,
+        "n_cap_blocks": 2,
+        "samples": "per-block J/request (NVML counter per block, not per request)"
+      },
+      "p99_s": {
+        "stock": 23.456823831685142,
+        "cap": 25.03226948449472
+      },
+      "quality": {
+        "stock_pct": 94.144,
+        "cap_pct": 93.919,
+        "checked": 444,
+        "passed": true,
+        "reason": "pass rate 93.9% vs 94.1%"
+      },
+      "mean_w": {
+        "stock": 541.932799499359,
+        "cap": 373.5140222106071
+      },
+      "max_temp_c": 64,
+      "max_temp_c_by_arm": {
+        "stock": 64,
+        "cap": 54
+      },
+      "errors": 0,
+      "reasoning": {
+        "reasoning_tokens": 302019,
+        "completion_tokens": 352464,
+        "share": 0.8569,
+        "label": "ESTIMATE"
+      },
+      "accepted": true,
+      "why_not": [],
+      "clock_requested": "base",
+      "clock_applied": true,
+      "clock_profile": "base",
+      "chosen_by": "muse-wonder",
+      "planner_reason": "Establishing the highest-cap baseline anchors maximum quality and cost before exploring lower-power trade-offs."
+    },
+    {
+      "cap_w": 350,
+      "repeats": 2,
+      "label": "MEASURED",
+      "j_per_req_stock": [
+        166.26656306306307,
+        162.9841081081081
+      ],
+      "j_per_req_cap": [
+        119.03983333333333,
+        126.39372972972973
+      ],
+      "energy_change_pct": {
+        "per_pair": [
+          -28.40422563604515,
+          -22.450273712641856
+        ],
+        "mean": -25.427249674343503,
+        "sd": 4.210079779897158,
+        "ci95_half": 37.82545656938113
+      },
+      "p99_change_pct": {
+        "per_pair": [
+          9.829841391764104,
+          9.620590185611094
+        ],
+        "mean": 9.7252157886876,
+        "sd": 0.14796294684225716
+      },
+      "p50_change_pct": {
+        "per_pair": [
+          10.910306542833885,
+          6.379726038748651
+        ],
+        "mean": 8.645016290791268
+      },
+      "j_per_token_change_pct": {
+        "mean": -25.90315444994308
+      },
+      "stock_noise": {
+        "label": "MEASURED",
+        "blocks": 2,
+        "cv_pct": 1.4098960827213476
+      },
+      "welch_per_block": {
+        "t": 10.407903941229968,
+        "df": 1.3832542555448224,
+        "p_value": 0.013939136724884928,
+        "n_stock_blocks": 2,
+        "n_cap_blocks": 2,
+        "samples": "per-block J/request (NVML counter per block, not per request)"
+      },
+      "p99_s": {
+        "stock": 23.404981712485444,
+        "cap": 25.681164074434783
+      },
+      "quality": {
+        "stock_pct": 94.144,
+        "cap_pct": 94.144,
+        "checked": 444,
+        "passed": true,
+        "reason": "pass rate 94.1% vs 94.1%"
+      },
+      "mean_w": {
+        "stock": 543.3632080292996,
+        "cap": 348.60774334694946
+      },
+      "max_temp_c": 64,
+      "max_temp_c_by_arm": {
+        "stock": 64,
+        "cap": 53
+      },
+      "errors": 0,
+      "reasoning": {
+        "reasoning_tokens": 301681,
+        "completion_tokens": 352186,
+        "share": 0.8566,
+        "label": "ESTIMATE"
+      },
+      "accepted": false,
+      "why_not": [
+        "energy change not clearly below zero"
+      ],
+      "clock_requested": "base",
+      "clock_applied": true,
+      "clock_profile": "base",
+      "chosen_by": "muse-wonder",
+      "planner_reason": "Stepping 375W base down to 350W base isolates the cap effect, testing $/energy savings against quality and p99 loss before exploring locked clocks."
+    },
+    {
+      "cap_w": 325,
+      "repeats": 2,
+      "label": "MEASURED",
+      "j_per_req_stock": [
+        178.7463108108108,
+        165.89546396396395
+      ],
+      "j_per_req_cap": [
+        122.16715765765765,
+        122.18086936936936
+      ],
+      "energy_change_pct": {
+        "per_pair": [
+          -31.65332637999887,
+          -26.35068708333721
+        ],
+        "mean": -29.00200673166804,
+        "sd": 3.7495322048557247,
+        "ci95_half": 33.687667451691524
+      },
+      "p99_change_pct": {
+        "per_pair": [
+          15.136164210773964,
+          14.762813319172594
+        ],
+        "mean": 14.949488764973278,
+        "sd": 0.2639989472133729
+      },
+      "p50_change_pct": {
+        "per_pair": [
+          12.918684588899254,
+          12.50869272992495
+        ],
+        "mean": 12.713688659412103
+      },
+      "j_per_token_change_pct": {
+        "mean": -29.185137720502794
+      },
+      "stock_noise": {
+        "label": "MEASURED",
+        "blocks": 2,
+        "cv_pct": 5.273255661089561
+      },
+      "welch_per_block": {
+        "t": 7.804442139307121,
+        "df": 1.0000022769308814,
+        "p_value": 0.040564527660686585,
+        "n_stock_blocks": 2,
+        "n_cap_blocks": 2,
+        "samples": "per-block J/request (NVML counter per block, not per request)"
+      },
+      "p99_s": {
+        "stock": 23.4619479899199,
+        "cap": 26.969294742530582
+      },
+      "quality": {
+        "stock_pct": 93.694,
+        "cap_pct": 93.468,
+        "checked": 444,
+        "passed": true,
+        "reason": "pass rate 93.5% vs 93.7%"
+      },
+      "mean_w": {
+        "stock": 541.031225467801,
+        "cap": 324.11850572669726
+      },
+      "max_temp_c": 66,
+      "max_temp_c_by_arm": {
+        "stock": 66,
+        "cap": 52
+      },
+      "errors": 0,
+      "reasoning": {
+        "reasoning_tokens": 302922,
+        "completion_tokens": 352966,
+        "share": 0.8582,
+        "label": "ESTIMATE"
+      },
+      "accepted": false,
+      "why_not": [
+        "p99 up 14.9% (limit 10%)",
+        "energy change not clearly below zero"
+      ],
+      "clock_requested": "base",
+      "clock_applied": true,
+      "clock_profile": "base",
+      "chosen_by": "grid",
+      "planner_reason": null
+    },
+    {
+      "cap_w": 300,
+      "repeats": 2,
+      "label": "MEASURED",
+      "j_per_req_stock": [
+        162.74601801801802,
+        176.76716666666667
+      ],
+      "j_per_req_cap": [
+        109.78452252252252,
+        121.23656306306306
+      ],
+      "energy_change_pct": {
+        "per_pair": [
+          -32.54242170744356,
+          -31.414546406301096
+        ],
+        "mean": -31.978484056872325,
+        "sd": 0.7975282737706553,
+        "ci95_half": 7.165391788158069
+      },
+      "p99_change_pct": {
+        "per_pair": [
+          24.168335925100614,
+          24.615856904996246
+        ],
+        "mean": 24.392096415048428,
+        "sd": 0.3164451196074501
+      },
+      "p50_change_pct": {
+        "per_pair": [
+          26.24496913953373,
+          23.792443698111676
+        ],
+        "mean": 25.018706418822703
+      },
+      "j_per_token_change_pct": {
+        "mean": -32.20391779302491
+      },
+      "stock_noise": {
+        "label": "MEASURED",
+        "blocks": 2,
+        "cv_pct": 5.840391323059739
+      },
+      "welch_per_block": {
+        "t": 5.992832880516838,
+        "df": 1.9233137064001626,
+        "p_value": 0.014646178514665898,
+        "n_stock_blocks": 2,
+        "n_cap_blocks": 2,
+        "samples": "per-block J/request (NVML counter per block, not per request)"
+      },
+      "p99_s": {
+        "stock": 23.46207805903563,
+        "cap": 29.184854244835677
+      },
+      "quality": {
+        "stock_pct": 93.919,
+        "cap_pct": 93.919,
+        "checked": 444,
+        "passed": true,
+        "reason": "pass rate 93.9% vs 93.9%"
+      },
+      "mean_w": {
+        "stock": 542.2389255309404,
+        "cap": 299.4396534263918
+      },
+      "max_temp_c": 64,
+      "max_temp_c_by_arm": {
+        "stock": 64,
+        "cap": 51
+      },
+      "errors": 0,
+      "reasoning": {
+        "reasoning_tokens": 302258,
+        "completion_tokens": 352078,
+        "share": 0.8585,
+        "label": "ESTIMATE"
+      },
+      "accepted": false,
+      "why_not": [
+        "p99 up 24.4% (limit 10%)"
+      ],
+      "clock_requested": "base",
+      "clock_applied": true,
+      "clock_profile": "base",
+      "chosen_by": "grid",
+      "planner_reason": null
+    },
+    {
+      "cap_w": 300,
+      "repeats": 2,
+      "label": "MEASURED",
+      "j_per_req_stock": [
+        176.9589099099099,
+        178.68322522522521
+      ],
+      "j_per_req_cap": [
+        109.26445945945946,
+        111.64195045045045
+      ],
+      "energy_change_pct": {
+        "per_pair": [
+          -38.25433287587147,
+          -37.519624290568466
+        ],
+        "mean": -37.88697858321997,
+        "sd": 0.5195174228637289,
+        "ci95_half": 4.667603642429982
+      },
+      "p99_change_pct": {
+        "per_pair": [
+          24.121208686101077,
+          23.874615210632957
+        ],
+        "mean": 23.99791194836702,
+        "sd": 0.1743679186998667
+      },
+      "p50_change_pct": {
+        "per_pair": [
+          24.323491351952807,
+          26.80053564057404
+        ],
+        "mean": 25.562013496263425
+      },
+      "j_per_token_change_pct": {
+        "mean": -37.6897092629311
+      },
+      "stock_noise": {
+        "label": "MEASURED",
+        "blocks": 2,
+        "cv_pct": 0.6856752515558882
+      },
+      "welch_per_block": {
+        "t": 45.875933760247364,
+        "df": 1.8240254705981875,
+        "p_value": 0.000417106927124375,
+        "n_stock_blocks": 2,
+        "n_cap_blocks": 2,
+        "samples": "per-block J/request (NVML counter per block, not per request)"
+      },
+      "p99_s": {
+        "stock": 23.45478562586989,
+        "cap": 29.083385883219755
+      },
+      "quality": {
+        "stock_pct": 93.694,
+        "cap_pct": 93.919,
+        "checked": 444,
+        "passed": true,
+        "reason": "pass rate 93.9% vs 93.7%"
+      },
+      "mean_w": {
+        "stock": 537.6035848915491,
+        "cap": 299.2304201899209
+      },
+      "max_temp_c": 64,
+      "max_temp_c_by_arm": {
+        "stock": 64,
+        "cap": 51
+      },
+      "errors": 0,
+      "reasoning": {
+        "reasoning_tokens": 302021,
+        "completion_tokens": 351424,
+        "share": 0.8594,
+        "label": "ESTIMATE"
+      },
+      "accepted": false,
+      "why_not": [
+        "p99 up 24.0% (limit 10%)"
+      ],
+      "clock_requested": "locked-mid",
+      "clock_applied": true,
+      "clock_profile": "locked-mid",
+      "chosen_by": "grid",
+      "planner_reason": null
+    }
+  ],
+  "best_cap_w": 375,
+  "planner": {
+    "name": "muse-wonder",
+    "model": "muse-wonder-1.0",
+    "partner": "meta",
+    "tier": "standard"
+  },
+  "adaptive_topk": null,
+  "room": {
+    "slot": "R03",
+    "labels": {
+      "rack_count": "MEASURED",
+      "rack_outline": "MEASURED",
+      "rack_to_gpu_map": "SIMULATED",
+      "thermal_frame": "SIMULATED",
+      "rack_temp_c": "SIMULATED",
+      "gpu_power_w": "REPLAY",
+      "gpu_temp_c": "SIMULATED",
+      "decision": "ADVICE",
+      "after": "SIMULATED",
+      "load_factors": "SIMULATED",
+      "example_racks": "SIMULATED",
+      "h100_gpu_power_w": "MEASURED",
+      "h100_slot_power_w": "MEASURED",
+      "h100_slot_temp_c": "MEASURED",
+      "h100_slot_temp_note": "GPU die sensor (NVML), not a camera surface reading",
+      "h100_slot_decision": "MEASURED"
+    },
+    "slot_before": {
+      "temp_c": 64,
+      "power_w": 541.9
+    },
+    "slot_after": {
+      "temp_c": 54,
+      "power_w": 373.5
+    },
+    "sam": {
+      "model": "sam-3.1",
+      "prompt": "server rack",
+      "racks_found": 11
+    }
+  },
+  "events": {
+    "file": "events.jsonl",
+    "n_events_so_far": 1310,
+    "sha256_so_far": "0b7c9824e5fcb35fbb2384b44a1ea608a93923adc6feac831304aac71ac43c62"
+  },
+  "manifest_sha256": "34cb85de1e6d35bc7d323f035f3b855b78c1e0666961556cac67895239054f94",
+  "results_sha256": "b27fcfbd542e16955aa2c6bf479895414fe2af5bade2af8dbe171c1bd6507932",
+  "guardrail": {
+    "spec": "wattnot.guardrail-ops/1",
+    "config": {
+      "format": "wattnot.guardrail/1",
+      "low_cap_drop_pct": 15,
+      "high_below_tdp_pct": 70,
+      "max_gpus_auto": 1,
+      "approval_timeout_s": 600,
+      "tiers": {
+        "muse-spark": "standard",
+        "bisect": "standard",
+        "muse-wonder": "standard",
+        "muse-spark-open": "strict",
+        "modal-open": "strict"
+      }
+    },
+    "auto_approve": false,
+    "approval_policy": {
+      "format": "wattnot.auto-approve/1",
+      "enabled": true,
+      "allowed_labels": [
+        "MEASURED"
+      ],
+      "kinds": {
+        "power_cap": {
+          "min_saving_pct": 3.0,
+          "max_p99_increase_pct": 10.0,
+          "max_cap_drop_pct": 58.0
+        }
+      },
+      "max_per_day": 3,
+      "set_by": "Akash K Raju",
+      "set_at": "2026-10-30T15:48:56Z",
+      "sha256": "58c37a7446e84a1a260b2db81af5c876669d3d95f2ba9604076d837393986841",
+      "approves_as": "approved by policy, set by operator Akash K Raju at 2026-10-30T15:48:56Z"
+    },
+    "ops": [
+      {
+        "op": "approve",
+        "change_id": "prop_20261103_114026_c9dda4a1",
+        "by": "auto-policy:58c37a7446e8",
+        "via": "auto-policy",
+        "at": "2026-11-03T11:40:46Z",
+        "note": "approved by policy, set by operator Akash K Raju at 2026-10-30T15:48:56Z; every threshold held",
+        "risk": "high",
+        "planner": {
+          "name": "muse-wonder",
+          "model": "muse-wonder-1.0",
+          "partner": "meta",
+          "tier": "standard"
+        },
+        "partner": {
+          "id": "policy",
+          "name": "Auto policy"
+        },
+        "proposed_by": {
+          "id": "meta",
+          "name": "Meta"
+        }
+      },
+      {
+        "op": "apply",
+        "change_id": "prop_20261103_114026_c9dda4a1",
+        "by": "wattnot",
+        "via": "cli",
+        "at": "2026-11-03T11:40:52Z",
+        "note": "",
+        "planner": {
+          "name": "muse-wonder",
+          "model": "muse-wonder-1.0",
+          "partner": "meta",
+          "tier": "standard"
+        },
+        "partner": null,
+        "proposed_by": {
+          "id": "meta",
+          "name": "Meta"
+        }
+      }
+    ],
+    "audit_chain_ok": true,
+    "audit_head_sha256": "5101b8303fdfd72bca8dad8d08f1d77c74ac2d03f16a345e31276b25d6df5d6a",
+    "source": "MEASURED"
+  },
+  "integrity": {
+    "sha256": "441948703084e9b71f3f79f03eecf1b8fe4001ea1649802ba755a2b009f702fc",
+    "signer": "offline:02a1f19ddc27b506",
+    "rekor": null
+  },
+  "sci": {
+    "spec": "GSF SCI 1.0 (ISO/IEC 21031:2024): SCI = (E x I + M) per R",
+    "R": "one correct answer (passed the quality gate)",
+    "label": "ESTIMATE",
+    "why_label": "E is the receipt's measured energy; I and water are cited factors, so every carbon and water number is ESTIMATE",
+    "scope": "operational (E x I)",
+    "I": {
+      "gco2e_per_kwh": 727.0,
+      "label": "ESTIMATE",
+      "region": "IN (India national grid)",
+      "year": "FY 2023-24",
+      "source": "CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included)",
+      "url": "https://cea.nic.in/cdm-co2-baseline-database/?lang=en"
+    },
+    "M": {
+      "status": "NOT_AVAILABLE",
+      "gco2e_per_correct": null,
+      "why": "no cited embodied-emissions figure for this GPU and server; SCI shown is operational only (E x I)"
+    },
+    "water": {
+      "wue": {
+        "l_per_kwh": 0.36,
+        "label": "ESTIMATE",
+        "source": "0.36 L/kWh on-site cooling (LBNL 2024 US Data Center Energy Usage Report)"
+      },
+      "wue_upper": {
+        "l_per_kwh": 1.8,
+        "label": "ESTIMATE",
+        "source": "1.8 L/kWh including power-plant (electricity) water, upper bound"
+      }
+    },
+    "arms": {
+      "baseline": {
+        "E_kwh_per_request": 4.768975726e-05,
+        "E_kwh_per_correct": 5.065618335e-05,
+        "pass_rate": 0.94144,
+        "E_label": "MEASURED",
+        "gco2e_per_request": 0.03467045353,
+        "gco2e_per_correct": 0.0368270453,
+        "sci_gco2e_per_R": 0.0368270453,
+        "water_ml_per_request": 0.01716831261,
+        "water_ml_per_correct": 0.01823622601,
+        "water_ml_per_request_upper": 0.08584156306
+      },
+      "candidate": {
+        "E_kwh_per_request": 3.39528491e-05,
+        "E_kwh_per_correct": 3.61512038e-05,
+        "pass_rate": 0.93919,
+        "E_label": "MEASURED",
+        "gco2e_per_request": 0.0246837213,
+        "gco2e_per_correct": 0.02628192516,
+        "sci_gco2e_per_R": 0.02628192516,
+        "water_ml_per_request": 0.01222302568,
+        "water_ml_per_correct": 0.01301443337,
+        "water_ml_per_request_upper": 0.06111512838,
+        "cap_w": 375
+      }
+    },
+    "change_pct_sci": -28.6342
+  }
+}

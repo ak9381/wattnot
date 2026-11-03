@@ -1,0 +1,12 @@
+{
+ "format": "wattnot.block-receipt/1",
+ "block": "p1-eye",
+ "label": "MEASURED",
+ "files": {
+  "meta.json": "cfdb89e7de6b0d296af87d6ba0b681491b5ad7277e08035aea53f42b95af92ac",
+  "state.json": "123ee0e2f070ed8cb3730e007b5b83d6e196f2e9c66b6970ead63152794e3aa7",
+  "timeline.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+ },
+ "prev": "8d857182d1d416bd20325d1b786f930f101dce199318c3aa4afc8a590a2d98e7",
+ "sha256": "8007f343f065f8dbb9a5264cbbd07b631a6be40fa1b45e8210c80ba6a42b977a"
+}
