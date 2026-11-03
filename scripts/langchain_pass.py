@@ -73,8 +73,10 @@ def tools():
     from langchain_core.tools import tool
 
     @tool
-    def calculator(expression: str) -> str:
+    def calculator(expression: str | int | float) -> str:
         """Evaluate a plain arithmetic expression, e.g. '16-3-4'."""
+        # models sometimes pass a bare number (run 1101 r04: expression=30); take it as text
+        expression = str(expression)
         import ast
         import operator as op
         ops = {ast.Add: op.add, ast.Sub: op.sub, ast.Mult: op.mul, ast.Div: op.truediv,
@@ -128,7 +130,10 @@ def run_agent(base_url: str, model: str, rows: list[dict], max_steps: int, frame
                 break
             for tc in ai.tool_calls:
                 t = by_name.get(tc["name"])
-                res = t.invoke(tc.get("args") or {}) if t else f"unknown tool {tc['name']}"
+                try:
+                    res = t.invoke(tc.get("args") or {}) if t else f"unknown tool {tc['name']}"
+                except Exception as e:  # noqa: BLE001 - a bad tool arg costs this call, not the block
+                    res = f"tool error: {type(e).__name__}: {str(e)[:200]}"
                 msgs.append(ToolMessage(str(res), tool_call_id=tc["id"]))
         # final text kept (trimmed) so a later CPU test can REPLAY this round's answers
         out.append({"i": i, "steps": steps, "correct": bool(r["ok"](r["item"], text)),
