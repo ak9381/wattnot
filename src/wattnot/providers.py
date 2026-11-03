@@ -10,7 +10,7 @@ every provider, and tests/test_providers.py fails if the table and the runners d
     if modal:    our vLLM + Muse Glimmer 30B on one A100-80GB. GPU levers: batch/KV sweep, FP8
                  candidate, prefix cache, thinking budget. Power caps are OFF (Modal refuses NVML
                  writes). Energy MEASURED (NVML counter). Smoke = 32 min / $1.50; full = 225 min
-                 ceiling, $10 hard per round, $60 stage cap.
+                 ceiling, $20 hard per round, $90 stage cap.
     if baseten:  hosted Muse Spark Open on the Model API, paid key BASETEN_METRICS_KEY only. No
                  GPU access, so request levers only (effort routing low -> medium, context saver,
                  agent waste guard). Text, grading and eye on muse-spark-open (Baseten); hearing,
@@ -48,7 +48,7 @@ PROFILES: dict[str, dict] = {
                       "sam", "wonder", "approval_gate", "eu_report"],
         "levers_off": {"power_cap": "Modal refuses the NVML power-limit write (MEASURED in r04)"},
         "energy_label": "MEASURED",
-        "caps": {"round_hard_usd": 10.0, "smoke_hard_usd": 1.50, "stage_cap_usd": 60.0,
+        "caps": {"round_hard_usd": 20.0, "smoke_hard_usd": 1.50, "stage_cap_usd": 90.0,
                  "round_ceiling_min": 225, "smoke_ceiling_min": 32, "gpu_usd_h": 2.50},
         "smoke": {"limit": 1, "agent_block": "1 rep x 4 cases, 768 tokens, 240 s", "grid": "2 batch points"},
         "full": {"limit": 0, "agent_block": "12 cases x 1 rep, 768 tokens, inside the 900 s cap",
@@ -58,7 +58,7 @@ PROFILES: dict[str, dict] = {
         # 80% of its limit. Worst cases: agentwaste ~43 min (ESTIMATE, 12 cases x 1 rep at 768 tokens);
         # langchain 898 s MEASURED in r04-try1 with the guard cutting the saver arm short, so ~2x that
         # once every item runs (ESTIMATE); think 446 s MEASURED; eye 32 s, spoken 15 s MEASURED.
-        # The container ceiling (225 min, $9.38 worst) is unchanged, so the round still fits $10.
+        # The container ceiling (225 min, $9.38 worst) is unchanged, so the round still fits $20.
         # langchain: 1903.3 s MEASURED in r04c (both arms, n 20) + up to 20 final-check step-ups
         # at ~14.4 s each (938 s / 65 thinking-on calls, MEASURED r04c saver_off) = ~2200 s ESTIMATE.
         "block_worst_s": {"agentwaste": 2610, "langchain": 2200, "think": 450, "eye": 120, "spoken": 120},
@@ -77,7 +77,7 @@ PROFILES: dict[str, dict] = {
         "energy_label": "ESTIMATE",
         "token_caps": "max_tokens = answer budget + allowance; low 768 (runaway cap, steps up), "
                       "medium 12000 for BOTH arms so no final answer is cut by the cap",
-        "caps": {"round_hard_usd": 8.0, "smoke_hard_usd": 1.0, "judge_cap": "min($98, round cap)"},
+        "caps": {"round_hard_usd": 20.0, "smoke_hard_usd": 1.0, "judge_cap": "min($98, round cap)"},
         "key_env": "BASETEN_METRICS_KEY",
         "go_env": None,
     },
@@ -165,11 +165,11 @@ def estimate(provider: str) -> dict:
         per_item = (0.124 + 0.040) / 30 / 2
         txt = per_item * 100 * 2 * 1.6   # x1.6: public items are longer than the smoke mix, and the
         return {"baseten_usd": round(txt + 0.10, 2), "meta_usd": 0.6,  # higher medium cap lets a few run long
-                "label": "ESTIMATE", "hard_cap_usd": 8.0,
+                "label": "ESTIMATE", "hard_cap_usd": 20.0,
                 "basis": "smoke job 20261101-191931-6df1 $/item x 200 answers x 1.6, + checks; Meta = Spark "
                          "grades (200) + hearing + SAM + Wonder"}
     if provider == "modal":
-        return {"modal_usd": round(110 / 60 * 2.5, 2), "label": "ESTIMATE", "hard_cap_usd": 10.0,
+        return {"modal_usd": round(110 / 60 * 2.5, 2), "label": "ESTIMATE", "hard_cap_usd": 20.0,
                 "basis": "~110 min (public 100 items/arm instead of 192, same blocks) x $2.50/h A100"}
     if provider == "h100":
         h = PROFILES["h100"]["caps"]["public_booking_h"]

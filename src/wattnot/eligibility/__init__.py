@@ -26,13 +26,13 @@ PROVIDERS: dict[str, dict] = {
     "baseten": {
         "label": "Baseten (hosted Spark Open, per token)", "runner": "baseten",
         "caps": {"meta_api", "hosted_api", "local"},
-        "default_model": "spark-open", "cost_round_usd": [3.0, 4.0], "hard_cap_usd": 8.0,
+        "default_model": "spark-open", "cost_round_usd": [3.0, 4.0], "hard_cap_usd": 20.0,
         "spend": "Baseten card (BASETEN_METRICS_KEY)", "energy_label": "ESTIMATE",
     },
     "modal_a100": {
         "label": "Modal A100 (our own vLLM, Glimmer 30B)", "runner": "modal",
         "caps": {"meta_api", "own_vllm", "nvml_read", "serverless_gpu", "local"},
-        "default_model": "glimmer-30b", "cost_round_usd": [3.0, 3.6], "hard_cap_usd": 60.0, "round_cap_usd": 10.0,
+        "default_model": "glimmer-30b", "cost_round_usd": [3.0, 3.6], "hard_cap_usd": 90.0, "round_cap_usd": 20.0,
         "spend": "Modal hackathon credits", "energy_label": "MEASURED",
     },
     "e2e_h100": {

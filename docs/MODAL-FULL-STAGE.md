@@ -78,7 +78,7 @@ block folders, `sweep/rcpt_*.json` (+ sigstore bundle), `flow/`, `features/`, `r
 ## Cost per full round (ESTIMATE)
 
 ~75 min of A100 at ~$2.64/h (rate seen in the smoke) = about $3.3; hard container timeout 4 h = $10 per round (raised from $7.50 on 1 Nov)
-worst case. 3 rounds about $10, worst $22.5, inside the $60 stage cap (raised from $40 on 1 Nov, 5:39 PM IST, to also cover the combined stage) (the runner refuses a round
+worst case. 3 rounds about $10, worst $22.5, inside the $90 stage cap (raised from $40 to $60 on 1 Nov, then to $90 on 3 Nov, 7:45 AM IST, with Akash's yes) (the runner refuses a round
 whose worst case would cross it). Meta: Spark grades about $0.85 a round worst case, plus cents for
 the live eye/hearing/SAM/Wonder calls with `--live-meta`.
 

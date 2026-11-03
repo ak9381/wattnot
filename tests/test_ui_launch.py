@@ -27,10 +27,10 @@ def test_no_drift_against_runner_tables():
 
 
 def test_caps_match_approvals():
-    assert L.CAPS["modal_smoke_usd"] == 1.5 and L.CAPS["modal_stage_usd"] == 60.0
+    assert L.CAPS["modal_smoke_usd"] == 1.5 and L.CAPS["modal_stage_usd"] == 90.0
     assert L.CAPS["modal_round_usd"] == 10.0 and L.CAPS["baseten_round_usd"] == 8.0
     sp = importlib.util.spec_from_file_location("mfr", ROOT / "scripts/e2e/modal_full_round.py")
-    assert "STAGE_CAP_USD = 60.0" in (ROOT / "scripts/e2e/modal_full_round.py").read_text()
+    assert "STAGE_CAP_USD = 90.0" in (ROOT / "scripts/e2e/modal_full_round.py").read_text()
     assert L._modal_round_worst() <= 10.0
 
 

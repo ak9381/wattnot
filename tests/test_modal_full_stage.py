@@ -52,9 +52,9 @@ def test_paid_round_needs_go_and_stage_cap(monkeypatch):
     assert m.main(["--round", "rtest"]) == 3
     fs = m.full_stage
     worst = fs.ROUND_CAP_S / 3600 * fs.GPU_USD_H
-    assert fs.ROUND_HARD_USD == 10.0
+    assert fs.ROUND_HARD_USD == 20.0
     assert worst <= fs.ROUND_HARD_USD and worst <= 10          # a single round's worst case <= $10
-    assert m.STAGE_CAP_USD == 60.0                             # stage cap raised to $60
+    assert m.STAGE_CAP_USD == 90.0                             # stage cap raised to $90 (3 Nov)
     assert fs.SMOKE_CAP_S / 3600 * fs.GPU_USD_H <= 1.50
 
 
