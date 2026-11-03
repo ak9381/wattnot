@@ -1,0 +1,1 @@
+{"running":false,"done":60,"total":60,"errors":0,"usd":0.60586,"stopped":null,"label":"Simulated traffic","without":{"done":60,"usd":0.25068},"workload":"agent","with_without":true,"without_totals":{"requests":60,"usd":0.25068,"wh":100.0971,"label":"ESTIMATE"}}

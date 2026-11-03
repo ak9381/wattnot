@@ -1,0 +1,31 @@
+# wattnot.yaml, written by the Configure screen. Keys stay in env vars, never here.
+deployment: both
+upstream:
+  base_url: http://localhost:8000/v1
+  key_env: VLLM_API_KEY
+port: 8780
+savers:
+  agent_waste:
+    enabled: true
+  routing:
+    enabled: true
+  context_saver:
+    enabled: true
+  thinking_cap:
+    enabled: true
+  vision:
+    enabled: true
+  voice:
+    enabled: true
+integrations:
+  langfuse:
+    enabled: false
+node:
+  enabled: true
+  gpus: all
+  cap_min_w: 300
+  cap_max_w: 375
+  sam_rack_check: true
+  approval: manual
+energy:
+  source: nvml

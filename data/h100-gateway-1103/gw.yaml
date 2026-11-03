@@ -1,0 +1,10 @@
+deployment: both
+port: 8780
+upstream: {base_url: "http://127.0.0.1:8000/v1", key_env: VLLM_API_KEY}
+tiers:
+  - {name: small, model: meta-models/Muse-Glimmer-30B, body_extra: {reasoning_effort: low}}
+  - {name: big,   model: meta-models/Muse-Glimmer-30B, body_extra: {reasoning_effort: high}}
+baseline: {tier: big}
+energy: {source: nvml, j_per_token: {default: 7.86}}
+node: {enabled: true, gpus: all, cap_min_w: 300, cap_max_w: 375, sam_rack_check: true, approval: manual, log: out/gateway/node.jsonl}
+savings_log: out/gateway/savings.jsonl
