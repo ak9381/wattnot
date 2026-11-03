@@ -622,31 +622,34 @@ def pass_blocks(out: Path, pas: str, sweep_tag: str, grid: str, dataset: str,
         Block(f"{pas}-think", f"Pass {pas}: thinking budget per tier", _m(M["think"]),
               _py("wattnot.longrun.thinking_budget", "--fake", "--per-tier", "2", "--out", D("think")),
               live=_rpy("wattnot.longrun.thinking_budget", "--url", url, "--per-tier", "4",
-                        "--out", R("think")), host=True, skip_if_short=optional),
+                        "--out", R("think")), host=True, depends_on=("t0-probe",),
+              skip_if_short=optional),
         Block(f"{pas}-tiers", f"Pass {pas}: tiers at the best cap vs stock", _m(M["tiers"]),
               _py("wattnot.longrun.harness", "--cap", "325", "--fake", "--model-config",
                   "muse-glimmer-30b", "--per-tier", "2", "--out", D("tiers")),
               live=_rpy("wattnot.longrun.harness", "--cap", "{BEST_CAP}", "--out", R("tiers"),
                         "--model-config", "muse-glimmer-30b", "--per-tier",
                         str(MAX_TIERS_PER_TIER), "--reps", "2", "--url", url),
-              host=True, depends_on=("t1-sweep",), skip_if_short=optional),
+              host=True, depends_on=("t1-sweep", "t0-probe"), skip_if_short=optional),
         Block(f"{pas}-eye", f"Pass {pas}: eye test gate", _m(M["eye"]),
               _py("wattnot.vision.run", "--fake", "--out", D("eye"), "--budget-s",
                   str(EYE_TEST_BUDGET_S)),
               live=_rpy("wattnot.vision.run", "--base-url", HOST_BASE_URL, "--out", R("eye"),
-                        "--budget-s", str(EYE_TEST_BUDGET_S)), host=True, skip_if_short=optional),
+                        "--budget-s", str(EYE_TEST_BUDGET_S)), host=True,
+              depends_on=("t0-probe",), skip_if_short=optional),
         Block(f"{pas}-spoken", f"Pass {pas}: spoken answers gate", _m(M["spoken"]),
               _py("wattnot.spokenanswer.run", "--fake", "--out", D("spoken"), "--budget-s",
                   str(SPOKEN_TEST_BUDGET_S)),
               live=_rpy("wattnot.spokenanswer.run", "--base-url", HOST_BASE_URL, "--out",
                         R("spoken"), "--budget-s", str(SPOKEN_TEST_BUDGET_S)),
-              host=True, skip_if_short=optional),
+              host=True, depends_on=("t0-probe",), skip_if_short=optional),
         Block(f"{pas}-phase", f"Pass {pas}: phase-aware clock sidecar, 3 min", _m(M["phase"]),
               _py("wattnot.control.phase_clock", "--mock", "--duration-s", "2", "--summary",
                   D("phase") + "/summary.json", "--log", D("phase") + "/log.jsonl"),
               live=_rpy("wattnot.control.phase_clock", "--url", HOST_BASE_URL, "--duration-s",
                         "180", "--summary", R("phase") + "/summary.json", "--log",
-                        R("phase") + "/log.jsonl"), host=True, skip_if_short=optional),
+                        R("phase") + "/log.jsonl"), host=True, depends_on=("t0-probe",),
+              skip_if_short=optional),
         Block(f"{pas}-langchain", f"Pass {pas}: LangChain agent through the waste proxy to "
               f"Glimmer, saver OFF vs ON, {dataset}", _m(M["langchain"]),
               [sys.executable, "scripts/langchain_pass.py", "--fake", "--dataset", dataset,
@@ -654,12 +657,13 @@ def pass_blocks(out: Path, pas: str, sweep_tag: str, grid: str, dataset: str,
               live=["python", "scripts/langchain_pass.py", "--base-url", HOST_BASE_URL,
                     "--dataset", dataset, "--start", str(start), "--n",
                     str(MAX_LANGCHAIN_ITEMS), "--out", R("langchain")],
-              host=True, skip_if_short=optional),
+              host=True, depends_on=("t0-probe",), skip_if_short=optional),
         Block(f"{pas}-agentwaste", f"Pass {pas}: agent-waste saver on the GPU, OFF vs ON",
               _m(M["agentwaste"]),
               [sys.executable, "scripts/agentwaste_gpu_ab.py", "--fake", "--out", D("agentwaste")],
               live=["python", "scripts/agentwaste_gpu_ab.py", "--base-url", HOST_BASE_URL,
-                    "--out", R("agentwaste")], host=True, skip_if_short=optional),
+                    "--out", R("agentwaste")], host=True, depends_on=("t0-probe",),
+              skip_if_short=optional),
     ]
     return bl
 
@@ -701,7 +705,10 @@ def plan_glimmer_max(out: Path) -> list[Block]:
     batching, prefix cache, combined, public benchmarks), then copy back. Off-GPU work (Wonder
     chart, EU, flow receipts, Code Mode, replay pack) runs after teardown."""
     long_blocks = {b.id: b for b in plan_glimmer_long(out)}
-    blocks = [long_blocks["t0-setup"], long_blocks["t0-probe"]]
+    # RUN1103: 56 GB of weights at ~1 GB/min, then docker pull, then the vLLM load take ~50-60
+    # min; the test/retest/long plans' 34 min budget is tuned for their own (shorter) VM windows.
+    setup = replace(long_blocks["t0-setup"], hours=_m(70))
+    blocks = [setup, long_blocks["t0-probe"]]
     for i, (pas, tag, grid, ds) in enumerate(MAX_PASSES):
         blocks += pass_blocks(out, pas, tag, grid, ds, optional=i > 0,
                               sweep_dry=long_blocks["t1-sweep"].dry)
@@ -1251,7 +1258,8 @@ def _live_runner(out: Path, host: str, key: str, vm: RemoteVm, log=print):
             # own process group so a driver stop kills setup too (RUN3: an orphaned setup kept
             # dialing a deleted VM's IP). run_child returns 124 if it overruns the block budget.
             return run_child([sys.executable, str(RUN2_REMOTE), "setup", "--host", host,
-                              "--key", key, "--model", GLIMMER_MODEL, "--moe", "none"],
+                              "--key", key, "--model", GLIMMER_MODEL, "--moe", "none",
+                              "--timeout", str(int(max(60, budget_s - 120)))],
                              timeout=budget_s)
         if b.infra == "pull":
             if not vm.pull():

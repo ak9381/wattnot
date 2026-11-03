@@ -420,3 +420,52 @@ def test_full_glimmer_test_plan_has_combined_block(tmp_path):
     assert [b.id for b in r].count("t2d-combined") == 1
     rc = next(b for b in r if b.id == "t2d-combined")
     assert rc.live[rc.live.index("--reps") + 1] == "2"
+
+
+def test_max_plan_pass_blocks_all_depend_on_the_probe(tmp_path):
+    # RUN1103: only the sweep block listed t0-probe as a dependency, so every other
+    # pass_blocks() block (think/tiers/eye/spoken/phase/langchain/agentwaste) ran against a
+    # dead server whenever the probe had not finished (or had failed) yet.
+    from wattnot.longrun.driver import MAX_PASSES, plan_glimmer_long, pass_blocks
+
+    long_blocks = {b.id: b for b in plan_glimmer_long(tmp_path)}
+    for i, (pas, tag, grid, ds) in enumerate(MAX_PASSES):
+        for b in pass_blocks(tmp_path, pas, tag, grid, ds, optional=i > 0,
+                             sweep_dry=long_blocks["t1-sweep"].dry):
+            assert "t0-probe" in b.depends_on, b.id
+
+
+def test_max_plan_setup_gets_the_bigger_budget_other_plans_keep_34(tmp_path):
+    # the 34 min default (test/retest/long) is tuned for those plans' own VM windows; only the
+    # max plan's setup block needs the ~70 min a real weights-download + docker pull + vLLM load
+    # takes (RUN1103).
+    from wattnot.longrun.driver import plan
+
+    assert next(b for b in plan(tmp_path, "glimmer-test", "max") if b.id == "t0-setup").hours * 60 == 70
+    for plan_name in ("full", "retest", "long"):
+        assert next(b for b in plan(tmp_path, "glimmer-test", plan_name)
+                    if b.id == "t0-setup").hours * 60 == 34
+
+
+def test_setup_passes_a_timeout_just_under_the_block_budget(tmp_path, monkeypatch):
+    # RUN1103: the setup infra call had no --timeout, so run2_remote.py used its own default
+    # (1800 s) instead of the block's real budget, and setup was killed mid-weights-download.
+    from wattnot.longrun import driver
+
+    captured = {}
+
+    def fake_run_child(argv, *, timeout, env=None):
+        captured["argv"] = argv
+        captured["timeout"] = timeout
+        return 0
+
+    monkeypatch.setattr(driver, "run_child", fake_run_child)
+    run = driver._live_runner(tmp_path, "HOST", "KEY", None)
+    b = driver.Block("t0-setup", "setup", driver._m(70), None, live=None, infra="setup")
+    budget_s = b.hours * 3600
+    rc = run(b, budget_s)
+    assert rc == 0
+    argv = captured["argv"]
+    assert "--timeout" in argv
+    assert argv[argv.index("--timeout") + 1] == str(int(max(60, budget_s - 120)))
+    assert captured["timeout"] == budget_s
