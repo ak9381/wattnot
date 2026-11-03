@@ -22,7 +22,7 @@ def _load(rel: str, name: str):
 
 def test_baseten_caps_match_runner():
     br = _load("scripts/e2e/baseten_round.py", "_t_baseten_round")
-    assert P.PROFILES["baseten"]["caps"]["round_hard_usd"] == br.HARD_CAP_USD == 8.0
+    assert P.PROFILES["baseten"]["caps"]["round_hard_usd"] == br.HARD_CAP_USD == 20.0
     assert br.FAIR_ALLOWANCE["medium"] == 12000
     assert br.FAIR_ALLOWANCE["low"] == br.DEFAULT_ALLOWANCE["low"]
     assert set(br.ALL_SETS) >= set(P.PUBLIC_SETS)
