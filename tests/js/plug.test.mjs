@@ -4,7 +4,7 @@ import { defaultChoice, applyPrefill, headline, path, fmtWh } from "../../web/da
 
 test("defaults: gateway on Meta API, every saver on, langfuse off", () => {
   const c = defaultChoice();
-  assert.equal(c.deployment, "gateway"); assert.equal(c.upstream, "meta"); assert.equal(c.langfuse, false);
+  assert.equal(c.deployment, "both"); assert.equal(c.upstream, "meta"); assert.equal(c.langfuse, false);
   assert.ok(Object.values(c.savers).every(Boolean));
 });
 test("voice prefill fills known fields and leaves nulls alone", () => {

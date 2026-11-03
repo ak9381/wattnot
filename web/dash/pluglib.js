@@ -62,7 +62,7 @@ export function liveFromTest(passed, base = defaultChoice()) {
   const ids = new Set((passed || []).map((p) => TEST_TO_LIVE[p]).filter(Boolean));
   if (!ids.size) return c;
   for (const s of Object.keys(c.savers)) c.savers[s] = ids.has(s);
-  if (ids.has("__gpu")) c.deployment = [...ids].some((i) => i !== "__gpu") ? "both" : "gpu";
+  c.deployment = ids.has("__gpu") ? ([...ids].some((i) => i !== "__gpu") ? "both" : "gpu") : "gateway";
   return c;
 }
 export function liveLink(passed) { return `plug.html?from=test&passed=${encodeURIComponent((passed || []).join(","))}#setup`; }
