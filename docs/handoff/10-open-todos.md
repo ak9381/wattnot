@@ -1,5 +1,6 @@
 # Open todos (priority order, as of 3 Nov ~3:30 AM IST)
 
+0. Done 3 Nov: `wattnot verify` covers round receipts and block attachments; form and video drafts in `/workspace/hackathon/submission/` (FORM-DRAFT-1103.md, VIDEO-SCRIPT-1103.md). Saver threshold config is on `feat/saver-threshold-config`, unmerged on purpose.
 1. **Ask Akash**: H100 go/no-go + top-up (see 08). If no, record the video on replays (REPLAY labels).
 2. Record the 3-minute video from the replay dashboard (11-pitch-and-video.md); captions; upload (needs okay).
 3. Fill the submission form from `/workspace/hackathon/submission/ANSWERS.md` (on the box, not in the repo); update numbers from MEASURED runs only.
