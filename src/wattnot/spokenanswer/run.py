@@ -56,6 +56,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--assets", default=None, help="spoken asset dir (default: data/voice/spoken)")
     ap.add_argument("--out", default=None, help="write spoken_answer.json here")
     ap.add_argument("--budget-s", type=float, default=None, help="wall-clock budget for the gate")
+    ap.add_argument("--best-cap", default=None,
+                    help="with_wattnot cap from this pass's sweep (NONE = no winner -> 350 W)")
+    ap.add_argument("--cap-source", default=None, help="where --best-cap came from")
     ap.add_argument("--fake", action="store_true", help="offline answerer (no network, not measured)")
     ap.add_argument("--base-url", default=None, help="served model base URL (live only)")
     ap.add_argument("--model", default=DEFAULT_MODEL)
@@ -116,7 +119,8 @@ def main(argv: list[str] | None = None) -> int:
         from wattnot.meter.arm_energy import two_arms
         (answers, run_meta), energy_doc = two_arms(
             _once, items=len(spoken.items), unit="clip", budget_s=args.budget_s,
-            live=mode == "live")
+            live=mode == "live",
+            best_cap=args.best_cap, cap_source=args.cap_source)
     except Exception:  # noqa: BLE001  energy must never fail the block
         if "answers" not in locals():
             (answers, run_meta) = _once(args.budget_s)[0]

@@ -22,6 +22,31 @@ EXTRA_ARM_MAX_S = 120.0
 METHOD = "NVML total-energy counter around the arm (incl. idle draw)"
 
 
+FALLBACK_CAP_W = 350
+
+
+def resolve_cap(best_cap: str | int | None = None, cap_source: str | None = None
+                ) -> tuple[int | None, str | None]:
+    """Pick the with_wattnot cap and say where it came from.
+
+    best_cap is what the driver filled in from this pass's own sweep ("NONE" when the sweep
+    had no passing cap). Then we fall back to 350 W. With no best_cap at all (older callers)
+    the env var / best_cap_w file is used as before."""
+    if best_cap is not None:
+        try:
+            v = int(float(best_cap))
+            if v > 0:
+                return v, cap_source or "sweep"
+        except (TypeError, ValueError):
+            pass
+        return FALLBACK_CAP_W, "fallback_350w_no_sweep_winner"
+    if os.environ.get("WATTNOT_BEST_CAP_W"):
+        c = best_cap_w()
+        return c, ("env:WATTNOT_BEST_CAP_W" if c else None)
+    c = best_cap_w()
+    return c, (f"file:{BEST_CAP_FILE}" if c else None)
+
+
 def best_cap_w() -> int | None:
     v = os.environ.get("WATTNOT_BEST_CAP_W")
     try:
@@ -125,7 +150,8 @@ def summarize(arms: dict, unit: str) -> dict:
     return out
 
 
-def two_arms(run_once, *, items: int, unit: str, budget_s: float | None, live: bool):
+def two_arms(run_once, *, items: int, unit: str, budget_s: float | None, live: bool,
+             best_cap: str | int | None = None, cap_source: str | None = None):
     """run_once(budget_s) -> (result, correct, passed). Returns (first_result, energy_doc|None).
 
     The first call is the block's real gated run and its result is what the block reports;
@@ -149,7 +175,7 @@ def two_arms(run_once, *, items: int, unit: str, budget_s: float | None, live: b
     try:
         arms = {"without_wattnot": arm_row(meter, limit_w=lim0, correct=ok, items=items,
                                            passed=passed, unit=unit)}
-        cap = best_cap_w()
+        cap, src = resolve_cap(best_cap, cap_source)
         left = EXTRA_ARM_MAX_S if budget_s is None else min(
             EXTRA_ARM_MAX_S, budget_s * 1.5 - (time.monotonic() - t_start))
         if cap and cap < lim0 and left > 15:
@@ -167,8 +193,10 @@ def two_arms(run_once, *, items: int, unit: str, budget_s: float | None, live: b
                 except Exception:  # noqa: BLE001
                     pass
         doc = summarize(arms, unit)
+        doc["cap_w"] = cap if "with_wattnot" in arms else None
+        doc["cap_source"] = src
         doc["note"] = ("without_wattnot = the gated run at the GPU's limit then; with_wattnot = "
-                       "same items again at the sweep's best cap; the block's pass/fail is the "
+                       "same items again at cap_w (from cap_source); the block's pass/fail is the "
                        "first run only")
         return res, doc
     except Exception as e:  # noqa: BLE001

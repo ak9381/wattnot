@@ -99,3 +99,47 @@ def test_phase_metrics_base_strips_v1():
     assert metrics_base("http://127.0.0.1:8000/v1") == "http://127.0.0.1:8000"
     assert metrics_base("http://127.0.0.1:8000/v1/") == "http://127.0.0.1:8000"
     assert metrics_base("http://127.0.0.1:8000") == "http://127.0.0.1:8000"
+
+
+def _live(monkeypatch, **kw):
+    g = FakeGpu()
+    monkeypatch.setattr(ae, "Gpu", lambda: g)
+    monkeypatch.setattr(ae, "best_cap_w", lambda: 350)   # stale file must be ignored
+    monkeypatch.setattr(ae.time, "sleep", lambda s: None)
+    calls = []
+    _res, doc = ae.two_arms(_runner(g, calls), items=10, unit="image", budget_s=90,
+                            live=True, **kw)
+    return doc, calls
+
+
+def test_uses_pass_sweep_winner_and_records_source(monkeypatch):
+    doc, calls = _live(monkeypatch, best_cap="375", cap_source="sweep:p2-sweep")
+    assert [c[0] for c in calls] == [700, 375]
+    assert doc["energy_arms"]["with_wattnot"]["limit_w"] == 375
+    assert doc["cap_w"] == 375 and doc["cap_source"] == "sweep:p2-sweep"
+
+
+def test_no_sweep_winner_falls_back_to_350(monkeypatch):
+    doc, calls = _live(monkeypatch, best_cap="NONE", cap_source="sweep:p2-sweep")
+    assert [c[0] for c in calls] == [700, 350]
+    assert doc["cap_w"] == 350 and doc["cap_source"] == "fallback_350w_no_sweep_winner"
+
+
+def test_resolve_cap_legacy_file(monkeypatch):
+    monkeypatch.delenv("WATTNOT_BEST_CAP_W", raising=False)
+    monkeypatch.setattr(ae, "best_cap_w", lambda: 325)
+    cap, src = ae.resolve_cap()
+    assert cap == 325 and src.startswith("file:")
+
+
+def test_driver_passes_own_sweep_cap_to_eye_and_spoken(tmp_path):
+    from wattnot.longrun import driver as d
+    for pas, tag in (("p2", "p2-sweep"), ("p1r", "p1r-sweep")):
+        if pas not in d.OWN_CAP_PASSES:
+            continue
+        bl = {b.id: b for b in d.pass_blocks(tmp_path, pas, tag, "325:450:25", "gsm8k",
+                                               optional=True, sweep_dry=["true"])}
+        for k in ("eye", "spoken"):
+            b = bl[f"{pas}-{k}"]
+            assert "{BEST_CAP}" in b.live and f"sweep:{tag}" in b.live
+            assert b.sweep_tag == tag

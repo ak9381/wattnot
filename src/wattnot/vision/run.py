@@ -34,6 +34,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--assets", default=None, help="eye-test asset dir (default: data/vision/eyetest)")
     ap.add_argument("--out", default=None, help="write eye_test.json here")
     ap.add_argument("--budget-s", type=float, default=None, help="wall-clock budget for the eye test")
+    ap.add_argument("--best-cap", default=None,
+                    help="with_wattnot cap from this pass's sweep (NONE = no winner -> 350 W)")
+    ap.add_argument("--cap-source", default=None, help="where --best-cap came from")
     ap.add_argument("--fake", action="store_true", help="offline answerer (no network, not measured)")
     ap.add_argument("--base-url", default=None, help="served vision model base URL (live only)")
     ap.add_argument("--model", default=DEFAULT_VISION_MODEL)
@@ -62,7 +65,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         from wattnot.meter.arm_energy import two_arms
         (answers, run_meta, result), energy_doc = two_arms(
-            _once, items=len(eye.items), unit="image", budget_s=args.budget_s, live=mode == "live")
+            _once, items=len(eye.items), unit="image", budget_s=args.budget_s, live=mode == "live",
+            best_cap=args.best_cap, cap_source=args.cap_source)
     except Exception:  # noqa: BLE001  energy must never fail the block
         if energy_doc is None and "result" not in locals():
             (answers, run_meta, result) = _once(args.budget_s)[0]

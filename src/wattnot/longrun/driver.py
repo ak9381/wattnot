@@ -746,13 +746,15 @@ def pass_blocks(out: Path, pas: str, sweep_tag: str, grid: str, dataset: str,
               _py("wattnot.vision.run", "--fake", "--out", D("eye"), "--budget-s",
                   str(EYE_TEST_BUDGET_S)),
               live=_rpy("wattnot.vision.run", "--base-url", HOST_BASE_URL, "--out", R("eye"),
-                        "--budget-s", str(EYE_TEST_BUDGET_S)), host=True,
+                        "--budget-s", str(EYE_TEST_BUDGET_S), "--best-cap", "{BEST_CAP}",
+                        "--cap-source", f"sweep:{cap_tag}"), host=True,
               depends_on=("t0-probe",), skip_if_short=optional),
         Block(f"{pas}-spoken", f"Pass {pas}: spoken answers gate", _m(M["spoken"]),
               _py("wattnot.spokenanswer.run", "--fake", "--out", D("spoken"), "--budget-s",
                   str(SPOKEN_TEST_BUDGET_S)),
               live=_rpy("wattnot.spokenanswer.run", "--base-url", HOST_BASE_URL, "--out",
-                        R("spoken"), "--budget-s", str(SPOKEN_TEST_BUDGET_S)),
+                        R("spoken"), "--budget-s", str(SPOKEN_TEST_BUDGET_S), "--best-cap",
+                        "{BEST_CAP}", "--cap-source", f"sweep:{cap_tag}"),
               host=True, depends_on=("t0-probe",), skip_if_short=optional),
         Block(f"{pas}-phase", f"Pass {pas}: phase-aware clock sidecar, 3 min", _m(M["phase"]),
               _py("wattnot.control.phase_clock", "--mock", "--duration-s", "2", "--summary",
@@ -1554,7 +1556,9 @@ def _live_runner(out: Path, host: str, key: str, vm: RemoteVm, log=print):
         if b.live is None:
             return 0
         if any("{BEST_CAP}" in a for a in b.live) and not best_cap_from_sweep(out, b.sweep_tag) \
-                and not any("prefix_cache_ab.py" in a for a in b.live):
+                and not any("prefix_cache_ab.py" in a for a in b.live) \
+                and "--best-cap" not in b.live:
+            # eye/spoken take --best-cap NONE and fall back to 350 W, so they still run
             # only prefix_cache_ab.py understands "NONE"; the harness and public_bench_ab.py take
             # an int cap, so with no passing cap these blocks have nothing to compare: skip
             log(f"[live] {b.id}: skipped, the sweep found no passing cap")
