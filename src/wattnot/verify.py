@@ -65,8 +65,18 @@ def _is_round(receipt) -> bool:
             and "round" in receipt)
 
 
+ATTACH_SPEC = "wattnot.round-attachment/1"
+ATTACH_FIELDS = ("spec", "run_id", "attaches_to", "block", "results", "integrity")
+
+
+def _is_attachment(receipt) -> bool:
+    """A block attachment (replays/*/blocks/*/attachment.json): one block's results, signed on
+    the GPU box and pinned to the round it belongs to via `attaches_to`."""
+    return isinstance(receipt, dict) and receipt.get("spec") == ATTACH_SPEC
+
+
 def _self_signed_ok(receipt) -> bool:
-    return _is_flow(receipt) or _is_round(receipt)
+    return _is_flow(receipt) or _is_round(receipt) or _is_attachment(receipt)
 
 
 def _schema_step(receipt) -> Step:
@@ -78,6 +88,11 @@ def _schema_step(receipt) -> Step:
                 or not isinstance(receipt.get("integrity"), dict):
             return Step("schema", False, {"error": "flow receipt needs layers[{id,...}] and integrity"})
         return Step("schema", True, {"spec": FLOW_SPEC, "layers": len(lay)})
+    if _is_attachment(receipt):
+        missing = [k for k in ATTACH_FIELDS if k not in receipt]
+        if missing or not isinstance(receipt.get("integrity"), dict):
+            return Step("schema", False, {"error": f"round attachment missing: {missing or 'integrity'}"})
+        return Step("schema", True, {"spec": f"{ATTACH_SPEC} (block {receipt['block']})"})
     if _is_round(receipt):
         missing = [k for k in ROUND_FIELDS if k not in receipt]
         if missing or not isinstance(receipt.get("results"), dict) \
