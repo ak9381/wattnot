@@ -224,7 +224,7 @@ def run_detached(block_id: str, inner: str, budget_s: float, host: str, key: str
         except Exception:  # noqa: BLE001
             time.sleep(5)
     if not started:
-        log(f"[live] {block_id}: could not start the detached block")
+        print(f"[live] {block_id}: could not start the detached block", file=sys.stderr, flush=True)
         return 4
     deadline = time.monotonic() + budget_s
     while time.monotonic() < deadline:

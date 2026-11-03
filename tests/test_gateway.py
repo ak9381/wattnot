@@ -491,3 +491,44 @@ def test_per_request_energy_is_never_labelled_measured(tmp_path):
     c = TestClient(build_app(load_config(p), upstream=fake_upstream([])))
     ask(c, "easy")
     assert c.get("/v1/wattnot/savings").json()["energy_wh"]["label"] == "ESTIMATE"
+
+
+def test_ui_add_gpu_helper_ok_runs_harness_cap_check_on_a_real_gpu(tmp_path, monkeypatch):
+    """Connect GPU -> Add GPU helper -> OK (approve): a real (fake NVML) GPU gets the same
+    HarnessCapCheck the sequential run uses, no NameError, and ends at a kept cap or stock."""
+    import time as _t
+
+    import wattnot.node.answercheck as ac
+    import wattnot.node.simgpu as sg
+    c, _ = _ui_client(tmp_path, monkeypatch)
+    monkeypatch.delenv("WATTNOT_GPU", raising=False)
+    monkeypatch.setattr(node_agent, "rack_check", lambda *a, **k: {"ok": True, "rack": "R01",
+                        "visible_racks": ["R01"], "label": "REPLAY", "boxes": {}, "note": None, "why": None})
+
+    class FakeNvml:
+        label = "MEASURED"
+        def __init__(self): self.mw, self.e = 700_000, 0
+        def nvmlDeviceGetName(self, h=None): return "Fake H100"
+        def nvmlDeviceGetCount(self): return 1
+        def nvmlDeviceGetPowerManagementLimit(self, h=None): return self.mw
+        def nvmlDeviceSetPowerManagementLimit(self, h, mw): self.mw = int(mw)
+        def nvmlDeviceGetPowerUsage(self, h=None): return self.mw
+        def nvmlDeviceGetTotalEnergyConsumption(self, h=None): return self.e
+    gpu = FakeNvml()
+    monkeypatch.setattr(sg, "open_gpu", lambda *a, **k: gpu)
+    want = {p["prompt"]: p["checks"][0]["value"] for p in ac.proof_prompts()}
+
+    def asker(cfg):
+        def ask(prompt, mt):
+            _t.sleep(0.02)
+            gpu.e += int(1000 * gpu.mw / 700_000)   # energy per answer falls with the cap
+            return f"#### {want[prompt]}"
+        return ask
+    monkeypatch.setattr(ac, "harness_asker", asker)
+    c.post("/api/dash/node/run", json={"approve": True, "sleep_s": 0})
+    st = _wait(c, "/api/dash/node/status")
+    res = st["result"]
+    assert res.get("status") != "error", res
+    steps = [e for e in c.get("/api/dash/plug").json()["node"]["events"] if e["step"] == "quality_check"]
+    assert steps and all("quality" in e for e in steps)
+    assert "harness graders" in steps[0]["rule"]

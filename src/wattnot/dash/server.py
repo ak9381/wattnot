@@ -1145,7 +1145,12 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
                 gpu = open_gpu()
                 chk = None
                 if not isinstance(gpu, SimulatedH100) and ncfg.get("upstream"):
-                    chk = AnswerCheck(gateway_asker(ncfg), gpu)   # live re-ask at each cap (MEASURED)
+                    # same check the backend sequential run uses: proof-v1, harness graders, sweep rule
+                    chk = HarnessCapCheck(
+                        harness_asker(ncfg), gpu,
+                        lambda w: gpu.nvmlDeviceSetPowerManagementLimit(None, int(w) * 1000),
+                        gpu.nvmlDeviceGetPowerManagementLimit(None) // 1000,
+                        n=int((ncfg.get("node") or {}).get("check_prompts", 111)))
                 node_job["result"] = _agent.run(ncfg, approve=bool(body.get("approve")), log_path=logs[1],
                                                 sleep_s=float(body.get("sleep_s", 0.25)), gpu=gpu,
                                                 answer_check=chk)
