@@ -33,7 +33,7 @@ def _check(j_cap=0.7, wrong_cap=0, reword=False):
 def test_uses_proof_v1_and_accepts_a_good_cap():
     assert len(proof_prompts()) == 111
     r, g = _check()
-    assert r["accepted"] and r["pairs"] == 2 and r["n"] == 8 and g.w == 375
+    assert r["accepted"] and r["pairs"] == 4 and r["n"] == 8 and g.w == 375
     assert -32 < r["energy_change_pct"] < -28
     assert r["quality"]["stock_pct"] == 100 and r["quality"]["cap_pct"] == 100
 
@@ -69,3 +69,14 @@ def test_check_uses_holdout_max_tokens():
     from wattnot.node.answercheck import HOLDOUT_MAX_TOKENS
     from wattnot.longrun.holdout import FROZEN_STACK
     assert HOLDOUT_MAX_TOKENS == FROZEN_STACK["max_tokens"] == 1536
+
+
+def test_check_runs_four_pairs_so_energy_uses_ci_rule():
+    import inspect
+    from wattnot.node.answercheck import CHECK_PAIRS, HarnessCapCheck
+    from wattnot.proof.session import SMALL_N_MAX, energy_clearly_down
+    assert inspect.signature(HarnessCapCheck).parameters["pairs"].default == CHECK_PAIRS == 4 > SMALL_N_MAX
+    d = [-24.9, -37.0, -24.8, -23.9]            # the refused run-1 pairs plus two steady ones
+    import statistics as st, math
+    m, half = st.mean(d), 3.182 * st.stdev(d) / math.sqrt(4)
+    assert energy_clearly_down(d, m, half, 20.0)

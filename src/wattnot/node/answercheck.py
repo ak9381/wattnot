@@ -93,6 +93,11 @@ def proof_prompts(n: int | None = None) -> list[dict]:
     return rows[:n] if n else rows
 
 
+# 4 interleaved stock/cap pairs: with 2-3 pairs energy_clearly_down falls back to "every pair beats
+# 2x stock noise", which refused a steady -25%/-37% drop; from 4 pairs it uses the 95% CI rule
+CHECK_PAIRS = 4
+
+
 class HarnessCapCheck:
     """The cap rule of the H100 sweep that picked 375 W (wattnot.proof.session.summarize):
     interleaved stock/cap blocks of the proof-v1 prompts at concurrency 32 (the sweep's default),
@@ -101,7 +106,7 @@ class HarnessCapCheck:
     wattnot.proof.session.energy_clearly_down (with 2-3 pairs every pair below max(3%, 2x stock cv)).
     Quality uses the sweep's harness graders (gates.fixed.fixed_checks), not exact text."""
 
-    def __init__(self, ask, gpu, set_cap, stock_w: int, n: int = 111, pairs: int = 2,
+    def __init__(self, ask, gpu, set_cap, stock_w: int, n: int = 111, pairs: int = CHECK_PAIRS,
                  concurrency: int = 32, p99_limit: float = 10.0):
         self.ask, self.gpu, self.set_cap, self.stock_w = ask, gpu, set_cap, int(stock_w)
         self.items, self.pairs, self.concurrency, self.p99_limit = proof_prompts(n), pairs, concurrency, p99_limit
