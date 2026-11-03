@@ -227,10 +227,14 @@ function build() {
     if (!s.length && !(t && t.running)) { gwl.hidden = true; return; }
     gwl.hidden = false;
     const last = s[s.length - 1] || {};
-    const w = last.wh || 0, b = last.wh_baseline || 0;
-    $("#gwlLab", gwl).textContent = last.label || "LIVE";
+    const me = f.measured && f.measured.energy_wh;   // sequential side by side: NVML per arm
+    const w = me ? me.actual : (last.wh || 0), b = me ? me.baseline : (last.wh_baseline || 0);
+    const ee = f.summary && f.summary.energy_wh_estimate;
+    $("#gwlLab", gwl).textContent = me ? "MEASURED" : (last.label || "LIVE");
     $("#gwlTxt", gwl).textContent = `${s.length} requests · ${(w * 1000).toFixed(1)} mWh with vs ${(b * 1000).toFixed(1)} mWh stock`
-      + (b ? ` (${(100 * (b - w) / b).toFixed(0)}% ${b >= w ? "saved" : "MORE"})` : "")
+      + (b ? ` (${(100 * (b - w) / b).toFixed(1)}% ${b >= w ? "saved" : "MORE"})` : "")
+      + (me ? " MEASURED, NVML per arm" : "")
+      + (me && ee ? ` · token ESTIMATE: ${ee.saved_pct ?? "n/a"}%` : "")
       + (t && t.running ? ` · sending ${t.done}/${t.total}` : "");
     $("#gwlRc", gwl).innerHTML = (f.receipts || []).slice(0, 4).map((r) =>
       `<button type="button" class="rc" data-rid="${r.receipt_id}">${r.receipt_id.slice(-6)}</button>`).join(" ");
@@ -250,7 +254,10 @@ function build() {
         if (!q || !q.requests) return;
         $("#gwlQ", gwl).innerHTML = `Quality gate: ${q.shadow_pairs} shadow pairs, agreement ${q.agreement == null ? "n/a" : Math.round(q.agreement * 100) + "%"}`
           + (q.gate_off.length ? ` · off: ${q.gate_off.map((g) => g.saver).join(", ")}` : " · all savers on")
-          + `<br>J per correct answer: ${q.j_per_correct ?? "n/a"} J (stock ${q.j_per_correct_stock ?? "n/a"} J/request) <span class="wnlab e">ESTIMATE</span>`
+          + (q.measured
+            ? (q.j_per_correct != null ? `<br>J per correct answer: ${q.j_per_correct} J (stock ${q.j_per_correct_stock} J; ${q.correct.with}/${q.correct.scored} vs ${q.correct.without}/${q.correct.scored} correct, harness-scored) <span class="wnlab m">MEASURED</span>` : "")
+              + (q.j_per_request || []).map((x) => `<br>${x.workload}: ${x.with} J per request (stock ${x.without} J), not scored <span class="wnlab m">MEASURED</span>`).join("")
+            : `<br>J per correct answer: ${q.j_per_correct ?? "n/a"} J (stock ${q.j_per_correct_stock ?? "n/a"} J/request) <span class="wnlab e">ESTIMATE</span>`)
           + `<br>Spend: $${q.spend_usd.toFixed(4)} <span class="wnlab e">${q.spend_label}</span>`;
       }).catch(() => {});
       const [f, t] = await Promise.all([fetch("/api/dash/plug?last=500").then((r) => r.json()),

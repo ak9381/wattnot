@@ -300,6 +300,7 @@ class TrafficRun:
                 time.sleep(gap)
         j = (g.energy_mj() - e0) / 1000
         out = {"requests": len(texts), "joules": round(j, 1), "seconds": round(time.time() - t0, 1),
+               "t0": round(t0, 3), "t1": round(time.time(), 3),
                "cap_w": g.limit_w(), "tokens": toks, "usd": round(usd, 6),
                "label": "MEASURED (NVML energy counter over the arm's window)", "texts": texts}
         self.event(step="arm_end", arm=name, **{k: v for k, v in out.items() if k != "texts"})
@@ -308,7 +309,9 @@ class TrafficRun:
     def _run_sequential(self, items, gap, with_without) -> None:
         g = self.gpu
         stock = g.default_w()
-        res: dict = {"mode": "sequential", "stock_w": stock, "harness_cap_w": self.cap_w}
+        res: dict = {"mode": "sequential", "stock_w": stock, "harness_cap_w": self.cap_w,
+                     "workload": self.state.get("workload"),
+                     "run_id": f"seq-{time.strftime('%Y%m%d-%H%M%S')}-{self.state.get('workload')}"}
         try:
             g.set_w(stock)
             res["without"] = wo = self._arm("without", items, gap, lambda b, i: self.direct(b))
@@ -355,7 +358,9 @@ class TrafficRun:
                                                        if isinstance(v, dict) else v) for k, v in res.items()}
                 if self.result_path:
                     self.result_path.parent.mkdir(parents=True, exist_ok=True)
-                    self.result_path.write_text(json.dumps(res, indent=1))
+                    self.result_path.write_text(json.dumps(res, indent=1))       # latest
+                    with self.result_path.with_name("sequential.runs.jsonl").open("a") as fh:  # one per run, never overwritten
+                        fh.write(json.dumps(res) + "\n")
                 self.state["phase"] = "done"
                 self.state["running"] = False
 

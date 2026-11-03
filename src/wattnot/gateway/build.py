@@ -224,6 +224,7 @@ def build_app(cfg: dict, upstream=None, log: SavingsLog | None = None):
         info["usage"] = dict((resp or {}).get("usage") or {})
         try:
             info["text"] = str(((resp.get("choices") or [{}])[0].get("message") or {}).get("content") or "")[:2000]
+            info["tool_calls"] = ((resp.get("choices") or [{}])[0].get("message") or {}).get("tool_calls")
         except (AttributeError, IndexError):
             info["text"] = ""
         sink = _calls.get()

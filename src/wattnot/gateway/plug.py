@@ -66,7 +66,24 @@ def feed(savings_log: str | Path | None, node_log: str | Path | None = None, las
     without = {"requests": len(wo), "wh": round(sum(x.get("joules", 0) for x in wo) / 3600, 4),
                "usd": round(sum(x.get("usd", 0) for x in wo), 6),
                "label": "ESTIMATE · Simulated traffic, without WattNot"} if wo else None
-    return {"source": "live", "label": s["energy_wh"]["label"] if s else "MEASURED", "without": without,
+    m = measured(savings_log)
+    rec_view = [{k: r.get(k) for k in ("receipt_id", "prev_receipt_id", "ts", "actual", "baseline",
+                                       "labels", "stepped_up", "guard_stopped", "status")} for r in recs[-last:]][::-1]
+    if m:
+        if s:
+            s["energy_wh_estimate"] = {**s["energy_wh"], "label": "ESTIMATE (tokens × J/token), secondary"}
+            s["energy_wh"] = m["energy_wh"]
+        for rv in rec_view:                    # receipts in a with-arm window: per-request MEASURED allocation
+            run = next((p for p in m["runs"] if p["window"][0] and p["window"][0] <= float(rv.get("ts") or 0)
+                        <= (p["window"][1] or 0) + 1), None)
+            if run:
+                rv["estimate"] = {"actual_j": (rv.get("actual") or {}).get("joules"),
+                                  "baseline_j": (rv.get("baseline") or {}).get("joules"), "label": "ESTIMATE"}
+                rv["actual"] = {**(rv.get("actual") or {}), "joules": run["alloc_j"][1]}
+                rv["baseline"] = {**(rv.get("baseline") or {}), "joules": run["alloc_j"][0]}
+                rv["labels"] = {**(rv.get("labels") or {}), "joules": ALLOC}
+                rv["run_id"] = run["run_id"]
+    return {"source": "live", "label": (m or {}).get("label") or (s["energy_wh"]["label"] if s else "MEASURED"), "without": without,
             "simulated_traffic": any(str(r.get("run") or "").startswith("sim-") for r in recs),
             "summary": s, "series": series[-500:], "power": power,
             "node": {"samples": len(node), "joules": round(node_j, 1), "label": node_label,
@@ -74,10 +91,8 @@ def feed(savings_log: str | Path | None, node_log: str | Path | None = None, las
             "water": {"litres": series[-1]["litres"] if series else 0,
                       "litres_baseline": series[-1]["litres_baseline"] if series else 0,
                       "label": f"ESTIMATE ({WUE_L_PER_KWH} L/kWh on-site cooling)"},
-            "sequential": _seq(savings_log),
-            "receipts": [{k: r.get(k) for k in ("receipt_id", "prev_receipt_id", "ts", "actual", "baseline",
-                                                 "labels", "stepped_up", "guard_stopped", "status")}
-                         for r in recs[-last:]][::-1]}
+            "sequential": _seq(savings_log), "measured": m,
+            "receipts": rec_view}
 
 
 def receipt(savings_log: str | Path | None, rid: str) -> dict | None:
@@ -100,6 +115,62 @@ def _seq(savings_log) -> dict | None:
             "final_limit_w": d.get("final_limit_w"), "label": "MEASURED (NVML, arms run one after the other)"}
 
 
+def seq_runs(savings_log) -> list[dict]:
+    """Every sequential side-by-side run since the logs were reset, one per run id + workload."""
+    if not savings_log:
+        return []
+    runs = [r for r in _read(Path(savings_log).with_name("sequential.runs.jsonl"))
+            if (r.get("with") or {}).get("joules") and (r.get("without") or {}).get("joules")]
+    if not runs:
+        one = Path(savings_log).with_name("sequential.json")
+        try:
+            d = json.loads(one.read_text()) if one.exists() else None
+        except ValueError:
+            d = None
+        if d and (d.get("with") or {}).get("joules") and (d.get("without") or {}).get("joules"):
+            runs = [d]
+    return runs
+
+
+MEASURED_SEQ = "MEASURED (NVML energy counter per arm, arms run one after the other)"
+ALLOC = "MEASURED arm total ÷ requests in the arm (per-request allocation)"
+
+
+def measured(savings_log) -> dict | None:
+    """The sequential runs' MEASURED totals: headline energy, J per correct (harness-scored only),
+    J per request for unscored workloads."""
+    runs = seq_runs(savings_log)
+    if not runs:
+        return None
+    per = []
+    for r in runs:
+        w, wo = r["with"], r["without"]
+        scored = bool(w.get("scored")) and w.get("correct") is not None
+        per.append({"run_id": r.get("run_id"), "workload": r.get("workload"),
+                    "without_j": wo["joules"], "with_j": w["joules"],
+                    "requests": w.get("requests"), "cap_w": w.get("cap_w"),
+                    "saved_pct": round(100 * (wo["joules"] - w["joules"]) / wo["joules"], 2),
+                    "scored": scored,
+                    "correct": [wo.get("correct"), w.get("correct")] if scored else None,
+                    "j_per_correct": [wo.get("j_per_correct"), w.get("j_per_correct")] if scored else None,
+                    "j_per_request": [round(wo["joules"] / max(1, wo.get("requests") or 1), 1),
+                                      round(w["joules"] / max(1, w.get("requests") or 1), 1)],
+                    "note": None if scored else "not scored: this workload has no answer key, so J per request",
+                    "window": [w.get("t0"), w.get("t1")],
+                    "alloc_j": [round(wo["joules"] / max(1, wo.get("requests") or 1), 3),
+                                round(w["joules"] / max(1, w.get("requests") or 1), 3)]})
+    bj, aj = sum(p["without_j"] for p in per), sum(p["with_j"] for p in per)
+    sc = [p for p in per if p["scored"]]
+    c_wo = sum(p["correct"][0] or 0 for p in sc); c_w = sum(p["correct"][1] or 0 for p in sc)
+    return {"label": MEASURED_SEQ, "runs": per,
+            "energy_wh": {"baseline": round(bj / 3600, 4), "actual": round(aj / 3600, 4),
+                          "saved_pct": round(100 * (bj - aj) / bj, 2) if bj else None, "label": MEASURED_SEQ},
+            "j_per_correct": round(sum(p["with_j"] for p in sc) / c_w, 1) if c_w else None,
+            "j_per_correct_stock": round(sum(p["without_j"] for p in sc) / c_wo, 1) if c_wo else None,
+            "correct": {"without": c_wo, "with": c_w, "scored": sum(p["requests"] or 0 for p in sc),
+                        "label": "harness-scored (same number / word match)"} if sc else None}
+
+
 def eu_report(savings_log: str | Path | None, node_log: str | Path | None = None) -> dict:
     """Inference-level fields toward an EU 2024/1364 report, from live plug records only."""
     f = feed(savings_log, node_log)
@@ -108,6 +179,22 @@ def eu_report(savings_log: str | Path | None, node_log: str | Path | None = None
     s = f["summary"] or {}
     e = s.get("energy_wh", {})
     kwh = (f["node"]["joules"] / 3.6e6) if f.get("node") else (e.get("actual", 0) / 1000)
+    m = f.get("measured")
+    if m:
+        e = m["energy_wh"]
+        return {"spec": "wattnot.eu-inference-fields/1", "source": "live",
+                "basis": "NVML energy counter per arm (sequential side by side); not a facility meter",
+                "requests": s.get("requests", 0),
+                "energy_kwh": {"value": round(e["actual"] / 1000, 6), "label": m["label"]},
+                "energy_saved_kwh": {"value": round((e["baseline"] - e["actual"]) / 1000, 6), "label": m["label"]},
+                "energy_saved_kwh_estimate": {"value": round((s.get("energy_wh_estimate", {}).get("baseline", 0)
+                                                              - s.get("energy_wh_estimate", {}).get("actual", 0)) / 1000, 6),
+                                              "label": "ESTIMATE (tokens × J/token), secondary"},
+                "water_litres": {"value": round(e["actual"] / 1e6 * WUE_L_PER_KWH, 6),
+                                 "label": f"ESTIMATE ({WUE_L_PER_KWH} L/kWh on MEASURED energy)"},
+                "sequential_runs": m["runs"],
+                "first_receipt": f["receipts"][-1]["receipt_id"] if f["receipts"] else None,
+                "last_receipt": f["receipts"][0]["receipt_id"] if f["receipts"] else None}
     return {"spec": "wattnot.eu-inference-fields/1", "source": "live",
             "basis": "gateway + node-agent records; not a facility meter",
             "requests": s.get("requests", 0),
@@ -158,6 +245,20 @@ def quality(savings_log, monitor: dict | None) -> dict:
     jb = sum((r.get("baseline") or {}).get("joules", 0) for r in recs)
     n_ok = round(len(recs) * agree) if agree is not None else None
     usd = sum((r.get("actual") or {}).get("usd", 0) for r in recs)
+    m = measured(savings_log)
+    if m:
+        unscored = [p for p in m["runs"] if not p["scored"]]
+        return {"requests": len(recs), "shadow_pairs": pairs, "agreement": agree,
+                "gate_off": [{"saver": e.get("saver"), "why": e.get("why")} for e in ((mon.get("gate") or {}).get("off") or [])],
+                "j_per_correct": m["j_per_correct"], "j_per_correct_stock": m["j_per_correct_stock"],
+                "correct": m["correct"],
+                "j_per_request": [{"workload": p["workload"], "without": p["j_per_request"][0],
+                                   "with": p["j_per_request"][1], "note": p["note"]} for p in unscored],
+                "j_label": m["label"] + "; correct = harness-scored", "measured": True,
+                "spend_usd": round(sum((r.get("actual") or {}).get("usd", 0) for r in recs), 6),
+                "spend_label": "ESTIMATE (list price)",
+                "spend_log": [{"receipt_id": r.get("receipt_id"), "ts": r.get("ts"), "usd": (r.get("actual") or {}).get("usd", 0)}
+                              for r in recs[-20:]][::-1]}
     return {"requests": len(recs), "shadow_pairs": pairs, "agreement": agree,
             "gate_off": [{"saver": e.get("saver"), "why": e.get("why")} for e in ((mon.get("gate") or {}).get("off") or [])],
             "j_per_correct": round(j / n_ok, 1) if n_ok else None,

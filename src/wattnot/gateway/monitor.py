@@ -27,6 +27,28 @@ def agree(a: str, b: str) -> bool:
     return bool(norm(a)) and norm(a) == norm(b)
 
 
+def tool_key(calls) -> list:
+    """Tool calls as sorted (name, canonical args) pairs, for comparing two agent turns."""
+    out = []
+    for c in calls or []:
+        f = (c or {}).get("function") or {}
+        try:
+            a = json.dumps(json.loads(f.get("arguments") or "{}"), sort_keys=True)
+        except (TypeError, ValueError):
+            a = str(f.get("arguments"))
+        out.append((f.get("name"), a))
+    return sorted(out)
+
+
+def agree_turn(a_text: str, a_tools, b_text: str, b_tools) -> bool:
+    """agree() for text answers; for agent turns that answer with tool calls (empty text), the
+    same tools with the same arguments count as agreeing. Text-only compare used to call every
+    tool-call turn a disagreement (empty vs empty)."""
+    if a_tools or b_tools:
+        return tool_key(a_tools) == tool_key(b_tools)
+    return agree(a_text, b_text)
+
+
 class Monitor:
     def __init__(self, cfg: dict, upstream, base_tier: dict, path: Path, rng=None, sync: bool = False,
                  gate=None, gate_key: str | None = None):
@@ -69,13 +91,14 @@ class Monitor:
         except Exception:  # noqa: BLE001  shadow never affects users
             return
         u = resp.get("usage") or {}
-        text = str(((resp.get("choices") or [{}])[0].get("message") or {}).get("content") or "")
+        msg = (resp.get("choices") or [{}])[0].get("message") or {}
+        text = str(msg.get("content") or "")
         pair = {"ts": round(time.time(), 3), "receipt_id": receipt_id,
                 "small_out": int(small["usage"].get("completion_tokens") or 0),
                 "base_out": int(u.get("completion_tokens") or 0),
                 "base_in": int(u.get("prompt_tokens") or 0),
                 "small_in": int(small["usage"].get("prompt_tokens") or 0),
-                "agree": agree(small.get("text", ""), text), "label": "MEASURED (shadow pair)"}
+                "agree": agree_turn(small.get("text", ""), small.get("tool_calls"), text, msg.get("tool_calls")), "label": "MEASURED (shadow pair)"}
         if self.gate is not None:
             self.gate.record_pair(self.gate_key, pair["small_in"] + pair["small_out"],
                                   pair["base_in"] + pair["base_out"], pair["agree"], small.get("applied"))

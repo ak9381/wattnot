@@ -96,7 +96,7 @@ async function drawLive() {
   const p = f && f.power && f.power.length ? f.power.at(-1) : null;
   const plab = p ? (p.label === "MEASURED" ? "MEASURED, NVML" : "REPLAY of the recorded H100, SIMULATED where between recorded limits") : "";
   $("#power").innerHTML = p ? `<p class="small">GPU power now: <b>${p.power_w} W</b> (${plab})${p.cap_w ? `, limit ${p.cap_w} W` : ""}</p>` : "";
-  const ev = (f && f.node && f.node.events) || [];
+  const ev = ((f && f.node && f.node.events) || []).filter((e) => !["arm_start", "arm_end", "restored"].includes(e.step));
   $("#nodeSteps").innerHTML = ev.length ? ev.map((e) => `<li>${esc(stepText(e))}</li>`).join("") : `<li class="small">No GPU helper yet. Press "Add GPU helper" to start one.</li>`;
   $("#receipts").innerHTML = (f && f.receipts || []).slice(0, 20).map((r) => `<li data-id="${esc(r.receipt_id)}">${esc(r.receipt_id)} · ${fmtWh((r.baseline.joules - r.actual.joules) / 3600)} saved · ${esc(r.labels.joules)}${r.stepped_up ? " · stepped up" : ""}${r.guard_stopped ? " · loop stopped" : ""}</li>`).join("")
     || `<li class="small">No receipts yet. Each request through the gateway adds one here.</li>`;
@@ -110,7 +110,7 @@ function stepText(e) {
     case "rack_check": return e.ok ? `Rack photo checked: ${e.visible_racks.length} racks visible, acting only on ${e.rack} (${e.label})` : `Rack check stopped: ${e.why}`;
     case "waiting_approval": return "Waiting for your OK before any power change";
     case "cap_applied": return `Power limit set to ${e.cap_w} W (${L})`;
-    case "quality_check": return `${e.cap_w} W: ${e.accepted ? "answers OK" : "refused"}${e.energy_change_pct != null ? `, energy ${e.energy_change_pct}%` : ""}${e.p99_change_pct != null ? `, slowest answers +${e.p99_change_pct}%` : ""}${e.accepted ? "" : ` (${(e.why_not || []).join("; ")})`} (${e.check_label})`;
+    case "quality_check": return `${e.cap_w} W: ${e.accepted ? "answers OK" : "refused"}${e.energy_change_pct != null ? `, energy ${e.energy_change_pct}%` : ""}${e.p99_change_pct != null ? `, slowest answers +${e.p99_change_pct}%` : ""}${e.accepted ? "" : ` (${(e.why_not || []).join("; ")})`} (${e.check_label || e.label || "MEASURED"})`;
     case "stock_answers": return `Asked ${e.n} sample questions at stock power: ${e.joules_per_answer != null ? `${Math.round(e.joules_per_answer)} J per answer` : "stock and capped answers are asked in interleaved pairs"} (${e.label})`;
     case "rolled_back": return `Rolled back to ${e.to_cap_w} W${(e.failed || []).length ? ` (${e.failed.join("; ")})` : ""}`;
     case "kept": return `Kept ${e.cap_w} W (${e.label})${e.note ? `: ${e.note}` : ""}`;
