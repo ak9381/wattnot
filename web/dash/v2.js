@@ -902,6 +902,18 @@ async function selectRun(id) {
   }
   renderReport();
 }
+// Savers that passed in a test record: an accepted cap, and any saver block marked passed.
+function passingSaverIds(rec) {
+  const out = new Set();
+  const steps = rec?.steps || rec?.results?.steps || [];
+  if ((Array.isArray(steps) ? steps : Object.values(steps)).some((s) => s && s.accepted)) out.add("caps");
+  const bj = rec?.phases?.baseline?.metrics?.j_per_req, wj = rec?.phases?.wattnot?.metrics?.j_per_req;
+  if (bj != null && wj != null && wj < bj && (rec?.phases?.wattnot?.gates_passed ?? true)) out.add("caps");
+  const sv = rec?.savers || rec?.results?.savers || {};
+  for (const [k, v] of Object.entries(sv)) if (v && (v.passed === true || v.gate === "pass" || v.accepted === true)) out.add(k);
+  return [...out];
+}
+
 async function renderReport() {
   if (S.radPan) { try { S.radPan.destroy(); } catch {} S.radPan = null; }
   if (!S.run) { $("#pReport").innerHTML = `<p>Loading the default replay…</p>`; await startQuiet(); }
@@ -939,7 +951,9 @@ async function renderReport() {
   const cst = compareState(runs, S.selRunId === BUNDLED_ID ? BUNDLED_ID : selId, featRec);
   S.cmpState = cst; S.cmpRec = cst.kind === "ok" || cst.kind === "bundled" ? featRec : null;
   const radOrEmpty = S.cmpRec ? `${cst.kind === "bundled" ? bundledBanner() : ""}${radialHtml(runs, selId, featRec)}` : emptyStateHtml(cst, !!bundledRecord(S.run2));
-  $("#pReport").innerHTML = `${radOrEmpty}<div class="ctrl noprint"><label for="runSel">Run</label><select id="runSel" style="width:auto;max-width:320px" aria-label="Run">${runs.length ? runs.map((r) => `<option value="${esc(r.id)}" ${r.id === selId ? "selected" : ""}>${esc(r.name)}</option>`).join("") : `<option value="default">Default replay</option>`}${bundledRecord(S.run2) ? `<option value="${BUNDLED_ID}" ${S.selRunId === BUNDLED_ID ? "selected" : ""}>Bundled sample · RUN2 (built-in, not your run)</option>` : ""}</select>${legendHtml()}<button class="btn pri" onclick="print()">Export PDF / PNG (print)</button><span style="color:var(--mu);font-size:13px">Topics start closed so the map stays readable. Open any circle for its two paths and the detail.</span><span style="flex:1"></span><button class="btn" data-map="open">Expand all</button><button class="btn" data-map="close">Collapse all</button></div>
+  const passedSavers = S.cmpRec ? passingSaverIds(featRec) : [];
+  const liveBtn = passedSavers.length ? `<p class="noprint"><a class="btn pri" href="plug.html?from=test&passed=${encodeURIComponent(passedSavers.join(","))}#setup">Use these settings live</a> <span style="color:var(--mu);font-size:13px">Carries the savers that passed (${esc(passedSavers.join(", "))}) into Go live.</span></p>` : "";
+  $("#pReport").innerHTML = `${liveBtn}${radOrEmpty}<div class="ctrl noprint"><label for="runSel">Run</label><select id="runSel" style="width:auto;max-width:320px" aria-label="Run">${runs.length ? runs.map((r) => `<option value="${esc(r.id)}" ${r.id === selId ? "selected" : ""}>${esc(r.name)}</option>`).join("") : `<option value="default">Default replay</option>`}${bundledRecord(S.run2) ? `<option value="${BUNDLED_ID}" ${S.selRunId === BUNDLED_ID ? "selected" : ""}>Bundled sample · RUN2 (built-in, not your run)</option>` : ""}</select>${legendHtml()}<button class="btn pri" onclick="print()">Export PDF / PNG (print)</button><span style="color:var(--mu);font-size:13px">Topics start closed so the map stays readable. Open any circle for its two paths and the detail.</span><span style="flex:1"></span><button class="btn" data-map="open">Expand all</button><button class="btn" data-map="close">Collapse all</button></div>
   <div class="map-wrap glass" id="mapWrap"><svg class="map-wires" id="mapWires" aria-hidden="true"></svg>
     <div class="map-stage" id="mapStage">
       <div class="map-hub" id="mapHub" data-open="0">

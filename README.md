@@ -146,6 +146,41 @@ Every Meta model WattNot uses, and what we built on top of each:
 - **Labels:** every number is MEASURED, ESTIMATE, SIMULATED, MOCK, REPLAY or ADVICE. SIMULATED and MOCK content is hidden by default; the "Illustrations" switch shows it.
 - **Not measured yet (long GPU run):** small-model-first escalation rate and net savings, the hosted Muse Spark judge (Llama 3.1 8B fallback), Muse Spark Open with fewer experts, and the token trimmer and caps on one workload (the stacked figure is an ESTIMATE until then).
 
+## Go live in 3 steps (gateway)
+
+WattNot sits between your app and the model as an OpenAI-compatible gateway. Every request goes
+through the savers you switch on in one file, `wattnot.yaml`: the agent-waste guard, small-first
+routing with step-up, the context saver (long chats only), the thinking cap, image downscaling and
+the voice route. Each request gets a savings record and a receipt id.
+
+```bash
+pip install -e .
+export META_API_KEY=...            # or `muse login`; the key never goes in the yaml
+wattnot gateway --config wattnot.yaml          # http://127.0.0.1:8780/v1
+```
+
+Change one line in your app, the base URL:
+
+```python
+from openai import OpenAI
+client = OpenAI(base_url="http://127.0.0.1:8780/v1", api_key="unused")   # the gateway holds the key
+client.chat.completions.create(model="muse-spark-1.3", messages=[{"role": "user", "content": "hi"}])
+```
+
+LangChain: `ChatOpenAI(base_url="http://127.0.0.1:8780/v1", api_key="unused", model="muse-spark-1.3")`.
+CrewAI: `LLM(model="openai/muse-spark-1.3", base_url="http://127.0.0.1:8780/v1", api_key="unused")`.
+
+Watch savings: `curl http://127.0.0.1:8780/v1/wattnot/savings`, or open the dashboard's
+**Live savings** page (`python -m wattnot.dash --gateway wattnot.yaml`, gateway mounted at `/gw/v1`).
+API numbers are ESTIMATE (tokens x J/token). A 10% shadow sample re-asks the baseline tier off the
+request path; it prices the baseline with measured token counts and rolls routing back if answers
+stop agreeing (`/v1/wattnot/monitor`).
+
+GPU owners: `sudo -E wattnot node --config wattnot.yaml --approve` checks the rack photo with
+SAM 3.1, then lowers the power limit step by step while checking answers. With no GPU attached
+it replays the recorded H100 RUN2 (labelled REPLAY, SIMULATED between recorded limits); with real
+NVML it switches to MEASURED by itself. Demo: `python scripts/gateway_demo.py --base http://127.0.0.1:8780/v1`.
+
 ## Quickstart
 
 ### One command, watch-only

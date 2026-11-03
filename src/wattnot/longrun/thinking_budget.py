@@ -16,8 +16,9 @@ answer, and an item that passed at the 1x cell but fails at this one (regressed)
 Gate per tier: among cells with pass rate >= the 1x cell - 1 pt and no regressed items, keep the
 lowest J per correct answer. Nothing better -> the tier keeps 1x ("no change").
 
-Routing a new prompt to a tier: the workload label if present, else Llama 3.2 1B (Meta) as a
-cheap classifier; when unsure, round up a tier. Llama is the classifier only, not the judge.
+Routing a new prompt to a tier: the workload label if present, else Muse Glimmer (Meta, the served
+open-weights model) as a cheap classifier; when unsure, round up a tier. It is the classifier
+only, not the judge.
 """
 from __future__ import annotations
 
@@ -44,7 +45,7 @@ ANSWER_CAP = 512
 CONTEXT = 8192
 THINK_OPEN = os.environ.get("WATTNOT_THINK_OPEN", "<think>")
 THINK_CLOSE = os.environ.get("WATTNOT_THINK_CLOSE", "</think>")
-ROUTER_MODEL = "meta-llama/Llama-3.2-1B-Instruct"
+ROUTER_MODEL = os.environ.get("WATTNOT_ROUTER_MODEL", "muse-glimmer-30b")
 CELL_MIN = {"easy": 2.5, "medium": 3.5, "hard": 5.0, "complex": 5.5}  # ESTIMATE, incl. grading
 
 
@@ -244,8 +245,8 @@ def _heuristic(prompt: str) -> tuple[str, float]:
     return "easy", 0.6
 
 
-def llama_classifier(url: str, timeout_s: float = 20):  # pragma: no cover - needs a server
-    """Llama 3.2 1B (Meta) says easy/medium/hard/complex with a 0-1 confidence."""
+def tier_classifier(url: str, timeout_s: float = 20):  # pragma: no cover - needs a server
+    """Muse Glimmer (Meta) says easy/medium/hard/complex with a 0-1 confidence."""
     def classify(prompt: str) -> tuple[str, float]:
         body = {"model": ROUTER_MODEL, "temperature": 0, "max_tokens": 12, "messages": [
             {"role": "system", "content": "Label the task difficulty. Reply as: <tier> <0-1 "
@@ -270,7 +271,7 @@ def route(prompt: str, policy: dict, *, label: str | None = None, classify=None,
     else:
         try:
             tier, conf = (classify or _heuristic)(prompt)
-            how = "llama-3.2-1b" if classify else "heuristic"
+            how = "glimmer-classifier" if classify else "heuristic"
         except Exception:  # noqa: BLE001 - the router never blocks a request
             tier, conf, how = _heuristic(prompt) + ("heuristic (router down)",)
         if conf < min_conf and tier != "complex":

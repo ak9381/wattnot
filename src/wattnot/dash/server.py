@@ -160,7 +160,8 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
                approvals_dir: Path | None = None,
                auto_approve: bool = False,
                live_apply: bool = False,
-               partners: Path | None = None) -> FastAPI:
+               partners: Path | None = None,
+               gateway: Path | None = None) -> FastAPI:
     app = FastAPI(title="WattNot dashboard", version="1")
     token = token or os.environ.get("WATTNOT_DASH_TOKEN") or None
     # Hosted replay-only mode (for judges): no GPU, no Meta call of any kind, saved run file only.
@@ -180,7 +181,7 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
             path = request.url.path
             ok = hmac.compare_digest(request.cookies.get("wn_auth", "").encode(), want.encode()) or \
                 hmac.compare_digest(request.headers.get("authorization", "")[7:].encode(), token.encode())
-            if ok or path in OPEN_PATHS or path.startswith("/run/vendor"):
+            if ok or path in OPEN_PATHS or path.startswith("/run/vendor") or path.startswith("/gw/"):
                 return await call_next(request)
             if path.startswith("/api/"):
                 return JSONResponse({"error": "sign in required", "login": "/login"}, status_code=401)
@@ -847,8 +848,81 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         if path.startswith("/api/receipts") and path not in have and "GET" in (getattr(r, "methods", None) or ()):
             app.router.routes.append(r)
 
+    _mount_plug(app, gateway)
     app.mount("/", StaticFiles(directory=str(WEB), html=True), name="web")
     return app
+
+
+def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
+    """Live plug routes: the gateway itself (/gw/v1, only with --gateway), the live feed, receipts,
+    the EU fields and the deploy-config writer. Without a gateway the feed says REPLAY."""
+    from fastapi import Body, HTTPException
+
+    from wattnot.gateway import deploy as _deploy
+    from wattnot.gateway import plug as _plug
+    from wattnot.gateway.build import DEFAULTS, build_app, load_config
+
+    cfg = load_config(gateway) if gateway else load_config(None)
+    logs = (os.environ.get("WATTNOT_SAVINGS_LOG") or cfg["savings_log"],
+            os.environ.get("WATTNOT_NODE_LOG") or cfg["node"]["log"])
+    if gateway:
+        app.mount("/gw", build_app(cfg), name="gateway")
+
+    @app.get("/api/dash/plug")
+    def plug_feed(last: int = 50) -> dict:
+        out = _plug.feed(*logs, last=last)
+        out["gateway_mounted"] = bool(gateway)
+        return out
+
+    @app.get("/api/dash/plug/receipt/{rid}")
+    def plug_receipt(rid: str) -> dict:
+        r = _plug.receipt(logs[0], rid)
+        if r is None:
+            raise HTTPException(404, "no such receipt")
+        return r
+
+    @app.get("/api/dash/plug/eu")
+    def plug_eu() -> dict:
+        return _plug.eu_report(*logs)
+
+    @app.post("/api/dash/deploy")
+    def deploy(choice: dict = Body(...)) -> dict:
+        try:
+            return _deploy.render(choice)
+        except (TypeError, ValueError) as e:
+            raise HTTPException(400, str(e)) from e
+
+    node_job: dict = {"thread": None, "result": None}
+
+    @app.post("/api/dash/node/run")
+    def node_run(body: dict = Body(default={})) -> dict:
+        """Add the node agent: rack check, then (with approve) the cap sweep. One job at a time."""
+        import threading
+
+        from wattnot.node import agent as _agent
+        t = node_job["thread"]
+        if t is not None and t.is_alive():
+            raise HTTPException(409, "the node agent is already running")
+        ncfg = load_config(gateway) if gateway else load_config(None)
+        ncfg["node"]["approval"] = "manual"
+
+        def job() -> None:
+            try:
+                node_job["result"] = _agent.run(ncfg, approve=bool(body.get("approve")), log_path=logs[1],
+                                                sleep_s=float(body.get("sleep_s", 0.25)))
+            except Exception as e:  # noqa: BLE001
+                node_job["result"] = {"status": "error", "why": type(e).__name__}
+        node_job["result"] = None
+        node_job["thread"] = threading.Thread(target=job, daemon=True)
+        node_job["thread"].start()
+        return {"started": True}
+
+    @app.get("/api/dash/node/status")
+    def node_status() -> dict:
+        t = node_job["thread"]
+        return {"running": bool(t and t.is_alive()), "result": node_job["result"]}
+
+    _ = DEFAULTS
 
 
 def serve(host: str = "127.0.0.1", port: int = 8765, *,

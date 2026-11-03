@@ -1,0 +1,15 @@
+.plug{max-width:860px;margin:80px auto 40px;padding:0 16px;font-family:system-ui,sans-serif}
+.tabs a{margin-right:16px;font-weight:600}.lead,.small{opacity:.8}.small{font-size:.9em}
+.steps{list-style:none;padding:0}.steps li{margin:18px 0;padding:14px;border-radius:12px;background:rgba(127,127,255,.08)}
+.cards{display:flex;gap:10px;flex-wrap:wrap}.cards label{flex:1;min-width:180px;padding:10px;border:1px solid #8884;border-radius:10px;cursor:pointer}
+.cards input{margin-right:6px}.cards small,.sv small,#adv small{display:block;opacity:.75;margin-bottom:8px}
+.sv{display:block;margin:6px 0}pre{background:#111;color:#eee;padding:12px;border-radius:8px;overflow:auto;white-space:pre-wrap}
+.os button.on{font-weight:700;text-decoration:underline}.err{color:#c33}#adv{margin-top:10px}#adv label{display:block;margin-top:8px}
+.hero{text-align:center;padding:24px}.big{font-size:2.6em;font-weight:700}.tag{font-size:.8em;padding:2px 8px;border-radius:8px;background:#8884}
+.pair{display:flex;gap:24px;justify-content:center;margin-top:8px;font-size:1.2em}
+#graph{width:100%;height:180px;background:rgba(127,127,127,.06);border-radius:10px}
+.k{display:inline-block;width:14px;height:3px;vertical-align:middle;margin:0 4px}.k.a{background:#2a9}.k.b{background:#999}
+#receipts{list-style:none;padding:0}#receipts li{padding:6px 0;border-bottom:1px solid #8883;cursor:pointer;font-family:monospace}
+.cards.two{margin-bottom:14px}.cards a.card{flex:1;min-width:200px;padding:12px;border:1px solid #8884;border-radius:10px;text-decoration:none;color:inherit}
+.cards a.card.on{border-color:#2a9;box-shadow:0 0 0 2px #2a93}.cards a.card small{display:block;opacity:.75}
+.note{padding:8px 10px;border-left:3px solid #2a9;background:#2a91}
