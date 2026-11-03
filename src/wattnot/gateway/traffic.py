@@ -27,6 +27,45 @@ PRICE_IN, PRICE_OUT = 1.25, 4.25    # muse-spark-1.3 $ per 1M (meta/ledger.py)
 EASY = ["What is 17 + 26?", "Capital of Kenya?", "What is 12 * 11?", "Is 91 prime? Answer yes or no.",
         "How many minutes in 3.5 hours?", "What is 15% of 240?", "Name the largest planet.",
         "Convert 5 km to metres.", "What is the square root of 196?", "What is 2 to the power 10?"]
+EASY_ANS = [43, "nairobi", 132, "no", 210, 36, "jupiter", 5000, 14, 1024]
+
+
+def score(text: str, want) -> bool:
+    """Harness scoring: numbers by wattnot.longrun.grade.same_number on the last number, words by match."""
+    from wattnot.longrun.grade import last_number, same_number
+    if isinstance(want, (int, float)):
+        return same_number(last_number(text or ""), want)
+    return str(want).lower() in (text or "").lower()
+
+
+def _agree(a: str, b: str) -> bool:
+    from wattnot.longrun.grade import last_number
+    na, nb = last_number(a or ""), last_number(b or "")
+    if na is not None and nb is not None:
+        return abs(na - nb) <= max(0.011, abs(nb) * 1e-4)
+    return (a or "").strip().lower()[:40] == (b or "").strip().lower()[:40]
+
+
+class NvmlGpu:
+    """GPU 0 through pynvml: energy counter (mJ) and power limit (mW)."""
+    def __init__(self):
+        import pynvml as n
+        n.nvmlInit()
+        self.n, self.h = n, n.nvmlDeviceGetHandleByIndex(0)
+
+    def energy_mj(self) -> int:
+        return self.n.nvmlDeviceGetTotalEnergyConsumption(self.h)
+
+    def limit_w(self) -> int:
+        return self.n.nvmlDeviceGetPowerManagementLimit(self.h) // 1000
+
+    def default_w(self) -> int:
+        return self.n.nvmlDeviceGetPowerManagementDefaultLimit(self.h) // 1000
+
+    def set_w(self, w: int) -> None:
+        self.n.nvmlDeviceSetPowerManagementLimit(self.h, int(w) * 1000)
+
+
 HARD = ["A train leaves at 9:40 and arrives at 13:05. It stopped 3 times for 7 minutes each. How many minutes was it moving? Number only.",
         "Smallest positive n with n mod 3 = 2, n mod 5 = 3, n mod 7 = 2? Number only.",
         "A price goes up 20% then down 20% and ends at 96. Start price? Number only.",
@@ -171,7 +210,14 @@ class TrafficRun:
     it straight to the upstream for the without arm; ``transcribe`` turns a wav into text."""
 
     def __init__(self, send, *, direct=None, transcribe=None, without_log: Path | None = None,
-                 max_usd: float = 1.0, lc_runner=None, spent=None, calib_path: Path | None = None):
+                 max_usd: float = 1.0, lc_runner=None, spent=None, calib_path: Path | None = None,
+                 gpu=None, cap_w: int = 375, answer_check=None, event=None, result_path: Path | None = None):
+        # gpu: NvmlGpu-shaped (energy_mj, limit_w, default_w, set_w); with it, side by side runs the
+        # arms one after the other: without at stock power, then WattNot at the harness cap (375 W,
+        # the H100 holdout winner) once the live answer check passes. answer_check(): AnswerCheck.
+        self.gpu, self.cap_w, self.answer_check = gpu, int(cap_w), answer_check
+        self.event = event or (lambda **kw: None)
+        self.result_path = Path(result_path) if result_path else None
         self.calib_path = Path(calib_path) if calib_path else None
         self.lc_runner = lc_runner or langchain_agent
         self.spent = spent            # callable(run_prefix) -> $ billed through the gateway so far
@@ -204,7 +250,11 @@ class TrafficRun:
         self._stop.clear()
         self.state.update(running=True, done=0, total=len(items), errors=0, usd=0.0, stopped=None,
                           workload=workload, mode=mode, with_without=bool(with_without), without={"done": 0, "usd": 0.0})
-        self.thread = threading.Thread(target=self._run, args=(items, SPEEDS[speed], with_without), daemon=True)
+        target = self._run
+        if with_without and self.direct and self.gpu is not None:
+            target = self._run_sequential   # one GPU: arms one after the other, power measured per arm
+            self.state["sequential"] = True
+        self.thread = threading.Thread(target=target, args=(items, SPEEDS[speed], with_without), daemon=True)
         self.thread.start()
         return dict(self.state)
 
@@ -219,6 +269,86 @@ class TrafficRun:
         s[0], s[1] = s[0] + usd, s[1] + 1
         self.calib_path.parent.mkdir(parents=True, exist_ok=True)
         self.calib_path.write_text(json.dumps(c))
+
+    def _arm(self, name, items, gap, call) -> dict:
+        """One arm, alone on the GPU: NVML energy counter read before and after (MEASURED)."""
+        g = self.gpu
+        self.event(step="arm_start", arm=name, cap_w=g.limit_w())
+        t0, e0 = time.time(), g.energy_mj()
+        texts, toks, usd = [], 0, 0.0
+        for i, (kind, body) in enumerate(items):
+            if self._stop.is_set():
+                self.state["stopped"] = "stopped by you"
+                break
+            body = {"model": "muse-spark-1.3", **SAMPLING, **body}
+            try:
+                r = call(body, i) or {}
+            except Exception:  # noqa: BLE001
+                self.state["errors"] += 1
+                r = {}
+            texts.append(str(r.get("text") or ""))
+            toks += int(r.get("tokens") or 0)
+            usd += float(r.get("usd") or 0)
+            self.state[name + "_done"] = i + 1
+            if gap:
+                time.sleep(gap)
+        j = (g.energy_mj() - e0) / 1000
+        out = {"requests": len(texts), "joules": round(j, 1), "seconds": round(time.time() - t0, 1),
+               "cap_w": g.limit_w(), "tokens": toks, "usd": round(usd, 6),
+               "label": "MEASURED (NVML energy counter over the arm's window)", "texts": texts}
+        self.event(step="arm_end", arm=name, **{k: v for k, v in out.items() if k != "texts"})
+        return out
+
+    def _run_sequential(self, items, gap, with_without) -> None:
+        g = self.gpu
+        stock = g.default_w()
+        res: dict = {"mode": "sequential", "stock_w": stock, "harness_cap_w": self.cap_w}
+        try:
+            g.set_w(stock)
+            res["without"] = wo = self._arm("without", items, gap, lambda b, i: self.direct(b))
+            check = self.answer_check() if self.answer_check else None
+            if check is not None:
+                check.stock()                      # stock answers at stock power
+                g.set_w(self.cap_w)
+                st = check.at(self.cap_w)
+                res["answer_check"] = st
+                self.event(step="quality_check", cap_w=self.cap_w, **{k: v for k, v in st.items() if k != "label"})
+                if not st["accepted"]:
+                    g.set_w(stock)
+                    self.event(step="rolled_back", to_cap_w=stock, failed=st.get("why_not"))
+            else:
+                res["answer_check"] = {"accepted": False, "why_not": ["no live answer check: cap not applied"]}
+            res["with"] = w = self._arm("with", items, gap,
+                                        lambda b, i: self.send(b, {"x-wattnot-run": f"sim-{i}", "x-wattnot-traffic": "simulated"}))
+            wants = [EASY_ANS[EASY.index(b["messages"][-1]["content"])]
+                     if k == "text" and b["messages"][-1]["content"] in EASY else None for k, b in items]
+            for arm in (wo, w):
+                scored = [score(t, x) for t, x in zip(arm["texts"], wants) if x is not None]
+                arm["correct"] = sum(scored) if scored else None
+                arm["scored"] = len(scored)
+                arm["j_per_correct"] = round(arm["joules"] / arm["correct"], 1) if arm.get("correct") else None
+            res["agreement"] = round(sum(_agree(a, b) for a, b in zip(w["texts"], wo["texts"])) / max(1, len(w["texts"])), 3)
+            res["no_worse"] = (w.get("correct") or 0) >= (wo.get("correct") or 0)
+            if wo["joules"]:
+                res["energy_saved_pct"] = round(100 * (wo["joules"] - w["joules"]) / wo["joules"], 2)
+                res["energy_label"] = "MEASURED"
+            self.state["without"]["done"] = wo["requests"]
+            self.state["done"] = w["requests"]
+        except Exception as e:  # noqa: BLE001
+            res["error"] = type(e).__name__
+            self.state["errors"] += 1
+        finally:
+            try:
+                g.set_w(stock)                     # always back to stock power
+            finally:
+                res["final_limit_w"] = g.limit_w()
+                self.event(step="restored", cap_w=res["final_limit_w"])
+                self.state["sequential_result"] = {k: ({kk: vv for kk, vv in v.items() if kk != "texts"}
+                                                       if isinstance(v, dict) else v) for k, v in res.items()}
+                if self.result_path:
+                    self.result_path.parent.mkdir(parents=True, exist_ok=True)
+                    self.result_path.write_text(json.dumps(res, indent=1))
+                self.state["running"] = False
 
     def _run(self, items, gap, with_without) -> None:
         try:

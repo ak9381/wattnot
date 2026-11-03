@@ -41,6 +41,14 @@ def export(savings_log, out_dir, *, round_id: str = "gw", model: str | None = No
         b = arm(wo, lambda x: x.get("joules", 0), lambda x: x.get("usd", 0))
         b["energy_j"]["label"] = "ESTIMATE (stock baseline from Test step)"
         b["baseline_only"] = True
+    seq = log.with_name("sequential.json")
+    if seq.exists():   # one GPU, arms one after the other: MEASURED NVML joules per arm
+        d = json.loads(seq.read_text())
+        for a, dst in (("with", w), ("without", b)):
+            if d.get(a):
+                dst["energy_j"] = {"value": d[a]["joules"], "label": "MEASURED"}
+                dst["correct"], dst["cap_w"] = d[a].get("correct"), d[a].get("cap_w")
+        jl = "MEASURED"
     res = {"per_arm": {"with_wattnot": w, "without_wattnot": b}}
     if recs and wo:
         wj, bj = w["energy_j"]["value"] / len(recs), b["energy_j"]["value"] / len(wo)

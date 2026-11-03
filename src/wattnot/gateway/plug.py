@@ -74,6 +74,7 @@ def feed(savings_log: str | Path | None, node_log: str | Path | None = None, las
             "water": {"litres": series[-1]["litres"] if series else 0,
                       "litres_baseline": series[-1]["litres_baseline"] if series else 0,
                       "label": f"ESTIMATE ({WUE_L_PER_KWH} L/kWh on-site cooling)"},
+            "sequential": _seq(savings_log),
             "receipts": [{k: r.get(k) for k in ("receipt_id", "prev_receipt_id", "ts", "actual", "baseline",
                                                  "labels", "stepped_up", "guard_stopped", "status")}
                          for r in recs[-last:]][::-1]}
@@ -81,6 +82,22 @@ def feed(savings_log: str | Path | None, node_log: str | Path | None = None, las
 
 def receipt(savings_log: str | Path | None, rid: str) -> dict | None:
     return next((r for r in _read(savings_log) if r.get("receipt_id") == rid), None)
+
+
+def _seq(savings_log) -> dict | None:
+    """The one-GPU, one-arm-at-a-time result (sequential.json): MEASURED NVML joules per arm."""
+    p = Path(savings_log).with_name("sequential.json") if savings_log else None
+    if not p or not p.exists():
+        return None
+    try:
+        d = json.loads(p.read_text())
+    except ValueError:
+        return None
+    arm = lambda a: {k: (d.get(a) or {}).get(k) for k in ("joules", "requests", "correct", "scored",  # noqa: E731
+                                                          "j_per_correct", "cap_w", "tokens", "label")}
+    return {"without": arm("without"), "with": arm("with"), "energy_saved_pct": d.get("energy_saved_pct"),
+            "agreement": d.get("agreement"), "no_worse": d.get("no_worse"),
+            "final_limit_w": d.get("final_limit_w"), "label": "MEASURED (NVML, arms run one after the other)"}
 
 
 def eu_report(savings_log: str | Path | None, node_log: str | Path | None = None) -> dict:
@@ -98,6 +115,7 @@ def eu_report(savings_log: str | Path | None, node_log: str | Path | None = None
             "energy_saved_kwh": {"value": round((e.get("baseline", 0) - e.get("actual", 0)) / 1000, 6),
                                  "label": "ESTIMATE (vs baseline)"},
             "water_litres": {"value": f["water"]["litres"], "label": f["water"]["label"]},
+            "sequential_arms": _seq(savings_log),
             "first_receipt": f["receipts"][-1]["receipt_id"] if f["receipts"] else None,
             "last_receipt": f["receipts"][0]["receipt_id"] if f["receipts"] else None}
 

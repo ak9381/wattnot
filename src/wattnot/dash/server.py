@@ -1005,7 +1005,13 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
             r = cl.post("/v1/chat/completions", json=body, headers=headers)
         rid = r.headers.get("x-wattnot-receipt")
         rec = _plug.receipt(logs[0], rid) if rid else None
-        return {"receipt_id": rid, "status": r.status_code, "usd": (rec or {}).get("actual", {}).get("usd", 0)}
+        try:
+            text = str(r.json()["choices"][0]["message"].get("content") or "")
+        except (ValueError, KeyError, IndexError, TypeError):
+            text = ""
+        a = (rec or {}).get("actual", {})
+        return {"receipt_id": rid, "status": r.status_code, "usd": a.get("usd", 0), "text": text,
+                "tokens": int(a.get("prompt_tokens") or 0) + int(a.get("completion_tokens") or 0)}
 
     def _direct(body: dict) -> dict:
         """The without-WattNot arm: same request, straight to the upstream at the baseline tier."""
@@ -1019,7 +1025,12 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
         resp = up(tier_body(clean, base), {"x-wattnot-arm": "without"})
         u = resp.get("usage") or {}
         pin, pout = int(u.get("prompt_tokens") or 0), int(u.get("completion_tokens") or 0)
-        return {"model": base["model"], "prompt_tokens": pin, "completion_tokens": pout,
+        try:
+            text = str(resp["choices"][0]["message"].get("content") or "")
+        except (KeyError, IndexError, TypeError, AttributeError):
+            text = ""
+        return {"model": base["model"], "prompt_tokens": pin, "completion_tokens": pout, "text": text,
+                "tokens": pin + pout,
                 "usd": round(_usd(base["model"], pin, pout), 7),
                 "joules": round(_jpt(c, base["model"]) * (pin + pout), 2), "joules_label": "ESTIMATE"}
 
@@ -1034,8 +1045,34 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
 
     traffic_t0 = [0.0]
     calib_path = Path(logs[0]).with_name(Path(logs[0]).stem + ".traffic-calib.json")
+    def _event(**kw):
+        try:
+            with open(logs[1], "a") as f:
+                f.write(json.dumps({"kind": "event", "ts": time.time(), "label": "MEASURED", **kw}) + "\n")
+        except OSError:
+            pass
+
     traffic = _traffic.TrafficRun(_send, direct=_direct, transcribe=_transcribe, without_log=without_log, spent=_spent,
-                                  calib_path=calib_path)
+                                  calib_path=calib_path, event=_event,
+                                  result_path=Path(logs[0]).with_name("sequential.json"))
+
+    def _attach_gpu():
+        """GPU helper connected (node.enabled) and NVML present: side by side runs sequentially."""
+        c = gw.cfg or cfg
+        if traffic.gpu is not None or not (c.get("node") or {}).get("enabled") or os.environ.get("WATTNOT_NO_NVML"):
+            return
+        try:
+            g = _traffic.NvmlGpu()
+        except Exception:  # noqa: BLE001 - no NVML: stays concurrent, energy ESTIMATE
+            return
+        from wattnot.node.answercheck import AnswerCheck, gateway_asker
+
+        class _A:   # NVML-shaped view for AnswerCheck
+            def nvmlDeviceGetTotalEnergyConsumption(self, _h):
+                return g.energy_mj()
+        traffic.gpu = g
+        traffic.cap_w = int((c.get("node") or {}).get("cap_max_w", 375))
+        traffic.answer_check = lambda: AnswerCheck(gateway_asker(c), _A())
 
     def _est(body: dict) -> dict:
         from urllib.parse import urlparse
@@ -1062,6 +1099,7 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
         try:
             if not traffic.state.get("running"):
                 traffic_t0[0] = time.time()
+            _attach_gpu()
             return traffic.start(body.get("workload", "mixed"), int(body.get("n", 60)), body.get("speed", "normal"),
                                  bool(body.get("with_without")), mode=body.get("mode", "live"),
                                  base_url=str(request.base_url).rstrip("/") + "/gw/v1")
