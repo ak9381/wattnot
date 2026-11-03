@@ -10,6 +10,7 @@ import { openThermal } from "./thermal.js";
 import { wireR7, infoBtn } from "./r7.js";
 import "./v2r7.js";
 import { esc, dot, numLab, legendHtml } from "./theme.js";
+import { getRun } from "./runpick.js";
 
 // ---- live meter strip: power, cost and water per request scale, straight from the bundle.
 // Every value comes from the recorded runs, the tuning ledger or a stated published factor;
@@ -28,6 +29,15 @@ export function meterStage(cues, shown) {
 
 // Meter tiles for one replay: power (W and J per request), cost ($ per 1M requests) and
 // water (L per 1M requests, ESTIMATE from the bundle's stated WUE factor).
+// The meter's title names the replay it really shows. These tiles are always the bundled
+// H100/hosted replay; when the header picker names a different run (a Modal or Baseten job),
+// say so instead of letting "The H100 run on E2E" read as that run's own numbers.
+export function meterTitle(title, picked) {
+  if (!picked || !picked.provider || /h100|e2e|own/i.test(picked.provider)) return title;
+  return `${title} (recorded replay; ${picked.name || picked.id} is not GPU-metered here)`;
+}
+const pickedRun = () => { try { const id = getRun(); return (globalThis.__wnRuns || []).find((r) => r.id === id) || null; } catch { return null; } };
+
 export function meterFor(d, id) {
   const wue = d.story.water.factor_l_per_kwh, rate = d.story.price.usd_per_kwh;
   const foot = `water = GPU kWh × WUE ${wue} L/kWh (on-site cooling, ESTIMATE); up to 1.8 L/kWh including power-plant water (ESTIMATE) · electricity $${rate}/kWh (EIA) · – = not metered, never guessed`;
@@ -43,7 +53,7 @@ export function meterFor(d, id) {
   const L = d.story.levers.find((l) => l.id === "cap");
   const pw = d.nodes.find((n) => n.id === "telemetry")?.stats.find((s) => s.k === "probe_w");
   const kwh = (wh) => wh * 1000;
-  return { title: d.replays.h100.title, lever: L, foot, tiles: [
+  return { title: meterTitle(d.replays.h100.title, pickedRun()), lever: L, foot, tiles: [
     { k: "power", label: "Power · per request", before: `${(L.wh_before * JH).toFixed(1)} J`, after: `${(L.wh_after * JH).toFixed(1)} J`, tag: "MEASURED", sub: pw ? `probe mean ${fmt(pw.v)} W · NVML` : "measured GPU energy (NVML)" },
     { k: "cost", label: "Cost · per 1M requests", before: mmMoney(kwh(L.wh_before) * rate), after: mmMoney(kwh(L.wh_after) * rate), tag: "ESTIMATE", sub: `measured GPU kWh × $${rate}/kWh` },
     { k: "water", label: "Water · per 1M requests", before: `${(kwh(L.wh_before) * wue).toFixed(1)} L`, after: `${(kwh(L.wh_after) * wue).toFixed(1)} L`, tag: "ESTIMATE", sub: `GPU kWh × WUE ${wue} L/kWh (on-site cooling); up to 1.8 L/kWh incl. power-plant water` },
@@ -97,8 +107,10 @@ export class ArchPage {
         <section id="aexpertBox" hidden aria-label="expert details"></section>
         <section class="aroom" id="aroom" hidden aria-label="room scan"><h3>Room scan · SAM 3.1 <span id="aroomTag"></span></h3><div id="aroomBody"></div></section>
         <div id="amap"></div>
+        <section class="aclips" id="aclips" hidden aria-label="demo clips"></section>
       </div>
       <aside class="panel in-drawer" id="apanel" aria-label="step details"><button class="btn x" id="apx" aria-label="close details">Close</button><div id="apbody"></div></aside>`;
+    this.mountClips();
     const rs = Object.values(data.replays);
     if ($("#rsel", host)) $("#rsel", host).innerHTML = rs.map((r) => `<option value="${r.id}">${esc(r.title)}</option>`).join("") + `<option value="live">Live run (events file)</option>`;
     $("#afil", host).innerHTML = FILTERS.map(([id, t, c]) => `<button class="fchip ${id === "meta" ? "meta" : ""}" data-f="${id}" ${c ? `style="--c:${c}"` : ""} aria-pressed="${id === "all"}">${c ? "<i></i>" : ""}${esc(t)}${id === "meta" ? ` <span class="muted">${data.nodes.filter((n) => n.partners.includes("meta")).length} steps</span>` : ""}</button>`).join("");
@@ -330,10 +342,20 @@ export class ArchPage {
   // ---- live following
   async startLive() {
     const H = this.host, cap = $("#acap", H);
-    let ok = true; try { const r = await fetch("/api/dash/health"); ok = (await r.json()).events; } catch { ok = false; }
-    if (!ok) { cap.innerHTML = `<span class="err">No run is being followed. Start the server with <code>--events path/to/events.jsonl</code> to watch a live run here. Recorded replays work without it.</span>`; return; }
+    // A Modal/Baseten round picked in the header (runpick.js) follows ITS OWN events file
+    // (server.py resolves ?run= through /api/launch/rounds); with nothing picked this follows
+    // the server's own --events FILE, same as before.
+    const runId = getRun();
+    const q = runId ? `?run=${encodeURIComponent(runId)}` : "";
+    let ok = true; try { const r = await fetch(`/api/dash/health${q}`); ok = (await r.json()).events; } catch { ok = false; }
+    if (!ok) {
+      cap.innerHTML = runId
+        ? `<span class="err">No step events recorded for this run.</span>`
+        : `<span class="err">No run is being followed. Start the server with <code>--events path/to/events.jsonl</code> to watch a live run here. Recorded replays work without it.</span>`;
+      return;
+    }
     this.view.reset(); cap.textContent = "Following the run as it writes events…";
-    const es = (this.es = new EventSource(`/api/dash/arch/live?speed=${this.speed}`)); let last = 0;
+    const es = (this.es = new EventSource(`/api/dash/arch/live?speed=${this.speed}${q}`)); let last = 0;
     this.roomPay = {}; this.tagged = false; this.spark = []; this.meta = {}; $("#aspark", H)?.remove(); $("#ameta", H)?.remove(); { const ar = $("#aroom", H); if (ar) ar.hidden = true; }
     es.addEventListener("event", (m) => {
       let ev; try { ev = JSON.parse(m.data); } catch { return; }
@@ -405,6 +427,22 @@ export class ArchPage {
     let box = $("#aspark", this.host);
     if (!box) { box = document.createElement("div"); box.id = "aspark"; $("#acap", this.host).after(box); }
     box.innerHTML = renderSparkTrace(this.spark);
+  }
+  // Recorded demo clips (eye and voice tests on the H100), from data/clips/h100-1103/clips.json.
+  // Hidden when the manifest is missing; each clip keeps its own label and caveat.
+  async mountClips() {
+    const box = $("#aclips", this.host); if (!box) return;
+    const url = (p) => `/api/launch/file?path=${encodeURIComponent(p)}`;
+    try {
+      const r = await fetch(url("data/clips/h100-1103/clips.json")); if (!r.ok) return;
+      const m = await r.json(); if (!Array.isArray(m.clips) || !m.clips.length) return;
+      box.innerHTML = `<h3>${esc(m.title || "Demo clips")}</h3><div class="aclip-row">${m.clips.map((c) => `
+        <figure class="aclip"><video controls src="${esc(url(c.file))}" ${c.poster ? `poster="${esc(url(c.poster))}"` : ""} style="max-width:100%"></video>
+        <figcaption><b>${esc(c.title)}</b> · ${esc(c.result)}${c.label ? dot(c.label) : ""}<br><span class="muted">${esc(c.note || "")}</span></figcaption></figure>`).join("")}</div>`;
+      // the .mp4 files are not in git (.gitignore *.mp4): on a checkout without them, drop the clip
+      box.querySelectorAll("video").forEach((v) => { v.preload = "metadata"; v.addEventListener("error", () => { v.closest("figure")?.remove(); if (!box.querySelector("figure")) box.hidden = true; }); });
+      box.hidden = false;
+    } catch { /* no clips: nothing to show */ }
   }
   stopLive() { this.es?.close(); this.es = null; }
   fitOnce() {

@@ -47,6 +47,34 @@ def test_round_view_lists_attachments(tmp_path, monkeypatch):
     assert got[0]["run_id"] == "r04e-lc-1" and got[0]["signed"] is False
 
 
+def test_round_events_includes_attachment_events_not_just_the_rounds_own(tmp_path, monkeypatch):
+    # a plain rglob(rdir) misses an attached run's events: they live in a sibling
+    # data/attachments/<round>/<run_id>/ folder, not inside the round's own directory.
+    from wattnot.dash import launch as L
+    monkeypatch.setattr(L, "ROOT", tmp_path)
+    rdir = tmp_path / "r04"
+    (rdir / "flow" / "runs" / "run_x").mkdir(parents=True)
+    (rdir / "flow" / "runs" / "run_x" / "events.jsonl").write_text("{}\n")
+    att = tmp_path / "attachments" / "r04" / "r04-lc-1"
+    att.mkdir(parents=True)
+    (att / "events-with_wattnot.jsonl").write_text("{}\n")
+    got = L.round_events(rdir)
+    assert "r04/flow/runs/run_x/events.jsonl" in got
+    assert "attachments/r04/r04-lc-1/events-with_wattnot.jsonl" in got
+
+
+def test_events_path_for_resolves_a_round_id_and_is_none_without_events(tmp_path, monkeypatch):
+    from wattnot.dash import launch as L
+    monkeypatch.setattr(L, "ROOT", tmp_path)
+    monkeypatch.setattr(L, "rounds", lambda: [
+        {"id": "modal_a100:r04", "events": ["data/modal-full-1101/r04/events.jsonl"]},
+        {"id": "baseten:r01", "events": []},
+    ])
+    assert L.events_path_for("modal_a100:r04") == tmp_path / "data/modal-full-1101/r04/events.jsonl"
+    assert L.events_path_for("baseten:r01") is None
+    assert L.events_path_for("nope:r99") is None
+
+
 def test_block_run_is_detached_and_waits_for_the_app():
     src = (ROOT / "scripts" / "e2e" / "modal_block_run.py").read_text()
     assert '"modal", "run", "--detach"' in src

@@ -640,9 +640,56 @@ def rounds() -> list[dict]:
                     "features": table["table"], "drift": table["drift"],
                     "source": f.relative_to(ROOT).as_posix(),
                     "receipt": (feats / "receipt.json").relative_to(ROOT).as_posix() if (feats / "receipt.json").exists() else None,
-                    "events": sorted(p.relative_to(ROOT).as_posix() for p in rdir.rglob("events*.jsonl"))[:4],
+                    "events": round_events(rdir),
                     "attachments": round_attachments(rdir)})
     return out
+
+
+def round_events(rdir: Path) -> list[str]:
+    """Every events*.jsonl for a round: inside its own folder (direct, or nested under
+    flow/runs/<run_id>/), plus any attached runs' own events (data/attachments/<round>/<run_id>/,
+    a sibling of rdir that a plain rglob(rdir) never reaches)."""
+    found = list(rdir.rglob("events*.jsonl"))
+    attach_dir = rdir.parent / "attachments" / rdir.name
+    if attach_dir.is_dir():
+        found += list(attach_dir.rglob("events*.jsonl"))
+    return sorted({p.relative_to(ROOT).as_posix() for p in found})[:8]
+
+
+def events_path_for(run_id: str) -> Path | None:
+    """Resolve a round id (as listed by /api/launch/rounds, e.g. "modal_a100:r04") to its best
+    events file, for the live graph on web/dash's Architecture view. None when that round has no
+    recorded events."""
+    newest = False
+    if run_id.startswith("job:"):
+        # a dashboard launch ("job:<id>", e.g. the Modal own 1103 run) has no events of its own:
+        # its stage writes into the round folder it ran, so follow that round's NEWEST events
+        # file (the one this job wrote), not the oldest one from an earlier run of the round
+        run_id, newest = _job_round(run_id[4:]), True
+        if run_id is None:
+            return None
+    found = [ROOT / e for r in rounds() if r["id"] == run_id for e in r["events"]]
+    if not found:
+        return None
+    if newest:   # the job's own orchestrate run (flow/runs/<run_id>/) first, newest first;
+        # every folder of that round counts (a round id can be listed twice, smoke and full)
+        found.sort(key=lambda p: ("/flow/runs/" in p.as_posix(),
+                                  p.stat().st_mtime if p.exists() else 0), reverse=True)
+    return found[0]
+
+
+def _job_round(jid: str) -> str | None:
+    """'<provider>:<round>' for a dashboard launch, from its own config.json (provider and the
+    stage command's --rounds argument). None when the job is unknown or ran no single round."""
+    try:
+        c = json.loads((JOBS_DIR / jid / "config.json").read_text())
+    except (OSError, ValueError):
+        return None
+    cfg = c.get("config") or {}
+    provider = cfg.get("provider") or c.get("provider")
+    cmd = [str(x) for x in (c.get("cmd") or [])]
+    rnd = cmd[cmd.index("--rounds") + 1] if "--rounds" in cmd[:-1] else None
+    return f"{provider}:{rnd.split(',')[0].split()[0]}" if provider and rnd else None
 
 
 def round_attachments(rdir: Path) -> list[dict]:

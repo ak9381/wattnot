@@ -1,10 +1,117 @@
 import json
 
-from wattnot.longrun.driver import dry_run
+from wattnot.longrun.driver import _block_route, dry_run
 
 
 def ok(b):
     return 0
+
+
+def _events(out):
+    return [json.loads(ln) for ln in (out / "live.jsonl").read_text().splitlines() if ln.strip()]
+
+
+def test_block_route_picks_a_real_architecture_node():
+    # web/dash's live graph (archpage.js) only lights a node it knows; these must be real ids
+    # from arch_spec.NODES, same canonical steps orchestrate's own Stream uses (events.STEP_NODE).
+    assert _block_route("t1-sweep") == ("e2e_rig", "sweep")
+    assert _block_route("b2-wonder-sweep") == ("e2e_rig", "sweep")   # sweep wins over wonder
+    assert _block_route("t1-wonder") == ("optimizer", "study")
+    assert _block_route("t2c-prefix") == ("cache", "ab")
+    assert _block_route("t2d-combined") == ("apply", "keep")
+    assert _block_route("t3-copy") == ("receipts", "build")
+    assert _block_route("b3-tiers") == ("apply", "cap")
+    assert _block_route("p1-phase") == ("apply", "config")
+    assert _block_route("p1-think") == ("agent", "guard")
+    assert _block_route("p1-agentwaste") == ("agent", "settle")   # not langchain/agent.call
+    assert _block_route("b9-mystery") == ("workload", "send")   # no keyword: generic workload
+
+
+def test_every_route_names_a_real_node_and_sub():
+    from wattnot.dash.arch_spec import NODES
+    from wattnot.longrun.driver import _NODE_KEYWORDS
+    subs = {n["id"]: {s["id"] for s in n["subs"]} for n in NODES}
+    for _, (node, sub) in _NODE_KEYWORDS + (("", ("workload", "send")),):
+        assert node in subs and sub in subs[node], (node, sub)
+
+
+def test_sweep_blocks_are_left_to_orchestrate(tmp_path):
+    dry_run(tmp_path, runner=ok)
+    assert not [e for e in _events(tmp_path) if "sweep" in (e.get("step_id") or "")
+                and (e.get("run_id") or "").startswith("driver-")]
+
+
+def test_graph_events_never_fail_a_block(tmp_path, monkeypatch):
+    import os as _os
+    from wattnot.longrun import driver as drv
+    real = _os.open
+
+    def boom(path, *a, **k):   # every live.jsonl write fails
+        if str(path).endswith("live.jsonl"):
+            raise OSError("disk full")
+        return real(path, *a, **k)
+    monkeypatch.setattr(drv.os, "open", boom)
+    st = dry_run(tmp_path, runner=ok)
+    assert st["blocks"] and all(v["status"] in ("done", "skipped", "dropped") for v in st["blocks"].values())
+
+
+def test_graph_events_flag_off_writes_nothing_and_marks_state(tmp_path, monkeypatch):
+    monkeypatch.setenv("WATTNOT_GRAPH_EVENTS", "0")
+    st = dry_run(tmp_path, runner=ok)
+    live = tmp_path / "live.jsonl"
+    evs = _events(tmp_path) if live.exists() else []
+    assert not [e for e in evs if (e.get("run_id") or "").startswith("driver-")]
+    assert st.get("graph_events") is None
+
+
+def test_graph_events_on_marks_state_for_the_sidecar(tmp_path):
+    st = dry_run(tmp_path, runner=ok)
+    assert st.get("graph_events") == "driver"
+
+
+def test_every_block_appends_step_events_not_just_the_sweep(tmp_path):
+    """Today's gap: only t1-sweep's orchestrate subprocess writes to live.jsonl. Every block in
+    the plan must now get its own step.started/step.finished pair there, so web/dash's live graph
+    animates for the whole run, not just the sweep."""
+    st = dry_run(tmp_path, runner=ok)
+    events = _events(tmp_path)
+    started = {e["step_id"].split("#")[0] for e in events if e["type"] == "step.started"}
+    finished = {e["step_id"].split("#")[0] for e in events if e["type"] == "step.finished"}
+    ran_or_skipped = {b for b, v in st["blocks"].items() if v["status"] != "dropped" and "sweep" not in b}
+    assert ran_or_skipped and ran_or_skipped <= started
+    assert ran_or_skipped <= finished
+    assert events[0]["schema_version"] == "wattnot.event/1"
+    assert all(e.get("type") for e in events)
+
+
+def test_skipped_block_gets_a_skipped_step_event(tmp_path):
+    dry_run(tmp_path, runner=ok)   # b5-second-model needs Akash's yes: skipped, not run
+    skip = next(e for e in _events(tmp_path)
+                if e["type"] == "step.finished" and e["step_id"] == "b5-second-model")
+    assert skip["data"]["status"] == "skipped"   # distinct from a real failure
+    assert skip["data"]["outputs"] == "needs Akash's yes"
+
+
+def test_block_with_a_tiers_result_emits_applied_cap_and_gate_results(tmp_path):
+    def runner(b):
+        if b.id == "b3-tiers":
+            d = tmp_path / "runs" / "b3-tiers"
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "tiers_summary.json").write_text(json.dumps({
+                "cap_w": 350,
+                "tiers": [{"tier": "easy", "gate": "pass", "cap": {"pass_pct": 100.0, "p99_s": 0.01}},
+                          {"tier": "hard", "gate": "blocked", "cap": {"pass_pct": 80.0, "p99_s": 0.5},
+                           "why_not": ["p99 +20%"]}]}))
+        return 0
+    dry_run(tmp_path, runner=runner)
+    events = _events(tmp_path)
+    applied = [e for e in events if e["type"] == "action.applied" and e["data"].get("change")]
+    gates = [e for e in events if e["type"] == "gate.result"]
+    rolled_back = [e for e in events if e["type"] == "action.rolled_back"]
+    assert applied and applied[0]["data"]["change"] == {"cap_w": 350}
+    assert {g["data"]["check"] for g in gates} == {"easy", "hard"}
+    assert any(g["data"]["passed"] is False and g["data"]["why_not"] for g in gates)
+    assert rolled_back and "1 of 2 tiers passed" in rolled_back[0]["data"]["reason"]
 
 
 def test_full_plan_with_link_drop_keeps_vm_and_finishes(tmp_path):

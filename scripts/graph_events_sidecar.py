@@ -22,7 +22,7 @@ from pathlib import Path
 
 from wattnot.proof.events import Stream
 
-# Same table as the drafted driver._NODE_KEYWORDS (first match wins).
+# Same table as wattnot.longrun.driver (first match wins); imported when available.
 NODE_KEYWORDS: tuple[tuple[str, tuple[str, str]], ...] = (
     ("setup", ("e2e_rig", "setup")), ("probe", ("e2e_rig", "probe")),
     ("sweep", ("e2e_rig", "sweep")), ("wonder", ("optimizer", "wonder")),
@@ -35,11 +35,17 @@ PASSED = {"done", "skipped", "dropped"}
 FINAL = {"done", "failed", "lost", "skipped", "dropped"}
 
 
+try:
+    from wattnot.longrun.driver import _NODE_KEYWORDS as NODE_KEYWORDS  # noqa: F811
+except Exception:  # an older checkout: keep the local table
+    pass
+
+
 def block_route(block_id: str) -> tuple[str, str]:
     for key, route in NODE_KEYWORDS:
-        if key in block_id:
+        if key in block_id.lower():
             return route
-    return ("workload", block_id)
+    return ("workload", "send")
 
 
 def is_sweep(block_id: str) -> bool:
@@ -103,6 +109,12 @@ class Sidecar:
         changed, i.e. a retry), then start a step for the heartbeat's current block."""
         state = read_json(self.out / "driver_state.json")
         hb = read_json(self.out / "heartbeat.json")
+        if state.get("graph_events") == "driver":
+            # the driver emits its own block steps (wattnot.longrun.driver); doubling them here
+            # would draw every step twice, so stand down and close anything still open
+            for bid in list(self.open):
+                self._finish(bid, ((state.get("blocks") or {}).get(bid) or {}).get("status") or "failed", {})
+            return
         blocks = state.get("blocks") or {}
         # The driver beats block=<id>, note=None at the top of every block (also for ones it is
         # about to pass over as done/skipped), then note="in-block" every 60 s while it runs.

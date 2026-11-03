@@ -30,9 +30,11 @@ import subprocess
 import sys
 import time
 from dataclasses import asdict, dataclass, field, replace
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Callable, Protocol
 
+from wattnot.proof.events import Stream
 from wattnot.proof.teardown import plan_teardown
 
 from .recorder import Recorder
@@ -53,6 +55,44 @@ DISK_FREE_FLOOR_GB = float(os.environ.get("WATTNOT_DISK_FREE_FLOOR_GB", "15"))
 # child runs in its OWN session, so the driver can kill the WHOLE group on timeout or on stop and
 # never leave an orphaned setup dialing a deleted VM's IP (RUN3, attempt 2).
 _CHILD_PGIDS: set[int] = set()
+
+# block id keyword -> (node, sub) on the Architecture map (web/dash's live graph, see
+# wattnot.proof.events.STEP_NODE for the canonical sweep steps). Checked in order, first match
+# wins, so "b2-wonder-sweep" (both "wonder" and "sweep") lands on the sweep node, not the
+# optimizer. A block with no match lights the generic "workload" node under its own id.
+_NODE_KEYWORDS: tuple[tuple[str, tuple[str, str]], ...] = (
+    ("setup", ("e2e_rig", "setup")), ("probe", ("e2e_rig", "probe")),
+    ("sweep", ("e2e_rig", "sweep")), ("wonder", ("optimizer", "study")),
+    ("eu", ("eu", "export")), ("eye", ("gates", "judge")), ("spoken", ("gates", "judge")),
+    ("prefix", ("cache", "ab")), ("flex", ("flex", "event")),
+    ("langchain", ("agent", "call")), ("agentwaste", ("agent", "settle")),
+    ("think", ("agent", "guard")), ("tiers", ("apply", "cap")), ("phase", ("apply", "config")),
+    ("sam", ("sam", "masks")), ("room", ("sam", "masks")),
+    ("fp8", ("models", "serve")), ("quant", ("models", "serve")), ("batch", ("workload", "send")),
+    ("topk", ("e2e_rig", "topk")), ("adaptive", ("adaptive", "arms")),
+    ("combined", ("apply", "keep")), ("copy", ("receipts", "build")),
+)
+
+
+def _block_route(block_id: str) -> tuple[str, str]:
+    """Which Architecture-map (node, sub) a block's events light up. Every route names a real
+    node and sub-step from wattnot.dash.arch_spec, so nothing lands on an unknown sub."""
+    bid = block_id.lower()
+    for key, route in _NODE_KEYWORDS:
+        if key in bid:
+            return route
+    return ("workload", "send")
+
+
+def graph_events_enabled() -> bool:
+    """Driver-side graph events are on unless WATTNOT_GRAPH_EVENTS=0 (e.g. when the external
+    sidecar, scripts/graph_events_sidecar.py, is the one animating the graph)."""
+    return os.environ.get("WATTNOT_GRAPH_EVENTS", "1").strip().lower() not in ("0", "off", "false", "no")
+
+
+def _iso_now() -> str:
+    dt = datetime.now(UTC)
+    return dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{dt.microsecond // 1000:03d}Z"
 
 
 def kill_child_groups(sig: int = signal.SIGTERM) -> None:
@@ -998,6 +1038,107 @@ class Driver:
         self.state = (json.loads(self.state_path.read_text()) if self.state_path.exists()
                       else {"blocks": {}, "events": [], "stopped": None})
         self.rec = Recorder(out, out / "live.jsonl", label=label)
+        # Every block's graph events (wattnot.event/1), same shape t1-sweep's orchestrate
+        # subprocess already writes to live.jsonl, so web/dash's live graph animates for every
+        # block, not just the sweep. Purely cosmetic: every emit goes through _ev_safe, so a bad
+        # disk, a bad result shape or a bug here can never fail or stop a block. Sweep blocks are
+        # left to orchestrate (it writes their own steps). Off with WATTNOT_GRAPH_EVENTS=0; when on,
+        # driver_state.json says graph_events="driver" so the sidecar stands down (no doubles).
+        self._ev_seq = 0
+        self.events = Stream(self._event_sink, label=label)
+        self.graph_events = graph_events_enabled()
+        self.state["graph_events"] = "driver" if self.graph_events else None
+
+    def _event_sink(self, raw: dict) -> None:
+        self._ev_seq += 1
+        event = {"schema_version": "wattnot.event/1", "run_id": f"driver-{self.label}",
+                 "seq": self._ev_seq, "ts": _iso_now(), "type": raw["type"],
+                 "step_id": raw.get("step_id"), "parent_step_id": raw.get("parent_step_id"),
+                 "data": raw.get("data") or {}}
+        live = self.rec.live
+        live.parent.mkdir(parents=True, exist_ok=True)
+        line = (json.dumps(event, ensure_ascii=False, separators=(",", ":"), default=str) + "\n").encode()
+        # one O_APPEND write per line: orchestrate may append to the same file concurrently
+        fd = os.open(live, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+        try:
+            os.write(fd, line)
+        finally:
+            os.close(fd)
+
+    def _ev_safe(self, fn, *args):
+        if not self.graph_events:
+            return None
+        try:
+            return fn(*args)
+        except Exception as e:  # graph events must never fail a block
+            try:
+                self.log(f"[graph-events] {type(e).__name__}: {e}")
+            except Exception:
+                pass
+            return None
+
+    @staticmethod
+    def _own_events(b: Block) -> bool:
+        return "sweep" not in b.id
+
+    def _block_step(self, b: Block, label_suffix: str = ""):
+        if not self._own_events(b):
+            return None
+
+        def go():
+            node, sub = _block_route(b.id)
+            return self.events.start(self.events.sid(b.id), node, sub, b.title + label_suffix,
+                                     inputs=f"budget {b.hours * 60:.0f} min", say=b.title)
+        return self._ev_safe(go)
+
+    def _skip_block_event(self, b: Block, status: str, why: str) -> None:
+        # a bare Stream.finish() only knows ok/failed; a block that never ran is neither, so this
+        # emits step.finished directly with the real status ("skipped" or "dropped").
+        st = self._block_step(b)
+        if st is None:
+            return
+        self._ev_safe(lambda: self.events.emit(
+            "step.finished", {**st.base, "status": status, "summary": why, "outputs": why,
+                              "duration_s": 0.0, "label": self.label, "numbers": []},
+            step_id=st.id, parent=st.parent))
+
+    def _end_block_step(self, st, ok: bool, outputs: str) -> None:
+        if st is None:
+            return
+
+        def go():
+            st.ok, st.outputs = ok, outputs
+            self.events.finish(st)
+        self._ev_safe(go)
+
+    def _finish_block_events(self, b: Block, st, result: dict, status: str) -> None:
+        """Applied cap/config, gate results and the keep/rollback decision, read from whatever
+        the block's own result carries (a tiers_summary.json's per-tier gate verdicts), then the
+        block's own step.finished."""
+        if st is None:
+            return
+
+        def extras():
+            tiers = result.get("tiers") if isinstance(result, dict) else None
+            tiers = tiers if isinstance(tiers, dict) else {}
+            rows = [r for r in (tiers.get("tiers") or []) if isinstance(r, dict)]
+            if tiers.get("cap_w") is not None:
+                self.events.emit("action.applied", {"node": "apply", "sub": "cap",
+                                                     "change": {"cap_w": tiers["cap_w"]}, "block": b.id})
+            blocked = 0
+            for row in rows:
+                passed = row.get("gate") == "pass"
+                blocked += not passed
+                cap = row.get("cap") if isinstance(row.get("cap"), dict) else {}
+                self.events.emit("gate.result", {"node": "gates", "sub": "decide", "check": row.get("tier"),
+                                                 "passed": passed, "quality_pass_pct": cap.get("pass_pct"),
+                                                 "p99_s": cap.get("p99_s"), "why_not": row.get("why_not")})
+            if rows:
+                self.events.emit("action.applied" if blocked == 0 else "action.rolled_back",
+                                 {"node": "apply", "sub": "keep", "block": b.id,
+                                  "reason": f"{len(rows) - blocked} of {len(rows)} tiers passed"})
+        self._ev_safe(extras)
+        self._end_block_step(st, status == "done", status)
 
     @staticmethod
     def _arity(run) -> int:
@@ -1186,6 +1327,7 @@ class Driver:
                 continue
             if b.optional and b.id not in self.include:
                 self.state["blocks"][b.id] = {"status": "skipped", "why": "needs Akash's yes"}
+                self._skip_block_event(b, "skipped", "needs Akash's yes")
                 self._save()
                 continue
             # a block whose dependency did not finish 'done' is skipped, not run. This is why a
@@ -1194,8 +1336,9 @@ class Driver:
             bad = [d for d in b.depends_on
                    if self.state["blocks"].get(d, {}).get("status") != "done"]
             if bad:
-                self.state["blocks"][b.id] = {"status": "skipped",
-                                              "why": f"dependency not done: {','.join(bad)}"}
+                why = f"dependency not done: {','.join(bad)}"
+                self.state["blocks"][b.id] = {"status": "skipped", "why": why}
+                self._skip_block_event(b, "skipped", why)
                 self._save()
                 continue
             bal = self.balance()
@@ -1226,13 +1369,16 @@ class Driver:
                     why = f"skipped: time (needs {b.hours * 60:.0f} min, {left * 60:.0f} min left)"
                     self._note(kind="skipped-time", block=b.id, why=why)
                     self.state["blocks"][b.id] = {"status": "skipped", "why": why}
+                    self._skip_block_event(b, "skipped", why)
                 else:
-                    self.state["blocks"][b.id] = {"status": "dropped",
-                                                  "why": f"needs {b.hours} h, {left:.2f} h left"}
+                    why = f"needs {b.hours} h, {left:.2f} h left"
+                    self.state["blocks"][b.id] = {"status": "dropped", "why": why}
+                    self._skip_block_event(b, "dropped", why)
                 self._save()
                 continue
             for attempt in (1, 2):
                 info = self.rec.begin(b.id, capture=self.capture and b.capture)
+                ev_step = self._block_step(b, "" if attempt == 1 else " (retry)")
                 t0 = time.time()
                 if hasattr(self.vm, "arm"):
                     self.vm.arm(b.id)
@@ -1257,6 +1403,7 @@ class Driver:
                         self.state["blocks"][b.id] = {"status": "lost", **result}
                         self.state["stopped"] = "VM dead" + (" (kept, not deleted)" if kept_dead else "")
                         self._save()
+                        self._end_block_step(ev_step, False, f"lost: {d.reason}")
                         return self.state
                 copied = self.vm.pull()
                 result["copied"] = copied
@@ -1282,6 +1429,7 @@ class Driver:
                         result["zero_pass"] = zero_pass_reason
                 self.state["blocks"][b.id] = {"status": "done" if ok else "failed", **result}
                 self._save()
+                self._finish_block_events(b, ev_step, result, "done" if ok else "failed")
                 if ok:
                     break
                 self._note(kind="retry" if attempt == 1 else "gave-up", block=b.id, rc=rc)

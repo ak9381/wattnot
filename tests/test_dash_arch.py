@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 
 from wattnot.dash import arch_spec as spec
 from wattnot.dash import server
+from wattnot.dash.arch import stage_title
 from wattnot.dash.server import create_app, meta_check
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -59,6 +60,21 @@ def test_nodes_edges_and_events_are_consistent():
     subs = {(n["id"], s["id"]) for n in spec.NODES for s in n["subs"]}
     for ev, target in spec.EVENT_MAP.items():
         assert tuple(target) in subs, ev
+
+
+def test_replay_title_comes_from_the_run_folder_not_a_fixed_string():
+    assert stage_title(Path("h100-oct30-2345")) == "The H100 run on E2E"
+    assert stage_title(Path("modal-full-1101")) == "The Modal run"
+    assert stage_title(Path("baseten-1101")) == "The Baseten run"
+    assert stage_title(None) == "The H100 run on E2E"   # the only run arch.h100() has ever read
+
+
+def test_bundle_replays_title_matches_the_run_it_actually_read(bundle):
+    from wattnot.dash import arch
+    h = {"ok": True, "main": Path("modal-full-1101/smoke-r04")}
+    out = arch.replays(h, {}, {})
+    assert out["h100"]["title"] == "The Modal run"
+    assert bundle["replays"]["h100"]["title"] == "The H100 run on E2E"   # the bundled run really is H100
 
 
 def test_bundle_matches_spec(bundle):
@@ -272,6 +288,31 @@ def test_meta_check_never_returns_the_key(monkeypatch, no_net):
 
 def test_live_endpoint_404_without_events_file_and_streams_with_one(tmp_path):
     assert TestClient(create_app()).get("/api/dash/arch/live").status_code == 404
+
+
+def test_live_endpoint_resolves_a_named_run_and_404s_with_a_clear_note(tmp_path, monkeypatch):
+    """For a Modal/Baseten round (point 2): ?run=<id> resolves that round's own events file,
+    independent of the server's --events flag; with no events for that run it is a clear note,
+    never a frozen graph."""
+    from wattnot.dash import launch
+
+    events_file = tmp_path / "data" / "modal-full-1101" / "r04" / "flow" / "runs" / "run_x" / "events.jsonl"
+    events_file.parent.mkdir(parents=True)
+    events_file.write_text('{"schema_version":"wattnot.event/1","type":"run.started"}\n')
+    monkeypatch.setattr(launch, "rounds", lambda: [{"id": "modal_a100:r04", "events":
+                         ["data/modal-full-1101/r04/flow/runs/run_x/events.jsonl"]},
+                         {"id": "baseten:r01", "events": []}])
+    monkeypatch.setattr(launch, "ROOT", tmp_path)
+    c = TestClient(create_app())
+    # the 200 path is an endless SSE stream (it follows the file as it grows), so a plain GET
+    # would never return; the resolver behind it is checked through /health instead
+    assert launch.events_path_for("modal_a100:r04") == events_file
+    assert c.get("/api/dash/health", params={"run": "modal_a100:r04"}).json()["events"] is True
+    no_ev = c.get("/api/dash/arch/live", params={"run": "baseten:r01"})
+    assert no_ev.status_code == 404 and no_ev.json()["detail"] == "No step events recorded for this run."
+    assert c.get("/api/dash/health", params={"run": "baseten:r01"}).json()["events"] is False
+    missing = c.get("/api/dash/arch/live", params={"run": "nope:r99"})
+    assert missing.status_code == 404 and "No step events" in missing.json()["detail"]
 
 
 def test_hosted_replay_only_makes_no_meta_call_and_says_replay(tmp_path, monkeypatch):
@@ -519,3 +560,30 @@ def test_room_scan_block_and_run_tile():
     assert "roomTileHtml" in prod and "SAM 3.1" in prod and "roomDetail" in prod
     assert "mountRoomScan" in prod and "wireRoomDetail" in prod
     assert "roomscan" in prod.lower() or "room_scan" in prod  # the scan payload still feeds it
+
+
+def test_a_dashboard_job_follows_the_newest_events_of_the_round_it_ran(tmp_path, monkeypatch):
+    """The Modal own 1103 job showed static lines: a job id is not a round id, so nothing
+    resolved. It now maps to <provider>:<round> from its own config and takes that round's
+    newest events file (the one the job wrote)."""
+    import json as _json
+    import os
+    from wattnot.dash import launch
+
+    old = tmp_path / "data" / "r04" / "a" / "events.jsonl"
+    new = tmp_path / "data" / "r04" / "b" / "events.jsonl"
+    for p in (old, new):
+        p.parent.mkdir(parents=True)
+        p.write_text("{}\n")
+    os.utime(old, (1, 1))
+    jd = tmp_path / "jobs" / "j1"
+    jd.mkdir(parents=True)
+    (jd / "config.json").write_text(_json.dumps({"config": {"provider": "modal_a100"},
+                                                 "cmd": ["python", "stage.py", "--rounds", "r04"]}))
+    monkeypatch.setattr(launch, "ROOT", tmp_path)
+    monkeypatch.setattr(launch, "JOBS_DIR", tmp_path / "jobs")
+    monkeypatch.setattr(launch, "rounds", lambda: [{"id": "modal_a100:r04",
+                         "events": ["data/r04/a/events.jsonl", "data/r04/b/events.jsonl"]}])
+    assert launch.events_path_for("job:j1") == new
+    assert launch.events_path_for("modal_a100:r04") == old    # a round id keeps its first file
+    assert launch.events_path_for("job:nope") is None

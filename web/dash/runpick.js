@@ -31,6 +31,13 @@ export function optionLabel(r) {
   return [r.name || r.id, r.stage, d, r.label].filter(Boolean).join(" · ");
 }
 
+// Which run the picker starts on: the asked-for one when this server lists it, the newest only
+// when nothing was asked for. An asked-for run that is not listed comes back as missing.
+export function pickInitial(asked, runs, latest) {
+  if (!asked) return { id: latest || null, missing: false };
+  return runs.some((r) => r.id === asked) ? { id: asked, missing: false } : { id: asked, missing: true };
+}
+
 async function list() {
   const [a, b] = await Promise.all([
     fetch("/api/launch/runs").then((x) => x.json()).catch(() => ({ runs: [] })),
@@ -61,12 +68,16 @@ export async function mountPicker() {
   const hideOnCfg = () => { const c = document.getElementById("pCfg"); box.hidden = /configure\.html$/.test(location.pathname) || location.hash === "#pCfg" || !!(c && c.offsetParent); };
   hideOnCfg(); addEventListener("hashchange", hideOnCfg);
   const { runs, latest } = await list();
-  let id = getRun();
-  if (!id || !runs.some((r) => r.id === id)) id = latest;
+  const { id, missing } = pickInitial(getRun(), runs, latest);
   const sel = box.querySelector("select");
-  sel.innerHTML = runs.map((r) => `<option value="${esc(r.id)}" ${r.id === id ? "selected" : ""}>${esc(optionLabel(r))}</option>`).join("");
+  // A run named in the URL or saved earlier that this server does not list (e.g. ?run=baseten:r04
+  // on a server that only has Modal rounds) stays named and flagged, never silently swapped for
+  // the newest run: the page must not show a different run's numbers under the asked-for name.
+  const opts = missing ? [{ id, name: `${id} (not on this server)`, missing: true }, ...runs] : runs;
+  sel.innerHTML = opts.map((r) => `<option value="${esc(r.id)}" ${r.id === id ? "selected" : ""}>${esc(r.missing ? r.name : optionLabel(r))}</option>`).join("");
   window.__wnRuns = runs;
-  if (id) setRun(id, { reload: false });
+  if (missing) { box.classList.add("wn-runpick-missing"); box.title = `Run ${id} is not on this server. Pick another run.`; }
+  else if (id) setRun(id, { reload: false });
   sel.addEventListener("change", () => setRun(sel.value));
   hideOnCfg(); addEventListener("popstate", hideOnCfg);
   new MutationObserver(() => { rewriteLinks(document, getRun()); hideOnCfg(); }).observe(document.body, { childList: true, subtree: true });

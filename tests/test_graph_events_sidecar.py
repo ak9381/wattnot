@@ -9,12 +9,13 @@ _spec.loader.exec_module(sc)
 
 
 def test_route_mapping():
-    assert sc.block_route("p2-eye") == ("gates", "eye")
-    assert sc.block_route("p2-spoken") == ("gates", "spoken")
-    assert sc.block_route("p1-langchain") == ("agent", "langchain")
-    assert sc.block_route("p1-agentwaste") == ("agent", "waste")
+    assert sc.block_route("p2-eye") == ("gates", "judge")
+    assert sc.block_route("p2-spoken") == ("gates", "judge")
+    assert sc.block_route("p1-langchain") == ("agent", "call")
+    assert sc.block_route("p1-agentwaste") == ("agent", "settle")
     assert sc.block_route("b2-wonder-sweep") == ("e2e_rig", "sweep")
-    assert sc.block_route("p2-tiers") == ("workload", "p2-tiers")
+    assert sc.block_route("p2-tiers") == ("apply", "cap")
+    assert sc.block_route("p2-mystery") == ("workload", "send")
 
 
 def _w(out, state, hb):
@@ -47,7 +48,7 @@ def test_lifecycle_shape_and_sweep_skipped(tmp_path):
         ("step.started", "p2-eye"), ("step.finished", "p2-eye")]
     for e in ev:
         assert e["schema_version"] == "wattnot.event/1" and e["run_id"] == "t"
-        assert e["data"]["node"] == "gates" or e["data"]["node"] == "workload"
+        assert e["data"]["node"] in ("gates", "apply")
         assert {"node", "sub", "kind", "partners"} <= set(e["data"])
     assert ev[1]["data"]["status"] == "ok" and [e["seq"] for e in ev] == [1, 2, 3, 4]
     assert not any("sweep" in (e["step_id"] or "") for e in ev)
@@ -65,3 +66,11 @@ def test_block_start_beat_without_note(tmp_path):
     _w(tmp_path, {"p1-langchain": {"status": "pending"}}, {"block": "p1-langchain", "note": None})
     s.tick()
     assert [e["step_id"] for e in _events(tmp_path)] == ["p1-langchain"]
+
+
+def test_sidecar_stands_down_when_the_driver_emits(tmp_path):
+    (tmp_path / "driver_state.json").write_text(json.dumps(
+        {"graph_events": "driver", "blocks": {"p1-eye": {"status": "running", "attempt": 1}}}))
+    (tmp_path / "heartbeat.json").write_text(json.dumps({"block": "p1-eye", "note": "in-block"}))
+    sc.Sidecar(tmp_path).tick()
+    assert not (tmp_path / "live.jsonl").exists()

@@ -226,17 +226,27 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
     else:
         gpu_bundle = json.loads(Path(bundle or DEFAULT_BUNDLE).read_text())
 
+    def _run_events(run: str | None) -> Path | None:
+        """A named round's events file (Modal/Baseten, by id from /api/launch/rounds), or None
+        when that round has none recorded."""
+        if not run:
+            return None
+        from wattnot.dash.launch import events_path_for
+        p = events_path_for(run)
+        return p if p is not None and p.is_file() else None
+
     @app.get("/api/dash/health")
-    def health() -> dict:
+    def health(run: str | None = None) -> dict:
         gpu_attached = shutil.which("nvidia-smi") is not None
-        live = following or results is not None or events is not None
+        ev = _run_events(run) if run else events
+        live = following or results is not None or ev is not None
         return {"ok": True, "following": following, "capture": cap_path.name,
                 "capture_exists": cap_path.is_file(), "read_only": True,
                 "mode": "replay" if replay_only or not live else "live",
                 "replay_only": replay_only, "meta_calls": not replay_only,
                 "gpu_attached": False if replay_only else gpu_attached,
                 "auth_required": bool(token), "story": story_path.is_file(),
-                "events": events is not None, "events_name": events.name if events is not None else None}
+                "events": ev is not None, "events_name": ev.name if ev is not None else None}
 
     @app.get("/api/dash/story")
     def story_bundle():
@@ -527,16 +537,22 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         return meta_cache["v"]
 
     @app.get("/api/dash/arch/live")
-    async def arch_live(request: Request, speed: float = 1.0):
-        """SSE of a run's events.jsonl as it grows; the page maps each type to a step."""
-        if events is None:
-            raise HTTPException(404, "no events file is being followed (start with --events FILE)")
+    async def arch_live(request: Request, speed: float = 1.0, run: str | None = None):
+        """SSE of a run's events.jsonl as it grows; the page maps each type to a step.
+
+        ``run`` names a round from /api/launch/rounds (a Modal/Baseten run, say); without it
+        this follows the server's own ``--events FILE``."""
+        ev = _run_events(run) if run else events
+        if ev is None:
+            msg = ("No step events recorded for this run." if run
+                   else "no events file is being followed (start with --events FILE)")
+            raise HTTPException(404, msg)
 
         async def gen() -> AsyncIterator[str]:
             pos, buf = 0, ""
             while not await request.is_disconnected():
                 try:
-                    with events.open("rb") as f:
+                    with ev.open("rb") as f:
                         f.seek(pos)
                         chunk = f.read()
                         pos = f.tell()

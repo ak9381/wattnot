@@ -21,3 +21,4 @@ import "./tunervoice.test.mjs";
 import "./frameworks.test.mjs";
 import "./codemode.test.mjs";
 import "./codemode_sandbox.test.mjs";
+import "./runpick.test.mjs";
