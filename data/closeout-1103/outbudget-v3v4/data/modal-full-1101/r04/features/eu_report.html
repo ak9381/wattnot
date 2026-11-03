@@ -1,0 +1,175 @@
+<h1>EU 2024/1364 fields (hosted stage)</h1><pre>{
+ "round": "r04",
+ "results": {
+  "accuracy_without": 1.0,
+  "accuracy_with": 0.9891,
+  "j_per_correct_without": 1501.8,
+  "j_per_correct_with": 617.8,
+  "energy_saved_pct": {
+   "value": 59.31,
+   "label": "MEASURED"
+  },
+  "j_per_correct_saved_pct": {
+   "value": 58.86,
+   "label": "MEASURED"
+  },
+  "per_arm": {
+   "without_wattnot": {
+    "tag": "without",
+    "arm": "without_wattnot",
+    "answers": 92,
+    "correct": 92,
+    "accuracy": 1.0,
+    "per_set": {
+     "ours": {
+      "correct": 92,
+      "answers": 92
+     }
+    },
+    "calls": 189,
+    "errors": 0,
+    "truncated": 0,
+    "tokens": {
+     "prompt": 44568,
+     "cached": 0,
+     "completion": 42941,
+     "label": "MEASURED",
+     "note": null
+    },
+    "energy_j": {
+     "value": 138164.0,
+     "label": "MEASURED",
+     "method": "NVML total-energy counter across the whole arm"
+    },
+    "energy_wh": {
+     "value": 38.3789,
+     "label": "MEASURED"
+    },
+    "wall_s": {
+     "value": 462.3,
+     "label": "MEASURED"
+    },
+    "avg_w": {
+     "value": 298.8,
+     "label": "MEASURED"
+    },
+    "j_per_correct": {
+     "value": 1501.8,
+     "label": "MEASURED"
+    },
+    "item_latency_s": {
+     "p50": 10.3045,
+     "p95": 69.8137,
+     "p99": 92.2147,
+     "label": "MEASURED"
+    },
+    "stepped_up": 0,
+    "concurrency": 4,
+    "partial": false,
+    "item_errors": 0,
+    "wh_per_item_samples": {
+     "values": [
+      0.077511,
+      0.074258,
+      0.065928,
+      0.145515,
+      0.222589,
+      0.308666,
+      0.273164,
+      0.241667,
+      0.371466,
+      0.523975,
+      1.745638,
+      1.493964
+     ],
+     "label": "MEASURED",
+     "method": "NVML counter per chunk of 8 items / items in chunk"
+    }
+   },
+   "with_wattnot": {
+    "tag": "with",
+    "arm": "with_wattnot",
+    "answers": 92,
+    "correct": 91,
+    "accuracy": 0.9891,
+    "per_set": {
+     "ours": {
+      "correct": 91,
+      "answers": 92
+     }
+    },
+    "calls": 203,
+    "errors": 0,
+    "truncated": 0,
+    "tokens": {
+     "prompt": 0,
+     "cached": 0,
+     "completion": 42192,
+     "label": "MEASURED",
+     "note": "prompt/cached tokens are not returned on the two-phase thinking-budget path; those calls count 0 here"
+    },
+    "energy_j": {
+     "value": 56218.0,
+     "label": "MEASURED",
+     "method": "NVML total-energy counter across the whole arm"
+    },
+    "energy_wh": {
+     "value": 15.6161,
+     "label": "MEASURED"
+    },
+    "wall_s": {
+     "value": 188.3,
+     "label": "MEASURED"
+    },
+    "avg_w": {
+     "value": 298.5,
+     "label": "MEASURED"
+    },
+    "j_per_correct": {
+     "value": 617.8,
+     "label": "MEASURED"
+    },
+    "item_latency_s": {
+     "p50": 12.151,
+     "p95": 79.5813,
+     "p99": 102.8473,
+     "label": "MEASURED"
+    },
+    "stepped_up": 0,
+    "concurrency": 32,
+    "partial": false,
+    "item_errors": 0,
+    "wh_per_item_samples": {
+     "values": [
+      0.013686,
+      0.054519,
+      0.086653,
+      0.524104
+     ],
+     "label": "MEASURED",
+     "method": "NVML counter per chunk of 23 items / items in chunk"
+    },
+    "request_levers": {
+     "calls": 203,
+     "tokens_saved_est": 0,
+     "guard_stops": 0,
+     "guard_flags": 0,
+     "tool_calling": 0,
+     "tools_skipped": 0
+    }
+   }
+  }
+ },
+ "sci": {
+  "grid": {
+   "gco2e_per_kwh": 727.0,
+   "label": "ESTIMATE",
+   "region": "IN (India national grid)",
+   "year": "FY 2023-24",
+   "source": "CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included)",
+   "url": "https://cea.nic.in/cdm-co2-baseline-database/?lang=en"
+  },
+  "label": "ESTIMATE",
+  "gco2_per_arm": null
+ }
+}</pre>

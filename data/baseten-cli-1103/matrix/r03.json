@@ -1,0 +1,3354 @@
+{
+ "round": "r03",
+ "leg": "baseten",
+ "status": "done",
+ "label": "MEASURED",
+ "model": "meta-models/muse-spark-open",
+ "where": "Baseten Model API (Muse Spark Open)",
+ "started_utc": "2026-11-03T04:56:32.132815+00:00",
+ "ended_utc": "2026-11-03T05:09:39.352144+00:00",
+ "stop_reason": null,
+ "smoke": false,
+ "note": "accuracy, tokens, USD and latency MEASURED; energy ESTIMATE from tokens (hosted API, no GPU meter); deterministic checks decide, Muse Spark grades beside them",
+ "levers": {
+  "without_wattnot": "effort medium for every request",
+  "with_wattnot": "every hosted WattNot feature ON (see features); effort low first, step up to medium on a failed check"
+ },
+ "token_caps": {
+  "allowance": {
+   "low": 768,
+   "medium": 12000,
+   "high": 12000,
+   "xhigh": 32000
+  },
+  "answer_budget": {
+   "ours": "per task",
+   "gsm8k": 512,
+   "humaneval": 768
+  },
+  "rule": "max_tokens = answer budget + allowance[effort], same table for both arms",
+  "truncated_final_answers": {
+   "without_wattnot": 3,
+   "with_wattnot": 0
+  },
+  "label": "MEASURED"
+ },
+ "results": {
+  "accuracy_without": 0.837,
+  "accuracy_with": 0.9022,
+  "j_per_correct_without": 1418.19,
+  "j_per_correct_with": 720.02,
+  "energy_saved_pct": {
+   "value": 45.27,
+   "label": "ESTIMATE"
+  },
+  "usd_saved_pct": {
+   "value": 56.48,
+   "label": "MEASURED"
+  },
+  "per_arm": {
+   "without_wattnot": {
+    "answers": 92,
+    "correct": 77,
+    "accuracy": 0.837,
+    "per_set": {
+     "ours": {
+      "correct": 77,
+      "answers": 92,
+      "accuracy": 0.837
+     }
+    },
+    "calls": 200,
+    "errors": 0,
+    "tokens": {
+     "prompt": 94483,
+     "cached": 59136,
+     "completion": 95967,
+     "label": "MEASURED"
+    },
+    "usd": {
+     "value": 0.460914,
+     "label": "MEASURED",
+     "method": "tokens x Baseten list price"
+    },
+    "energy_wh": {
+     "value": 30.3335,
+     "low": 5.5152,
+     "high": 55.1519,
+     "label": "ESTIMATE",
+     "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+    },
+    "j_per_correct": {
+     "value": 1418.19,
+     "label": "ESTIMATE"
+    },
+    "item_latency_s": {
+     "p50": 3.295,
+     "p95": 58.955,
+     "p99": 69.2767,
+     "label": "MEASURED"
+    },
+    "call_latency_s": {
+     "p50": 2.7008,
+     "p99": 62.1554,
+     "mean": 6.8503,
+     "label": "MEASURED"
+    },
+    "stepped_up": 0
+   },
+   "with_wattnot": {
+    "answers": 92,
+    "correct": 83,
+    "accuracy": 0.9022,
+    "per_set": {
+     "ours": {
+      "correct": 83,
+      "answers": 92,
+      "accuracy": 0.9022
+     }
+    },
+    "calls": 230,
+    "errors": 0,
+    "tokens": {
+     "prompt": 109811,
+     "cached": 71296,
+     "completion": 33348,
+     "label": "MEASURED"
+    },
+    "usd": {
+     "value": 0.200567,
+     "label": "MEASURED",
+     "method": "tokens x Baseten list price"
+    },
+    "energy_wh": {
+     "value": 16.6004,
+     "low": 3.0182,
+     "high": 30.1825,
+     "label": "ESTIMATE",
+     "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+    },
+    "j_per_correct": {
+     "value": 720.02,
+     "label": "ESTIMATE"
+    },
+    "item_latency_s": {
+     "p50": 2.163,
+     "p95": 22.856,
+     "p99": 55.6746,
+     "label": "MEASURED"
+    },
+    "call_latency_s": {
+     "p50": 1.95,
+     "p99": 37.2833,
+     "mean": 2.7509,
+     "label": "MEASURED"
+    },
+    "stepped_up": 0
+   }
+  },
+  "latency_verdict": {
+   "rule": "with-arm item p99 within +10% of without; note allowed if p95 passes and dropping <= 2 with-arm items above the without p99 fixes p99",
+   "p99_without_s": 69.2767,
+   "p99_with_s": 55.6746,
+   "p95_without_s": 58.955,
+   "p95_with_s": 22.856,
+   "items": [],
+   "label": "MEASURED",
+   "strict_ok": true,
+   "p95_ok": true,
+   "verdict": "pass"
+  }
+ },
+ "spend": {
+  "baseten_usd": {
+   "value": 0.803056,
+   "label": "MEASURED",
+   "method": "tokens x list price (not yet checked against the invoice)"
+  },
+  "meta_usd": {
+   "value": 0.18162,
+   "label": "MEASURED",
+   "source": "Meta spend ledger"
+  },
+  "meta_ledger_after_usd": 30.6452
+ },
+ "spark_summary": {
+  "label": "LIVE",
+  "answers": 184,
+  "spark_graded": 174,
+  "agreement": 0.9943,
+  "disagreements": 1,
+  "stopped": null
+ },
+ "answers": [
+  {
+   "id": "easy-00",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "80+31 equals 111 as answered.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.295
+  },
+  {
+   "id": "easy-01",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "40 times 9 equals 360.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.8919
+  },
+  {
+   "id": "easy-02",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is empty instead of 56.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 30.1866
+  },
+  {
+   "id": "easy-03",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "No number was provided instead of 420.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 30.1886
+  },
+  {
+   "id": "easy-04",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "167 is the correct result of 199 minus 32.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 50.3626
+  },
+  {
+   "id": "easy-05",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "66+59 equals 125 as answered.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 32.1263
+  },
+  {
+   "id": "easy-06",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "23 times 7 equals 161.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.7775
+  },
+  {
+   "id": "easy-07",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "184 divided by 4 equals 46.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.3369
+  },
+  {
+   "id": "easy-08",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Answer correctly gives 300 minutes for 5 hours.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.9378
+  },
+  {
+   "id": "easy-09",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "166 minus 58 equals 108.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.1817
+  },
+  {
+   "id": "easy-10",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "96+17 equals 113 as answered.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.0115
+  },
+  {
+   "id": "easy-11",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "76*13 equals 988.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.8424
+  },
+  {
+   "id": "easy-12",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is empty and does not provide 44.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 26.4533
+  },
+  {
+   "id": "easy-13",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "8 hours equals 480 minutes.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 4.5442
+  },
+  {
+   "id": "easy-14",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "125 minus 52 equals 73.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 71.318
+  },
+  {
+   "id": "easy-15",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "43 plus 8 equals 51.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.5431
+  },
+  {
+   "id": "easy-16",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "52 times 9 equals 468.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.63
+  },
+  {
+   "id": "easy-17",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "188 divided by 4 equals 47.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.4825
+  },
+  {
+   "id": "easy-18",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Answer 180 is correct for 3 hours in minutes.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.533
+  },
+  {
+   "id": "easy-19",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "137-15 equals 122.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.3418
+  },
+  {
+   "id": "easy-20",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "78+35 equals 113 and output contains only that number.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.5827
+  },
+  {
+   "id": "easy-21",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "27 times 11 equals 297.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.147
+  },
+  {
+   "id": "easy-22",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "96 divided by 4 equals 24.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.6424
+  },
+  {
+   "id": "easy-23",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "120 is the correct number of minutes in 2 hours.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.8132
+  },
+  {
+   "id": "easy-24",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "139 minus 44 equals 95.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.2755
+  },
+  {
+   "id": "easy-25",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "74+21 equals 95 as given.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.9052
+  },
+  {
+   "id": "easy-26",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "65 times 13 equals 845.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.2587
+  },
+  {
+   "id": "easy-27",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "116 divided by 4 equals 29.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.8912
+  },
+  {
+   "id": "easy-28",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "300 is the correct number of minutes in 5 hours.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.9605
+  },
+  {
+   "id": "easy-29",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "189 minus 31 equals 158.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 56.3509
+  },
+  {
+   "id": "medium-00",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "12*9=108 minus 30 equals 78 as shown.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.1186
+  },
+  {
+   "id": "medium-01",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation of 27 apples costing $54 with $36 change is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.5496
+  },
+  {
+   "id": "medium-02",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Total 66+98=164 matches calculation.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 56.9263
+  },
+  {
+   "id": "medium-03",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 10*7-13=57 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.3225
+  },
+  {
+   "id": "medium-04",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "30 candles cost $120, change from $144 is $24.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 4.3788
+  },
+  {
+   "id": "medium-05",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "The calculation 24+44=68 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.9112
+  },
+  {
+   "id": "medium-06",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "8*6=48 minus 33 equals 15 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.0468
+  },
+  {
+   "id": "medium-07",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 32 dollars change.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 4.4429
+  },
+  {
+   "id": "medium-08",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 60+91=151 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 5.3107
+  },
+  {
+   "id": "medium-09",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "3*8=24 minus 19 equals 5 correctly.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.2705
+  },
+  {
+   "id": "medium-10",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations for total candles, cost, and change are all correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 59.3741
+  },
+  {
+   "id": "medium-11",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 32+55=87 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.1034
+  },
+  {
+   "id": "medium-12",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 11*9-20=79 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 67.2152
+  },
+  {
+   "id": "medium-13",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields $40 change.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.262
+  },
+  {
+   "id": "medium-14",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations 54+90=144 are correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 14.3365
+  },
+  {
+   "id": "medium-15",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 3*8-3=21 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.3586
+  },
+  {
+   "id": "medium-16",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 11 dollars change.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 62.1563
+  },
+  {
+   "id": "medium-17",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly gives 30 + 54 = 84.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.3642
+  },
+  {
+   "id": "medium-18",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 4*7-11=17 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.5331
+  },
+  {
+   "id": "medium-19",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Steps and final total 9 dollars change are correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.1453
+  },
+  {
+   "id": "medium-20",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 24+45=69 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 58.955
+  },
+  {
+   "id": "medium-21",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 7*6-12=30 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 47.9778
+  },
+  {
+   "id": "medium-22",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations and final answer 5 are correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.9255
+  },
+  {
+   "id": "medium-23",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "50 plus 78 equals 128, calculation is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.9486
+  },
+  {
+   "id": "medium-24",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 6*2-9=3 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.281
+  },
+  {
+   "id": "medium-25",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation of 24 apples costing $72 and $20 change is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.5613
+  },
+  {
+   "id": "medium-26",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "12*6=72 plus 15*7=105 equals 177 correctly.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.643
+  },
+  {
+   "id": "medium-27",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 4*5-5=15 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 4.0659
+  },
+  {
+   "id": "medium-28",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields $20 change.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.7014
+  },
+  {
+   "id": "medium-29",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 30+52=82 is correct.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.6579
+  },
+  {
+   "id": "hard-00",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly ignores case and non-alphanumerics and checks reverse.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.7178
+  },
+  {
+   "id": "hard-01",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implements Euclidean algorithm correctly for non-negative ints.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.0806
+  },
+  {
+   "id": "hard-02",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Code correctly implements run-length encoding.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.2236
+  },
+  {
+   "id": "hard-03",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly recursively flattens nested lists.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.4034
+  },
+  {
+   "id": "hard-04",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": null,
+   "spark_reason": "unparseable Spark reply",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.7033
+  },
+  {
+   "id": "hard-05",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly extracts ASCII letter runs, lowercases, and counts them.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.2724
+  },
+  {
+   "id": "hard-06",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Code correctly implements greedy Roman numeral conversion.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 5.2117
+  },
+  {
+   "id": "hard-07",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly sorts and merges overlapping closed intervals including touching endpoints.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 5.6146
+  },
+  {
+   "id": "hard-08",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly implements primality test.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.9505
+  },
+  {
+   "id": "hard-09",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implements correct binary search returning index or -1.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.7415
+  },
+  {
+   "id": "hard-10",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly compares letter counts ignoring case and spaces.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.1704
+  },
+  {
+   "id": "hard-11",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly computes nth Fibonacci number.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 49.6645
+  },
+  {
+   "id": "hard-12",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implements chunking correctly in a single code block.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.5988
+  },
+  {
+   "id": "hard-13",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Code correctly checks balanced brackets using a stack.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.2118
+  },
+  {
+   "id": "hard-14",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implements first-seen-order dedupe correctly for hashable inputs.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.8188
+  },
+  {
+   "id": "hard-15",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly converts camelCase example to snake_case.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 47.1128
+  },
+  {
+   "id": "hard-16",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly returns sum of digits of absolute value.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.5378
+  },
+  {
+   "id": "hard-17",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly transposes matrix using zip and handles empty input.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.2836
+  },
+  {
+   "id": "hard-18",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly computes median for odd and even lengths.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 42.2131
+  },
+  {
+   "id": "hard-19",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Code correctly shifts letters with case and modulo handling while preserving non-letters.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 4.3248
+  },
+  {
+   "id": "complex-00",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": null,
+   "spark_reason": "unparseable Spark reply",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 46.6105
+  },
+  {
+   "id": "complex-01",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "No FINAL number was reported.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 32.4044
+  },
+  {
+   "id": "complex-02",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer 'None' provides no numeric INR restock cost.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 19.0089
+  },
+  {
+   "id": "complex-03",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None instead of numeric EUR total.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 18.2459
+  },
+  {
+   "id": "complex-04",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None instead of combined USD total number.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 27.5065
+  },
+  {
+   "id": "complex-05",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer 'None' provides no restock cost value.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 25.4023
+  },
+  {
+   "id": "complex-06",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "No tool calls made, no numeric answer computed.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 25.0376
+  },
+  {
+   "id": "complex-07",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "No FINAL number was provided.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 37.8049
+  },
+  {
+   "id": "complex-08",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is 'None' instead of a numeric INR cost.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 26.5369
+  },
+  {
+   "id": "complex-09",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer 'None' provides no numeric EUR cost.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 21.0841
+  },
+  {
+   "id": "complex-10",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "No FINAL number provided.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 35.4027
+  },
+  {
+   "id": "complex-11",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "without_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer provides no numeric cost in INR.",
+   "tries": [
+    "medium"
+   ],
+   "step_up_reason": null,
+   "wall_s": 69.2767
+  },
+  {
+   "id": "easy-00",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "80+31 equals 111.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.7244
+  },
+  {
+   "id": "easy-01",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "40 times 9 equals 360.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.8875
+  },
+  {
+   "id": "easy-02",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "224 divided by 4 equals 56.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.983
+  },
+  {
+   "id": "easy-03",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "7 hours equals 420 minutes.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.8497
+  },
+  {
+   "id": "easy-04",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "167 is correct result of 199-32.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.6332
+  },
+  {
+   "id": "easy-05",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "66+59 equals 125.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.6899
+  },
+  {
+   "id": "easy-06",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "23 times 7 equals 161.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.6403
+  },
+  {
+   "id": "easy-07",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "184 divided by 4 equals 46.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.3767
+  },
+  {
+   "id": "easy-08",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "5 hours equals 300 minutes.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.5578
+  },
+  {
+   "id": "easy-09",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "166 minus 58 equals 108.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.4675
+  },
+  {
+   "id": "easy-10",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "96+17 equals 113 as given.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.5301
+  },
+  {
+   "id": "easy-11",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "76*13 equals 988, so the answer is correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.6061
+  },
+  {
+   "id": "easy-12",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "176 divided by 4 equals 44.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.7014
+  },
+  {
+   "id": "easy-13",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "8 hours equals 480 minutes.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.6429
+  },
+  {
+   "id": "easy-14",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "125 minus 52 equals 73.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.4162
+  },
+  {
+   "id": "easy-15",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "43+8 equals 51 as answered.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.3489
+  },
+  {
+   "id": "easy-16",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "52 times 9 equals 468.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.391
+  },
+  {
+   "id": "easy-17",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "188 divided by 4 equals 47.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.3606
+  },
+  {
+   "id": "easy-18",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "3 hours equals 180 minutes.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.4152
+  },
+  {
+   "id": "easy-19",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "137 minus 15 equals 122.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.2895
+  },
+  {
+   "id": "easy-20",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "78+35 equals 113 as answered.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.3831
+  },
+  {
+   "id": "easy-21",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "27 times 11 equals 297.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.8232
+  },
+  {
+   "id": "easy-22",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "96 divided by 4 equals 24.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.4224
+  },
+  {
+   "id": "easy-23",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Answer 120 correctly gives minutes in 2 hours.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.5356
+  },
+  {
+   "id": "easy-24",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "139 minus 44 equals 95, matching the answer.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.3616
+  },
+  {
+   "id": "easy-25",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": null,
+   "spark_reason": "Spark call failed (MetaError)",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.3719
+  },
+  {
+   "id": "easy-26",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "65*13 equals 845.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.3644
+  },
+  {
+   "id": "easy-27",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "116 divided by 4 equals 29.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.0024
+  },
+  {
+   "id": "easy-28",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "5 hours equals 300 minutes.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.7608
+  },
+  {
+   "id": "easy-29",
+   "dataset": "easy",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": null,
+   "spark_reason": "Spark call failed (MetaError)",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.2431
+  },
+  {
+   "id": "medium-00",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": null,
+   "spark_reason": "Spark call failed (MetaError)",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.7614
+  },
+  {
+   "id": "medium-01",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations and final answer 36 are correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.9424
+  },
+  {
+   "id": "medium-02",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 66+98=164 is correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.095
+  },
+  {
+   "id": "medium-03",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 70-13=57 is correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.7677
+  },
+  {
+   "id": "medium-04",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly totals 30 candles costing $120 leaving $24 change.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.7707
+  },
+  {
+   "id": "medium-05",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 24+44=68 is correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.3595
+  },
+  {
+   "id": "medium-06",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 8*6-33=15 is correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 4.1929
+  },
+  {
+   "id": "medium-07",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 32 dollars change.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 4.2742
+  },
+  {
+   "id": "medium-08",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations 60+91=151 are correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.163
+  },
+  {
+   "id": "medium-09",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 3*8-19=5 is correct and format matches.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.3108
+  },
+  {
+   "id": "medium-10",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations are correct: 36 candles cost $252, change $21.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.2515
+  },
+  {
+   "id": "medium-11",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 32+55=87 is correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.6322
+  },
+  {
+   "id": "medium-12",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "11x9=99 minus 20 equals 79 is correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.2709
+  },
+  {
+   "id": "medium-13",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation of 33 apples costing $132 and $40 change is correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.6882
+  },
+  {
+   "id": "medium-14",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 54+90=144 is correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.6387
+  },
+  {
+   "id": "medium-15",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": null,
+   "spark_reason": "Spark call failed (MetaError)",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.7727
+  },
+  {
+   "id": "medium-16",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields $11 change.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.1112
+  },
+  {
+   "id": "medium-17",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations 6*5+9*6=84 are correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.0142
+  },
+  {
+   "id": "medium-18",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "4*7=28 minus 11 equals 17, matching final answer.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.0305
+  },
+  {
+   "id": "medium-19",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation is correct and ends with ANSWER: 9.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 4.7129
+  },
+  {
+   "id": "medium-20",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 24+45=69 is correct and format matches.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.0053
+  },
+  {
+   "id": "medium-21",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 7*6-12=30 is correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.3433
+  },
+  {
+   "id": "medium-22",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields 5 dollars change.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.5321
+  },
+  {
+   "id": "medium-23",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 50+78=128 is correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.4228
+  },
+  {
+   "id": "medium-24",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 6*2-9=3 is correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.2263
+  },
+  {
+   "id": "medium-25",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculations correctly yield 24 apples costing $72 and $20 change.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.3615
+  },
+  {
+   "id": "medium-26",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Math is correct (72+105=177) and ends with required format.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.5013
+  },
+  {
+   "id": "medium-27",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation 4*5-5=15 is correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.757
+  },
+  {
+   "id": "medium-28",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Calculation correctly yields $20 change.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.7099
+  },
+  {
+   "id": "medium-29",
+   "dataset": "medium",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Total 30+52=82 is correct.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.3502
+  },
+  {
+   "id": "hard-00",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly filters case and non-alphanumerics and checks palindrome.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.08
+  },
+  {
+   "id": "hard-01",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implements Euclidean algorithm correctly for non-negative ints.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.0412
+  },
+  {
+   "id": "hard-02",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Code correctly implements run-length encoding for all cases including empty string.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.0709
+  },
+  {
+   "id": "hard-03",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly flattens nested lists and formatting matches requirements.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.8938
+  },
+  {
+   "id": "hard-04",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly returns second largest distinct value or None.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.481
+  },
+  {
+   "id": "hard-05",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly counts lowercase runs of ASCII letters.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.007
+  },
+  {
+   "id": "hard-06",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Code correctly converts 1-3999 to Roman numerals using greedy values.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.1989
+  },
+  {
+   "id": "hard-07",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly sorts and merges overlapping closed intervals.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.7727
+  },
+  {
+   "id": "hard-08",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly identifies primes and meets format requirements.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.3573
+  },
+  {
+   "id": "hard-09",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Implements correct standard binary search returning index or -1.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.9209
+  },
+  {
+   "id": "hard-10",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly compares letter counts ignoring case and spaces.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 5.249
+  },
+  {
+   "id": "hard-11",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly computes Fibonacci and formatting matches requirement.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.5082
+  },
+  {
+   "id": "hard-12",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly splits list into chunks of size n.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.9485
+  },
+  {
+   "id": "hard-13",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Code correctly checks balanced brackets with stack.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 4.3236
+  },
+  {
+   "id": "hard-14",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Removes duplicates while preserving first-seen order.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.3261
+  },
+  {
+   "id": "hard-15",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly inserts underscore before capitals and lowercases.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 3.0732
+  },
+  {
+   "id": "hard-16",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly computes sum of decimal digits of absolute value.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 1.4298
+  },
+  {
+   "id": "hard-17",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly transposes matrix and handles empty case.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.4715
+  },
+  {
+   "id": "hard-18",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Correctly computes median for odd and even lengths.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 55.3606
+  },
+  {
+   "id": "hard-19",
+   "dataset": "hard",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": true,
+   "spark_reason": "Function correctly shifts letters with case preservation and handles all k values.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 2.4627
+  },
+  {
+   "id": "complex-00",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None and provides no EUR cost.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 17.5634
+  },
+  {
+   "id": "complex-01",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None, not the required combined USD total.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 55.6746
+  },
+  {
+   "id": "complex-02",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": null,
+   "spark_reason": "unparseable Spark reply",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 41.0157
+  },
+  {
+   "id": "complex-03",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None instead of a numeric EUR cost.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 18.182
+  },
+  {
+   "id": "complex-04",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None and provides no combined USD total.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 22.5169
+  },
+  {
+   "id": "complex-05",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer 'None' does not provide the required numeric INR cost.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 20.2942
+  },
+  {
+   "id": "complex-06",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None instead of a numeric EUR total.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 19.5369
+  },
+  {
+   "id": "complex-07",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": false,
+   "spark_reason": "Answer is None instead of combined USD total number.",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 21.6506
+  },
+  {
+   "id": "complex-08",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": false,
+   "spark_reason": "placeholder",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 107.6694
+  },
+  {
+   "id": "complex-09",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": null,
+   "spark_reason": "unparseable Spark reply",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 22.3953
+  },
+  {
+   "id": "complex-10",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": true,
+   "spark": null,
+   "spark_reason": "unparseable Spark reply",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 30.5446
+  },
+  {
+   "id": "complex-11",
+   "dataset": "complex",
+   "set": "ours",
+   "arm": "with_wattnot",
+   "deterministic": false,
+   "spark": null,
+   "spark_reason": "unparseable Spark reply",
+   "tries": [
+    "low"
+   ],
+   "step_up_reason": null,
+   "wall_s": 22.856
+  }
+ ],
+ "raw_dir": "data/baseten-cli-1103/r03",
+ "refusal_watch": [
+  {
+   "after": "without_wattnot",
+   "at": "2026-11-03T05:03:05.846258+00:00",
+   "endpoint": "/v1/billing/model_apis",
+   "status": 200,
+   "refusal": false,
+   "words": [],
+   "day": "2026-11-03",
+   "day_subtotal_usd": 0.37435015,
+   "label": "MEASURED"
+  },
+  {
+   "after": "with_wattnot",
+   "at": "2026-11-03T05:06:37.819943+00:00",
+   "endpoint": "/v1/billing/model_apis",
+   "status": 200,
+   "refusal": false,
+   "words": [],
+   "day": "2026-11-03",
+   "day_subtotal_usd": 0.6428841,
+   "label": "MEASURED"
+  }
+ ],
+ "sets": [
+  "ours"
+ ],
+ "features": [
+  {
+   "id": "effort_routing",
+   "name": "Reasoning-effort + cheapest-first routing (low, step up on a failed check)",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "thinking_budget",
+   "name": "Thinking-budget enforcer (max_tokens per effort)",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "router",
+   "name": "Backend/effort router",
+   "status": "ON",
+   "reason": "effort leg only; one hosted backend on this stage"
+  },
+  {
+   "id": "context_saver",
+   "name": "Agent saver: tool-output dedup + memory compression",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "waste_guard",
+   "name": "Agent-waste proxy (repeat/no-op/cycle/overspend detectors)",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "code_mode",
+   "name": "Code Mode with locked sandbox + network boundary",
+   "status": "ON",
+   "reason": "runs on the box over recorded traces"
+  },
+  {
+   "id": "prefix_cache_provider",
+   "name": "Prefix caching (provider side, reported cached tokens)",
+   "status": "ON",
+   "reason": "MEASURED cached_tokens from the API; we cannot control the cache"
+  },
+  {
+   "id": "concurrency_batching",
+   "name": "Concurrency batching (client side)",
+   "status": "ON",
+   "reason": "client concurrency only"
+  },
+  {
+   "id": "gates",
+   "name": "Noise gate, fixed answer gate, LLM judge, reasoning-leak strip",
+   "status": "ON",
+   "reason": "hosted API (per-token, no GPU access)"
+  },
+  {
+   "id": "spark_grades",
+   "name": "Muse Spark grades every answer",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "joule_slo",
+   "name": "Joule-SLO + user p99 limit",
+   "status": "ON",
+   "reason": "energy ESTIMATE from tokens"
+  },
+  {
+   "id": "eye_check",
+   "name": "Eye check: vision gate on the SYNTHETIC Muse Image set",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "sam_hotspot",
+   "name": "SAM 3.1 hotspot audit",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "hearing_check",
+   "name": "Hearing check: Muse Voice Transcribe on spoken answers",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "wonder_planner",
+   "name": "Muse Wonder planner + Wonderchart",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "spark_trace",
+   "name": "Spark 4-call trace (probe, proposal, gate, receipt)",
+   "status": "ON",
+   "reason": "Meta API"
+  },
+  {
+   "id": "approvals",
+   "name": "Approve-before-apply with risk classifier, undo",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "musecode_pr",
+   "name": "Muse Code PR flow (ak9381/wattnot-demo-deploy only)",
+   "status": "ON",
+   "reason": "patch always built; PR opened only with --open-pr at stage time"
+  },
+  {
+   "id": "receipt",
+   "name": "Signed receipt + SCI carbon/water + joules per good answer",
+   "status": "ON",
+   "reason": "local signing key"
+  },
+  {
+   "id": "eu_report",
+   "name": "EU report",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "label_lint",
+   "name": "Label-honesty lint",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "spend_guard",
+   "name": "Spend guards (Baseten hard cap, Meta soft cap, ledger)",
+   "status": "ON",
+   "reason": "local"
+  },
+  {
+   "id": "power_caps",
+   "name": "Power-cap sweep + J/correct gate",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "fp8",
+   "name": "FP8 quantization keep/reject gate",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "kv_batch",
+   "name": "Batch-size + KV-cache sweep",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "vllm_prefix",
+   "name": "vLLM prefix-cache control",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "clock_sidecar",
+   "name": "Phase-aware clock sidecar, marginal-joule knee",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  },
+  {
+   "id": "moe",
+   "name": "MoE top-k / per-expert pinning",
+   "status": "OFF",
+   "reason": "needs Spark Open self-served (8x B200)"
+  },
+  {
+   "id": "measured_energy",
+   "name": "MEASURED GPU energy (NVML)",
+   "status": "OFF",
+   "reason": "hosted API exposes no power meter; energy is ESTIMATE"
+  },
+  {
+   "id": "flex",
+   "name": "Flex grid-event load shedding",
+   "status": "OFF",
+   "reason": "simulator only"
+  },
+  {
+   "id": "rekor",
+   "name": "Rekor publish",
+   "status": "OFF",
+   "reason": "only after the long run, with Akash's yes"
+  },
+  {
+   "id": "own_gpu_serving",
+   "name": "Own-GPU vLLM serving + E2E rig",
+   "status": "OFF",
+   "reason": "needs our own GPU / our own vLLM server"
+  }
+ ],
+ "levers_stats": {
+  "calls": 230,
+  "tokens_saved_est": 0,
+  "guard_stops": 0,
+  "guard_flags": 0,
+  "tool_calling": true,
+  "tools_skipped": 0,
+  "label": "ESTIMATE"
+ },
+ "feature_stages": {
+  "mode": "live",
+  "label": "MEASURED",
+  "eye_check": {
+   "status": "ok",
+   "passed": false,
+   "reason": "vision misread 1/10 image(s): gauge-reading",
+   "energy": {
+    "tokens": {
+     "prompt": 32273,
+     "cached": 1152,
+     "completion": 1275,
+     "calls": 10
+    },
+    "energy_j": 263601.9,
+    "energy_wh": 73.2227,
+    "j_per_correct": 29289.1,
+    "label": "ESTIMATE",
+    "method": "billed prompt+completion tokens x 7.857 J/token"
+   },
+   "arms": {
+    "with_wattnot": {
+     "passed": false,
+     "reason": "vision misread 1/10 image(s): gauge-reading",
+     "energy": {
+      "tokens": {
+       "prompt": 32273,
+       "cached": 1152,
+       "completion": 1275,
+       "calls": 10
+      },
+      "energy_j": 263601.9,
+      "energy_wh": 73.2227,
+      "j_per_correct": 29289.1,
+      "label": "ESTIMATE",
+      "method": "billed prompt+completion tokens x 7.857 J/token"
+     },
+     "effort": "low+step-up (WattNot)"
+    },
+    "without_wattnot": {
+     "passed": false,
+     "reason": "vision misread 1/10 image(s): gauge-reading",
+     "energy": {
+      "tokens": {
+       "prompt": 32273,
+       "cached": 1280,
+       "completion": 2536,
+       "calls": 10
+      },
+      "energy_j": 273510.2,
+      "energy_wh": 75.975,
+      "j_per_correct": 30390.0,
+      "label": "ESTIMATE",
+      "method": "billed prompt+completion tokens x 7.857 J/token"
+     },
+     "effort": "medium (plain)"
+    }
+   },
+   "route": "baseten:meta-models/muse-spark-open",
+   "live_label": "LIVE"
+  },
+  "hearing_check": {
+   "status": "ok",
+   "passed": true,
+   "reason": "all 20 spoken answers correct",
+   "transcribe_usd_est": 0.002588,
+   "energy": {
+    "tokens": {
+     "prompt": 5428,
+     "cached": 2176,
+     "completion": 2296,
+     "calls": 20
+    },
+    "energy_j": 60691.0,
+    "energy_wh": 16.8586,
+    "j_per_correct": 3034.5,
+    "label": "ESTIMATE",
+    "method": "billed prompt+completion tokens x 7.857 J/token"
+   },
+   "arms": {
+    "with_wattnot": {
+     "passed": true,
+     "reason": "all 20 spoken answers correct",
+     "transcribe_usd_est": 0.002588,
+     "energy": {
+      "tokens": {
+       "prompt": 5428,
+       "cached": 2176,
+       "completion": 2296,
+       "calls": 20
+      },
+      "energy_j": 60691.0,
+      "energy_wh": 16.8586,
+      "j_per_correct": 3034.5,
+      "label": "ESTIMATE",
+      "method": "billed prompt+completion tokens x 7.857 J/token"
+     },
+     "effort": "low+step-up (WattNot)"
+    },
+    "without_wattnot": {
+     "passed": false,
+     "reason": "spoken misheard 1/20 answer(s): q-bay-clean",
+     "transcribe_usd_est": 0.002588,
+     "energy": {
+      "tokens": {
+       "prompt": 5432,
+       "cached": 2816,
+       "completion": 6948,
+       "calls": 20
+      },
+      "energy_j": 97275.3,
+      "energy_wh": 27.0209,
+      "j_per_correct": 5119.8,
+      "label": "ESTIMATE",
+      "method": "billed prompt+completion tokens x 7.857 J/token"
+     },
+     "effort": "medium (plain)"
+    }
+   },
+   "route": "meta-api:muse-voice-transcribe-1.0 + baseten:meta-models/muse-spark-open",
+   "live_label": "LIVE"
+  },
+  "sam_hotspot": {
+   "status": "ok",
+   "argv": [
+    "--out",
+    "data/baseten-cli-1103/r03/features/sam",
+    "--live"
+   ],
+   "route": "meta-api:sam-3.1",
+   "live_label": "LIVE",
+   "without_wattnot": "not applicable (WattNot feature)"
+  },
+  "wonder_chart": {
+   "status": "ok",
+   "argv": [
+    "--sweep",
+    "data/baseten-cli-1103/r03/features/trials.json",
+    "--out",
+    "data/baseten-cli-1103/r03/features/wonder",
+    "--live"
+   ],
+   "route": "meta-api:muse-wonder-1.0",
+   "live_label": "LIVE",
+   "without_wattnot": "not applicable (WattNot feature)"
+  },
+  "spark_trace": {
+   "status": "ok",
+   "steps": 4,
+   "ok": 4,
+   "route": "meta-api:muse-spark-1.3",
+   "live_label": "LIVE"
+  },
+  "approvals": {
+   "status": "ok",
+   "held_change": {
+    "kind": "reasoning_effort",
+    "change": {
+     "reasoning_effort": "low",
+     "step_up": "medium"
+    }
+   },
+   "risk": "low",
+   "reasons": [
+    "request-level reasoning-effort knob, reversible, no hardware touched"
+   ],
+   "evidence": {
+    "accuracy_without": 0.837,
+    "accuracy_with": 0.9022,
+    "p99_without": 69.2767,
+    "p99_with": 55.6746,
+    "spark_agreement": 0.9943,
+    "j_per_correct_without": 1418.19,
+    "j_per_correct_with": 720.02,
+    "eye_check": false,
+    "hearing_check": true
+   },
+   "review": {
+    "who": "Akash K Raju (delegated reviewer)",
+    "what": {
+     "reasoning_effort": "low",
+     "step_up": "medium"
+    },
+    "risk": "low",
+    "checks": [
+     {
+      "check": "accuracy (with >= without - 1 pt)",
+      "ok": true,
+      "detail": {
+       "without": 0.837,
+       "with": 0.9022,
+       "label": "MEASURED"
+      }
+     },
+     {
+      "check": "p99 limit (with <= 1.10 x without)",
+      "ok": true,
+      "detail": {
+       "without_s": 69.2767,
+       "with_s": 55.6746,
+       "label": "MEASURED"
+      }
+     },
+     {
+      "check": "Spark agreement >= 0.90",
+      "ok": true,
+      "detail": {
+       "agreement": 0.9943
+      }
+     },
+     {
+      "check": "joule-SLO (J/correct with <= without)",
+      "ok": true,
+      "detail": {
+       "without": 1418.19,
+       "with": 720.02,
+       "label": "ESTIMATE"
+      }
+     },
+     {
+      "check": "eye_check gate passed",
+      "ok": false,
+      "detail": {
+       "passed": false
+      }
+     },
+     {
+      "check": "hearing_check gate passed",
+      "ok": true,
+      "detail": {
+       "passed": true
+      }
+     }
+    ],
+    "decision": "rejected",
+    "failed_checks": [
+     "eye_check gate passed"
+    ],
+    "skipped_checks": [],
+    "why": "failed: eye_check gate passed",
+    "started_utc": "2026-11-03T05:13:03.963294+00:00",
+    "decided_utc": "2026-11-03T05:13:03.963839+00:00",
+    "auto_approve": false
+   }
+  },
+  "musecode_pr": {
+   "status": "skipped",
+   "why": "one PR per stage, opened after the last round"
+  },
+  "code_mode": {
+   "status": "ok",
+   "runs": 144,
+   "label": "ESTIMATE"
+  },
+  "receipt": {
+   "status": "ok",
+   "path": "data/baseten-cli-1103/r03/features/receipt.json",
+   "signer": "offline:cc61d7cb91526c69",
+   "bundle": "data/baseten-cli-1103/r03/features/receipt.sigstore.json"
+  },
+  "eu_report": {
+   "status": "ok",
+   "wording_issues": []
+  },
+  "label_lint": {
+   "status": "ok",
+   "issues": []
+  },
+  "no_mocks": true,
+  "feature_audit": {
+   "eye_check": {
+    "route": "baseten:meta-models/muse-spark-open",
+    "label": "LIVE",
+    "status": "ok",
+    "fell_back": null,
+    "without_wattnot": "compared in both arms"
+   },
+   "hearing_check": {
+    "route": "meta-api:muse-voice-transcribe-1.0 + baseten:meta-models/muse-spark-open",
+    "label": "LIVE",
+    "status": "ok",
+    "fell_back": null,
+    "without_wattnot": "compared in both arms"
+   },
+   "sam_hotspot": {
+    "route": "meta-api:sam-3.1",
+    "label": "LIVE",
+    "status": "ok",
+    "fell_back": null,
+    "without_wattnot": "not applicable (WattNot feature)"
+   },
+   "wonder_chart": {
+    "route": "meta-api:muse-wonder-1.0",
+    "label": "LIVE",
+    "status": "ok",
+    "fell_back": null,
+    "without_wattnot": "not applicable (WattNot feature)"
+   },
+   "spark_trace": {
+    "route": "meta-api:muse-spark-1.3",
+    "label": "LIVE",
+    "status": "ok",
+    "fell_back": null,
+    "without_wattnot": "compared in both arms"
+   }
+  },
+  "meta_guard": {
+   "ok": true,
+   "why": "within caps",
+   "ledger_total_usd": 30.696,
+   "worst_meta_usd": 0.4955,
+   "soft_cap_usd": 100.0,
+   "meta_cap_usd": 2.0,
+   "basis": "SAM 6x$0.0025/img + Wonder 1 call + Spark trace 4 calls + voice 40 clips@$0.0005 + Spark grades 184x$0.0021575",
+   "label": "ESTIMATE"
+  }
+ },
+ "provider_usage": {
+  "status": "ok",
+  "label": "MEASURED",
+  "source": "Baseten GET /v1/model_apis/usage + /v1/billing/model_apis",
+  "window_utc": [
+   "2026-11-03T04:56:00Z",
+   "2026-11-03T05:15:00Z"
+  ],
+  "baseten": {
+   "requests": 490,
+   "input_tokens": 279700,
+   "cached_input_tokens": 137856,
+   "output_tokens": 142370
+  },
+  "billing": {
+   "date_utc": "2026-11-03",
+   "subtotal_usd": 0.8030559,
+   "note": "whole-day workspace subtotal, includes any other use that day"
+  },
+  "crosscheck": {
+   "requests": {
+    "baseten": 490,
+    "ours": 490,
+    "diff_pct": 0.0
+   },
+   "input_tokens": {
+    "baseten": 279700,
+    "ours": null,
+    "diff_pct": null
+   },
+   "cached_input_tokens": {
+    "baseten": 137856,
+    "ours": null,
+    "diff_pct": null
+   },
+   "output_tokens": {
+    "baseten": 142370,
+    "ours": null,
+    "diff_pct": null
+   }
+  },
+  "worst_diff_pct": 0.0,
+  "match": true,
+  "note": "window is workspace-wide for this model: other use of the same key in the window shows up here; energy is not exposed for Model APIs and stays ESTIMATE"
+ }
+}

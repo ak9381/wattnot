@@ -1,0 +1,37 @@
+{
+ "config": {
+  "name": "Modal own 1103",
+  "description": "",
+  "provider": "modal_a100",
+  "model": "glimmer-30b",
+  "datasets": [
+   "ours"
+  ],
+  "p99_pct": 10.0,
+  "approvals": "hold_high_risk",
+  "open_pr": true,
+  "rounds": 1,
+  "smoke": null,
+  "caps": {
+   "modal_smoke_usd": 0.0,
+   "baseten_smoke_usd": 1.0,
+   "baseten_smoke_max_usd": 2.0,
+   "meta_smoke_usd": 1.0,
+   "baseten_round_usd": 20.0,
+   "modal_round_usd": 20.0,
+   "modal_stage_usd": 90.0,
+   "meta_hard_usd": 120.0,
+   "meta_soft_usd": 100.0
+  }
+ },
+ "mode": "live",
+ "label": "MEASURED",
+ "cmd": [
+  "/usr/bin/python3",
+  "scripts/e2e/modal_stage.py",
+  "--rounds",
+  "r04",
+  "--sets",
+  "ours"
+ ]
+}

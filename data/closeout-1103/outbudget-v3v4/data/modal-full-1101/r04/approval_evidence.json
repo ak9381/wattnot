@@ -1,0 +1,62 @@
+{
+ "decision": "rejected",
+ "auto_approve": false,
+ "checks": {
+  "accuracy_vs_baseline": {
+   "ok": true,
+   "drop_pts": 1.09,
+   "rule": "accuracy may drop at most 2 points"
+  },
+  "p99": {
+   "ok": false,
+   "strict_ok": false,
+   "verdict": "fail",
+   "rule": "with-arm item p99 within +10% of without",
+   "without_s": 92.2147,
+   "with_s": 102.8473,
+   "latency_verdict": {
+    "rule": "with-arm item p99 within +10% of without; note allowed if p95 passes and dropping <= 2 with-arm items above the without p99 fixes p99",
+    "p99_without_s": 92.2147,
+    "p99_with_s": 102.8473,
+    "p95_without_s": 69.8137,
+    "p95_with_s": 79.5813,
+    "items": [],
+    "label": "MEASURED",
+    "strict_ok": false,
+    "p95_ok": false,
+    "verdict": "fail",
+    "items_above_without_p99": 3
+   }
+  },
+  "joule_slo": {
+   "ok": true,
+   "rule": "J/correct with <= without",
+   "without": 1501.8,
+   "with": 617.8
+  },
+  "spark_agreement": {
+   "ok": true,
+   "value": 0.9143,
+   "rule": "Spark agrees with the fixed checks on >= 90% of answers"
+  },
+  "fp8_gate": {
+   "ok": true,
+   "rule": "FP8 only if its own gate kept it"
+  },
+  "receipt_hash": {
+   "ok": true,
+   "rule": "receipt re-seals"
+  },
+  "no_fatal": {
+   "ok": true,
+   "value": null
+  }
+ },
+ "latency_note": null,
+ "failed_checks": [
+  "p99"
+ ],
+ "skipped_checks": [],
+ "at": "2026-11-03T06:11:31.225164+00:00",
+ "by": "runner verification (rules above), recorded as evidence"
+}

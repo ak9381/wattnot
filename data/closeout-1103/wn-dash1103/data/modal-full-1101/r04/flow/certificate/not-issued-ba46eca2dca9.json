@@ -1,0 +1,61 @@
+{
+  "format": "wattnot.cert-decline/1",
+  "status": "declined",
+  "issued_at": "2026-11-03T06:11:30+00:00",
+  "title": "Efficiency Statement \u2014 NOT ISSUED",
+  "reasons": [
+    {
+      "code": "grade",
+      "detail": "grade is NOISE; only VALID or ESTIMATE are minted"
+    }
+  ],
+  "receipt": {
+    "receipt_id": "rcpt_20261101_modal_full_r04",
+    "sha256": "ba46eca2dca91d4e2c6d563c1737c02b05edbe3c7e62688cb16fb6666f2e22fe",
+    "spec": "wattnot.receipt/1",
+    "grade": "NOISE",
+    "label": "MEASURED",
+    "created_at": "2026-11-03T06:10:49+00:00"
+  },
+  "subject": {
+    "model": "meta-models/Muse-Glimmer-30B",
+    "provider": "modal",
+    "gpu": "NVIDIA A100 80GB PCIe",
+    "workload": "ours92"
+  },
+  "figures": {
+    "wh_per_request": {
+      "baseline": 0.462028,
+      "candidate": 0.16974,
+      "saved": 0.292288,
+      "saved_ci95": {
+        "low": -0.101645236,
+        "high": 0.435459542
+      },
+      "baseline_range": null,
+      "candidate_range": null
+    },
+    "saving_pct": {
+      "mean": 63.2619,
+      "ci_low": -21.9998,
+      "ci_high": 94.2496,
+      "basis": null
+    },
+    "usd_per_request": {
+      "baseline": 5.54434e-05,
+      "candidate": 2.03689e-05,
+      "saved": 3.50745e-05,
+      "currency": "USD"
+    },
+    "j_per_good_answer": {
+      "baseline": 1663.3008,
+      "candidate": 617.797998,
+      "change_pct": -62.8571
+    },
+    "pass_rate": {
+      "baseline": 1.0,
+      "candidate": 0.9891
+    }
+  },
+  "note": "No certificate was minted. The receipt is intact but its saving is not statistically shown (grade NOISE); a certificate is only minted for a VALID or ESTIMATE receipt that shows a clear saving."
+}

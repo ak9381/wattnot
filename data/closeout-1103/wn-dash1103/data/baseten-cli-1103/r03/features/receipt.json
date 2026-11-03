@@ -1,0 +1,468 @@
+{
+  "kind": "hosted-e2e",
+  "approvals": {
+    "status": "ok",
+    "held_change": {
+      "kind": "reasoning_effort",
+      "change": {
+        "reasoning_effort": "low",
+        "step_up": "medium"
+      }
+    },
+    "risk": "low",
+    "reasons": [
+      "request-level reasoning-effort knob, reversible, no hardware touched"
+    ],
+    "evidence": {
+      "accuracy_without": 0.837,
+      "accuracy_with": 0.9022,
+      "p99_without": 69.2767,
+      "p99_with": 55.6746,
+      "spark_agreement": 0.9943,
+      "j_per_correct_without": 1418.19,
+      "j_per_correct_with": 720.02,
+      "eye_check": false,
+      "hearing_check": true
+    },
+    "review": {
+      "who": "Akash K Raju (delegated reviewer)",
+      "what": {
+        "reasoning_effort": "low",
+        "step_up": "medium"
+      },
+      "risk": "low",
+      "checks": [
+        {
+          "check": "accuracy (with >= without - 1 pt)",
+          "ok": true,
+          "detail": {
+            "without": 0.837,
+            "with": 0.9022,
+            "label": "MEASURED"
+          }
+        },
+        {
+          "check": "p99 limit (with <= 1.10 x without)",
+          "ok": true,
+          "detail": {
+            "without_s": 69.2767,
+            "with_s": 55.6746,
+            "label": "MEASURED"
+          }
+        },
+        {
+          "check": "Spark agreement >= 0.90",
+          "ok": true,
+          "detail": {
+            "agreement": 0.9943
+          }
+        },
+        {
+          "check": "joule-SLO (J/correct with <= without)",
+          "ok": true,
+          "detail": {
+            "without": 1418.19,
+            "with": 720.02,
+            "label": "ESTIMATE"
+          }
+        },
+        {
+          "check": "eye_check gate passed",
+          "ok": false,
+          "detail": {
+            "passed": false
+          }
+        },
+        {
+          "check": "hearing_check gate passed",
+          "ok": true,
+          "detail": {
+            "passed": true
+          }
+        }
+      ],
+      "decision": "rejected",
+      "failed_checks": [
+        "eye_check gate passed"
+      ],
+      "skipped_checks": [],
+      "why": "failed: eye_check gate passed",
+      "started_utc": "2026-11-03T05:13:03.963294+00:00",
+      "decided_utc": "2026-11-03T05:13:03.963839+00:00",
+      "auto_approve": false
+    }
+  },
+  "musecode_pr": {
+    "status": "skipped",
+    "why": "one PR per stage, opened after the last round"
+  },
+  "feature_stages": {
+    "eye_check": "ok",
+    "hearing_check": "ok",
+    "sam_hotspot": "ok",
+    "wonder_chart": "ok",
+    "spark_trace": "ok",
+    "approvals": "ok",
+    "musecode_pr": "skipped",
+    "code_mode": "ok"
+  },
+  "round": "r03",
+  "model": "meta-models/muse-spark-open",
+  "features": [
+    {
+      "id": "effort_routing",
+      "name": "Reasoning-effort + cheapest-first routing (low, step up on a failed check)",
+      "status": "ON",
+      "reason": "hosted API (per-token, no GPU access)"
+    },
+    {
+      "id": "thinking_budget",
+      "name": "Thinking-budget enforcer (max_tokens per effort)",
+      "status": "ON",
+      "reason": "hosted API (per-token, no GPU access)"
+    },
+    {
+      "id": "router",
+      "name": "Backend/effort router",
+      "status": "ON",
+      "reason": "effort leg only; one hosted backend on this stage"
+    },
+    {
+      "id": "context_saver",
+      "name": "Agent saver: tool-output dedup + memory compression",
+      "status": "ON",
+      "reason": "hosted API (per-token, no GPU access)"
+    },
+    {
+      "id": "waste_guard",
+      "name": "Agent-waste proxy (repeat/no-op/cycle/overspend detectors)",
+      "status": "ON",
+      "reason": "hosted API (per-token, no GPU access)"
+    },
+    {
+      "id": "code_mode",
+      "name": "Code Mode with locked sandbox + network boundary",
+      "status": "ON",
+      "reason": "runs on the box over recorded traces"
+    },
+    {
+      "id": "prefix_cache_provider",
+      "name": "Prefix caching (provider side, reported cached tokens)",
+      "status": "ON",
+      "reason": "MEASURED cached_tokens from the API; we cannot control the cache"
+    },
+    {
+      "id": "concurrency_batching",
+      "name": "Concurrency batching (client side)",
+      "status": "ON",
+      "reason": "client concurrency only"
+    },
+    {
+      "id": "gates",
+      "name": "Noise gate, fixed answer gate, LLM judge, reasoning-leak strip",
+      "status": "ON",
+      "reason": "hosted API (per-token, no GPU access)"
+    },
+    {
+      "id": "spark_grades",
+      "name": "Muse Spark grades every answer",
+      "status": "ON",
+      "reason": "Meta API"
+    },
+    {
+      "id": "joule_slo",
+      "name": "Joule-SLO + user p99 limit",
+      "status": "ON",
+      "reason": "energy ESTIMATE from tokens"
+    },
+    {
+      "id": "eye_check",
+      "name": "Eye check: vision gate on the SYNTHETIC Muse Image set",
+      "status": "ON",
+      "reason": "Meta API"
+    },
+    {
+      "id": "sam_hotspot",
+      "name": "SAM 3.1 hotspot audit",
+      "status": "ON",
+      "reason": "Meta API"
+    },
+    {
+      "id": "hearing_check",
+      "name": "Hearing check: Muse Voice Transcribe on spoken answers",
+      "status": "ON",
+      "reason": "Meta API"
+    },
+    {
+      "id": "wonder_planner",
+      "name": "Muse Wonder planner + Wonderchart",
+      "status": "ON",
+      "reason": "Meta API"
+    },
+    {
+      "id": "spark_trace",
+      "name": "Spark 4-call trace (probe, proposal, gate, receipt)",
+      "status": "ON",
+      "reason": "Meta API"
+    },
+    {
+      "id": "approvals",
+      "name": "Approve-before-apply with risk classifier, undo",
+      "status": "ON",
+      "reason": "local"
+    },
+    {
+      "id": "musecode_pr",
+      "name": "Muse Code PR flow (ak9381/wattnot-demo-deploy only)",
+      "status": "ON",
+      "reason": "patch always built; PR opened only with --open-pr at stage time"
+    },
+    {
+      "id": "receipt",
+      "name": "Signed receipt + SCI carbon/water + joules per good answer",
+      "status": "ON",
+      "reason": "local signing key"
+    },
+    {
+      "id": "eu_report",
+      "name": "EU report",
+      "status": "ON",
+      "reason": "local"
+    },
+    {
+      "id": "label_lint",
+      "name": "Label-honesty lint",
+      "status": "ON",
+      "reason": "local"
+    },
+    {
+      "id": "spend_guard",
+      "name": "Spend guards (Baseten hard cap, Meta soft cap, ledger)",
+      "status": "ON",
+      "reason": "local"
+    },
+    {
+      "id": "power_caps",
+      "name": "Power-cap sweep + J/correct gate",
+      "status": "OFF",
+      "reason": "needs our own GPU / our own vLLM server"
+    },
+    {
+      "id": "fp8",
+      "name": "FP8 quantization keep/reject gate",
+      "status": "OFF",
+      "reason": "needs our own GPU / our own vLLM server"
+    },
+    {
+      "id": "kv_batch",
+      "name": "Batch-size + KV-cache sweep",
+      "status": "OFF",
+      "reason": "needs our own GPU / our own vLLM server"
+    },
+    {
+      "id": "vllm_prefix",
+      "name": "vLLM prefix-cache control",
+      "status": "OFF",
+      "reason": "needs our own GPU / our own vLLM server"
+    },
+    {
+      "id": "clock_sidecar",
+      "name": "Phase-aware clock sidecar, marginal-joule knee",
+      "status": "OFF",
+      "reason": "needs our own GPU / our own vLLM server"
+    },
+    {
+      "id": "moe",
+      "name": "MoE top-k / per-expert pinning",
+      "status": "OFF",
+      "reason": "needs Spark Open self-served (8x B200)"
+    },
+    {
+      "id": "measured_energy",
+      "name": "MEASURED GPU energy (NVML)",
+      "status": "OFF",
+      "reason": "hosted API exposes no power meter; energy is ESTIMATE"
+    },
+    {
+      "id": "flex",
+      "name": "Flex grid-event load shedding",
+      "status": "OFF",
+      "reason": "simulator only"
+    },
+    {
+      "id": "rekor",
+      "name": "Rekor publish",
+      "status": "OFF",
+      "reason": "only after the long run, with Akash's yes"
+    },
+    {
+      "id": "own_gpu_serving",
+      "name": "Own-GPU vLLM serving + E2E rig",
+      "status": "OFF",
+      "reason": "needs our own GPU / our own vLLM server"
+    }
+  ],
+  "results": {
+    "accuracy_without": 0.837,
+    "accuracy_with": 0.9022,
+    "j_per_correct_without": 1418.19,
+    "j_per_correct_with": 720.02,
+    "energy_saved_pct": {
+      "value": 45.27,
+      "label": "ESTIMATE"
+    },
+    "usd_saved_pct": {
+      "value": 56.48,
+      "label": "MEASURED"
+    },
+    "per_arm": {
+      "without_wattnot": {
+        "answers": 92,
+        "correct": 77,
+        "accuracy": 0.837,
+        "per_set": {
+          "ours": {
+            "correct": 77,
+            "answers": 92,
+            "accuracy": 0.837
+          }
+        },
+        "calls": 200,
+        "errors": 0,
+        "tokens": {
+          "prompt": 94483,
+          "cached": 59136,
+          "completion": 95967,
+          "label": "MEASURED"
+        },
+        "usd": {
+          "value": 0.460914,
+          "label": "MEASURED",
+          "method": "tokens x Baseten list price"
+        },
+        "energy_wh": {
+          "value": 30.3335,
+          "low": 5.5152,
+          "high": 55.1519,
+          "label": "ESTIMATE",
+          "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+        },
+        "j_per_correct": {
+          "value": 1418.19,
+          "label": "ESTIMATE"
+        },
+        "item_latency_s": {
+          "p50": 3.295,
+          "p95": 58.955,
+          "p99": 69.2767,
+          "label": "MEASURED"
+        },
+        "call_latency_s": {
+          "p50": 2.7008,
+          "p99": 62.1554,
+          "mean": 6.8503,
+          "label": "MEASURED"
+        },
+        "stepped_up": 0
+      },
+      "with_wattnot": {
+        "answers": 92,
+        "correct": 83,
+        "accuracy": 0.9022,
+        "per_set": {
+          "ours": {
+            "correct": 83,
+            "answers": 92,
+            "accuracy": 0.9022
+          }
+        },
+        "calls": 230,
+        "errors": 0,
+        "tokens": {
+          "prompt": 109811,
+          "cached": 71296,
+          "completion": 33348,
+          "label": "MEASURED"
+        },
+        "usd": {
+          "value": 0.200567,
+          "label": "MEASURED",
+          "method": "tokens x Baseten list price"
+        },
+        "energy_wh": {
+          "value": 16.6004,
+          "low": 3.0182,
+          "high": 30.1825,
+          "label": "ESTIMATE",
+          "method": "2 x active params x (uncached prompt + completion tokens) FLOPs, times a J/FLOP range for H100-class GPUs. Cached prompt tokens skip prefill. Not measured on Baseten's GPUs."
+        },
+        "j_per_correct": {
+          "value": 720.02,
+          "label": "ESTIMATE"
+        },
+        "item_latency_s": {
+          "p50": 2.163,
+          "p95": 22.856,
+          "p99": 55.6746,
+          "label": "MEASURED"
+        },
+        "call_latency_s": {
+          "p50": 1.95,
+          "p99": 37.2833,
+          "mean": 2.7509,
+          "label": "MEASURED"
+        },
+        "stepped_up": 0
+      }
+    },
+    "latency_verdict": {
+      "rule": "with-arm item p99 within +10% of without; note allowed if p95 passes and dropping <= 2 with-arm items above the without p99 fixes p99",
+      "p99_without_s": 69.2767,
+      "p99_with_s": 55.6746,
+      "p95_without_s": 58.955,
+      "p95_with_s": 22.856,
+      "items": [],
+      "label": "MEASURED",
+      "strict_ok": true,
+      "p95_ok": true,
+      "verdict": "pass"
+    }
+  },
+  "spend": {
+    "baseten_usd": {
+      "value": 0.661481,
+      "label": "MEASURED",
+      "method": "tokens x list price (not yet checked against the invoice)"
+    },
+    "meta_usd": {
+      "value": 0.18162,
+      "label": "MEASURED",
+      "source": "Meta spend ledger"
+    },
+    "meta_ledger_after_usd": 30.6452
+  },
+  "provider_usage": null,
+  "server_config": null,
+  "labels": {
+    "energy": "ESTIMATE",
+    "tokens": "MEASURED"
+  },
+  "integrity": {
+    "signer": "offline:cc61d7cb91526c69",
+    "sha256": "644c8b3324e42617c6b9bc519619d89651b895ad6b1ca7251b675953ed4f4004",
+    "rekor": null
+  },
+  "sha256": "1f177d187207f66d39decebed3368f32a45c67d1c4dd8671358616a756c3224f",
+  "sci": {
+    "grid": {
+      "gco2e_per_kwh": 727.0,
+      "label": "ESTIMATE",
+      "region": "IN (India national grid)",
+      "year": "FY 2023-24",
+      "source": "CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included)",
+      "url": "https://cea.nic.in/cdm-co2-baseline-database/?lang=en"
+    },
+    "label": "ESTIMATE",
+    "gco2_per_arm": null
+  }
+}

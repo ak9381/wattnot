@@ -1,0 +1,13 @@
+diff --git a/values.yaml b/values.yaml
+index 3f6af94..635df8a 100644
+--- a/values.yaml
++++ b/values.yaml
+@@ -20,6 +20,6 @@ resources:
+ selfHosted:
+   quantization: bf16
+   maxNumSeqs: 128
+-  prefixCaching: true
++  prefixCaching: false
+   router: cheapest-first
+-  receiptSha256: c976bf9a181b75fbb1805b31fab9237749221b2583d163cc817a7547ce93a56a
++  receiptSha256: 3487f4d82d2399c40de876a9126c444f5411c73f2cb7a92712ce98b7cf1d0d85

@@ -1,0 +1,33 @@
+/app/scripts/langchain_pass.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml
+Traceback (most recent call last):
+  File "/app/scripts/langchain_pass.py", line 324, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/app/scripts/langchain_pass.py", line 271, in main
+    per = run_agent(base, model, rows, a.max_steps, f"lc-{arm}",
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/scripts/langchain_pass.py", line 131, in run_agent
+    res = t.invoke(tc.get("args") or {}) if t else f"unknown tool {tc['name']}"
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/tools/base.py", line 764, in invoke
+    return self.run(tool_input, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/tools/base.py", line 1132, in run
+    raise error_to_raise
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/tools/base.py", line 1091, in run
+    tool_args, tool_kwargs = self._to_args_and_kwargs(
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/tools/base.py", line 993, in _to_args_and_kwargs
+    tool_input = self._parse_input(tool_input, tool_call_id)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/langchain_core/tools/base.py", line 834, in _parse_input
+    result_v2 = input_args.model_validate(tool_input)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/pydantic/main.py", line 732, in model_validate
+    return cls.__pydantic_validator__.validate_python(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for calculator
+expression
+  Input should be a valid string [type=string_type, input_value=30, input_type=int]
+    For further information visit https://errors.pydantic.dev/2.13/v/string_type

@@ -1,0 +1,63 @@
+{
+ "started_utc": "2026-11-03T12:14:45.642352+00:00",
+ "gpu": "NVIDIA A100-SXM4-80GB",
+ "fake": false,
+ "sets": [
+  "ours",
+  "gsm8k",
+  "humaneval"
+ ],
+ "idle_w": {
+  "value": 69.5,
+  "label": "MEASURED",
+  "when": "before vLLM start"
+ },
+ "cap_probe": {
+  "writable": false,
+  "reason": "NVML refused the power-limit write (NVMLError_NoPermission); Modal containers have no privileged GPU control",
+  "label": "MEASURED"
+ },
+ "items": 192,
+ "slice": 24,
+ "steps": {
+  "prefix_cache_switch": {
+   "enabled": false,
+   "mode": "auto",
+   "threshold": 0.5,
+   "shared_prefix_ratio": 0.1433,
+   "prompts": 192,
+   "workload": "ours,gsm8k,humaneval",
+   "reason": "shared-prefix ratio 14.3% < threshold 50%: short single questions, cache off",
+   "vllm_flag": "--no-enable-prefix-caching",
+   "label": "MEASURED"
+  },
+  "only": [
+   "langchain"
+  ],
+  "with_server": {
+   "fp8": false,
+   "prefix_caching": true,
+   "max_num_seqs": 128,
+   "start_s": {
+    "value": 159.1,
+    "label": "MEASURED"
+   }
+  },
+  "blocks": {
+   "langchain": {
+    "rc": 5,
+    "wall_s": 1577.5,
+    "out": "langchain",
+    "energy_j": {
+     "value": 566059.7,
+     "label": "MEASURED"
+    }
+   }
+  }
+ },
+ "failed": {
+  "langchain": "langchain GPU block exited rc=5 (see langchain/block.log)"
+ },
+ "deadline_s": 4500.0,
+ "ended_utc": "2026-11-03T12:43:49.604334+00:00"
+}

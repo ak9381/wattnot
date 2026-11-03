@@ -1,0 +1,18 @@
+{
+ "trials": [
+  {
+   "name": "without_wattnot",
+   "effort": "medium",
+   "accuracy": 0.837,
+   "energy_wh": 30.3335,
+   "label": "ESTIMATE"
+  },
+  {
+   "name": "with_wattnot",
+   "effort": "low+step-up",
+   "accuracy": 0.9022,
+   "energy_wh": 16.6004,
+   "label": "ESTIMATE"
+  }
+ ]
+}

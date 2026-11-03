@@ -1,0 +1,42 @@
+[
+ {
+  "kind": "spark_call",
+  "step": "probe",
+  "model": "muse-spark-1.3",
+  "status": "ok",
+  "trace_id": "chatcmpl-01a1a009-1f5b-724e-87f9-910f4e0c96ae",
+  "latency_s": 6.2,
+  "text": "Energy estimated from tokens with no GPU meter, so J/correct 1501.8\u2192617.8 is approximate.\nEfficiency capped by higher p99 92.2\u2192102.8ms and slight accuracy drop 1.0\u21920.9891 (agreement 0.9143).",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "proposal",
+  "model": "muse-spark-1.3",
+  "status": "ok",
+  "trace_id": "chatcmpl-01a1a009-4daf-7587-813f-0436cd86d221",
+  "latency_s": 11.867,
+  "text": "{\"change\": \"enable effort routing to low-effort/Spark tier with fallback on disagreement\", \"why\": \"saves ~59% energy per correct (1501.8 to 617.8 J) for only 1.1pt accuracy cost (1.0 to 0.9891), p99 92.2ms to 102.8ms remains acceptable, spark_agreement 0.9143 is high and eye_check/hearing_check both true\"}",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "gate",
+  "model": "muse-spark-1.3",
+  "status": "ok",
+  "trace_id": "chatcmpl-01a1a009-682b-7127-a0f1-697ceb322b75",
+  "latency_s": 6.789,
+  "text": "FAIL - accuracy regressed 1.0 to 0.9891 and p99 regressed 92.2ms to 102.8ms despite energy savings.",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "receipt",
+  "model": "muse-spark-1.3",
+  "status": "ok",
+  "trace_id": "chatcmpl-01a1a009-8472-7031-bf6a-c9d2027e6691",
+  "latency_s": 7.26,
+  "text": "Accuracy slipped slightly from 1.0 to 0.9891 with the change, while p99 latency increased from 92.21 to 102.85. Energy efficiency improved a lot, dropping from 1501.8 J per correct to 617.8 J per correct, with spark agreement at 0.9143. Both the eye check and hearing check passed.",
+  "label": "MEASURED"
+ }
+]

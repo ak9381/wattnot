@@ -1,0 +1,68 @@
+{
+  "spec": "wattnot.round-attachment/1",
+  "run_id": "r04-langchain-20261103T062925Z",
+  "attaches_to": "r04",
+  "block": "langchain",
+  "status": "passed",
+  "label": "MEASURED",
+  "summary": "LangChain saver 20/20 vs 19/20 without",
+  "created_at": "2026-11-03T07:01:13.442648+00:00",
+  "server": {
+    "fp8": false,
+    "prefix_caching": true,
+    "max_num_seqs": 128,
+    "start_s": {
+      "value": 90.1,
+      "label": "MEASURED"
+    }
+  },
+  "gpu": "NVIDIA A100 80GB PCIe",
+  "results": {
+    "langchain": {
+      "rc": 0,
+      "energy_j": {
+        "value": 527836.3,
+        "label": "MEASURED"
+      },
+      "file": "data/modal-full-1101/attachments/r04/r04-langchain-20261103T062925Z/langchain/langchain_pass.json",
+      "file_sha256": "a0afa8f579a3001910e03ed20d6d9913361e8a37d4994114f371e81ffe831cfe",
+      "quality_held": true,
+      "arms": {
+        "saver_off": {
+          "correct": 19,
+          "n": 20,
+          "gpu_j": 233910.28,
+          "j_per_correct": 12311.067368421052
+        },
+        "saver_on": {
+          "correct": 20,
+          "n": 20,
+          "gpu_j": 293746.287,
+          "j_per_correct": 14687.31435
+        }
+      }
+    }
+  },
+  "spend": {
+    "modal_usd": {
+      "value": 1.3219,
+      "label": "ESTIMATE"
+    },
+    "stage_total_usd": {
+      "value": 5.3375,
+      "label": "ESTIMATE"
+    },
+    "teardown": {
+      "stopped": [],
+      "still_running": [],
+      "verified_empty": true,
+      "checked_at": "2026-11-03T07:01:13.261153+00:00"
+    }
+  },
+  "note": "Separate run with its own id; the round's own files are never changed.",
+  "integrity": {
+    "sha256": "757f6d9e73dba66a6c426a6c2efc1f64aa3220c13ceb915d3b4346463a6b539e",
+    "signer": "offline:a10d641cddc104d8",
+    "rekor": null
+  }
+}

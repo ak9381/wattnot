@@ -1,0 +1,396 @@
+{
+  "spec": "wattnot.receipt/1",
+  "receipt_id": "rcpt_20261101_modal_full_r04",
+  "created_at": "2026-11-03T06:10:49+00:00",
+  "run_id": "run_20261101_modal_full_r04",
+  "subject": {
+    "model": "meta-models/Muse-Glimmer-30B",
+    "host": {
+      "provider": "modal",
+      "gpu": "NVIDIA A100 80GB PCIe",
+      "driver": "recorded"
+    },
+    "mode": "container",
+    "workload": {
+      "name": "ours92",
+      "version": "1",
+      "n_requests": 92
+    }
+  },
+  "baseline": {
+    "params": {
+      "power_cap_w": null,
+      "fp8": false,
+      "prefix_caching": false,
+      "max_num_seqs": 64,
+      "start_s": {
+        "value": 87.1,
+        "label": "MEASURED"
+      }
+    },
+    "reps": 12,
+    "wh_per_req": {
+      "mean": 0.462028,
+      "sd": 0.559623,
+      "samples": [
+        0.077511,
+        0.074258,
+        0.065928,
+        0.145515,
+        0.222589,
+        0.308666,
+        0.273164,
+        0.241667,
+        0.371466,
+        0.523975,
+        1.745638,
+        1.493964
+      ]
+    },
+    "usd_per_req": {
+      "mean": 5.54434e-05,
+      "sd": 6.71548e-05,
+      "samples": [
+        9.3013e-06,
+        8.911e-06,
+        7.9114e-06,
+        1.74618e-05,
+        2.67107e-05,
+        3.70399e-05,
+        3.27797e-05,
+        2.9e-05,
+        4.45759e-05,
+        6.2877e-05,
+        0.0002094766,
+        0.0001792757
+      ]
+    },
+    "p99_ms": 92215,
+    "quality": {
+      "fixed_pass_rate": 1.0
+    }
+  },
+  "candidate": {
+    "params": {
+      "power_cap_w": null,
+      "fp8": false,
+      "prefix_caching": false,
+      "max_num_seqs": 128,
+      "start_s": {
+        "value": 63.0,
+        "label": "MEASURED"
+      },
+      "concurrency": 32,
+      "router": "no-think first, per-tier thinking budget on a failed check"
+    },
+    "reps": 4,
+    "wh_per_req": {
+      "mean": 0.16974,
+      "sd": 0.238122,
+      "samples": [
+        0.013686,
+        0.054519,
+        0.086653,
+        0.524104
+      ]
+    },
+    "usd_per_req": {
+      "mean": 2.03689e-05,
+      "sd": 2.85746e-05,
+      "samples": [
+        1.6423e-06,
+        6.5423e-06,
+        1.03984e-05,
+        6.28925e-05
+      ]
+    },
+    "p99_ms": 102847,
+    "quality": {
+      "fixed_pass_rate": 0.9891
+    }
+  },
+  "result": {
+    "saving_pct": {
+      "mean": 63.2619,
+      "ci_low": -21.9998,
+      "ci_high": 94.2496
+    },
+    "welch": {
+      "t": 1.456466,
+      "df": 12.583047,
+      "p_value": 0.08488024514826076,
+      "alpha": 0.05
+    },
+    "bootstrap": {
+      "n": 10000,
+      "seed": 7,
+      "level": 0.95
+    },
+    "billable": false,
+    "billed_saving_pct": 0,
+    "fee_share": 0.2,
+    "currency": "USD",
+    "tariff_usd_per_kwh": {
+      "value": 0.12,
+      "label": "ESTIMATE"
+    }
+  },
+  "measurement": {
+    "meter": "nvml",
+    "hz": 1,
+    "label": "MEASURED",
+    "idle_w": 56.1,
+    "csv": [
+      {
+        "path": "data/modal-full-1101/r04/raw/batch-c16-s64.power.csv",
+        "sha256": "0daf778b1b03e2cb6036054af6309739fbce747da0f32fcc627acbf213284007"
+      },
+      {
+        "path": "data/modal-full-1101/r04/raw/batch-c32-s128.power.csv",
+        "sha256": "a03330209057f2ea50c74ddf3da5f17b3bbe74e0c93ed5ea128a4b37e8adc328"
+      },
+      {
+        "path": "data/modal-full-1101/r04/raw/batch-c4-s64.power.csv",
+        "sha256": "5c275183f304d6bb309e0e41421c3394c8d3b4a1941263145bf7b70c76c28c1c"
+      },
+      {
+        "path": "data/modal-full-1101/r04/raw/fp8.power.csv",
+        "sha256": "806ab492e1902186e75bf257245e13ecbc22a202cbb88955e327d26ebf61bfaa"
+      },
+      {
+        "path": "data/modal-full-1101/r04/raw/with.power.csv",
+        "sha256": "ed3a33ccf5f7233bb720810eaf3208f5f80e6fd1fb290ee595bf1e101a527f73"
+      },
+      {
+        "path": "data/modal-full-1101/r04/raw/without.power.csv",
+        "sha256": "0c8e301b6f59476dbfa5ad998bb07f769e52866345b45de9321189ec23ea90c2"
+      },
+      {
+        "path": "data/modal-full-1101/r04/raw/with.answers.graded.jsonl",
+        "sha256": "1bd53b38414073f9ae1d4fcab4012eb6a7ec283e38350fd79f4adf1ed7b055b7"
+      },
+      {
+        "path": "data/modal-full-1101/r04/raw/with.answers.jsonl",
+        "sha256": "081e8a10cfcb9551e55fe7c646b9c9940609e8465ddcedc823995288aaad69b6"
+      },
+      {
+        "path": "data/modal-full-1101/r04/raw/with.calls.jsonl",
+        "sha256": "3d1fb81350fe0549f9a6ce6e2dac28a5c7fd6a1e5553ac7dab00bf42773699ec"
+      },
+      {
+        "path": "data/modal-full-1101/r04/raw/without.answers.graded.jsonl",
+        "sha256": "3c045fa7bf0518cb4e6c45e943da12f90e2f0caddd6f004d88a3ebc99d379431"
+      },
+      {
+        "path": "data/modal-full-1101/r04/raw/without.answers.jsonl",
+        "sha256": "a446d885080e6507a28cd0e8d9ab016ebd1bac8f32cc5421a64768d1eb891fa0"
+      },
+      {
+        "path": "data/modal-full-1101/r04/raw/without.calls.jsonl",
+        "sha256": "43fd40ebeaca881e6ce99b1b07dce422ad62ba30fa9b6e2e345139b311dec6e2"
+      }
+    ],
+    "per_model_joules": [
+      {
+        "model": "meta-models/Muse-Glimmer-30B (served, model under test)",
+        "role": "served",
+        "where": "local",
+        "j_per_answer": 611.064,
+        "j_total": 56217.9,
+        "label": "MEASURED",
+        "how": "NVML energy counter, 10 samples a second; j_total = J per answer x checked answers"
+      }
+    ],
+    "eye_test": {
+      "label": "SYNTHETIC",
+      "passed": true,
+      "checked": 0,
+      "passed_count": 0,
+      "missed": [],
+      "reason": "all 10 eye-test images read correctly",
+      "model": "meta-models/Muse-Glimmer-30B",
+      "est_wh_per_image": {
+        "value": 0.5,
+        "label": "ESTIMATE"
+      },
+      "images": []
+    },
+    "spoken_test": {
+      "label": "SYNTHETIC",
+      "transcriber": "muse-voice-transcribe-1.0",
+      "passed": true,
+      "checked": 0,
+      "passed_count": 0,
+      "missed": [],
+      "missed_noisy": [],
+      "reason": "all 20 spoken answers correct",
+      "model": "meta-models/Muse-Glimmer-30B",
+      "items": []
+    }
+  },
+  "attribution": {
+    "method": "token-share-capped (after Neuralwatt)",
+    "cap": 1.0
+  },
+  "planner_trace": [],
+  "estimates": {
+    "water_ml_per_req": {
+      "value": 0.061106,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"
+    },
+    "water_ml_per_req_upper": {
+      "value": 0.305532,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"
+    },
+    "baseline_water_ml_per_req": {
+      "value": 0.16633,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"
+    },
+    "baseline_water_ml_per_req_upper": {
+      "value": 0.83165,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"
+    }
+  },
+  "limits": {
+    "max_p99_increase": 0.1,
+    "max_p99_increase_pct": 10.0,
+    "source": "default"
+  },
+  "dataset": {
+    "id": "not-recorded",
+    "chosen_by": "not recorded",
+    "why": "this run predates the dataset picker"
+  },
+  "joules": {
+    "unit": "J",
+    "label": "MEASURED",
+    "formula": "j_per_answer = wh_per_req x 3600; j_per_good_answer = j_per_answer / pass_rate",
+    "baseline": {
+      "j_per_answer": 1663.3008,
+      "pass_rate": 1.0,
+      "j_per_good_answer": 1663.3008
+    },
+    "candidate": {
+      "j_per_answer": 611.064,
+      "pass_rate": 0.9891,
+      "j_per_good_answer": 617.797998
+    },
+    "change_pct": {
+      "j_per_answer": -63.262,
+      "j_per_good_answer": -62.8571
+    }
+  },
+  "sci": {
+    "spec": "GSF SCI 1.0 (ISO/IEC 21031:2024): SCI = (E x I + M) per R",
+    "R": "one correct answer (passed the quality gate)",
+    "label": "ESTIMATE",
+    "why_label": "E is the receipt's measured energy; I and water are cited factors, so every carbon and water number is ESTIMATE",
+    "scope": "operational (E x I)",
+    "I": {
+      "gco2e_per_kwh": 727.0,
+      "label": "ESTIMATE",
+      "region": "IN (India national grid)",
+      "year": "FY 2023-24",
+      "source": "CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included)",
+      "url": "https://cea.nic.in/cdm-co2-baseline-database/?lang=en"
+    },
+    "M": {
+      "status": "NOT_AVAILABLE",
+      "gco2e_per_correct": null,
+      "why": "no cited embodied-emissions figure for this GPU and server; SCI shown is operational only (E x I)"
+    },
+    "water": {
+      "wue": {
+        "l_per_kwh": 0.36,
+        "label": "ESTIMATE",
+        "source": "0.36 L/kWh on-site cooling (LBNL 2024 US Data Center Energy Usage Report)"
+      },
+      "wue_upper": {
+        "l_per_kwh": 1.8,
+        "label": "ESTIMATE",
+        "source": "1.8 L/kWh including power-plant (electricity) water, upper bound"
+      }
+    },
+    "arms": {
+      "baseline": {
+        "E_kwh_per_request": 0.000462028,
+        "E_kwh_per_correct": 0.000462028,
+        "pass_rate": 1.0,
+        "E_label": "MEASURED",
+        "gco2e_per_request": 0.335894356,
+        "gco2e_per_correct": 0.335894356,
+        "sci_gco2e_per_R": 0.335894356,
+        "water_ml_per_request": 0.16633008,
+        "water_ml_per_correct": 0.16633008,
+        "water_ml_per_request_upper": 0.8316504
+      },
+      "candidate": {
+        "E_kwh_per_request": 0.00016974,
+        "E_kwh_per_correct": 0.0001716105551,
+        "pass_rate": 0.9891,
+        "E_label": "MEASURED",
+        "gco2e_per_request": 0.12340098,
+        "gco2e_per_correct": 0.1247608735,
+        "sci_gco2e_per_R": 0.1247608735,
+        "water_ml_per_request": 0.0611064,
+        "water_ml_per_correct": 0.06177979982,
+        "water_ml_per_request_upper": 0.305532
+      }
+    },
+    "change_pct_sci": -62.8571
+  },
+  "grade": "NOISE",
+  "integrity": {
+    "canonicalization": "JCS RFC 8785",
+    "sha256": "ba46eca2dca91d4e2c6d563c1737c02b05edbe3c7e62688cb16fb6666f2e22fe",
+    "prev_sha256": null,
+    "signer": "offline:a10d641cddc104d8",
+    "rekor": null
+  },
+  "modal_stage": {
+    "label": "MEASURED",
+    "cap_probe": {
+      "writable": false,
+      "reason": "NVML refused the power-limit write (NVMLError_NoPermission); Modal containers have no privileged GPU control",
+      "label": "MEASURED"
+    },
+    "batch_kv": {
+      "concurrency": 32,
+      "max_num_seqs": 128
+    },
+    "fp8": {
+      "kept": true,
+      "gate": {
+        "keep": true,
+        "accuracy_ok": true,
+        "energy_ok": true,
+        "acc_drop_pts": 0.0,
+        "label": "MEASURED",
+        "eye_rc": 0,
+        "hearing_rc": 0
+      }
+    },
+    "limits": {
+      "p99_limit": "+10%",
+      "p99_ok": false,
+      "joule_slo_ok": true,
+      "quality_gate": {
+        "keep": true,
+        "accuracy_ok": true,
+        "energy_ok": true,
+        "acc_drop_pts": 1.09,
+        "label": "MEASURED"
+      },
+      "label": "MEASURED"
+    },
+    "note": "Signed locally with the WattNot certificate key (ed25519-wattnot, verifier/trusted-keys.json); not published to Rekor."
+  }
+}

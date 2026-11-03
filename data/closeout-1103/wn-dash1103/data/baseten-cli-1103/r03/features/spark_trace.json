@@ -1,0 +1,42 @@
+[
+ {
+  "kind": "spark_call",
+  "step": "probe",
+  "model": "muse-spark-1.3",
+  "status": "ok",
+  "trace_id": "chatcmpl-01a19fd2-bfda-76d8-8bf1-04741d3786ee",
+  "latency_s": 12.606,
+  "text": "Energy is token-estimated only (no GPU meter), so 1418.2\u2192720.0 J/correct is approximate.\nWithout-mode limits efficiency: lower accuracy 0.837 vs 0.9022 and higher p99 69.3s vs 55.7s.\n",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "proposal",
+  "model": "muse-spark-1.3",
+  "status": "ok",
+  "trace_id": "chatcmpl-01a19fd3-0cd6-7350-8cb1-aded5480257b",
+  "latency_s": 19.724,
+  "text": "{\"change\": \"enable effort routing to low-effort/Spark path\", \"why\": \"with-routing dominates: accuracy 0.837->0.9022, p99 69.28->55.67, J/correct 1418.19->720.02 with spark_agreement 0.9943; eye_check false means no vision escalation needed despite hearing_check true, so route low-effort by default and escalate only on disagreement.\"}",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "gate",
+  "model": "muse-spark-1.3",
+  "status": "ok",
+  "trace_id": "chatcmpl-01a19fd3-25c6-7049-8ea3-8d9ed02bba1d",
+  "latency_s": 6.409,
+  "text": "PASS - accuracy 0.837\u21920.9022, p99 69.3\u219255.7, J/correct 1418\u2192720 with 0.994 agreement, keep WattNot.",
+  "label": "MEASURED"
+ },
+ {
+  "kind": "spark_call",
+  "step": "receipt",
+  "model": "muse-spark-1.3",
+  "status": "ok",
+  "trace_id": "chatcmpl-01a19fd3-3e7a-77ca-8754-5d98835638f6",
+  "latency_s": 6.303,
+  "text": "Accuracy improved from 0.837 to 0.9022 with the change, while p99 latency dropped from 69.28 to 55.67. Energy efficiency roughly doubled, with joules per correct falling from 1418.19 to 720.02, and Spark agreement was very high at 0.9943. The hearing check passed but the eye check did not.",
+  "label": "MEASURED"
+ }
+]

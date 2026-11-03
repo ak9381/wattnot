@@ -1,0 +1,9 @@
+{"item": "tier-0000", "kind": "reserve", "provider": "baseten", "rid": "baseten-3258559-1793686254209232690-1", "t": 1793686254.2092345, "usd": 0.1385}
+{"error": 429, "item": "tier-0000", "kind": "settle", "provider": "baseten", "rid": "baseten-3258559-1793686254209232690-1", "t": 1793686254.2094386, "usd": 0.1385}
+{"item": "tier-0000", "kind": "reserve", "provider": "baseten", "rid": "baseten-3258559-1793686254209585650-2", "t": 1793686254.2095866, "usd": 0.1385}
+{"error": 429, "item": "tier-0000", "kind": "settle", "provider": "baseten", "rid": "baseten-3258559-1793686254209585650-2", "t": 1793686254.20968, "usd": 0.1385}
+{"item": "tier-0000", "kind": "reserve", "provider": "baseten", "rid": "baseten-3258559-1793686254209791290-3", "t": 1793686254.2097921, "usd": 0.1385}
+{"error": 429, "item": "tier-0000", "kind": "settle", "provider": "baseten", "rid": "baseten-3258559-1793686254209791290-3", "t": 1793686254.2098796, "usd": 0.1385}
+{"item": "tier-0000", "kind": "reserve", "provider": "baseten", "rid": "baseten-3258559-1793686254210584467-4", "t": 1793686254.2105854, "usd": 0.1385}
+{"error": 429, "item": "tier-0000", "kind": "settle", "provider": "baseten", "rid": "baseten-3258559-1793686254210584467-4", "t": 1793686254.2116163, "usd": 0.1385}
+{"kind": "stop", "level": "soft", "provider": "baseten", "t": 1793686254.2123744, "why": "baseten: provider error 429"}

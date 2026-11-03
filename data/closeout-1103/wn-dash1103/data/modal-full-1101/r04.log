@@ -1,0 +1,35 @@
+Note that running a local entrypoint in detached mode only keeps the last triggered Modal function alive after the parent process has been killed or disconnected.
+✓ Initialized. View run at 
+https://modal.com/apps/akashkraju218/main/ap-sfvk7Eav49RqDtGjU97vxA
+✓ Created objects.
+├── ✓ Uploaded /workspace/wn-dash1103/modal/full_stage.py
+├── ✓ Uploaded pyproject.toml
+├── ✓ Uploaded /workspace/wn-dash1103/data/public_bench
+├── ✓ Uploaded /workspace/wn-dash1103/workloads
+├── ✓ Uploaded /workspace/wn-dash1103/data/voice
+├── ✓ Uploaded /workspace/wn-dash1103/examples
+├── ✓ Uploaded /workspace/wn-dash1103/data/vision
+├── ✓ Uploaded /workspace/wn-dash1103/scripts
+├── ✓ Uploaded /workspace/wn-dash1103/src
+├── ✓ Created Function gpu_round.
+├── ✓ Created Function gpu_smoke.
+├── ✓ Created Function gpu_block.
+└── ✓ Created Function deps_probe.
+[modal-client] 2026-11-03T05:15:08+0000 Detected 1 background thread(s) [Thread-2] still running after container exit. This will prevent runner shutdown for up to 30 seconds.
+Runner failed with exception: Container terminated due to preemption. Your Function will be restarted with the same input. For more details, see https://modal.com/docs/guide/preemption
+[full_stage] r04: results in 
+/workspace/wn-dash1103/data/modal-full-1101/_incoming/r04
+[modal-client] 2026-11-03T06:07:56+0000 Detected 1 background thread(s) [Thread-2] still running after container exit. This will prevent runner shutdown for up to 30 seconds.
+Exception ignored in: <module 'threading' from '/usr/lib/python3.12/threading.py'>
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/threading.py", line 1622, in _shutdown
+    lock.acquire()
+KeyboardInterrupt: 
+Runner terminated.
+✓ App completed. View run at 
+https://modal.com/apps/akashkraju218/main/ap-sfvk7Eav49RqDtGjU97vxA
+[teardown] {"stopped": [], "still_running": [], "verified_empty": true, "checked_at": "2026-11-03T06:08:07.022986+00:00"}
+[approval] held change rejected: failed checks ['p99']
+hotspot set [live] (SYNTHETIC tests): SAM 3.1 found all 6 SYNTHETIC hotspots
+wonder chart [live · wonder]: next = 300W/base — No real measurements exist yet, so test the lowest-power base profile to probe minimum joules per correct answer.
+{"round": "r04", "acc": [1.0, 0.9891], "j_per_correct": [1501.8, 617.8], "saved_pct": {"value": 58.86, "label": "MEASURED"}, "spark": {"label": "LIVE", "graded": 175, "disagreements": 15, "agreement": 0.9143, "stopped": null}, "flow_rc": 0, "musecode": {"status": "ok", "repo": "ak9381/wattnot-demo-deploy", "started_utc": "2026-11-03T06:12:20.858875+00:00", "steps": [{"step": "muse exec", "rc": 0, "trace": {"session_id": "01a1a009-9214-7863-acce-4ce6e82368b7", "trace_id": "01a1a009-9823-70b3-b0a1-41f03e794e9c", "input_tokens": 76548, "output_tokens": 735, "total_tokens": 77283, "usage": {"input_tokens": 76548, "output_tokens": 735, "total_tokens": 77283}}, "latency_s": 17.0}], "review_checks": [{"check": "only values.yaml changed", "ok": true, "detail": ["values.yaml"]}, {"check": "values.yaml parses and hosted block matches the approved change", "ok": true, "detail": {"quantization": "bf16", "maxNumSeqs": 128, "prefixCaching": false, "router": "cheapest-first", "receiptSha256": "3487f4d82d2399c40de876a9126c444f5411c73f2cb7a92712ce98b7cf1d0d85"}}, {"check": "no other values changed", "ok": true, "detail": null}, {"check": "launch.sh syntax (bash -n)", "ok": true, "detail": null}, {"check": "repo tests/CI", "ok": true, "detail": "repo has no tests or CI workflows; checks above stand in"}, {"check": "change was approved after evidence review", "ok": false, "detail": null}], "pr_url": null, "decision": "not opened (no diff or --open-pr not set)", "clean": false, "files": ["values.yaml"], "ended_utc": "2026-11-03T06:12:40.950425+00:00", "reviewer": "Akash K Raju (delegated reviewer)", "auto_approve": false}, "modal_usd": {"value": 3.1585, "label": "ESTIMATE", "method": "wall minutes incl. image and container start x list price"}, "approval": "rejected", "failed": ["waste_guard"]}
