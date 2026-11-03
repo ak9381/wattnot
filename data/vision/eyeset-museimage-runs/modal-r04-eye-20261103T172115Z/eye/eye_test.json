@@ -1,0 +1,410 @@
+{
+  "spec": "wattnot.eyetest/1",
+  "dataset_source": "Muse Image generated",
+  "dataset_dir": "eyeset-museimage",
+  "dataset_size": 25,
+  "mode": "live",
+  "model": "meta-models/Muse-Glimmer-30B",
+  "label": "SYNTHETIC",
+  "answers_label": "MEASURED",
+  "passed": false,
+  "reason": "vision misread 2/25 image(s): gauge-temp-68, gauge-hum-45",
+  "run": {
+    "answered": 25,
+    "total": 25,
+    "budget_s": 90.0,
+    "budget_hit": false,
+    "concurrency": 8,
+    "elapsed_s": 42.417396
+  },
+  "detail": {
+    "checked": 25,
+    "passed_count": 23,
+    "missed": [
+      "gauge-temp-68",
+      "gauge-hum-45"
+    ],
+    "images": [
+      {
+        "id": "gauge-temp-68",
+        "kind": "number",
+        "question": "What temperature in degrees Celsius does the display show?",
+        "expected": "68",
+        "got": "88",
+        "ok": false,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "gauge-volt-230",
+        "kind": "number",
+        "question": "What voltage does the panel meter show?",
+        "expected": "230",
+        "got": "230 V",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "gauge-pue-14",
+        "kind": "number",
+        "question": "What PUE value does the dashboard screen show?",
+        "expected": "1.4",
+        "got": "1.4",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "gauge-hum-45",
+        "kind": "number",
+        "question": "What humidity percentage does the sensor display show?",
+        "expected": "45",
+        "got": "95",
+        "ok": false,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "gauge-fan-72",
+        "kind": "number",
+        "question": "What fan speed percentage does the display show?",
+        "expected": "72",
+        "got": "72",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "rack-count-4",
+        "kind": "count",
+        "question": "How many servers are mounted in the rack?",
+        "expected": "4",
+        "got": "4",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "rack-count-6",
+        "kind": "count",
+        "question": "How many servers are mounted in the rack?",
+        "expected": "6",
+        "got": "6",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "rack-count-3",
+        "kind": "count",
+        "question": "How many servers are mounted in the rack?",
+        "expected": "3",
+        "got": "3",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "rack-label-b07",
+        "kind": "text",
+        "question": "What is the rack label text?",
+        "expected": "RACK-B07",
+        "got": "RACK-B07",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "rack-label-c12",
+        "kind": "text",
+        "question": "What is the rack label text?",
+        "expected": "ROW-C12",
+        "got": "ROW-C12",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "rack-led-red",
+        "kind": "color",
+        "question": "What colour is the single status light that is lit on the server?",
+        "expected": "red",
+        "got": "red",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "rack-cable-blue",
+        "kind": "color",
+        "question": "What colour are the network cables?",
+        "expected": "blue",
+        "got": "blue",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "chart-bar-tallest-green",
+        "kind": "color",
+        "question": "What colour is the tallest bar in the chart?",
+        "expected": "green",
+        "got": "green",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "chart-bar-count-5",
+        "kind": "count",
+        "question": "How many bars are in the chart?",
+        "expected": "5",
+        "got": "5",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "chart-value-82",
+        "kind": "number",
+        "question": "What value is printed above the highlighted bar?",
+        "expected": "82",
+        "got": "82",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "chart-title-energy",
+        "kind": "text",
+        "question": "What is the chart title?",
+        "expected": "ENERGY",
+        "got": "ENERGY",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "chart-pie-largest-purple",
+        "kind": "color",
+        "question": "What colour is the largest slice of the pie chart?",
+        "expected": "purple",
+        "got": "purple",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "chart-kpi-267",
+        "kind": "number",
+        "question": "What percentage does the KPI card show?",
+        "expected": "26.7",
+        "got": "26.7%",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "doc-invoice-total-4520",
+        "kind": "number",
+        "question": "What is the invoice total in dollars?",
+        "expected": "4520.00",
+        "got": "$4,520.00",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "doc-po-number",
+        "kind": "text",
+        "question": "What is the purchase order number?",
+        "expected": "PO-5531",
+        "got": "PO-5531",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "doc-receipt-kwh-918",
+        "kind": "number",
+        "question": "How many kWh does the energy bill show?",
+        "expected": "918",
+        "got": "918",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "doc-ticket-id",
+        "kind": "text",
+        "question": "What is the ticket ID on the work order?",
+        "expected": "WO-2207",
+        "got": "WO-2207",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "doc-stamp-approved",
+        "kind": "text",
+        "question": "What word is stamped on the document?",
+        "expected": "APPROVED",
+        "got": "APPROVED",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "doc-sticky-colour",
+        "kind": "color",
+        "question": "What colour is the sticky note?",
+        "expected": "yellow",
+        "got": "yellow",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      },
+      {
+        "id": "doc-checkboxes-3",
+        "kind": "count",
+        "question": "How many boxes are ticked on the form?",
+        "expected": "3",
+        "got": "3",
+        "ok": true,
+        "label": "SYNTHETIC",
+        "energy_wh": {
+          "value": 0.179503,
+          "label": "MEASURED",
+          "method": "with-arm block NVML energy / items"
+        }
+      }
+    ],
+    "label": "SYNTHETIC",
+    "est_wh_per_image": null,
+    "blocks_musecode_pr": true
+  },
+  "energy_arms": {
+    "with_wattnot": {
+      "correct": 23,
+      "items": 25,
+      "passed": false,
+      "energy_j": 16155.3,
+      "j_per_correct": 702.4,
+      "label": "MEASURED",
+      "method": "NVML total-energy counter around the block (incl. idle draw)"
+    },
+    "without_wattnot": {
+      "correct": 23,
+      "items": 25,
+      "passed": false,
+      "energy_j": 16437.8,
+      "j_per_correct": 714.7,
+      "label": "MEASURED",
+      "method": "NVML total-energy counter around the block (incl. idle draw)"
+    }
+  },
+  "cap_w": null,
+  "cap_source": null,
+  "note": "without_wattnot = the gated run at the GPU's limit then; with_wattnot = same items again at cap_w (from cap_source); the block's pass/fail is the first run only",
+  "wh_per_image": {
+    "value": 0.178961,
+    "label": "MEASURED"
+  }
+}

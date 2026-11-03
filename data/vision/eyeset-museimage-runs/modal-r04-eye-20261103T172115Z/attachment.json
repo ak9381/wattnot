@@ -1,0 +1,70 @@
+{
+  "spec": "wattnot.round-attachment/1",
+  "run_id": "r04-eye-20261103T172115Z",
+  "attaches_to": "r04",
+  "block": "eye",
+  "status": "failed",
+  "label": "MEASURED",
+  "summary": "eye: with_wattnot 23/25 702.4 J/correct vs without_wattnot 23/25 714.7 J/correct",
+  "created_at": "2026-11-03T17:26:56.916388+00:00",
+  "server": {
+    "fp8": false,
+    "prefix_caching": true,
+    "max_num_seqs": 128,
+    "start_s": {
+      "value": 72.0,
+      "label": "MEASURED"
+    }
+  },
+  "gpu": "NVIDIA A100-SXM4-80GB",
+  "results": {
+    "eye": {
+      "rc": 1,
+      "energy_j": {
+        "value": 16155.3,
+        "label": "MEASURED"
+      },
+      "file": "data/modal-full-1101/attachments/r04/r04-eye-20261103T172115Z/eye/eye_test.json",
+      "file_sha256": "b2c03a55f9a6851ccc425258a3de9aee47b746ca98212ed111c6a90085b07a03",
+      "quality_held": false,
+      "arms": {
+        "with_wattnot": {
+          "correct": 23,
+          "n": 25,
+          "gpu_j": 16155.3,
+          "j_per_correct": 702.4
+        },
+        "without_wattnot": {
+          "correct": 23,
+          "n": 25,
+          "gpu_j": 16437.8,
+          "j_per_correct": 714.7
+        }
+      }
+    }
+  },
+  "spend": {
+    "modal_usd": {
+      "value": 0.2231,
+      "label": "ESTIMATE"
+    },
+    "stage_total_usd": {
+      "value": 10.0817,
+      "label": "ESTIMATE"
+    },
+    "teardown": {
+      "stopped": [
+        "ap-gDFFc5Ds7f631AJkFFLY7p"
+      ],
+      "still_running": [],
+      "verified_empty": true,
+      "checked_at": "2026-11-03T17:26:56.809394+00:00"
+    }
+  },
+  "note": "Separate run with its own id; the round's own files are never changed.",
+  "integrity": {
+    "sha256": "7c9dd4f40e7a04786a400713e099624f790720d301575f3ffa4e2f7af3ddf6d7",
+    "signer": "offline:a10d641cddc104d8",
+    "rekor": null
+  }
+}

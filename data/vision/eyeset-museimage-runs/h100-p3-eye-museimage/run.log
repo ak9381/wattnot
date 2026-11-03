@@ -1,0 +1,6 @@
+700.00 W
+eye test [live]: vision misread 2/25 image(s): gauge-temp-68, gauge-hum-45
+  MISS gauge-temp-68 (number): expected '68' got '88'
+  MISS gauge-hum-45 (number): expected '45' got '95'
+rc=1
+700.00 W
