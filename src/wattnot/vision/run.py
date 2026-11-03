@@ -71,8 +71,15 @@ def main(argv: list[str] | None = None) -> int:
         if energy_doc is None and "result" not in locals():
             (answers, run_meta, result) = _once(args.budget_s)[0]
 
+    try:
+        manifest = json.loads((Path(eye.base_dir) / "answers.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        manifest = {}
     summary = {
         "spec": "wattnot.eyetest/1",
+        "dataset_source": manifest.get("dataset_source") or manifest.get("source") or "unknown",
+        "dataset_dir": Path(eye.base_dir).name,
+        "dataset_size": len(eye),
         "mode": mode,
         "model": args.model,
         "label": "SYNTHETIC",   # the test items (images / audio) are synthetic
