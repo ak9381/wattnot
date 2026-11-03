@@ -145,6 +145,66 @@ def best_cap_from_sweep(out: Path) -> int | None:
         return None
 
 
+
+DETACH_DIR = "/root/run2/blocks"
+DETACH_POLL_S = 20
+
+
+def run_detached(block_id: str, inner: str, budget_s: float, host: str, key: str, logf: Path,
+                 *, poll_s: float = DETACH_POLL_S, sshmod=None) -> int:
+    """Start `inner` on the VM under nohup (own session), then poll for its rc file over fresh
+    short SSH calls until it lands or `budget_s` passes. A dropped link only costs one poll.
+    Returns the block rc, 124 on overrun (the remote group is killed), 4 if never started."""
+    if sshmod is None:
+        from wattnot.proof import sshutil as sshmod
+    tag = f"{DETACH_DIR}/{block_id}-{int(time.time())}"
+    q = shlex.quote
+    start = (f"mkdir -p {DETACH_DIR}; rm -f {q(tag)}.rc; "
+             f"nohup setsid sh -c {q(inner + '; echo $? > ' + tag + '.rc.tmp; mv ' + tag + '.rc.tmp ' + tag + '.rc')} "
+             f"> {q(tag)}.log 2>&1 < /dev/null & echo $! > {q(tag)}.pid; echo started")
+
+    def call(cmd: str, t: float = 60.0):
+        c = sshmod.connect(host, key)
+        try:
+            return sshmod.exec_bounded(c.get_transport(), cmd, timeout=t)
+        finally:
+            try:
+                c.close()
+            except Exception:  # noqa: BLE001
+                pass
+
+    started = False
+    for _ in range(3):
+        try:
+            rc, raw = call(start)
+            if rc == 0 and b"started" in raw:
+                started = True
+                break
+        except Exception:  # noqa: BLE001
+            time.sleep(5)
+    if not started:
+        log(f"[live] {block_id}: could not start the detached block")
+        return 4
+    deadline = time.monotonic() + budget_s
+    while time.monotonic() < deadline:
+        time.sleep(poll_s)
+        try:
+            rc, raw = call(f"cat {q(tag)}.rc 2>/dev/null || echo PENDING")
+        except Exception:  # noqa: BLE001 - one lost poll is fine, the block keeps running
+            continue
+        txt = raw.decode(errors="replace").strip()
+        if txt and txt != "PENDING":
+            with contextlib.suppress(Exception):
+                _, lraw = call(f"cat {q(tag)}.log", 120.0)
+                logf.write_bytes(lraw)
+            try:
+                return int(txt.splitlines()[-1])
+            except ValueError:
+                return 1
+    with contextlib.suppress(Exception):
+        call(f"kill -9 -- -$(cat {q(tag)}.pid) 2>/dev/null; cat {q(tag)}.log", 60.0)
+    return 124
+
 def host_inner(argv: list[str]) -> str:
     """The shell line for a GPU-host block: cd into the repo, activate the venv that
     h100_vm_setup.sh built at REMOTE_VENV, then run the command. If the venv is missing the block
@@ -1354,22 +1414,14 @@ def _live_runner(out: Path, host: str, key: str, vm: RemoteVm, log=print):
             except Exception as e:  # noqa: BLE001
                 log(f"[live] SSH connect failed for {b.id}: {type(e).__name__}")
                 return 5
+            # Detached: the block runs under nohup on the VM and writes its rc to a file, and we
+            # poll with short SSH calls. A long silent channel was cut at ~600 s when the box's
+            # egress IP rotated (run 1103: p1-think finished on the VM but came back rc -1).
             try:
-                rc, raw = sshutil.exec_bounded(c.get_transport(), inner, timeout=budget_s)
-            except TimeoutError:
-                return 124
-            except sshutil.SshDown:
-                return 4
-            except Exception as e:  # noqa: BLE001 - a dead link mid-command
-                log(f"[live] SSH exec lost for {b.id}: {type(e).__name__}")
-                return 4
-            finally:
-                try:
-                    c.close()
-                except Exception:  # noqa: BLE001
-                    pass
-            logf.write_bytes(raw)
-            return rc
+                c.close()
+            except Exception:  # noqa: BLE001
+                pass
+            return run_detached(b.id, inner, budget_s, host, key, logf)
         with logf.open("w") as f:
             try:
                 return subprocess.run(argv, stdout=f, stderr=subprocess.STDOUT, env=env,
