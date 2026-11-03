@@ -474,14 +474,15 @@ def test_landing_page_head_tags_and_content():
     powered_tools = [
         "Muse Spark",
         "Muse Wonder",
-        "Muse Glimmer",
+        "Muse Glimmer (text + vision)",
         "Muse Code",
-        "Voice",
-        "Llama",
+        "Muse Voice Transcribe (hearing)",
         "SAM 3.1",
     ]
     for tool in powered_tools:
         assert f'<span class="chip">{tool}</span>' in html
+    powered = html[html.index('class="powered"'):html.index("</header>")]
+    assert "llama" not in powered.lower()  # Llama is not a Meta model for this hackathon
     assert "Muse Image" not in html
 
 

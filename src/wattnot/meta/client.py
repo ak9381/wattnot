@@ -65,6 +65,25 @@ def load_key(auth_file: str | Path | None = None) -> str:
         return ""
 
 
+RETRY_STATUS = (429, 502, 503, 504)
+RETRY_WAITS_S = (2.0, 5.0, 10.0)
+
+
+def hint(status: int | None) -> str:
+    """One plain next step for a failed call."""
+    if status in (401, 403):
+        return "Bad or expired key: check META_API_KEY in .env (no quotes, no spaces)"
+    if status == 429:
+        return "Rate limited after 3 retries: wait a minute and rerun, or lower WATTNOT_PER_TIER"
+    if status in (502, 503, 504):
+        return "The Meta API is busy or down: rerun in a few minutes"
+    if status == 404:
+        return "Wrong endpoint or model: check META_BASE_URL (leave it empty for the default)"
+    if status is None:
+        return "Timeout or no network: check your connection or META_BASE_URL"
+    return "See the message above"
+
+
 def _urlopen(req: urllib.request.Request, timeout: float) -> tuple[int, bytes]:
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310
@@ -101,10 +120,16 @@ class GuardedClient:
         t0 = time.monotonic()
         try:
             status, raw = self.opener(req, self.timeout_s)
+            # 429 and 502/503/504 mean the request was not served, so a retry cannot double-bill.
+            for wait in RETRY_WAITS_S:
+                if status not in RETRY_STATUS:
+                    break
+                time.sleep(wait)
+                status, raw = self.opener(req, self.timeout_s)
         except Exception as e:  # timeout or network: the call may still have been billed
             self.ledger.settle(eid, None, status="unknown", note=type(e).__name__,
                                latency_s=time.monotonic() - t0)
-            raise MetaError(f"request failed: {type(e).__name__}") from None
+            raise MetaError(f"request failed: {type(e).__name__}. {hint(None)}") from None
         lat = time.monotonic() - t0
         try:
             data = json.loads(raw or b"{}")
@@ -115,7 +140,7 @@ class GuardedClient:
             msg = err.get("message") if isinstance(err, dict) else str(err or "")
             self.ledger.settle(eid, None, status="error", http_status=status, latency_s=lat,
                                note=msg)
-            raise MetaError(f"HTTP {status}: {msg[:160]}", status)
+            raise MetaError(f"HTTP {status}: {msg[:160]}. {hint(status)}", status)
         self.ledger.settle(eid, data.get("usage"), model=str(body.get("model", "")),
                            http_status=status, latency_s=lat,
                            status="ok" if data.get("usage") else "ok-no-usage")

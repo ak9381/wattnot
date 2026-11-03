@@ -1,0 +1,12 @@
+{
+ "format": "wattnot.block-receipt/1",
+ "block": "p1-agentwaste",
+ "label": "MEASURED",
+ "files": {
+  "meta.json": "39d6b57c5aab79e75cdf580cc94be4d5ce8f0d04ed16cd3ae9a899b0ad033d96",
+  "state.json": "5c680315e72a1b057e3337455c62595f64ce93f0d5a636c8eca0750eb4842570",
+  "timeline.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+ },
+ "prev": "c5920189436f551795bd2d05903655dc3917f098f48c6324218771df225633b2",
+ "sha256": "8d857182d1d416bd20325d1b786f930f101dce199318c3aa4afc8a590a2d98e7"
+}

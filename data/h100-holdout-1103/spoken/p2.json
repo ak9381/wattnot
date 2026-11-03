@@ -1,0 +1,261 @@
+{
+  "spec": "wattnot.spokenanswer/1",
+  "mode": "live",
+  "model": "meta-models/Muse-Glimmer-30B",
+  "transcriber": "muse-voice-transcribe-1.0",
+  "label": "SYNTHETIC",
+  "answers_label": "MEASURED",
+  "transcripts_label": "LIVE",
+  "transcribe_note": "transcribed live via Muse Voice Transcribe (Meta Model API)",
+  "passed": true,
+  "reason": "all 20 spoken answers correct",
+  "run": {
+    "answered": 20,
+    "total": 20,
+    "budget_s": 90.0,
+    "budget_hit": false,
+    "concurrency": 8,
+    "elapsed_s": 10.078442
+  },
+  "detail": {
+    "checked": 20,
+    "passed_count": 20,
+    "missed": [],
+    "missed_noisy": [],
+    "items": [
+      {
+        "id": "q-gpus-clean",
+        "kind": "text",
+        "noise": "clean",
+        "question": "How many GPUs are in the rack?",
+        "expected": "8",
+        "got": "8",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-gpus-datacenter",
+        "kind": "text",
+        "noise": "datacenter",
+        "question": "How many GPUs are in the rack?",
+        "expected": "8",
+        "got": "8",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-cap-clean",
+        "kind": "number",
+        "noise": "clean",
+        "question": "What is the power cap in watts?",
+        "expected": "350",
+        "got": "350",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-cap-datacenter",
+        "kind": "number",
+        "noise": "datacenter",
+        "question": "What is the power cap in watts?",
+        "expected": "350",
+        "got": "350",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-light-clean",
+        "kind": "text",
+        "noise": "clean",
+        "question": "What colour is the status light?",
+        "expected": "green",
+        "got": "green",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-light-datacenter",
+        "kind": "text",
+        "noise": "datacenter",
+        "question": "What colour is the status light?",
+        "expected": "green",
+        "got": "green",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-meter-clean",
+        "kind": "number",
+        "noise": "clean",
+        "question": "What does the power meter read in watts?",
+        "expected": "275",
+        "got": "275",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-meter-datacenter",
+        "kind": "number",
+        "noise": "datacenter",
+        "question": "What does the power meter read in watts?",
+        "expected": "275",
+        "got": "275",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-bay-clean",
+        "kind": "text",
+        "noise": "clean",
+        "question": "Which bay has the fault?",
+        "expected": "B3",
+        "got": "B3",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-bay-datacenter",
+        "kind": "text",
+        "noise": "datacenter",
+        "question": "Which bay has the fault?",
+        "expected": "B3",
+        "got": "B3",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-fans-clean",
+        "kind": "number",
+        "noise": "clean",
+        "question": "How many fans are spinning?",
+        "expected": "4",
+        "got": "4",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-fans-datacenter",
+        "kind": "number",
+        "noise": "datacenter",
+        "question": "How many fans are spinning?",
+        "expected": "4",
+        "got": "4",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-coolant-clean",
+        "kind": "number",
+        "noise": "clean",
+        "question": "What is the coolant temperature in celsius?",
+        "expected": "29",
+        "got": "29",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-coolant-datacenter",
+        "kind": "number",
+        "noise": "datacenter",
+        "question": "What is the coolant temperature in celsius?",
+        "expected": "29",
+        "got": "29",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-rack-clean",
+        "kind": "text",
+        "noise": "clean",
+        "question": "What is the rack id?",
+        "expected": "R12",
+        "got": "R12",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-rack-datacenter",
+        "kind": "text",
+        "noise": "datacenter",
+        "question": "What is the rack id?",
+        "expected": "R12",
+        "got": "R12",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-servers-clean",
+        "kind": "number",
+        "noise": "clean",
+        "question": "How many servers are online?",
+        "expected": "16",
+        "got": "16",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-servers-datacenter",
+        "kind": "number",
+        "noise": "datacenter",
+        "question": "How many servers are online?",
+        "expected": "16",
+        "got": "16",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-speed-clean",
+        "kind": "number",
+        "noise": "clean",
+        "question": "What is the fan speed percent?",
+        "expected": "80",
+        "got": "80",
+        "ok": true,
+        "label": "SYNTHETIC"
+      },
+      {
+        "id": "q-speed-datacenter",
+        "kind": "number",
+        "noise": "datacenter",
+        "question": "What is the fan speed percent?",
+        "expected": "80",
+        "got": "80",
+        "ok": true,
+        "label": "SYNTHETIC"
+      }
+    ],
+    "label": "SYNTHETIC",
+    "blocks_musecode_pr": false
+  },
+  "energy_arms": {
+    "without_wattnot": {
+      "limit_w": 700,
+      "correct": 20,
+      "items": 20,
+      "passed": true,
+      "energy_j": 4688.2,
+      "wh": 1.30227,
+      "j_per_clip": 234.41,
+      "j_per_correct": 234.4,
+      "wall_s": 10.08,
+      "label": "MEASURED",
+      "method": "NVML total-energy counter around the arm (incl. idle draw)"
+    },
+    "with_wattnot": {
+      "limit_w": 350,
+      "correct": 20,
+      "items": 20,
+      "passed": true,
+      "energy_j": 3751.3,
+      "wh": 1.04202,
+      "j_per_clip": 187.56,
+      "j_per_correct": 187.6,
+      "wall_s": 10.75,
+      "label": "MEASURED",
+      "method": "NVML total-energy counter around the arm (incl. idle draw)"
+    }
+  },
+  "savings_pct_clip": 20.0,
+  "savings_label": "MEASURED",
+  "note": "without_wattnot = the gated run at the GPU's limit then; with_wattnot = same items again at the sweep's best cap; the block's pass/fail is the first run only"
+}

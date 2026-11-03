@@ -59,7 +59,7 @@ WORKLOADS = [
      "desc": "Fifteen prompts in five classes (extract, classify, trace, arith, logic), each repeated five times."},
 ]
 CREDITS = {
-    "cap": [("meta", "Muse Glimmer 30B or Llama 3.1 8B was the model served"), ("e2e", "Rented the H100 the sweep ran on"),
+    "cap": [("meta", "Muse Glimmer 30B was the model served"), ("e2e", "Rented the H100 the sweep ran on"),
             ("nvidia", "NVML read power 10 times a second and set the cap")],
     "topk": [("hf", "Transformers loaded the model; hooks on the routers kept fewer experts"), ("nvidia", "NVML read the energy"),
              ("e2e", "Rented the H100")],
@@ -148,8 +148,7 @@ def build_config(h: dict, bt: dict, scenes: list[dict], water: dict, price: dict
     models = []
     if "glimmer" in data["cap"]:
         models.append({"id": "glimmer", "name": "Muse Glimmer 30B", "place": "h100", "workload": "coding", "levers": ["cap"], "meta": True, "product": "Muse Glimmer 30B"})
-    if "llama" in data["cap"]:
-        models.append({"id": "llama", "name": "Llama 3.1 8B Instruct", "place": "h100", "workload": "coding", "levers": ["cap"], "meta": True, "product": "Llama 3.1 8B"})
+    # Llama 3.1 8B (RUN2 history) is not offered: it does not count as a Meta model here.
     # The earlier non-Meta top-k tests (Qwen3, Granite) on the H100 are history only and are not
     # offered: top-k is not part of the H100 run (Glimmer is dense) and is pending as a Spark
     # test on Modal. Their data stays in data["topk"] for the record.

@@ -1,0 +1,12 @@
+{
+ "format": "wattnot.block-receipt/1",
+ "block": "h1-holdout",
+ "label": "MEASURED",
+ "files": {
+  "meta.json": "d5760265b40e011377a030d51a329636347710c43705b3dc2e693a56f88b73c0",
+  "state.json": "fed42c15b4819c495edbb59be714c941a183b8cb2022fe8664f603ddb50f1dfa",
+  "timeline.jsonl": "d0663fa1807cb8de287edc6737c464144cc3a5ad43a5737e6b157c5bee0b26fa"
+ },
+ "prev": "d6b46a711d4ba81aa8b3f0b2b2fc049fc629edfa3f573b21df5c076d4fc964d7",
+ "sha256": "0f8f268935d53e683576ce6edf1c0a1d975894d3dee1f89bc4d23de26465b9a6"
+}

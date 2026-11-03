@@ -1,4 +1,4 @@
-"""Hosted Spark is the default judge; Llama answers only on 401/402/429s/spend stop."""
+"""Hosted Spark is the default judge; local Glimmer answers only on 401/402/429s/spend stop."""
 import json
 
 import pytest
@@ -32,8 +32,8 @@ def _http(code):
 
 
 def _run(primary):
-    llama = lambda body: OK  # noqa: E731
-    fb = J.FallbackJudge(primary, llama, J.SPARK_HOSTED_JUDGE, J.LLAMA_JUDGE)
+    glimmer = lambda body: OK  # noqa: E731
+    fb = J.FallbackJudge(primary, glimmer, J.SPARK_HOSTED_JUDGE, J.LOCAL_JUDGE)
     return J.judge(BASE, BASE, ITEMS, transport=fb, model=J.SPARK_HOSTED_JUDGE)
 
 
@@ -56,11 +56,11 @@ def test_hosted_spark_answers_and_is_recorded(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("code", [401, 402])
-def test_auth_or_credit_falls_back_to_llama(tmp_path, monkeypatch, code):
+def test_auth_or_credit_falls_back_to_glimmer(tmp_path, monkeypatch, code):
     h, g = _hosted(tmp_path, _http(code), monkeypatch)
     r = _run(h)
-    assert r.passed and r.detail["judge_model"] == J.LLAMA_JUDGE
-    assert r.detail["judge_path"] == "llama-fallback"
+    assert r.passed and r.detail["judge_model"] == J.LOCAL_JUDGE
+    assert r.detail["judge_path"] == "glimmer-fallback"
     assert ("HardStop" if code == 402 else "SoftStop") in r.detail["fallback_reason"]
 
 
@@ -72,7 +72,7 @@ def test_repeated_429_falls_back(tmp_path, monkeypatch):
         return _http(429)(req)
     h, g = _hosted(tmp_path, t, monkeypatch, max_429=3)
     r = _run(h)
-    assert len(calls) == 4 and r.detail["judge_path"] == "llama-fallback"
+    assert len(calls) == 4 and r.detail["judge_path"] == "glimmer-fallback"
 
 
 def test_spend_stop_falls_back_without_calling(tmp_path, monkeypatch):
@@ -80,14 +80,14 @@ def test_spend_stop_falls_back_without_calling(tmp_path, monkeypatch):
     h, g = _hosted(tmp_path, lambda req: calls.append(1) or OK, monkeypatch)
     g.mark_stop("hard", "test")
     r = _run(h)
-    assert not calls and r.detail["judge_path"] == "llama-fallback"
+    assert not calls and r.detail["judge_path"] == "glimmer-fallback"
 
 
 def test_no_key_falls_back_and_reserves_nothing(tmp_path, monkeypatch):
     h, g = _hosted(tmp_path, lambda req: OK, monkeypatch)
     monkeypatch.delenv("BASETEN_METRICS_KEY")
     r = _run(h)
-    assert r.detail["judge_path"] == "llama-fallback" and g.committed() == 0
+    assert r.detail["judge_path"] == "glimmer-fallback" and g.committed() == 0
 
 
 def test_round_and_smoke_caps_lower_the_judge_cap(tmp_path, monkeypatch):
@@ -112,7 +112,7 @@ def test_round_and_smoke_caps_lower_the_judge_cap(tmp_path, monkeypatch):
 
 def test_judge_refused_once_the_round_cap_is_spent(tmp_path, monkeypatch):
     # Judge spend near the $8 round cap: the next judge call is refused (a labelled spend stop)
-    # before any hosted call, and the gate falls back to the local Llama rather than overspend.
+    # before any hosted call, and the gate falls back to the local Glimmer rather than overspend.
     monkeypatch.setenv("BASETEN_METRICS_KEY", "test-not-a-key")
     monkeypatch.setenv(J.BASETEN_CAP_ENV, "8.0")
     cap = J.baseten_cap_usd()
@@ -128,7 +128,7 @@ def test_judge_refused_once_the_round_cap_is_spent(tmp_path, monkeypatch):
     h = J.HostedSparkJudge(client=c, guard=g)
     r = _run(h)
     assert not calls  # the hosted judge was refused before making a call
-    assert r.detail["judge_path"] == "llama-fallback"
+    assert r.detail["judge_path"] == "glimmer-fallback"
     assert "baseten" in r.detail["fallback_reason"].lower()
 
 

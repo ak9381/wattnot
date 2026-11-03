@@ -1,0 +1,13 @@
+{
+ "block": "p2-sweep",
+ "label": "MEASURED",
+ "started": 1793701786.459973,
+ "ended": 1793707210.9338615,
+ "byte_range": [
+  0,
+  489651
+ ],
+ "events": 1324,
+ "replay": "replays/h100-max-1103/blocks/p2-sweep/timeline.jsonl",
+ "screen": null
+}

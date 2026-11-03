@@ -19,19 +19,19 @@ from pathlib import Path
 from wattnot.gates.result import GateResult
 
 # The quality judge is Muse Spark (Meta), hosted on Baseten at low thinking, called through
-# proof/baseten_planner.py and behind a Baseten spend guard (wattnot.spend.guard). Llama 3.1 8B
-# on our own vLLM (JUDGE_BASE_URL) is the fallback only: on 401/402, repeated 429s, a spend
+# proof/baseten_planner.py and behind a Baseten spend guard (wattnot.spend.guard). Muse Glimmer 30B
+# (Meta open weights) on our own vLLM (JUDGE_BASE_URL) is the fallback only: on 401/402, repeated 429s, a spend
 # stop or a network failure. Every verdict records which judge made it (`judge_model`,
-# `judge_path`). History: RUN2 used fixed answer checks only; Oct 27-28 builds judged with Llama.
+# `judge_path`). Only Meta models judge: there is no non-Meta fallback.
 SPARK_HOSTED_JUDGE = "meta-models/muse-spark-open"
-LLAMA_JUDGE = "meta-llama/Llama-3.1-8B-Instruct"
+LOCAL_JUDGE = "meta-models/Muse-Glimmer-30B"
 MODEL = os.environ.get("JUDGE_MODEL", SPARK_HOSTED_JUDGE)
 JUDGE_EFFORT = "low"
 # The judge's own default Baseten cap. A round run sets a LOWER Baseten cap (the $8 per-round hard
 # stop, or $1 in a smoke run) via WATTNOT_BASETEN_CAP_USD; the judge must honour whichever cap is
 # lower, so judge spend counts against — and cannot slip past — the round/smoke Baseten cap. Once
 # the cap is reached the hosted judge is refused (a labelled HardStop/SoftStop) and the gate falls
-# back to the local Llama rather than overspending.
+# back to the local Glimmer rather than overspending.
 JUDGE_BASETEN_CAP_USD = 98.0
 BASETEN_CAP_ENV = "WATTNOT_BASETEN_CAP_USD"
 
@@ -57,7 +57,7 @@ SPEND_LEDGER = Path(os.environ.get("WATTNOT_SPEND_DIR", "data/spend")) / "basete
 class LocalJudge:
     """OpenAI-compatible transport for a self-hosted judge (no key, no spend)."""
 
-    def __init__(self, base: str, model: str = LLAMA_JUDGE, timeout_s: float = 120) -> None:
+    def __init__(self, base: str, model: str = LOCAL_JUDGE, timeout_s: float = 120) -> None:
         self.base, self.model, self.timeout_s = base.rstrip("/"), model, timeout_s
 
     def __call__(self, body: dict) -> dict:
@@ -135,7 +135,7 @@ def _has_verdict_content(raw) -> bool:
 
 class FallbackJudge:
     """Try the primary (hosted Spark); on auth/credit/rate/spend/network failure use the
-    fallback (Llama). `last` names the judge that actually answered and why."""
+    fallback (local Glimmer). `last` names the judge that actually answered and why."""
 
     def __init__(self, primary, fallback, primary_model: str, fallback_model: str) -> None:
         self.primary, self.fallback = primary, fallback
@@ -148,7 +148,7 @@ class FallbackJudge:
             raw = self.primary(body)
             if not _has_verdict_content(raw):
                 # Spark spent the whole budget reasoning and returned no verdict. That is a
-                # cut-off, not a usable same/better/worse answer: fall back to Llama rather
+                # cut-off, not a usable same/better/worse answer: fall back to local Glimmer rather
                 # than let the gate fail closed on an unchecked change.
                 raise RuntimeError("hosted judge reply cut off: no content")
             self.last = {"judge_model": self.primary_model, "judge_path": "hosted-spark"}
@@ -158,21 +158,21 @@ class FallbackJudge:
                 raise
             why = f"{type(e).__name__}: {str(e)[:120]}"
         raw = self.fallback({k: v for k, v in body.items() if k != "model"})
-        self.last = {"judge_model": self.fallback_model, "judge_path": "llama-fallback",
+        self.last = {"judge_model": self.fallback_model, "judge_path": "glimmer-fallback",
                      "fallback_reason": why}
         return raw
 
 
 def default_transport(model: str = MODEL):
-    """Hosted Spark first, Llama (JUDGE_BASE_URL) as the fallback. JUDGE_MODEL=<llama id>
+    """Hosted Spark first, local Glimmer (JUDGE_BASE_URL) as the fallback. JUDGE_MODEL=<glimmer id>
     forces the local judge (e.g. offline tests)."""
     base = os.environ.get("JUDGE_BASE_URL")
-    local = LocalJudge(base, LLAMA_JUDGE) if base else None
-    if model.startswith("meta-llama/"):
+    local = LocalJudge(base, LOCAL_JUDGE) if base else None
+    if model.startswith("meta-models/Muse-Glimmer"):
         if local is None:
             raise RuntimeError("JUDGE_BASE_URL is not set for the local judge")
         return LocalJudge(base, model), model
-    return FallbackJudge(HostedSparkJudge(), local, SPARK_HOSTED_JUDGE, LLAMA_JUDGE), \
+    return FallbackJudge(HostedSparkJudge(), local, SPARK_HOSTED_JUDGE, LOCAL_JUDGE), \
         SPARK_HOSTED_JUDGE
 
 VERDICTS = ("same", "better", "worse")

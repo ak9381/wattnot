@@ -1,0 +1,193 @@
+{
+ "events": 2,
+ "types": {
+  "step.finished": 1,
+  "step.started": 1
+ },
+ "first_ts": "2026-11-03T12:14:27.541Z",
+ "last_ts": "2026-11-03T12:14:27.541Z",
+ "steps": {
+  "p2-think": {
+   "type": "step.finished",
+   "ts": "2026-11-03T12:14:27.541Z",
+   "status": "ok"
+  },
+  "p2-tiers": {
+   "type": "step.started",
+   "ts": "2026-11-03T12:14:27.541Z",
+   "status": null
+  }
+ },
+ "result": {
+  "rc": 0,
+  "attempt": 1,
+  "wall_s": 2063.6,
+  "capture": false,
+  "copied": true,
+  "tiers": {
+   "cap_w": 375,
+   "label": "MEASURED",
+   "reasoning": {
+    "reasoning_tokens": 161229,
+    "completion_tokens": 204557,
+    "share": 0.7882,
+    "label": "ESTIMATE"
+   },
+   "assumptions": {
+    "wue_l_per_kwh": 0.36,
+    "tariff_usd_per_kwh": 0.12,
+    "gpu_usd_per_h": 5.13,
+    "note": "Wh is GPU-only NVML energy; mL and $ are ESTIMATES"
+   },
+   "truncation": {
+    "items": 0,
+    "checked": 320,
+    "pct": 0.0,
+    "note": "answers cut off by the token cap (finish=length); reported, not silently counted as quality misses"
+   },
+   "tiers": [
+    {
+     "tier": "easy",
+     "label": "MEASURED",
+     "stock": {
+      "n": 40,
+      "pass_pct": 100.0,
+      "wh_per_task": 0.053780701388888894,
+      "ml_per_task": 0.0193610525,
+      "usd_energy_per_1k": 0.006453684166666667,
+      "usd_gpu_time_per_1k": 0.6022817350386094,
+      "p99_s": 2.6148754749992804
+     },
+     "cap": {
+      "n": 40,
+      "pass_pct": 100.0,
+      "wh_per_task": 0.044887625,
+      "ml_per_task": 0.016159545,
+      "usd_energy_per_1k": 0.005386515,
+      "usd_gpu_time_per_1k": 0.6217418371387725,
+      "p99_s": 2.7340938890010875
+     },
+     "energy_change_pct": -16.53581332936317,
+     "pass_drop_pts": 0.0,
+     "p99_change_pct": 4.55923867662722,
+     "truncated": 0,
+     "truncation_pct": 0.0,
+     "reasoning": {
+      "reasoning_tokens": 6250,
+      "completion_tokens": 7034,
+      "share": 0.8885,
+      "label": "ESTIMATE"
+     },
+     "gate": "pass",
+     "why_not": []
+    },
+    {
+     "tier": "medium",
+     "label": "MEASURED",
+     "stock": {
+      "n": 40,
+      "pass_pct": 100.0,
+      "wh_per_task": 0.14448936805555557,
+      "ml_per_task": 0.052016172500000006,
+      "usd_energy_per_1k": 0.017338724166666666,
+      "usd_gpu_time_per_1k": 1.5844469540024602,
+      "p99_s": 9.142985534999752
+     },
+     "cap": {
+      "n": 40,
+      "pass_pct": 100.0,
+      "wh_per_task": 0.11887056944444445,
+      "ml_per_task": 0.042793405,
+      "usd_energy_per_1k": 0.014264468333333332,
+      "usd_gpu_time_per_1k": 1.630876799902403,
+      "p99_s": 9.486626485500892
+     },
+     "energy_change_pct": -17.730576966231038,
+     "pass_drop_pts": 0.0,
+     "p99_change_pct": 3.7585201156194126,
+     "truncated": 0,
+     "truncation_pct": 0.0,
+     "reasoning": {
+      "reasoning_tokens": 15478,
+      "completion_tokens": 22548,
+      "share": 0.6864,
+      "label": "ESTIMATE"
+     },
+     "gate": "pass",
+     "why_not": []
+    },
+    {
+     "tier": "hard",
+     "label": "MEASURED",
+     "stock": {
+      "n": 40,
+      "pass_pct": 100.0,
+      "wh_per_task": 0.32489433333333334,
+      "ml_per_task": 0.11696195999999999,
+      "usd_energy_per_1k": 0.03898732,
+      "usd_gpu_time_per_1k": 3.5818252161600954,
+      "p99_s": 14.298019747500803
+     },
+     "cap": {
+      "n": 40,
+      "pass_pct": 100.0,
+      "wh_per_task": 0.26785394444444444,
+      "ml_per_task": 0.09642741999999999,
+      "usd_energy_per_1k": 0.03214247333333333,
+      "usd_gpu_time_per_1k": 3.679518119790048,
+      "p99_s": 15.161916172999554
+     },
+     "energy_change_pct": -17.556597033770636,
+     "pass_drop_pts": 0.0,
+     "p99_change_pct": 6.042070445802494,
+     "truncated": 0,
+     "truncation_pct": 0.0,
+     "reasoning": {
+      "reasoning_tokens": 27046,
+      "completion_tokens": 32919,
+      "share": 0.8216,
+      "label": "ESTIMATE"
+     },
+     "gate": "pass",
+     "why_not": []
+    },
+    {
+     "tier": "complex",
+     "label": "MEASURED",
+     "stock": {
+      "n": 40,
+      "pass_pct": 100.0,
+      "wh_per_task": 2.758904673611111,
+      "ml_per_task": 0.9932056825000002,
+      "usd_energy_per_1k": 0.3310685608333333,
+      "usd_gpu_time_per_1k": 30.346141284273873,
+      "p99_s": 51.39934570249898
+     },
+     "cap": {
+      "n": 40,
+      "pass_pct": 100.0,
+      "wh_per_task": 2.2333345625000005,
+      "ml_per_task": 0.8040004425000002,
+      "usd_energy_per_1k": 0.26800014750000006,
+      "usd_gpu_time_per_1k": 30.687203914250606,
+      "p99_s": 53.503787502502746
+     },
+     "energy_change_pct": -19.04995544565864,
+     "pass_drop_pts": 0.0,
+     "p99_change_pct": 4.094296865536662,
+     "truncated": 0,
+     "truncation_pct": 0.0,
+     "reasoning": {
+      "reasoning_tokens": 112455,
+      "completion_tokens": 142056,
+      "share": 0.7916,
+      "label": "ESTIMATE"
+     },
+     "gate": "pass",
+     "why_not": []
+    }
+   ],
+   "model": "meta-models/Muse-Glimmer-30B"
+  }
+ }
+}

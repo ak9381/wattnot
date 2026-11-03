@@ -1,5 +1,39 @@
 # WattNot
 
+## Built during the hackathon (Oct 26 – Nov 4, 2026)
+
+Everything in this repo was built during the hackathon, Oct 26 – Nov 4, 2026.
+
+What we wrote:
+- The WattNot framework: the try-one-change loop, the quality gate (pass rate, p99, noise test) and the hash-chained, signed receipts with `wattnot verify`.
+- The power-cap and clock controller on NVML, which always restores the stock limit.
+- The token savers: the thinking budget, the context saver, cheapest-first effort routing with step-up, and the agentwaste proxy for agent loops (with LangChain drop-in).
+- The long-run driver, recorder, watchdogs and the sealed GSM8K holdout.
+- The dashboard (`web/`), replays, EU efficiency report export, `wattnot doctor` and `run-local.sh`.
+- Our prompt sets (`workloads/proof-v1`, `tiers-v1`, agent tasks) and all run results and receipts in `replays/` and `data/`.
+
+What we use but did not write (open source, used as is):
+
+| Project | Used for | License |
+|---|---|---|
+| vLLM | Serving Muse Glimmer 30B | Apache 2.0 |
+| NVIDIA NVML (driver library, loaded with ctypes) | Power readings and power caps | NVIDIA driver license |
+| LangChain (`langchain-core`, `langchain-openai`) | Agent framework drop-in tests | MIT |
+| FastAPI, Uvicorn | Dashboard server | MIT, BSD-3 |
+| Optuna | Picking the next cap to try | MIT |
+| jsonschema, cryptography | Schema checks, Ed25519 signing | MIT, Apache 2.0 / BSD |
+| GSM8K, HumanEval (OpenAI) | Public test prompts, licenses in `data/public_bench/` and `data/holdout/` | MIT |
+| Inter, JetBrains Mono, Lucide | Fonts and icons in `web/run/vendor/` | OFL 1.1, OFL 1.1, ISC |
+
+## Open weights
+
+**Muse Glimmer 30B served via vLLM on our own rented H100 80GB.** It's the model whose answers WattNot measures. Every power cap, thinking budget, saver and agentwaste arm runs on Glimmer's real replies, and the quality gate grades them against the stock run. It was served in BF16 (`bash scripts/glimmer_serve.sh bf16`, with `--reasoning-parser muse_glimmer`). FP8 was tested on Modal's A100-80GB: it kept eye and hearing accuracy but lost 4.16 points on the full round (MEASURED), so the gate rejected it and the H100 stayed on BF16.
+
+Run logs and recordings:
+- H100 3 Nov long run (pass 1, pass 2, sealed holdout): [`replays/h100-max-1103/`](replays/h100-max-1103/manifest.json), with the event log, a receipt for each block and the signed sweep receipts.
+- Modal and Baseten rounds: [`replays/INDEX.md`](replays/INDEX.md).
+- Every run with its commit, cost and verdict: [`docs/RUN_HISTORY.md`](docs/RUN_HISTORY.md).
+
 ## Submission overview
 
 - **Track:** Indie (solo, Akash K Raju). **Problem statement:** Push the Frontier (energy).
@@ -8,7 +42,7 @@
 - **Meta models at runtime:** Muse Spark 1.3 (planner and judge), Muse Wonder (trial planner and
   chart reader), Muse Voice Transcribe (spoken Ask), SAM 3.1 (rack hotspots), and the open-weights
   models we serve and tune: **Muse Glimmer 30B** on an H100 and **Muse Spark Open** on Baseten. Both
-  are load-bearing: they are the models whose watts we measure and cut. Llama 3.1 8B is a comparison model.
+  are load-bearing: they are the models whose watts we measure and cut.
 - **Bonus categories we are aiming for:** Best Build on Meta Open Weight Models, Best Agentic Use-Case.
 - **Try it without any keys:** see [Keyless replay](#keyless-replay). Every number is labelled
   MEASURED, ESTIMATE, MOCK or REPLAY.
@@ -34,13 +68,119 @@ from an earlier run is labelled REPLAY; nothing is shown that did not happen.
 
 Full list with costs: [Meta models used](#meta-models-used).
 
-WattNot is an agent that cuts the energy and cost of each LLM inference request without making the model worse. It tries one serving change at a time (GPU power cap, batching, KV-cache settings, FP8, prefix caching) and keeps it only if three fixed checks pass: a quality gate on a fixed prompt set (accuracy may drop by at most 1 point by default), a p99 latency budget, and a Welch noise test so a saving has to beat run-to-run jitter. The model can explain a verdict but never overrides it; the rule decides. Each kept change becomes a hash-chained receipt signed offline (Ed25519) with before and after Wh and $ per request, and `wattnot verify` re-checks it: change one number and verification fails. It is built on Meta models: Muse Spark picks each step, and the default served model is Meta's open-weights Muse Glimmer 30B (`meta-models/Muse-Glimmer-30B`, Apache 2.0) on vLLM, with Llama 3.1 8B Instruct (`meta-llama/Llama-3.1-8B-Instruct`) as a comparison model. We also tune Muse Spark Open (NVFP4) on a large multi-GPU box, because it needs 700 GB+ of VRAM, more than one H100.
+WattNot is an agent that cuts the energy and cost of each LLM inference request without making the model worse. It tries one serving change at a time (GPU power cap, batching, KV-cache settings, FP8, prefix caching) and keeps it only if three fixed checks pass: a quality gate on a fixed prompt set (accuracy may drop by at most 1 point by default), a p99 latency budget, and a Welch noise test so a saving has to beat run-to-run jitter. The model can explain a verdict but never overrides it; the rule decides. Each kept change becomes a hash-chained receipt signed offline (Ed25519) with before and after Wh and $ per request, and `wattnot verify` re-checks it: change one number and verification fails. It is built on Meta models: Muse Spark picks each step, and the default served model is Meta's open-weights Muse Glimmer 30B (`meta-models/Muse-Glimmer-30B`, Apache 2.0) on vLLM. We also tune Muse Spark Open (NVFP4) on a large multi-GPU box, because it needs 700 GB+ of VRAM, more than one H100.
 
 Token trimmers cut your bill, but not your watts. WattNot measures the joules each request burns on the GPU, and checks quality before it keeps any change.
 
 H100 run: `bash scripts/h100_run.sh --dry-run` first, then see [docs/runbooks/H100.md](docs/runbooks/H100.md). Adaptive top-k ([docs/ADAPTIVE-TOPK.md](docs/ADAPTIVE-TOPK.md)) is not in the H100 run; it is planned on Muse Spark Open via Modal. Earlier top-k tests used non-Meta models and are kept only as dated history.
 
-**Every model WattNot runs is a Meta model (Glimmer, Llama, Spark, Spark Open, Wonder, SAM 3.1, Voice, Code, plus Muse Image for pre-generated SYNTHETIC test sets). See [Meta models used](#meta-models-used).**
+**Every model WattNot runs is a Meta model (Glimmer, Spark, Spark Open, Wonder, SAM 3.1, Voice, Code, plus Muse Image for pre-generated SYNTHETIC test sets). See [Meta models used](#meta-models-used).**
+
+## Run it in 2 minutes
+
+You need Python 3.11, 3.12 or 3.13 and git. No GPU. A Meta Model API key is optional: with one you run WattNot live, without one you get the recorded real runs.
+
+macOS, Linux or WSL:
+
+```bash
+git clone https://github.com/ak9381/wattnot.git && cd wattnot
+./run-local.sh smoke      # about a minute: doctor, a simulated run, the dashboard up and down
+./run-local.sh            # with a key in .env: live Meta API run. Without one: replay of our real runs
+```
+
+Windows (PowerShell, no WSL needed):
+
+```powershell
+git clone https://github.com/ak9381/wattnot.git; cd wattnot
+powershell -ExecutionPolicy Bypass -File .\run-local.ps1 smoke
+powershell -ExecutionPolicy Bypass -File .\run-local.ps1
+```
+
+Both launchers make a `.venv` on the first run, then call the same entry point, `python -m wattnot.judge`, which you can also run yourself inside the venv (`python -m wattnot.judge smoke`). Every mode below works the same way on both: swap `./run-local.sh` for `.\run-local.ps1`. WSL users follow the macOS/Linux lines. The `gpu` mode needs Linux with an NVIDIA GPU.
+
+### Your settings
+
+Copy the example file and fill in what you have. `.env` is gitignored, and WattNot never prints its values.
+
+```bash
+cp .env.example .env            # macOS / Linux / WSL
+```
+
+```powershell
+Copy-Item .env.example .env     # Windows PowerShell
+```
+
+### The modes
+
+| Command | What runs | Needs | Numbers |
+|---|---|---|---|
+| `./run-local.sh smoke` | doctor, a simulated run and the replay dashboard up and down. Prints `SMOKE PASS` | nothing | MOCK |
+| `./run-local.sh doctor` | Checks Python, disk, GPU, driver, NVML, power-limit permission, vLLM and your key. Each line says PASS, WARN or FAIL, plus the fix. Changes nothing. | nothing | - |
+| `./run-local.sh gpu` (optional) | The full framework on your GPU. Stock vs a power cap on 4 prompt tiers, with the quality gate (pass rate drop of 2 points or less, p99 within +10%). Then the token savers if a key is set. | NVIDIA GPU you control, root, a vLLM server, `WATTNOT_VLLM_URL` | energy MEASURED (NVML); water and $ ESTIMATE |
+| `./run-local.sh savers` | Cheapest-first routing with step-up and the thinking budget, then the agentwaste proxy and context saver on agent tasks, all on live Meta models. Spend is capped by `WATTNOT_MAX_SPEND` (default $0.50). | `META_API_KEY` | tokens, latency, cost MEASURED; energy ESTIMATE |
+| `./run-local.sh sim` | The same harness with a fake GPU and an oracle model | nothing | all MOCK |
+| `./run-local.sh replay [name]` | Dashboard on one of our recorded runs: `h100-max-1103` (default), `modal-r1`, `modal-r2`, `baseten-r1`, `baseten-r2` | nothing | MEASURED replay |
+
+`make judge` and `make doctor` do the same as the first two commands. Results go to `out/judge-<time>/`.
+
+### GPU prerequisites
+
+- NVIDIA driver installed. `nvidia-smi` must work.
+- Root, or sudo, to change power limits. Run `sudo -E ./run-local.sh gpu`.
+- vLLM serving Muse Glimmer 30B (Meta open weights) on the same box: `vllm serve meta-models/Muse-Glimmer-30B --port 8000 --reasoning-parser muse_glimmer` (or `bash scripts/glimmer_serve.sh`, which we used). Keep `WATTNOT_MODEL_CONFIG=muse-glimmer-30b`. Only Meta models count for this hackathon, so the judge path never calls anything else.
+- The stock power limit goes back on at exit, on Ctrl-C and on error, both from the harness and from the launcher. If anything kills the process hard, run `sudo nvidia-smi -i 0 -pl <stock W>` (doctor shows the stock range).
+
+When doctor finds no GPU, an untested GPU or no permission, the power-cap features turn off with a message saying why. The token savers still run.
+
+### Meta models used, and where each runs
+
+| Model | Where it runs | What it does in WattNot |
+|---|---|---|
+| Muse Glimmer 30B (open weights) | vLLM on a rented NVIDIA H100 80GB, BF16. FP8 was also tried on Modal A100-80GB: it kept accuracy on eye and hearing but was rejected on the full round (accuracy -4.16 pts, MEASURED), so the H100 stays BF16 | The model being served. Every power cap, thinking budget, saver and agentwaste arm is measured on its answers |
+| Muse Spark (Meta Model API) | Hosted | Cheapest-first effort routing with step-up, answer grading for the quality gate, and the judge `savers` mode |
+| Muse Spark Open (open weights) | Baseten, hosted | The hosted-API round: effort routing and the LangChain saver |
+| Muse Wonder (Meta Model API) | Hosted | Plans which cap and clock to try next |
+| SAM 3.1 (Meta Model API) | Hosted | Rack photo to a map of the servers a run touched, used as a cross-check |
+| Muse Code | Hosted | Opened the 375 W cap PR from a run result |
+| Muse Glimmer 30B, vision (eye test) | Same vLLM server as above (`meta-models/Muse-Glimmer-30B`, `src/wattnot/vision/client.py`) | Reads 10 SYNTHETIC images (gauges, invoices, plates, signs). H100 pass 1: 10/10 in both arms, 619.1 to 540.5 J per correct (12.7% less per image). Pass 2: 10/10 both arms, 669.0 to 609.1 J (9.0% less). Proof: [data/h100-holdout-1103/eye/](data/h100-holdout-1103/eye/). Modal A100-80GB: 10/10 both arms, 960.9 to 920.9 J per correct (-4.2%). All MEASURED (NVML) |
+| Muse Voice Transcribe + Glimmer 30B, hearing (spoken test) | Transcribe: Meta Model API, hosted (`muse-voice-transcribe-1.0`, `src/wattnot/spokenanswer/client.py`). Answers: Glimmer on vLLM | 20 SYNTHETIC spoken questions, transcribed live. H100 pass 1: 20/20 in both arms, 227.1 to 179.1 J per correct (21.1% less per clip). Pass 2: 20/20 both arms, 234.4 to 187.6 J (20.0% less). Proof: [data/h100-holdout-1103/spoken/](data/h100-holdout-1103/spoken/). Modal: 20/20 both arms, 358.4 to 344.9 J per correct (-3.8%). All MEASURED (NVML) |
+| Muse Voice Transcribe (dashboard mic) | Meta Model API, hosted | Turns the mic button into text: "Explain the dashboard" reads the cards on screen back to you; "Configure a run at 375 watts, thinking budget on" fills the Set up a run form. It never presses Start |
+
+Provenance for the H100 run: the full event log, per-block receipts and signed sweep receipts are in [`replays/h100-max-1103/`](replays/h100-max-1103/manifest.json) (`./run-local.sh replay` plays it). Modal and Baseten runs are in [`replays/INDEX.md`](replays/INDEX.md). Run history with commits and costs: [`docs/RUN_HISTORY.md`](docs/RUN_HISTORY.md).
+
+### Tested on
+
+| Where | What we ran | Power cap |
+|---|---|---|
+| NVIDIA H100 80GB (bare cloud VM with root access) | The full stack: power caps through NVML, vLLM serving, quality gate, signed receipts, LangChain, agentwaste, eye and spoken arms, sealed GSM8K holdout | yes |
+| Modal (hosted A100-80GB) | Glimmer 30B served on Modal, with LangChain and context saver runs | no, the platform owns the GPU |
+| Baseten (hosted Muse Spark Open API) | Effort routing, with the LangChain saver | no, we don't control the GPU |
+
+The power-cap features need root and NVML on a GPU you control. The token savers work on any OpenAI-compatible endpoint. Any other GPU is untested: doctor flags it, and caps stay off unless you set `WATTNOT_ALLOW_UNTESTED_GPU=1`.
+
+### Checklist to test it yourself (about 10 minutes)
+
+1. Fresh clone, then `./run-local.sh smoke` (Windows: `.\run-local.ps1 smoke`). Expect `SMOKE PASS`.
+2. `./run-local.sh doctor`. Expect a mode line (`sim` with no key, `savers-only` with a key) and no crash. Missing settings are named, never shown.
+3. Copy `.env.example` to `.env`, leave the key as the placeholder, run `./run-local.sh`. Expect "No META_API_KEY: showing our recorded real runs" and a URL. Open it, then Ctrl-C. Expect a clean exit.
+4. Start something on port 8765 (or a second replay), run `./run-local.sh replay` again. Expect "port 8765 is busy, using …".
+5. Put a wrong key in `.env`, run `./run-local.sh savers`. Expect `HTTP 401 … check META_API_KEY in .env` and no traceback.
+6. With a real key: `./run-local.sh savers`. Expect three live steps and a spend line under `WATTNOT_MAX_SPEND`.
+7. Dashboard mic (needs a key and a non-replay server: `python -m wattnot.dash`): open `/dash/v2.html`, press the mic, say "Explain the dashboard". Expect a short spoken summary and the same run still selected. Say "Configure a run at 375 watts with thinking budget on". Expect the Set up a run page with a "From your voice request" box showing 375 W and thinking budget on. Start stays unpressed.
+8. `replay modal-r2` and `replay baseten-r1`. Each should open.
+
+### Troubleshooting
+
+- **`setup failed`**: run `bash scripts/setup.sh` to see the error. Most often Python is older than 3.11.
+- **Windows: "running scripts is disabled"**: use the `powershell -ExecutionPolicy Bypass -File .\run-local.ps1` form shown above. It changes nothing system-wide.
+- **Windows: `py` not found**: install Python from python.org with "Add python.exe to PATH" and the py launcher ticked, then open a new PowerShell.
+- **`HTTP 401` / `403`**: the key is wrong or expired. Check `META_API_KEY` in `.env`, with no quotes and no spaces.
+- **`HTTP 429`**: WattNot retries 3 times (2, 5 and 10 s). If it still fails, wait a minute or lower `WATTNOT_PER_TIER`.
+- **`request failed: TimeoutError`**: no network, or `META_BASE_URL` is wrong. Timeouts are not retried, because the call may already have been billed.
+- **doctor says `vllm FAIL`**: the server isn't up yet, or the URL is wrong. `curl http://127.0.0.1:8000/v1/models` (your host and port) should list a model.
+- **`power-limit permission FAIL`**: run with `sudo -E`. On serverless GPUs this can't work, so use `savers`.
+- **Port busy**: a free port is picked and printed. Set `WATTNOT_PORT` to choose one.
+- **Ctrl-C**: safe at any point. The power limit is restored and nothing is left running.
 
 ## For judges
 
@@ -85,7 +225,7 @@ https://ak9381.github.io/wattnot/ if you'd rather not install anything.)
 (a software model or placeholder, hidden until you flip the "Illustrations"
 switch). The headline below is MEASURED.
 
-- **Headline (RUN2, MEASURED):** -27.1% joules per correct answer at a 350 W cap on an H100 (17.03 to 12.42 J), pass rate unchanged at 93.7% on 666 checked answers. RUN2 quality was judged by fixed answer checks (deterministic string and number matching, no model as a judge); results with the Meta judge (hosted Muse Spark, with a Llama 3.1 8B fallback) are reported separately when measured.
+- **Headline (sealed holdout, MEASURED):** -26.65% joules per request with the frozen full stack (375 W cap, low reasoning effort) against stock (700 W) on Muse Glimmer 30B (BF16, vLLM) on an NVIDIA H100 80GB: 233.4 to 171.2 J/request. Quality 92.0% in both arms, 899/977 on never-seen GSM8K prompts (95% CI -0.8 to +0.8 points, exact McNemar p = 1.00, 8 discordant each way, minimum detectable drop 1.146 points at 80% power). Run once, sealed manifest. Proof: [data/h100-holdout-1103/holdout_result.json](data/h100-holdout-1103/holdout_result.json), per-request rows in [data/h100-holdout-1103/raw/](data/h100-holdout-1103/raw/). Quality was judged by fixed answer checks (deterministic number matching, no model as a judge).
 - **What Spark decided:** every Muse Spark planner call in RUN2 (400 W, 350 W, 325 W, stop), with its reasoning, latency, tokens and the gate verdict. 325 W failed the p99 gate (+10.95% against a 10% limit); the (i) button explains why.
 - **Verify a receipt yourself:**
 
@@ -138,13 +278,12 @@ Every Meta model WattNot uses, and what we built on top of each:
 | SAM 3.1 (`sam-3.1`, hosted) | hotspot finder: segments rack photos into units (kept off the main path) | $0.12 over 47 calls (MEASURED, API ledger) |
 | Muse Voice (`muse-voice-transcribe-1.0`, hosted) | Ask by voice: speech to text for the voice guide, which answers from signed receipts only | from the API ledger (MEASURED when run) |
 | Muse Glimmer 30B (`meta-models/Muse-Glimmer-30B`, open weights) | the served model we tune on the H100 (power cap, thinking budget, tiers, LangChain agent, agent-waste saver) | own H100, cost is GPU hours |
-| Llama 3.1 8B Instruct (open weights) | the served model in RUN2; small model in small-first; judge fallback | own H100, cost is GPU hours |
 | Muse Spark Open (Baseten, Modal) | big model when the small one fails a check; hosted planner; the multi-provider routing arm | $0.004, 1 call (MEASURED) |
 | Muse Image (`muse-image-1.0`) | the pre-generated test images for the vision quality gate and the SAM hotspot test set, labelled SYNTHETIC; blocked in India, so no live call in any run | none in our runs |
 
 - **Endpoint health:** `wattnot health` probes each hosted endpoint and writes a FALLBACK ledger (`data/judge/health-*.json`).
 - **Labels:** every number is MEASURED, ESTIMATE, SIMULATED, MOCK, REPLAY or ADVICE. SIMULATED and MOCK content is hidden by default; the "Illustrations" switch shows it.
-- **Not measured yet (long GPU run):** small-model-first escalation rate and net savings, the hosted Muse Spark judge (Llama 3.1 8B fallback), Muse Spark Open with fewer experts, and the token trimmer and caps on one workload (the stacked figure is an ESTIMATE until then).
+- **Not measured yet (long GPU run):** small-model-first escalation rate and net savings, the hosted Muse Spark judge, Muse Spark Open with fewer experts, and the token trimmer and caps on one workload (the stacked figure is an ESTIMATE until then).
 
 ## Quickstart
 
@@ -304,7 +443,7 @@ What is and isn't checked yet is listed in [docs/runbooks/BASETEN.md](docs/runbo
 - **Safe fallback.** If the call fails or the answer is off the list, a deterministic bisect rule picks the cap instead. That step is logged as `FALLBACK` and marked `source: fallback` in the receipt, so it never passes as a model pick.
 - One real test call (`scripts/spark_open_planner_smoke.py`, made-up SIMULATED history shaped like RUN2): Spark Open picked 350 W after 400 W passed and 325 W failed on p99, in 4.95 s, 575 in / 766 out tokens, about $0.004 (latency and tokens MEASURED, dollars ESTIMATE from list price). 350 W is the cap RUN2 kept on the H100. Record: [docs/runs/spark-open-planner-smoke.json](docs/runs/spark-open-planner-smoke.json).
 - **Modal works the same way.** `--planner modal-open` runs the same planner on Modal's Shared Endpoint for Muse Spark Open, at the same list price. Every compare (`python -m wattnot.spark_open.h2h`) lists three placements on the same prompts: our GPU, Baseten and Modal. The router picks one per workload on quality and p99 and writes the reasons into the receipt. Setup: [docs/runbooks/MODAL.md](docs/runbooks/MODAL.md).
-- The served models we tune are Meta open weights too: Muse Glimmer 30B and Llama 3.1 8B Instruct on vLLM.
+- The served model we tune is Meta open weights too: Muse Glimmer 30B on vLLM.
 
 ## Meta API usage (capped at $120)
 

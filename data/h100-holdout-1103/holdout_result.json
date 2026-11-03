@@ -1,0 +1,48 @@
+{
+ "spec": "wattnot.holdout-run/1",
+ "label": "MEASURED",
+ "manifest_sha256": "8dd48d36cfb8d25b5300fa13c1f1461507becba9f4f00d62b6cd6722cf530a4c",
+ "stack": {
+  "cap_w": 375,
+  "stock_w": 700,
+  "savers": {
+   "reasoning_effort": "low"
+  },
+  "max_tokens": 1536,
+  "temperature": 0,
+  "seed": 1234
+ },
+ "arms": {
+  "stock": {
+   "cap_w": 700,
+   "joules": 228027.204,
+   "j_per_req": 233.39529580348002,
+   "wall_s": 421.44691586494446
+  },
+  "stack": {
+   "cap_w": 375,
+   "joules": 167254.267,
+   "j_per_req": 171.19167553735926,
+   "wall_s": 447.82286977767944
+  }
+ },
+ "quality": {
+  "n": 977,
+  "stock_pct": 92.01637666325486,
+  "stack_pct": 92.01637666325486,
+  "diff_pts": 0.0,
+  "ci95_pts": [
+   -0.8024417541617415,
+   0.8024417541617415
+  ],
+  "discordant": {
+   "stock_only": 8,
+   "stack_only": 8,
+   "rate": 0.016376663254861822
+  },
+  "mcnemar_exact_p": 1.0,
+  "mde_pts_80pct_power": 1.1456319089617992
+ },
+ "energy_change_pct": -26.651616971104904,
+ "report": "Sealed holdout (MEASURED, run once, 977 prompts the system never saw): -26.7% J/request, quality 92.0% -> 92.0% (+0.0 pts, 95% CI -0.8 to +0.8, McNemar p=1.00); detectable drop 1.1 pts at 95%/80% power"
+}

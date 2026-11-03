@@ -72,25 +72,25 @@ def test_fails_closed_on_bad_response():
     assert not g.passed
 
 
-def test_cutoff_from_primary_falls_back_to_llama():
+def test_cutoff_from_primary_falls_back_to_glimmer():
     # Spark returns a reasoning-only reply with no verdict content. FallbackJudge must treat
-    # that as a failed primary and use the Llama fallback, not hand back the empty reply.
+    # that as a failed primary and use the Glimmer fallback, not hand back the empty reply.
     same = [i for i in ITEMS if i["label"] == "same"]
     cutoff = {"choices": [{"message": {"content": None}}]}
-    good = {"model": "meta-llama/Llama-3.1-8B-Instruct", "usage": {},
+    good = {"model": "meta-models/Muse-Glimmer-30B", "usage": {},
             "choices": [{"message": {"content": json.dumps(
                 {"verdicts": [{"id": i["id"], "verdict": "same"} for i in same]})}}]}
-    fj = FallbackJudge(lambda b: cutoff, lambda b: good, "spark", "meta-llama/Llama-3.1-8B-Instruct")
+    fj = FallbackJudge(lambda b: cutoff, lambda b: good, "spark", "meta-models/Muse-Glimmer-30B")
     g = judge(*_outs(), same, transport=fj)
     assert g.passed
-    assert g.detail["judge_path"] == "llama-fallback"
-    assert g.detail["judge_model"] == "meta-llama/Llama-3.1-8B-Instruct"
+    assert g.detail["judge_path"] == "glimmer-fallback"
+    assert g.detail["judge_model"] == "meta-models/Muse-Glimmer-30B"
     assert "cut off" in g.detail["fallback_reason"]
 
 
 def test_cutoff_fails_closed_when_there_is_no_fallback():
     # No fallback configured: a cut-off still fails closed (never a silent pass).
-    fj = FallbackJudge(lambda b: {"choices": [{"message": {"content": ""}}]}, None, "spark", "llama")
+    fj = FallbackJudge(lambda b: {"choices": [{"message": {"content": ""}}]}, None, "spark", "glimmer")
     g = judge(*_outs(), ITEMS, transport=fj)
     assert not g.passed and "unavailable" in g.reason
 

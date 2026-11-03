@@ -16,8 +16,8 @@ from collections.abc import Sequence
 from wattnot.route.escalate import TIER_CHAIN
 
 # Illustrative per-answer cost by tier (MOCK). Bigger model, more joules and more dollars.
-TIER_JOULES = {"llama-8b": 10.0, "glimmer-30b": 28.0, "spark-open": 70.0}
-TIER_USD = {"llama-8b": 0.00008, "glimmer-30b": 0.00022, "spark-open": 0.0019}
+TIER_JOULES = {"glimmer-fast": 10.0, "glimmer-30b": 28.0, "spark-open": 70.0}
+TIER_USD = {"glimmer-fast": 0.00008, "glimmer-30b": 0.00022, "spark-open": 0.0019}
 
 # A passing / failing answer per task kind, shaped so escalate.gate agrees.
 _PASS = {"math": "Working it through, #### 42", "code": "```python\ndef f():\n    return 1\n```",

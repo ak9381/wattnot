@@ -40,8 +40,8 @@ def test_framework_drop_in(proxy, name, pkg):
     mod = _load(name)
     easy = mod.run(proxy, "Where do the signed receipts live?")
     hard = mod.run(proxy, "HARD: which module signs receipts?")
-    assert "llama-3.1-8b" in easy.lower()          # small model kept
-    assert "llama-3.1-8b" not in hard.lower()      # escalated past the small model
+    assert "(fast)" in easy.lower()                # cheap first tier kept
+    assert "(fast)" not in hard.lower()            # escalated past the first tier
     rc = _receipt(proxy)
     assert rc["label"] == "MOCK"
     expect = {"openai_python": "openai-python"}.get(name, name)

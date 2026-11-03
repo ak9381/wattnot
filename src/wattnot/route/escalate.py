@@ -1,6 +1,7 @@
 """Small model first, big model only when the answer gate fails.
 
-Every prompt is answered by Llama 3.1 8B on our own GPU first. A reference-free gate looks
+Every prompt is answered by Muse Glimmer 30B on our own GPU first, with low reasoning
+effort and a short token budget. A reference-free gate looks
 at that answer right away (no ground truth needed at serving time):
 
 * the reply was not cut off by the token limit,
@@ -24,13 +25,14 @@ from collections.abc import Iterable, Mapping, Sequence
 
 from wattnot.gates.answers import _MARKERS  # same final-answer markers as the scoring gate
 
-SMALL = "meta-llama/Llama-3.1-8B-Instruct"
 MID = "meta-models/Muse-Glimmer-30B"
+SMALL = MID  # same Meta model, run cheap first (low effort, short budget); Llama is not used
 BIG = "meta-models/Muse-Spark-Open-816B-A42B"
 # The all-Meta escalation chain, smallest first. Each prompt is tried at a tier; the
 # reference-free gate decides keep-or-escalate. The last tier is terminal (always answers).
 TIER_CHAIN = (
-    {"name": "llama-8b", "model": SMALL, "where": "local"},
+    {"name": "glimmer-fast", "model": SMALL, "where": "local",
+     "body_extra": {"reasoning_effort": "low"}},
     {"name": "glimmer-30b", "model": MID, "where": "local"},
     {"name": "spark-open", "model": BIG, "where": "hosted"},
 )

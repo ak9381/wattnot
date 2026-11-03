@@ -169,7 +169,7 @@ def test_explain_intent() -> None:
     assert res["action"] == "explain"
     assert res["intent"] == "explain"
     assert "25%" in res["target_query"]
-    assert "Highlighting" in res["text"] or "Locating" in res["text"]
+    assert res["scope"] == "element" and "25%" in res["text"]
     assert res["label"] in {"MOCK", "MEASURED"}
 
 
@@ -256,7 +256,8 @@ def test_spoken_run_setup_prefill_phrasings(phrase, cap_w, workload, framework) 
 
 def test_spoken_setup_unknown_fields_stay_null() -> None:
     parsed = parse_run_setup("configure a new run")
-    assert parsed == {"cap_w": None, "workload": None, "framework": None}
+    assert all(v is None for v in parsed.values())
+    assert {"cap_w", "workload", "framework", "thinking_budget"} <= set(parsed)
     res = process_voice_query("configure a new run", root_dir=REPO_ROOT, mock=True)
     assert res["action"] == "prefill"
     assert res["prefill"]["cap_w"] is None

@@ -13,13 +13,13 @@ def test_meta_default_and_args():
     assert [a["k"] for a in sweep_plan("spark", 8)] == [8, 6, 4]
 
 
-def test_judge_defaults_to_llama_local(monkeypatch):
+def test_judge_defaults_to_glimmer_local(monkeypatch):
     monkeypatch.setenv("JUDGE_BASE_URL", "http://127.0.0.1:9/v1")
-    tr, model = judge.default_transport(judge.LLAMA_JUDGE)
-    assert isinstance(tr, judge.LocalJudge) and model == judge.LLAMA_JUDGE
+    tr, model = judge.default_transport(judge.LOCAL_JUDGE)
+    assert isinstance(tr, judge.LocalJudge) and model == judge.LOCAL_JUDGE
     seen = {}
     res = judge.judge({"a": "1"}, {"a": "1"}, [{"id": "a", "question": "q"}],
                       transport=lambda b: seen.setdefault("b", b) and {
                           "choices": [{"message": {"content": '{"verdicts":[{"id":"a","verdict":"same"}]}'}}]},
-                      model=judge.LLAMA_JUDGE)
+                      model=judge.LOCAL_JUDGE)
     assert res.passed and res.detail["judge_era"] == "meta-judge"

@@ -1,0 +1,12 @@
+{
+ "format": "wattnot.block-receipt/1",
+ "block": "t1-sweep",
+ "label": "MEASURED",
+ "files": {
+  "meta.json": "b16973f49c3d18cdd0db48d59f47af0f5f881fd4f239d0be3b2b67d683658a02",
+  "state.json": "53c372246e4dcaf9faf844fbf96ec9b180f2ab05deffcf54a4912772442f587f",
+  "timeline.jsonl": "e952b7ab54297839184df85107946912da703ce267457d3d3e49bcec19644690"
+ },
+ "prev": "b7e5b830a1b76ec642fc854f6eb43909e417dd5919def795d21c50723341231f",
+ "sha256": "73afcf3fcf2906aaf8aad37148fabaa2ef0389247b1ed08ecd9ef03e9e48bfb1"
+}

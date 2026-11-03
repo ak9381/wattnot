@@ -28,11 +28,13 @@ def _last_user(messages) -> str:
 def mock_upstream(body: dict, headers: dict) -> dict:
     model = str(body.get("model", ""))
     prompt = _last_user(body.get("messages"))
-    small = model == TIER_CHAIN[0]["model"]
+    first = TIER_CHAIN[0]
+    small = model == first["model"] and all(body.get(k) == v for k, v in (first.get("body_extra") or {}).items())
     if small and "HARD" in prompt:
         text = "Sorry, I can't help with that."
     else:
-        text = f"Answer from {model.split('/')[-1] or 'model'}: the receipts live in wattnot.receipt."
+        tag = " (fast)" if small else ""
+        text = f"Answer from {model.split('/')[-1] or 'model'}{tag}: the receipts live in wattnot.receipt."
     p_tok = sum(len(str(m.get("content") or "")) for m in body.get("messages") or []) // 4 + 1
     return {"id": "mock-1", "object": "chat.completion", "created": 0, "model": model,
             "choices": [{"index": 0, "finish_reason": "stop",

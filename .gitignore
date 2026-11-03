@@ -45,3 +45,6 @@ results/
 site/
 approval-policy.json
 data/modal-full-1101/fake/
+
+# judge runs
+out/judge-*/

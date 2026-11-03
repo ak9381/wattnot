@@ -1,0 +1,12 @@
+{
+ "format": "wattnot.block-receipt/1",
+ "block": "p1-langchain",
+ "label": "MEASURED",
+ "files": {
+  "meta.json": "0314a5a1eb6702b599d1c98007e460b0b91ef25d4fc1d3b618936be3336db0e3",
+  "state.json": "d8a0d362783c8d2d25e07752ed2c35f8c84fefd4dd1f8fa29cadb7b36dc1475d",
+  "timeline.jsonl": "2ab1af327bb3229103f9eac5bccae234a08ee5febf602587bc2211a01a9036fe"
+ },
+ "prev": "4e6c7481186ea72d39c7d9427e685bcda9c88a230fd23be7ce478da7369201aa",
+ "sha256": "7d59027af1e431e868e3a963acece5badb4a1ea964b9f0d390413c269b8877f3"
+}

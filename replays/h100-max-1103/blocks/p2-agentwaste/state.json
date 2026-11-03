@@ -1,0 +1,28 @@
+{
+ "events": 2,
+ "types": {
+  "step.finished": 1,
+  "step.started": 1
+ },
+ "first_ts": "2026-11-03T14:46:41.219Z",
+ "last_ts": "2026-11-03T14:46:41.220Z",
+ "steps": {
+  "p2-agentwaste": {
+   "type": "step.finished",
+   "ts": "2026-11-03T14:46:41.219Z",
+   "status": "failed"
+  },
+  "p2-agentwaste#2": {
+   "type": "step.started",
+   "ts": "2026-11-03T14:46:41.220Z",
+   "status": null
+  }
+ },
+ "result": {
+  "rc": 0,
+  "attempt": 2,
+  "wall_s": 2038.9,
+  "capture": false,
+  "copied": true
+ }
+}

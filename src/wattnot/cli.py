@@ -117,6 +117,8 @@ def build_parser() -> argparse.ArgumentParser:
     svx.add_argument("--on", dest="saver_on", action="store_const", const=True, help="turn the saver on")
     svx.add_argument("--off", dest="saver_on", action="store_const", const=False, help="turn the saver off")
     sv.add_argument("--min-tokens", type=int, help="only compress conversations at least this long (default 500)")
+    dr = sub.add_parser("doctor", help="judge setup check: pass/fail with the fix for each, picks the run mode")
+    dr.add_argument("--json", action="store_true")
     pf = sub.add_parser("preflight", help="read-only check: driver, CUDA, power-cap permission, vLLM")
     pf.add_argument("--json", action="store_true")
     hc = sub.add_parser("health", help="probe Meta API, Baseten and Modal before a run (free GET /models)")
@@ -363,6 +365,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         from wattnot import demo as _demo
 
         return _demo.run(args)
+    if args.cmd == "doctor":
+        from wattnot.doctor import main as _doctor
+        return _doctor(["--json"] if args.json else [])
     if args.cmd == "health":
         from wattnot.health import main as _health
         return _health(["--json"] if args.json else [])

@@ -1,4 +1,4 @@
-.PHONY: test lint demo rehearse-run3
+.PHONY: test lint demo rehearse-run3 judge doctor
 
 # Offline unit tests. No network, no GPU, no Meta API.
 test:
@@ -16,3 +16,10 @@ lint:
 # Needs WattNot installed (pip install -e .); run scripts/setup.sh first if not.
 demo:
 	python -m wattnot.cli demo
+
+# Judges: doctor, then the best live mode this machine supports (see README "Run it in 2 minutes").
+judge:
+	./run-local.sh
+
+doctor:
+	./run-local.sh doctor

@@ -29,12 +29,17 @@ test("landing page has head tags, Open Graph tags, and text content", () => {
 const POWERED_BY_TOOLS = [
   "Muse Spark",
   "Muse Wonder",
-  "Muse Glimmer",
+  "Muse Glimmer (text + vision)",
   "Muse Code",
-  "Voice",
-  "Llama",
+  "Muse Voice Transcribe (hearing)",
   "SAM 3.1",
 ];
+
+test("landing 'Powered by' line names no Llama (not a Meta model for this hackathon)", () => {
+  const html = fs.readFileSync(path.join(dashDir, "index.html"), "utf8");
+  const block = html.slice(html.indexOf('class="powered"'), html.indexOf("</header>"));
+  assert.ok(!/llama/i.test(block));
+});
 
 test("landing 'Powered by' line lists the pinned Meta tool set as prominent chips", () => {
   const html = fs.readFileSync(path.join(dashDir, "index.html"), "utf8");

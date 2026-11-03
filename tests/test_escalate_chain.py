@@ -4,7 +4,7 @@ from wattnot.route.mock_backend import mock_item, mock_items, sample_prompts
 
 def test_mock_item_shape():
     it = mock_item({"id": "x", "kind": "math", "solves_at": 1})
-    assert [a["tier"] for a in it["attempts"]] == ["llama-8b", "glimmer-30b", "spark-open"]
+    assert [a["tier"] for a in it["attempts"]] == ["glimmer-fast", "glimmer-30b", "spark-open"]
     # tier 0 fails the gate, tier 1 passes and is correct
     assert not E.gate("math", it["attempts"][0]["text"])[0]
     assert E.gate("math", it["attempts"][1]["text"])[0]
@@ -17,7 +17,7 @@ def test_chain_answers_at_right_tier_and_sums_energy():
                {"id": "c", "kind": "code", "solves_at": 2}]
     b = E.evaluate_chain(mock_items(prompts))
     by_id = {p["id"]: p for p in b["per_item"]}
-    assert by_id["a"]["answered_by"] == "llama-8b" and not by_id["a"]["escalated"]
+    assert by_id["a"]["answered_by"] == "glimmer-fast" and not by_id["a"]["escalated"]
     assert by_id["b"]["answered_by"] == "glimmer-30b" and by_id["b"]["escalated"]
     assert by_id["c"]["answered_by"] == "spark-open" and by_id["c"]["escalated"]
     # per-item trail records a gate verdict for every tier reached
@@ -34,7 +34,7 @@ def test_aggregate_rates_and_per_tier_pass():
     assert b["escalation_rate_pct"] == 30.0
     assert round(b["small_model_pass_pct"] + b["escalation_rate_pct"], 2) == 100.0
     tiers = {t["name"]: t for t in b["tiers"]}
-    assert tiers["llama-8b"]["attempted"] == 20 and tiers["llama-8b"]["gate_passes"] == 14
+    assert tiers["glimmer-fast"]["attempted"] == 20 and tiers["glimmer-fast"]["gate_passes"] == 14
     assert tiers["glimmer-30b"]["attempted"] == 6 and tiers["glimmer-30b"]["answered"] == 4
 
 
@@ -52,7 +52,7 @@ def test_leaderboard_row_carries_both_rates():
     row = E.chain_leaderboard_row(b, setup="WattNot three-tier chain")
     assert row["escalation_rate_pct"] == 30.0 and row["small_model_pass_pct"] == 70.0
     assert row["j_per_correct"]["mean"] > 0
-    assert "Llama-3.1-8B-Instruct" in row["model"] and "Muse-Spark-Open" in row["model"]
+    assert "Muse-Glimmer-30B" in row["model"] and "Muse-Spark-Open" in row["model"]
     assert row["status"] == "illustration"  # MOCK is not a measured row
 
 
