@@ -92,6 +92,64 @@ class Controller:
         self.state = None
 
 
+def metrics_base(url: str) -> str:
+    """vLLM serves /metrics at the server root, not under the OpenAI /v1 prefix (run 1103:
+    the driver passed .../v1, every scrape was a 404 and every window counted 0)."""
+    u = url.rstrip("/")
+    return u[:-3] if u.endswith("/v1") else u
+
+
+class MixLoad:
+    """Two workers alternating a long-prompt/short-answer request (prefill-heavy) with a
+    short-prompt/long-answer one (decode-heavy) against the served model, until stopped."""
+
+    LONG = ("Summarise the rack telemetry below in one word. " + "GPU0 power 512 W temp 61 C; " * 180)
+    SHORT = "Write a short story about a data center at night."
+
+    def __init__(self, base: str, duration_s: float, stop: dict, workers: int = 2):
+        import threading
+        self.base, self.stop, self.t_end = base, stop, time.time() + duration_s
+        self.n = {"prefill_req": 0, "decode_req": 0, "errors": 0}
+        self.model = None
+        self.threads = [threading.Thread(target=self._run, args=(i,), daemon=True)
+                        for i in range(workers)]
+
+    def _model(self):
+        if self.model is None:
+            d = json.loads(urllib.request.urlopen(self.base + "/v1/models", timeout=5).read())  # noqa: S310
+            self.model = d["data"][0]["id"]
+        return self.model
+
+    def _req(self, prompt: str, max_tokens: int) -> None:
+        body = json.dumps({"model": self._model(), "prompt": prompt, "max_tokens": max_tokens,
+                           "temperature": 0}).encode()
+        rq = urllib.request.Request(self.base + "/v1/completions", data=body,
+                                    headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(rq, timeout=60).read()  # noqa: S310
+
+    def _run(self, i: int) -> None:
+        k = i
+        while not self.stop["v"] and time.time() < self.t_end:
+            try:
+                if k % 2 == 0:
+                    self._req(self.LONG, 4)
+                    self.n["prefill_req"] += 1
+                else:
+                    self._req(self.SHORT, 192)
+                    self.n["decode_req"] += 1
+            except Exception:  # noqa: BLE001
+                self.n["errors"] += 1
+                time.sleep(1)
+            k += 1
+
+    def start(self):
+        for t in self.threads:
+            t.start()
+
+    def stats(self) -> dict:
+        return dict(self.n, workers=len(self.threads), label="MEASURED")
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="http://127.0.0.1:8000")
@@ -104,28 +162,40 @@ def main(argv=None) -> int:
     ap.add_argument("--summary", default=None)
     ap.add_argument("--mock", action="store_true", help="mock NVML (dry run)")
     a = ap.parse_args(argv)
+    base = metrics_base(a.url)
     gpu = MockNVML() if a.mock else NVML()
     stop = {"v": False}
     signal.signal(signal.SIGTERM, lambda *_: stop.update(v=True))
     t0 = time.time()
+    c_err = {"n": 0}
     for path in (a.log, a.summary):
         if path and os.path.dirname(path):
             os.makedirs(os.path.dirname(path), exist_ok=True)
+    load = None
+    if not a.mock:
+        try:   # a light prefill/decode mix so the windows have traffic to classify
+            load = MixLoad(base, a.duration_s or 180, stop)
+            load.start()
+        except Exception:  # noqa: BLE001
+            load = None
     with open(a.log, "a") as lg:
         c = Controller(gpu, a.high, a.low, a.ratio, lg)
         try:
             while not stop["v"] and (not a.duration_s or time.time() - t0 < a.duration_s):
                 try:
-                    txt = urllib.request.urlopen(a.url + "/metrics", timeout=2).read().decode()  # noqa: S310
+                    txt = urllib.request.urlopen(base + "/metrics", timeout=2).read().decode()  # noqa: S310
                     c.step(txt, time.time() - t0)
                 except OSError:
-                    pass
+                    c_err["n"] += 1
                 time.sleep(a.interval_s)
         finally:
+            stop["v"] = True
             c.close()
     s = {"switches": c.switches, "windows": c.windows, "high_mhz": a.high, "low_mhz": a.low,
          "interval_s": a.interval_s, "granularity": "per scheduler window of batch steps, not per request",
-         "prior_art": "DynamoLLM (phase-aware frequency scaling for LLM inference)", "mock": a.mock}
+         "prior_art": "DynamoLLM (phase-aware frequency scaling for LLM inference)", "mock": a.mock,
+         "metrics_url": base + "/metrics", "metrics_errors": c_err["n"],
+         "load": load.stats() if load else None}
     if a.summary:
         open(a.summary, "w").write(json.dumps(s, indent=1))
     print(json.dumps(s))

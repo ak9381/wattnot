@@ -30,9 +30,11 @@ import subprocess
 import sys
 import time
 from dataclasses import asdict, dataclass, field, replace
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Callable, Protocol
 
+from wattnot.proof.events import Stream
 from wattnot.proof.teardown import plan_teardown
 
 from .recorder import Recorder
@@ -53,6 +55,44 @@ DISK_FREE_FLOOR_GB = float(os.environ.get("WATTNOT_DISK_FREE_FLOOR_GB", "15"))
 # child runs in its OWN session, so the driver can kill the WHOLE group on timeout or on stop and
 # never leave an orphaned setup dialing a deleted VM's IP (RUN3, attempt 2).
 _CHILD_PGIDS: set[int] = set()
+
+# block id keyword -> (node, sub) on the Architecture map (web/dash's live graph, see
+# wattnot.proof.events.STEP_NODE for the canonical sweep steps). Checked in order, first match
+# wins, so "b2-wonder-sweep" (both "wonder" and "sweep") lands on the sweep node, not the
+# optimizer. A block with no match lights the generic "workload" node under its own id.
+_NODE_KEYWORDS: tuple[tuple[str, tuple[str, str]], ...] = (
+    ("setup", ("e2e_rig", "setup")), ("probe", ("e2e_rig", "probe")),
+    ("sweep", ("e2e_rig", "sweep")), ("wonder", ("optimizer", "study")),
+    ("eu", ("eu", "export")), ("eye", ("gates", "judge")), ("spoken", ("gates", "judge")),
+    ("prefix", ("cache", "ab")), ("flex", ("flex", "event")),
+    ("langchain", ("agent", "call")), ("agentwaste", ("agent", "settle")),
+    ("think", ("agent", "guard")), ("tiers", ("apply", "cap")), ("phase", ("apply", "config")),
+    ("sam", ("sam", "masks")), ("room", ("sam", "masks")),
+    ("fp8", ("models", "serve")), ("quant", ("models", "serve")), ("batch", ("workload", "send")),
+    ("topk", ("e2e_rig", "topk")), ("adaptive", ("adaptive", "arms")),
+    ("combined", ("apply", "keep")), ("copy", ("receipts", "build")),
+)
+
+
+def _block_route(block_id: str) -> tuple[str, str]:
+    """Which Architecture-map (node, sub) a block's events light up. Every route names a real
+    node and sub-step from wattnot.dash.arch_spec, so nothing lands on an unknown sub."""
+    bid = block_id.lower()
+    for key, route in _NODE_KEYWORDS:
+        if key in bid:
+            return route
+    return ("workload", "send")
+
+
+def graph_events_enabled() -> bool:
+    """Driver-side graph events are on unless WATTNOT_GRAPH_EVENTS=0 (e.g. when the external
+    sidecar, scripts/graph_events_sidecar.py, is the one animating the graph)."""
+    return os.environ.get("WATTNOT_GRAPH_EVENTS", "1").strip().lower() not in ("0", "off", "false", "no")
+
+
+def _iso_now() -> str:
+    dt = datetime.now(UTC)
+    return dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{dt.microsecond // 1000:03d}Z"
 
 
 def kill_child_groups(sig: int = signal.SIGTERM) -> None:
@@ -118,6 +158,7 @@ class Block:
     host: bool = False             # live: run `live` on the GPU host over SSH (else on control)
     infra: str = ""                # live: a driver-run infra step: "setup" | "pull"
     skip_if_short: bool = False    # time left can't cover it -> log "skipped: time" and move on
+    sweep_tag: str = "t1-sweep"    # live: {BEST_CAP} comes from runs/<sweep_tag>/vm/results.json
 
 
 def _py(*args: str) -> list[str]:
@@ -130,11 +171,11 @@ def _rpy(*args: str) -> list[str]:
     return ["python", "-m", *args]
 
 
-def best_cap_from_sweep(out: Path) -> int | None:
+def best_cap_from_sweep(out: Path, sweep_tag: str = "t1-sweep") -> int | None:
     """The best accepted cap from the sweep's results.json (written on the control box by
     orchestrate), for the combined block's prefix-ON arm. None when the sweep produced no passing
     cap — the combined block then skips cleanly instead of measuring against nothing."""
-    p = out / "runs" / "t1-sweep" / "vm" / "results.json"
+    p = out / "runs" / sweep_tag / "vm" / "results.json"
     try:
         bc = json.loads(p.read_text()).get("best_cap_w")
     except (OSError, ValueError):
@@ -144,6 +185,66 @@ def best_cap_from_sweep(out: Path) -> int | None:
     except (TypeError, ValueError):
         return None
 
+
+
+DETACH_DIR = "/root/run2/blocks"
+DETACH_POLL_S = 20
+
+
+def run_detached(block_id: str, inner: str, budget_s: float, host: str, key: str, logf: Path,
+                 *, poll_s: float = DETACH_POLL_S, sshmod=None) -> int:
+    """Start `inner` on the VM under nohup (own session), then poll for its rc file over fresh
+    short SSH calls until it lands or `budget_s` passes. A dropped link only costs one poll.
+    Returns the block rc, 124 on overrun (the remote group is killed), 4 if never started."""
+    if sshmod is None:
+        from wattnot.proof import sshutil as sshmod
+    tag = f"{DETACH_DIR}/{block_id}-{int(time.time())}"
+    q = shlex.quote
+    start = (f"mkdir -p {DETACH_DIR}; rm -f {q(tag)}.rc; "
+             f"nohup setsid sh -c {q(inner + '; echo $? > ' + tag + '.rc.tmp; mv ' + tag + '.rc.tmp ' + tag + '.rc')} "
+             f"> {q(tag)}.log 2>&1 < /dev/null & echo $! > {q(tag)}.pid; echo started")
+
+    def call(cmd: str, t: float = 60.0):
+        c = sshmod.connect(host, key)
+        try:
+            return sshmod.exec_bounded(c.get_transport(), cmd, timeout=t)
+        finally:
+            try:
+                c.close()
+            except Exception:  # noqa: BLE001
+                pass
+
+    started = False
+    for _ in range(3):
+        try:
+            rc, raw = call(start)
+            if rc == 0 and b"started" in raw:
+                started = True
+                break
+        except Exception:  # noqa: BLE001
+            time.sleep(5)
+    if not started:
+        log(f"[live] {block_id}: could not start the detached block")
+        return 4
+    deadline = time.monotonic() + budget_s
+    while time.monotonic() < deadline:
+        time.sleep(poll_s)
+        try:
+            rc, raw = call(f"cat {q(tag)}.rc 2>/dev/null || echo PENDING")
+        except Exception:  # noqa: BLE001 - one lost poll is fine, the block keeps running
+            continue
+        txt = raw.decode(errors="replace").strip()
+        if txt and txt != "PENDING":
+            with contextlib.suppress(Exception):
+                _, lraw = call(f"cat {q(tag)}.log", 120.0)
+                logf.write_bytes(lraw)
+            try:
+                return int(txt.splitlines()[-1])
+            except ValueError:
+                return 1
+    with contextlib.suppress(Exception):
+        call(f"kill -9 -- -$(cat {q(tag)}.pid) 2>/dev/null; cat {q(tag)}.log", 60.0)
+    return 124
 
 def host_inner(argv: list[str]) -> str:
     """The shell line for a GPU-host block: cd into the repo, activate the venv that
@@ -375,7 +476,10 @@ def plan_glimmer_test(out: Path) -> list[Block]:
               live=None, infra="setup"),
         Block("t0-probe", "Probe / go-no-go: power-cap write + image acceptance on the server",
               _m(8), _py("wattnot.vision.imageprobe", "--fake"),
-              live=["bash", "scripts/glimmer_probe.sh", HOST_BASE_URL], host=True),
+              live=["bash", "-c", "for i in $(seq 1 90); do curl -sf -m 5 "
+                    + shlex.quote(HOST_BASE_URL.rsplit('/v1', 1)[0] + "/health")
+                    + " >/dev/null && break; sleep 10; done; exec bash scripts/glimmer_probe.sh "
+                    + shlex.quote(HOST_BASE_URL)], host=True),  # wait up to 15 min for vLLM health
         Block("t1-sweep", "Glimmer BF16 power-cap sweep + live SAM 3.1 rack scan + signed receipt "
               "(quick, 2 control blocks)", _m(35), sweep_dry, live=sweep_live,
               depends_on=("t0-probe",)),   # no cap write / no images = no sweep
@@ -565,10 +669,17 @@ MAX_PASSES = (
     # (pass, sweep tag, cap order, dataset)
     ("p1", "t1-sweep", "375,350,325,300", "own"),
     ("p2", "p2-sweep", "300,325,350,375", "gsm8k300"),
-    ("p3", "p3-sweep", "360,340,320,300", "humaneval164"),
+    # RUN1103 (3 Nov, Akash): pass 3 dropped; instead a full pass-1 rerun on the fixed code
+    # after pass 2. Its own block ids and folders (p1r-*), and its {BEST_CAP} comes from its own
+    # sweep (runs/p1r-sweep), not t1-sweep. Pass 2 also reads its own (runs/p2-sweep); pass 1 keeps t1-sweep.
+    ("p1r", "p1r-sweep", "375,350,325,300", "own"),
 )
+# which sweep a pass's {BEST_CAP} and tiers dependency read (default t1-sweep)
+OWN_CAP_PASSES = ("p2", "p1r")
+# agentwaste 20 -> 40 min (kill limit 1,800 -> 3,600 s): p1-agentwaste took 2,262 s (MEASURED)
+# and p2-agentwaste was killed at the old 1,800 s limit on both tries (3 Nov).
 MAX_PASS_LAYERS_MIN = {"sweep": 95, "think": 15, "tiers": 25, "eye": 3, "spoken": 3,
-                       "phase": 5, "langchain": 25, "agentwaste": 20}   # ESTIMATE, 191 min
+                       "phase": 5, "langchain": 25, "agentwaste": 40}   # ESTIMATE, 211 min
 MAX_LANGCHAIN_ITEMS = 40
 MAX_PUBLIC_SETS = ("gsm8k300", "humaneval164")   # 300 GSM8K + all 164 HumanEval
 MAX_PUBLIC_REPS = 3
@@ -596,7 +707,7 @@ MAX_REQUIRED_BLOCKS = ("t1-sweep", "p1-think", "p1-tiers", "p1-eye", "p1-spoken"
                        "p1-langchain", "p1-agentwaste", "t2-fp8", "t2-eye", "t2-spoken",
                        "t2b-batch", "t2c-prefix")
 MAX_EXTRA_BLOCKS = tuple(f"{p}-{l}" for p, *_ in MAX_PASSES[1:] for l in MAX_PASS_LAYERS_MIN
-                         if l != "sweep") + ("p2-sweep", "p3-sweep", "t2g-serverless",
+                         if l != "sweep") + ("p2-sweep", "p1r-sweep", "t2g-serverless",
                                              "t2d-combined", "t2e-public")
 
 
@@ -609,6 +720,7 @@ def pass_blocks(out: Path, pas: str, sweep_tag: str, grid: str, dataset: str,
     R = lambda layer: f"{REMOTE_RESULTS}/{pas}-{layer}"  # noqa: E731
     D = lambda layer: str(out / "runs" / f"{pas}-{layer}")  # noqa: E731
     start = 0
+    cap_tag = sweep_tag if pas in OWN_CAP_PASSES else "t1-sweep"
     sweep = Block(
         sweep_tag, f"Pass {pas}: BF16 power-cap sweep ({grid}), Wonder planner, gates, approvals, "
         "SAM, signed receipt", _m(M["sweep"]),
@@ -622,31 +734,37 @@ def pass_blocks(out: Path, pas: str, sweep_tag: str, grid: str, dataset: str,
         Block(f"{pas}-think", f"Pass {pas}: thinking budget per tier", _m(M["think"]),
               _py("wattnot.longrun.thinking_budget", "--fake", "--per-tier", "2", "--out", D("think")),
               live=_rpy("wattnot.longrun.thinking_budget", "--url", url, "--per-tier", "4",
-                        "--out", R("think")), host=True, skip_if_short=optional),
+                        "--out", R("think")), host=True, depends_on=("t0-probe",),
+              skip_if_short=optional),
         Block(f"{pas}-tiers", f"Pass {pas}: tiers at the best cap vs stock", _m(M["tiers"]),
               _py("wattnot.longrun.harness", "--cap", "325", "--fake", "--model-config",
                   "muse-glimmer-30b", "--per-tier", "2", "--out", D("tiers")),
               live=_rpy("wattnot.longrun.harness", "--cap", "{BEST_CAP}", "--out", R("tiers"),
                         "--model-config", "muse-glimmer-30b", "--per-tier",
                         str(MAX_TIERS_PER_TIER), "--reps", "2", "--url", url),
-              host=True, depends_on=("t1-sweep",), skip_if_short=optional),
+              host=True, depends_on=(cap_tag, "t0-probe"), skip_if_short=optional,
+              sweep_tag=cap_tag),
         Block(f"{pas}-eye", f"Pass {pas}: eye test gate", _m(M["eye"]),
               _py("wattnot.vision.run", "--fake", "--out", D("eye"), "--budget-s",
                   str(EYE_TEST_BUDGET_S)),
               live=_rpy("wattnot.vision.run", "--base-url", HOST_BASE_URL, "--out", R("eye"),
-                        "--budget-s", str(EYE_TEST_BUDGET_S)), host=True, skip_if_short=optional),
+                        "--budget-s", str(EYE_TEST_BUDGET_S), "--best-cap", "{BEST_CAP}",
+                        "--cap-source", f"sweep:{cap_tag}"), host=True,
+              depends_on=("t0-probe",), skip_if_short=optional),
         Block(f"{pas}-spoken", f"Pass {pas}: spoken answers gate", _m(M["spoken"]),
               _py("wattnot.spokenanswer.run", "--fake", "--out", D("spoken"), "--budget-s",
                   str(SPOKEN_TEST_BUDGET_S)),
               live=_rpy("wattnot.spokenanswer.run", "--base-url", HOST_BASE_URL, "--out",
-                        R("spoken"), "--budget-s", str(SPOKEN_TEST_BUDGET_S)),
-              host=True, skip_if_short=optional),
+                        R("spoken"), "--budget-s", str(SPOKEN_TEST_BUDGET_S), "--best-cap",
+                        "{BEST_CAP}", "--cap-source", f"sweep:{cap_tag}"),
+              host=True, depends_on=("t0-probe",), skip_if_short=optional),
         Block(f"{pas}-phase", f"Pass {pas}: phase-aware clock sidecar, 3 min", _m(M["phase"]),
               _py("wattnot.control.phase_clock", "--mock", "--duration-s", "2", "--summary",
                   D("phase") + "/summary.json", "--log", D("phase") + "/log.jsonl"),
               live=_rpy("wattnot.control.phase_clock", "--url", HOST_BASE_URL, "--duration-s",
                         "180", "--summary", R("phase") + "/summary.json", "--log",
-                        R("phase") + "/log.jsonl"), host=True, skip_if_short=optional),
+                        R("phase") + "/log.jsonl"), host=True, depends_on=("t0-probe",),
+              skip_if_short=optional),
         Block(f"{pas}-langchain", f"Pass {pas}: LangChain agent through the waste proxy to "
               f"Glimmer, saver OFF vs ON, {dataset}", _m(M["langchain"]),
               [sys.executable, "scripts/langchain_pass.py", "--fake", "--dataset", dataset,
@@ -654,14 +772,15 @@ def pass_blocks(out: Path, pas: str, sweep_tag: str, grid: str, dataset: str,
               live=["python", "scripts/langchain_pass.py", "--base-url", HOST_BASE_URL,
                     "--dataset", dataset, "--start", str(start), "--n",
                     str(MAX_LANGCHAIN_ITEMS), "--out", R("langchain")],
-              host=True, skip_if_short=optional),
+              host=True, depends_on=("t0-probe",), skip_if_short=optional),
         Block(f"{pas}-agentwaste", f"Pass {pas}: agent-waste saver on the GPU, OFF vs ON",
               _m(M["agentwaste"]),
               [sys.executable, "scripts/agentwaste_gpu_ab.py", "--fake", "--out", D("agentwaste")],
               live=["python", "scripts/agentwaste_gpu_ab.py", "--base-url", HOST_BASE_URL,
-                    "--out", R("agentwaste")], host=True, skip_if_short=optional),
+                    "--out", R("agentwaste")], host=True, depends_on=("t0-probe",),
+              skip_if_short=optional),
     ]
-    return bl
+    return [replace(b, sweep_tag=cap_tag) for b in bl]
 
 
 def _matrix_round_sh(rid: str, cap: str, public_only: bool = False) -> str:
@@ -701,7 +820,10 @@ def plan_glimmer_max(out: Path) -> list[Block]:
     batching, prefix cache, combined, public benchmarks), then copy back. Off-GPU work (Wonder
     chart, EU, flow receipts, Code Mode, replay pack) runs after teardown."""
     long_blocks = {b.id: b for b in plan_glimmer_long(out)}
-    blocks = [long_blocks["t0-setup"], long_blocks["t0-probe"]]
+    # RUN1103: 56 GB of weights at ~1 GB/min, then docker pull, then the vLLM load take ~50-60
+    # min; the test/retest/long plans' 34 min budget is tuned for their own (shorter) VM windows.
+    setup = replace(long_blocks["t0-setup"], hours=_m(70))
+    blocks = [setup, long_blocks["t0-probe"]]
     for i, (pas, tag, grid, ds) in enumerate(MAX_PASSES):
         blocks += pass_blocks(out, pas, tag, grid, ds, optional=i > 0,
                               sweep_dry=long_blocks["t1-sweep"].dry)
@@ -920,6 +1042,107 @@ class Driver:
         self.state = (json.loads(self.state_path.read_text()) if self.state_path.exists()
                       else {"blocks": {}, "events": [], "stopped": None})
         self.rec = Recorder(out, out / "live.jsonl", label=label)
+        # Every block's graph events (wattnot.event/1), same shape t1-sweep's orchestrate
+        # subprocess already writes to live.jsonl, so web/dash's live graph animates for every
+        # block, not just the sweep. Purely cosmetic: every emit goes through _ev_safe, so a bad
+        # disk, a bad result shape or a bug here can never fail or stop a block. Sweep blocks are
+        # left to orchestrate (it writes their own steps). Off with WATTNOT_GRAPH_EVENTS=0; when on,
+        # driver_state.json says graph_events="driver" so the sidecar stands down (no doubles).
+        self._ev_seq = 0
+        self.events = Stream(self._event_sink, label=label)
+        self.graph_events = graph_events_enabled()
+        self.state["graph_events"] = "driver" if self.graph_events else None
+
+    def _event_sink(self, raw: dict) -> None:
+        self._ev_seq += 1
+        event = {"schema_version": "wattnot.event/1", "run_id": f"driver-{self.label}",
+                 "seq": self._ev_seq, "ts": _iso_now(), "type": raw["type"],
+                 "step_id": raw.get("step_id"), "parent_step_id": raw.get("parent_step_id"),
+                 "data": raw.get("data") or {}}
+        live = self.rec.live
+        live.parent.mkdir(parents=True, exist_ok=True)
+        line = (json.dumps(event, ensure_ascii=False, separators=(",", ":"), default=str) + "\n").encode()
+        # one O_APPEND write per line: orchestrate may append to the same file concurrently
+        fd = os.open(live, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+        try:
+            os.write(fd, line)
+        finally:
+            os.close(fd)
+
+    def _ev_safe(self, fn, *args):
+        if not self.graph_events:
+            return None
+        try:
+            return fn(*args)
+        except Exception as e:  # graph events must never fail a block
+            try:
+                self.log(f"[graph-events] {type(e).__name__}: {e}")
+            except Exception:
+                pass
+            return None
+
+    @staticmethod
+    def _own_events(b: Block) -> bool:
+        return "sweep" not in b.id
+
+    def _block_step(self, b: Block, label_suffix: str = ""):
+        if not self._own_events(b):
+            return None
+
+        def go():
+            node, sub = _block_route(b.id)
+            return self.events.start(self.events.sid(b.id), node, sub, b.title + label_suffix,
+                                     inputs=f"budget {b.hours * 60:.0f} min", say=b.title)
+        return self._ev_safe(go)
+
+    def _skip_block_event(self, b: Block, status: str, why: str) -> None:
+        # a bare Stream.finish() only knows ok/failed; a block that never ran is neither, so this
+        # emits step.finished directly with the real status ("skipped" or "dropped").
+        st = self._block_step(b)
+        if st is None:
+            return
+        self._ev_safe(lambda: self.events.emit(
+            "step.finished", {**st.base, "status": status, "summary": why, "outputs": why,
+                              "duration_s": 0.0, "label": self.label, "numbers": []},
+            step_id=st.id, parent=st.parent))
+
+    def _end_block_step(self, st, ok: bool, outputs: str) -> None:
+        if st is None:
+            return
+
+        def go():
+            st.ok, st.outputs = ok, outputs
+            self.events.finish(st)
+        self._ev_safe(go)
+
+    def _finish_block_events(self, b: Block, st, result: dict, status: str) -> None:
+        """Applied cap/config, gate results and the keep/rollback decision, read from whatever
+        the block's own result carries (a tiers_summary.json's per-tier gate verdicts), then the
+        block's own step.finished."""
+        if st is None:
+            return
+
+        def extras():
+            tiers = result.get("tiers") if isinstance(result, dict) else None
+            tiers = tiers if isinstance(tiers, dict) else {}
+            rows = [r for r in (tiers.get("tiers") or []) if isinstance(r, dict)]
+            if tiers.get("cap_w") is not None:
+                self.events.emit("action.applied", {"node": "apply", "sub": "cap",
+                                                     "change": {"cap_w": tiers["cap_w"]}, "block": b.id})
+            blocked = 0
+            for row in rows:
+                passed = row.get("gate") == "pass"
+                blocked += not passed
+                cap = row.get("cap") if isinstance(row.get("cap"), dict) else {}
+                self.events.emit("gate.result", {"node": "gates", "sub": "decide", "check": row.get("tier"),
+                                                 "passed": passed, "quality_pass_pct": cap.get("pass_pct"),
+                                                 "p99_s": cap.get("p99_s"), "why_not": row.get("why_not")})
+            if rows:
+                self.events.emit("action.applied" if blocked == 0 else "action.rolled_back",
+                                 {"node": "apply", "sub": "keep", "block": b.id,
+                                  "reason": f"{len(rows) - blocked} of {len(rows)} tiers passed"})
+        self._ev_safe(extras)
+        self._end_block_step(st, status == "done", status)
 
     @staticmethod
     def _arity(run) -> int:
@@ -1038,6 +1261,67 @@ class Driver:
         deadline_s = max(1.0, left_h * 3600.0)
         return max(1.0, min(budget_s, deadline_s))
 
+    def _all_failed(self, block_id: str) -> str | None:
+        """Check result JSON files for zero-pass evidence. Return reason string if all items
+        failed or empty, None otherwise. Conservative: only flags when clear zero-pass evidence
+        exists; missing/unparseable files never flag."""
+        cands = [self.out / "runs" / block_id, self.out / "pulled" / "run2" / "results" / block_id]
+        for block_dir in (c for c in cands if c.exists()):
+            why = self._zero_pass_in(block_dir)
+            if why:
+                return why
+        return None
+
+    @staticmethod
+    def _zero_pass_in(block_dir) -> str | None:
+
+        try:
+            # Check tiers_summary.json: all tiers have pass_pct == 0
+            tiers_file = block_dir / "tiers_summary.json"
+            if tiers_file.exists():
+                tiers = json.loads(tiers_file.read_text())
+                if "tiers" in tiers and isinstance(tiers["tiers"], list) and len(tiers["tiers"]) > 0:
+                    # Each tier has a "cap" section with pass_pct
+                    all_zero = all(
+                        tier.get(arm, {}).get("pass_pct", 1) == 0
+                        for tier in tiers["tiers"] for arm in ("stock", "cap")
+                    )
+                    if all_zero:
+                        return f"tiers_summary: all {len(tiers['tiers'])} tiers have 0% pass rate"
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+
+        try:
+            # Check eye_test.json: detail.passed_count == 0 with checked > 0
+            eye_file = block_dir / "eye_test.json"
+            if eye_file.exists():
+                eye = json.loads(eye_file.read_text())
+                detail = eye.get("detail", {})
+                if isinstance(detail, dict):
+                    checked = detail.get("checked", 0)
+                    passed = detail.get("passed_count", 0)
+                    if checked > 0 and passed == 0:
+                        return f"eye_test: {passed}/{checked} passed (0%)"
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+
+        try:
+            # Check phase/summary.json: all windows counts are 0
+            summary_file = block_dir / "summary.json"
+            if not summary_file.exists():
+                summary_file = block_dir / "phase" / "summary.json"
+            if summary_file.exists():
+                summary = json.loads(summary_file.read_text())
+                windows = summary.get("windows", {})
+                if isinstance(windows, dict) and len(windows) > 0:
+                    all_zero = all(v == 0 for v in windows.values() if isinstance(v, int))
+                    if all_zero and any(v == 0 for v in windows.values()):
+                        return f"phase/summary: all window counts are 0"
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+
+        return None
+
     def go(self) -> dict:
         self._heartbeat(note="start")
         for b in self.blocks:
@@ -1047,6 +1331,7 @@ class Driver:
                 continue
             if b.optional and b.id not in self.include:
                 self.state["blocks"][b.id] = {"status": "skipped", "why": "needs Akash's yes"}
+                self._skip_block_event(b, "skipped", "needs Akash's yes")
                 self._save()
                 continue
             # a block whose dependency did not finish 'done' is skipped, not run. This is why a
@@ -1055,8 +1340,9 @@ class Driver:
             bad = [d for d in b.depends_on
                    if self.state["blocks"].get(d, {}).get("status") != "done"]
             if bad:
-                self.state["blocks"][b.id] = {"status": "skipped",
-                                              "why": f"dependency not done: {','.join(bad)}"}
+                why = f"dependency not done: {','.join(bad)}"
+                self.state["blocks"][b.id] = {"status": "skipped", "why": why}
+                self._skip_block_event(b, "skipped", why)
                 self._save()
                 continue
             bal = self.balance()
@@ -1087,13 +1373,16 @@ class Driver:
                     why = f"skipped: time (needs {b.hours * 60:.0f} min, {left * 60:.0f} min left)"
                     self._note(kind="skipped-time", block=b.id, why=why)
                     self.state["blocks"][b.id] = {"status": "skipped", "why": why}
+                    self._skip_block_event(b, "skipped", why)
                 else:
-                    self.state["blocks"][b.id] = {"status": "dropped",
-                                                  "why": f"needs {b.hours} h, {left:.2f} h left"}
+                    why = f"needs {b.hours} h, {left:.2f} h left"
+                    self.state["blocks"][b.id] = {"status": "dropped", "why": why}
+                    self._skip_block_event(b, "dropped", why)
                 self._save()
                 continue
             for attempt in (1, 2):
                 info = self.rec.begin(b.id, capture=self.capture and b.capture)
+                ev_step = self._block_step(b, "" if attempt == 1 else " (retry)")
                 t0 = time.time()
                 if hasattr(self.vm, "arm"):
                     self.vm.arm(b.id)
@@ -1118,6 +1407,7 @@ class Driver:
                         self.state["blocks"][b.id] = {"status": "lost", **result}
                         self.state["stopped"] = "VM dead" + (" (kept, not deleted)" if kept_dead else "")
                         self._save()
+                        self._end_block_step(ev_step, False, f"lost: {d.reason}")
                         return self.state
                 copied = self.vm.pull()
                 result["copied"] = copied
@@ -1135,8 +1425,15 @@ class Driver:
                 d = self.rec.end(result)
                 self._receipt(d, b.id)
                 ok = rc == 0 and not linkdown
+                zero_pass_reason = None
+                if ok:
+                    zero_pass_reason = self._all_failed(b.id)
+                    if zero_pass_reason:
+                        ok = False
+                        result["zero_pass"] = zero_pass_reason
                 self.state["blocks"][b.id] = {"status": "done" if ok else "failed", **result}
                 self._save()
+                self._finish_block_events(b, ev_step, result, "done" if ok else "failed")
                 if ok:
                     break
                 self._note(kind="retry" if attempt == 1 else "gave-up", block=b.id, rc=rc)
@@ -1235,12 +1532,12 @@ def _live_runner(out: Path, host: str, key: str, vm: RemoteVm, log=print):
     No block ever uses --fake: the live argv is the real command."""
     env = dict(os.environ)
 
-    def fill(argv: list[str]) -> list[str]:
+    def fill(argv: list[str], sweep_tag: str = "t1-sweep") -> list[str]:
         best = None
         if any("{BEST_CAP}" in a for a in argv):
             # resolve the best passing cap from the sweep results on the control box; "NONE" makes
             # the combined block skip cleanly when the sweep found no passing cap
-            bc = best_cap_from_sweep(out)
+            bc = best_cap_from_sweep(out, sweep_tag)
             best = str(bc) if bc else "NONE"
         return [a.replace("{HOST}", host).replace("{KEY}", key)
                  .replace("{BEST_CAP}", best) if best is not None
@@ -1251,7 +1548,8 @@ def _live_runner(out: Path, host: str, key: str, vm: RemoteVm, log=print):
             # own process group so a driver stop kills setup too (RUN3: an orphaned setup kept
             # dialing a deleted VM's IP). run_child returns 124 if it overruns the block budget.
             return run_child([sys.executable, str(RUN2_REMOTE), "setup", "--host", host,
-                              "--key", key, "--model", GLIMMER_MODEL, "--moe", "none"],
+                              "--key", key, "--model", GLIMMER_MODEL, "--moe", "none",
+                              "--timeout", str(int(max(60, budget_s - 120)))],
                              timeout=budget_s)
         if b.infra == "pull":
             if not vm.pull():
@@ -1259,13 +1557,15 @@ def _live_runner(out: Path, host: str, key: str, vm: RemoteVm, log=print):
             return 7 if vm.copy_mismatched else 0   # copied, but sha256 mismatch: block fails
         if b.live is None:
             return 0
-        if any("{BEST_CAP}" in a for a in b.live) and not best_cap_from_sweep(out) \
-                and not any("prefix_cache_ab.py" in a for a in b.live):
+        if any("{BEST_CAP}" in a for a in b.live) and not best_cap_from_sweep(out, b.sweep_tag) \
+                and not any("prefix_cache_ab.py" in a for a in b.live) \
+                and "--best-cap" not in b.live:
+            # eye/spoken take --best-cap NONE and fall back to 350 W, so they still run
             # only prefix_cache_ab.py understands "NONE"; the harness and public_bench_ab.py take
             # an int cap, so with no passing cap these blocks have nothing to compare: skip
             log(f"[live] {b.id}: skipped, the sweep found no passing cap")
             return 0
-        argv = fill(b.live)
+        argv = fill(b.live, b.sweep_tag)
         logf = out / "logs" / f"{b.id}.log"
         logf.parent.mkdir(parents=True, exist_ok=True)
         if b.host:
@@ -1276,22 +1576,14 @@ def _live_runner(out: Path, host: str, key: str, vm: RemoteVm, log=print):
             except Exception as e:  # noqa: BLE001
                 log(f"[live] SSH connect failed for {b.id}: {type(e).__name__}")
                 return 5
+            # Detached: the block runs under nohup on the VM and writes its rc to a file, and we
+            # poll with short SSH calls. A long silent channel was cut at ~600 s when the box's
+            # egress IP rotated (run 1103: p1-think finished on the VM but came back rc -1).
             try:
-                rc, raw = sshutil.exec_bounded(c.get_transport(), inner, timeout=budget_s)
-            except TimeoutError:
-                return 124
-            except sshutil.SshDown:
-                return 4
-            except Exception as e:  # noqa: BLE001 - a dead link mid-command
-                log(f"[live] SSH exec lost for {b.id}: {type(e).__name__}")
-                return 4
-            finally:
-                try:
-                    c.close()
-                except Exception:  # noqa: BLE001
-                    pass
-            logf.write_bytes(raw)
-            return rc
+                c.close()
+            except Exception:  # noqa: BLE001
+                pass
+            return run_detached(b.id, inner, budget_s, host, key, logf)
         with logf.open("w") as f:
             try:
                 return subprocess.run(argv, stdout=f, stderr=subprocess.STDOUT, env=env,

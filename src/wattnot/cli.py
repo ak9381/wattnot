@@ -111,6 +111,12 @@ def build_parser() -> argparse.ArgumentParser:
     ini.add_argument("--config", help="config path (default ~/.wattnot/config.json)")
     ini.add_argument("--act", action="store_true", help="allow WattNot to apply approved changes")
     ini.add_argument("--force", action="store_true", help="overwrite an existing config")
+    sv = sub.add_parser("saver", help="show or set the context saver: on/off and the long-conversation threshold")
+    sv.add_argument("--config", help="config path (default: the one WattNot reads, else ~/.wattnot/config.json)")
+    svx = sv.add_mutually_exclusive_group()
+    svx.add_argument("--on", dest="saver_on", action="store_const", const=True, help="turn the saver on")
+    svx.add_argument("--off", dest="saver_on", action="store_const", const=False, help="turn the saver off")
+    sv.add_argument("--min-tokens", type=int, help="only compress conversations at least this long (default 500)")
     pf = sub.add_parser("preflight", help="read-only check: driver, CUDA, power-cap permission, vLLM")
     pf.add_argument("--json", action="store_true")
     hc = sub.add_parser("health", help="probe Meta API, Baseten and Modal before a run (free GET /models)")
@@ -216,6 +222,29 @@ def _run_impact(a: argparse.Namespace) -> int:
     return 0
 
 
+def _run_saver(a: argparse.Namespace) -> int:
+    import json
+
+    from wattnot import settings
+    if a.saver_on is not None or a.min_tokens is not None:
+        p = Path(a.config) if a.config else (settings.config_path() or Path.home() / ".wattnot" / "config.json")
+        cfg = json.loads(p.read_text()) if p.is_file() else {}
+        if a.saver_on is not None:
+            cfg["context_saver"] = a.saver_on
+        if a.min_tokens is not None:
+            cfg["saver_min_tokens"] = settings.check_min_tokens(a.min_tokens)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(cfg, indent=2) + "\n")
+        print(f"Saved to {p}")
+        import os
+        os.environ.setdefault("WATTNOT_CONFIG", str(p))
+    cfg = settings.load()
+    state = "on" if cfg["context_saver"] else "off"
+    print(f"Context saver: {state}; compresses conversations of {cfg['saver_min_tokens']}+ "
+          "estimated tokens (shorter ones pass through untouched)")
+    return 0
+
+
 def _run_verify(a: argparse.Namespace) -> int:
     import json
 
@@ -276,6 +305,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.cmd == "init":
         from wattnot import init as _init
         return _init.main(args)
+    if args.cmd == "saver":
+        try:
+            return _run_saver(args)
+        except (OSError, ValueError) as e:
+            parser.error(f"saver: {e}")
     if args.cmd == "preflight":
         from wattnot import preflight as _pf
         r = _pf.run()

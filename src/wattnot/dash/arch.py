@@ -222,6 +222,19 @@ def h100(e2e: Path | None) -> dict:
     return out
 
 
+def stage_title(main: Path | None) -> str:
+    """The replay's title, from the actual run folder it read rather than a fixed string: an
+    H100 E2E rental, a Modal run or a Baseten run, whichever ``main``'s name says."""
+    # the whole path, not just its last part: a round folder (".../modal-full-1101/smoke-r04")
+    # names the platform one level up
+    name = Path(main).as_posix().lower() if main else ""
+    if "modal" in name:
+        return "The Modal run"
+    if "baseten" in name:
+        return "The Baseten run"
+    return "The H100 run on E2E"
+
+
 def sweep_row(h: dict, model: str, cap: int) -> dict | None:
     for x in h.get("sweep", []):
         if model in x["model"] and int(x["cap_w"]) == cap:
@@ -624,7 +637,7 @@ def replays(h: dict, bt: dict, lg: dict) -> dict:
         cue("baseten_model", "meter", "Billing meter not available for this key: not claimed", tag=None, ok=False),
         cue("effort_router", "receipt", f'Receipt written; the whole tuning run cost ${run2.get("totals", {}).get("experiment_usd")}', tag="MEASURED"),
     ]
-    return {"h100": {"id": "h100", "title": "The H100 run on E2E", "note": "Order and durations are from the run's own stage log, audit log and receipts. The animation is compressed; \"took\" is real time.", "cues": cues},
+    return {"h100": {"id": "h100", "title": stage_title(h.get("main")), "note": "Order and durations are from the run's own stage log, audit log and receipts. The animation is compressed; \"took\" is real time.", "cues": cues},
             "hosted": {"id": "hosted", "title": "The hosted run on Baseten", "note": "From the recorded calls of run 2 (204 calls).", "cues": hosted}}
 
 

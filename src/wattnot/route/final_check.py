@@ -1,4 +1,7 @@
-"""Final-answer check for agent effort routing (thinking off first, step up when shaky).
+"""Final-answer check for agent effort routing (cheap setting first, step up when shaky).
+
+Note: Glimmer ignores enable_thinking (smoke test 2026-11-03), so "thinking off" below is the
+requested setting, not what the model did.
 
 r04c on Modal: the LangChain saver arm answered 70 of 71 calls with thinking off and scored
 11/20 against 19/20 without the saver, because every tool-calling reply counted as a pass and a

@@ -1,0 +1,13 @@
+{
+  "title": "Eye and voice tests on the H100 (Nov 3)",
+  "clips": [
+    {"id": "eye", "file": "data/clips/h100-1103/eye-test-h100.mp4", "poster": "data/clips/h100-1103/eye-test-h100-frame.png",
+     "title": "Eye test: 10 images, 10 of 10 correct",
+     "result": "619.1 J to 540.5 J (-12.7%)", "label": "MEASURED",
+     "note": "Images are the test set's own pictures; one answer read the sign as ROUTE 45 WEST EXIT 12B, marked correct."},
+    {"id": "voice", "file": "data/clips/h100-1103/voice-test-h100.mp4", "poster": "data/clips/h100-1103/voice-test-h100-frame.png",
+     "title": "Voice test: 6 spoken questions",
+     "result": "227.1 J to 179.1 J (-21.1%)", "label": "MEASURED",
+     "note": "The audio is text-to-speech. The 'Heard' captions are the source question texts, not a live transcript."}
+  ]
+}

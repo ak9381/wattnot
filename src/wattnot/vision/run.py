@@ -34,6 +34,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--assets", default=None, help="eye-test asset dir (default: data/vision/eyetest)")
     ap.add_argument("--out", default=None, help="write eye_test.json here")
     ap.add_argument("--budget-s", type=float, default=None, help="wall-clock budget for the eye test")
+    ap.add_argument("--best-cap", default=None,
+                    help="with_wattnot cap from this pass's sweep (NONE = no winner -> 350 W)")
+    ap.add_argument("--cap-source", default=None, help="where --best-cap came from")
     ap.add_argument("--fake", action="store_true", help="offline answerer (no network, not measured)")
     ap.add_argument("--base-url", default=None, help="served vision model base URL (live only)")
     ap.add_argument("--model", default=DEFAULT_VISION_MODEL)
@@ -52,9 +55,21 @@ def main(argv: list[str] | None = None) -> int:
                                         max_completion_tokens=args.max_completion_tokens)
         mode = "live"
 
-    answers, run_meta = answer_eye_test(eye, answerer, budget_s=args.budget_s,
-                                        concurrency=args.concurrency)
-    result = vision_gate(answers, eye.items, wh_per_image=eye.wh_per_image)
+    def _once(budget):
+        a, m = answer_eye_test(eye, answerer, budget_s=budget, concurrency=args.concurrency)
+        r = vision_gate(a, eye.items, wh_per_image=eye.wh_per_image)
+        ok = sum(1 for row in r.detail.get("images", []) if row.get("ok"))
+        return (a, m, r), ok, r.passed
+
+    energy_doc = None
+    try:
+        from wattnot.meter.arm_energy import two_arms
+        (answers, run_meta, result), energy_doc = two_arms(
+            _once, items=len(eye.items), unit="image", budget_s=args.budget_s, live=mode == "live",
+            best_cap=args.best_cap, cap_source=args.cap_source)
+    except Exception:  # noqa: BLE001  energy must never fail the block
+        if energy_doc is None and "result" not in locals():
+            (answers, run_meta, result) = _once(args.budget_s)[0]
 
     summary = {
         "spec": "wattnot.eyetest/1",
@@ -67,6 +82,12 @@ def main(argv: list[str] | None = None) -> int:
         "run": run_meta,
         "detail": result.detail,
     }
+    if energy_doc:
+        summary.update(energy_doc)
+        w = (energy_doc.get("energy_arms") or {}).get("without_wattnot") or {}
+        if w.get("wh") and w.get("items"):   # replace the flat 0.5 Wh/image placeholder
+            summary["detail"]["est_wh_per_image"] = None
+            summary["wh_per_image"] = {"value": round(w["wh"] / w["items"], 6), "label": "MEASURED"}
     if args.out:
         out = Path(args.out)
         out.mkdir(parents=True, exist_ok=True)

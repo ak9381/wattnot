@@ -41,6 +41,12 @@ PROVIDERS: dict[str, dict] = {
         "default_model": "glimmer-30b", "cost_round_usd": None, "hard_cap_usd": None,
         "spend": "E2E prepaid balance", "energy_label": "MEASURED",
     },
+    "own_gpu": {
+        "label": "Own GPU (H100 rented VM, long-run driver)", "runner": "own_gpu",
+        "caps": {"meta_api", "own_vllm", "nvml_read", "power_write", "clock_write", "gpu_vm", "local"},
+        "default_model": "glimmer-30b", "cost_round_usd": None, "hard_cap_usd": None,
+        "spend": "E2E prepaid balance", "energy_label": "MEASURED",
+    },
     "combined": {
         "label": "Combined (Baseten + Modal A100 + E2E H100)", "runner": None,
         "caps": {"meta_api", "hosted_api", "own_vllm", "nvml_read", "power_write", "clock_write",

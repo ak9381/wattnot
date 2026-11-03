@@ -1,16 +1,16 @@
 <h1>EU 2024/1364 fields (hosted stage)</h1><pre>{
- "round": "r04f",
+ "round": "r04c",
  "results": {
-  "accuracy_without": 0.974,
-  "accuracy_with": 0.9844,
-  "j_per_correct_without": 2017.3,
-  "j_per_correct_with": 653.8,
+  "accuracy_without": 0.9583,
+  "accuracy_with": 0.9896,
+  "j_per_correct_without": 2254.7,
+  "j_per_correct_with": 821.6,
   "energy_saved_pct": {
-   "value": 67.24,
+   "value": 62.37,
    "label": "MEASURED"
   },
   "j_per_correct_saved_pct": {
-   "value": 67.59,
+   "value": 63.56,
    "label": "MEASURED"
   },
   "per_arm": {
@@ -18,56 +18,56 @@
     "tag": "without",
     "arm": "without_wattnot",
     "answers": 192,
-    "correct": 187,
-    "accuracy": 0.974,
+    "correct": 184,
+    "accuracy": 0.9583,
     "per_set": {
      "ours": {
       "correct": 91,
       "answers": 92
      },
      "gsm8k": {
-      "correct": 59,
+      "correct": 57,
       "answers": 60
      },
      "humaneval": {
-      "correct": 37,
+      "correct": 36,
       "answers": 40
      }
     },
-    "calls": 303,
+    "calls": 299,
     "errors": 0,
-    "truncated": 1,
+    "truncated": 0,
     "tokens": {
-     "prompt": 65559,
+     "prompt": 63272,
      "cached": 0,
-     "completion": 108384,
+     "completion": 110251,
      "label": "MEASURED",
      "note": null
     },
     "energy_j": {
-     "value": 377236.1,
+     "value": 414873.2,
      "label": "MEASURED",
      "method": "NVML total-energy counter across the whole arm"
     },
     "energy_wh": {
-     "value": 104.7878,
+     "value": 115.2425,
      "label": "MEASURED"
     },
     "wall_s": {
-     "value": 1261.7,
+     "value": 1282.5,
      "label": "MEASURED"
     },
     "avg_w": {
-     "value": 299.0,
+     "value": 323.5,
      "label": "MEASURED"
     },
     "j_per_correct": {
-     "value": 2017.3,
+     "value": 2254.7,
      "label": "MEASURED"
     },
     "item_latency_s": {
-     "p50": 13.3917,
-     "p99": 88.3794,
+     "p50": 12.9756,
+     "p99": 101.831,
      "label": "MEASURED"
     },
     "stepped_up": 0,
@@ -76,30 +76,30 @@
     "item_errors": 0,
     "wh_per_item_samples": {
      "values": [
-      0.077908,
-      0.07422,
-      0.066942,
-      0.225248,
-      0.22167,
-      0.251957,
-      0.253063,
-      0.27088,
-      0.375493,
-      0.421314,
-      1.881343,
-      1.068647,
-      0.572161,
-      0.974865,
-      0.515596,
-      0.234562,
-      0.544867,
-      0.452042,
-      0.52821,
-      0.800259,
-      0.506149,
-      0.78027,
-      0.558429,
-      1.440258
+      0.080881,
+      0.07928,
+      0.078397,
+      0.155411,
+      0.23862,
+      0.31852,
+      0.27398,
+      0.264418,
+      0.341318,
+      0.428119,
+      1.934586,
+      1.446868,
+      0.589719,
+      1.053932,
+      0.501684,
+      0.251039,
+      0.817597,
+      0.531875,
+      0.525514,
+      0.784182,
+      0.514667,
+      0.870156,
+      0.585426,
+      1.738493
      ],
      "label": "MEASURED",
      "method": "NVML counter per chunk of 8 items / items in chunk"
@@ -109,15 +109,15 @@
     "tag": "with",
     "arm": "with_wattnot",
     "answers": 192,
-    "correct": 189,
-    "accuracy": 0.9844,
+    "correct": 190,
+    "accuracy": 0.9896,
     "per_set": {
      "ours": {
       "correct": 92,
       "answers": 92
      },
      "gsm8k": {
-      "correct": 59,
+      "correct": 60,
       "answers": 60
      },
      "humaneval": {
@@ -125,59 +125,61 @@
       "answers": 40
      }
     },
-    "calls": 304,
+    "calls": 301,
     "errors": 0,
     "truncated": 2,
     "tokens": {
-     "prompt": 3085,
+     "prompt": 3542,
      "cached": 0,
-     "completion": 88204,
+     "completion": 87906,
      "label": "MEASURED",
      "note": "prompt/cached tokens are not returned on the two-phase thinking-budget path; those calls count 0 here"
     },
     "energy_j": {
-     "value": 123569.7,
+     "value": 156097.4,
      "label": "MEASURED",
      "method": "NVML total-energy counter across the whole arm"
     },
     "energy_wh": {
-     "value": 34.3249,
+     "value": 43.3604,
      "label": "MEASURED"
     },
     "wall_s": {
-     "value": 413.3,
+     "value": 469.5,
      "label": "MEASURED"
     },
     "avg_w": {
-     "value": 299.0,
+     "value": 332.5,
      "label": "MEASURED"
     },
     "j_per_correct": {
-     "value": 653.8,
+     "value": 821.6,
      "label": "MEASURED"
     },
     "item_latency_s": {
-     "p50": 15.7416,
-     "p99": 104.6458,
+     "p50": 13.0066,
+     "p99": 84.3911,
      "label": "MEASURED"
     },
-    "stepped_up": 5,
-    "concurrency": 32,
+    "stepped_up": 4,
+    "concurrency": 16,
     "partial": false,
     "item_errors": 0,
     "wh_per_item_samples": {
      "values": [
-      0.032131,
-      0.287736,
-      0.101502,
-      0.293734
+      0.039277,
+      0.081533,
+      0.547201,
+      0.084494,
+      0.124356,
+      0.478151
      ],
      "label": "MEASURED",
-     "method": "NVML counter per chunk of 48 items / items in chunk"
+     "method": "NVML counter per chunk of 32 items / items in chunk"
     },
     "request_levers": {
-     "calls": 304,
-     "tokens_saved_est": 0,
+     "calls": 301,
+     "tokens_saved_est": 1703,
      "guard_stops": 0,
      "guard_flags": 0,
      "tool_calling": 0,

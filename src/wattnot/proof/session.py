@@ -59,6 +59,27 @@ def _pool(blocks: list[dict], repeat: int) -> tuple[dict, dict]:
     return outs, cut
 
 
+
+SMALL_N_MAX = 3            # below 4 pairs the t-interval (df 1-2) is too wide to ever clear zero
+SMALL_N_FLOOR_PCT = 3.0    # with few pairs, every pair must drop by more than this ...
+SMALL_N_CV_MULT = 2.0      # ... and by more than 2x the stock-vs-stock noise of this step
+
+
+def energy_clearly_down(per_pair: list[float], mean: float, ci_half: float, cv_pct: float) -> bool:
+    """Is the energy drop real? With 4+ pairs: the 95% interval sits below zero. With 2-3 pairs
+    the t-interval (df 1-2) is so wide that even a steady 30% drop never clears it, so instead
+    EVERY pair must drop by more than max(3%, 2x the stock noise cv). One pair is never enough."""
+    n = len(per_pair)
+    if n < 2:
+        return False
+    if math.isfinite(ci_half) and mean + ci_half < 0:
+        return True
+    if n <= SMALL_N_MAX:
+        bar = max(SMALL_N_FLOOR_PCT, SMALL_N_CV_MULT * cv_pct) if math.isfinite(cv_pct) else None
+        return bar is not None and all(d < -bar for d in per_pair)
+    return False
+
+
 def summarize(cap_w: int, stock: list[dict], capped: list[dict], workload: Workload, repeat: int,
               *, max_drop_pts: float = MAX_DROP_PTS, p99_slack_pct: float | None = None) -> dict:
     if p99_slack_pct is None:
@@ -81,7 +102,7 @@ def summarize(cap_w: int, stock: list[dict], capped: list[dict], workload: Workl
     e_mean, e_sd = mean_sd(d_energy)
     _, e_half = ci95(d_energy)
     p_mean, p_sd = mean_sd(d_p99)
-    e_ok = n >= 2 and e_mean + e_half < 0
+    e_ok = energy_clearly_down(d_energy, e_mean, e_half, stock_noise(stock)["cv_pct"])
     p_ok = p_mean <= p99_slack_pct
     why = []
     if not q.passed:

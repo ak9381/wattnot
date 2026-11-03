@@ -276,23 +276,35 @@ export function mountVoiceGuide(customMountEl = null) {
 
   // Replay of one real Muse Voice Transcribe call (LIVE transcript of a synthetic TTS clip),
   // saved as a signed addendum to the RUN2 receipt. The answer that follows keeps its own label.
+  // Served through /api/launch/file (same read-only file route realruns.js and report.js use):
+  // a path relative to this module's own URL broke once voiceguide.js was no longer served from
+  // the same directory as receipts/, and a 404's JSON body ({"detail":"Not Found"}) has no
+  // "data", so every field below read as undefined instead of hitting the catch block.
+  const LIVE_TRANSCRIPT_PATH = "receipts/run2/rcpt_20261027_run2_cap350.voice_transcribe.json";
+  const liveTranscriptUrl = () => `/api/launch/file?path=${encodeURIComponent(LIVE_TRANSCRIPT_PATH)}`;
   const liveBtn = dom.querySelector("#vg-live-btn");
-  if (liveBtn) liveBtn.addEventListener("click", async () => {
-    showStatus("Listening…");
-    try {
-      const url = new URL("../receipts/run2/rcpt_20261027_run2_cap350.voice_transcribe.json", import.meta.url);
-      const doc = await (await fetch(url)).json();
-      const v = doc.data || {};
-      displayResponse({ intent: "TRANSCRIPT", label: "LIVE",
-        text: `Muse Voice Transcribe heard: “${v.transcript}” (synthetic text-to-speech clip, ${v.audio?.duration_s}s; session ${v.session_id}).` });
-      inputEl.value = v.transcript || "";
-      hideStatus();
-      setTimeout(() => handleQuery(inputEl.value), 900);
-    } catch {
-      hideStatus();
-      displayResponse({ intent: "TRANSCRIPT", label: "MOCK", text: "The live transcript file could not be loaded. Type your question instead." });
-    }
-  });
+  if (liveBtn) {
+    fetch(liveTranscriptUrl()).then((r) => { if (!r.ok) liveBtn.hidden = true; })
+      .catch(() => { liveBtn.hidden = true; });
+    liveBtn.addEventListener("click", async () => {
+      showStatus("Listening…");
+      try {
+        const r = await fetch(liveTranscriptUrl());
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const doc = await r.json();
+        const v = doc.data || {};
+        if (!v.transcript) throw new Error("no transcript in the receipt addendum");
+        displayResponse({ intent: "TRANSCRIPT", label: "LIVE",
+          text: `Muse Voice Transcribe heard: “${v.transcript}” (synthetic text-to-speech clip, ${v.audio?.duration_s}s; session ${v.session_id}).` });
+        inputEl.value = v.transcript || "";
+        hideStatus();
+        setTimeout(() => handleQuery(inputEl.value), 900);
+      } catch {
+        hideStatus();
+        displayResponse({ intent: "TRANSCRIPT", label: "MOCK", text: "The live transcript file could not be loaded. Type your question instead." });
+      }
+    });
+  }
 
   submitBtn.addEventListener("click", () => {
     const val = inputEl.value;

@@ -1,10 +1,117 @@
 import json
 
-from wattnot.longrun.driver import dry_run
+from wattnot.longrun.driver import _block_route, dry_run
 
 
 def ok(b):
     return 0
+
+
+def _events(out):
+    return [json.loads(ln) for ln in (out / "live.jsonl").read_text().splitlines() if ln.strip()]
+
+
+def test_block_route_picks_a_real_architecture_node():
+    # web/dash's live graph (archpage.js) only lights a node it knows; these must be real ids
+    # from arch_spec.NODES, same canonical steps orchestrate's own Stream uses (events.STEP_NODE).
+    assert _block_route("t1-sweep") == ("e2e_rig", "sweep")
+    assert _block_route("b2-wonder-sweep") == ("e2e_rig", "sweep")   # sweep wins over wonder
+    assert _block_route("t1-wonder") == ("optimizer", "study")
+    assert _block_route("t2c-prefix") == ("cache", "ab")
+    assert _block_route("t2d-combined") == ("apply", "keep")
+    assert _block_route("t3-copy") == ("receipts", "build")
+    assert _block_route("b3-tiers") == ("apply", "cap")
+    assert _block_route("p1-phase") == ("apply", "config")
+    assert _block_route("p1-think") == ("agent", "guard")
+    assert _block_route("p1-agentwaste") == ("agent", "settle")   # not langchain/agent.call
+    assert _block_route("b9-mystery") == ("workload", "send")   # no keyword: generic workload
+
+
+def test_every_route_names_a_real_node_and_sub():
+    from wattnot.dash.arch_spec import NODES
+    from wattnot.longrun.driver import _NODE_KEYWORDS
+    subs = {n["id"]: {s["id"] for s in n["subs"]} for n in NODES}
+    for _, (node, sub) in _NODE_KEYWORDS + (("", ("workload", "send")),):
+        assert node in subs and sub in subs[node], (node, sub)
+
+
+def test_sweep_blocks_are_left_to_orchestrate(tmp_path):
+    dry_run(tmp_path, runner=ok)
+    assert not [e for e in _events(tmp_path) if "sweep" in (e.get("step_id") or "")
+                and (e.get("run_id") or "").startswith("driver-")]
+
+
+def test_graph_events_never_fail_a_block(tmp_path, monkeypatch):
+    import os as _os
+    from wattnot.longrun import driver as drv
+    real = _os.open
+
+    def boom(path, *a, **k):   # every live.jsonl write fails
+        if str(path).endswith("live.jsonl"):
+            raise OSError("disk full")
+        return real(path, *a, **k)
+    monkeypatch.setattr(drv.os, "open", boom)
+    st = dry_run(tmp_path, runner=ok)
+    assert st["blocks"] and all(v["status"] in ("done", "skipped", "dropped") for v in st["blocks"].values())
+
+
+def test_graph_events_flag_off_writes_nothing_and_marks_state(tmp_path, monkeypatch):
+    monkeypatch.setenv("WATTNOT_GRAPH_EVENTS", "0")
+    st = dry_run(tmp_path, runner=ok)
+    live = tmp_path / "live.jsonl"
+    evs = _events(tmp_path) if live.exists() else []
+    assert not [e for e in evs if (e.get("run_id") or "").startswith("driver-")]
+    assert st.get("graph_events") is None
+
+
+def test_graph_events_on_marks_state_for_the_sidecar(tmp_path):
+    st = dry_run(tmp_path, runner=ok)
+    assert st.get("graph_events") == "driver"
+
+
+def test_every_block_appends_step_events_not_just_the_sweep(tmp_path):
+    """Today's gap: only t1-sweep's orchestrate subprocess writes to live.jsonl. Every block in
+    the plan must now get its own step.started/step.finished pair there, so web/dash's live graph
+    animates for the whole run, not just the sweep."""
+    st = dry_run(tmp_path, runner=ok)
+    events = _events(tmp_path)
+    started = {e["step_id"].split("#")[0] for e in events if e["type"] == "step.started"}
+    finished = {e["step_id"].split("#")[0] for e in events if e["type"] == "step.finished"}
+    ran_or_skipped = {b for b, v in st["blocks"].items() if v["status"] != "dropped" and "sweep" not in b}
+    assert ran_or_skipped and ran_or_skipped <= started
+    assert ran_or_skipped <= finished
+    assert events[0]["schema_version"] == "wattnot.event/1"
+    assert all(e.get("type") for e in events)
+
+
+def test_skipped_block_gets_a_skipped_step_event(tmp_path):
+    dry_run(tmp_path, runner=ok)   # b5-second-model needs Akash's yes: skipped, not run
+    skip = next(e for e in _events(tmp_path)
+                if e["type"] == "step.finished" and e["step_id"] == "b5-second-model")
+    assert skip["data"]["status"] == "skipped"   # distinct from a real failure
+    assert skip["data"]["outputs"] == "needs Akash's yes"
+
+
+def test_block_with_a_tiers_result_emits_applied_cap_and_gate_results(tmp_path):
+    def runner(b):
+        if b.id == "b3-tiers":
+            d = tmp_path / "runs" / "b3-tiers"
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "tiers_summary.json").write_text(json.dumps({
+                "cap_w": 350,
+                "tiers": [{"tier": "easy", "gate": "pass", "cap": {"pass_pct": 100.0, "p99_s": 0.01}},
+                          {"tier": "hard", "gate": "blocked", "cap": {"pass_pct": 80.0, "p99_s": 0.5},
+                           "why_not": ["p99 +20%"]}]}))
+        return 0
+    dry_run(tmp_path, runner=runner)
+    events = _events(tmp_path)
+    applied = [e for e in events if e["type"] == "action.applied" and e["data"].get("change")]
+    gates = [e for e in events if e["type"] == "gate.result"]
+    rolled_back = [e for e in events if e["type"] == "action.rolled_back"]
+    assert applied and applied[0]["data"]["change"] == {"cap_w": 350}
+    assert {g["data"]["check"] for g in gates} == {"easy", "hard"}
+    assert any(g["data"]["passed"] is False and g["data"]["why_not"] for g in gates)
+    assert rolled_back and "1 of 2 tiers passed" in rolled_back[0]["data"]["reason"]
 
 
 def test_full_plan_with_link_drop_keeps_vm_and_finishes(tmp_path):
@@ -420,3 +527,65 @@ def test_full_glimmer_test_plan_has_combined_block(tmp_path):
     assert [b.id for b in r].count("t2d-combined") == 1
     rc = next(b for b in r if b.id == "t2d-combined")
     assert rc.live[rc.live.index("--reps") + 1] == "2"
+
+
+def test_max_plan_pass_blocks_all_depend_on_the_probe(tmp_path):
+    # RUN1103: only the sweep block listed t0-probe as a dependency, so every other
+    # pass_blocks() block (think/tiers/eye/spoken/phase/langchain/agentwaste) ran against a
+    # dead server whenever the probe had not finished (or had failed) yet.
+    from wattnot.longrun.driver import MAX_PASSES, plan_glimmer_long, pass_blocks
+
+    long_blocks = {b.id: b for b in plan_glimmer_long(tmp_path)}
+    for i, (pas, tag, grid, ds) in enumerate(MAX_PASSES):
+        for b in pass_blocks(tmp_path, pas, tag, grid, ds, optional=i > 0,
+                             sweep_dry=long_blocks["t1-sweep"].dry):
+            assert "t0-probe" in b.depends_on, b.id
+
+
+def test_max_plan_setup_gets_the_bigger_budget_other_plans_keep_34(tmp_path):
+    # the 34 min default (test/retest/long) is tuned for those plans' own VM windows; only the
+    # max plan's setup block needs the ~70 min a real weights-download + docker pull + vLLM load
+    # takes (RUN1103).
+    from wattnot.longrun.driver import plan
+
+    assert next(b for b in plan(tmp_path, "glimmer-test", "max") if b.id == "t0-setup").hours * 60 == 70
+    for plan_name in ("full", "retest", "long"):
+        assert next(b for b in plan(tmp_path, "glimmer-test", plan_name)
+                    if b.id == "t0-setup").hours * 60 == 34
+
+
+def test_setup_passes_a_timeout_just_under_the_block_budget(tmp_path, monkeypatch):
+    # RUN1103: the setup infra call had no --timeout, so run2_remote.py used its own default
+    # (1800 s) instead of the block's real budget, and setup was killed mid-weights-download.
+    from wattnot.longrun import driver
+
+    captured = {}
+
+    def fake_run_child(argv, *, timeout, env=None):
+        captured["argv"] = argv
+        captured["timeout"] = timeout
+        return 0
+
+    monkeypatch.setattr(driver, "run_child", fake_run_child)
+    run = driver._live_runner(tmp_path, "HOST", "KEY", None)
+    b = driver.Block("t0-setup", "setup", driver._m(70), None, live=None, infra="setup")
+    budget_s = b.hours * 3600
+    rc = run(b, budget_s)
+    assert rc == 0
+    argv = captured["argv"]
+    assert "--timeout" in argv
+    assert argv[argv.index("--timeout") + 1] == str(int(max(60, budget_s - 120)))
+    assert captured["timeout"] == budget_s
+
+
+def test_max_plan_agentwaste_kill_limit_is_one_hour(tmp_path):
+    from wattnot.longrun import driver as drv
+    blocks = {b.id: b for b in drv.plan_glimmer_max(tmp_path)}
+    limit = lambda b: b.hours * 3600.0 * drv.OVERRUN_FACTOR  # noqa: E731
+    aw = [k for k in blocks if k.endswith("-agentwaste")]
+    assert "p1r-agentwaste" in aw
+    for k in aw:
+        assert abs(limit(blocks[k]) - 3600.0) < 1e-6, k
+    for k in ("p1r-langchain", "p1r-think", "p1r-tiers"):
+        assert abs(limit(blocks[k]) - 3600.0) > 1, k
+    assert abs(limit(blocks["p1r-langchain"]) - 2250.0) < 1e-6

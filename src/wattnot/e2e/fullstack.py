@@ -118,7 +118,8 @@ class RequestLevers:
         import threading
         from wattnot.cloud import supports_tool_calling
         from wattnot.context_saver.middleware import ContextSaver
-        self.saver = ContextSaver()
+        # the user's on/off and threshold; off = a pass-through saver so the totals still add up
+        self.saver = ContextSaver.from_settings() or ContextSaver(middlewares=[])
         self.lock = threading.Lock()
         self.tools_supported = supports_tool_calling() if tools_supported is None else bool(tools_supported)
         self.stats = {"calls": 0, "tokens_saved_est": 0, "guard_stops": 0, "guard_flags": 0,
@@ -176,7 +177,7 @@ MODAL_GPU_OVERRIDES: dict[str, tuple[str, str]] = {
     "prefix_cache_provider": ("ON", "our own vLLM; cached_tokens MEASURED from usage"),
     "measured_energy": ("ON", "NVML total-energy counter brackets each arm and each chunk of items"),
     "concurrency_batching": ("ON", "server-side batching via the kept --max-num-seqs"),
-    "router": ("ON", "thinking off first, per-tier thinking budget on a failed check; one backend"),
+    "router": ("ON", "per-tier thinking budget, step up on a failed check (Glimmer has no thinking-off switch); one backend"),
     "joule_slo": ("ON", "Joule-SLO + p99 limit on MEASURED energy"),
     "power_caps": ("OFF", "Modal refuses NVML power-limit writes (probed each round, recorded)"),
     "clock_sidecar": ("OFF", "needs GPU clock writes, which Modal also refuses"),

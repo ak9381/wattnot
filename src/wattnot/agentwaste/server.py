@@ -139,6 +139,11 @@ def tier_body(body: dict, tier: Mapping | None) -> dict:
         budget = int(tier.get("max_output") or REASONING_BUDGET)
         asked = out.pop("max_tokens", None) or out.get("max_completion_tokens") or 0
         out["max_completion_tokens"] = max(int(asked), budget)
+    if tier.get("max_output_cap"):   # a hard ceiling on a step-up's thinking + answer
+        cap = int(tier["max_output_cap"])
+        for k in ("max_tokens", "max_completion_tokens"):
+            if out.get(k):
+                out[k] = min(int(out[k]), cap)
     return out
 
 

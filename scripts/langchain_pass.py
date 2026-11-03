@@ -4,8 +4,8 @@ traffic through the WattNot agent-waste proxy to the served model, saver OFF the
 
 * OFF arm: the proxy only forwards and logs (no guard limits, no context saver, no routing).
 * ON arm: waste guard + context saver + routing. On one H100 there is one model, so routing is
-  between two settings of the same Glimmer: thinking off first, thinking on if the answer gate
-  fails. That is effort routing, not model routing, and the receipt says so.
+  between two settings of the same Glimmer: a thinking budget first, the full budget if the
+  answer gate fails (Glimmer ignores enable_thinking, so there is no real thinking-off switch). That is effort routing, not model routing, and the receipt says so.
 
 Datasets are only the three we already run: our own set (proof-v1 math items), GSM8K (pinned
 300) and HumanEval (pinned 164). Pick one with --dataset and a slice with --start/--n so the
@@ -73,8 +73,10 @@ def tools():
     from langchain_core.tools import tool
 
     @tool
-    def calculator(expression: str) -> str:
+    def calculator(expression: str | int | float) -> str:
         """Evaluate a plain arithmetic expression, e.g. '16-3-4'."""
+        # models sometimes pass a bare number (run 1101 r04: expression=30); take it as text
+        expression = str(expression)
         import ast
         import operator as op
         ops = {ast.Add: op.add, ast.Sub: op.sub, ast.Mult: op.mul, ast.Div: op.truediv,
@@ -103,7 +105,7 @@ def tools():
 
 
 def run_agent(base_url: str, model: str, rows: list[dict], max_steps: int, framework_tag: str,
-              kind: str = "math", on_item=None):
+              kind: str = "math", on_item=None, on_step=None):
     from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
     from langchain_openai import ChatOpenAI
 
@@ -121,14 +123,23 @@ def run_agent(base_url: str, model: str, rows: list[dict], max_steps: int, frame
                 HumanMessage(r["prompt"])]
         text, steps = "", 0
         for steps in range(1, max_steps + 1):
+            t_call = time.time()
             ai = llm.invoke(msgs, config={"metadata": {"item": i}})
             msgs.append(ai)
+            if on_step:
+                try:   # logging only: a bad usage shape never costs the item
+                    on_step(step_row(i, steps, ai, time.time() - t_call))
+                except Exception:  # noqa: BLE001
+                    pass
             if not getattr(ai, "tool_calls", None):
                 text = ai.content if isinstance(ai.content, str) else str(ai.content)
                 break
             for tc in ai.tool_calls:
                 t = by_name.get(tc["name"])
-                res = t.invoke(tc.get("args") or {}) if t else f"unknown tool {tc['name']}"
+                try:
+                    res = t.invoke(tc.get("args") or {}) if t else f"unknown tool {tc['name']}"
+                except Exception as e:  # noqa: BLE001 - a bad tool arg costs this call, not the block
+                    res = f"tool error: {type(e).__name__}: {str(e)[:200]}"
                 msgs.append(ToolMessage(str(res), tool_call_id=tc["id"]))
         # final text kept (trimmed) so a later CPU test can REPLAY this round's answers
         out.append({"i": i, "steps": steps, "correct": bool(r["ok"](r["item"], text)),
@@ -136,6 +147,37 @@ def run_agent(base_url: str, model: str, rows: list[dict], max_steps: int, frame
         if on_item:   # per-item progress: a run cut mid-block still returns the scores so far
             on_item(out[-1])
     return out
+
+
+def step_row(item: int, step: int, ai, wall_s: float) -> dict:
+    """One agent call's tokens, wall time and thinking mode (logging only)."""
+    meta = getattr(ai, "response_metadata", None) or {}
+    usage = meta.get("token_usage") or {}
+    details = usage.get("completion_tokens_details") or {}
+    um = getattr(ai, "usage_metadata", None) or {}
+    reasoning = details.get("reasoning_tokens")
+    if reasoning is None:
+        reasoning = (um.get("output_token_details") or {}).get("reasoning")
+    return {"item": item, "step": step, "wall_s": round(wall_s, 3),
+            "prompt_tokens": usage.get("prompt_tokens", um.get("input_tokens")),
+            "completion_tokens": usage.get("completion_tokens", um.get("output_tokens")),
+            "reasoning_tokens": reasoning, "finish": meta.get("finish_reason"),
+            "tool_calls": len(getattr(ai, "tool_calls", None) or [])}
+
+
+def step_writer(out_dir: Path, arm: str, thinking: str):
+    """Append each agent call to <out>/langchain_steps.jsonl. Never raises."""
+    path = Path(out_dir) / "langchain_steps.jsonl"
+
+    def write(row: dict):
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open("a") as f:
+                f.write(json.dumps({"arm": arm, "thinking": thinking, "t": round(time.time(), 1),
+                                    **row}, default=str) + "\n")
+        except Exception:  # noqa: BLE001 - logging only
+            pass
+    return write
 
 
 def progress_writer(out_dir: Path, arm: str):
@@ -215,6 +257,8 @@ def main(argv=None) -> int:
                     help="saver-on arm routing. final-check judges only the agent's FINAL answer "
                          "(tool-call turns are never a pass) and steps a shaky one up to thinking on "
                          "(r04c Modal: 'gate' passed every tool turn, 70/71 calls thinking off, 11/20 vs 19/20)")
+    ap.add_argument("--stepup-max-tokens", type=int, default=1536,
+                    help="output cap (thinking + answer) on a step-up to thinking on; 0 = no cap")
     ap.add_argument("--max-stepups", type=int, default=1, help="step-up cap per agent run (final-check)")
     ap.add_argument("--short-bypass-tokens", type=int, default=None,
                     help="agent calls under this many tokens pass through untouched (no done tool, "
@@ -252,13 +296,14 @@ def main(argv=None) -> int:
         upstream = http_upstream(upstream_base(a.base_url)) if live else mock_upstream
         model = (a.model or GLIMMER) if live else "mock-model"
         tiers = [{"name": "glimmer-think-off", "model": model, "body_extra": {"chat_template_kwargs": {"enable_thinking": False}}},
-                 {"name": "glimmer-think-on", "model": model, "reasoning": True}]
+                 {"name": "glimmer-think-on", "model": model, "reasoning": True,
+                  "max_output_cap": a.stepup_max_tokens or None}]
     rows = items(a.dataset, a.start, a.n)
     nv = Nvml() if (live and bt is None) else None
     res = {"spec": "wattnot.langchain-pass/1", "label": label, "dataset": a.dataset,
            "start": a.start, "n": len(rows), "framework": "langchain", "provider": a.provider,
            "model": model,
-           "routing": "effort routing on one served model (thinking off -> on); model routing "
+           "routing": "effort routing on one served model (thinking budget -> full budget on a failed check); model routing "
                       "needs a second model and is in the multi-provider block", "route": a.route, "arms": {}}
     for arm, on in (("saver_off", False), ("saver_on", True)):
         base, server = serve(upstream, on, label, tiers, a.route == "final-check", a.max_stepups,
@@ -270,7 +315,9 @@ def main(argv=None) -> int:
             try:
                 per = run_agent(base, model, rows, a.max_steps, f"lc-{arm}",
                                 "code" if a.dataset == "humaneval164" else "math",
-                                on_item=progress_writer(Path(a.out), arm))
+                                on_item=progress_writer(Path(a.out), arm),
+                                on_step=step_writer(Path(a.out), arm,
+                                                    "off, steps up to on" if on else "model default"))
             except Exception as e:  # noqa: BLE001 - Baseten stop: keep what finished, end cleanly
                 if bt is None or not bt.stopped:
                     raise
