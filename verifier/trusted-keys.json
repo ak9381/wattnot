@@ -12,6 +12,13 @@
       "signer_name": "wattnot-cert-signing-2026-11-02",
       "public_key": "b4dc87c6b1c96e7a0639f952091968162f8d19578f1120ca5511f481112c642c",
       "since": "2026-11-02 (Modal round r04d)"
+    },
+    {
+      "signer": "offline:d3a16ddd216502c0",
+      "kind": "ed25519-wattnot",
+      "signer_name": "wattnot-report-signing-2026-11-04",
+      "public_key": "f1d4cdfc390c515407d5137f0f0b44873bd3cf71381dc21666609ad4d1f6fc89",
+      "since": "2026-11-04 (H100 Text 60 signed EU report)"
     }
   ]
 }
