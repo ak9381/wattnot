@@ -23,16 +23,34 @@ What we use but did not write (open source, used as is):
 | Optuna | Picking the next cap to try | MIT |
 | jsonschema, cryptography | Schema checks, Ed25519 signing | MIT, Apache 2.0 / BSD |
 | GSM8K, HumanEval (OpenAI) | Public test prompts, licenses in `data/public_bench/` and `data/holdout/` | MIT |
+| OpenAI Python SDK (`openai`) | Client for OpenAI-compatible endpoints (vLLM, Meta Model API) | Apache 2.0 |
+| LlamaIndex | Only in the drop-in examples in the docs and Muse Code snippets | MIT |
+| NumPy, Pillow | SAM room scan maths, image overlays and charts | BSD-3, MIT-CMU |
+| edge-tts | Made the spoken test questions offline (not in the runtime path) | LGPL-3.0 |
+| sigstore-python (optional `sign` extra) | Publishing receipts to the public Rekor log | Apache 2.0 |
 | Inter, JetBrains Mono, Lucide | Fonts and icons in `web/run/vendor/` | OFL 1.1, OFL 1.1, ISC |
 
 ## Open weights
 
-**Muse Glimmer 30B served via vLLM on our own rented H100 80GB.** It's the model whose answers WattNot measures. Every power cap, thinking budget, saver and agentwaste arm runs on Glimmer's real replies, and the quality gate grades them against the stock run. It was served in BF16 (`bash scripts/glimmer_serve.sh bf16`, with `--reasoning-parser muse_glimmer`). FP8 was tested on Modal's A100-80GB: it kept eye and hearing accuracy but lost 4.16 points on the full round (MEASURED), so the gate rejected it and the H100 stayed on BF16.
+The hackathon asks that the README and demo say how, where and why each open-weight model is used, with run logs or captures as proof. Here it is.
 
-Run logs and recordings:
-- H100 3 Nov long run (pass 1, pass 2, sealed holdout): [`replays/h100-max-1103/`](replays/h100-max-1103/manifest.json), with the event log, a receipt for each block and the signed sweep receipts.
-- Modal and Baseten rounds: [`replays/INDEX.md`](replays/INDEX.md).
-- Every run with its commit, cost and verdict: [`docs/RUN_HISTORY.md`](docs/RUN_HISTORY.md).
+**Why open weights.** WattNot saves energy by changing how the model is served: GPU power caps, batch size, KV-cache settings and quantization like FP8. None of that can be changed behind a closed API, so WattNot needs a model whose server it controls. Open weights let us run the model ourselves, change one setting at a time and measure the joules on the GPU.
+
+**Muse Glimmer 30B, on a rented H100 80GB (bare VM with root access).**
+- How: served with vLLM in BF16 (`bash scripts/glimmer_serve.sh bf16`, `--reasoning-parser muse_glimmer`). It's the model whose answers WattNot measures. Every power cap, thinking budget, saver and agentwaste arm runs on Glimmer's real replies, and the quality gate grades them against the stock run. It also reads the vision test images.
+- FP8 and KV cache on the H100 (Nov 4, fixed answer check): first, stock against stock matched 16 of 16 answers, which shows the check is fair. FP8 cut energy 42.5% but matched only 15 of 16 answers, so WattNot refused it and rolled back. KV cache saved 1.4% but made p99 latency 43.6% worse, so it was refused too. All MEASURED. The H100 stays on BF16.
+- Proof: the Nov 3 long run (pass 1, pass 2, sealed holdout) is in [`replays/h100-max-1103/`](replays/h100-max-1103/manifest.json), with the event log, a receipt for each block and signed sweep receipts.
+
+**Muse Glimmer 30B, on Modal A100-80GB.**
+- How: the same vLLM setup on Modal's hosted GPU. Round r04 (Nov 4) ran text, agents, images and voice through WattNot: 74.4% less energy, accuracy 96.4% to 97.9%, image 10/10, voice 20/20 (MEASURED). Most of that saving comes from routing easy prompts to cheaper settings, not from the same settings using less power.
+- Earlier FP8 test (Nov 2, Modal A100-80GB): FP8 kept eye and hearing accuracy but lost 4.16 points on the full round (MEASURED), so the gate rejected it.
+- Proof: [`round.json`](https://github.com/ak9381/wattnot/tree/data/modal-text-1104/data/modal-full-1101/r04/round.json), [`events.jsonl`](https://github.com/ak9381/wattnot/tree/data/modal-text-1104/data/modal-full-1101/r04/events.jsonl) and [`flow.log`](https://github.com/ak9381/wattnot/tree/data/modal-text-1104/data/modal-full-1101/r04/flow.log) for r04, on branch `data/modal-text-1104`.
+
+**Muse Spark Open, on Baseten (hosted API, our own deployment).**
+- How: `meta-models/muse-spark-open` behind Baseten's API. WattNot can't touch that GPU, so here it uses request-level savers: effort routing with step-up and the LangChain saver.
+- Proof: Baseten rounds in [`replays/INDEX.md`](replays/INDEX.md).
+
+Every run with its commit, cost and verdict: [`docs/RUN_HISTORY.md`](docs/RUN_HISTORY.md).
 
 ## Submission overview
 
