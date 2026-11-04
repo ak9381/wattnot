@@ -67,7 +67,8 @@ test("every page includes chrome.js and chrome.css", () => {
   for (const page of dashPages) {
     const html = fs.readFileSync(path.join(dashDir, page), "utf8");
     assert.match(html, /<link rel="stylesheet" href="chrome\.css">/, `expected chrome.css on ${page}`);
-    assert.match(html, /<script src="chrome\.js" defer><\/script>/, `expected chrome.js on ${page}`);
+    // v2.html loads chrome.js only outside embed mode (the gateway Go live panel embeds it), via document.write.
+    assert.match(html, /<script src="chrome\.js" defer><\\?\/script>/, `expected chrome.js on ${page}`);
   }
 
   const runHtml = fs.readFileSync(path.resolve(__dirname, "../../web/run/index.html"), "utf8");
@@ -113,8 +114,8 @@ test("root redirect page has description and OG tags", () => {
 
 test("shared chrome header has plain top routes and a sidebar with every page", () => {
   const chromeJs = fs.readFileSync(path.join(dashDir, "chrome.js"), "utf8");
-  for (const t of ["Set up a run", "Watch it run", "Results", "Proof", "Costs", "Connected tools"]) assert.ok(chromeJs.includes(`>${t}</a>`), t);
-  for (const h of ["v2.html#pHome", "runs.html", "v2.html#pReport", "report.html", "graph.html", "approvals.html", "matrix.html", "eu.html", "metatools.html"]) assert.ok(chromeJs.includes(`"${h}"`), h);
+  for (const t of ["Plug in", "Live savings", "Results", "Proof", "Costs", "Connected tools"]) assert.ok(chromeJs.includes(`>${t}</a>`), t);
+  for (const h of ["plug.html#setup", "plug.html#live", "v2.html#pHome", "runs.html", "v2.html#pReport", "report.html", "graph.html", "approvals.html", "matrix.html", "eu.html", "metatools.html"]) assert.ok(chromeJs.includes(`"${h}"`), h);
   assert.match(chromeJs, /runpick\.js/);
   assert.match(chromeJs, /sidenav\.js/);
   assert.doesNotMatch(chromeJs, />Architecture<\/a>/);

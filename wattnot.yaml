@@ -1,0 +1,24 @@
+# wattnot.yaml: one file for the WattNot gateway. Keys stay in env vars, never here.
+#   wattnot gateway --config wattnot.yaml      -> http://127.0.0.1:8780/v1
+deployment: gateway          # gateway | gpu | both
+port: 8780
+upstream:
+  base_url: https://api.meta.ai/v1   # or http://localhost:8000/v1 (vLLM), or Baseten
+  key_env: META_API_KEY              # read from the environment (or `muse login`)
+tiers:                       # small first; step up only when the answer looks shaky
+  - {name: small, model: muse-spark-1.3, body_extra: {reasoning_effort: low}}
+  - {name: big,   model: muse-spark-1.3, body_extra: {reasoning_effort: high}}
+baseline: {tier: big}        # what your app sent before WattNot (for the savings math)
+savers:
+  agent_waste:   {enabled: true, preset: second_layer}   # stops loops, repeats, no-op steps
+  routing:       {enabled: true, final_check: false, max_stepups: 1}
+  context_saver: {enabled: true, min_tokens: 500}        # only long chats are trimmed
+  thinking_cap:  {enabled: true, max_tokens: 1024}       # output (thinking + answer) ceiling
+  vision:        {enabled: true, max_side_px: 768}       # downscale inline images
+  voice:         {enabled: true}                         # /v1/audio/transcriptions via Muse Voice
+energy:
+  source: estimate           # estimate (API: tokens x J/token) | nvml (own GPU, MEASURED)
+  j_per_token: {muse-spark-1.3: 7.86, default: 7.86}     # ESTIMATE, scaled from H100 runs
+savings_log: out/gateway/savings.jsonl
+integrations:
+  langfuse: {enabled: false}  # needs LANGFUSE_HOST / LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY

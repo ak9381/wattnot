@@ -202,6 +202,8 @@ def create_app(
     final_check: bool = False,
     max_stepups: int = 1,
     short_bypass_tokens: int | None = None,
+    waste_gate: Callable[[dict], bool] | None = None,
+    context_gate: Callable[[dict], bool] | None = None,
 ) -> FastAPI:
     """Build the proxy app. upstream(body, headers) returns parsed JSON.
 
@@ -276,7 +278,8 @@ def create_app(
         # only agent calls (a tools list) are bypassed; plain Q&A routing is unchanged
         short = (bool(bypass_under) and isinstance(body.get("tools"), list) and bool(body["tools"])
                  and conversation_tokens(msgs_in) < bypass_under)
-        verdict = guard.before(body, inject_done=not short)
+        waste_on = waste_gate is None or waste_gate(body)   # per-model gate: off = budgets only, body untouched
+        verdict = guard.before(body, inject_done=not short and waste_on)
         if (verdict.action == "stop" and final_check and verdict.reason
                 and "budget" not in verdict.reason and isinstance(body.get("messages"), list)):
             # final-check mode: a detector stop (repeat, cycle, no-op...) must still end with an
@@ -309,7 +312,7 @@ def create_app(
                 guard.stop_response(verdict.reason, model=str(body.get("model", "")))
             )
         headers = dict(request.headers)
-        out_body = verdict.body
+        out_body = verdict.body if waste_on else body
         if (final_check and not short and isinstance(out_body, dict)
                 and isinstance(out_body.get("tools"), list)):
             # ask for the answer inside done(reason): a done() with the answer needs no finalize
@@ -317,7 +320,8 @@ def create_app(
         rec: dict = {"run": run[:16], "framework": detect_framework(request.headers),
                      "tokens_before": None, "tokens_after": None,
                "dropped_fields": dropped, "stream": stream, "short_bypass": short}
-        if context_saver is not None and isinstance(out_body, dict) and out_body.get("messages"):
+        if context_saver is not None and isinstance(out_body, dict) and out_body.get("messages") \
+                and (context_gate is None or context_gate(out_body)):   # per-model gate: off = body untouched
             saved, acct = context_saver.transform(list(out_body["messages"]))
             out_body = {**out_body, "messages": saved}
             rec["tokens_before"], rec["tokens_after"] = acct["tokens_before"], acct["tokens_after"]

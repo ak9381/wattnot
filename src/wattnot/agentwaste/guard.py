@@ -174,6 +174,42 @@ def build_trace(messages: list) -> list[Step]:
     return steps
 
 
+def collapse_repeats(messages: list) -> tuple[list, int]:
+    """Drop assistant tool turns that repeat an earlier call (same name, same canonical args) AND
+    got the same result, with their tool messages. Returns (messages, calls dropped). A turn is
+    dropped only if every call in it is such a repeat, so nothing new the model saw is lost."""
+    seen: dict[tuple[str, str], str] = {}
+    results: dict[str, str] = {}
+    for m in messages:
+        if isinstance(m, dict) and m.get("role") == "tool" and m.get("tool_call_id") is not None:
+            results[str(m["tool_call_id"])] = str(m.get("content"))
+    out: list = []
+    skip_ids: set[str] = set()
+    dropped = 0
+    for m in messages:
+        if not isinstance(m, dict):
+            out.append(m)
+            continue
+        if m.get("role") == "tool" and str(m.get("tool_call_id")) in skip_ids:
+            continue
+        calls = m.get("tool_calls") if m.get("role") == "assistant" else None
+        if calls and not m.get("content"):
+            keys = []
+            for c in calls:
+                f = (c or {}).get("function") or {}
+                keys.append(((str(f.get("name")), canon_args(f.get("arguments") or "")),
+                             results.get(str((c or {}).get("id")))))
+            if all(r is not None and seen.get(k) == r for k, r in keys):
+                skip_ids.update(str(c.get("id")) for c in calls)
+                dropped += len(calls)
+                continue
+            for k, r in keys:
+                if r is not None:
+                    seen.setdefault(k, r)
+        out.append(m)
+    return out, dropped
+
+
 def done_tool_schema(name: str = "done") -> dict:
     """Tool schema that lets the agent stop cleanly with a one-line reason."""
     return {
@@ -275,7 +311,11 @@ class WasteGuard:
                 self._stop(reason)
                 return Verdict("stop", None, reason, [fired])
             out = copy.deepcopy(body)
-            if fired.kind in _NEW_KINDS:
+            if cfg.lean_nudge:
+                msgs, dropped = collapse_repeats(out.get("messages") or [])
+                note = (f"Note: {fired.detail}" + (f" ({dropped} identical calls removed)" if dropped else "")
+                        + ". Do not call it again; answer now from the results above.")
+            elif fired.kind in _NEW_KINDS:
                 note = (f"Note: {fired.detail}. Do not repeat it. If the work is finished, or "
                         f"you are blocked, call the `{cfg.done_tool}` tool with a one-line "
                         "reason (say what blocked you) instead of making more calls.")
@@ -283,7 +323,10 @@ class WasteGuard:
                 note = (f"Note: {fired.detail}. If the goal is done or there is "
                         f"nothing left to do, call the `{cfg.done_tool}` tool "
                         "with a one-line reason instead of making more calls.")
-            out.setdefault("messages", []).append({"role": "user", "content": note})
+            if cfg.lean_nudge:
+                out["messages"] = [*msgs, {"role": "user", "content": note}]
+            else:
+                out.setdefault("messages", []).append({"role": "user", "content": note})
             self._nudges += 1
             flags.append(fired)
 
@@ -305,6 +348,7 @@ class WasteGuard:
         tools = (out if out is not None else body).get("tools")
         if (
             cfg.inject_done
+            and not cfg.lean_nudge
             and inject_done
             and isinstance(tools, list)
             and tools

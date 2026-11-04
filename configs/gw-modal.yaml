@@ -1,0 +1,12 @@
+# Gateway inside a Modal A100 container, in front of our own vLLM (Muse Glimmer 30B).
+# NVML energy is readable (MEASURED); setting the power limit is refused (no root), so no cap.
+deployment: both
+port: 8780
+upstream: {base_url: "http://127.0.0.1:8000/v1", key_env: VLLM_API_KEY}
+tiers:
+  - {name: small, model: meta-models/Muse-Glimmer-30B, body_extra: {reasoning_effort: low}}
+  - {name: big,   model: meta-models/Muse-Glimmer-30B, body_extra: {}}
+baseline: {tier: big}
+energy: {source: nvml, j_per_token: {default: 7.86}}
+node: {enabled: true, gpus: all, cap_min_w: 300, cap_max_w: 375, approval: manual, log: out/hosted/modal/node.jsonl}
+savings_log: out/hosted/modal/savings.jsonl

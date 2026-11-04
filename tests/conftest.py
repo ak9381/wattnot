@@ -34,3 +34,12 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if item.fspath.basename in _SLOW_FILES:
             item.add_marker(_pytest_slow.mark.slow)
+
+
+
+@pytest.fixture(autouse=True)
+def _fast_gpu_warmup(monkeypatch):
+    """The answer check's GPU warm-up (proof profile: 4 s settle, 16 requests, 10 s load, a
+    burn-in block) shrunk for tests; the shape is the same."""
+    from wattnot.node import answercheck as ac
+    monkeypatch.setattr(ac, "WARMUP", {"settle_s": 0.0, "requests": 2, "load_s": 0.01, "burn_in_blocks": 1})

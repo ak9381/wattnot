@@ -81,6 +81,9 @@ LOGIN_HTML = (
 )
 
 
+# take 4: a power check and a traffic run shared the GPU and reset each other's power limit
+GPU_BUSY = "Another GPU job is running; wait for it to finish"
+
 def _mac(token: str) -> str:
     return hmac.new(token.encode(), b"wattnot-dash", hashlib.sha256).hexdigest()
 
@@ -160,7 +163,8 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
                approvals_dir: Path | None = None,
                auto_approve: bool = False,
                live_apply: bool = False,
-               partners: Path | None = None) -> FastAPI:
+               partners: Path | None = None,
+               gateway: Path | None = None) -> FastAPI:
     app = FastAPI(title="WattNot dashboard", version="1")
     token = token or os.environ.get("WATTNOT_DASH_TOKEN") or None
     # Hosted replay-only mode (for judges): no GPU, no Meta call of any kind, saved run file only.
@@ -180,7 +184,7 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
             path = request.url.path
             ok = hmac.compare_digest(request.cookies.get("wn_auth", "").encode(), want.encode()) or \
                 hmac.compare_digest(request.headers.get("authorization", "")[7:].encode(), token.encode())
-            if ok or path in OPEN_PATHS or path.startswith("/run/vendor"):
+            if ok or path in OPEN_PATHS or path.startswith("/run/vendor") or path.startswith("/gw/"):
                 return await call_next(request)
             if path.startswith("/api/"):
                 return JSONResponse({"error": "sign in required", "login": "/login"}, status_code=401)
@@ -848,8 +852,361 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         if path.startswith("/api/receipts") and path not in have and "GET" in (getattr(r, "methods", None) or ()):
             app.router.routes.append(r)
 
+    _mount_plug(app, gateway)
     app.mount("/", StaticFiles(directory=str(WEB), html=True), name="web")
     return app
+
+
+GATEWAY_UPSTREAM = None   # tests set a factory cfg -> upstream callable; None means the real upstream
+
+
+class _GatewayHolder:
+    """ASGI app at /gw: answers 503 until the gateway is started from the UI (or --gateway)."""
+
+    def __init__(self) -> None:
+        self.app, self.cfg, self.path, self.started = None, None, None, None
+
+    def start(self, app, cfg: dict, path) -> None:
+        self.app, self.cfg, self.path, self.started = app, cfg, path, time.time()
+        self.ui_started = False
+
+    def stop(self) -> None:
+        self.app = None
+
+    def status(self) -> dict:
+        return {"running": self.app is not None, "ui_started": bool(getattr(self, "ui_started", False)), "config": str(self.path) if self.path else "defaults",
+                "upstream": (self.cfg or {}).get("upstream", {}).get("base_url"),
+                "savers_on": [k for k, v in ((self.cfg or {}).get("savers") or {}).items() if v.get("enabled")]}
+
+    async def __call__(self, scope, receive, send):
+        if self.app is None:
+            from starlette.responses import JSONResponse as _J
+            return await _J({"detail": "gateway not started: press Start gateway"}, status_code=503)(scope, receive, send)
+        return await self.app(scope, receive, send)
+
+
+def _snippets(base: str) -> dict:
+    return {"base_url": base, "snippets": {
+        "langchain": f'ChatOpenAI(base_url="{base}", api_key="unused", model="muse-spark-1.3")',
+        "openai": f'from openai import OpenAI\nclient = OpenAI(base_url="{base}", api_key="unused")\n'
+                  'client.chat.completions.create(model="muse-spark-1.3", messages=[{"role": "user", "content": "hi"}])',
+        "curl": f"curl {base}/chat/completions -H 'Content-Type: application/json' "
+                '-d \'{"model":"muse-spark-1.3","messages":[{"role":"user","content":"hi"}]}\''}}
+
+
+def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
+    """Live plug routes: the gateway itself (/gw/v1, only with --gateway), the live feed, receipts,
+    the EU fields and the deploy-config writer. Without a gateway the feed says REPLAY."""
+    from fastapi import Body, HTTPException
+
+    from wattnot.gateway import deploy as _deploy
+    from wattnot.gateway import plug as _plug
+    from wattnot.gateway.build import DEFAULTS, build_app, load_config
+
+    cfg = load_config(gateway) if gateway else load_config(None)
+    logs = (os.environ.get("WATTNOT_SAVINGS_LOG") or cfg["savings_log"],
+            os.environ.get("WATTNOT_NODE_LOG") or cfg["node"]["log"])
+    gw = _GatewayHolder()
+    app.mount("/gw", gw, name="gateway")
+    app.state.gateway_holder = gw
+    saved_yaml = Path(os.environ.get("WATTNOT_PLUG_YAML") or "out/gateway/wattnot.yaml")
+
+    def _start_gateway(path: Path | None) -> dict:
+        c = load_config(path) if path else load_config(None)
+        ov = os.environ.get("WATTNOT_PLUG_OVERLAY")   # site settings (tiers, upstream) on top of the UI choice
+        if ov:
+            from wattnot.gateway.build import _merge
+            import yaml as _y
+            c = _merge(c, _y.safe_load(Path(ov).read_text()) or {})
+        c["savings_log"], c["node"]["log"] = logs
+        gw.start(build_app(c, upstream=GATEWAY_UPSTREAM(c) if GATEWAY_UPSTREAM else None), c, path)
+        return gw.status()
+
+    if gateway:
+        _start_gateway(Path(gateway))
+
+    @app.get("/api/dash/plug")
+    def plug_feed(last: int = 50) -> dict:
+        out = _plug.feed(*logs, last=last)
+        out["gateway_mounted"] = gw.app is not None
+        out["traffic"] = traffic.state
+        return out
+
+    @app.get("/api/dash/plug/receipt/{rid}")
+    def plug_receipt(rid: str) -> dict:
+        r = _plug.receipt(logs[0], rid)
+        if r is None:
+            raise HTTPException(404, "no such receipt")
+        return r
+
+    @app.get("/api/dash/plug/receipt/{rid}/verify")
+    def plug_receipt_verify(rid: str) -> dict:
+        r = _plug.verify_receipt(logs[0], rid)
+        if r is None:
+            raise HTTPException(404, "no such receipt")
+        return r
+
+    @app.get("/api/dash/plug/quality")
+    def plug_quality() -> dict:
+        mon = None
+        if gw.app is not None:
+            try:
+                st = gw.app.state.monitor.status()
+                mon = {**st, "gate": gw.app.state.gate.status()}
+            except AttributeError:
+                mon = None
+        return _plug.quality(logs[0], mon)
+
+    @app.get("/api/dash/plug/eu")
+    def plug_eu() -> dict:
+        return _plug.eu_report(*logs)
+
+    @app.post("/api/dash/deploy")
+    def deploy(choice: dict = Body(...)) -> dict:
+        try:
+            return _deploy.render(choice)
+        except (TypeError, ValueError) as e:
+            raise HTTPException(400, str(e)) from e
+
+    @app.post("/api/dash/deploy/save")
+    def deploy_save(choice: dict = Body(...)) -> dict:
+        """Write the choice to the saved wattnot.yaml the Start button uses. No keys are written."""
+        try:
+            r = _deploy.render(choice)
+        except (TypeError, ValueError) as e:
+            raise HTTPException(400, str(e)) from e
+        saved_yaml.parent.mkdir(parents=True, exist_ok=True)
+        saved_yaml.write_text(r["yaml"])
+        return {"saved": str(saved_yaml)}
+
+    @app.post("/api/dash/gateway/start")
+    def gateway_start(request: Request) -> dict:
+        try:
+            _start_gateway(saved_yaml if saved_yaml.exists() else (Path(gateway) if gateway else None))
+            gw.ui_started = True
+            st = gw.status()
+        except (OSError, ValueError) as e:
+            raise HTTPException(400, f"could not start: {e}") from e
+        return {**st, **_snippets(str(request.base_url).rstrip("/") + "/gw/v1")}
+
+    @app.post("/api/dash/gateway/stop")
+    def gateway_stop() -> dict:
+        traffic.stop()
+        gw.stop()
+        return gw.status()
+
+    @app.get("/api/dash/gateway/status")
+    def gateway_status(request: Request) -> dict:
+        return {**gw.status(), **_snippets(str(request.base_url).rstrip("/") + "/gw/v1")}
+
+    from wattnot.gateway import traffic as _traffic
+
+    def _send(body: dict, headers: dict) -> dict:
+        if gw.app is None:
+            raise RuntimeError("gateway is not started")
+        from starlette.testclient import TestClient as _TC
+        with _TC(gw.app) as cl:   # in-process HTTP into the running gateway
+            r = cl.post("/v1/chat/completions", json=body, headers=headers)
+        rid = r.headers.get("x-wattnot-receipt")
+        rec = _plug.receipt(logs[0], rid) if rid else None
+        try:
+            text = str(r.json()["choices"][0]["message"].get("content") or "")
+        except (ValueError, KeyError, IndexError, TypeError):
+            text = ""
+        a = (rec or {}).get("actual", {})
+        return {"receipt_id": rid, "status": r.status_code, "usd": a.get("usd", 0), "text": text,
+                "joules": a.get("joules"),
+                "tokens": int(a.get("prompt_tokens") or 0) + int(a.get("completion_tokens") or 0)}
+
+    def _direct(body: dict) -> dict:
+        """The without-WattNot arm: same request, straight to the upstream at the baseline tier."""
+        from wattnot.agentwaste.server import sanitize, tier_body
+        from wattnot.gateway.build import http_upstream
+        from wattnot.gateway.savings import _jpt, _usd
+        c = gw.cfg or load_config(None)
+        base = next(t for t in c["tiers"] if t["name"] == c["baseline"]["tier"])
+        up = GATEWAY_UPSTREAM(c) if GATEWAY_UPSTREAM else http_upstream(c)
+        clean, _, _ = sanitize(body)
+        resp = up(tier_body(clean, base), {"x-wattnot-arm": "without"})
+        u = resp.get("usage") or {}
+        pin, pout = int(u.get("prompt_tokens") or 0), int(u.get("completion_tokens") or 0)
+        try:
+            text = str(resp["choices"][0]["message"].get("content") or "")
+        except (KeyError, IndexError, TypeError, AttributeError):
+            text = ""
+        return {"model": base["model"], "prompt_tokens": pin, "completion_tokens": pout, "text": text,
+                "tokens": pin + pout,
+                "usd": round(_usd(base["model"], pin, pout), 7),
+                "joules": round(_jpt(c, base["model"]) * (pin + pout), 2), "joules_label": "ESTIMATE"}
+
+    def _transcribe(wav: bytes) -> str:
+        from wattnot.spokenanswer.client import transcribe_wav_live
+        return transcribe_wav_live(wav)
+
+    without_log = Path(logs[0]).with_name(Path(logs[0]).stem + ".without.jsonl")
+    def _spent() -> float:
+        return round(sum(r["actual"]["usd"] for r in _plug._read(logs[0])
+                         if str(r.get("run") or "").startswith("sim-") and r.get("ts", 0) >= traffic_t0[0]), 6)
+
+    traffic_t0 = [0.0]
+    calib_path = Path(logs[0]).with_name(Path(logs[0]).stem + ".traffic-calib.json")
+    def _event(**kw):
+        try:
+            with open(logs[1], "a") as f:
+                f.write(json.dumps({"kind": "event", "ts": time.time(), "label": "MEASURED", **kw}) + "\n")
+        except OSError:
+            pass
+
+    traffic = _traffic.TrafficRun(_send, direct=_direct, transcribe=_transcribe, without_log=without_log, spent=_spent,
+                                  calib_path=calib_path, event=_event,
+                                  result_path=Path(logs[0]).with_name("sequential.json"))
+
+    def _attach_gpu():
+        """GPU helper connected (node.enabled) and NVML present: side by side runs sequentially."""
+        c = gw.cfg or cfg
+        if traffic.gpu is not None or not (c.get("node") or {}).get("enabled") or os.environ.get("WATTNOT_NO_NVML"):
+            return
+        meter = (c.get("node") or {}).get("meter")
+        if meter == "remote":   # hosted GPU (Modal): its own NVML over HTTP, MEASURED; no cap step
+            from wattnot.gateway.build import upstream_headers
+            url = (c.get("node") or {}).get("meter_url") or \
+                c["upstream"]["base_url"].rstrip("/").removesuffix("/v1") + "/wattnot/nvml"
+            try:
+                traffic.gpu, traffic.answer_check = _traffic.RemoteNvmlGpu(url, upstream_headers(c),
+                                                                         timeout=float((c.get("node") or {}).get("meter_timeout_s", 900))), None
+            except Exception:  # noqa: BLE001 - endpoint down: stays concurrent, ESTIMATE
+                pass
+            return
+        if meter == "estimate":   # hosted API with no GPU access (Baseten): sequential, ESTIMATE energy
+            traffic.gpu, traffic.answer_check = _traffic.EstimateMeter(), None
+            return
+        try:
+            g = _traffic.NvmlGpu()
+        except Exception:  # noqa: BLE001 - no NVML: stays concurrent, energy ESTIMATE
+            if (c.get("node") or {}).get("meter") == "estimate":   # hosted API: sequential, ESTIMATE energy
+                traffic.gpu, traffic.answer_check = _traffic.EstimateMeter(), None
+            return
+        if not getattr(g, "can_cap", lambda: True)():   # hosted GPU (Modal): NVML energy MEASURED, savers only, no cap step
+            traffic.gpu, traffic.answer_check = g, None
+            return
+        from wattnot.node.answercheck import HarnessCapCheck, harness_asker
+
+        class _A:   # NVML-shaped view for AnswerCheck
+            def nvmlDeviceGetTotalEnergyConsumption(self, _h):
+                return g.energy_mj()
+
+            def nvmlDeviceGetPowerManagementLimit(self, _h):
+                return g.n.nvmlDeviceGetPowerManagementLimit(g.h)
+
+            def nvmlDeviceGetPowerUsage(self, _h):
+                return g.n.nvmlDeviceGetPowerUsage(g.h)
+        traffic.gpu = g
+        traffic.cap_w = int((c.get("node") or {}).get("cap_max_w", 375))
+        n = int((c.get("node") or {}).get("check_prompts", 111))
+        traffic.answer_check = lambda: HarnessCapCheck(harness_asker(c), _A(), g.set_w, g.default_w(), n=n)
+
+    def _est(body: dict) -> dict:
+        from urllib.parse import urlparse
+        host = urlparse(((gw.cfg or cfg).get("upstream") or {}).get("base_url", "")).hostname or ""
+        own = host in ("localhost", "127.0.0.1", "::1") or host.startswith(("10.", "192.168."))
+        return _traffic.estimate(body.get("workload", "mixed"), int(body.get("n", 60)), bool(body.get("with_without")),
+                                 calib=_traffic.load_calib(calib_path), self_hosted=own)
+    app.state.traffic = traffic
+    if os.environ.get("WATTNOT_SEQ_MAX_USD"):   # hosted providers: hard $ stop across both arms
+        traffic.seq_max_usd = float(os.environ["WATTNOT_SEQ_MAX_USD"])
+
+    @app.post("/api/dash/traffic/estimate")
+    def traffic_estimate(body: dict = Body(default={})) -> dict:
+        try:
+            return _est(body)
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from e
+
+    @app.post("/api/dash/traffic/start")
+    def traffic_start(request: Request, body: dict = Body(default={})) -> dict:
+        nt = node_job["thread"]
+        if nt is not None and nt.is_alive():   # one GPU job at a time: the power check owns the GPU
+            raise HTTPException(409, GPU_BUSY)
+        if gw.app is None:
+            raise HTTPException(409, "Start the gateway first (step 3).")
+        est = _est(body)
+        if not est["under_1_usd"] and not body.get("confirm_over_1"):
+            raise HTTPException(402, f"estimated ${est['usd']} is over $1; confirm to run")
+        try:
+            if not traffic.state.get("running"):
+                traffic_t0[0] = time.time()
+            _attach_gpu()
+            return traffic.start(body.get("workload", "mixed"), int(body.get("n", 60)), body.get("speed", "normal"),
+                                 bool(body.get("with_without")), mode=body.get("mode", "live"),
+                                 base_url=str(request.base_url).rstrip("/") + "/gw/v1")
+        except (RuntimeError, ValueError) as e:
+            raise HTTPException(400, str(e)) from e
+
+    @app.post("/api/dash/traffic/stop")
+    def traffic_stop() -> dict:
+        traffic.stop()
+        return traffic.state
+
+    @app.get("/api/dash/traffic/status")
+    def traffic_status() -> dict:
+        w = _plug._read(without_log)
+        return {**traffic.state, "without_totals": {
+            "requests": len(w), "usd": round(sum(x.get("usd", 0) for x in w), 6),
+            "wh": round(sum(x.get("joules", 0) for x in w) / 3600, 4), "label": "ESTIMATE"}}
+
+    node_job: dict = {"thread": None, "result": None}
+
+    @app.post("/api/dash/node/run")
+    def node_run(body: dict = Body(default={})) -> dict:
+        """Add the node agent: rack check, then (with approve) the cap sweep. One job at a time."""
+        import threading
+
+        from wattnot.node import agent as _agent
+        t = node_job["thread"]
+        if t is not None and t.is_alive():
+            raise HTTPException(409, GPU_BUSY)
+        if body.get("approve") and traffic.state.get("running"):   # traffic is using the GPU
+            raise HTTPException(409, GPU_BUSY)
+        ncfg = load_config(gateway) if gateway else load_config(None)
+        if (ncfg.get("node") or {}).get("meter") in ("remote", "estimate"):
+            raise HTTPException(409, "Power cap not available on this provider (no root on the GPU). "
+                                     "The software savers still run; use Simulate traffic.")
+        ov = os.environ.get("WATTNOT_PLUG_OVERLAY")
+        if ov:
+            from wattnot.gateway.build import _merge
+            import yaml as _y
+            ncfg = _merge(ncfg, _y.safe_load(Path(ov).read_text()) or {})
+        ncfg["node"]["approval"] = "manual"
+
+        def job() -> None:
+            try:
+                from wattnot.node.answercheck import HarnessCapCheck, harness_asker
+                from wattnot.node.simgpu import SimulatedH100, open_gpu
+                gpu = open_gpu()
+                chk = None
+                if not isinstance(gpu, SimulatedH100) and ncfg.get("upstream"):
+                    # same check the backend sequential run uses: proof-v1, harness graders, sweep rule
+                    chk = HarnessCapCheck(
+                        harness_asker(ncfg), gpu,
+                        lambda w: gpu.nvmlDeviceSetPowerManagementLimit(None, int(w) * 1000),
+                        gpu.nvmlDeviceGetPowerManagementLimit(None) // 1000,
+                        n=int((ncfg.get("node") or {}).get("check_prompts", 111)))
+                node_job["result"] = _agent.run(ncfg, approve=bool(body.get("approve")), log_path=logs[1],
+                                                sleep_s=float(body.get("sleep_s", 0.25)), gpu=gpu,
+                                                answer_check=chk)
+            except Exception as e:  # noqa: BLE001
+                node_job["result"] = {"status": "error", "why": f"{type(e).__name__}: {e}"[:300]}
+        node_job["result"] = None
+        node_job["thread"] = threading.Thread(target=job, daemon=True)
+        node_job["thread"].start()
+        return {"started": True}
+
+    @app.get("/api/dash/node/status")
+    def node_status() -> dict:
+        t = node_job["thread"]
+        return {"running": bool(t and t.is_alive()), "result": node_job["result"]}
+
+    _ = DEFAULTS
 
 
 def serve(host: str = "127.0.0.1", port: int = 8765, *,

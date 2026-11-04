@@ -190,6 +190,7 @@ export function mountVoiceGuide(customMountEl = null) {
       panelRoute.style.display = "block";
       const caps = Array.isArray(data.prefill.caps_w) ? `${data.prefill.caps_w.join(", ")}W` : "caps pending";
       routeLine("Prefill:", `${data.prefill.stack || "vllm"} (${caps})`);
+      if (data.prefill.deploy) window.dispatchEvent(new CustomEvent("wn:prefill-deploy", { detail: data.prefill.deploy }));
     } else {
       panelRoute.style.display = "none";
     }

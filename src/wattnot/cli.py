@@ -126,6 +126,15 @@ def build_parser() -> argparse.ArgumentParser:
     dsh = sub.add_parser("dash", help="live dashboard: GPU power, and a view of the experts")
     from wattnot.dash import __main__ as _dash
     _dash.add_args(dsh)
+    gw = sub.add_parser("gateway", help="OpenAI-compatible gateway with every saver, from one wattnot.yaml")
+    gw.add_argument("--config", default=None, help="wattnot.yaml (defaults: Meta API upstream, all savers on)")
+    gw.add_argument("--host", default="127.0.0.1")
+    gw.add_argument("--port", type=int, default=None)
+    nd = sub.add_parser("node", help="GPU node agent: rack check, power cap with the quality check (replay H100 if no GPU)")
+    nd.add_argument("--config", default="wattnot.yaml")
+    nd.add_argument("--approve", action="store_true")
+    nd.add_argument("--sim", action="store_true")
+    nd.add_argument("--sleep", type=float, default=0.0)
     dm = sub.add_parser(
         "demo",
         help="open the dashboard on the bundled replay (no GPU, no network, no keys)",
@@ -304,6 +313,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_recommend(args)
         except (OSError, KeyError, TypeError, ValueError) as e:
             parser.error(f"bad report: {e}")
+    if args.cmd == "gateway":
+        from wattnot.gateway.build import load_config, serve
+        try:
+            port = args.port or load_config(args.config).get("port", 8780)
+        except (OSError, ValueError) as e:
+            parser.error(f"gateway: {e}")
+        return serve(args.config, host=args.host, port=port)
+    if args.cmd == "node":
+        from wattnot.node import agent as _agent
+        argv = ["--config", args.config, "--sleep", str(args.sleep)] + (["--approve"] if args.approve else []) \
+            + (["--sim"] if args.sim else [])
+        return _agent.main(argv)
     if args.cmd == "init":
         from wattnot import init as _init
         return _init.main(args)

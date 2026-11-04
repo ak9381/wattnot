@@ -362,6 +362,46 @@ def summarize_screen(cards: Any, limit: int = 4) -> str:
             " Lower energy per correct answer with the pass rate held is the win; MEASURED numbers come from the GPU meter.")
 
 
+_SAVER_WORDS = {"agent_waste": ("agent waste", "waste guard", "loop guard"), "routing": ("routing", "tiers", "step up"),
+                "context_saver": ("context saver", "context"), "thinking_cap": ("thinking cap", "thinking budget", "thinking"),
+                "vision": ("vision", "image"), "voice": ("voice", "speech", "audio")}
+
+
+def parse_deploy(text: str) -> dict[str, Any]:
+    """Spoken deployment setup -> fields of the Plug-in screen. Unknown stays None. Read-only."""
+    t = text.lower()
+    out: dict[str, Any] = {"deployment": None, "upstream": None, "savers_off": [], "cap_min_w": None,
+                           "cap_max_w": None, "sam_rack_check": None, "langfuse": None, "port": None}
+    if "both" in t or ("gateway" in t and ("gpu" in t or "node" in t)):
+        out["deployment"] = "both"
+    elif "gateway" in t or "base url" in t or "proxy" in t:
+        out["deployment"] = "gateway"
+    elif "gpu controller" in t or "node agent" in t or "power cap" in t:
+        out["deployment"] = "gpu"
+    for k, words in (("meta", ("meta api", "muse spark")), ("vllm", ("vllm", "v llm")), ("baseten", ("baseten", "base ten"))):
+        if any(w in t for w in words):
+            out["upstream"] = k
+    for key, words in _SAVER_WORDS.items():
+        for w in words:
+            if re.search(rf"(?:no|without|disable|turn off|switch off)\s+(?:the\s+)?{w}|{w}\s+off\b", t):
+                out["savers_off"].append(key)
+                break
+    m = re.search(r"(\d{3})\s*(?:to|-|and)\s*(\d{3})\s*(?:w|watt)", t)
+    if m:
+        lo, hi = sorted((int(m.group(1)), int(m.group(2))))
+        out["cap_min_w"], out["cap_max_w"] = lo, hi
+    if re.search(r"(?:no|without|skip|disable)\s+(?:the\s+)?(?:sam|rack check)", t):
+        out["sam_rack_check"] = False
+    elif "rack check" in t or "sam" in t.split():
+        out["sam_rack_check"] = True
+    if "langfuse" in t:
+        out["langfuse"] = not re.search(r"(?:no|without|disable)\s+langfuse", t)
+    m = re.search(r"port\s+(\d{4,5})", t)
+    if m:
+        out["port"] = int(m.group(1))
+    return out
+
+
 def _has_run_setup_signals(t: str) -> bool:
     """True when lowered text carries spoken run-setup evidence (cap, workload, or framework)."""
     if _parse_cap_w(t) is not None:
@@ -710,6 +750,7 @@ def process_voice_query(
                     "gpu_memory_utilization": 0.90,
                 },
                 "caps_w": [cap_w] if cap_w is not None else [300, 350, 400],
+                "deploy": parse_deploy(text),
                 "note": (
                     "Pre-filled by voice guide. Action required: review parameters and press Start. "
                     "This pre-fill never starts, stops, or changes a run."

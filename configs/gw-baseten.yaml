@@ -1,0 +1,11 @@
+# Gateway on Baseten's Model API (Muse Spark Open). No GPU access: no power cap, energy ESTIMATE.
+deployment: gateway
+port: 8780
+upstream: {base_url: "https://inference.baseten.co/v1", key_env: BASETEN_METRICS_KEY, timeout_s: 180}
+tiers:
+  - {name: small, model: meta-models/muse-spark-open, body_extra: {reasoning_effort: low}}
+  - {name: big,   model: meta-models/muse-spark-open, body_extra: {}}   # stock: provider default effort
+baseline: {tier: big}
+energy: {source: estimate, j_per_token: {default: 7.86}}
+node: {enabled: true, meter: estimate}
+savings_log: out/hosted/baseten-ui/savings.jsonl

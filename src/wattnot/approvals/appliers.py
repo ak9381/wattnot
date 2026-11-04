@@ -146,7 +146,7 @@ def _vllm_args(cfg: Mapping) -> list[str] | None:
 
     fields = {k: cfg[k] for k in ("max_num_seqs", "enable_chunked_prefill",
                                   "enable_prefix_caching", "block_size", "quantization",
-                                  "gpu_mem_util") if k in cfg}
+                                  "gpu_mem_util", "kv_cache_dtype") if k in cfg}
     try:
         return server_args(str(cfg.get("model", "MODEL")), TrialParams(**fields))[3:]
     except (TypeError, ValueError):
