@@ -1231,7 +1231,7 @@
  ],
  "receipt_signed": true,
  "gaps": [
-  "p99 was not recorded by the gateway sequential runner (receipts say 0 is a placeholder).",
+  "p99 was not recorded by the gateway sequential runner; the receipts store 0 for it, which is not a measurement.",
   "Power samples from node.jsonl thinned to one every 2 s for playback; the receipts hold the full counter energy."
  ],
  "spec": "wattnot.replay-manifest/1",

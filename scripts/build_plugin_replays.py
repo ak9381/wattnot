@@ -76,7 +76,7 @@ def h100():
         "kind": "gateway-takes", "energy_label": "MEASURED", "headline": "seq-20261104-000651-text",
         "headline_why": "text take with the strongest test (Welch p 0.027); other takes are listed beside it, not averaged",
         "takes": takes, "receipt_signed": True,
-        "gaps": ["p99 was not recorded by the gateway sequential runner (receipts say 0 is a placeholder).",
+        "gaps": ["p99 was not recorded by the gateway sequential runner; the receipts store 0 for it, which is not a measurement.",
                  f"Power samples from {H100_NODE.name} thinned to one every 2 s for playback; the receipts hold the full counter energy."]}, ev)
 
 
@@ -125,5 +125,23 @@ def baseten():
                  "The power cap step is skipped on this provider (no cap available)."]}, ev, files)
 
 
+
+def plugin_h100_eu_and_receipts() -> None:
+    """EU field export from the signed headline receipt, plus the receipts scene4 reads."""
+    import shutil
+    from wattnot.report import eu
+    src, out = ROOT / "receipts/h100-1104", ROOT / "replays/plugin-h100-1104"
+    (out / "receipts").mkdir(exist_ok=True)
+    for t in ("000651-text", "011725-images", "013308-images", "040850-voice"):
+        shutil.copy(src / f"rcpt_20261104-{t}.json", out / "receipts")
+    shutil.copy(src / "rcpt_20261104-000651-text.sigstore.json", out / "receipts")
+    rec, signed = eu.check_receipt_file(src / "rcpt_20261104-000651-text.json")
+    rows = eu.fields_for(rec)
+    if signed is not True:
+        rows = eu._unsigned(rows)
+    (out / "eu_report.html").write_text(eu.to_html(
+        rows, title="EU 2024/1364 field export: Plugin H100, text take seq-20261104-000651-text (Nov 4)"))
+
+
 if __name__ == "__main__":
-    h100(); modal(); baseten(); print("ok")
+    h100(); modal(); baseten(); plugin_h100_eu_and_receipts(); print("ok")

@@ -60,9 +60,52 @@ export async function loadData(fetcher = fetch) {
   return D;
 }
 
+// Plugin H100 (Nov 4) sources: the signed gateway-take receipts copied into its replay folder.
+const PH = "/replays/plugin-h100-1104";
+const PSRC = {
+  text: `${PH}/receipts/rcpt_20261104-000651-text.json`,
+  img1: `${PH}/receipts/rcpt_20261104-011725-images.json`,
+  img2: `${PH}/receipts/rcpt_20261104-013308-images.json`,
+  voice: `${PH}/receipts/rcpt_20261104-040850-voice.json`,
+};
+const jpr = (r) => [r.baseline.wh_per_req.mean * 3600, r.candidate.wh_per_req.mean * 3600];
+export function pluginPanels(Q, D) {
+  const P = D.proof, pr = D.pr, t = Q.text, ti = t.integrity, ts = t.sci.arms, tq = t.candidate.quality, bq = t.baseline.quality;
+  const take = (r, name) => { const [a, b] = jpr(r), q = r.candidate.quality || {};
+    return `<tr><td>${name}</td><td>${n(a)} → ${n(b)} J</td><td>${n(-r.result.saving_pct.mean)}% ${chip("MEASURED")}</td><td>${q.agreement_with_stock != null ? `agreement with stock ${n(q.agreement_with_stock * 100, 0)}%` : "not graded"}</td></tr>`; };
+  return {
+    3: { title: "Text, images and voice, and a look at the rack first", cards: [
+      card(`Images and voice takes, Plugin H100 ${chip("MEASURED")}`, `<table class="s4-t"><tr><th>take</th><th>energy per request</th><th>change</th><th>answers</th></tr>
+        ${take(Q.img1, "images 01:17")}${take(Q.img2, "images 01:33")}${take(Q.voice, "voice 04:08")}</table>
+        <div class="lineup-role">Images use about a quarter less energy at 375 W. Voice did not save (Welch p ${n(Q.voice.result.welch.p_value, 2)}), so it is not counted as a win.</div>`, "plugin-h100-1104 signed receipts (NVML counter per arm)"),
+      card(`SAM 3.1 rack check ${chip(P.room.labels.rack_count)}`, `<img class="s4-img" src="./scene4/rackmap.sam.png" alt="SAM 3.1 rack map"><div class="lineup-role">${P.room.sam.racks_found} racks found (prompt "${esc(P.room.sam.prompt)}"). Rule in code: a rack not visible in the photo is not touched. Recorded in the Test H100 run (Nov 3); the Plugin H100 run did not run SAM.</div>`, "Test H100 proof-de155e room.sam"),
+    ] },
+    5: { title: "Safe cuts, water counted, EU report", cards: [
+      card(`Answers held ${chip("MEASURED")}`, `<div class="s4-big">${bq.correct}/${bq.scored} → ${tq.correct}/${tq.scored} correct</div><div class="lineup-role">${n(t.result.saving_pct.mean)}% less energy per request on the text take (Welch p ${n(t.result.welch.p_value, 3)})</div>`, "plugin-h100-1104 text take receipt"),
+      card(`Water per request ${chip(t.estimates.water_ml_per_req.label)}`, `<div class="s4-big">${n(ts.baseline.water_ml_per_request, 3)} → ${n(ts.candidate.water_ml_per_request, 3)} mL</div><div class="lineup-role">${esc(t.estimates.water_ml_per_req.source)}</div>`, "plugin-h100-1104 text receipt sci.water"),
+      card(`EU efficiency report ${chip("MEASURED")}`, `<div class="lineup-role">Exported from the signed text-take receipt; facility fields marked not available.</div><a class="s4-btn" href="${PH}/eu_report.html">Open EU report</a>`, "replays/plugin-h100-1104/eu_report.html"),
+    ] },
+    6: { title: "A signed receipt, then a pull request", cards: [
+      card(`Signed receipt ${chip("MEASURED")}`, `<div class="s4-mono">${esc(t.receipt_id)}</div><div class="lineup-role">sha256 ${esc(ti.sha256.slice(0, 16))}… · ${esc(ti.canonicalization)} · Sigstore log index ${esc(ti.rekor.log_index)}</div>`, "plugin-h100-1104 text receipt integrity"),
+      card(`Muse Code pull request ${chip(pr.label)}`, `<div class="s4-mono">${esc(pr.pr_url.replace("https://github.com/", ""))}</div><div class="lineup-role">Change: power cap ${pr.change.power_cap_w} W (${esc(pr.change.label)}) · energy ${n(pr.evidence.energy_change_pct)}% · answers ${pr.evidence.quality_cap_pct}% vs ${pr.evidence.quality_stock_pct}% on ${pr.evidence.checked}</div>`, "musecode p2 pr.json"),
+    ] },
+  };
+}
+
 export async function mountScene4(el, search) {
-  const panels = buildPanels(await loadData());
+  const D = await loadData();
+  const panels = buildPanels(D);
+  // Default is the Plugin H100 run; ?run=test keeps the Test-run panels.
+  if (new URLSearchParams(search).get("run") !== "test") {
+    const Q = {};
+    await Promise.all(Object.entries(PSRC).map(async ([k, u]) => { Q[k] = await (await fetch(u)).json(); }));
+    Object.assign(panels, pluginPanels(Q, D));
+  }
   const line = new URLSearchParams(search).get("line");
+  if (line === "pr") { // the real PR #4 page, full frame (screenshot of github.com, Nov 4)
+    el.innerHTML = `<figure class="s4-pr"><img src="./scene4/pr4-github.png" alt="Pull request #4 on GitHub"><figcaption>${esc(D.pr.pr_url)} · ${chip(D.pr.label)} · evidence from the Test H100 power-cap sweep (${esc(D.pr.evidence.run_id)})</figcaption></figure>`;
+    return;
+  }
   const keys = line && panels[line] ? [line] : Object.keys(panels);
   el.innerHTML = keys.map((k) => `<section class="lineup s4-panel" data-line="${k}"><div class="lineup-head"><h2><span class="s4-line">Line ${k}</span> ${panels[k].title}</h2>
     <button type="button" class="lineup-play">&#9654; Play</button></div><div class="s4-grid">${panels[k].cards.join("")}</div></section>`).join("");

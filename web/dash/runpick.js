@@ -30,6 +30,12 @@ export function rewriteLinks(root = document, id = getRun()) {
 
 export function optionLabel(r) {
   const d = (r.date || "").slice(0, 10);
+  if (r.kind === "recorded") {
+    // Short enough to read in full in the side panel: "Plugin H100 · Nov 4".
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d);
+    const md = m ? `${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m[2] - 1]} ${+m[3]}` : "";
+    return [r.name || r.id, md].filter(Boolean).join(" · ");
+  }
   return [r.name || r.id, r.stage, d, r.label].filter(Boolean).join(" · ");
 }
 

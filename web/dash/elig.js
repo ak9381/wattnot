@@ -1,4 +1,4 @@
-import { RUN_NAMES } from "./runset.js";
+import { RUN_NAMES, RUN_CFG } from "./runset.js";
 // Shared eligibility: one check (POST /api/launch/eligibility) for the configuration saved on the
 // Configure screen. Every page greys what this configuration cannot run, with the reason on hover,
 // and gets a replay toggle between the without-WattNot and with-WattNot arms.
@@ -77,7 +77,12 @@ function bar(elig, arm) {
   const el = document.createElement("div");
   el.className = "wn-elig"; el.setAttribute("role", "region"); el.setAttribute("aria-label", "Run configuration");
   const rid = replayId();
-  el.innerHTML = `<span>${rid ? `Run <b>${esc(RUN_NAMES[rid] || rid)}</b> ${lab("REPLAY")} · ` : ""}Configuration <b>${esc(elig.provider_label)}</b> · main model <b>${esc(elig.model)}</b> · energy ${lab(elig.energy_label)}</span>
+  const rc = rid ? RUN_CFG[String(rid).replace(/^replay:/, "")] : null;
+  el.innerHTML = rc
+    ? `<span>Run <b>${esc(RUN_NAMES[rid] || rid)}</b> ${lab("REPLAY")} · Configuration <b>${esc(rc.provider)}</b>${rc.model ? ` · main model <b>${esc(rc.model)}</b>` : ""}${rc.energy ? ` · energy ${lab(rc.energy)}` : ""}</span>
+    <span>Settings from this run's own record</span>
+    <a href="v2.html#pCfg">Configure a new run</a>`
+    : `<span>${rid ? `Run <b>${esc(RUN_NAMES[rid] || rid)}</b> ${lab("REPLAY")} · ` : ""}Configuration <b>${esc(elig.provider_label)}</b> · main model <b>${esc(elig.model)}</b> · energy ${lab(elig.energy_label)}</span>
     <span><b>${elig.counts.eligible}</b> eligible · <b>${elig.counts.ineligible}</b> ineligible of ${elig.counts.total} features</span>
     <a href="v2.html#pCfg">Change configuration</a>`;
   el.querySelectorAll("[data-arm]").forEach((b) => b.addEventListener("click", () => {
