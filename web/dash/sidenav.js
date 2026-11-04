@@ -38,7 +38,10 @@ function blocks(root, max) {
 let built = "";
 function build() {
   const a = document.querySelector("#wnSide a.wn-link.on"); if (!a) return;
-  const host = a.parentElement.querySelector(".wn-secs"); if (!host) return;
+  const host = a.parentElement.querySelector(".wn-secs") || { set innerHTML(v) {} };
+  // Every page opens in full: no auto-generated part links and no "Show the whole page" link.
+  document.querySelectorAll(".wn-sec-hidden").forEach((e) => e.classList.remove("wn-sec-hidden"));
+  host.innerHTML = ""; built = "full"; return;
   if (SKIP.test(location.pathname + location.hash)) { host.innerHTML = ""; return; }
   const all = new URL(location.href).searchParams.get("all") === "1";
   document.querySelectorAll(".wn-sec-hidden").forEach((e) => e.classList.remove("wn-sec-hidden"));

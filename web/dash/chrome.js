@@ -60,7 +60,7 @@
     ];
     const LBL = {};
     side.innerHTML = `<div class="wn-side-run" id="wnSideRun"></div>` + G.map(([g, name, items]) => `<details class="wn-grp" data-group="${g}"><summary>${name}</summary><ul>${items.map(([k, h, t]) =>
-      `<li><a class="wn-link" data-nav="${k}" href="${prefix}${h}">${LBL[k] || t}</a><ul class="wn-secs" data-secs-for="${k}"></ul></li>`).join("")}</ul></details>`).join("");
+      `<li><a class="wn-link" data-nav="${k}" href="${prefix}${h}">${LBL[k] || t}</a></li>`).join("")}</ul></details>`).join("");
     document.body.insertBefore(side, nav.nextSibling);
     document.body.classList.add("wn-has-side");
     const scrim = document.createElement("div"); scrim.className = "wn-side-scrim"; scrim.hidden = true; document.body.appendChild(scrim);
