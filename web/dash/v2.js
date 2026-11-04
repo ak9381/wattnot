@@ -119,7 +119,7 @@ function renderHome() {
   wireR7();
   const rid = selectedReplay(location.search, localStorage.getItem("wn.run"));
   if (!S.replayRuns && !S._rrLoading) { S._rrLoading = true; replayRuns().then((x) => { S.replayRuns = x; renderHome(); }); }
-  if (rid && S.replaySum?.id !== rid && !S._replayLoading) { S._replayLoading = true; replaySummary(rid).then((x) => { S.replaySum = x; S._replayLoading = false; renderHome(); }); }
+  if (rid && S._replayTried !== rid && !S._replayLoading) { S._replayLoading = true; S._replayTried = rid; replaySummary(rid).then((x) => { S.replaySum = x; S._replayLoading = false; renderHome(); }); }
   $("#pHome").innerHTML = overviewHtml(S);
   $$("#pHome [data-go]").forEach((a) => (a.onclick = (e) => { e.preventDefault(); show(a.dataset.go); }));
   // "Open bigger": the same chart, with the same run's data, in a large closable overlay.

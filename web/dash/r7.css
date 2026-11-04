@@ -188,3 +188,9 @@ body:not(.illus) [data-illus] { display: none !important; }
 .bigchart{width:min(1200px,94vw);max-height:90vh;padding:18px 22px;border-radius:18px;border:1px solid rgba(255,255,255,.16);background:rgba(12,16,30,.97);color:#E4DFEB}
 .bigchart::backdrop{background:rgba(0,0,0,.6)}.bigchart header{display:flex;justify-content:space-between;align-items:center}.bigchart h3{margin:0}
 .bigchart-body svg{width:100%;height:auto;min-height:420px}
+/* Home grid: cards size to their content; charts have a fixed max height so nothing can grow without end. */
+.ov-grid{align-items:start}
+.ov-grid>section{min-height:0;overflow:hidden}
+.ov-grid svg{display:block;width:100%;height:auto;max-height:300px}
+.ov-gauge svg{max-height:190px;max-width:280px;margin:0 auto}
+.ov-donut svg{max-height:220px}
