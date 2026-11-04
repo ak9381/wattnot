@@ -202,6 +202,7 @@
           <span class="wn-footer-year">2026</span>
         </div>
         <div class="wn-footer-right">
+          <span class="wn-footer-builtwith">Built with Muse Spark Open</span>
           <a class="wn-footer-gh" href="https://github.com/ak9381/wattnot" target="_blank" rel="noopener">GitHub</a>
         </div>
       </div>
