@@ -56,7 +56,7 @@ function contextSaver() {
 const CONTEXT_PARTS = [["prefix", "Prefix cache hit rate"], ["memcomp", "Memory compression"], ["dupcut", "Tool-output dedup"]];
 
 const params = new URLSearchParams(location.search);
-// RUN2 (Llama 3.1 8B, not a Meta model here) is hidden: an old stored id falls back to the Glimmer rerun.
+// RUN2 (the hidden non-Meta comparison run) is not shown: an old stored id falls back to the Glimmer rerun.
 const RUN_PICK = params.get("run") || localStorage.getItem("wn.run") || "";
 const RUN_ID = !RUN_PICK || /llama|^run2/i.test(RUN_PICK) ? "rerun-1031-glimmer-325w" : RUN_PICK;
 const IS_RECORDED = RUN_ID.startsWith("replay:");
