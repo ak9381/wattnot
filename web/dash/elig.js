@@ -76,7 +76,7 @@ function bar(elig, arm) {
   const el = document.createElement("div");
   el.className = "wn-elig"; el.setAttribute("role", "region"); el.setAttribute("aria-label", "Run configuration");
   const rid = replayId();
-  el.innerHTML = `<span>${rid ? `Run <b>${esc(rid)}</b> ${lab("REPLAY")} · ` : ""}Configuration <b>${esc(elig.provider_label)}</b> · main model <b>${esc(elig.model)}</b> · energy ${lab(elig.energy_label)}</span>
+  el.innerHTML = `<span>${rid ? `Run <b>${esc(({ "h100-stitched": "H100 run", "modal-stitched": "Modal run", "baseten-stitched": "Baseten run" })[rid] || rid)}</b> ${lab("REPLAY")} · ` : ""}Configuration <b>${esc(elig.provider_label)}</b> · main model <b>${esc(elig.model)}</b> · energy ${lab(elig.energy_label)}</span>
     <span><b>${elig.counts.eligible}</b> eligible · <b>${elig.counts.ineligible}</b> ineligible of ${elig.counts.total} features</span>
     <a href="v2.html#pCfg">Change configuration</a>`;
   el.querySelectorAll("[data-arm]").forEach((b) => b.addEventListener("click", () => {
