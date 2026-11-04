@@ -9,6 +9,7 @@ import { fetchElig, getArm, NODE_FEATURE, MODEL_ALIAS } from "./elig.js";
 import { modelOf } from "./metastrip.js";
 import { getRun } from "./runpick.js";
 import { gwlHeadline, gwlSpend } from "./gwlcard.js";
+import { getJSON } from "./plugsteps.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -279,8 +280,7 @@ function build() {
             : `<br>J per correct answer: ${q.j_per_correct ?? "n/a"} J (stock ${q.j_per_correct_stock ?? "n/a"} J/request) <span class="wnlab e">ESTIMATE</span>`)
           + `<br>${gwlSpend(q)} <span class="wnlab e">${q.spend_label}</span>`;
       }).catch(() => {});
-      const [f, t] = await Promise.all([fetch("/api/dash/plug?last=500").then((r) => r.json()),
-        fetch("/api/dash/traffic/status").then((r) => (r.ok ? r.json() : null)).catch(() => null)]);
+      const [f, t] = await Promise.all([getJSON("/api/dash/plug?last=500", 15000), getJSON("/api/dash/traffic/status")]);
       if (f && f.source !== "replay") drawGwl(f, t); else if (!gl.classList.contains("open")) gwl.hidden = true;
       liveAnts(f, t);
     } catch { /* not served here: no gateway, nothing to draw */ }

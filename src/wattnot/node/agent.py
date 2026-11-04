@@ -114,7 +114,7 @@ def run(cfg: dict, *, approve: bool = False, gpu=None, sam_client=None, samples_
             return {"status": "stopped", "why": rc["why"]}
     if node.get("approval", "manual") == "manual" and not approve:
         ev("waiting_approval", note="approve to start the cap sweep")
-        return {"status": "waiting_approval"}
+        return {"status": "waiting_approval", "rack_label": rc.get("label") if node.get("sam", True) else None}
 
     def sample(cap_w, n):
         for _ in range(n):

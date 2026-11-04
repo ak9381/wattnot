@@ -535,15 +535,22 @@ class TrafficRun:
                 self.state["cap_note"] = CAP_UNAVAILABLE
                 self.event(step="cap_unavailable", note=CAP_UNAVAILABLE)
             elif check is not None:
-                self.state["phase"] = (f"answer check: {getattr(check, 'items', None) and len(check.items)} "
-                                       f"proof-v1 prompts, stock vs {self.cap_w} W")
+                base = (f"answer check: {getattr(check, 'items', None) and len(check.items)} "
+                        f"proof-v1 prompts, stock vs {self.cap_w} W (about 10-12 min, GPU busy)")
+                self.state["phase"] = base
+                t_chk = time.time()
+
+                def _progress(what, base=base, t_chk=t_chk):
+                    self.state["phase"] = f"{base} · {what} · {int(time.time() - t_chk) // 60} min in"
+                if hasattr(check, "progress"):
+                    check.progress = _progress
                 check.stock()                      # stock answers at stock power
                 g.set_w(self.cap_w)
                 if hasattr(check, "warmup") and not getattr(check, "warm", None):
-                    self.state["phase"] = "GPU warm-up (not measured)"
+                    self.state["phase"] = f"{base} · GPU warm-up (not measured, about 5 min)"
                     wu = check.warmup()
                     self.event(step="gpu_warmup", **wu)
-                    self.state["phase"] = (f"answer check: {len(check.items)} proof-v1 prompts, stock vs {self.cap_w} W")
+                    self.state["phase"] = base
                 st = check.at(self.cap_w)
                 res["answer_check"] = st
                 self.event(step="quality_check", cap_w=self.cap_w, **{k: v for k, v in st.items() if k != "label"})
