@@ -223,6 +223,7 @@ body.is-landing footer.wn-footer.gl {
 /* Keep the bar compact on narrow screens: drop the middle credits, keep brand + year + link. */
 @media (max-width: 720px) {
   .wn-footer-credit, .wn-footer-track,
+  .wn-footer-builtwith,
   .wn-footer-left .wn-footer-sep { display: none; }
 }
 
@@ -324,6 +325,12 @@ body:not(.is-landing):not(.story):not(:has(.viewport)) > footer.wn-footer.gl {
   font-style: italic;
 }
 
+.wn-footer-builtwith {
+  font-size: 12px;
+  color: var(--v-mut, #8E7A9E);
+  white-space: nowrap;
+}
+
 .wn-footer-gh {
   color: var(--v-sub, #B2A6C3);
   text-decoration: none;
@@ -416,6 +423,7 @@ body.is-landing footer.wn-footer.gl .wn-footer-credit,
 body.is-landing footer.wn-footer.gl .wn-footer-track,
 body.is-landing footer.wn-footer.gl .wn-footer-year,
 body.is-landing footer.wn-footer.gl .wn-leg-item,
+body.is-landing footer.wn-footer.gl .wn-footer-builtwith,
 body.is-landing footer.wn-footer.gl .wn-footer-note {
   color: #C8CCD4;
 }
