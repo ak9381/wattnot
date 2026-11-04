@@ -1,5 +1,5 @@
 . /workspace/hackathon/video/takes/helpers/typer.sh
-clear; cd /tmp/wn-nollama; export PYTHONPATH=src; PY=/workspace/wattnot/.venv/bin/python
+clear; cd /tmp/wn-takes; export PYTHONPATH=src; PY=/workspace/wattnot/.venv/bin/python
 printf '\e[1;37;41m  SIMULATED  \e[0m rack inventory, slot map, rack budget (rack/audit/fleet.json)\n'
 printf '\e[1;30;42m  MEASURED   \e[0m SAM 3.1 unit boxes, replayed from a saved live call (rack/*/sam-raw)\n'
 sleep 3

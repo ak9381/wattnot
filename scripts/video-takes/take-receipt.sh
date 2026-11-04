@@ -1,5 +1,5 @@
 . /workspace/hackathon/video/takes/helpers/typer.sh
-clear; cd /tmp/wn-nollama; export PYTHONPATH=src; alias wattnot='/workspace/wattnot/.venv/bin/python -m wattnot.cli'
+clear; cd /tmp/wn-takes; export PYTHONPATH=src; alias wattnot='/workspace/wattnot/.venv/bin/python -m wattnot.cli'
 shopt -s expand_aliases
 say "Baseten round receipt (images + text), checked offline"
 t "wattnot verify replays/baseten-r2/receipt.json" 3
