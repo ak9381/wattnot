@@ -9,6 +9,16 @@ function replayId() {
   const v = new URLSearchParams(location.search).get("run") || localStorage.getItem("wn.run") || "";
   return v.startsWith("replay:") ? v.slice(7) : null;
 }
+// The run picker can settle on a run after this page rendered (no ?run= and nothing saved yet):
+// reload once so the bar, EU card and numbers all follow that run instead of the defaults.
+if (globalThis.addEventListener && !globalThis.__WN_TEST__) {
+  const first = globalThis.location ? replayId() : null;
+  addEventListener("wn:run", (e) => {
+    const id = e.detail?.id || "", now = id.startsWith("replay:") ? id.slice(7) : null;
+    if (now !== first && !sessionStorage.getItem("wn.runReloaded")) { sessionStorage.setItem("wn.runReloaded", "1"); location.reload(); }
+    else sessionStorage.removeItem("wn.runReloaded");
+  });
+}
 export function loadConfig() {
   const q = new URLSearchParams(location.search).get("provider") || REPLAY_PROVIDER(replayId());
   try { const c = JSON.parse(localStorage.getItem(KEY) || "null"); return q ? { ...(c || {}), provider: q } : c || { ...DEFAULT }; }
@@ -68,9 +78,6 @@ function bar(elig, arm) {
   const rid = replayId();
   el.innerHTML = `<span>${rid ? `Run <b>${esc(rid)}</b> ${lab("REPLAY")} · ` : ""}Configuration <b>${esc(elig.provider_label)}</b> · main model <b>${esc(elig.model)}</b> · energy ${lab(elig.energy_label)}</span>
     <span><b>${elig.counts.eligible}</b> eligible · <b>${elig.counts.ineligible}</b> ineligible of ${elig.counts.total} features</span>
-    <span class="seg" role="group" aria-label="Replay arm">
-      <button data-arm="without_wattnot" aria-pressed="${arm === "without_wattnot"}">Without WattNot</button>
-      <button data-arm="with_wattnot" aria-pressed="${arm === "with_wattnot"}">With WattNot</button></span>
     <a href="v2.html#pCfg">Change configuration</a>`;
   el.querySelectorAll("[data-arm]").forEach((b) => b.addEventListener("click", () => {
     el.querySelectorAll("[data-arm]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));

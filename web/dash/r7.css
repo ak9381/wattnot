@@ -32,7 +32,7 @@ nav.tabs button.on{background:rgba(142,122,158,.14);border-color:rgba(142,122,15
 /* info button + panel (right to left) */
 .ibtn{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:rgba(142,122,158,.12);color:#F3F0F7;font:600 12px/1 "Space Grotesk",sans-serif;cursor:pointer;vertical-align:middle;margin-left:8px;padding:0}
 .ibtn:hover,.ibtn:focus-visible{border-color:var(--r7-blue);outline:none;box-shadow:0 0 0 3px rgba(142,122,158,.25)}
-.r7info{position:fixed;top:0;right:0;height:100vh;width:min(460px,92vw);z-index:90;transform:translateX(105%);transition:transform .28s ease;overflow:auto;padding:18px 22px;border-radius:18px 0 0 18px;background:rgba(10,16,30,.92)!important}
+.r7info{position:fixed;top:0;right:0;height:100vh;width:min(460px,92vw);z-index:1000;transform:translateX(105%);transition:transform .28s ease;overflow:auto;padding:18px 22px;border-radius:18px 0 0 18px;background:rgba(10,16,30,.92)!important}
 .r7info.on{transform:none}
 .r7info header{display:flex;align-items:center;gap:8px;margin-bottom:10px}.r7info .sp{flex:1}
 .r7info h2{font-size:22px;margin:4px 0 10px;color:#F3F0F7}.r7info h3{font-size:15px;margin:14px 0 4px;color:#F3F0F7}.r7info p,.r7info li{color:#E4DFEB;font-size:14px;line-height:1.55}
@@ -183,3 +183,5 @@ body:not(.illus) [data-illus] { display: none !important; }
 .ov{grid-template-columns:1fr}
 .ov-jump{margin:6px 0 0;font-size:13px;color:#CBC4D6}.ov-jump a{color:#C9B8E0;text-decoration:none;border-bottom:1px dotted rgba(201,184,224,.5)}.ov-jump a:hover{color:#fff}
 .ov-legend{margin-top:8px}.ov-legend .r7legend{flex-direction:row;flex-wrap:wrap;gap:12px;font-size:12px}
+
+.r7info header{position:sticky;top:-18px;padding-top:4px;background:inherit;z-index:1}.r7info .r7ix{font-size:14px;padding:6px 12px}

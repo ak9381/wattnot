@@ -394,7 +394,6 @@ export function overviewHtml(S) {
   return `<div class="ov">
   <div class="ov-main">
     <div class="ov-hd"><div><h1>Less power per AI answer, with proof</h1><p class="lead">WattNot tries a safer GPU setting, checks the answers, and keeps it only if nothing got worse. ${infoBtn("what", "what WattNot does")}</p>
-      <p class="ov-jump">On this page: ${[["pCfg", "Configure"], ["pRun", "Run"], ["pReport", "Compare"], ["pProof", "Proof"], ["pLearn", "How it works"]].map(([p, t]) => `<a href="#${p}">${t}</a>`).join(" · ")}</p>
       <div class="ov-legend">${legend()}</div></div><button class="btn pri" data-go="pCfg">Configure a run →</button></div>
     <div class="ov-kpis">
       ${(() => { // Headline: joules per correct answer (energy per answer / fixed-check pass rate), MEASURED.

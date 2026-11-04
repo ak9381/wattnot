@@ -28,12 +28,13 @@
   .eu-legend em::after{content:attr(data-t);font-style:normal}
   .eu-legend span{display:inline-flex;align-items:center;gap:6px}.eu-legend .wn-dot{margin:0!important}
   .eu-src{font-size:.82rem;color:#C9C6D6}.eu-src a{color:#A3BE8C}
+  #eu-full table{width:100%;border-collapse:collapse;font-size:.82rem}#eu-full td,#eu-full th{padding:5px 6px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;vertical-align:top}
   .road{font-size:.75rem;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.25)}
 </style>
 </head>
 <body>
 <main class="eu">
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><h1>EU Compliance</h1><span id="wn-mic-slot"></span></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><h1>EU energy report</h1><span id="wn-mic-slot"></span></div>
   <p class="sub">Measured energy per correct answer, ready for EU reporting. One click turns a signed receipt into the report.</p>
 
   <div class="eu-legend" aria-label="Legend: measured, estimate, simulated, mock, replay, pending">
@@ -45,9 +46,10 @@
     <span><i class="wn-dot wn-dot-pending" title="Pending: not in this receipt yet."></i><em data-t="pending"></em></span>
   </div>
 
-  <h2>One-click report · Oct 31 Glimmer rerun (325 W cap, measured)</h2>
+  <h2 id="eu-run-h">One-click report</h2>
   <div id="eu-card-mount" class="eucard-wrap"></div>
   <div id="eulink-mount"></div>
+  <section id="eu-full" class="eu-box" hidden><h3 id="eu-full-h">Full EU 2024/1364 field export</h3><div id="eu-full-body"></div></section>
 
   <h2>Why it matters</h2>
   <div class="eu-grid">
@@ -74,8 +76,28 @@
 <script type="module">
   import { mountEuCard, mountEuLink, loadEuReceipt } from "./eulink.js";
   const rc = await loadEuReceipt();
-  mountEuCard(document.getElementById("eu-card-mount"), rc);
-  mountEuLink(document.getElementById("eulink-mount"), rc || {});
+  const rid = rc?.__replay || null;
+  document.getElementById("eu-run-h").textContent = rid ? `One-click report · run ${rid}` : "One-click report · Oct 31 Glimmer rerun (325 W cap, measured)";
+  const card = document.getElementById("eu-card-mount");
+  await mountEuCard(card, rc);
+  if (!rc?.__csv && !rc?.__none) mountEuLink(document.getElementById("eulink-mount"), rc || {});
+  // One EU page: no link back to itself, and the full report opens here, in the same tab.
+  card.querySelectorAll('a[href="eu.html"]').forEach((a) => a.remove());
+  const src = rid ? `/replays/${rid}/eu_report.html` : null;
+  if (src) {
+    try {
+      const r = await fetch(src);
+      if (r.ok) {
+        const doc = new DOMParser().parseFromString(await r.text(), "text/html");
+        const t = doc.querySelector("table");
+        if (t) { document.getElementById("eu-full-body").appendChild(t); document.getElementById("eu-full-h").textContent = `Full EU 2024/1364 field export · ${rid}`; document.getElementById("eu-full").hidden = false; }
+      }
+    } catch {}
+  }
+  card.querySelectorAll('a.eucard-btn[target="_blank"]').forEach((a) => {
+    a.removeAttribute("target"); a.removeAttribute("rel");
+    if (!document.getElementById("eu-full").hidden) a.href = "#eu-full";
+  });
 </script>
 <script type="module" src="realruns.js"></script>
 </body>

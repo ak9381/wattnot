@@ -43,7 +43,7 @@ function ensurePanel() {
   if (p) return p;
   p = document.createElement("aside");
   p.id = "r7info"; p.className = "r7info glass"; p.setAttribute("role", "dialog"); p.setAttribute("aria-label", "Explanation"); p.setAttribute("aria-hidden", "true");
-  p.innerHTML = `<header><span class="lvl">Explained</span><span class="sp"></span><button class="btn r7ix" aria-label="Close explanation">Close</button></header><div class="r7info-body"></div>`;
+  p.innerHTML = `<header><span class="lvl">Explained</span><span class="sp"></span><button class="btn r7ix" aria-label="Close explanation" title="Close (Esc)">✕ Close</button></header><div class="r7info-body"></div>`;
   document.body.appendChild(p);
   p.querySelector(".r7ix").onclick = closeInfo;
   return p;
@@ -55,7 +55,7 @@ export function openInfo(key) {
   p.classList.add("on"); p.setAttribute("aria-hidden", "false");
   p.querySelector(".r7ix").focus();
 }
-export function closeInfo() { const p = document.getElementById("r7info"); if (p) { p.classList.remove("on"); p.setAttribute("aria-hidden", "true"); } }
+export function closeInfo() { const p = document.getElementById("r7info"); if (p) { p.classList.remove("on"); p.setAttribute("aria-hidden", "true"); delete p.dataset.key; } }
 
 // ---------- tooltips: any element with data-tip ----------
 let tipEl = null;
@@ -74,7 +74,15 @@ export function wireR7() {
   if (wired) return; wired = true;
   document.addEventListener("click", (e) => {
     const b = e.target.closest("[data-info]");
-    if (b && INFO[b.dataset.info]) { e.preventDefault(); e.stopPropagation(); openInfo(b.dataset.info); }
+    const p = document.getElementById("r7info"), open = p?.classList.contains("on");
+    if (b && INFO[b.dataset.info]) {
+      e.preventDefault(); e.stopPropagation();
+      // The same i again closes the drawer; another i switches it.
+      if (open && p.dataset.key === b.dataset.info) closeInfo(); else { openInfo(b.dataset.info); document.getElementById("r7info").dataset.key = b.dataset.info; }
+      return;
+    }
+    // A click outside the open drawer closes it.
+    if (open && !e.target.closest("#r7info")) closeInfo();
   }, true);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeInfo(); hideTip(); } });
   document.addEventListener("mouseover", (e) => { const t = e.target.closest("[data-tip]"); if (t) showTip(t); });
