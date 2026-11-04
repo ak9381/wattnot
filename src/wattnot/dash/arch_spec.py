@@ -299,7 +299,7 @@ NODES = [
        S("draw", "Draw watts on the rack", "Colours each slot by its GPU's measured power.", "sam/rackmap.py::render_svg",
          "slots, trace", "an SVG")],
       "a rack photo", "a rack map",
-      {"meta": "SAM 3.1 is asked to cut the photo. Its recorded masks were not usable, so the hand-drawn overlay is the one in use."},
+      {"meta": "SAM 3.1 finds the racks live before any power change. The per-slot overlay drawn here is still hand-drawn."},
       lane="Rig"),
 
     N("route", "Where to run it", ["oss"],

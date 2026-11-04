@@ -412,7 +412,7 @@ def node_stats(repo: Path, h: dict, lg: dict, bt: dict) -> dict[str, list[dict]]
         st("calls", "SAM 3.1 calls", sam.get("calls"), "", "MEASURED", "rack/sam.spend.json"),
         st("usd", "spent", sam.get("usd_estimate"), "$", "ESTIMATE", "rack/sam.spend.json usd_estimate"),
         st("obj", "usable masks returned", len(masks.get("objects", [])) if masks else None, "", "MEASURED", "rack/masks.sam.json",
-           f'status "{masks.get("status")}": the hand-drawn overlay is in use'),
+           f'status "{masks.get("status")}": the slot overlay on the rack map is hand-drawn; the live rack check uses SAM boxes'),
     ]
     S["route"] = [missing("r", "region choice", "route/replay.py", "no recorded report is bundled; grid data is a fixture")]
     S["certificate"] = [missing("c", "certificates", "certificate/", "format only; always MOCK")]
@@ -433,7 +433,7 @@ META_PRODUCTS = {
                          "nodes": [("models", "*"), ("e2e_rig", "sweep")]},
     "Muse Code": {"does": "A set of coding tasks written by Muse Spark; Muse Spark was run on it at three effort levels.",
                   "nodes": [("workload", "load")]},
-    "SAM 3.1": {"does": "Asked to cut the rack photo into slots. Its masks were not usable, so a hand-drawn overlay is in use.",
+    "SAM 3.1": {"does": "Finds the racks in the photo live before any power change (the GPU helper's rack check). The per-slot overlay on the rack map is still hand-drawn.",
                 "nodes": [("sam", "*")]},
 }
 
