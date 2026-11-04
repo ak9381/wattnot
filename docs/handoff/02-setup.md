@@ -41,7 +41,7 @@ For parallel work use worktrees: `git worktree add /tmp/wn-<task> -b <branch> or
 ## 7. Meta Model API
 - Key in `~/.config/wattnot/env` (`META_API_KEY`); `muse` CLI at `~/.local/bin/muse` (login in `~/.config/muse/auth.json`).
 - Mock everything with `WATTNOT_META_MOCK=1` (tests and replays always mock). Spend guard ledger `~/.wattnot/meta_spend.json`. Usage notes: `docs/runbooks/META-USAGE.md`.
-- Models used: Muse Spark 1.3 (planner/judge), Muse Wonder (cap picker/charts), Muse Voice Transcribe (voice guide, hearing gate), SAM 3.1 (rack/hotspot vision), Llama 3.1 8B / Glimmer open weights (served model). No Muse Image (geo-blocked).
+- Models used: Muse Spark 1.3 (planner/judge), Muse Wonder (cap picker/charts), Muse Voice Transcribe (voice guide, hearing gate), SAM 3.1 (rack/hotspot vision), Llama 3.1 8B / Glimmer open weights (served model). Muse Image only for the pre-generated SYNTHETIC test images (no live call; it works in India as of Nov 4).
 
 ## 8. The dashboard
 ```bash

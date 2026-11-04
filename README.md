@@ -23,16 +23,34 @@ What we use but did not write (open source, used as is):
 | Optuna | Picking the next cap to try | MIT |
 | jsonschema, cryptography | Schema checks, Ed25519 signing | MIT, Apache 2.0 / BSD |
 | GSM8K, HumanEval (OpenAI) | Public test prompts, licenses in `data/public_bench/` and `data/holdout/` | MIT |
+| OpenAI Python SDK (`openai`) | Client for OpenAI-compatible endpoints (vLLM, Meta Model API) | Apache 2.0 |
+| LlamaIndex | Only in the drop-in examples in the docs and Muse Code snippets | MIT |
+| NumPy, Pillow | SAM room scan maths, image overlays and charts | BSD-3, MIT-CMU |
+| edge-tts | Made the spoken test questions offline (not in the runtime path) | LGPL-3.0 |
+| sigstore-python (optional `sign` extra) | Publishing receipts to the public Rekor log | Apache 2.0 |
 | Inter, JetBrains Mono, Lucide | Fonts and icons in `web/run/vendor/` | OFL 1.1, OFL 1.1, ISC |
 
 ## Open weights
 
-**Muse Glimmer 30B served via vLLM on our own rented H100 80GB.** It's the model whose answers WattNot measures. Every power cap, thinking budget, saver and agentwaste arm runs on Glimmer's real replies, and the quality gate grades them against the stock run. It was served in BF16 (`bash scripts/glimmer_serve.sh bf16`, with `--reasoning-parser muse_glimmer`). FP8 was tested on Modal's A100-80GB: it kept eye and hearing accuracy but lost 4.16 points on the full round (MEASURED), so the gate rejected it and the H100 stayed on BF16.
+The hackathon asks that the README and demo say how, where and why each open-weight model is used, with run logs or captures as proof. Here it is.
 
-Run logs and recordings:
-- H100 3 Nov long run (pass 1, pass 2, sealed holdout): [`replays/h100-max-1103/`](replays/h100-max-1103/manifest.json), with the event log, a receipt for each block and the signed sweep receipts.
-- Modal and Baseten rounds: [`replays/INDEX.md`](replays/INDEX.md).
-- Every run with its commit, cost and verdict: [`docs/RUN_HISTORY.md`](docs/RUN_HISTORY.md).
+**Why open weights.** WattNot saves energy by changing how the model is served: GPU power caps, batch size, KV-cache settings and quantization like FP8. None of that can be changed behind a closed API, so WattNot needs a model whose server it controls. Open weights let us run the model ourselves, change one setting at a time and measure the joules on the GPU.
+
+**Muse Glimmer 30B, on a rented H100 80GB (bare VM with root access).**
+- How: served with vLLM in BF16 (`bash scripts/glimmer_serve.sh bf16`, `--reasoning-parser muse_glimmer`). It's the model whose answers WattNot measures. Every power cap, thinking budget, saver and agentwaste arm runs on Glimmer's real replies, and the quality gate grades them against the stock run. It also reads the vision test images.
+- FP8 and KV cache on the H100 (Nov 4, fixed answer check): first, stock against stock matched 16 of 16 answers, which shows the check is fair. FP8 cut energy 42.5% but matched only 15 of 16 answers, so WattNot refused it and rolled back. KV cache saved 1.4% but made p99 latency 43.6% worse, so it was refused too. All MEASURED. The H100 stays on BF16.
+- Proof: the Nov 3 long run (pass 1, pass 2, sealed holdout) is in [`replays/h100-max-1103/`](replays/h100-max-1103/manifest.json), with the event log, a receipt for each block and signed sweep receipts.
+
+**Muse Glimmer 30B, on Modal A100-80GB.**
+- How: the same vLLM setup on Modal's hosted GPU. Round r04 (Nov 4) ran text, agents, images and voice through WattNot: 74.4% less energy, accuracy 96.4% to 97.9%, image 10/10, voice 20/20 (MEASURED). Most of that saving comes from routing easy prompts to cheaper settings, not from the same settings using less power.
+- Earlier FP8 round (Nov 2, Modal A100-80GB, round r04e with FP8 on): it saved 23.9% energy per correct answer, but was rejected because accuracy fell from 0.974 to 0.943 and p99 rose from 77.6 s to 498.7 s (MEASURED). Most of that came from 8 agent tasks that looped, so it isn't clean evidence about FP8. Today's H100 one-lever test above is the clean FP8 result.
+- Proof: [`round.json`](https://github.com/ak9381/wattnot/tree/data/modal-text-1104/data/modal-full-1101/r04/round.json), [`events.jsonl`](https://github.com/ak9381/wattnot/tree/data/modal-text-1104/data/modal-full-1101/r04/events.jsonl) and [`flow.log`](https://github.com/ak9381/wattnot/tree/data/modal-text-1104/data/modal-full-1101/r04/flow.log) for r04, on branch `data/modal-text-1104`.
+
+**Muse Spark Open, on Baseten (hosted API, our own deployment).**
+- How: `meta-models/muse-spark-open` behind Baseten's API. WattNot can't touch that GPU, so here it uses request-level savers: effort routing with step-up and the LangChain saver.
+- Proof: Baseten rounds in [`replays/INDEX.md`](replays/INDEX.md).
+
+Every run with its commit, cost and verdict: [`docs/RUN_HISTORY.md`](docs/RUN_HISTORY.md).
 
 ## Submission overview
 
@@ -64,7 +82,7 @@ from an earlier run is labelled REPLAY; nothing is shown that did not happen.
 | Voice | Muse Voice (`muse-voice-transcribe-1.0`) | spoken Ask and tune |
 | Change | Muse Code | the change as a sandboxed PR (replay in demos; no PR is opened) |
 | Routing | Muse Spark Open on Baseten | multi-provider routing pass |
-| Test data | Muse Image | made the test images for the vision quality gate (any miss rejects a change) and the SAM hotspot test set. Muse Image is blocked in India, so these are pre-generated sets labelled SYNTHETIC, never a live call |
+| Test data | Muse Image | made the test images for the vision quality gate (any miss rejects a change) and the SAM hotspot test set. These are pre-generated sets labelled SYNTHETIC; no run makes a live Muse Image call |
 
 Full list with costs: [Meta models used](#meta-models-used).
 
@@ -136,7 +154,7 @@ When doctor finds no GPU, an untested GPU or no permission, the power-cap featur
 
 | Model | Where it runs | What it does in WattNot |
 |---|---|---|
-| Muse Glimmer 30B (open weights) | vLLM on a rented NVIDIA H100 80GB, BF16. FP8 was also tried on Modal A100-80GB: it kept accuracy on eye and hearing but was rejected on the full round (accuracy -4.16 pts, MEASURED), so the H100 stays BF16 | The model being served. Every power cap, thinking budget, saver and agentwaste arm is measured on its answers |
+| Muse Glimmer 30B (open weights) | vLLM on a rented NVIDIA H100 80GB, BF16. FP8 on its own was tested on the H100 on Nov 4 (-42.5% energy, 15/16 answers, refused, MEASURED), so it stays BF16. A Nov 2 Modal round with FP8 on (r04e) was also rejected, but mainly from looping agent tasks, so it isn't clean evidence about FP8 | The model being served. Every power cap, thinking budget, saver and agentwaste arm is measured on its answers |
 | Muse Spark (Meta Model API) | Hosted | Cheapest-first effort routing with step-up, answer grading for the quality gate, and the judge `savers` mode |
 | Muse Spark Open (open weights) | Baseten, hosted | The hosted-API round: effort routing and the LangChain saver |
 | Muse Wonder (Meta Model API) | Hosted | Plans which cap and clock to try next |
@@ -279,7 +297,7 @@ Every Meta model WattNot uses, and what we built on top of each:
 | Muse Voice (`muse-voice-transcribe-1.0`, hosted) | Ask by voice: speech to text for the voice guide, which answers from signed receipts only | from the API ledger (MEASURED when run) |
 | Muse Glimmer 30B (`meta-models/Muse-Glimmer-30B`, open weights) | the served model we tune on the H100 (power cap, thinking budget, tiers, LangChain agent, agent-waste saver) | own H100, cost is GPU hours |
 | Muse Spark Open (Baseten, Modal) | big model when the small one fails a check; hosted planner; the multi-provider routing arm | $0.004, 1 call (MEASURED) |
-| Muse Image (`muse-image-1.0`) | the pre-generated test images for the vision quality gate and the SAM hotspot test set, labelled SYNTHETIC; blocked in India, so no live call in any run | none in our runs |
+| Muse Image (`muse-image-1.0`) | the pre-generated test images for the vision quality gate and the SAM hotspot test set, labelled SYNTHETIC; made ahead of the runs, so no live call in any run | none in our runs |
 
 - **Endpoint health:** `wattnot health` probes each hosted endpoint and writes a FALLBACK ledger (`data/judge/health-*.json`).
 - **Labels:** every number is MEASURED, ESTIMATE, SIMULATED, MOCK, REPLAY or ADVICE. SIMULATED and MOCK content is hidden by default; the "Illustrations" switch shows it.
