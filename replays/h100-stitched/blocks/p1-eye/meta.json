@@ -1,0 +1,13 @@
+{
+ "block": "p1-eye",
+ "label": "MEASURED",
+ "started": 1793696553.795991,
+ "ended": 1793696845.1738863,
+ "byte_range": [
+  482119,
+  482119
+ ],
+ "events": 0,
+ "replay": "replays/h100-max-1103/blocks/p1-eye/timeline.jsonl",
+ "screen": null
+}

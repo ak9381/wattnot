@@ -25,5 +25,5 @@ test("series and runs list", async () => {
   const m = await replaySummary("modal-r1", f); assert.equal(m.series.sets[1].pts.length, 6); assert.equal(m.date, "2026-11-02");
   const h = await replaySummary("h100-max-1103", f); assert.equal(h.series.sets[0].pts.length, 2);
   const { replayRuns } = await import("./replaystats.js"); const rr = await replayRuns(f);
-  assert.deepEqual(rr.map((x) => x.id), ["modal-r1", "modal-r2", "h100-max-1103", "baseten-r1", "baseten-r2"]);
+  assert.deepEqual(rr.map((x) => x.id), ["h100-stitched", "modal-stitched", "baseten-stitched", "modal-r1", "modal-r2", "h100-max-1103", "baseten-r1", "baseten-r2"]);
 });

@@ -78,7 +78,7 @@ export async function replaySummary(id, fetcher = fetch) {
   return S;
 }
 
-export const REPLAY_IDS = ["modal-r1", "modal-r2", "h100-max-1103", "baseten-r1", "baseten-r2"];
+export const REPLAY_IDS = ["h100-stitched", "modal-stitched", "baseten-stitched", "modal-r1", "modal-r2", "h100-max-1103", "baseten-r1", "baseten-r2"];
 export async function replayRuns(fetcher = fetch) {
   const out = await Promise.all(REPLAY_IDS.map((id) => replaySummary(id, fetcher).catch(() => null)));
   return out.filter(Boolean).map((x) => ({ id: x.id, name: x.id, model: (x.model || "").replace("meta-models/", ""), date: x.date || "", label: x.label, title: x.title }));

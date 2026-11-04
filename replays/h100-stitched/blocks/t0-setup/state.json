@@ -1,0 +1,14 @@
+{
+ "events": 0,
+ "types": {},
+ "first_ts": null,
+ "last_ts": null,
+ "steps": {},
+ "result": {
+  "rc": 3,
+  "attempt": 2,
+  "wall_s": 1823.7,
+  "capture": false,
+  "copied": true
+ }
+}

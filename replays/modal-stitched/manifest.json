@@ -1,0 +1,56 @@
+{
+ "replay": "modal-stitched",
+ "title": "Modal stitched: modal-r1 + modal-r2 (A100)",
+ "provider": "modal",
+ "label": "REPLAY",
+ "stitched_from": [
+  "modal-r1",
+  "modal-r2"
+ ],
+ "rule": "union of all blocks; a block in both rounds uses the later valid take; each event carries replay.source_round",
+ "headline_receipt": "modal-r2/receipt.json",
+ "blocks": [
+  {
+   "block": "main round",
+   "source_round": "modal-r2",
+   "date": "2026-11-02",
+   "events": 945
+  },
+  {
+   "block": "langchain",
+   "source_round": "modal-r2",
+   "date": "2026-11-02",
+   "events": 3
+  },
+  {
+   "block": "eye+hearing",
+   "source_round": "modal-r2",
+   "date": "2026-11-02",
+   "events": 5
+  },
+  {
+   "block": "attribution",
+   "source_round": "modal-r2",
+   "date": "2026-11-02",
+   "events": 746
+  }
+ ],
+ "replaced": [
+  {
+   "block": "langchain",
+   "source_round": "modal-r1",
+   "reason": "replaced by the later take"
+  },
+  {
+   "block": "eye+hearing",
+   "source_round": "modal-r1",
+   "reason": "replaced by the later take"
+  },
+  {
+   "block": "main round",
+   "source_round": "modal-r1",
+   "reason": "replaced by the later take"
+  }
+ ],
+ "model": null
+}

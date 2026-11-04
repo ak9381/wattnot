@@ -1,0 +1,12 @@
+{
+ "format": "wattnot.block-receipt/1",
+ "block": "p2-spoken",
+ "label": "MEASURED",
+ "files": {
+  "meta.json": "98821e35ed6902f23e1ff774c102f8ed3b4ea8fa81f25385bf6b822100458aa3",
+  "state.json": "cfcf12ad851238b778d15ca225966961986e85416e14a89ce5c46a89bb258837",
+  "timeline.jsonl": "cf2cefd0da4f34de8b8502f10445b847bc7025118280e09a87aac7a1a571ba4f"
+ },
+ "prev": "6ebdd79baf25c802145700cc42090580669cf548ec59ce88231a27da538f6daa",
+ "sha256": "f1fcf32e62ac315e58706cbd4543a00c0d65503af2bb72526859df5e4f29a624"
+}

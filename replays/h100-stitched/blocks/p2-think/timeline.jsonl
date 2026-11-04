@@ -1,0 +1,1 @@
+{"schema_version":"wattnot.event/1","run_id":"sidecar-20261103_092719","seq":3,"ts":"2026-11-03T12:00:11.187Z","type":"step.started","step_id":"p2-think","parent_step_id":null,"data":{"node":"workload","sub":"p2-think","kind":"workload.p2-think","partners":["oss"],"label":"p2-think","inputs":"","narration":{"text":"p2-think","source":"template"}}}

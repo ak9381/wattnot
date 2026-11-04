@@ -1,0 +1,193 @@
+{
+ "replay": "h100-stitched",
+ "label": "REPLAY",
+ "gpu": "H100 80GB, E2E Networks",
+ "model": "meta-models/Muse-Glimmer-30B",
+ "note": "meta.json 'replay' paths are rewritten to repo paths; nothing else is changed. Block receipt hashes cover the original meta.json, so check them against state.json and timeline.jsonl only. Events keep the recording machine's receipt paths as recorded; the same receipts are in proofs/<block>/.",
+ "blocks": [
+  {
+   "block": "h1-holdout",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "p1-agentwaste",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "p1-eye",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "p1-langchain",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "p1-phase",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "p1-spoken",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "p1-think",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "p1-tiers",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "p2-agentwaste",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "p2-eye",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "p2-langchain",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "p2-phase",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "p2-spoken",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "p2-sweep",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "p2-think",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "p2-tiers",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "t0-probe",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "t0-setup",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "t1-sweep",
+   "source_round": "h100-max-1103",
+   "date": "2026-11-03"
+  },
+  {
+   "block": "Nov 4 take: text",
+   "source_round": "seq-20261104-032655-text",
+   "date": "2026-11-04",
+   "receipt": "receipts/h100-1104/rcpt_20261104-032655-text.json",
+   "j_per_req": [
+    1125.4536,
+    983.3904
+   ],
+   "energy_change_pct": -12.6228,
+   "label": "MEASURED"
+  },
+  {
+   "block": "Nov 4 take: agent",
+   "source_round": "seq-20261104-034921-agent",
+   "date": "2026-11-04",
+   "receipt": "receipts/h100-1104/rcpt_20261104-034921-agent.json",
+   "j_per_req": [
+    464.3532,
+    505.6884
+   ],
+   "energy_change_pct": 8.9017,
+   "label": "MEASURED"
+  },
+  {
+   "block": "Nov 4 take: images (SAM test set)",
+   "source_round": "seq-20261104-013308-images",
+   "date": "2026-11-04",
+   "receipt": "receipts/h100-1104/rcpt_20261104-013308-images.json",
+   "j_per_req": [
+    587.466,
+    430.9416
+   ],
+   "energy_change_pct": -26.644,
+   "label": "MEASURED"
+  },
+  {
+   "block": "Nov 4 take: voice",
+   "source_round": "seq-20261104-040850-voice",
+   "date": "2026-11-04",
+   "receipt": "receipts/h100-1104/rcpt_20261104-040850-voice.json",
+   "j_per_req": [
+    6293.8404,
+    6710.976
+   ],
+   "energy_change_pct": 6.6277,
+   "label": "MEASURED"
+  },
+  {
+   "block": "Nov 4 lever: fp8",
+   "source_round": "h100-1104 one-lever takes",
+   "date": "2026-11-04",
+   "label": "MEASURED",
+   "energy_change_pct": -42.5,
+   "decision": "rolled back",
+   "source": "h100-logs-1104-final/gate-fix-rerun/wn-gw-1103/out/lever/lever-events.jsonl"
+  },
+  {
+   "block": "Nov 4 lever: kv_cache",
+   "source_round": "h100-1104 one-lever takes",
+   "date": "2026-11-04",
+   "label": "MEASURED",
+   "energy_change_pct": -1.4,
+   "decision": "rolled back",
+   "source": "h100-logs-1104-final/gate-fix-rerun/wn-gw-1103/out/lever/lever-events.jsonl"
+  },
+  {
+   "block": "Nov 4 lever: batching",
+   "source_round": "h100-1104 one-lever takes",
+   "date": "2026-11-04",
+   "label": "MEASURED",
+   "energy_change_pct": 0.6,
+   "decision": "rolled back",
+   "source": "h100-logs-1104-final/gate-fix-rerun/wn-gw-1103/out/lever/lever-events.jsonl"
+  }
+ ],
+ "title": "H100 stitched: h100-max-1103 + Nov 4 H100 takes",
+ "provider": "e2e",
+ "stitched_from": [
+  "h100-max-1103",
+  "receipts/h100-1104",
+  "lever-takes-1104.json"
+ ],
+ "excluded": [
+  {
+   "run": "seq-20261104-050330-text",
+   "reason": "bogus take, not used"
+  }
+ ],
+ "rule": "union of all blocks; latest valid take per workload; each event carries replay.source_round"
+}

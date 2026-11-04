@@ -1,0 +1,40 @@
+{
+ "replay": "baseten-stitched",
+ "title": "Baseten stitched: baseten-r1 + baseten-r2",
+ "provider": "baseten",
+ "label": "REPLAY",
+ "stitched_from": [
+  "baseten-r1",
+  "baseten-r2"
+ ],
+ "rule": "union of all blocks; a block in both rounds uses the later valid take; each event carries replay.source_round",
+ "headline_receipt": "baseten-r2/receipt.json",
+ "blocks": [
+  {
+   "block": "main round (public gsm8k+humaneval)",
+   "source_round": "baseten-r1",
+   "date": "2026-11-02",
+   "events": 723
+  },
+  {
+   "block": "langchain",
+   "source_round": "baseten-r2",
+   "date": "2026-11-02",
+   "events": 1
+  },
+  {
+   "block": "main round (own set)",
+   "source_round": "baseten-r2",
+   "date": "2026-11-02",
+   "events": 1203
+  }
+ ],
+ "replaced": [
+  {
+   "block": "langchain",
+   "source_round": "baseten-r1",
+   "reason": "replaced by the later take"
+  }
+ ],
+ "model": null
+}

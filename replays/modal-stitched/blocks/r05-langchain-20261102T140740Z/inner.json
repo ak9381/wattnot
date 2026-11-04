@@ -1,0 +1,50 @@
+{
+ "started_utc": "2026-11-02T14:08:21.381438+00:00",
+ "gpu": "NVIDIA A100-SXM4-80GB",
+ "fake": false,
+ "sets": [
+  "ours",
+  "gsm8k",
+  "humaneval"
+ ],
+ "idle_w": {
+  "value": 71.9,
+  "label": "MEASURED",
+  "when": "before vLLM start"
+ },
+ "cap_probe": {
+  "writable": false,
+  "reason": "NVML refused the power-limit write (NVMLError_NoPermission); Modal containers have no privileged GPU control",
+  "label": "MEASURED"
+ },
+ "items": 192,
+ "slice": 24,
+ "steps": {
+  "only": [
+   "langchain"
+  ],
+  "with_server": {
+   "fp8": false,
+   "prefix_caching": true,
+   "max_num_seqs": 128,
+   "start_s": {
+    "value": 108.1,
+    "label": "MEASURED"
+   }
+  },
+  "blocks": {
+   "langchain": {
+    "rc": 0,
+    "wall_s": 1687.6,
+    "out": "langchain",
+    "energy_j": {
+     "value": 622524.6,
+     "label": "MEASURED"
+    }
+   }
+  }
+ },
+ "failed": {},
+ "deadline_s": 4500.0,
+ "ended_utc": "2026-11-02T14:38:23.716349+00:00"
+}

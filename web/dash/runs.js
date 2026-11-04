@@ -14,7 +14,7 @@
 import { replaySummary } from "./replaystats.js";
 let S_REPS = [];
 let S_LEVERS = null;
-const REPLAY_IDS = ["modal-r1", "modal-r2", "baseten-r1", "baseten-r2", "h100-max-1103"];
+const REPLAY_IDS = ["h100-stitched", "modal-stitched", "baseten-stitched", "modal-r1", "modal-r2", "baseten-r1", "baseten-r2", "h100-max-1103"];
 const EM = "—"; // em dash for missing values
 
 // ---- constants from story.json (shown with their own labels) ----
@@ -365,7 +365,7 @@ function renderTrend(runsList, details) {
 function renderDonut(story) {
   const el = $("#donut");
   // Demo run h100-max-1103: only its real steps. The older RUN1 sweep.csv slice (10.56 J/req) is dropped.
-  const h = S_REPS.find((x) => x.id === "h100-max-1103");
+  const h = S_REPS.find((x) => x.id === "h100-max-1103") || S_REPS.find((x) => x.id === "h100-stitched");
   if (h && isNum(h.j_per_req_stock) && isNum(h.j_per_req_cap)) {
     const saved = h.j_per_req_stock - h.j_per_req_cap;
     const lt = S_LEVERS;

@@ -1,0 +1,28 @@
+{
+ "events": 2,
+ "types": {
+  "step.finished": 1,
+  "step.started": 1
+ },
+ "first_ts": "2026-11-03T13:05:44.484Z",
+ "last_ts": "2026-11-03T13:05:44.484Z",
+ "steps": {
+  "p2-spoken": {
+   "type": "step.finished",
+   "ts": "2026-11-03T13:05:44.484Z",
+   "status": "ok"
+  },
+  "p2-phase": {
+   "type": "step.started",
+   "ts": "2026-11-03T13:05:44.484Z",
+   "status": null
+  }
+ },
+ "result": {
+  "rc": 0,
+  "attempt": 1,
+  "wall_s": 191.7,
+  "capture": false,
+  "copied": true
+ }
+}
