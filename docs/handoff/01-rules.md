@@ -38,5 +38,5 @@
 - The demo must show only what was built during the hackathon, and make that clear.
   (Before 26 Oct there were planning docs only.)
 - Must use Meta models (Muse Spark series, Muse Wonder, Muse Voice Transcribe, SAM, Llama open weights).
-  **Muse Image is geo-blocked in India; never use a VPN to get around it.**
+  **Never use a VPN to get around region limits.** Muse Image now works in India (confirmed Nov 4); it only made the pre-generated SYNTHETIC test images, so don't claim a live Muse Image call unless a run really makes one.
 - Judging: stage 1 pass/fail fit; stage 2 rubric 0-10; stage 3 top 5 per track judged on the video.

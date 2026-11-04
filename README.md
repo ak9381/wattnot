@@ -64,7 +64,7 @@ from an earlier run is labelled REPLAY; nothing is shown that did not happen.
 | Voice | Muse Voice (`muse-voice-transcribe-1.0`) | spoken Ask and tune |
 | Change | Muse Code | the change as a sandboxed PR (replay in demos; no PR is opened) |
 | Routing | Muse Spark Open on Baseten | multi-provider routing pass |
-| Test data | Muse Image | made the test images for the vision quality gate (any miss rejects a change) and the SAM hotspot test set. Muse Image is blocked in India, so these are pre-generated sets labelled SYNTHETIC, never a live call |
+| Test data | Muse Image | made the test images for the vision quality gate (any miss rejects a change) and the SAM hotspot test set. These are pre-generated sets labelled SYNTHETIC; no run makes a live Muse Image call |
 
 Full list with costs: [Meta models used](#meta-models-used).
 
@@ -279,7 +279,7 @@ Every Meta model WattNot uses, and what we built on top of each:
 | Muse Voice (`muse-voice-transcribe-1.0`, hosted) | Ask by voice: speech to text for the voice guide, which answers from signed receipts only | from the API ledger (MEASURED when run) |
 | Muse Glimmer 30B (`meta-models/Muse-Glimmer-30B`, open weights) | the served model we tune on the H100 (power cap, thinking budget, tiers, LangChain agent, agent-waste saver) | own H100, cost is GPU hours |
 | Muse Spark Open (Baseten, Modal) | big model when the small one fails a check; hosted planner; the multi-provider routing arm | $0.004, 1 call (MEASURED) |
-| Muse Image (`muse-image-1.0`) | the pre-generated test images for the vision quality gate and the SAM hotspot test set, labelled SYNTHETIC; blocked in India, so no live call in any run | none in our runs |
+| Muse Image (`muse-image-1.0`) | the pre-generated test images for the vision quality gate and the SAM hotspot test set, labelled SYNTHETIC; made ahead of the runs, so no live call in any run | none in our runs |
 
 - **Endpoint health:** `wattnot health` probes each hosted endpoint and writes a FALLBACK ledger (`data/judge/health-*.json`).
 - **Labels:** every number is MEASURED, ESTIMATE, SIMULATED, MOCK, REPLAY or ADVICE. SIMULATED and MOCK content is hidden by default; the "Illustrations" switch shows it.
