@@ -1,9 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { budgetRows, bindsWording, verdictLine, labelChip, renderBudget, costFootnote, RUN2_SAMPLE } from "../../web/dash/costbudget.js";
+import { budgetRows, bindsWording, verdictLine, labelChip, renderBudget, costFootnote, RERUN_SAMPLE } from "../../web/dash/costbudget.js";
 
 const THROUGHPUT_NOTE = "throughput not yet measured; real numbers come from the H100 run";
-const admit = RUN2_SAMPLE;
+// A fixed fixture for the rendering tests (not shown in the UI; the page uses RERUN_SAMPLE).
+const admit = {
+  verdict: "admit", binds: "cost", chosen: 350, greenest: 350, label: "MEASURED",
+  budget_j_per_correct: 15.0, achieved_j_per_correct: 12.42, headroom_j: 2.58,
+  floor_j_per_correct: 12.42, p99_ceiling_pct: 10.0,
+  budget_usd_per_1k_correct: 1.75, usd_per_hour: 2.5,
+  achieved_usd_per_1k_correct: 1.5625, cost_basis: "ESTIMATE", headroom_usd: 0.1875,
+  cost_note: "throughput not yet measured; real numbers come from the H100 run",
+  cost_floor_usd_per_1k_correct: 1.5625, cost_floor_basis: "ESTIMATE",
+};
 const infeasible = {
   verdict: "infeasible", binds: "both", chosen: null, greenest: 350, label: "MEASURED",
   budget_j_per_correct: 16.0, achieved_j_per_correct: null, headroom_j: null, floor_j_per_correct: 12.42,
@@ -93,17 +102,17 @@ test("costFootnote names the basis: ESTIMATE with a note, else MEASURED-derived"
   assert.doesNotMatch(derived, /throughput not yet measured/);
 });
 
-test("RUN2_SAMPLE serves at the signed 350 W cap, its one measured config", () => {
-  // RUN2 is the signed cap350 run, so the served cap, the greenest cap and the cost floor are all
+test("RERUN_SAMPLE serves at the signed 325 W rerun cap, its one measured config", () => {
+  // The rerun is the signed cap325 run, so the served cap, the greenest cap and the cost floor are all
   // that single config: achieved energy/cost equal the floors, never a higher hypothetical cap.
-  assert.equal(RUN2_SAMPLE.chosen, 350);
-  assert.equal(RUN2_SAMPLE.greenest, 350);
-  assert.equal(RUN2_SAMPLE.achieved_j_per_correct, RUN2_SAMPLE.floor_j_per_correct);
-  assert.equal(RUN2_SAMPLE.achieved_usd_per_1k_correct, RUN2_SAMPLE.cost_floor_usd_per_1k_correct);
+  assert.equal(RERUN_SAMPLE.chosen, 325);
+  assert.equal(RERUN_SAMPLE.greenest, 325);
+  assert.equal(RERUN_SAMPLE.achieved_j_per_correct, RERUN_SAMPLE.floor_j_per_correct);
+  assert.equal(RERUN_SAMPLE.achieved_usd_per_1k_correct, RERUN_SAMPLE.cost_floor_usd_per_1k_correct);
   // headrooms are budget minus achieved, and the cost basis stays an ESTIMATE
-  assert.ok(Math.abs(RUN2_SAMPLE.headroom_j - (RUN2_SAMPLE.budget_j_per_correct - RUN2_SAMPLE.achieved_j_per_correct)) < 1e-9);
-  assert.ok(Math.abs(RUN2_SAMPLE.headroom_usd - (RUN2_SAMPLE.budget_usd_per_1k_correct - RUN2_SAMPLE.achieved_usd_per_1k_correct)) < 1e-9);
-  assert.equal(RUN2_SAMPLE.cost_basis, "ESTIMATE");
+  assert.ok(Math.abs(RERUN_SAMPLE.headroom_j - (RERUN_SAMPLE.budget_j_per_correct - RERUN_SAMPLE.achieved_j_per_correct)) < 1e-9);
+  assert.ok(Math.abs(RERUN_SAMPLE.headroom_usd - (RERUN_SAMPLE.budget_usd_per_1k_correct - RERUN_SAMPLE.achieved_usd_per_1k_correct)) < 1e-9);
+  assert.equal(RERUN_SAMPLE.cost_basis, "ESTIMATE");
 });
 
 test("renderBudget escapes nothing dangerous but stays well-formed for infeasible", () => {

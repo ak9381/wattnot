@@ -20,6 +20,7 @@ from wattnot.meta.voiceguide import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+from wattnot.dash import run2 as run2_mod
 
 
 def test_intent_classification() -> None:
@@ -69,7 +70,8 @@ def test_navigate_intent_compare_and_report() -> None:
     assert "target_receipt_id" in res2
 
 
-def test_answer_intent_cites_signed_receipt() -> None:
+def test_answer_intent_cites_signed_receipt(monkeypatch) -> None:
+    monkeypatch.setattr(run2_mod, "SHOW_RUN2", True)  # RUN2 is hidden by default
     # Query asking about energy savings
     res = process_voice_query("what was the billed saving on rcpt_20261027_run2_cap350?", root_dir=REPO_ROOT, mock=True)
     assert res["action"] == "answer"
@@ -331,7 +333,8 @@ def test_voiceguide_api_endpoint_post_and_get() -> None:
 
 
 # --- voice fixes 2026-10-29 -------------------------------------------------
-def test_voice_run_two_resolves_to_run2_receipt():
+def test_voice_run_two_resolves_to_run2_receipt(monkeypatch):
+    monkeypatch.setattr(run2_mod, "SHOW_RUN2", True)  # RUN2 is hidden by default
     from pathlib import Path
     from wattnot.meta.voiceguide import process_voice_query
     root = Path(__file__).resolve().parents[1]
@@ -361,7 +364,8 @@ def test_api_voice_audio_is_mock_unless_switched_on(monkeypatch):
     assert "Type your question" in r.json()["text"]
 
 
-def test_why_325_rejected_answered_from_receipt():
+def test_why_325_rejected_answered_from_receipt(monkeypatch):
+    monkeypatch.setattr(run2_mod, "SHOW_RUN2", True)  # RUN2 is hidden by default
     # The headline live-replay transcript asks exactly this; it must be answered
     # from the signed Wonder addendum trials, not refused.
     for q in ("why was 325 watts rejected in run2", "Why was 325 watts rejected in run2?", "why was 325 w rejected in run2"):
@@ -378,7 +382,8 @@ def test_why_325_rejected_answered_from_receipt():
         assert "rcpt_20261027_run2_cap350.wonder_live" in out["citations"], q
 
 
-def test_accepted_cap_question_reports_kept():
+def test_accepted_cap_question_reports_kept(monkeypatch):
+    monkeypatch.setattr(run2_mod, "SHOW_RUN2", True)  # RUN2 is hidden by default
     out = process_voice_query(query_text="why did 350 watts fail in run2", root_dir=REPO_ROOT, mock=True)
     assert not out.get("refusal")
     assert "350 W was kept" in out["text"]
@@ -440,3 +445,13 @@ def test_rerun_gate_answers_from_the_rerun_sweep():
     out = vg.process_voice_query(query_text="why was 300 watts rejected", root_dir=root, mock=True)
     assert "300 W was rejected: p99 latency rose 18.0% against the 10% limit" in out["text"]
     assert out["citations"] == ["rcpt_20261031_rerun_cap325"]
+
+
+def test_run2_questions_answer_not_available_while_hidden():
+    assert run2_mod.SHOW_RUN2 is False
+    for q in ("what did run two save", "why was 325 watts rejected in run2",
+              "what was the billed saving on rcpt_20261027_run2_cap350?"):
+        out = process_voice_query(query_text=q, root_dir=REPO_ROOT, mock=True)
+        assert out.get("hidden") is True, q
+        assert "not available" in out["text"], q
+        assert out["citations"] == [], q

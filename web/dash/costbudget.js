@@ -79,7 +79,7 @@ export function budgetRows(r) {
 // metered bill. When the throughput is measured that makes it MEASURED-derived; when it is not
 // (cost_note set), the cost is an ESTIMATE and the note says why - throughput not measured yet.
 export function costFootnote(r) {
-  const base = "Cost is the GPU list price per hour × throughput, never a metered bill.";
+  const base = r?.cost_base || "Cost is the GPU list price per hour × throughput, never a metered bill.";
   if (r && r.cost_note) return `${esc(base)} It is an <b>ESTIMATE</b>: ${esc(r.cost_note)}.`;
   return `${esc(base)} With measured time it is <b>MEASURED-derived</b>.`;
 }
@@ -111,17 +111,17 @@ export function mountCostBudget(el, result) {
   el.innerHTML = renderBudget(result);
 }
 
-// The built-in RUN2 sample (no network): RUN2 is the signed 350 W cap run, so the card serves at
-// that cap - the one measured config, which is therefore both the greenest and the cost floor.
-// Energy is MEASURED (12.42 J/correct = the receipt's 11.64 J/req over the 0.937 pass rate); the
-// throughput is still synthetic, so every cost derived from it is an ESTIMATE carrying the
-// throughput note - real numbers come from the H100 run.
-export const RUN2_SAMPLE = {
-  verdict: "admit", binds: "cost", chosen: 350, greenest: 350, label: "MEASURED",
-  budget_j_per_correct: 15.0, achieved_j_per_correct: 12.42, headroom_j: 2.58,
-  floor_j_per_correct: 12.42, p99_ceiling_pct: 10.0,
-  budget_usd_per_1k_correct: 1.75, usd_per_hour: 2.5,
-  achieved_usd_per_1k_correct: 1.5625, cost_basis: "ESTIMATE", headroom_usd: 0.1875,
-  cost_note: "throughput not yet measured; real numbers come from the H100 run",
-  cost_floor_usd_per_1k_correct: 1.5625, cost_floor_basis: "ESTIMATE",
+// The built-in sample (no network): the signed Oct 31 Glimmer rerun at a 325 W cap, its one measured
+// config, so it is both the greenest and the cost floor. Energy is MEASURED (115.71 J/correct, from the
+// receipt rcpt_20261031_rerun_cap325 joules block). Cost per 1,000 correct is ESTIMATE: the receipt's
+// usd_per_req (ESTIMATE tariff) over the 0.95045 pass rate. The two budgets are example inputs.
+export const RERUN_SAMPLE = {
+  verdict: "admit", binds: "energy", chosen: 325, greenest: 325, label: "MEASURED",
+  budget_j_per_correct: 130.0, achieved_j_per_correct: 115.71, headroom_j: 14.29,
+  floor_j_per_correct: 115.71, p99_ceiling_pct: 10.0,
+  budget_usd_per_1k_correct: 0.005, usd_per_hour: null,
+  achieved_usd_per_1k_correct: 0.003857, cost_basis: "ESTIMATE", headroom_usd: 0.001143,
+  cost_base: "Cost is measured energy × an electricity tariff, never a metered bill.",
+  cost_note: "cost uses the receipt's ESTIMATE tariff ($0.12/kWh), from rcpt_20261031_rerun_cap325",
+  cost_floor_usd_per_1k_correct: 0.003857, cost_floor_basis: "ESTIMATE",
 };

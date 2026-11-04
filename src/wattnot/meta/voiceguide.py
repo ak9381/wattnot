@@ -743,6 +743,14 @@ def process_voice_query(
         t_low = re.sub(r"\brun[\s_-]*(?:two|to|too|2)\b", "run2", t_low)
         t_low = re.sub(r"\brun[\s_-]*(?:one|1)\b", "run1", t_low)
         run_tok = re.search(r"\brun\d+\b", t_low)
+        # RUN2 served Llama 3.1 8B (not a Meta model here) and is hidden from the dashboard while
+        # SHOW_RUN2 is off: its receipts stay on disk but are not used to answer, and a question
+        # that names it gets a plain "not available" answer.
+        from wattnot.dash import run2 as _run2
+        hidden_run2 = False
+        if not _run2.SHOW_RUN2:
+            hidden_run2 = "run2" in t_low
+            receipts = [r for r in receipts if "_run2_" not in str(r.get("receipt_id", "")).lower() + "_"]
 
         # Pick the best matching receipt (by id, then by run tag), else the latest.
         matched: dict[str, Any] | None = None
@@ -778,7 +786,18 @@ def process_voice_query(
             bool(r.get("receipt_id")) and r["receipt_id"].lower() in t_low for r in receipts
         )
 
-        if gate_text is not None:
+        if hidden_run2:
+            result = {
+                "intent": "answer",
+                "action": "answer",
+                "text": ("RUN2 is not available: it served a model that does not count as a Meta model "
+                         "for this hackathon, so it is hidden. Ask about the Oct 31 Glimmer rerun instead."),
+                "citations": [],
+                "hidden": True,
+                "quick_ack": quick["ack"],
+                "label": label,
+            }
+        elif gate_text is not None:
             result = {
                 "intent": "answer",
                 "action": "answer",

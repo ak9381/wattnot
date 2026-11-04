@@ -359,7 +359,7 @@ export function openPowerGraph(rec, c) {
 // ---------- Meta tools really used (checked against the repo) ----------
 export const META_TOOLS = [
   { id: "spark", name: "Muse Spark", role: "Plans the next cap to try in the sweep" },
-  { id: "wonder", name: "Muse Wonder", role: "Supervisor: reviewed the measured RUN2 sweep live once; local gates still decide" },
+  { id: "wonder", name: "Muse Wonder", role: "Supervisor: reviewed a measured H100 sweep live once; local gates still decide" },
   { id: "spark_open", name: "Muse Spark Open on Baseten", role: "The hosted open model: cap-planner call and prompt-cache A/B" },
   { id: "sam", name: "SAM 3.1", role: "Outlines each rack in the room photo" },
   { id: "glimmer", name: "Muse Glimmer 30B", role: "Open weights swept on the H100 in RUN1" },
@@ -374,7 +374,7 @@ export const metaInRun = (rec) => {
 registerInfo({
   "meta-spark": { title: "Muse Spark", html: `<p>Meta's Muse Spark API is WattNot's planner. It reads the last measurements and proposes the next power cap to try, or says stop.</p><p>Every call is logged with its cost in the ledger. It only proposes; the gates and a person decide.</p>` },
   "meta-spark_open": { title: "Muse Spark Open on Baseten", html: `<p>Meta's open model, served by Baseten. WattNot calls it for the cap planner step and for the prompt-cache test, and it is one of the three places a model can run.</p><p>Baseten does not share power meters, so its energy is always an estimate.</p>` },
-  "meta-wonder": { title: "Muse Wonder", html: `<p>Meta's Muse Wonder (muse-wonder-1.0) was called LIVE once as a supervisor over the MEASURED RUN2 sweep (inputs are a REPLAY of measured steps). It proposed a 300 W trial; WattNot's local p99 gate would block it because 325 W already failed (+10.9% vs a 10% limit). The decision and the response ids are in a signed addendum on the RUN2 receipt; see the Live Meta calls card on the RUN2 report.</p>` },
+  "meta-wonder": { title: "Muse Wonder", html: `<p>Meta's Muse Wonder (muse-wonder-1.0) was called LIVE once as a supervisor over a recorded H100 sweep (inputs are a REPLAY of measured steps). It only proposes a next trial; WattNot's local p99 and quality gates decide whether any cap is kept. The decision and the response ids are in a signed addendum.</p>` },
   "meta-sam": { title: "SAM 3.1", html: `<p>Meta's Segment Anything 3.1 turns a photo of a server room into one outline per rack, from the prompt "server rack".</p><p>WattNot uses the outlines to put savings in a place: which rack is hot, which one it can cap.</p>` },
   "meta-glimmer": { title: "Muse Glimmer 30B", html: `<p>Meta's open-weights 30B model. RUN1 swept caps from 700 W down on it; 400 W used 21% less energy per answer with p99 +3.7%.</p>` },
   "meta-code": { title: "Muse Code task set", html: `<p>A fixed set of coding prompts written with Muse Spark. It is one of the workloads WattNot can replay to check that a cap does not hurt coding answers.</p>` },

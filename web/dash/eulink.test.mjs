@@ -97,3 +97,11 @@ test("SCI carbon box shows only when the receipt has a signed sci block", async 
   assert.ok(html.includes("Carbon (SCI)") && html.includes("727 g/kWh") && html.includes("NOT_AVAILABLE"));
   assert.ok(!/neutral|offset/i.test(html));
 });
+
+test("CSV button is hidden for the rerun receipt, which has no CSV export", async () => {
+  const { hasCsv } = await import("./eulink.js");
+  assert.equal(hasCsv("rcpt_20261031_rerun_cap325"), false);
+  assert.equal(hasCsv("r1"), true);
+  const html = renderEuCardHTML({ receiptId: "rcpt_20261031_rerun_cap325" });
+  assert.doesNotMatch(html, /CSV/);
+});
