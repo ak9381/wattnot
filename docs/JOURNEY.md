@@ -21,7 +21,7 @@ writes a signed receipt (Wh and $ per request) anyone can re-check with the open
 | **REPLAY** | A saved run re-evaluated; nothing runs live. |
 | **ADVICE** | A recommendation or risk note, not a measurement. |
 
-Headline result: **−27.1% joules per correct answer** at a 350 W cap on one H100,
+Early result, on an 8B comparison model (not a Meta model, so not a headline): **−27.1% joules per correct answer** at a 350 W cap on one H100,
 pass rate unchanged at 93.69% on 666 checked answers — MEASURED, signed, and replayable
 at <https://ak9381.github.io/wattnot/>.
 
