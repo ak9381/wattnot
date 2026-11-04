@@ -401,7 +401,7 @@ class TrafficRun:
         self._stop.clear()
         self.state.update(running=True, done=0, total=len(items), errors=0, usd=0.0, stopped=None, cap_rollback=None,
                           workload=workload, mode=mode, with_without=bool(with_without), without={"done": 0, "usd": 0.0},
-                          seq_usd=0.0)
+                          seq_usd=0.0, run_id=None, finished_ts=None, sequential_result=None)
         target = self._run
         if with_without and self.direct and self.gpu is not None:
             target = self._run_sequential   # one GPU: arms one after the other, power measured per arm
@@ -597,6 +597,8 @@ class TrafficRun:
                     with self.result_path.with_name("sequential.runs.jsonl").open("a") as fh:  # one per run, never overwritten
                         fh.write(json.dumps(res) + "\n")
                 self.state["phase"] = "done"
+                self.state["run_id"] = res.get("run_id")
+                self.state["finished_ts"] = round(time.time(), 3)
                 self.state["running"] = False
 
     def _run(self, items, gap, with_without) -> None:  # noqa: D401

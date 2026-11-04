@@ -44,3 +44,20 @@ def test_waiting_approval_result_carries_rack_label(tmp_path):
     out = agent.run({"node": {"cap_min_w": 300, "cap_max_w": 375, "approval": "manual"}},
                     gpu=Gpu(), sam_client=NoSam(), log_path=tmp_path / "n.jsonl", samples_per_step=1)
     assert out["status"] == "waiting_approval" and out["rack_label"].startswith("REPLAY")
+
+
+def test_measured_latest_has_time_and_its_own_correct_count(tmp_path):
+    import json
+    from wattnot.gateway import plug
+    log = tmp_path / "savings.jsonl"
+    log.write_text("")
+    arm = lambda j, c, t1: {"joules": j, "requests": 60, "correct": c, "scored": 60, "j_per_correct": round(j / c, 1),  # noqa: E731
+                           "t0": t1 - 100, "t1": t1, "usd": 0.15}
+    runs = [{"run_id": "seq-a", "workload": "images", "without": arm(40000, 60, 1000), "with": arm(30000, 60, 1200)},
+            {"run_id": "seq-b", "workload": "text", "without": arm(72000, 54, 2000), "with": arm(63000, 54, 2300)}]
+    (tmp_path / "sequential.runs.jsonl").write_text("".join(json.dumps(r) + "\n" for r in runs))
+    m = plug.measured(log)
+    L = m["latest"]
+    assert L["run_id"] == "seq-b" and L["ts"] == 2300 and L["energy_wh"]["saved_pct"] == 12.5
+    assert L["correct"]["with"] == 54 and L["correct"]["scored"] == 60
+    assert m["correct"]["with"] == 114 and m["all_runs"]["runs"] == 2

@@ -8,7 +8,7 @@
 import { fetchElig, getArm, NODE_FEATURE, MODEL_ALIAS } from "./elig.js";
 import { modelOf } from "./metastrip.js";
 import { getRun } from "./runpick.js";
-import { gwlHeadline, gwlSpend } from "./gwlcard.js";
+import { gwlHeadline, gwlSpend, gwlCorrect } from "./gwlcard.js";
 import { getJSON } from "./plugsteps.js";
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -275,7 +275,7 @@ function build() {
           : `Quality gate: ${q.shadow_pairs} shadow pairs, agreement ${pc(q.agreement)}`
             + (q.gate_off.length ? ` · off: ${q.gate_off.map((g) => g.saver).join(", ")}` : " · all savers on"))
           + (q.measured
-            ? (q.j_per_correct != null ? `<br>J per correct answer: ${q.j_per_correct} J (stock ${q.j_per_correct_stock} J; ${q.correct.with}/${q.correct.scored} vs ${q.correct.without}/${q.correct.scored} correct, harness-scored) <span class="wnlab m">MEASURED</span>` : "")
+            ? gwlCorrect(q)
               + (q.j_per_request || []).map((x) => `<br>${x.workload}: ${x.with} J per request (stock ${x.without} J), not scored <span class="wnlab m">MEASURED</span>`).join("")
             : `<br>J per correct answer: ${q.j_per_correct ?? "n/a"} J (stock ${q.j_per_correct_stock ?? "n/a"} J/request) <span class="wnlab e">ESTIMATE</span>`)
           + `<br>${gwlSpend(q)} <span class="wnlab e">${q.spend_label}</span>`;

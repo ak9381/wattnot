@@ -1,4 +1,4 @@
-import { SAVERS, MODES, UPSTREAMS, defaultChoice, applyPrefill, headline, path, fmtWh, fromQuery, nodeHeadline } from "./pluglib.js";
+import { SAVERS, MODES, UPSTREAMS, defaultChoice, applyPrefill, headline, path, fmtWh, fromQuery, nodeHeadline, trafficText } from "./pluglib.js";
 import { latestHelperEvents, getJSON, rackResultText } from "./plugsteps.js";
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -165,7 +165,7 @@ async function drawTraffic() {
   if (!t) { if (tRunning && !$("#tState").textContent.endsWith(RETRY)) $("#tState").textContent += RETRY; return; }
   tRunning = !!t.running;
   if (tErr && !t.running) $("#tState").textContent = tErr;
-  else if (t.total) $("#tState").textContent = `${t.running ? "Sending" : "Done"}: ${t.done} of ${t.total} · spent $${Number(t.usd).toFixed(4)}${t.errors ? ` · ${t.errors} errors` : ""}${t.stopped ? ` · ${t.stopped}` : ""}${t.running && t.phase ? ` · ${t.phase}` : ""}${t.cap_rollback ? ` · ${t.cap_rollback}` : ""} (Simulated traffic)`;
+  else if (t.total) $("#tState").textContent = `${t.running ? `Sending: ${Math.min(t.done, t.total)} of ${t.total}` : trafficText(t)} · spent $${Number(t.usd).toFixed(4)}${t.errors ? ` · ${t.errors} errors` : ""}${t.stopped ? ` · ${t.stopped}` : ""}${t.running && t.phase ? ` · ${t.phase}` : ""}${t.cap_rollback ? ` · ${t.cap_rollback}` : ""} (Simulated traffic)`;
   const w = t.without_totals;
   $("#tAbOut").textContent = w && w.requests ? `Without WattNot (same requests): ${fmtWh(w.wh)}, $${w.usd.toFixed(4)} (${w.label}).` : "";
 }

@@ -32,3 +32,14 @@ export function gwlSpend(q) {
   }
   return `Spend: $${Number((q && q.spend_usd) || 0).toFixed(4)}`;
 }
+
+// J per correct answer: the latest run first (with its id), then "All runs" when there is more than one.
+export function gwlCorrect(q) {
+  const M = '<span class="wnlab m">MEASURED</span>';
+  const L = q && q.latest, A = (q && q.all_runs) || {};
+  const line = (jc, js, c) => `${jc} J (stock ${js} J; ${c.with}/${c.scored} vs ${c.without}/${c.scored} correct, harness-scored)`;
+  let out = "";
+  if (L && L.correct && L.j_per_correct != null) out += `<br>J per correct answer, latest run ${L.run_id}: ${line(L.j_per_correct, L.j_per_correct_stock, L.correct)} ${M}`;
+  if (q && q.j_per_correct != null && q.correct && (!L || A.runs > 1)) out += `<br>${L ? `All runs (${A.runs})` : "J per correct answer"}: ${line(q.j_per_correct, q.j_per_correct_stock, q.correct)} ${M}`;
+  return out;
+}

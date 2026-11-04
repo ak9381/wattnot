@@ -177,7 +177,12 @@ def measured(savings_log) -> dict | None:
               "energy_wh": {"baseline": round(last["without_j"] / 3600, 4), "actual": round(last["with_j"] / 3600, 4),
                             "saved_pct": last["saved_pct"], "label": lab},
               "spend_usd": last["usd"][1], "spend_usd_stock": last["usd"][0],
-              "spend_label": "ESTIMATE (list price)"}
+              "spend_label": "ESTIMATE (list price)",
+              "ts": last["window"][1],
+              "correct": ({"without": last["correct"][0], "with": last["correct"][1], "scored": last["requests"],
+                           "label": "harness-scored (same number / word match)"} if last["scored"] else None),
+              "j_per_correct": last["j_per_correct"][1] if last["scored"] else None,
+              "j_per_correct_stock": last["j_per_correct"][0] if last["scored"] else None}
     all_runs = {"runs": len(per), "requests": sum(p["requests"] or 0 for p in per),
                 "energy_wh": {"baseline": round(bj / 3600, 4), "actual": round(aj / 3600, 4),
                               "saved_pct": round(100 * (bj - aj) / bj, 2) if bj else None, "label": lab},
