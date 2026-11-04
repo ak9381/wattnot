@@ -20,7 +20,7 @@ Source: Official Rules (event-details.md) and kickoff notes (`kickoff/KICKOFF-NO
 | Criterion | What earns it | Modules |
 |---|---|---|
 | Impact 30% | Who benefits and by how much, said first: small self-hosting teams get lower Wh and $ per request with no quality loss. Real measured saving (container FP8/batching receipt, power-cap Pareto), honest null if no win, EU fields | M3, M4, M6, M12 |
-| Use of Meta AI tooling 25% | Muse Spark 1.3 planner/explainer/judge, Muse Spark Open as the model tuned, Muse Code scripted workload, SAM 3.1 floor map, Glimmer/Llama 8B cheap tier | M5, M6, M11, M3 |
+| Use of Meta AI tooling 25% | Muse Spark 1.3 planner/explainer/judge, Muse Spark Open as the model tuned, Muse Code scripted workload, SAM 3.1 floor map, Glimmer/8B comparison model cheap tier | M5, M6, M11, M3 |
 | Demo 25% | Opens on who benefits and the saving, then forge challenge in the verifier, live run canvas, Pareto with error bars. No chat-UI look | M8, M10, M13 |
 | Technical depth & execution 20% | 10 Hz NVML traces, Welch test + bootstrap CI billing, Sigstore/Rekor, warm-start ablation with Wh budgets | M2, M6, M7, M5 |
 

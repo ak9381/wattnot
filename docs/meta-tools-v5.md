@@ -3,7 +3,7 @@
 Meta Tools v5 introduces three core capabilities to WattNot:
 1. **Muse Wonder Supervisor**: Pareto-optimal power cap and clock frequency search that halts when the cost/quality frontier flattens.
 2. **Muse Code Automation**: Unified diff patch generation, PR body authoring linked to signed receipts (`wattnot://<hash>`), and agent framework drop-in snippets.
-3. **Receipt Quality Coverage**: quality judge verdict (hosted Muse Spark; Llama 3.1 8B fallback), agreement score, Wonder trace IDs, per-model spend, and patch hashes signed into the receipt body.
+3. **Receipt Quality Coverage**: quality judge verdict (hosted Muse Spark; the 8B comparison model fallback), agreement score, Wonder trace IDs, per-model spend, and patch hashes signed into the receipt body.
 
 ---
 
@@ -107,10 +107,10 @@ All Meta Tools v5 verifications are placed directly inside the receipt's `measur
 
 - **`judge_verdict`**: `"pass"` or `"fail"`
 - **`judge_score`**: judge agreement fraction (e.g. `0.942` `[MEASURED]`)
-- **`judge_model`**: the judge that made the verdict, e.g. `"meta-models/muse-spark-open"` (default) or `"meta-llama/Llama-3.1-8B-Instruct"` (fallback); `judge_path` says which
+- **`judge_model`**: the judge that made the verdict, e.g. `"meta-models/muse-spark-open"` (default) or `"the 8B comparison model's Hugging Face repo"` (fallback); `judge_path` says which
 - **`spark_trace_id`**: Deterministic decision hash (e.g. `spark-9a8b7c6d5e4f3210`)
 - **`wonder_trace_ids`**: List of supervisor trace identifiers
-- **`per_model_spend`**: Spend tally for `spark`, `wonder`, `glimmer`, `llama`, and `sam`
+- **`per_model_spend`**: Spend tally for `spark`, `wonder`, `glimmer`, `cmp8b`, and `sam`
 - **`musecode_patch_sha256`**: Canonical hash of generated deployment patch
 
 Because these fields reside in the receipt body alongside measurements, they are hashed by JCS (RFC 8785) into `integrity.sha256` and verified by Ed25519 offline signatures. Tampering with any judge or trace field causes signature verification to fail.
@@ -165,7 +165,7 @@ A hands-free multimodal assistant for querying runs and navigating dashboards:
 - **Selector Mapping by Page**:
   | Page | Target Components | Exact Selectors | Extracted Fields |
   |---|---|---|---|
-  | All-runs dashboard (`runs.html`) | Bento KPI cards, run rows, trend & donut charts | `.kpis .kpi`, `#runsTable tbody tr`, `.charts .card` | Title (`.name`), Value (`.big`), Label (`.v-lab`), Source (`rcpt_llama_350w`) |
+  | All-runs dashboard (`runs.html`) | Bento KPI cards, run rows, trend & donut charts | `.kpis .kpi`, `#runsTable tbody tr`, `.charts .card` | Title (`.name`), Value (`.big`), Label (`.v-lab`), Source (`rcpt_run2_350w`) |
   | Run report (`report.html`) | Stepped flow cards, meta line, side panel details | `.flow .card`, `.step .card`, `.meta-line`, `aside.side .kv` | Step Name (`.k`), Value (`.val`), Explanation (`.sub`), Label (`.v-chip`) |
   | Compare & Setup (`v2.html`) | Compare branch cards, placement rows, gates, setup inputs | `.cmp.glass`, `.cmp-cards .cmp`, `.wr-t tbody tr`, `.wr-gates li`, `.cmp-m li`, `.ov-kpi.glass`, `#pCfg .card, [data-step]` | Lever Name (`.cmp-t`), Saving (`.cmp-v`), Gate Status, Input Config |
   | Live watch-run (`web/run`) | Live counters, efficiency tiles, waterfall bars, graph nodes | `#savings .cnt`, `#savings .eff`, `#savings .wf li`, `#nodes .node` | Counter Name (`.ch span`), Value (`b.mono`), Node Title (`.nt`), Delta |
@@ -228,7 +228,7 @@ Extends Delegated Regulation (EU) 2024/1364 data-center reporting with one-click
 A consolidated preview page (`web/dash/metatools.html`) brings together all Meta Tools v5 components:
 - Muse Wonder Supervisor trial overview & Pareto stop details
 - Muse Code PR diff preview & framework snippets
-- Llama 8B Quality Gate verdict & agreement score
+- 8B comparison-model quality gate verdict & agreement score
 - SAM 3.1 Cooling Hotspots rack map and bounded cap derate
 - EU Energy Efficiency Directive export link
 - Self-mounted Voice Guide in top-right slot

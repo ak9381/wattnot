@@ -180,7 +180,7 @@ The top nav links every page. Go in this order:
 4. **Run** `/v2.html#pRun`. Check: steps, labels, nothing claims live GPU.
 5. **Compare** `/v2.html#pReport`. Check: stock vs tuned, 300 W shown as rejected (p99 +18%).
 6. **Learn** `/v2.html#pLearn` and **Proof** `/v2.html#pProof`. Check: receipt id `rcpt_20261031_rerun_cap325`, grade ESTIMATE (offline test key, no Rekor yet). This receipt predates the SCI block.
-7. **Runs** `/runs.html` and **Reports** `/report.html?run=run2-llama-350w`. Check: the run list opens, the RUN2 report (Llama 3.1 8B, 350 W, −27.1%) loads.
+7. **Runs** `/runs.html` and **Reports** `/report.html?run=rerun-1031-glimmer-325w`. Check: the run list opens, the Oct 31 Glimmer rerun report (325 W) loads.
 8. **Live graph / architecture** `/graph.html`. Check: the layer diagram, the **Meta models at work** strip with all 8 models (Muse Image marked SYNTHETIC; models with no call say "no call in this run"), the **Spark 4-call trace** panel (probe → proposal → gate → receipt, MOCK in mock mode, with trace ids when live).
 9. **Cost budget** `/costbudget.html`. Check: numbers labelled ESTIMATE.
 10. **Run matrix** `/matrix.html`. Check: 12 rounds, each PLANNED; dataset per round; the with/without WattNot round; Spark grades next to the answer checks; Meta spend meter ($26.82 of $120, MEASURED); Baseten, Modal, E2E credit meters.

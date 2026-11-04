@@ -97,11 +97,11 @@ Validation is **free/dry only** -- no GPU, no deploy, no network, no money:
   would give a fine-grained budget; whether the hosted endpoint honours it is UNVERIFIED.
 - Plan: effort sweep low/medium/high (+xhigh baseline) instead of 0.5x/1x/2x; max_tokens as the hard ceiling.
 
-## Quality judge -> Muse Spark (hosted) by default, Llama 3.1 8B fallback
-Today: `src/wattnot/gates/judge.py` defaults `JUDGE_MODEL` to Llama 3.1 8B (local vLLM), with Spark via
+## Quality judge -> Muse Spark (hosted) by default, the 8B comparison model fallback
+Today: `src/wattnot/gates/judge.py` defaults `JUDGE_MODEL` to the 8B comparison model (local vLLM), with Spark via
 the Meta API only when no local URL. Switch: default transport = hosted Spark via the existing
 `proof/baseten_planner.py` client (reasoning_effort=low, temperature 0, guarded by this ledger); on
-401/402/429-exhausted/soft-or-hard stop, fall back to `LocalJudge` (Llama). Every verdict records `judge_model`.
+401/402/429-exhausted/soft-or-hard stop, fall back to `LocalJudge` (8B comparison model). Every verdict records `judge_model`.
 Text to update: web/dash/metatools.js (lines 2, 42-45, 176, 317), web/dash/v2.js:1219,
 web/dash/sample-meta5-receipt.json:129, src/wattnot/receipt/build.py:160, src/wattnot/dash/judgepath.py:75,
 data/judge/judge-path.json:21, src/wattnot/rehearse.py:225, src/wattnot/dash/leaderboard.py:167,
@@ -115,7 +115,7 @@ Key + model: inference works with `BASETEN_METRICS_KEY` (`BASETEN_API_KEY` retur
 `meta-models/muse-spark-open`; the old `-1026` slug is gone from live code (kept only in historical run files).
 
 Cut-off rule: with `max_tokens` 64 the model spent 61 tokens reasoning and returned `content: None`. A reply with
-no content is a **cut-off**: `FallbackJudge` treats it like a failed primary call and falls back to Llama, and if
+no content is a **cut-off**: `FallbackJudge` treats it like a failed primary call and falls back to the 8B comparison model, and if
 there is no fallback the gate fails closed — never a pass. Judge budget is pinned to one value,
 `JUDGE_MAX_TOKENS = 1500` at low effort, across the batch judge, hosted-Spark pricing and `record_judge`; 512
 still spent the whole budget on reasoning for some replies.

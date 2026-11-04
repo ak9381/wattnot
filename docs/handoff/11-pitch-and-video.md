@@ -3,7 +3,7 @@
 - Draft form answers + a shot-by-shot **3-minute video script**: `/workspace/hackathon/submission/ANSWERS.md`
   (DRAFT, form not opened or submitted). Pitch council outputs: `/workspace/hackathon/council-pitch/`.
   Marketing/bonus ideas: `bonus-and-marketing.md`. Demo story: vault `Demo story guide.md`; box `/workspace/hackathon/STORY.md`.
-- Tagline: **"Savings you can prove."** Banner: Push the Frontier · Energy · served model (Llama 3.1 8B /
+- Tagline: **"Savings you can prove."** Banner: Push the Frontier · Energy · served model (the 8B comparison model /
   Glimmer, open weights) · planner/judge Muse Spark 1.3.
 - Structure (0:00-3:00): title + "built this week" line -> human units -> problem (tools hand you a
   number) -> live run canvas with Spark decisions -> gate panel with a red rollback -> fixed-cap

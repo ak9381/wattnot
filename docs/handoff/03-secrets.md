@@ -9,7 +9,7 @@
 | `BASETEN_API_KEY` | Baseten hackathon key | injected box secret | **dead (401), never use**; code pops/refuses it |
 | `E2E_API_KEY`, `E2E_API_TOKEN` | E2E Networks (H100 VM control API) | injected box secrets | env; read by `scripts/e2e/ctl.py` (copies in `/workspace/hackathon/e2e-run2/` and `e2e-run3/`) |
 | `E2E_BACKUP_CODES` | E2E Networks account 2FA backup codes | injected box secret | only for an E2E web sign-in, ask Akash first |
-| `HF_TOKEN` | Hugging Face (gated Llama weights download) | injected box secret | env; pass to the VM/container, never echo |
+| `HF_TOKEN` | Hugging Face (gated 8B comparison weights download) | injected box secret | env; pass to the VM/container, never echo |
 | `PINGGY_TOKEN` | Pinggy tunnel (exposing a demo server) | injected box secret | env |
 | `TYS_DEMO_PASSWORD` | demo-site password (not WattNot core) | injected box secret | env |
 | `META_API_KEY` | Meta Model API (Muse Spark/Wonder/Voice Transcribe) | file `~/.config/wattnot/env` (line `META_API_KEY=...`); the Muse CLI also keeps its login in `~/.config/muse/auth.json` (`providers` section); Modal secret **`wattnot-meta`** holds it for containers | `set -a; . ~/.config/wattnot/env; set +a`. Mock instead with `WATTNOT_META_MOCK=1` |

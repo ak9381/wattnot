@@ -1,6 +1,6 @@
 # H100 RUN2 raw data (27 Oct 2026)
 
-One NVIDIA H100 80GB HBM3 (E2E Networks, Delhi), Llama-3.1-8B-Instruct on vLLM, 111-prompt gate.
+One NVIDIA H100 80GB HBM3 (E2E Networks, Delhi), the 8B comparison model on vLLM, 111-prompt gate.
 Times inside the files are UTC (IST is +5:30).
 
 - `events/sweep.events.jsonl`: orchestrator event stream (room scan, baseline, quality gate, Muse

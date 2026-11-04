@@ -32,8 +32,8 @@ Final test status (run at end of review):
   `web/`, `README.md`, `SPEC.md`, `docs/`. `openai` appears only as the OpenAI-compatible
   SDK/`base_url` interop identifier (how a user points their existing client at the local
   vLLM endpoint) — a legitimate integration name, not competitor marketing copy.
-- **Llama, SAM 3.1, Qwen3, Granite are intentional and honest, not violations.** This is a
-  *Meta* entry: "Powered by Meta" with Llama/SAM 3.1 is the point. Qwen3 and Granite are
+- **SAM 3.1, Qwen3, Granite are intentional and honest, not violations.** This is a
+  *Meta* entry: "Powered by Meta" with SAM 3.1 is the point. Qwen3 and Granite are
   real non-Meta models that were genuinely benchmarked on the H100 (MEASURED NVML
   receipts); the code discloses this explicitly (`src/wattnot/dash/runplan.py:153,729`:
   "Qwen3 and Granite are not Meta models … history only"). Renaming any of these to
@@ -93,7 +93,7 @@ Ranked by value. None are correctness bugs on the demo (replay) path.
 
 Copy follow-ups (product decision, not a defect):
 
-9. **README line 9** states "Every model WattNot runs is a Meta model (Glimmer, Llama,
+9. **README line 9** states "Every model WattNot runs is a Meta model (Glimmer,
    Spark, SAM 3.1, Wonder)." The Qwen3/Granite benchmarks are non-Meta (and disclosed as
    such elsewhere). The live/recorded run uses Meta models; consider softening to "Every
    model in the recorded run is a Meta model" to match `runplan.py`'s own disclosure.

@@ -179,10 +179,10 @@ test("popover content includes id, label, plain-language explanation, and source
   doc.body.appendChild(el);
 
   const data = {
-    id: "rcpt_llama_350w_energy",
+    id: "rcpt_run2_350w_energy",
     value: "9.4%",
     label: "MEASURED",
-    source: "rcpt_llama_350w",
+    source: "rcpt_run2_350w",
     title: "Billed Saving",
     summary: "WattNot reduced energy consumption by 9.4% [MEASURED] across all prompts.",
   };
@@ -195,7 +195,7 @@ test("popover content includes id, label, plain-language explanation, and source
   const html = pop.innerHTML;
   assert.match(html, /9\.4%/);
   assert.match(html, /MEASURED/);
-  assert.match(html, /rcpt_llama_350w/);
+  assert.match(html, /rcpt_run2_350w/);
   assert.match(html, /Billed Saving/);
 });
 

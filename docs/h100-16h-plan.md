@@ -64,8 +64,8 @@ Driver command: `PYTHONPATH=src python -m wattnot.longrun.driver --dry-run --out
 | glimmer `--plan public` | PASS | 17/17 blocks done |
 | glimmer `--plan long` | PASS | 16/16 blocks done |
 | glimmer `--plan full` | PASS | 11 done; `g8-buffer` dropped by design (needs 0.75 h, 0.31 h left) |
-| llama `--plan full` | PASS | 8 done; `b5-second-model` skipped by design (needs Akash's yes) |
-| llama `--plan max` | refused (expected) | the guard says `--plan max needs --model glimmer-test` |
+| 8B comparison `--plan full` | PASS | 8 done; `b5-second-model` skipped by design (needs Akash's yes) |
+| 8B comparison `--plan max` | refused (expected) | the guard says `--plan max needs --model glimmer-test` |
 | `scripts/e2e/baseten_round.py --round r01 --mode smoke --limit 2 --dry-run` | PASS | status dry-run, 0 errors, billing not read |
 | `scripts/e2e/round.py --dry-run` for modal, baseten and h100 | PASS | all rc 0 |
 | `modal/spark_topk_sprint.py --dry-run` | PASS after a fix | Bug: it appended $0 "reconcile" rows to the tracked `data/spend/modal.ledger.jsonl`. Fixed in fix/dry-run-ledger: the dry run now writes `DIR/dry-run.ledger.jsonl`, with a regression test. |

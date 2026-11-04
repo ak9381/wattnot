@@ -4,7 +4,7 @@ WattNot's proxy speaks the OpenAI chat-completions API. Any framework that lets 
 
 1. **Agent-waste saver** stops loops that bring in no new information (repeated tool calls, no-op steps, cycles).
 2. **Context saver** replaces repeated tool output with a short reference and folds old turns into a summary. A stage that would make the prompt bigger is skipped.
-3. **Small model first**: Llama 3.1 8B answers first. If the reference-free answer gate fails, the call goes to Muse Glimmer 30B, then to Muse Spark Open.
+3. **Small model first**: The 8B comparison model answers first. If the reference-free answer gate fails, the call goes to Muse Glimmer 30B, then to Muse Spark Open.
 4. **Quality gate** checks the final answer.
 
 `GET /v1/wattnot/receipt` returns what happened: the framework name, calls, escalation rate, small-model pass rate, gate pass %, tokens before and after the context saver, and the waste counters.

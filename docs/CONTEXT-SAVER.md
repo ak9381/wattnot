@@ -25,10 +25,10 @@ Module: `wattnot.context_saver.prefix_cache` (pure; `mock_ab()` for CPU, `run_ab
 
 ## 2. Memory compression (agent-path middleware)
 
-`MemoryCompressionMiddleware` summarises old agent turns with Llama 3.1 8B into a **chunk store**,
+`MemoryCompressionMiddleware` summarises old agent turns with the 8B comparison model into a **chunk store**,
 keeps the system prompt and the last few turns verbatim, then **retrieves** the chunks most
 relevant to the latest question and stitches them back as one compact recap. The summariser is
-injected, so tests use `MockSummarizer` (deterministic, offline) and a live run uses a Llama 8B
+injected, so tests use `MockSummarizer` (deterministic, offline) and a live run uses a 8B comparison model
 client — no network in tests.
 
 ## 3. Tool-output dedup (agent-path middleware)

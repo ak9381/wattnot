@@ -87,7 +87,7 @@ cost of one.
 
 ### How the numbers are converted (ESTIMATE)
 
-- **Energy** = completion tokens x 0.1497 J/token. That rate is MEASURED in RUN2 for Llama 3.1
+- **Energy** = completion tokens x 0.1497 J/token. That rate is MEASURED in RUN2 for 8B comparison model
   8B on one H100 at the stock 700 W cap (`data/h100-run2/vm/baseline.json`). Muse Spark is a
   different, larger model on hardware we do not control, so this is a stand-in rate. Read it
   as a relative comparison between arms, not as Muse Spark's real draw. Only generated tokens

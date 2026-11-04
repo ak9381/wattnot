@@ -59,7 +59,7 @@ mindmap
       Muse Wonder supervisor
       Muse Code applies the change
       SAM 3.1 rack and hotspot audit
-      Llama and Glimmer served and judge
+      the 8B comparison model and Glimmer served and judge
     Keep it safe
       Approve before apply
       Trial grants with bounds
@@ -94,7 +94,7 @@ flowchart TB
     WONDER["Muse Wonder<br/>Pareto supervisor"]:::meta
     CODE["Muse Code<br/>applies kept change as a PR"]:::meta
     SAM["SAM 3.1<br/>rack + hotspot audit"]:::meta
-    SERVE["Llama 3.1 8B / Muse Glimmer 30B<br/>served + quality judge"]:::meta
+    SERVE["the 8B comparison model / Muse Glimmer 30B<br/>served + quality judge"]:::meta
   end
 
   subgraph LEVERS["Serving changes it tries"]
@@ -195,7 +195,7 @@ What makes WattNot more than a token counter — the parts that are genuinely no
 
 ## 4. Measured results
 
-All MEASURED on one NVIDIA H100 80GB (Llama 3.1 8B Instruct on vLLM), 666 checked answers,
+All MEASURED on one NVIDIA H100 80GB (the 8B comparison model on vLLM), 666 checked answers,
 3 reps per arm, interleaved stock blocks for the noise floor.
 
 ### Power-cap sweep (RUN2)
@@ -225,7 +225,7 @@ energy saving, but it broke the latency contract, so it was rejected.
 | Flex grid shed | sheds to the limit p99 and quality allow | SIMULATED (software power model) |
 
 The adaptive top-k agreement figure was measured on a non-Meta MoE model and is kept only as
-dated history; the H100 run and headline use Meta models (Llama, Glimmer).
+dated history; the H100 run and headline use Meta models (Glimmer).
 
 ---
 
@@ -239,7 +239,7 @@ Choices that shaped the build, stated plainly.
   within 1 point; adaptive top-k and routing use a 95% token/answer agreement gate. They are
   not the same test and the receipt says so.
 - **RUN2 quality is judged by deterministic fixed checks** (string and number matching, no
-  model as a judge). Results with the hosted Meta judge (with a Llama fallback) are reported
+  model as a judge). Results with the hosted Meta judge (with a 8B comparison-model fallback) are reported
   separately when measured.
 - **Publish the null.** 325 W saved the most energy but failed the p99 gate, so it was
   rejected and shown rejected.

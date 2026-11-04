@@ -19,7 +19,7 @@ A fixed/sticky floating glass bar styled to match the visionOS/Liquid Glass aest
   - `Dashboard` (`runs.html`)
   - `Runs` (`runs.html#runs`)
   - `Compare` (`v2.html#pReport`)
-  - `Reports` (`report.html?run=run2-llama-350w`)
+  - `Reports` (`report.html?run=rerun-1031-glimmer-325w`)
   - `Live graph` (`graph.html`)
 - **Active Navigation State**: Highlighted via `.on` class and `aria-current="page"`, updated automatically on page load and on `hashchange` events.
 - **Voice / Mic Slot Container**: Right-aligned inside `.wn-slot-wrap` on app pages.
@@ -66,7 +66,7 @@ Every key numeric metric, breakdown card, and mind-map node exposes structured a
 
 | Attribute | Purpose | Example Values |
 |---|---|---|
-| `data-explain` | Stable hierarchical identifier | `report.saving`, `runs.run2-llama-350w.saving`, `compare.power.agent-waste` |
+| `data-explain` | Stable hierarchical identifier | `report.saving`, `runs.rerun-1031-glimmer-325w.saving`, `compare.power.agent-waste` |
 | `data-explain-value` | Formatted value string | `27.1%`, `93.7%`, `15.96 J`, `Passed`, `Signed` |
 | `data-explain-label` | Data provenance classification | `MEASURED`, `ESTIMATE`, `MOCK`, `SIMULATED`, `REPLAY`, `pending` |
 | `data-explain-source` | Field or formula origin | `phases.wattnot.metrics.saved_pct`, `receipt.context_saver.tokens_cut_pct` |

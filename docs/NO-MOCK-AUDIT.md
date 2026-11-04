@@ -80,7 +80,7 @@ preflight passes.
 | # | Area | Finding | Fix |
 |---|------|---------|-----|
 | 24 | Setup | Docker and the NVIDIA container runtime were not checked before the ~60 GB download. | FIXED: preflight exits 15 before any download. |
-| 25 | Setup | The Hugging Face access check ran only for `meta-llama/*`, not the default Glimmer model. | FIXED: runs for any model. |
+| 25 | Setup | The Hugging Face access check ran only for gated 8B comparison weights, not the default Glimmer model. | FIXED: runs for any model. |
 | 26 | Copy | Results were copied with no end-to-end checksum. | FIXED: the VM's sha256 list is compared with the copy, mismatches retried once, `pull-verify.json` written. |
 | 27 | Clock | NTP was never enabled or recorded. | FIXED: `timedatectl set-ntp true` in setup; clock state saved at setup and every pull. |
 | 28 | Adopt | Adopting an existing VM restarted its 3.5 h lifetime from now. | FIXED: the clock starts at the recorded launch intent. |

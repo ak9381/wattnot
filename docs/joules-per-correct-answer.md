@@ -21,7 +21,7 @@ J/correct = (GPU energy for the run + overhead energy) / number of answers that 
 - Hosted model calls (the planner, hosted endpoints). Providers report tokens, not joules, so these
   show as "not metered". A hosted row on the leaderboard is an ESTIMATE: billed tokens x a published
   joules-per-token figure (**7.86 J/token** for Muse Spark Open on H100-class GPUs: RUN2's measured
-  0.1497 J/token on Llama 3.1 8B, scaled by active parameters 42B/0.8B), and it says so.
+  0.1497 J/token on the 8B comparison model, scaled by active parameters 42B/0.8B), and it says so.
 - Embodied energy of the hardware.
 
 ## What counts as correct
@@ -33,7 +33,7 @@ An answer is correct when it passes the workload's fixed check:
 - **qa:** the answer matches the reference after normalising case and whitespace.
 
 RUN2 (proof-v1: 50 math, 29 code, 32 qa prompts, 666 checked answers per arm) used these fixed
-checks. Rows that use a model as the judge (Llama 3.1 8B Instruct) are a separate era and are
+checks. Rows that use a model as the judge (the 8B comparison model) are a separate era and are
 never mixed with RUN2 rows.
 
 ## Sample size and error bars

@@ -76,7 +76,7 @@ call, flag repeats and cycles, offer a done action, enforce budgets, exit early.
 shows its card under the lever cards, served from `GET /api/dash/agent-waste`. Its numbers come
 from `data/agent-waste/results.json`, a benchmark of an agent loop with and without the saver plus a
 standard harness that already stops by itself. Calls, tokens, wall time and success are MEASURED on
-Muse Spark; energy and dollars are ESTIMATE, using RUN2's measured joules per token for Llama 3.1 8B
+Muse Spark; energy and dollars are ESTIMATE, using RUN2's measured joules per token for the 8B comparison model
 as a stand-in rate. A missing value is a dash.
 
 `?tab=power|experts|arch` and `?tab=arch&filter=meta` still work.
