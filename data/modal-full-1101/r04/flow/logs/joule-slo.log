@@ -1,0 +1,23 @@
+{
+  "budget_j_per_correct": 200.0,
+  "p99_ceiling_pct": 10.0,
+  "budget_usd_per_1k_correct": null,
+  "usd_per_hour": null,
+  "label": "MEASURED",
+  "verdict": "infeasible",
+  "binds": "joule",
+  "chosen": null,
+  "greenest": null,
+  "achieved_j_per_correct": null,
+  "headroom_j": null,
+  "floor_j_per_correct": 2018.305345,
+  "achieved_usd_per_1k_correct": null,
+  "cost_basis": null,
+  "cost_note": null,
+  "headroom_usd": null,
+  "cost_floor_usd_per_1k_correct": null,
+  "cost_floor_basis": null,
+  "reason": "budget 200 J/correct is below the floor 2018.31 J/correct; relax the budget or the p99 ceiling"
+}
+
+--- stderr ---

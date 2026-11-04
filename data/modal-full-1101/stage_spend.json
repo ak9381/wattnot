@@ -1,5 +1,5 @@
 {
- "usd": 0.6739,
+ "usd": 4.5532,
  "rounds": [
   {
    "round": "smoke-r04",
@@ -12,8 +12,21 @@
    "usd": 0.2965,
    "minutes": 7.1,
    "at": "2026-11-01T11:41:45.828792+00:00"
+  },
+  {
+   "round": "r04",
+   "usd": 3.7445,
+   "minutes": 89.9,
+   "at": "2026-11-04T07:42:03.683460+00:00"
+  },
+  {
+   "round": "r04-metered-true-up",
+   "usd": 0.1348,
+   "minutes": 0,
+   "at": "2026-11-04T07:43:08.646451+00:00"
   }
  ],
  "label": "ESTIMATE",
- "method": "container wall minutes x A100-80GB list price"
+ "method": "container wall minutes x A100-80GB list price",
+ "reserved": {}
 }

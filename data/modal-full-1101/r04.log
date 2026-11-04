@@ -1,0 +1,97 @@
+Note that running a local entrypoint in detached mode only keeps the last triggered Modal function alive after the parent process has been killed or disconnected.
+✓ Initialized. View run at 
+https://modal.com/apps/akashkraju218/main/ap-IIN5lhb1JzpR1KPKIYshDF
+✓ Created objects.
+├── ✓ Uploaded /workspace/wn-modaltake/modal/full_stage.py
+├── ✓ Uploaded pyproject.toml
+├── ✓ Uploaded /workspace/wn-modaltake/data/public_bench
+├── ✓ Uploaded /workspace/wn-modaltake/data/voice
+├── ✓ Uploaded /workspace/wn-modaltake/workloads
+├── ✓ Uploaded /workspace/wn-modaltake/examples
+├── ✓ Uploaded /workspace/wn-modaltake/data/vision
+├── ✓ Uploaded /workspace/wn-modaltake/scripts
+├── ✓ Uploaded /workspace/wn-modaltake/src
+├── ✓ Created Function gpu_round.
+├── ✓ Created Function gpu_smoke.
+├── ✓ Created Function gpu_block.
+└── ✓ Created Function deps_probe.
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+WARNING: Logs may not be continuous
+[full_stage] r04: results in 
+/workspace/wn-modaltake/data/modal-full-1101/_incoming/r04
+[modal-client] 2026-11-04T07:41:55+0000 Detected 1 background thread(s) [Thread-2] still running after container exit. This will prevent runner shutdown for up to 30 seconds.
+Exception ignored in: <module 'threading' from '/usr/lib/python3.12/threading.py'>
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/threading.py", line 1622, in _shutdown
+    lock.acquire()
+KeyboardInterrupt: 
+Runner terminated.
+✓ App completed. View run at 
+https://modal.com/apps/akashkraju218/main/ap-IIN5lhb1JzpR1KPKIYshDF
+[teardown] {"stopped": [], "still_running": [], "verified_empty": true, "checked_at": "2026-11-04T07:42:05.834034+00:00"}
+[approval] held change approved: failed checks []
+hotspot set [live] (SYNTHETIC tests): SAM 3.1 found all 6 SYNTHETIC hotspots
+wonder chart [live · wonder]: next = 300W/base — No measured trials yet, so test the lowest cap to probe minimum joules per correct while checking quality retention.
+{"round": "r04", "acc": [0.9635, 0.9792], "j_per_correct": [2018.4, 509.3], "saved_pct": {"value": 74.77, "label": "MEASURED"}, "spark": {"label": "LIVE", "graded": 360, "disagreements": 17, "agreement": 0.9528, "stopped": null}, "flow_rc": 0, "musecode": {"status": "ok", "repo": "ak9381/wattnot-demo-deploy", "started_utc": "2026-11-04T07:51:39.676271+00:00", "steps": [{"step": "muse exec", "rc": 0, "trace": {"session_id": "01a1a58a-db55-72f3-86ff-6a4119cecb35", "trace_id": "01a1a58a-e0cb-74e2-ac14-69d338378afd", "input_tokens": 76825, "output_tokens": 887, "total_tokens": 77712, "usage": {"input_tokens": 76825, "output_tokens": 887, "total_tokens": 77712}}, "latency_s": 17.9}, {"step": "gh pr create", "rc": 0, "url": "https://github.com/ak9381/wattnot-demo-deploy/pull/5", "err": null}, {"step": "gh pr merge", "rc": 0, "err": null}], "review_checks": [{"check": "only values.yaml changed", "ok": true, "detail": ["values.yaml"]}, {"check": "values.yaml parses and hosted block matches the approved change", "ok": true, "detail": {"quantization": "bf16", "maxNumSeqs": 128, "prefixCaching": false, "router": "cheapest-first", "receiptSha256": "c5db0a6586a8df67fd94995e3dabdebe5b93d4fa7ed91cd31886e337034aa112"}}, {"check": "no other values changed", "ok": true, "detail": null}, {"check": "launch.sh syntax (bash -n)", "ok": true, "detail": null}, {"check": "repo tests/CI", "ok": true, "detail": "repo has no tests or CI workflows; checks above stand in"}, {"check": "change was approved after evidence review", "ok": true, "detail": null}], "pr_url": "https://github.com/ak9381/wattnot-demo-deploy/pull/5", "decision": "merged", "clean": true, "files": ["values.yaml"], "ended_utc": "2026-11-04T07:52:15.570437+00:00", "reviewer": "Akash K Raju (delegated reviewer)", "auto_approve": false}, "modal_usd": {"value": 3.7445, "label": "ESTIMATE", "method": "wall minutes incl. image and container start x list price"}, "approval": "approved", "failed": []}

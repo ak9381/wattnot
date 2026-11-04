@@ -1,0 +1,18 @@
+{
+  "points": [
+    {
+      "cap_w": null,
+      "j_per_good": 2018.3053450960042,
+      "p99_delta_pct": 0.0,
+      "gate_pass": true,
+      "label": "MEASURED"
+    },
+    {
+      "cap_w": null,
+      "j_per_good": 509.24632352941177,
+      "p99_delta_pct": -15.041949660407516,
+      "gate_pass": true,
+      "label": "MEASURED"
+    }
+  ]
+}

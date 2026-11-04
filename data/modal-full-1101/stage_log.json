@@ -1,0 +1,38 @@
+[
+ {
+  "round": "r04",
+  "pr": "https://github.com/ak9381/wattnot-demo-deploy/pull/5",
+  "pr_review": "approved",
+  "clips": [
+   {
+    "file": "data/modal-full-1101/clips/modal-r04-graph-without.mp4",
+    "duration_s": 1437.7,
+    "frames": 14377,
+    "plays": true,
+    "bytes": 6559118
+   },
+   {
+    "file": "data/modal-full-1101/clips/modal-r04-graph-with.mp4",
+    "duration_s": 4248.7,
+    "frames": 42487,
+    "plays": true,
+    "bytes": 19173102
+   },
+   {
+    "file": "data/modal-full-1101/clips/modal-r04-matrix.mp4",
+    "duration_s": 18.2,
+    "frames": 182,
+    "plays": true,
+    "bytes": 272317
+   },
+   {
+    "file": "data/modal-full-1101/clips/modal-r04-pr-review.mp4",
+    "duration_s": 29.0,
+    "frames": 290,
+    "plays": true,
+    "bytes": 196834
+   }
+  ],
+  "rc": 0
+ }
+]

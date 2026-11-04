@@ -1,0 +1,13 @@
+wattnot_verify /workspace/wn-modaltake/data/modal-full-1101/r04/flow/sweep/rcpt_20261101_modal_full_r04.json
+  ok   schema    wattnot.receipt/1
+  ok   sha256    expected 4732590b04bcd14ad438fc600fab6b1418f066060a7df399fe8fc9d7f1fcb0a4  got 4732590b04bcd14ad438fc600fab6b1418f066060a7df399fe8fc9d7f1fcb0a4
+  ok   signature signer offline:a10d641cddc104d8 [signed (WattNot certificate key)]
+  none rekor     no Rekor entry (offline signature): grade at most ESTIMATE
+  ok   joules    matches the receipt's numbers
+  ok   sci       E x I and water match the receipt's numbers
+  ok   labels    ESTIMATE 10, MEASURED 10, SYNTHETIC 2
+  ok   grade     ESTIMATE
+  info           candidate 498.7 J per answer, 509.2 J per good answer
+  info           [ESTIMATE] SCI 0.1028 gCO2e per correct answer (E 0.0001415 kWh [MEASURED] x I 727 g/kWh, IN (India national grid) FY 2023-24; M NOT_AVAILABLE); water 0.05092 mL per correct at 0.36 L/kWh
+
+--- stderr ---

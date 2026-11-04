@@ -1,0 +1,5 @@
+[agentwaste-gpu] harness rep0: 97743 J, 11/12 ok
+[agentwaste-gpu] harness+saver rep0: 72854 J, 12/12 ok
+{"label": "MEASURED", "model": "meta-models/Muse-Glimmer-30B", "off": {"joules": 97742.6, "successes": 11, "runs": 12, "calls": 70, "j_per_success": 8885.7}, "on": {"joules": 72854.3, "successes": 12, "runs": 12, "calls": 47, "j_per_success": 6071.2}, "joules_saved": 24888.3, "saved_pct": 25.46, "routing": "not measured (one model on the card)", "max_cases": 12, "max_tokens": 768}
+/app/scripts/agentwaste_gpu_ab.py:80: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml

@@ -1,0 +1,17 @@
+g6-think transport: parser-split (confident=True) reasoning delta field present; close marker hidden by the parser
+g6-think easy 0.25x: 100.0% pass, 376.43 J/correct
+g6-think easy 0.5x: 100.0% pass, 723.04 J/correct
+g6-think easy 1.0x: 100.0% pass, 902.91 J/correct
+g6-think medium 0.5x: 100.0% pass, 3248.83 J/correct
+g6-think medium 1.0x: 100.0% pass, 3264.34 J/correct
+g6-think medium 1.5x: 100.0% pass, 3265.78 J/correct
+g6-think hard 0.5x: 100.0% pass, 3460.22 J/correct
+g6-think hard 1.0x: 100.0% pass, 3462.00 J/correct
+g6-think hard 2.0x: 100.0% pass, 3476.43 J/correct
+g6-think complex 1.0x: 100.0% pass, 15772.78 J/correct
+g6-think complex 1.5x: 100.0% pass, 15780.35 J/correct
+easy     keep 0.25x  0.25x      J/correct 376.429  pass 100.0% (+0.0 pts)
+medium   keep 0.5x  0.5x       J/correct 3248.829  pass 100.0% (+0.0 pts)
+hard     keep 0.5x  0.5x       J/correct 3460.215  pass 100.0% (+0.0 pts)
+complex  keep 1.0x  no change  J/correct 15772.776  pass 100.0% (+0.0 pts)
+wrote /tmp/results/r04/think/thinking_policy.json [MEASURED]
