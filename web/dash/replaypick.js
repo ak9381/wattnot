@@ -101,3 +101,13 @@ async function play(run, el) {
 }
 
 mount(document.getElementById("wn-replay"));
+
+// Inline player for any page (Results "Play it back"): plays one recorded run in `el`.
+export async function playInline(id, el) {
+  if (!el) return;
+  if (!document.getElementById("rp-style")) { const st = document.createElement("style"); st.id = "rp-style"; st.textContent = STYLE; document.head.append(st); }
+  const list = await fetch("/api/dash/replays").then((r) => r.json()).then((j) => j.replays || []).catch(() => []);
+  const run = list.find((r) => r.id === id);
+  if (!run) { el.hidden = false; el.innerHTML = `<p class="muted">Run ${esc(id)} is not under replays/ on this server.</p>`; return; }
+  return play(run, el);
+}
