@@ -62,6 +62,7 @@ class SaverGate:
         self.pairs: dict[str, list[dict]] = {}
         self.done: dict[str, dict] = {}
         self.events: list[dict] = []
+        self.tries: dict[str, int] = {}     # shadow pairs seen per mix, repeats included
         self.noop: dict[str, dict] = {}      # saver mixes proven to leave the request unchanged
         self.noop_pairs = int(noop_pairs)
         self._lock = threading.Lock()
@@ -82,12 +83,13 @@ class SaverGate:
         self.pairs = {k: list(v) for k, v in (d.get("pairs") or {}).items()}
         self.done = {k: dict(v) for k, v in (d.get("done") or {}).items()}
         self.noop = {k: dict(v) for k, v in (d.get("noop") or {}).items()}
+        self.tries = {k: int(v) for k, v in (d.get("tries") or {}).items()}
 
     def _save(self) -> None:
         if not self.state_path:
             return
         d = {"off": list(self.off.values()), "events": self.events, "pairs": self.pairs,
-             "done": self.done, "noop": self.noop, "saved": round(time.time(), 3)}
+             "done": self.done, "noop": self.noop, "tries": self.tries, "saved": round(time.time(), 3)}
         self.state_path.parent.mkdir(parents=True, exist_ok=True)
         tmp = self.state_path.with_suffix(self.state_path.suffix + ".tmp")
         tmp.write_text(json.dumps(d))
@@ -96,7 +98,7 @@ class SaverGate:
     def reset(self) -> None:
         """Forget every decision (new model or a fresh test)."""
         with self._lock:
-            self.off, self.pairs, self.done, self.events, self.noop = {}, {}, {}, [], {}
+            self.off, self.pairs, self.done, self.events, self.noop, self.tries = {}, {}, {}, [], {}, {}
             self._save()
 
     def mark_noop(self, savers: list[str], model: str | None, why: str) -> None:
@@ -138,7 +140,9 @@ class SaverGate:
             k = self._key(model, applied)
             if k in self.noop:
                 return False
-            return len(self.pairs.get(k, [])) < self.min_pairs
+            # warm-up ends after min_pairs shadow checks even when they repeat one prompt (a
+            # workload of one repeated prompt must not be shadowed forever)
+            return len(self.pairs.get(k, [])) < self.min_pairs and self.tries.get(k, 0) < self.min_pairs
 
     def record_pair(self, model: str | None, small_total: int, base_total: int, agree: bool | None,
                     applied: list[str] | None = None, small_in: int | None = None,
@@ -161,16 +165,17 @@ class SaverGate:
         ps = self.pairs.setdefault(k, [])
         # a pair counts once per distinct prompt: 60 requests made of 10 prompts sent 6 times
         # are 10 samples, not 60, so the same prompt never fills the warm-up on its own
-        if prompt_key is not None and any(p.get("prompt") == prompt_key for p in ps):
-            return
-        ps.append({"prompt": prompt_key, "small": int(small_total), "base": int(base_total), "agree": None if agree is None else bool(agree),
-                   "small_in": None if small_in is None else int(small_in),
-                   "base_in": None if base_in is None else int(base_in)})
+        self.tries[k] = self.tries.get(k, 0) + 1
+        dup = prompt_key is not None and any(p.get("prompt") == prompt_key for p in ps)
+        if not dup:
+            ps.append({"prompt": prompt_key, "small": int(small_total), "base": int(base_total), "agree": None if agree is None else bool(agree),
+                       "small_in": None if small_in is None else int(small_in),
+                       "base_in": None if base_in is None else int(base_in)})
         # effort-only mix that changed nothing (same prompt, same output length, same answer):
         # after noop_pairs distinct prompts the mix is a no-op on this model, so stop shadowing
         # it and stop applying it (the request goes out byte-identical to stock)
         eff_only = bool(applied) and all(sv in EFFORT_SAVERS for sv in applied)
-        if eff_only and small_out is not None and base_out is not None:
+        if eff_only and not dup and small_out is not None and base_out is not None:
             same = [p for p in ps if p.get("small_in") == p.get("base_in") and p.get("agree") is not False
                     and p.get("small") == p.get("base")]
             if len(same) == len(ps) and len(ps) >= self.noop_pairs:
@@ -187,7 +192,7 @@ class SaverGate:
             return
         # one pair at 1.5x stock or worse is already a clear loss: stop paying for more calibration
         clear_loss = int(small_total) > 1.5 * int(base_total)
-        if len(ps) < self.min_pairs and not clear_loss:
+        if len(ps) < self.min_pairs and self.tries[k] < self.min_pairs and not clear_loss:
             return
         recent = ps[-max(self.min_pairs, 10):]
         sm, bs = sum(p["small"] for p in recent), sum(p["base"] for p in recent)

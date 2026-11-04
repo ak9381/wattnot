@@ -109,12 +109,13 @@ def test_gate_state_survives_restart(tmp_path):
 
 def test_repeated_prompt_counts_once():
     g = SaverGate(min_pairs=3)
-    for _ in range(6):
+    for _ in range(2):
         g.record_pair(M, 100, 100, True, ["context_saver"], prompt_key="same")
-    assert g.warming(M, ["context_saver"])          # 6 repeats = 1 sample
-    g.record_pair(M, 100, 100, True, ["context_saver"], prompt_key="b")
-    g.record_pair(M, 100, 100, True, ["context_saver"], prompt_key="c")
-    assert not g.warming(M, ["context_saver"])
+    assert g.warming(M, ["context_saver"])
+    assert len(g.pairs[g._key(M, ["context_saver"])]) == 1          # 2 repeats = 1 sample
+    g.record_pair(M, 100, 100, True, ["context_saver"], prompt_key="same")
+    assert not g.warming(M, ["context_saver"])   # warm-up still ends after 3 checks: no endless shadowing
+    assert len(g.pairs[g._key(M, ["context_saver"])]) == 1
 
 
 def test_prompt_key_ignores_model_and_effort():
