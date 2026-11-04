@@ -1,0 +1,109 @@
+{
+  "run_id": "seq-20261104-031142-text",
+  "receipt_id": "rcpt_20261104-031142-text",
+  "subject": {
+    "model": "meta-models/Muse-Glimmer-30B (BF16, vLLM)",
+    "host": {
+      "provider": "e2e-networks",
+      "gpu": "H100 80GB",
+      "driver": "recorded"
+    },
+    "mode": "gateway-sequential (live traffic through the WattNot gateway, without arm then with arm); raw record also holds the paired answer check",
+    "workload": {
+      "name": "text",
+      "version": "1104",
+      "n_requests": 20,
+      "sha256": "5d7d6bbe6948b2cdd7e97a63eb3520e32eea16e96dccc90a99a198b17f8ce5c1"
+    }
+  },
+  "baseline": {
+    "params": {
+      "power_cap_w": 700
+    },
+    "wh_samples": [
+      0.1947,
+      0.030742,
+      0.255703,
+      0.294619,
+      0.348342,
+      0.316561,
+      0.368919,
+      0.379814,
+      0.453939,
+      0.443233,
+      0.196931,
+      0.030994,
+      0.25795,
+      0.295975,
+      0.35005,
+      0.317806,
+      0.370506,
+      0.382494,
+      0.457058,
+      0.444953
+    ],
+    "p99_ms": 0,
+    "quality": {
+      "arm_joules_nvml_counter": 24120.7,
+      "arm_seconds": 60.6,
+      "p99_note": "p99_ms not recorded by the gateway sequential runner; 0 is a placeholder, not a measurement. The paired answer check of the same run measured p99 +5.0% at 375 W (MEASURED).",
+      "correct": 18,
+      "scored": 20,
+      "fixed_pass_rate": 0.9
+    }
+  },
+  "candidate": {
+    "params": {
+      "power_cap_w": 375
+    },
+    "wh_samples": [
+      0.179697,
+      0.030169,
+      0.227011,
+      0.260856,
+      0.308422,
+      0.280161,
+      0.320539,
+      0.328344,
+      0.398806,
+      0.3766,
+      0.175764,
+      0.026583,
+      0.223933,
+      0.270494,
+      0.313042,
+      0.274203,
+      0.328219,
+      0.333111,
+      0.395294,
+      0.383006
+    ],
+    "p99_ms": 0,
+    "quality": {
+      "arm_joules_nvml_counter": 21189.1,
+      "arm_seconds": 62.5,
+      "p99_note": "p99_ms not recorded by the gateway sequential runner; 0 is a placeholder, not a measurement. The paired answer check of the same run measured p99 +5.0% at 375 W (MEASURED).",
+      "correct": 18,
+      "scored": 20,
+      "fixed_pass_rate": 0.9
+    }
+  },
+  "measurement": {
+    "meter": "nvml",
+    "hz": 10,
+    "label": "MEASURED",
+    "idle_w": null,
+    "csv": [
+      {
+        "path": "data/h100-seq-1104/seq-20261104-031142-text.json",
+        "sha256": "5d7d6bbe6948b2cdd7e97a63eb3520e32eea16e96dccc90a99a198b17f8ce5c1"
+      }
+    ],
+    "spark_trace_id": null
+  },
+  "planner_trace": [],
+  "dataset": {
+    "id": "wattnot text gateway workload",
+    "chosen_by": "user"
+  }
+}

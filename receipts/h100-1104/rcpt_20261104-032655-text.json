@@ -486,6 +486,10 @@
     "sha256": "80b2eddd39d12cfefc71b2fa1bd5d2e93976d18a4913024231fdac1e5bedf82a",
     "prev_sha256": null,
     "signer": "offline:d3a16ddd216502c0",
-    "rekor": null
+    "rekor": {
+      "log_index": 3686498857,
+      "uuid": "108e9186e8c5677a4d925eb7ee97eb69fce19a1ca936c33765aa53e369bb5f42e83f1be0afd611b6",
+      "url": "https://search.sigstore.dev/?logIndex=3686498857"
+    }
   }
 }
