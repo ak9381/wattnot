@@ -41,9 +41,6 @@ Other guides: [START-HERE.md](START-HERE.md) (one page) and [GETTING-STARTED.md]
 3. Never commit `.env`. It is already gitignored.
 4. No key? Just run `./start.sh`. It plays the keyless recorded replay.
 
-A one-line `curl … | bash` installer (`start-here/install.sh`) is **coming**; it is not in the
-repo yet. For now use the `git clone` + `./start.sh` path above.
-
 **Docker is not required.** If you prefer a container, `Dockerfile` builds a replay-only image
 (the dashboard on a saved run) and `Dockerfile.agent` builds the GPU agent image. Neither is
 needed for the default run.
