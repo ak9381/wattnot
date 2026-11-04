@@ -1,0 +1,272 @@
+{
+ "mode": "sequential",
+ "stock_w": null,
+ "harness_cap_w": 375,
+ "workload": "agent",
+ "run_id": "seq-20261104-140240-agent",
+ "cap_available": false,
+ "without": {
+  "requests": 20,
+  "joules": 152012.4,
+  "shadow_excluded": null,
+  "seconds": 24.7,
+  "t0": 1793781160.617,
+  "t1": 1793781185.341,
+  "cap_w": null,
+  "tokens": 19340,
+  "usd": 0.09176,
+  "label": "ESTIMATE (tokens x J/token per model, no GPU counter on this provider)",
+  "texts": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  "per_request_j": [
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ]
+  ],
+  "gate_warmup": null,
+  "correct": null,
+  "scored": 0,
+  "j_per_correct": null
+ },
+ "answer_check": {
+  "accepted": false,
+  "skipped": true,
+  "why_not": [
+   "power cap not available on this provider"
+  ],
+  "note": "software savers only; the power-cap step is skipped"
+ },
+ "with": {
+  "requests": 20,
+  "joules": 158693.4,
+  "shadow_excluded": {
+   "calls": 2,
+   "joules": 0.0,
+   "label": "MEASURED NVML energy of the gateway's shadow calls to stock, run one at a time and taken out of this arm"
+  },
+  "seconds": 31.7,
+  "t0": 1793781185.341,
+  "t1": 1793781216.997,
+  "cap_w": null,
+  "tokens": 20190,
+  "usd": 0.107128,
+  "label": "ESTIMATE (tokens x J/token per model, no GPU counter on this provider)",
+  "texts": [
+   "The H100 SXM default power limit is 700 W.",
+   "The H100 SXM default power limit is 700 W.",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  "per_request_j": [
+   [
+    "agent",
+    9832.86,
+    "gate warm-up"
+   ],
+   [
+    "agent",
+    12049.38,
+    "gate warm-up"
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ],
+   [
+    "agent",
+    7600.62
+   ]
+  ],
+  "gate_warmup": {
+   "requests": 2,
+   "joules": 21882.2,
+   "label": "gate warm-up: saver-on requests the per-model gate shadow-checked (MEASURED, counted in this arm, left out of the cap probe)"
+  },
+  "correct": null,
+  "scored": 0,
+  "j_per_correct": null
+ },
+ "cap_decision": {},
+ "agreement": 0.9,
+ "no_worse": true,
+ "energy_saved_pct": -4.4,
+ "energy_label": "ESTIMATE",
+ "final_limit_w": null
+}

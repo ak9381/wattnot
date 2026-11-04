@@ -100,27 +100,30 @@ async function loadRecorded() {
   let v = null; try { v = await getJSON(`/api/dash/run/receipt?run=${encodeURIComponent(RUN_ID)}`); } catch { v = null; }
   const eu = `/replays/${encodeURIComponent(id)}/eu_report.html`;
   let hasEu = false; try { hasEu = (await fetch(eu, { method: "HEAD" })).ok; } catch { hasEu = false; }
-  $("#lede").innerHTML = `<h1>Recorded run ${esc(id)}</h1><p>REPLAY of a recorded run. Numbers below are copied from its signed receipt with the labels it was written with.</p>
-    ${v ? `<pre class="rcpt-json">${esc(JSON.stringify(v, null, 2))}</pre>` : `<p>No signed receipt in this run's folder.</p>`}
+  const { replaySummary, runName } = await import("./replaystats.js");
+  const rs0 = await replaySummary(id).catch(() => null);
+  const tk = rs0?.takes ? await import("./takes.js") : null;
+  $("#lede").innerHTML = `<h1>${esc(runName(id))}</h1><p>REPLAY of a recorded run (<code>replays/${esc(id)}</code>). Numbers below are copied from its recorded files with the labels they were written with.</p>
+    ${tk ? `${tk.takesTable(rs0)}<p class="sub">Sources: ${tk.takesSources(id, rs0.takes)}</p>` : v ? `<pre class="rcpt-json">${esc(JSON.stringify(v, null, 2))}</pre>` : `<p>No signed receipt in this run's folder.</p>`}
     <p>${hasEu ? `<a href="eu.html?run=replay:${encodeURIComponent(id)}">Open its EU energy report</a> · ` : ""}<a href="#rp-inline" id="rpPlayLink">Play it back</a> · <a href="graph.html">Live graph</a></p><div id="rp-inline" class="rp-inline" hidden></div>`;
   const go = (e) => { e?.preventDefault(); import("./replaypick.js").then((m) => m.playInline(id, $("#rp-inline"))); };
   $("#rpPlayLink").onclick = go;
   if (location.hash === "#rp-inline") go();
   // Headline card: the run's own recorded headline, with the label it was recorded with.
-  const { replaySummary } = await import("./replaystats.js");
-  const rs = await replaySummary(id).catch(() => null);
+  const rs = rs0;
   const card = $("#heroCard"); if (!card) return;
   const pc = (x) => (x == null ? null : `${x > 0 ? "+" : ""}${Number(x).toFixed(1)}%`);
   const jpc = rs && rs.j_per_correct_stock && rs.j_per_correct_cap ? (rs.j_per_correct_cap / rs.j_per_correct_stock - 1) * 100 : null;
   const cells = rs ? [
     ["Energy per correct answer", jpc != null ? `${Number(rs.j_per_correct_stock).toFixed(1)} → ${Number(rs.j_per_correct_cap).toFixed(1)} J (${pc(jpc)})` : null, rs.energy_label],
+    ["Energy per request", jpc == null && rs.j_per_req_stock != null ? `${Number(rs.j_per_req_stock).toFixed(1)} → ${Number(rs.j_per_req_cap).toFixed(1)} J` : null, rs.energy_label],
     ["Energy saved", rs.energy_saved_pct != null ? `${Number(rs.energy_saved_pct).toFixed(1)}%` : null, rs.energy_saved_label || rs.energy_label],
     ["Answer quality", rs.quality_stock_pct != null ? `${Number(rs.quality_stock_pct).toFixed(1)}% → ${Number(rs.quality_cap_pct).toFixed(1)}%` : null, rs.quality_label],
     ["Slowest 1% (p99)", pc(rs.p99_change_pct), rs.p99_label],
   ].filter((c) => c[1]) : [];
   if (!cells.length) { card.remove(); return; }
   const norm = (l) => (String(l || "").toUpperCase().match(/MEASURED|ESTIMATE|SIMULATED|MOCK|REPLAY/) || ["REPLAY"])[0];
-  $("#heroRunBadge").innerHTML = `${chip("REPLAY")} <span class="muted">${esc(id)}</span>`;
+  $("#heroRunBadge").innerHTML = `${chip("REPLAY")} <span class="muted">${esc(runName(id))}${rs.headline_take ? ` · headline take ${esc(rs.headline_take)}` : ""}</span>`;
   $("#heroGrid").innerHTML = cells.map(([k, v, l]) => `<div class="hero-cell"><div class="hero-k">${esc(k)}</div><div class="hero-val">${esc(v)} ${chip(norm(l))}</div></div>`).join("");
 }
 

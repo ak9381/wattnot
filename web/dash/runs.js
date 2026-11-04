@@ -14,7 +14,7 @@
 import { replaySummary } from "./replaystats.js";
 let S_REPS = [];
 let S_LEVERS = null;
-const REPLAY_IDS = ["h100-stitched", "modal-stitched", "baseten-stitched"];
+import { REPLAY_IDS } from "./runset.js";
 const EM = "—"; // em dash for missing values
 
 // ---- constants from story.json (shown with their own labels) ----

@@ -1,5 +1,5 @@
 // "Replay a run": pick a recorded run (read from replays/ on disk by /api/dash/replays) and play
-const NM = { "h100-stitched": "H100 run", "modal-stitched": "Modal run", "baseten-stitched": "Baseten run" };
+import { RUN_NAMES as NM, REPLAY_IDS } from "./runset.js";
 // it back through a live power graph. No keys, no GPU, no network call beyond this server.
 // Every number keeps the label it was recorded with.
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -48,7 +48,7 @@ export async function mount(host) {
   if (!host) return;
   const st = document.createElement("style"); st.textContent = STYLE; document.head.append(st);
   let list = [], health = {};
-  try { [list, health] = await Promise.all([fetch("/api/dash/replays").then((r) => r.json()).then((j) => (j.replays || []).filter((r) => NM[r.id]).map((r) => ({ ...r, name: NM[r.id] }))), fetch("/api/dash/health").then((r) => r.json()).catch(() => ({}))]); }
+  try { [list, health] = await Promise.all([fetch("/api/dash/replays").then((r) => r.json()).then((j) => (j.replays || []).filter((r) => NM[r.id]).sort((a, b) => REPLAY_IDS.indexOf(a.id) - REPLAY_IDS.indexOf(b.id)).map((r) => ({ ...r, name: NM[r.id] }))), fetch("/api/dash/health").then((r) => r.json()).catch(() => ({}))]); }
   catch { host.innerHTML = `<p class="muted">The recorded runs need the local server (./start.sh).</p>`; return; }
   const liveActive = health.mode === "live" && !health.replay_only;
   if (!liveActive) document.body.classList.add("wn-replay-first"); // no live run: the picker is the first screen

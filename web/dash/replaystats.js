@@ -1,3 +1,5 @@
+import { RUN_NAMES, REPLAY_IDS, runName, DEFAULT_RUN } from "./runset.js";
+export { RUN_NAMES, REPLAY_IDS, runName };
 // Headline numbers for one recorded run under replays/<id>/, read from its own files.
 // Every value keeps the label it was recorded with; a missing value comes with a reason.
 const J_PER_KWH = 3.6e6;
@@ -8,7 +10,8 @@ const pts = (a, f = (x) => x) => (a || []).map((y, i) => ({ x: i + 1, y: f(y), l
 async function getJSON(fetcher, u) { try { const r = await fetcher(u); return r.ok ? await r.json() : null; } catch { return null; } }
 
 export function selectedReplay(search, stored) {
-  const v = new URLSearchParams(search || "").get("run") || stored || "";
+  const ok = (x) => x && REPLAY_IDS.includes(String(x).replace(/^replay:/, ""));
+  const v = new URLSearchParams(search || "").get("run") || (ok(stored) ? stored : "") || `replay:${DEFAULT_RUN}`;
   return v.startsWith("replay:") ? v.slice(7) : null;
 }
 
@@ -34,6 +37,23 @@ export async function replaySummary(id, fetcher = fetch) {
   if (!man) return null;
   const S = { id, title: man.title || man.note, provider: man.provider || "e2e", label: man.label || "REPLAY", model: man.model || rec?.model || null,
     date: await firstTs(fetcher, `${base}/events.jsonl`) };
+  // Gateway takes (plugin runs): the manifest's headline take, every take listed beside it, never averaged.
+  if (man.kind === "gateway-takes" && Array.isArray(man.takes)) {
+    const h = man.takes.find((t) => t.run_id === man.headline) || man.takes[0];
+    const L = h.label || man.energy_label;
+    Object.assign(S, { date: man.date || S.date, takes: man.takes, headline_take: h.run_id, headline_why: man.headline_why, gaps: man.gaps || [],
+      j_per_req_stock: h.j_per_req[0], j_per_req_cap: h.j_per_req[1], energy_label: L,
+      energy_saved_pct: h.energy_change_pct == null ? null : -h.energy_change_pct, energy_saved_label: L,
+      setting: `${h.workload} take through the WattNot gateway${h.cap_w ? `, ${h.cap_w} W cap` : ""}`, requests: h.j_samples?.[1]?.length || null,
+      p99_why: "p99 was not recorded by the gateway sequential runner" });
+    if (h.quality) { const q = (s) => { const [a, b] = String(s).split("/").map(Number); return b ? (a / b) * 100 : null; }; S.quality_stock_pct = q(h.quality[0]); S.quality_cap_pct = q(h.quality[1]); S.quality_label = "MEASURED"; }
+    else if (h.agreement != null) { S.agreement = h.agreement; S.quality_why = `no graded answers on this hosted take; answer agreement with stock ${h.agreement} (recorded)`; }
+    if (h.j_samples?.[0]?.length) S.series = { unit: "request", label: L, note: `${h.run_id}, J per request as recorded`,
+      sets: [{ name: "Without WattNot", cls: "without", pts: pts(h.j_samples[0]) }, { name: "With WattNot", cls: "with", pts: pts(h.j_samples[1]) }] };
+    if (S.quality_stock_pct && S.quality_cap_pct) { S.j_per_correct_stock = S.j_per_req_stock / (S.quality_stock_pct / 100); S.j_per_correct_cap = S.j_per_req_cap / (S.quality_cap_pct / 100); }
+    if (man.provider === "baseten") S.water_why = "hosted API: no GPU power meter, so water (from energy) is not computed";
+    return S;
+  }
   const res = rec?.results;
   if (res) {
     const pa = res.per_arm || {}, w0 = pa.without_wattnot || {}, w1 = pa.with_wattnot || {};
@@ -80,9 +100,7 @@ export async function replaySummary(id, fetcher = fetch) {
 
 // One run per provider in the UI: the stitched runs (best valid take per block, each block source-tagged).
 // The original rounds stay on disk under replays/ but are not listed.
-export const RUN_NAMES = { "h100-stitched": "H100 run", "modal-stitched": "Modal run", "baseten-stitched": "Baseten run" };
-export const REPLAY_IDS = Object.keys(RUN_NAMES);
-export const runName = (id) => RUN_NAMES[String(id).replace(/^replay:/, "")] || id;
+
 export async function replayRuns(fetcher = fetch) {
   const out = await Promise.all(REPLAY_IDS.map((id) => replaySummary(id, fetcher).catch(() => null)));
   return out.filter(Boolean).map((x) => ({ id: x.id, name: x.id, model: (x.model || "").replace("meta-models/", ""), date: x.date || "", label: x.label, title: x.title }));

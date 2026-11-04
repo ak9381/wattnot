@@ -1,0 +1,274 @@
+{
+ "mode": "sequential",
+ "stock_w": null,
+ "harness_cap_w": 375,
+ "workload": "images",
+ "run_id": "seq-20261104-140340-images",
+ "cap_available": false,
+ "without": {
+  "requests": 20,
+  "joules": 384550.5,
+  "shadow_excluded": null,
+  "seconds": 73.2,
+  "t0": 1793781220.92,
+  "t1": 1793781294.12,
+  "cap_w": null,
+  "tokens": 48925,
+  "usd": 0.25978,
+  "label": "ESTIMATE (tokens x J/token per model, no GPU counter on this provider)",
+  "texts": [
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250"
+  ],
+  "per_request_j": [
+   [
+    "text",
+    18950.46
+   ],
+   [
+    "text",
+    20247.36
+   ],
+   [
+    "text",
+    20718.96
+   ],
+   [
+    "text",
+    18919.02
+   ],
+   [
+    "text",
+    18510.3
+   ],
+   [
+    "text",
+    18871.86
+   ],
+   [
+    "text",
+    18871.86
+   ],
+   [
+    "text",
+    18628.2
+   ],
+   [
+    "text",
+    19084.08
+   ],
+   [
+    "text",
+    20090.16
+   ],
+   [
+    "text",
+    20396.7
+   ],
+   [
+    "text",
+    20043.0
+   ],
+   [
+    "text",
+    19076.22
+   ],
+   [
+    "text",
+    19233.42
+   ],
+   [
+    "text",
+    18612.48
+   ],
+   [
+    "text",
+    18864.0
+   ],
+   [
+    "text",
+    19304.16
+   ],
+   [
+    "text",
+    18919.02
+   ],
+   [
+    "text",
+    18321.66
+   ],
+   [
+    "text",
+    18887.58
+   ]
+  ],
+  "gate_warmup": null,
+  "correct": null,
+  "scored": 0,
+  "j_per_correct": null
+ },
+ "answer_check": {
+  "accepted": false,
+  "skipped": true,
+  "why_not": [
+   "power cap not available on this provider"
+  ],
+  "note": "software savers only; the power-cap step is skipped"
+ },
+ "with": {
+  "requests": 20,
+  "joules": 158599.1,
+  "shadow_excluded": {
+   "calls": 4,
+   "joules": 0.0,
+   "label": "MEASURED NVML energy of the gateway's shadow calls to stock, run one at a time and taken out of this arm"
+  },
+  "seconds": 78.4,
+  "t0": 1793781294.12,
+  "t1": 1793781372.516,
+  "cap_w": null,
+  "tokens": 20178,
+  "usd": 0.186376,
+  "label": "ESTIMATE (tokens x J/token per model, no GPU counter on this provider)",
+  "texts": [
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250",
+   "4250"
+  ],
+  "per_request_j": [
+   [
+    "text",
+    24664.68,
+    "gate warm-up"
+   ],
+   [
+    "text",
+    5942.16,
+    "gate warm-up"
+   ],
+   [
+    "text",
+    7003.26,
+    "gate warm-up"
+   ],
+   [
+    "text",
+    6130.8
+   ],
+   [
+    "text",
+    6099.36
+   ],
+   [
+    "text",
+    6130.8
+   ],
+   [
+    "text",
+    5832.12
+   ],
+   [
+    "text",
+    6083.64
+   ],
+   [
+    "text",
+    6005.04
+   ],
+   [
+    "text",
+    6115.08
+   ],
+   [
+    "text",
+    6052.2,
+    "gate warm-up"
+   ],
+   [
+    "text",
+    6602.4
+   ],
+   [
+    "text",
+    5895.0
+   ],
+   [
+    "text",
+    5761.38
+   ],
+   [
+    "text",
+    6657.42
+   ],
+   [
+    "text",
+    22888.32
+   ],
+   [
+    "text",
+    6185.82
+   ],
+   [
+    "text",
+    7529.88
+   ],
+   [
+    "text",
+    5313.36
+   ],
+   [
+    "text",
+    5706.36
+   ]
+  ],
+  "gate_warmup": {
+   "requests": 4,
+   "joules": 43662.3,
+   "label": "gate warm-up: saver-on requests the per-model gate shadow-checked (MEASURED, counted in this arm, left out of the cap probe)"
+  },
+  "correct": null,
+  "scored": 0,
+  "j_per_correct": null
+ },
+ "cap_decision": {},
+ "agreement": 1.0,
+ "no_worse": true,
+ "energy_saved_pct": 58.76,
+ "energy_label": "ESTIMATE",
+ "final_limit_w": null
+}

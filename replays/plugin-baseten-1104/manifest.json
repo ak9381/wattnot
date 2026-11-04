@@ -1,0 +1,336 @@
+{
+ "title": "Plugin run, Baseten (Nov 4): live traffic through the WattNot gateway, one take per workload",
+ "provider": "baseten",
+ "model": "Muse Spark open (Baseten)",
+ "date": "2026-11-04",
+ "kind": "gateway-takes",
+ "energy_label": "ESTIMATE",
+ "headline": "seq-20261104-140109-text",
+ "headline_why": "text take (agreement 0.95); other takes are listed beside it, not averaged",
+ "takes": [
+  {
+   "workload": "text",
+   "run_id": "seq-20261104-140109-text",
+   "file": "takes/seq-text.json",
+   "date": "2026-11-04",
+   "j_per_req": [
+    4485.3,
+    3432.5
+   ],
+   "energy_change_pct": -23.47,
+   "agreement": 0.95,
+   "usd": [
+    0.1793,
+    0.12572
+   ],
+   "label": "ESTIMATE",
+   "why": null,
+   "j_samples": [
+    [
+     2413.02,
+     2743.14,
+     2609.52,
+     2695.98,
+     4024.32,
+     4008.6,
+     7773.54,
+     3725.64,
+     3254.04,
+     5439.12,
+     2861.04,
+     2806.02,
+     4660.98,
+     13291.26,
+     3419.1,
+     2845.32,
+     7584.9,
+     5486.28,
+     4047.9,
+     4016.46
+    ],
+    [
+     4008.6,
+     1438.38,
+     3607.74,
+     3780.66,
+     3230.46,
+     3269.76,
+     4503.78,
+     3851.4,
+     3175.44,
+     4362.3,
+     2782.44,
+     1414.8,
+     2813.88,
+     2947.5,
+     3906.42,
+     3914.28,
+     5046.12,
+     3458.4,
+     3285.48,
+     3851.4
+    ]
+   ]
+  },
+  {
+   "workload": "agent",
+   "run_id": "seq-20261104-140240-agent",
+   "file": "takes/seq-agent.json",
+   "date": "2026-11-04",
+   "j_per_req": [
+    7600.6,
+    7934.7
+   ],
+   "energy_change_pct": 4.4,
+   "agreement": 0.9,
+   "usd": [
+    0.09176,
+    0.107128
+   ],
+   "label": "ESTIMATE",
+   "why": null,
+   "j_samples": [
+    [
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62
+    ],
+    [
+     9832.86,
+     12049.38,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62,
+     7600.62
+    ]
+   ]
+  },
+  {
+   "workload": "images",
+   "run_id": "seq-20261104-140340-images",
+   "file": "takes/seq-images.json",
+   "date": "2026-11-04",
+   "j_per_req": [
+    19227.5,
+    7930.0
+   ],
+   "energy_change_pct": -58.76,
+   "agreement": 1.0,
+   "usd": [
+    0.25978,
+    0.186376
+   ],
+   "label": "ESTIMATE",
+   "why": null,
+   "j_samples": [
+    [
+     18950.46,
+     20247.36,
+     20718.96,
+     18919.02,
+     18510.3,
+     18871.86,
+     18871.86,
+     18628.2,
+     19084.08,
+     20090.16,
+     20396.7,
+     20043.0,
+     19076.22,
+     19233.42,
+     18612.48,
+     18864.0,
+     19304.16,
+     18919.02,
+     18321.66,
+     18887.58
+    ],
+    [
+     24664.68,
+     5942.16,
+     7003.26,
+     6130.8,
+     6099.36,
+     6130.8,
+     5832.12,
+     6083.64,
+     6005.04,
+     6115.08,
+     6052.2,
+     6602.4,
+     5895.0,
+     5761.38,
+     6657.42,
+     22888.32,
+     6185.82,
+     7529.88,
+     5313.36,
+     5706.36
+    ]
+   ]
+  },
+  {
+   "workload": "voice (take 1)",
+   "run_id": "seq-20261104-140616-voice",
+   "file": "takes/seq-voice.json",
+   "date": "2026-11-04",
+   "j_per_req": [
+    null,
+    null
+   ],
+   "energy_change_pct": null,
+   "agreement": 1.0,
+   "usd": [
+    0.0,
+    0.0
+   ],
+   "label": "ESTIMATE",
+   "why": "broken take: the without arm recorded 0 J, so no saving is reported",
+   "j_samples": null
+  },
+  {
+   "workload": "voice (take 2)",
+   "run_id": "seq-20261104-140910-voice",
+   "file": "takes/seq-voice-b.json",
+   "date": "2026-11-04",
+   "j_per_req": [
+    5730.7,
+    5803.8
+   ],
+   "energy_change_pct": 1.28,
+   "agreement": 0.2,
+   "usd": [
+    0.24132,
+    0.239952
+   ],
+   "label": "ESTIMATE",
+   "why": "agreement 0.2: most answers were 'no context' refusals",
+   "j_samples": [
+    [
+     5509.86,
+     6264.42,
+     6272.28,
+     5195.46,
+     5533.44,
+     4480.2,
+     6885.36,
+     6067.92,
+     5250.48,
+     4818.18,
+     6264.42,
+     4731.72,
+     6295.86,
+     5997.18,
+     5784.96,
+     5211.18,
+     8245.14,
+     4747.44,
+     4778.88,
+     6280.14
+    ],
+    [
+     4928.22,
+     4008.6,
+     3584.16,
+     4566.66,
+     6201.54,
+     6830.34,
+     6531.66,
+     6303.72,
+     4480.2,
+     6201.54,
+     5753.52,
+     5022.54,
+     11860.74,
+     9817.14,
+     4959.66,
+     5195.46,
+     4378.02,
+     4338.72,
+     5156.16,
+     5957.88
+    ]
+   ]
+  }
+ ],
+ "receipt_signed": false,
+ "gaps": [
+  "Baseten is a hosted API with no GPU counter: energy is tokens x J/token per model (ESTIMATE).",
+  "No signed receipt was written for these takes; the sequential result files are copied as recorded.",
+  "The power cap step is skipped on this provider (no cap available)."
+ ],
+ "spec": "wattnot.replay-manifest/1",
+ "name": "plugin-baseten-1104",
+ "replay": "plugin-baseten-1104",
+ "label": "REPLAY",
+ "live_calls": false,
+ "events": 30,
+ "files": [
+  {
+   "file": "takes/seq-text.json",
+   "source": "/workspace/wn-gw-cloud/out/hosted/baseten-1104/seq-text.json",
+   "sha256": "6830189d4e848bcf257dff71e3f2fd89479528eb6f7b1d97adf04eb724e60eec"
+  },
+  {
+   "file": "takes/seq-agent.json",
+   "source": "/workspace/wn-gw-cloud/out/hosted/baseten-1104/seq-agent.json",
+   "sha256": "d8abcf15f9cbddaf50611fa452c135f08bf4d36b4152b01e78f0a23eb931a9c2"
+  },
+  {
+   "file": "takes/seq-images.json",
+   "source": "/workspace/wn-gw-cloud/out/hosted/baseten-1104/seq-images.json",
+   "sha256": "ede1e22f7dc56308d8d431acfbea300e4547ffae82eb55910caf78895f14978b"
+  },
+  {
+   "file": "takes/seq-voice.json",
+   "source": "/workspace/wn-gw-cloud/out/hosted/baseten-1104/seq-voice.json",
+   "sha256": "659ad7e4a2694832c42b4626bf6a4345947a36b35a392ec1121a008f4d652855"
+  },
+  {
+   "file": "takes/seq-voice-b.json",
+   "source": "/workspace/wn-gw-cloud/out/hosted/baseten-1104/seq-voice-b.json",
+   "sha256": "65960a09b9d164e3611770ee57620233a156044ea0c53f1e98130d79b21e49ee"
+  },
+  {
+   "file": "savings.gate.jsonl",
+   "source": "/workspace/wn-gw-cloud/out/hosted/baseten-1104/savings.gate.jsonl",
+   "sha256": "68b83e54a320cdcd0f6ef5f61399fe11ce17ee421b2710a29e048c1183bd38a0"
+  },
+  {
+   "file": "node.jsonl",
+   "source": "/workspace/wn-gw-cloud/out/hosted/baseten-1104/node.jsonl",
+   "sha256": "62e234b9ce09dd8736e3893f4c570364f41ec8ec9558f5ef6e06b455df26e642"
+  }
+ ]
+}

@@ -1,3 +1,4 @@
+import { takesTable } from "./takes.js";
 // Round 7 views for the new dashboard: Overview, the Power/Cost/Water
 // comparison cards, the "Where should this model run?" head-to-head, and the
 // info-panel texts. Numbers come only from the run record; anything the
@@ -403,14 +404,17 @@ export function overviewHtml(S) {
         const cs = r.j_per_correct_stock ?? (ok ? js / (qs / 100) : null), cc = r.j_per_correct_cap ?? (ok ? jc / (qc / 100) : null);
         const pct = cs != null && cc != null ? (cc / cs - 1) * 100 : null;
         const where = r.setting || `${r.cap_w} W cap vs ${r.stock_w} W`;
+        if (pct == null && js != null && jc != null) return kpi("Energy per request", `${fmt((jc / js - 1) * 100, 1)}%`, r.energy_label || "MEASURED",
+          `${fmt(js, 1)} → ${fmt(jc, 1)} J · ${where}. ${r.quality_why ? esc(r.quality_why) : "No graded answers, so no J per correct answer"}`, "calc-power");
         return kpi("Joules per correct answer", pct != null ? `${fmt(pct, 1)}%` : saved, r.energy_label || "MEASURED",
           pct != null ? `${fmt(cs, 1)} → ${fmt(cc, 1)} J · ${where}${r.title ? ` · ${r.id}` : ""}. Cost and water are ESTIMATES from these joules` : "", "calc-power");
       })()}
-      ${kpi("Slowest 1% (p99)", r.p99_change_pct != null ? `${r.p99_change_pct > 0 ? "+" : ""}${fmt(r.p99_change_pct, 1)}%` : null, r.p99_label || "MEASURED", r.p99_stock_s != null ? `${fmt(r.p99_stock_s, 1)} s → ${fmt(r.p99_cap_s, 1)} s · limit +10%` : "limit +10%", "p99")}
-      ${kpi("Quality: fixed-check pass rate", r.quality_cap_pct != null ? `${fmt(r.quality_cap_pct, 1)}%` : null, r.quality_label || "MEASURED", r.quality_stock_pct != null ? `${r.setting ? "without WattNot" : "uncapped"} ${fmt(r.quality_stock_pct, 1)}% · share of fixed checks passed · quality gate: drop ≤ 1.0 pt (held); latency gate p99 ≤ +10% decides the cap` : "", "quality")}
+      ${kpi("Slowest 1% (p99)", r.p99_change_pct != null ? `${r.p99_change_pct > 0 ? "+" : ""}${fmt(r.p99_change_pct, 1)}%` : r.p99_why ? "Not recorded" : null, r.p99_label || "MEASURED", r.p99_stock_s != null ? `${fmt(r.p99_stock_s, 1)} s → ${fmt(r.p99_cap_s, 1)} s · limit +10%` : "limit +10%", "p99")}
+      ${kpi("Quality: fixed-check pass rate", r.quality_cap_pct != null ? `${fmt(r.quality_cap_pct, 1)}%` : r.quality_why ? "Not graded" : null, r.quality_label || "MEASURED", r.quality_stock_pct != null ? `${r.setting ? "without WattNot" : "uncapped"} ${fmt(r.quality_stock_pct, 1)}% · share of fixed checks passed · quality gate: drop ≤ 1.0 pt (held); latency gate p99 ≤ +10% decides the cap` : "", "quality")}
       ${(() => { const m = metaSpend(S.metaLive, led); return kpi("Meta API spend", m.usd != null ? `$${fmt(m.usd)}` : null, m.label, m.note, null); })()}
     </div>
     ${metaTile()}
+    ${takesTable(r)}
     <div class="ov-grid">
       <section class="glass ov-trend"><h3>Energy per answer, by repeat ${infoBtn("calc-power", "energy")}</h3>${S.replaySum?.series ? lineChart(S.replaySum.series.sets, { unit: "J", yLabel: "J per answer", w: 620, h: 220, y0: 0, xticks: S.replaySum.series.sets[0].pts.map((p) => ({ x: p.x, label: p.label })) }) + `<p class="r7note">${n(esc(S.replaySum.id), S.replaySum.series.label)} One point per ${esc(S.replaySum.series.unit)}. ${esc(S.replaySum.series.note)}</p>` : S.replaySum ? `<p class="r7note">${esc(S.replaySum.series_why || "no per-repeat energy in this run")}</p>` : rec ? lineChart(series(rec, (j) => j), { unit: "J", yLabel: "J per answer", w: 620, h: 220, y0: 0, xticks: [1, 2, 3].map((x) => ({ x, label: `#${x}` })) }) : `<p class="r7miss">${PENDING}</p>`}<button class="btn" data-pg="1">Open bigger</button></section>
       <section class="glass ov-donut"><h3>Where the energy went</h3>${cut != null ? donut([{ name: "Still used", v: used, color: "#8E7A9E" }, { name: "Saved by WattNot", v: cut, color: "#7FA88A" }], { center: saved || "", centerSub: "saved", aria: "energy used vs saved" }) + (S.replaySum ? `<p class="r7note">J per answer: ${fmt(r.j_per_req_stock, 1)} without → ${fmt(used, 1)} with WattNot (${esc(r.energy_label || "MEASURED")}), ${esc(r.id)}</p>` : "") : S.replaySum ? `<p class="r7note">${esc(S.replaySum.water_why || "no metered energy in this run")}</p>` : `<p class="r7miss">${PENDING}</p>`}</section>
@@ -459,3 +463,4 @@ export function emptyStateHtml(st, hasBundled) {
     + (hasBundled ? `<button class="btn sm" data-bundled>Show the bundled RUN2 sample</button><p class="r7miss">The bundled sample is H100 RUN2 data that ships with WattNot, not your run.</p>` : "") + `</section>`;
 }
 export const bundledBanner = () => `<p class="cmp-bundled" id="cmpBundled" role="note"><b>Bundled sample</b>: H100 RUN2 data that ships with WattNot, not one of your runs.</p>`;
+
