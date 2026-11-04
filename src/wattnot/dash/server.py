@@ -235,6 +235,9 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         when that round has none recorded."""
         if not run:
             return None
+        if run.startswith("replay:"):  # a recorded run under replays/<id>/ (the Replay picker)
+            from wattnot.dash.replays import events_path as _rp
+            return _rp(ROOT, run[7:])
         from wattnot.dash.launch import events_path_for
         p = events_path_for(run)
         return p if p is not None and p.is_file() else None
@@ -654,6 +657,22 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         from wattnot.dash import judgepath
         f = ROOT / "data/judge/judge-path.json"
         return json.loads(f.read_text()) if f.exists() else judgepath.build(ROOT)
+
+    @app.get("/api/dash/replays")
+    def replay_list() -> dict:
+        """The recorded runs under replays/, read from disk, for the Replay picker. No keys, no GPU."""
+        from wattnot.dash.replays import list_replays
+        return {"label": "REPLAY", "live_calls": False, "replays": list_replays(ROOT)}
+
+    @app.get("/api/dash/replays/{rid}/events")
+    def replay_events(rid: str) -> dict:
+        """Every event of one recorded run, as recorded (each keeps its own label)."""
+        from wattnot.dash.replays import list_replays, load_events
+        evs = load_events(ROOT, rid)
+        if evs is None:
+            raise HTTPException(404, "no such recorded run")
+        meta = next((r for r in list_replays(ROOT) if r["id"] == rid), None)
+        return {"label": "REPLAY", "run": meta, "events": evs}
 
     @app.get("/api/dash/v2/runs")
     def v2_runs() -> dict:

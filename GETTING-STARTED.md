@@ -95,6 +95,21 @@ Each is one command. Windows: replace `./start.sh` with `start.cmd`.
 `./start.sh` or `./start.sh replay`. No keys, no GPU. Dashboard on our recorded H100 80GB run; the
 numbers are MEASURED on that run and shown as REPLAY.
 
+**Pick any recorded run in the dashboard.** When no live run is active, the first screen is
+**Replay a run**. It lists every run under `replays/` on your disk (name, platform, date, what it
+was, its label). Click one and it plays back on a live power graph, with a
+`REPLAY of MEASURED run <id>` banner, Pause/Play, Restart, and Real speed or 4x. Playback keeps the
+real gaps between recorded events but shortens idle stretches over 3 s; the page says how much was
+cut. Baseten is a hosted API with no GPU power meter, so its runs show steps but no power line.
+You can also open one directly: `http://127.0.0.1:<port>/?replay=modal-r1`.
+
+![Replay picker](docs/getting-started/img/replay-picker.png)
+
+![A run playing back](docs/getting-started/img/replay-playing.png)
+
+**Or from the terminal:** `./run-local.sh replay <id>` with `h100-max-1103`, `modal-r1`,
+`modal-r2`, `baseten-r1` or `baseten-r2`. That starts a separate dashboard on that run.
+
 ### live: token savers on Meta models
 Needs `META_API_KEY`. Runs routing, thinking budget, context saver and the agent-waste proxy against
 the Meta API, capped by `WATTNOT_MAX_SPEND`. No GPU. Results go to `out/`.
