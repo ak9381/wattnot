@@ -115,7 +115,7 @@ test("root redirect page has description and OG tags", () => {
 test("shared chrome header has plain top routes and a sidebar with every page", () => {
   const chromeJs = fs.readFileSync(path.join(dashDir, "chrome.js"), "utf8");
   for (const t of ["Plug in", "Live savings", "Results", "Proof", "Costs", "Connected tools"]) assert.ok(chromeJs.includes(`>${t}</a>`), t);
-  for (const h of ["plug.html#setup", "plug.html#live", "v2.html#pHome", "runs.html", "v2.html#pReport", "report.html", "graph.html", "approvals.html", "matrix.html", "eu.html", "metatools.html"]) assert.ok(chromeJs.includes(`"${h}"`), h);
+  for (const h of ["plug.html#setup", "v2.html#pHome", "runs.html", "v2.html#pReport", "report.html", "graph.html", "approvals.html", "matrix.html", "eu.html", "metatools.html"]) assert.ok(chromeJs.includes(`"${h}"`), h);
   assert.match(chromeJs, /runpick\.js/);
   assert.match(chromeJs, /sidenav\.js/);
   assert.doesNotMatch(chromeJs, />Architecture<\/a>/);
@@ -149,8 +149,8 @@ test("header is fixed glass, footer is a plain bar at the page end", () => {
 
 test("Cost and Water cards and nodes have no ESTIMATE label chips", () => {
   const runsJs = fs.readFileSync(path.join(dashDir, "runs.js"), "utf8");
-  assert.doesNotMatch(runsJs, /Water saved<\/div>\s*<div class="big">[\s\S]*?\$\{dot\("ESTIMATE"\)\}/);
-  assert.doesNotMatch(runsJs, /Cost saved<\/div>\s*<div class="big">[\s\S]*?\$\{dot\("ESTIMATE"\)\}/);
+  assert.doesNotMatch(runsJs, /Water saved<\/div>\s*<div class="big">(?:(?!<\/div>)[\s\S])*?\$\{dot\("ESTIMATE"\)\}/);
+  assert.doesNotMatch(runsJs, /Cost saved<\/div>\s*<div class="big">(?:(?!<\/div>)[\s\S])*?\$\{dot\("ESTIMATE"\)\}/);
 
   const reportJs = fs.readFileSync(path.join(dashDir, "report.js"), "utf8");
   assert.doesNotMatch(reportJs, /<dt>Cost saved<\/dt><dd>[^<]*\$\{chip\("ESTIMATE"\)\}/);

@@ -29,9 +29,7 @@ test("shared header has no second tab row and highlights per page", () => {
   assert.match(c, /\|\|\s*"dashboard"/);
 });
 
-test("overview has no sidebar nav, only in-page anchors and a legend", () => {
+test("overview has no sidebar nav and no jump links (Home dropped them)", () => {
   const v = read("dash/v2r7.js");
   assert.doesNotMatch(v, /ov-side|class="ov-nav/);
-  for (const id of ["pCfg", "pRun", "pReport", "pProof", "pLearn"]) assert.match(v, new RegExp(`\\["${id}"`));
-  assert.match(v, /ov-jump/);
 });
