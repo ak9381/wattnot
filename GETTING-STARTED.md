@@ -152,8 +152,8 @@ On a machine without a GPU it explains and stops:
 ## 5. Verify a receipt
 
 ```bash
-.venv/bin/wattnot verify receipts/h100-1104/rcpt_20261104-032655-text.json
-# Windows: .venv\Scripts\wattnot.exe verify receipts\h100-1104\rcpt_20261104-032655-text.json
+.venv/bin/wattnot verify receipts/h100-1104/rcpt_20261104-000651-text.json
+# Windows: .venv\Scripts\wattnot.exe verify receipts\h100-1104\rcpt_20261104-000651-text.json
 ```
 
 It checks the hash, signature, Rekor transparency-log entry and that the joules, carbon and water

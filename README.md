@@ -27,9 +27,12 @@ git clone https://github.com/ak9381/wattnot.git && cd wattnot
 ```
 
 `./start.sh` runs a preflight, makes a `.venv` from the pinned `requirements-lock.txt`, runs a
-smoke test, then starts the dashboard and opens your browser. It opens on the **Plugin H100**
-recorded run by default (`web/dash/runset.js:12`, `DEFAULT_RUN = "plugin-h100-1104"`) — a real
-Nov 4 run replayed on your machine, no GPU or network call.
+smoke test, then starts the dashboard and opens your browser. It opens on the recorded
+**Test H100** run (`replays/h100-max-1103`, Nov 3), replayed on your machine with no GPU or network
+call. Pick **Plugin H100 · Nov 4** in the run picker (top left) to see the headline −12.9% run.
+
+Already have the repo checked out? Skip the clone and run `./start.sh` from its folder.
+Other guides: [START-HERE.md](START-HERE.md) (one page) and [GETTING-STARTED.md](GETTING-STARTED.md) (full).
 
 **Want live calls? Add your key (30 seconds):**
 
@@ -108,6 +111,37 @@ cp .env.example .env            # macOS / Linux / WSL   (PowerShell: Copy-Item .
 Full walkthrough and troubleshooting: [GETTING-STARTED.md](GETTING-STARTED.md).
 
 ---
+
+
+## How to configure a run
+
+Open the dashboard, then **Plug in** in the left menu. There are two kinds of run. Nothing below
+spends money until you press a paid start button, and those always ask you to confirm first.
+
+### Test mode: try WattNot on your prompts (Plug in → Test run setup)
+
+| Step | What you do |
+|---|---|
+| ![](docs/img/configure-test-01.png) | 1. Give the run a name. |
+| ![](docs/img/configure-test-02.png) | 2. Pick what to save on: power, cost, water, or a balance of all three. |
+| ![](docs/img/configure-test-03.png) | 3. Pick where it runs: Baseten, Modal A100, or an H100. |
+| ![](docs/img/configure-test-04.png) | 4. Pick the AI model. |
+| ![](docs/img/configure-test-05.png) | 5. Pick the prompts and datasets to test with. |
+| ![](docs/img/configure-test-06.png) | 6. Tell it your stack, for example openai-python. |
+| ![](docs/img/configure-test-07.png) | 7. Set the limits: how much slower is OK, and the most you will spend. |
+| ![](docs/img/configure-test-08.png) | 8. Choose who approves risky changes, and whether to draft a code PR. |
+| ![](docs/img/configure-test-09.png) | 9. See what works on this machine. Greyed-out items can't run here. |
+| ![](docs/img/configure-test-10.png) | 10. Run the free pre-launch checks. |
+| ![](docs/img/configure-test-11.png) | 11. Confirm. **Start replay** is free; **Run (paid)** needs the approve box ticked. |
+
+### Plugin mode: put WattNot in front of your app (Plug in → Plug in (3 steps))
+
+| Step | What you do |
+|---|---|
+| ![](docs/img/configure-plugin-00.png) | Open **Plug in (3 steps)**. Safe settings are already picked. |
+| ![](docs/img/configure-plugin-01.png) | 1. Choose how to plug in (one URL, your own GPUs, or both) and which model it forwards to. |
+| ![](docs/img/configure-plugin-02.png) | 2. Tick the savers you want. Each one has a one-line explanation. |
+| ![](docs/img/configure-plugin-03.png) | 3. Press **Start gateway** (and **Connect GPU** if you have one). Live calls need your own key in `.env`. |
 
 ## Eligibility and disclosures
 

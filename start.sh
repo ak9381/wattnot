@@ -127,7 +127,7 @@ next_steps() {
   cat <<'TXT'
 
 == Next steps
-  Verify a signed receipt:  .venv/bin/wattnot verify receipts/h100-1104/rcpt_20261104-032655-text.json
+  Verify a signed receipt:  .venv/bin/wattnot verify receipts/h100-1104/rcpt_20261104-000651-text.json
   Add your own keys:        ./start.sh keys
   Live modes:               ./start.sh live | baseten | modal | gpu
   Full guide:               GETTING-STARTED.md
