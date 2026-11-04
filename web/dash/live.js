@@ -1,4 +1,5 @@
-// LIVE Meta calls on RUN2 (meta6): reads the signed addenda next to the RUN2 receipt.
+// LIVE Meta calls (meta6): reads the signed addenda saved next to the older H100 receipt.
+// Only the Meta call evidence is shown; that run's cap numbers are not (it served a non-Meta model).
 // Every value shown here comes from those files; nothing is filled in when a file is missing.
 const BASE = "../receipts/run2/rcpt_20261027_run2_cap350.";
 const NAMES = ["wonder_live", "musecode_pr", "sam_hotspot", "voice_transcribe"];
@@ -25,16 +26,15 @@ export function renderLive(el, L) {
   const w = L.wonder_live?.data;
   if (w) {
     const ids = (w.calls || []).map((c) => `<code>${esc(c.response_id)}</code>`).join(", ");
-    parts.push(row("Muse Wonder supervisor", `${chip("LIVE")} decisions · inputs ${chip("REPLAY")} of ${chip("MEASURED")} RUN2 steps`,
-      `<p>Wonder read the five measured caps and proposed: <b>${esc(w.decision?.action)} ${w.decision?.cap_w ? esc(w.decision.cap_w) + " W" : ""}</b>. “${esc(w.decision?.reason)}”</p>
-       <p class="lv-note">The local p99 gate would block this proposal: 325 W already failed p99 (+10.9% vs a 10% limit), so a lower cap is not run. This is why the gates, not the model, have the last word.</p>
-       <details><summary>Wonder's end-of-run summary</summary><p>${esc(w.summary)}</p></details>
-       <p class="lv-meta">Model ${esc(w.model)} · response ids ${ids} · spend $${Number(w.spend_usd).toFixed(4)} ${chip("MEASURED")}</p>`, L.wonder_live, `${w.decision?.cap_w ?? "—"} W proposed`, "LIVE"));
+    parts.push(row("Muse Wonder supervisor", `${chip("LIVE")} decisions · inputs ${chip("REPLAY")} of recorded H100 steps`,
+      `<p>Wonder read the measured caps and proposed a next step: <b>${esc(w.decision?.action)}</b>.</p>
+       <p class="lv-note">A proposal is only advice: the local p99 and quality gates decide whether any cap is kept. This is why the gates, not the model, have the last word.</p>
+       <p class="lv-meta">Model ${esc(w.model)} · response ids ${ids} · spend $${Number(w.spend_usd).toFixed(4)} ${chip("MEASURED")}</p>`, L.wonder_live, "proposal", "LIVE"));
   }
   const m = L.musecode_pr?.data;
   if (m) {
     parts.push(row("Muse Code: Apply as PR", chip("LIVE"),
-      `<p>Muse Code edited <code>launch.sh</code> and <code>values.yaml</code> for the kept 350 W change and opened a real pull request on the demo fixture repo (<strong>nothing is deployed</strong>):
+      `<p>Muse Code edited <code>launch.sh</code> and <code>values.yaml</code> for a kept cap change and opened a real pull request on the demo fixture repo (<strong>nothing is deployed</strong>):
        <a href="${esc(m.pr_url || "")}" target="_blank" rel="noopener">${esc((m.pr_url || "").replace("https://github.com/", ""))}</a>. The PR body carries the receipt hash.</p>
        <p class="lv-meta">Session <code>${esc(m.muse_code?.session_id)}</code> · run <code>${esc(m.muse_code?.run_id)}</code> · patch <code>${esc(m.patch_sha256?.slice(0, 12))}…</code> · ~$${Number(m.muse_code?.spend_usd_estimate).toFixed(4)} ${chip("ESTIMATE")}</p>`, L.musecode_pr, `PR #${(m.pr_url || "").split("/").pop()}`, "LIVE"));
   }

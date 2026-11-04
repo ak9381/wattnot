@@ -110,8 +110,8 @@ async function load() {
   const hasMeta = !!(r.wonder || r.musecode || r.hotspot || r.measurement?.judge_verdict);
   if (hasMeta) { STATE.metaReceipt = r; STATE.metaIsSample = false; }
   else {
-    try { STATE.metaReceipt = await getJSON("sample-meta5-receipt.json"); STATE.metaIsSample = true; }
-    catch { STATE.metaReceipt = r; STATE.metaIsSample = false; }
+    // The old sample-meta5-receipt.json names a non-Meta model under test; it is kept in the repo, not shown.
+    STATE.metaReceipt = r; STATE.metaIsSample = false;
   }
   render();
 }

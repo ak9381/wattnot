@@ -4,8 +4,10 @@
 import { WATER_L_PER_KWH, WATER_L_PER_KWH_UPPER } from "./r7.js";
 
 export const EU_DIR = "eu/";
-export const EU_RECEIPT = "eu/run2-receipt.json";
-export const reportHref = (rid, fmt = "html") => `${EU_DIR}eu_report_${rid}.${fmt}`;
+// The Oct 31 Glimmer rerun receipt (the older eu/run2-receipt.json served a non-Meta model; kept in the repo, not shown).
+export const EU_RECEIPT = "../receipts/rerun-1031/rcpt_20261031_rerun_cap325.json";
+const RERUN_ID = "rcpt_20261031_rerun_cap325";
+export const reportHref = (rid, fmt = "html") => (rid === RERUN_ID && fmt === "html" ? "../receipts/rerun-1031/eu_report.html" : `${EU_DIR}eu_report_${rid}.${fmt}`);
 export const EU_UPLOAD_URL = "/api/report/eu/upload";
 const DASH = "–";
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : null);
