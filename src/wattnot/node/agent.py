@@ -61,21 +61,26 @@ def rack_check(sam_client=None, photo: Path = PHOTO, rack: str | None = None) ->
     """SAM 3.1 finds the racks it can see. Returns the visible rack ids and the one we act on."""
     from wattnot.sam.room import PROMPT, masks_from_raw
     label, note = "MEASURED (live SAM 3.1 call)", None
+    raw = None
     try:
         if sam_client is None:
             from wattnot.sam.client import SamClient
             sam_client = SamClient()
         raw = sam_client.segment(Path(photo).read_bytes(), PROMPT, purpose="sam:node-rack-check")
-        masks = masks_from_raw(raw)
-        if not masks:
-            raise ValueError("SAM found no racks")
-    except Exception as e:  # noqa: BLE001  no key, budget, network, bad output
+    except Exception as e:  # noqa: BLE001  no key, budget, network
         label, note = "REPLAY (saved SAM 3.1 output)", f"live call not used: {type(e).__name__}"
+        raw = SAVED_RAW.read_text()
+    try:
+        masks = masks_from_raw(raw)
+    except Exception:  # noqa: BLE001  no mask decoder here: the boxes in the same output are enough to find racks
+        masks = boxes_from_raw(raw)
+        note = (note + "; " if note else "") + "boxes only (mask decoder not installed)"
+    if not masks and label.startswith("MEASURED"):  # live output had no racks: say so, use the saved one
+        label, note = "REPLAY (saved SAM 3.1 output)", "live call returned no racks"
         try:
             masks = masks_from_raw(SAVED_RAW.read_text())
-        except Exception:  # noqa: BLE001  no mask decoder here: the saved boxes are enough to find racks
+        except Exception:  # noqa: BLE001
             masks = boxes_from_raw(SAVED_RAW.read_text())
-            note += "; boxes only (mask decoder not installed)"
     visible = [m.id for m in masks]
     target = rack or (visible[0] if visible else None)
     ok = target in visible
