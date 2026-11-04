@@ -7,6 +7,11 @@ prefix caching, reasoning effort), measures the joules on the GPU, and keeps the
 fixed quality gate passes. Every kept change becomes a signed, hash-chained receipt you can
 re-verify. Built on Meta models.
 
+**Built with Muse Spark Open**, a Meta open-weight model (it runs the hosted-API saver round on
+Baseten, alongside open-weight Muse Glimmer 30B as the served model being tuned).
+
+**Demo video (3 min): VIDEO_LINK_TBD**
+
 ---
 
 ## Install and run
@@ -22,6 +27,13 @@ git clone https://github.com/ak9381/wattnot.git && cd wattnot
 smoke test, then starts the dashboard and opens your browser. It opens on the **Plugin H100**
 recorded run by default (`web/dash/runset.js:12`, `DEFAULT_RUN = "plugin-h100-1104"`) — a real
 Nov 4 run replayed on your machine, no GPU or network call.
+
+**Want live calls? Add your key (30 seconds):**
+
+1. Copy `.env.example` to `.env` (`cp .env.example .env`; PowerShell: `Copy-Item .env.example .env`).
+2. Paste your Meta API key into `META_API_KEY`. Modal and Baseten keys are optional.
+3. Never commit `.env`. It is already gitignored.
+4. No key? Just run `./start.sh`. It plays the keyless recorded replay.
 
 A one-line `curl … | bash` installer (`start-here/install.sh`) is **coming**; it is not in the
 repo yet. For now use the `git clone` + `./start.sh` path above.
@@ -44,8 +56,19 @@ needed for the default run.
 
 ### Keys
 
-The default run needs no keys. Live modes are **bring-your-own-key**. Enter keys with
-`./start.sh keys`; they are written to `.env` (gitignored, mode 600) and never printed.
+The default run needs no keys. Live modes are **bring-your-own-key**.
+
+**Judge setup, in order:**
+
+1. `cp .env.example .env` (PowerShell: `Copy-Item .env.example .env`).
+2. Set `META_API_KEY` to your own Meta Model API key. This is the only key the live token savers
+   need; the Modal and Baseten values below are optional.
+3. Optional — Modal: your own endpoint and proxy tokens (`WATTNOT_MODAL_URL`,
+   `MODAL_PROXY_TOKEN_ID`, `MODAL_PROXY_TOKEN_SECRET`). Optional — Baseten: `BASETEN_METRICS_KEY`.
+4. `./start.sh keys` enters any key with hidden input instead of editing the file by hand; it writes
+   `.env` (gitignored, mode 600) and prints set / not set only, never the value.
+
+Keys are written to `.env` (gitignored, mode 600) and never printed.
 
 - **Meta Model API** — your own key in `META_API_KEY`. Needed for live Muse Spark, Wonder, SAM
   3.1 and Voice Transcribe, and for the token savers.
@@ -86,8 +109,8 @@ Full walkthrough and troubleshooting: [GETTING-STARTED.md](GETTING-STARTED.md).
 ## Eligibility and disclosures
 
 **Built entirely during the hackathon, Oct 26 – Nov 4, 2026.** The repo was created on 2026-10-26.
-The first commit is `043ce2c`, 2026-10-26 22:09 IST ("Planning docs, README and license"). The git
-history holds every step since. Nothing pre-existing is vendored: the only third-party code in the
+The first commit is `043ce2c`, 2026-10-26 22:09 IST ("Planning docs, README and license") — after the
+Oct 26 kickoff ended at 12:24 PM ET (9:54 PM IST). The git history holds every step since. Nothing pre-existing is vendored: the only third-party code in the
 tree is fonts and icons under `web/dash/vendor/`; all other dependencies are installed from PyPI by
 `./start.sh` and listed below. No code existed before the hackathon started.
 
@@ -175,6 +198,19 @@ Full licence detail, links and attribution: [`DATASET-LICENCES.md`](DATASET-LICE
 | Piper | Made the spoken test clips offline (not in the runtime path) | MIT |
 | sigstore-python (optional) | Publishing receipts to the public Rekor log | Apache 2.0 |
 | Inter, JetBrains Mono, Lucide | Fonts and icons in `web/dash/vendor/` | OFL 1.1, OFL 1.1, ISC |
+
+### Demo video and voice (TTS) disclosure
+
+- **Demo video voice-over** is AI text-to-speech, made with Runway TTS (ElevenLabs `eleven_v4`). The
+  words are ours; only the narration voice is synthetic.
+- **Presenter avatar** in the video is AI-generated, and is labelled as such on screen.
+- **The app's offline voice** is Piper TTS (open, offline). WattNot uses it to voice the spoken test
+  clips ahead of time; it runs offline and is **not in the judged runtime path**. The dashboard's own
+  read-back uses the browser's speech synthesis, not Piper. (See the datasets table above and
+  [`DATASET-LICENCES.md`](DATASET-LICENCES.md).)
+- **TTS is only ever used for voice output** (narration and spoken test clips). Nothing WattNot
+  measures, grades or decides depends on it; speech going the other way (spoken questions in) is
+  transcribed live by Meta's Muse Voice Transcribe.
 
 ---
 
