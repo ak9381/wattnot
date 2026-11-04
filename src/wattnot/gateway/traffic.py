@@ -422,18 +422,6 @@ class TrafficRun:
         self.calib_path.parent.mkdir(parents=True, exist_ok=True)
         self.calib_path.write_text(json.dumps(c))
 
-    def _voice_body(self, body: dict) -> dict:
-        """A voice item: the WAV transcribed by Muse Voice, then asked as a one-line question."""
-        if "messages" in body:
-            return body
-        text = None
-        if body.get("wav") and self.transcribe:
-            try:
-                text = self.transcribe(Path(body["wav"]).read_bytes())
-            except Exception:  # noqa: BLE001
-                text = None
-        return {"messages": [{"role": "user", "content": (text or "What is 6 times 7?") + " Answer in one line."}]}
-
     def _arm(self, name, items, gap, call) -> dict:
         """One arm, alone on the GPU: NVML energy counter read before and after (MEASURED)."""
         g = self.gpu
@@ -600,6 +588,23 @@ class TrafficRun:
                 self.state["run_id"] = res.get("run_id")
                 self.state["finished_ts"] = round(time.time(), 3)
                 self.state["running"] = False
+
+    def _voice_body(self, body: dict) -> dict:
+        """A voice item is a wav path: transcribe it, then send the words as a chat message.
+        Both arms of a side-by-side run send the same transcript, so cache it per wav."""
+        if "messages" in body:
+            return body
+        wav = body.get("wav")
+        cache = self.__dict__.setdefault("_voice_text", {})
+        if wav not in cache:
+            text = None
+            if wav and self.transcribe:
+                try:
+                    text = self.transcribe(Path(wav).read_bytes())
+                except Exception:  # noqa: BLE001
+                    text = None
+            cache[wav] = text
+        return {"messages": [{"role": "user", "content": (cache[wav] or "What is 6 times 7?") + " Answer in one line."}]}
 
     def _run(self, items, gap, with_without) -> None:  # noqa: D401
         try:
