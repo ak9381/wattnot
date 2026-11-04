@@ -1,0 +1,491 @@
+{
+  "spec": "wattnot.receipt/1",
+  "receipt_id": "rcpt_20261104-011725-images",
+  "created_at": "2026-11-04T06:06:59+00:00",
+  "run_id": "seq-20261104-011725-images",
+  "subject": {
+    "model": "meta-models/Muse-Glimmer-30B (BF16, vLLM)",
+    "host": {
+      "provider": "e2e-networks",
+      "gpu": "H100 80GB",
+      "driver": "recorded"
+    },
+    "mode": "gateway-sequential (live traffic through the WattNot gateway, without arm then with arm); raw record also holds the paired answer check",
+    "workload": {
+      "name": "images",
+      "version": "1104",
+      "n_requests": 60,
+      "sha256": "079cd177b4ec073e7f3ea5319a841be083e64e10005fba64d96acf38d58c1cfe"
+    }
+  },
+  "baseline": {
+    "params": {
+      "power_cap_w": 700
+    },
+    "reps": 60,
+    "wh_per_req": {
+      "mean": 0.162392,
+      "sd": 0.004644,
+      "samples": [
+        0.1818,
+        0.154019,
+        0.1641,
+        0.156514,
+        0.162422,
+        0.167194,
+        0.15985,
+        0.166664,
+        0.158933,
+        0.166322,
+        0.159128,
+        0.165958,
+        0.160033,
+        0.166067,
+        0.158208,
+        0.166156,
+        0.158964,
+        0.166775,
+        0.156972,
+        0.160919,
+        0.157144,
+        0.163925,
+        0.156961,
+        0.165339,
+        0.157008,
+        0.166094,
+        0.158497,
+        0.165872,
+        0.159197,
+        0.166503,
+        0.159058,
+        0.1659,
+        0.159519,
+        0.166525,
+        0.159078,
+        0.165889,
+        0.15965,
+        0.165494,
+        0.158339,
+        0.165622,
+        0.158992,
+        0.166583,
+        0.159017,
+        0.166742,
+        0.159517,
+        0.16695,
+        0.159414,
+        0.165856,
+        0.158875,
+        0.166178,
+        0.159264,
+        0.166611,
+        0.157478,
+        0.165847,
+        0.157519,
+        0.164511,
+        0.157531,
+        0.163386,
+        0.166958,
+        0.157697
+      ]
+    },
+    "usd_per_req": {
+      "mean": 1.94871e-05,
+      "sd": 5.573e-07,
+      "samples": [
+        2.1816e-05,
+        1.84823e-05,
+        1.9692e-05,
+        1.87817e-05,
+        1.94906e-05,
+        2.00633e-05,
+        1.9182e-05,
+        1.99997e-05,
+        1.9072e-05,
+        1.99586e-05,
+        1.90954e-05,
+        1.9915e-05,
+        1.9204e-05,
+        1.9928e-05,
+        1.8985e-05,
+        1.99387e-05,
+        1.90757e-05,
+        2.0013e-05,
+        1.88366e-05,
+        1.93103e-05,
+        1.88573e-05,
+        1.9671e-05,
+        1.88353e-05,
+        1.98407e-05,
+        1.8841e-05,
+        1.99313e-05,
+        1.90196e-05,
+        1.99046e-05,
+        1.91036e-05,
+        1.99804e-05,
+        1.9087e-05,
+        1.9908e-05,
+        1.91423e-05,
+        1.9983e-05,
+        1.90894e-05,
+        1.99067e-05,
+        1.9158e-05,
+        1.98593e-05,
+        1.90007e-05,
+        1.98746e-05,
+        1.9079e-05,
+        1.999e-05,
+        1.9082e-05,
+        2.0009e-05,
+        1.9142e-05,
+        2.0034e-05,
+        1.91297e-05,
+        1.99027e-05,
+        1.9065e-05,
+        1.99414e-05,
+        1.91117e-05,
+        1.99933e-05,
+        1.88974e-05,
+        1.99016e-05,
+        1.89023e-05,
+        1.97413e-05,
+        1.89037e-05,
+        1.96063e-05,
+        2.0035e-05,
+        1.89236e-05
+      ]
+    },
+    "p99_ms": 0,
+    "quality": {
+      "arm_joules_nvml_counter": 40409.5,
+      "arm_seconds": 105.2,
+      "p99_note": "p99_ms not recorded by the gateway sequential runner; 0 is a placeholder, not a measurement. The paired answer check of the same run measured p99 +5.6% at 375 W (MEASURED).",
+      "agreement_with_stock": 1.0
+    }
+  },
+  "candidate": {
+    "params": {
+      "power_cap_w": 375
+    },
+    "reps": 60,
+    "wh_per_req": {
+      "mean": 0.118985,
+      "sd": 0.002764,
+      "samples": [
+        0.122244,
+        0.117119,
+        0.118478,
+        0.124558,
+        0.118967,
+        0.117942,
+        0.116372,
+        0.121836,
+        0.118217,
+        0.116969,
+        0.116639,
+        0.118067,
+        0.115689,
+        0.120433,
+        0.117139,
+        0.115856,
+        0.124842,
+        0.120708,
+        0.118833,
+        0.118136,
+        0.115756,
+        0.117536,
+        0.116603,
+        0.124186,
+        0.119167,
+        0.117681,
+        0.118781,
+        0.117786,
+        0.117186,
+        0.123061,
+        0.118389,
+        0.117669,
+        0.116814,
+        0.1163,
+        0.124589,
+        0.118711,
+        0.116719,
+        0.124625,
+        0.117319,
+        0.116075,
+        0.124822,
+        0.118892,
+        0.117997,
+        0.116108,
+        0.1248,
+        0.120061,
+        0.119003,
+        0.116964,
+        0.115894,
+        0.123667,
+        0.118603,
+        0.116106,
+        0.120578,
+        0.118622,
+        0.118228,
+        0.118453,
+        0.117794,
+        0.123275,
+        0.118769,
+        0.116447
+      ]
+    },
+    "usd_per_req": {
+      "mean": 1.42782e-05,
+      "sd": 3.317e-07,
+      "samples": [
+        1.46693e-05,
+        1.40543e-05,
+        1.42174e-05,
+        1.4947e-05,
+        1.4276e-05,
+        1.4153e-05,
+        1.39646e-05,
+        1.46203e-05,
+        1.4186e-05,
+        1.40363e-05,
+        1.39967e-05,
+        1.4168e-05,
+        1.38827e-05,
+        1.4452e-05,
+        1.40567e-05,
+        1.39027e-05,
+        1.4981e-05,
+        1.4485e-05,
+        1.426e-05,
+        1.41763e-05,
+        1.38907e-05,
+        1.41043e-05,
+        1.39924e-05,
+        1.49023e-05,
+        1.43e-05,
+        1.41217e-05,
+        1.42537e-05,
+        1.41343e-05,
+        1.40623e-05,
+        1.47673e-05,
+        1.42067e-05,
+        1.41203e-05,
+        1.40177e-05,
+        1.3956e-05,
+        1.49507e-05,
+        1.42453e-05,
+        1.40063e-05,
+        1.4955e-05,
+        1.40783e-05,
+        1.3929e-05,
+        1.49786e-05,
+        1.4267e-05,
+        1.41596e-05,
+        1.3933e-05,
+        1.4976e-05,
+        1.44073e-05,
+        1.42804e-05,
+        1.40357e-05,
+        1.39073e-05,
+        1.484e-05,
+        1.42324e-05,
+        1.39327e-05,
+        1.44694e-05,
+        1.42346e-05,
+        1.41874e-05,
+        1.42144e-05,
+        1.41353e-05,
+        1.4793e-05,
+        1.42523e-05,
+        1.39736e-05
+      ]
+    },
+    "p99_ms": 0,
+    "quality": {
+      "arm_joules_nvml_counter": 30367.2,
+      "arm_seconds": 113.1,
+      "p99_note": "p99_ms not recorded by the gateway sequential runner; 0 is a placeholder, not a measurement. The paired answer check of the same run measured p99 +5.6% at 375 W (MEASURED).",
+      "agreement_with_stock": 1.0
+    }
+  },
+  "result": {
+    "saving_pct": {
+      "mean": 26.7301,
+      "ci_low": 26.0617,
+      "ci_high": 27.4045
+    },
+    "welch": {
+      "t": 62.21205,
+      "df": 96.136355,
+      "p_value": 9.090563029544427e-80,
+      "alpha": 0.05
+    },
+    "bootstrap": {
+      "n": 10000,
+      "seed": 7,
+      "level": 0.95
+    },
+    "billable": true,
+    "billed_saving_pct": 26.0617,
+    "fee_share": 0.2,
+    "currency": "USD",
+    "tariff_usd_per_kwh": {
+      "value": 0.12,
+      "label": "ESTIMATE"
+    }
+  },
+  "measurement": {
+    "meter": "nvml",
+    "hz": 10,
+    "label": "MEASURED",
+    "idle_w": null,
+    "csv": [
+      {
+        "path": "data/h100-seq-1104/seq-20261104-011725-images.json",
+        "sha256": "079cd177b4ec073e7f3ea5319a841be083e64e10005fba64d96acf38d58c1cfe"
+      }
+    ],
+    "spark_trace_id": null,
+    "per_model_joules": [
+      {
+        "model": "meta-models/Muse-Glimmer-30B (BF16, vLLM) (served, model under test)",
+        "role": "served",
+        "where": "local",
+        "j_per_answer": 428.346,
+        "j_total": 25700.8,
+        "label": "MEASURED",
+        "how": "NVML energy counter, 10 samples a second; j_total = J per answer x checked answers"
+      }
+    ]
+  },
+  "attribution": {
+    "method": "token-share-capped (after Neuralwatt)",
+    "cap": 1.0
+  },
+  "planner_trace": [],
+  "estimates": {
+    "water_ml_per_req": {
+      "value": 0.042835,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"
+    },
+    "water_ml_per_req_upper": {
+      "value": 0.214173,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"
+    },
+    "baseline_water_ml_per_req": {
+      "value": 0.058461,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "0.36 L/kWh on-site cooling (LBNL 2024), ESTIMATE; not measured"
+    },
+    "baseline_water_ml_per_req_upper": {
+      "value": 0.292306,
+      "label": "ESTIMATE",
+      "method": "Wh/request x WUE (L/kWh)",
+      "source": "1.8 L/kWh including power-plant water, upper ESTIMATE; not measured"
+    }
+  },
+  "limits": {
+    "max_p99_increase": 0.1,
+    "max_p99_increase_pct": 10.0,
+    "source": "default"
+  },
+  "dataset": {
+    "id": "wattnot images gateway workload",
+    "chosen_by": "user"
+  },
+  "joules": {
+    "unit": "J",
+    "label": "MEASURED",
+    "formula": "j_per_answer = wh_per_req x 3600; j_per_good_answer = j_per_answer / pass_rate",
+    "baseline": {
+      "j_per_answer": 584.6112,
+      "pass_rate": null,
+      "j_per_good_answer": null
+    },
+    "candidate": {
+      "j_per_answer": 428.346,
+      "pass_rate": null,
+      "j_per_good_answer": null
+    },
+    "change_pct": {
+      "j_per_answer": -26.7298,
+      "j_per_good_answer": null
+    }
+  },
+  "sci": {
+    "spec": "GSF SCI 1.0 (ISO/IEC 21031:2024): SCI = (E x I + M) per R",
+    "R": "one correct answer (passed the quality gate)",
+    "label": "ESTIMATE",
+    "why_label": "E is the receipt's measured energy; I and water are cited factors, so every carbon and water number is ESTIMATE",
+    "scope": "operational (E x I)",
+    "I": {
+      "gco2e_per_kwh": 727.0,
+      "label": "ESTIMATE",
+      "region": "IN (India national grid)",
+      "year": "FY 2023-24",
+      "source": "CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included)",
+      "url": "https://cea.nic.in/cdm-co2-baseline-database/?lang=en"
+    },
+    "M": {
+      "status": "NOT_AVAILABLE",
+      "gco2e_per_correct": null,
+      "why": "no cited embodied-emissions figure for this GPU and server; SCI shown is operational only (E x I)"
+    },
+    "water": {
+      "wue": {
+        "l_per_kwh": 0.36,
+        "label": "ESTIMATE",
+        "source": "0.36 L/kWh on-site cooling (LBNL 2024 US Data Center Energy Usage Report)"
+      },
+      "wue_upper": {
+        "l_per_kwh": 1.8,
+        "label": "ESTIMATE",
+        "source": "1.8 L/kWh including power-plant (electricity) water, upper bound"
+      }
+    },
+    "arms": {
+      "baseline": {
+        "E_kwh_per_request": 0.000162392,
+        "E_kwh_per_correct": null,
+        "pass_rate": null,
+        "E_label": "MEASURED",
+        "gco2e_per_request": 0.118058984,
+        "gco2e_per_correct": null,
+        "sci_gco2e_per_R": null,
+        "water_ml_per_request": 0.05846112,
+        "water_ml_per_correct": null,
+        "water_ml_per_request_upper": 0.2923056
+      },
+      "candidate": {
+        "E_kwh_per_request": 0.000118985,
+        "E_kwh_per_correct": null,
+        "pass_rate": null,
+        "E_label": "MEASURED",
+        "gco2e_per_request": 0.086502095,
+        "gco2e_per_correct": null,
+        "sci_gco2e_per_R": null,
+        "water_ml_per_request": 0.0428346,
+        "water_ml_per_correct": null,
+        "water_ml_per_request_upper": 0.214173
+      }
+    },
+    "change_pct_sci": null
+  },
+  "grade": "ESTIMATE",
+  "integrity": {
+    "canonicalization": "JCS RFC 8785",
+    "sha256": "c4ed80bba3f73131247e065cce551e54698671a281aeb3a879d66e3c3001641c",
+    "prev_sha256": null,
+    "signer": "offline:d3a16ddd216502c0",
+    "rekor": {
+      "log_index": 3686499505,
+      "uuid": "108e9186e8c5677ab4e1f6f2ed829e4c73a9d497c10400b5dc79a5484624a50ade685ae1c85b07e2",
+      "url": "https://search.sigstore.dev/?logIndex=3686499505"
+    }
+  }
+}
