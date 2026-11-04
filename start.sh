@@ -25,10 +25,20 @@ setup() {
   fi
 }
 
+# A key counts as set only if .env (or the shell) has a value that differs from the
+# .env.example placeholder. Values are compared, never printed.
+env_val() {
+  local k=$1 v="" ex=""
+  [ -f .env ] && v=$(grep -E "^${k}=" .env | tail -1 | cut -d= -f2-)
+  [ -f .env.example ] && ex=$(grep -E "^${k}=" .env.example | tail -1 | cut -d= -f2-)
+  [ "$v" = "$ex" ] && v=""
+  [ -n "$v" ] && echo set
+}
+
 key_status() {
   # Prints only set / not set, never a value.
   for k in META_API_KEY WATTNOT_VLLM_URL BASETEN_METRICS_KEY MODAL_ENDPOINT_URL; do
-    v=""; [ -f .env ] && v=$(grep -E "^${k}=" .env | tail -1 | cut -d= -f2-)
+    v=$(env_val "$k")
     [ -n "${!k:-}" ] && v=set
     if [ -n "$v" ]; then printf '  %-22s set\n' "$k"; else printf '  %-22s not set\n' "$k"; fi
   done
@@ -72,7 +82,7 @@ case "$MODE" in
     ;;
   live)
     setup
-    if ! { [ -n "${META_API_KEY:-}" ] || grep -qE '^META_API_KEY=.+' .env 2>/dev/null; }; then
+    if ! { [ -n "${META_API_KEY:-}" ] || [ -n "$(env_val META_API_KEY)" ]; }; then
       echo "META_API_KEY is not set. Run ./start.sh keys and add it to .env."; exit 2
     fi
     exec ./run-local.sh savers
