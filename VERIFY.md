@@ -26,7 +26,7 @@ Read the grade honestly:
 Check any of them the same way, or all at once:
 
 ```bash
-for f in receipts/h100-1104/rcpt_*[a-z].json; do python3 verifier/wattnot_verify.py "$f" --trust verifier/trusted-keys.json | grep -E "rekor|grade"; done
+for f in $(ls receipts/h100-1104/rcpt_*.json | grep -v sigstore); do python3 verifier/wattnot_verify.py "$f" --trust verifier/trusted-keys.json | grep -E "rekor|grade"; done
 ```
 
 | Run | Arm totals (NVML counter) | Saving | Receipt grade | Rekor |
