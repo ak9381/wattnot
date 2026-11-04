@@ -19,7 +19,7 @@ ASSUME_YES="${WATTNOT_YES:-0}"
 say()  { printf '\n== %s\n' "$*"; }
 fail() { # fail CODE "message"
   printf '\nERROR %s: %s\n  Fix: see %s (entry %s)\n' "$1" "$2" "$GUIDE" "$1" >&2; exit "${3:-1}"; }
-row()  { printf '  %-22s %-8s %s\n' "$1" "$2" "$3"; }
+row()  { printf '  %-26s %-8s %s\n' "$1" "$2" "$3"; }
 
 # ---------- .env loading (KEY=VALUE only, never eval'd, placeholders ignored) ----------
 load_env() {
@@ -210,6 +210,6 @@ case "$MODE" in
         need gpu WATTNOT_VLLM_URL
         curl -fsS -m 5 -o /dev/null "${WATTNOT_VLLM_URL%/chat/completions}/models" || fail E13 "vLLM not reachable at WATTNOT_VLLM_URL"
         exec ./run-local.sh gpu ;;
-  -h|--help|help) sed -n '2,12p' "$0" ;;
-  *) sed -n '2,12p' "$0"; fail E00 "unknown command '$MODE'" 2 ;;
+  -h|--help|help) sed -n '2,11p' "$0" ;;
+  *) sed -n '2,11p' "$0"; fail E00 "unknown command '$MODE'" 2 ;;
 esac
