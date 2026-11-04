@@ -10,6 +10,8 @@ re-verify. Built on Meta models.
 **Built with Muse Spark Open**, a Meta open-weight model (it runs the hosted-API saver round on
 Baseten, alongside open-weight Muse Glimmer 30B as the served model being tuned).
 
+**Read the full project write-up:** [`docs/PROJECT-DESCRIPTION.md`](docs/PROJECT-DESCRIPTION.md)
+
 **Demo video (3 min, YouTube):** _pending, link coming_ (`YOUTUBE_LINK_TBD`)  
 **X post:** _pending, link coming_ (`X_POST_LINK_TBD`)
 
