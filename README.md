@@ -377,7 +377,6 @@ API, Baseten) own their GPU, so WattNot uses request-level savers there instead 
 
 All of these are **coming**; they are not built yet.
 
-- **One-command installer** (`start-here/install.sh`, a `curl … | bash` one-liner).
 - **Shared demo key** for Meta API and Modal behind a capped server-side proxy, so judges can make
   live calls without their own account, with an optional own-key field.
 - **CSRD report pack** as a paid add-on on top of the EU efficiency report.
