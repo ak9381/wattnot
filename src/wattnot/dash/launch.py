@@ -25,6 +25,7 @@ import asyncio
 import hashlib
 import hmac
 import json
+import shlex
 import os
 import re
 import secrets
@@ -651,6 +652,8 @@ def round_events(rdir: Path) -> list[str]:
     flow/runs/<run_id>/), plus any attached runs' own events (data/attachments/<round>/<run_id>/,
     a sibling of rdir that a plain rglob(rdir) never reaches)."""
     found = list(rdir.rglob("events*.jsonl"))
+    # a full (non-smoke) stage run writes <data>/<round>.<arm>.events.jsonl next to the round folder
+    found += list(rdir.parent.glob(f"{rdir.name.split('-')[-1]}.*events.jsonl"))
     attach_dir = rdir.parent / "attachments" / rdir.name
     if attach_dir.is_dir():
         found += list(attach_dir.rglob("events*.jsonl"))
@@ -674,8 +677,8 @@ def events_path_for(run_id: str) -> Path | None:
         return None
     if newest:   # the job's own orchestrate run (flow/runs/<run_id>/) first, newest first;
         # every folder of that round counts (a round id can be listed twice, smoke and full)
-        found.sort(key=lambda p: ("/flow/runs/" in p.as_posix(),
-                                  p.stat().st_mtime if p.exists() else 0), reverse=True)
+        # the file this job is writing right now is the newest one, wherever it lives
+        found.sort(key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)
     return found[0]
 
 
@@ -688,7 +691,8 @@ def _job_round(jid: str) -> str | None:
         return None
     cfg = c.get("config") or {}
     provider = cfg.get("provider") or c.get("provider")
-    cmd = [str(x) for x in (c.get("cmd") or [])]
+    raw = c.get("cmd") or []
+    cmd = shlex.split(raw) if isinstance(raw, str) else [str(x) for x in raw]
     rnd = cmd[cmd.index("--rounds") + 1] if "--rounds" in cmd[:-1] else None
     return f"{provider}:{rnd.split(',')[0].split()[0]}" if provider and rnd else None
 
