@@ -46,6 +46,7 @@
     `;
 
     document.body.prepend(nav);
+    mountLegendButton(nav);
     // Left sidebar: every route, grouped. The current group is open; its page sections are filled in by sidenav.js.
     const side = document.createElement("aside");
     side.className = "wn-side"; side.id = "wnSide"; side.setAttribute("aria-label", "All pages");
@@ -257,3 +258,36 @@
   set();
   window.__wnDrawerBounds = set;
 })();
+
+// One "Legend" button at the top right replaces the inline label rows on every page.
+// Collapsed by default; closes on X, Esc, a click outside, or the button again.
+function mountLegendButton(nav) {
+  const st = document.createElement("style");
+  st.textContent = `.wn-shared-legend,.r7legend,.ov-legend,.eu-legend,.lab-legend{display:none!important}
+.wn-legbtn{margin-left:10px;font:inherit;font-size:12px;padding:5px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:inherit;cursor:pointer}
+.wn-legpop{position:fixed;top:56px;right:16px;z-index:1100;width:290px;padding:12px 14px;border-radius:14px;background:rgba(14,18,32,.97);border:1px solid rgba(255,255,255,.16);box-shadow:0 12px 40px rgba(0,0,0,.45);font-size:12.5px;color:#E4DFEB}
+.wn-legpop[hidden]{display:none}.wn-legpop header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:600}
+.wn-legpop button{font:inherit;background:none;border:1px solid rgba(255,255,255,.2);border-radius:8px;color:inherit;cursor:pointer;padding:2px 8px}
+.wn-legpop li{display:flex;gap:8px;align-items:flex-start;margin:5px 0;list-style:none}.wn-legpop ul{margin:0;padding:0}
+.wn-legpop i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-top:4px;flex:none}`;
+  document.head.appendChild(st);
+  if (/graph\.html$/.test(location.pathname)) return; // the Live graph toolbar has its own Legend button
+  const rows = [["MEASURED", "#2DD4A7", "Read from a meter or a real run."], ["MEASURED-derived", "#2DD4A7", "Measured time priced at a published list rate."],
+    ["ESTIMATE", "#F5C451", "Measured numbers plus a stated assumption."], ["SIMULATED", "#5B9FE8", "From a model or simulator, not measured."],
+    ["MOCK", "#FB7185", "Sample data that shows the layout only."], ["REPLAY", "#A78BFA", "Replayed from saved, signed records."],
+    ["pending", "transparent;border:1.5px dashed #9AA0AE", "Not measured yet; shown dimmed, never hidden."],
+    ["with WattNot", "#7FA88A", "Chart line or bar for the run with WattNot."], ["without WattNot", "#E07A7A", "Chart line or bar for the stock run."]];
+  const btn = document.createElement("button");
+  btn.className = "wn-legbtn"; btn.id = "wnLegBtn"; btn.type = "button"; btn.textContent = "Legend";
+  btn.setAttribute("aria-expanded", "false"); btn.setAttribute("aria-controls", "wnLegPop");
+  const pop = document.createElement("div");
+  pop.className = "wn-legpop"; pop.id = "wnLegPop"; pop.hidden = true; pop.setAttribute("role", "dialog"); pop.setAttribute("aria-label", "Legend");
+  pop.innerHTML = `<header><span>Legend</span><button type="button" aria-label="Close legend">✕</button></header><ul>${rows.map(([l, c, t]) => `<li><i style="background:${c}"></i><span><b>${l}</b>: ${t}</span></li>`).join("")}</ul>`;
+  const set = (open) => { pop.hidden = !open; btn.setAttribute("aria-expanded", String(open)); };
+  btn.onclick = (e) => { e.stopPropagation(); set(pop.hidden); };
+  pop.querySelector("button").onclick = () => set(false);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") set(false); });
+  document.addEventListener("click", (e) => { if (!pop.hidden && !pop.contains(e.target) && e.target !== btn) set(false); });
+  (nav.querySelector(".wn-nav-inner") || nav).appendChild(btn);
+  document.body.appendChild(pop);
+}
