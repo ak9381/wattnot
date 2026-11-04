@@ -259,6 +259,7 @@ export function hostLeverValue(rec, host, lever, branch) {
 // under all three, and hosted items are cost-MEASURED, power/water-ESTIMATE.
 export function treeValue(rec, branch, node) {
   const id = node?.id;
+  if (rec?.tree && rec.tree[id]) { const t = rec.tree[id]; return t.gate || t.why || branch === "power" ? t : { ...t, tag: "ESTIMATE" }; }
   if (node?.kind === "gate") {
     if (node.host) { const h = hostAB(rec, node.host); return h == null ? null : { gate: true, pass: !!h.gate_passed }; }
     const g = gateStatus(rec, id); return g == null ? null : { gate: true, pass: g.pass };
