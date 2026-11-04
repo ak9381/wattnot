@@ -608,3 +608,22 @@ def test_ui_sequence_power_check_then_side_by_side_traffic_completes(tmp_path, m
     assert seq["without"]["joules"] > 0 and seq["with"]["joules"] > 0
     assert seq["without"]["cap_w"] == 700 and seq["final_limit_w"] == 700 and nv.mw == 700_000
     assert st["done"] == 20 and kept in (300, 325, 350, 375, 700)
+
+
+def test_one_gpu_job_at_a_time(tmp_path, monkeypatch):
+    import threading
+    from wattnot.dash.server import GPU_BUSY, create_app
+    monkeypatch.setenv("WATTNOT_SAVINGS_LOG", str(tmp_path / "s.jsonl"))
+    monkeypatch.setenv("WATTNOT_NODE_LOG", str(tmp_path / "n.jsonl"))
+    monkeypatch.setenv("WATTNOT_GPU", "sim")
+    go = threading.Event()
+    monkeypatch.setattr(node_agent, "run", lambda *a, **k: (go.wait(5), {"status": "done"})[1])
+    c = TestClient(create_app())
+    try:
+        assert c.post("/api/dash/node/run", json={"approve": True, "sleep_s": 0}).json()["started"]
+        r = c.post("/api/dash/traffic/start", json={"workload": "text", "n": 20, "with_without": True, "mode": "test"})
+        assert r.status_code == 409 and r.json()["detail"] == GPU_BUSY == "Another GPU job is running; wait for it to finish"
+        r = c.post("/api/dash/node/run", json={"approve": True})
+        assert r.status_code == 409 and r.json()["detail"] == GPU_BUSY
+    finally:
+        go.set()

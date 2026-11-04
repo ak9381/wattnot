@@ -96,6 +96,27 @@ def proof_prompts(n: int | None = None) -> list[dict]:
 # 4 interleaved stock/cap pairs: with 2-3 pairs energy_clearly_down falls back to "every pair beats
 # 2x stock noise", which refused a steady -25%/-37% drop; from 4 pairs it uses the 95% CI rule
 CHECK_PAIRS = 4
+SAMPLE_S = 1.0          # in-block sampling of power limit and draw
+MAX_EXTRA_PAIRS = 4     # pairs added at most when some are dropped as invalid
+COUNTER_TOL = 0.10      # NVML energy counter vs integrated 1 Hz power samples
+
+
+def block_validity(w, lim0, lim1, samples, joules, seconds) -> dict:
+    """A block counts only if the power limit stayed at w from start to end (take 4: another GPU
+    job reset it mid-block) and the energy counter agrees with the integrated power samples
+    within 10% (steady-window measurement, as in Zeus and arXiv 2312.02741)."""
+    lims = [x for x in [lim0, *(a for a, _ in samples), lim1] if x is not None]
+    if any(abs(x - w) > 1 for x in lims):
+        return {"valid": False, "why": f"power limit changed mid-block ({sorted(set(int(x) for x in lims))} W, asked {w} W)"}
+    pw = [p for _, p in samples if p is not None]
+    if len(pw) >= 3 and seconds > 0 and joules > 0:
+        integ = sum(pw) / len(pw) * seconds
+        dev = abs(integ - joules) / joules
+        if dev > COUNTER_TOL:
+            return {"valid": False, "why": f"energy counter and power samples differ by {100 * dev:.0f}%"}
+    return {"valid": True, "why": None}
+
+
 # proof.profile "standard": settle_s 4, warmup 16, warmup_s 10, burn_in 1
 WARMUP = {"settle_s": 4.0, "requests": 16, "load_s": 10.0, "burn_in_blocks": 1}
 
@@ -114,11 +135,31 @@ class HarnessCapCheck:
         self.items, self.pairs, self.concurrency, self.p99_limit = proof_prompts(n), pairs, concurrency, p99_limit
         self.ref = None
 
+    def _read(self, name: str, scale: float):
+        f = getattr(self.gpu, name, None)
+        if f is None:
+            return None
+        try:
+            return f(None) / scale
+        except Exception:  # noqa: BLE001 - a missing reading only skips that validity check
+            return None
+
     def _block(self, w: int) -> dict:
+        import threading
         from concurrent.futures import ThreadPoolExecutor
         from wattnot.proof.stats import percentile
         self.set_cap(w)
+        lim0 = self._read("nvmlDeviceGetPowerManagementLimit", 1000)
         e0 = self.gpu.nvmlDeviceGetTotalEnergyConsumption(None)
+        t_start = time.perf_counter()
+        samples, stop = [], threading.Event()
+
+        def sampler():   # power limit and power draw while the block runs (1 Hz, like the sampler)
+            while not stop.wait(SAMPLE_S):
+                samples.append((self._read("nvmlDeviceGetPowerManagementLimit", 1000),
+                                self._read("nvmlDeviceGetPowerUsage", 1000)))
+        th = threading.Thread(target=sampler, daemon=True)
+        th.start()
 
         def one(it):
             t = time.perf_counter()
@@ -126,12 +167,19 @@ class HarnessCapCheck:
             # seed 1234): proof-v1's small per-prompt limits truncate a reasoning model's answers
             a = self.ask(it["prompt"], max(int(it.get("max_tokens") or 512), HOLDOUT_MAX_TOKENS))
             return a, time.perf_counter() - t
-        with ThreadPoolExecutor(self.concurrency) as ex:
-            out = list(ex.map(one, self.items))
+        try:
+            with ThreadPoolExecutor(self.concurrency) as ex:
+                out = list(ex.map(one, self.items))
+        finally:
+            stop.set()
+            th.join()
+        dur = time.perf_counter() - t_start
         j = (self.gpu.nvmlDeviceGetTotalEnergyConsumption(None) - e0) / 1000
+        lim1 = self._read("nvmlDeviceGetPowerManagementLimit", 1000)
         lat = [t for _, t in out]
         return {"answers": [a for a, _ in out], "j_per_req": j / max(1, len(out)),
-                "p99_s": percentile(lat, 99), "cap_w": w}
+                "p99_s": percentile(lat, 99), "cap_w": w, "joules": j, "seconds": dur,
+                **block_validity(w, lim0, lim1, samples, j, dur)}
 
     def warmup(self) -> dict:
         """GPU warm-up (not measured), copied from the proof sweep's "standard" profile
@@ -166,15 +214,28 @@ class HarnessCapCheck:
         stock, capped = [], []
         if not getattr(self, "warm", None):
             self.warmup()                 # UI power check and sequential mode both come through here
+        dropped, r = [], 0
         try:
-            for r in range(self.pairs):
+            # keep adding interleaved pairs until `pairs` valid ones exist (at most MAX_EXTRA_PAIRS more)
+            while len(stock) < self.pairs and r < self.pairs + MAX_EXTRA_PAIRS:
                 order = [("stock", self.stock_w), ("cap", int(cap))]
                 if r % 2:
                     order = order[::-1]   # cap first on odd rounds, as the sweep does
-                for arm, w in order:
-                    (stock if arm == "stock" else capped).append(self._block(w))
+                got = {arm: self._block(w) for arm, w in order}
+                r += 1
+                bad = [f"{arm} block: {got[arm]['why']}" for arm in ("stock", "cap") if not got[arm]["valid"]]
+                if bad:
+                    dropped.append(f"pair {r} dropped: " + "; ".join(bad))
+                    continue
+                stock.append(got["stock"])
+                capped.append(got["cap"])
         finally:
             self.set_cap(int(cap))        # the caller decides what stays; it restores stock on reject
+        if len(stock) < 2:   # not enough clean pairs to judge anything: stay at stock
+            return {"accepted": False, "why_not": [f"only {len(stock)} valid pairs after {r} (another GPU job?)"],
+                    "pairs": len(stock), "pairs_run": r, "dropped_pairs": dropped, "n": len(self.items),
+                    "energy_change_pct": None, "p99_change_pct": None, "warmup": getattr(self, "warm", None),
+                    "label": "MEASURED (NVML energy, interleaved stock/cap blocks)"}
         pct = lambda c, s: 100 * (c - s) / s if s else float("nan")  # noqa: E731
         d_e = [pct(c["j_per_req"], s["j_per_req"]) for s, c in zip(stock, capped)]
         d_p = [pct(c["p99_s"], s["p99_s"]) for s, c in zip(stock, capped)]
@@ -211,7 +272,8 @@ class HarnessCapCheck:
                             "max_drop_pts": MAX_DROP_PTS, "passed": q_ok, "one_pt_rule": q.passed,
                             "reason": q.reason, "holdout_paired": paired, "noninferiority": noninf,
                             "max_tokens": HOLDOUT_MAX_TOKENS},
-                "why_not": why, "n": n, "pairs": self.pairs, "warmup": self.warm,
+                "why_not": why, "n": n, "pairs": len(stock), "pairs_run": r, "dropped_pairs": dropped,
+                "warmup": self.warm,
                 "rule": "proof sweep: harness graders (fixed_checks <=1 pt drop, or paired non-inferiority: 95% CI "
                         "lower bound > -5 pts, holdout report), max_tokens 1536 (holdout), mean p99 <= +10%, "
                         "energy_clearly_down, concurrency 32",

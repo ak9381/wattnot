@@ -81,6 +81,9 @@ LOGIN_HTML = (
 )
 
 
+# take 4: a power check and a traffic run shared the GPU and reset each other's power limit
+GPU_BUSY = "Another GPU job is running; wait for it to finish"
+
 def _mac(token: str) -> str:
     return hmac.new(token.encode(), b"wattnot-dash", hashlib.sha256).hexdigest()
 
@@ -1070,6 +1073,12 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
         class _A:   # NVML-shaped view for AnswerCheck
             def nvmlDeviceGetTotalEnergyConsumption(self, _h):
                 return g.energy_mj()
+
+            def nvmlDeviceGetPowerManagementLimit(self, _h):
+                return g.n.nvmlDeviceGetPowerManagementLimit(g.h)
+
+            def nvmlDeviceGetPowerUsage(self, _h):
+                return g.n.nvmlDeviceGetPowerUsage(g.h)
         traffic.gpu = g
         traffic.cap_w = int((c.get("node") or {}).get("cap_max_w", 375))
         n = int((c.get("node") or {}).get("check_prompts", 111))
@@ -1092,6 +1101,9 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
 
     @app.post("/api/dash/traffic/start")
     def traffic_start(request: Request, body: dict = Body(default={})) -> dict:
+        nt = node_job["thread"]
+        if nt is not None and nt.is_alive():   # one GPU job at a time: the power check owns the GPU
+            raise HTTPException(409, GPU_BUSY)
         if gw.app is None:
             raise HTTPException(409, "Start the gateway first (step 3).")
         est = _est(body)
@@ -1129,7 +1141,9 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
         from wattnot.node import agent as _agent
         t = node_job["thread"]
         if t is not None and t.is_alive():
-            raise HTTPException(409, "the node agent is already running")
+            raise HTTPException(409, GPU_BUSY)
+        if body.get("approve") and traffic.state.get("running"):   # traffic is using the GPU
+            raise HTTPException(409, GPU_BUSY)
         ncfg = load_config(gateway) if gateway else load_config(None)
         ov = os.environ.get("WATTNOT_PLUG_OVERLAY")
         if ov:

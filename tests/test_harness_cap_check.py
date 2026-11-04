@@ -87,3 +87,70 @@ def test_gpu_warmup_runs_at_stock_before_check_and_is_labelled():
     assert r["warmup"]["label"] == "GPU warm-up (not measured)" and r["warmup"]["cap_w"] == 700
     assert r["warmup"]["requests"] == 2 and r["warmup"]["burn_in_blocks"] == 1
     assert r["accepted"]
+
+
+class G2(G):
+    """NVML view with a readable power limit; `other` is a second GPU job that resets it."""
+    def __init__(self):
+        super().__init__()
+        self.other = set()        # block numbers in which the other job sets 700 W mid-block
+        self.blocks = 0
+    def nvmlDeviceGetPowerManagementLimit(self, _): return self.w * 1000
+
+
+def _replay(other_blocks, cap_factors):
+    import itertools
+    from wattnot.node import answercheck as ac
+    g = G2()
+    fac = itertools.cycle(cap_factors)
+    cur = {"f": 0.75}
+    def set_cap(w):
+        g.w = w
+        g.blocks += 1
+        if w != 700:
+            cur["f"] = next(fac)
+    k = [0]
+    def ask(p, mt):
+        time.sleep(0.004)
+        k[0] += 1
+        if g.blocks in g.other and k[0] % 8 == 4:
+            g.w = 700                 # the traffic run's own check resets the limit
+        g.e += int(1000 * (1.0 if g.w == 700 else cur["f"]))
+        return f"#### {ITEMS[p]}"
+    g.other = set(other_blocks)
+    c = ac.HarnessCapCheck(ask, g, set_cap, 700, n=8, concurrency=4)
+    c.warm = {"label": "GPU warm-up (not measured)"}
+    return c.at(375)
+
+
+def test_take4_contaminated_pairs_are_dropped_and_replaced(monkeypatch):
+    from wattnot.node import answercheck as ac
+    monkeypatch.setattr(ac, "SAMPLE_S", 0.002)
+    # blocks are numbered by set_cap calls; pairs 1-3 have a block where the limit is reset
+    r = _replay(other_blocks={2, 3, 6}, cap_factors=[0.75, 0.73, 0.75, 0.77])
+    assert len(r["dropped_pairs"]) >= 2
+    assert all("power limit changed mid-block" in d and d.startswith("pair ") for d in r["dropped_pairs"])
+    assert r["pairs"] == 4 and r["pairs_run"] == 4 + len(r["dropped_pairs"])
+    assert r["accepted"] and r["energy_change_pct"] < -20
+
+
+def test_clean_runs_stay_accepted_with_no_drops(monkeypatch):
+    from wattnot.node import answercheck as ac
+    monkeypatch.setattr(ac, "SAMPLE_S", 0.002)
+    for f in ([0.746, 0.727, 0.746, 0.768], [0.75, 0.797, 0.723, 0.769]):   # warmup-0503, take-4 check
+        r = _replay(other_blocks=set(), cap_factors=f)
+        assert r["dropped_pairs"] == [] and r["pairs"] == 4 and r["accepted"]
+
+
+def test_extra_pairs_are_capped():
+    from wattnot.node import answercheck as ac
+    r = _replay(other_blocks=set(range(1, 40)), cap_factors=[0.75])
+    assert r["pairs_run"] == 4 + ac.MAX_EXTRA_PAIRS and r["pairs"] == 0 and not r["accepted"]
+
+
+def test_counter_vs_samples_check():
+    from wattnot.node.answercheck import block_validity
+    assert block_validity(375, 375, 375, [(375, 300)] * 5, 3000, 10)["valid"]
+    v = block_validity(375, 375, 375, [(375, 300)] * 5, 4000, 10)
+    assert not v["valid"] and "differ by" in v["why"]
+    assert not block_validity(375, 375, 700, [], 1, 1)["valid"]

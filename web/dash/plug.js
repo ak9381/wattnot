@@ -153,13 +153,16 @@ async function tEstimate() {
 $("#tStart").onclick = async () => {
   let r = await post("/api/dash/traffic/start", tChoice()).catch(() => null);
   if (r && r.status === 402 && confirm((await r.json()).detail + "?")) r = await post("/api/dash/traffic/start", { ...tChoice(), confirm_over_1: true });
-  $("#tState").textContent = !r ? "Server not reachable." : r.ok ? "Sending…" : (await r.json()).detail;
+  tErr = !r ? "Server not reachable." : r.ok ? "" : (await r.json()).detail;
+  $("#tState").textContent = tErr || "Sending…";
 };
+let tErr = "";
 $("#tStop").onclick = () => post("/api/dash/traffic/stop");
 async function drawTraffic() {
   const t = await fetch("/api/dash/traffic/status").then((r) => r.json()).catch(() => null);
   if (!t) return;
-  if (t.total) $("#tState").textContent = `${t.running ? "Sending" : "Done"}: ${t.done} of ${t.total} · spent $${Number(t.usd).toFixed(4)}${t.errors ? ` · ${t.errors} errors` : ""}${t.stopped ? ` · ${t.stopped}` : ""}${t.running && t.phase ? ` · ${t.phase}` : ""}${t.cap_rollback ? ` · ${t.cap_rollback}` : ""} (Simulated traffic)`;
+  if (tErr && !t.running) $("#tState").textContent = tErr;
+  else if (t.total) $("#tState").textContent = `${t.running ? "Sending" : "Done"}: ${t.done} of ${t.total} · spent $${Number(t.usd).toFixed(4)}${t.errors ? ` · ${t.errors} errors` : ""}${t.stopped ? ` · ${t.stopped}` : ""}${t.running && t.phase ? ` · ${t.phase}` : ""}${t.cap_rollback ? ` · ${t.cap_rollback}` : ""} (Simulated traffic)`;
   const w = t.without_totals;
   $("#tAbOut").textContent = w && w.requests ? `Without WattNot (same requests): ${fmtWh(w.wh)}, $${w.usd.toFixed(4)} (${w.label}).` : "";
 }
