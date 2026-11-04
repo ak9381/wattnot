@@ -107,14 +107,19 @@ def models_ok(url: str = URL, timeout: float = 5) -> bool:
         return False
 
 
+# 512 was too small: the model reasons first, so about half the answers came back empty or cut
+# off and stock did not even agree with itself (7/16). 3072 leaves room for reasoning + answer.
+CHECK_MAX_TOKENS = int(os.environ.get("WATTNOT_CHECK_MAX_TOKENS", "3072"))
+
+
 def vllm_asker(url: str = URL, stop: threading.Event | None = None):
     def ask(prompt: str) -> str:
         if stop is not None and stop.is_set():
             raise RuntimeError("stopped from the UI")
         body = json.dumps({"model": MODEL, "messages": [{"role": "user", "content": prompt}],
-                           "temperature": 0, "max_tokens": 512}).encode()
+                           "temperature": 0, "seed": 1234, "max_tokens": CHECK_MAX_TOKENS}).encode()
         req = urllib.request.Request(f"{url}/chat/completions", body, {"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=180) as r:
+        with urllib.request.urlopen(req, timeout=600) as r:
             d = json.load(r)
         return str(((d.get("choices") or [{}])[0].get("message") or {}).get("content") or "")
     return ask

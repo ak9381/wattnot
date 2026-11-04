@@ -8,7 +8,40 @@ from __future__ import annotations
 
 import json
 import time
+import re
 from pathlib import Path
+
+# The check compares final answers only. Reasoning is split off by vLLM's reasoning parser; an
+# answer cut off by the token limit (or empty) never counts as agreeing, so a too-small budget
+# shows up as "changed" instead of quietly matching or failing at random.
+_HASH = re.compile(r"####\s*([^\n]+)")
+_BOXED = re.compile(r"\\boxed\{([^{}]+)\}")
+_NUMTOK = re.compile(r"-?\d[\d,]*(?:\.\d+)?")
+
+
+def _norm_num(t: str) -> str:
+    t = t.replace(",", "")
+    if "." in t:
+        t = t.rstrip("0").rstrip(".")
+    return t[1:] if t.startswith("-0") and set(t[1:]) <= {"0", "."} else t
+
+
+def final_answer(text: str) -> str:
+    """'#### 125', '\\boxed{125}', '$1,250.00' -> a normalized final answer ('' if none)."""
+    text = text or ""
+    m = _HASH.findall(text) or _BOXED.findall(text)
+    tail = m[-1] if m else text
+    nums = _NUMTOK.findall(tail)
+    if nums:
+        return _norm_num(nums[-1] if not m else nums[0])
+    # a marked non-numeric answer ('#### Paris') still compares; unmarked text with no number does
+    # not, since that is what a cut-off answer looks like
+    return " ".join(re.sub(r"[^a-z0-9 ]", " ", tail.lower()).split()) if m else ""
+
+
+def same_answer(a: str, b: str) -> bool:
+    fa, fb = final_answer(a), final_answer(b)
+    return bool(fa) and fa == fb
 
 SAMPLE = [
     "What is 17 * 23? Reply with the number only.",
@@ -49,11 +82,10 @@ class AnswerCheck:
         return self.ref
 
     def at(self, cap=None) -> dict:
-        from wattnot.gateway.monitor import agree
         if self.ref is None:
             self.stock()
         r, ref = self._round(), self.ref
-        ok = sum(agree(a, b) for a, b in zip(r["answers"], ref["answers"]))
+        ok = sum(same_answer(a, b) for a, b in zip(r["answers"], ref["answers"]))
         e_pct = round(100 * (r["joules_per_answer"] - ref["joules_per_answer"]) / ref["joules_per_answer"], 1) \
             if ref["joules_per_answer"] else None
         p99 = round(100 * (r["p99_s"] - ref["p99_s"]) / ref["p99_s"], 1) if ref["p99_s"] else 0.0
