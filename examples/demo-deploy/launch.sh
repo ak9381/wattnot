@@ -7,7 +7,7 @@ set -euo pipefail
 # Power cap limit
 # sudo nvidia-smi -pl 400
 
-exec vllm serve meta-llama/Llama-3.1-8B-Instruct \
+exec vllm serve meta-models/Muse-Glimmer-30B \
     --host 0.0.0.0 \
     --port 8000 \
     --max-num-seqs 256 \

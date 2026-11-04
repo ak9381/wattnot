@@ -6,7 +6,7 @@ image:
   tag: latest
 
 vllm:
-  model: meta-llama/Llama-3.1-8B-Instruct
+  model: meta-models/Muse-Glimmer-30B
   port: 8000
   maxNumSeqs: 256
   gpuMemoryUtilization: 0.90

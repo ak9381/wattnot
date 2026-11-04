@@ -145,7 +145,7 @@ async function load() {
   const hasMeta = !!(r.wonder || r.musecode || r.hotspot || r.measurement?.judge_verdict);
   if (hasMeta) { STATE.metaReceipt = r; STATE.metaIsSample = false; }
   else {
-    // The old sample-meta5-receipt.json names a non-Meta model under test; it is kept in the repo, not shown.
+    // The old sample-meta5 receipt (non-Meta model) moved to tests/fixtures/legacy-run2; it is never served.
     STATE.metaReceipt = r; STATE.metaIsSample = false;
   }
   render();

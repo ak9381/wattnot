@@ -10,7 +10,7 @@ def run(base_url: str = BASE_URL, question: str = "Where do the signed receipts 
     client = OpenAI(base_url=base_url, api_key=os.environ.get("WATTNOT_KEY", "unused"),
                     default_headers={"X-WattNot-Framework": "openai-python"})
     out = client.chat.completions.create(
-        model="meta-llama/Llama-3.1-8B-Instruct",
+        model="meta-models/Muse-Glimmer-30B",
         messages=[{"role": "user", "content": question}])
     return out.choices[0].message.content
 

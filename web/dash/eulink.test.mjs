@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { extractEuLinkData, renderEuLinkHTML, renderEuCardHTML, reportHref } from "./eulink.js";
 
-const run2 = JSON.parse(readFileSync(new URL("./eu/run2-receipt.json", import.meta.url)));
+const run2 = JSON.parse(readFileSync(new URL("../../tests/fixtures/legacy-run2/run2-receipt.json", import.meta.url)));
 
 test("RUN2 receipt gives the measured headline numbers", () => {
   const d = extractEuLinkData(run2);

@@ -12,7 +12,7 @@ import {
 } from "./metatools.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const samplePath = path.join(__dirname, "sample-meta5-receipt.json");
+const samplePath = path.join(__dirname, "../../tests/fixtures/legacy-run2/sample-meta5-receipt.json");
 const sampleReceipt = JSON.parse(fs.readFileSync(samplePath, "utf-8"));
 
 test("extractMetaToolsData extracts judge, wonder, and musecode fields", () => {

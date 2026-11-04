@@ -127,7 +127,7 @@ def main(out: Path) -> None:
     (rc / "index.html").write_text("<!doctype html><meta charset=utf-8><title>WattNot signed receipts</title>"
         "<h1>Signed receipts (replay of measured logs)</h1><p>Signed offline with the repo's public test key, so each grade is capped at ESTIMATE: the check proves the numbers were not edited after signing, not who signed them.</p><p>Download the files, then run "
         "<code>python wattnot_verify.py --chain --trust keys/trusted-keys.json .</code></p><ul>"
-        + "".join(f'<li><a href="{n}">{n}</a></li>' for n in names if n not in ("keys", "run2", "frameworks")) + '<li><a href="run2/rcpt_20261027_run2_cap350.json">run2/rcpt_20261027_run2_cap350.json</a> (RUN2, 350 W; check with <code>python wattnot_verify.py --trust keys/trusted-keys.json run2/</code>)</li><li><a href="run2/rcpt_20261027_run2_cap350.sigstore.json">run2/rcpt_20261027_run2_cap350.sigstore.json</a></li><li><a href="frameworks/langchain-demo.json">frameworks/langchain-demo.json</a> (LangChain drop-in demo; MOCK upstream, not a live model call)</li><li><a href="keys/trusted-keys.json">keys/trusted-keys.json</a></li></ul>\n')
+        + "".join(f'<li><a href="{n}">{n}</a></li>' for n in names if n not in ("keys", "run2", "frameworks")) + '<li><a href="frameworks/langchain-demo.json">frameworks/langchain-demo.json</a> (LangChain drop-in demo; MOCK upstream, not a live model call)</li><li><a href="keys/trusted-keys.json">keys/trusted-keys.json</a></li></ul>\n')
     print(f"site built: {n} run settings recorded")
 
 
