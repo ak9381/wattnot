@@ -117,6 +117,24 @@ tree is fonts and icons under `web/dash/vendor/`; all other dependencies are ins
 - **Track:** Indie (solo). **Problem statement:** Push the Frontier (energy).
 - **Bonus categories:** Best Build on Meta Open Weight Models, Best Agentic Use-Case.
 
+### Hackathon rules checklist
+
+✅ = met and checked. ⏳ = pending, not done yet.
+
+| Rule | Status | How we meet it | Evidence |
+|---|---|---|---|
+| New work only | ✅ | Repo created Oct 26; first commit `043ce2c` at 22:09 IST, after kickoff ended at 12:24 PM ET (9:54 PM IST). | `git log --reverse`, [Eligibility](#eligibility-and-disclosures) |
+| Public repo, open licence | ✅ | Public on GitHub, MIT licence. | [`LICENSE`](LICENSE) |
+| Only Meta models at runtime | ✅ | Every runtime model is a Meta model; the table says where each runs. No Llama model is used. Some old Llama names in UI text and runbooks are being removed on `fix/no-llama-1105` (⏳ merge). | [Meta models used](#meta-models-used-and-where-each-runs) |
+| TTS disclosed | ✅ | Video voice-over is Runway TTS (ElevenLabs `eleven_v4`). Piper only pre-voices test clips offline, not in the runtime path. | [TTS disclosure](#demo-video-and-voice-tts-disclosure) |
+| Muse Image disclosed | ✅ | Vision gate and SAM hotspot images were pre-generated with Muse Image and labelled SYNTHETIC. No live call. | [Datasets](#public-datasets-and-our-own-sets) |
+| Built with Muse Spark Open | ✅ | Stated at the top of this README. App footer line is on `fix/footer-spark-open-1105` (⏳ merge). | top of README |
+| Data rights | ✅ | Public sets are MIT / CC BY / CC BY-SA with attribution; our own sets are CC0. Only data we have rights to. | [`DATASET-LICENCES.md`](DATASET-LICENCES.md) |
+| Judges can run it | ✅ | `./start.sh` plays a keyless recorded replay. Live modes use your own key via `.env.example`; `.env` is gitignored. An old rehearsal key in early history (`856c06f`) is revoked. | [Keys](#keys), [`.env.example`](.env.example) |
+| Demo video | ⏳ | Plan: ≤ 3:00, mostly real screen footage, AI avatar and TTS labelled, replays labelled REPLAY, opens with a built-this-week line. Link not added yet. | Demo video link above (TBD) |
+| Not a banned category | ✅ | An energy and serving-efficiency agent for LLM inference. Not health, RAG, education, hiring, nutrition, sports, personality or political. | [What it does](#what-it-does-and-why) |
+| Team, track, problem | ✅ | Solo (Akash K Raju), Indie track, Push the Frontier (energy). | [Team and licence](#team-and-licence) |
+
 ### Meta models used, and where each runs
 
 Every model WattNot runs is a Meta model. In a live run each call below has a trace id, latency and
