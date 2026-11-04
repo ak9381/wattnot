@@ -35,6 +35,12 @@ DEFAULTS: dict[str, Any] = {
         "thinking_cap": {"enabled": True, "reasoning_effort": "low", "max_tokens": 1536, "harness": "holdout"},
         "vision": {"enabled": True, "max_side_px": 768},
         "voice": {"enabled": True},
+        # opt-in, off by default: a one-line "answer briefly" system note on short plain Q&A (no
+        # tools, no images, short prompt). The gate judges it like any saver: if answers stop
+        # matching stock, or the request costs more tokens, it switches itself off.
+        "brief_answers": {"enabled": False, "max_prompt_tokens": 300,
+                          "note": "Answer briefly: give the answer and at most one short line of working. "
+                                  "Do not restate the question or repeat the result."},
     },
     "energy": {"source": "estimate", "j_per_token": {"muse-spark-1.3": 7.86, "default": 7.86}},
     "savings_log": "out/gateway/savings.jsonl",
@@ -43,7 +49,10 @@ DEFAULTS: dict[str, Any] = {
     "integrations": {"langfuse": {"enabled": False}},
     "deployment": "gateway",
     "port": 8780,
-    "gate": {"min_pairs": 3, "done_window": 10},   # per-model saver gate (gateway/gate.py)
+    # per-model saver gate (gateway/gate.py). state_path: where decisions survive a restart (default:
+    # next to the savings log). effort_noop_models: served models known to ignore reasoning_effort,
+    # so routing/thinking_cap are never applied or shadow-checked there when both tiers are that model.
+    "gate": {"min_pairs": 3, "done_window": 10, "state_path": None, "effort_noop_models": []},
 }
 
 _ctx_changed_box: contextvars.ContextVar[dict | None] = contextvars.ContextVar("wn_gw_ctx", default=None)
@@ -88,6 +97,29 @@ def _key(cfg: dict) -> str:
         from wattnot.meta.client import load_key
         return load_key()
     return ""
+
+
+def same_model_tiers(cfg: dict) -> bool:
+    """True when every tier serves the same model (routing then only changes body extras)."""
+    return len({t.get("model") for t in cfg.get("tiers") or []}) == 1
+
+
+def is_short_qa(body: dict, max_prompt_tokens: int) -> bool:
+    """Plain short question: no tools, no images, prompt under max_prompt_tokens (chars/4)."""
+    if body.get("tools"):
+        return False
+    msgs = body.get("messages") or []
+    if not msgs or not isinstance(msgs[-1], dict) or msgs[-1].get("role") != "user":
+        return False
+    n = 0
+    for m in msgs:
+        c = m.get("content") if isinstance(m, dict) else None
+        if isinstance(c, list):
+            if any(isinstance(p, dict) and p.get("type") not in (None, "text") for p in c):
+                return False
+            c = " ".join(str(p.get("text") or "") for p in c if isinstance(p, dict))
+        n += len(str(c or "")) // 4
+    return n <= max_prompt_tokens
 
 
 def cap_thinking(body: dict, max_tokens: int) -> dict:
@@ -188,9 +220,15 @@ def build_app(cfg: dict, upstream=None, log: SavingsLog | None = None):
     log = log or SavingsLog(cfg["savings_log"])
     from wattnot.gateway.gate import SaverGate
     gcfg = cfg.get("gate") or {}
+    _slog = Path(cfg["savings_log"])
     gate = SaverGate(min_pairs=int(gcfg.get("min_pairs", 3)), done_window=int(gcfg.get("done_window", 10)),
-                     min_agreement=float(cfg["baseline"].get("min_agreement", 0.8)))
+                     min_agreement=float(cfg["baseline"].get("min_agreement", 0.8)),
+                     state_path=gcfg.get("state_path") or _slog.with_name(_slog.stem + ".gate-state.json"))
     gate_key = base_tier_ref[0]["model"]   # one served model per gateway: the gate is per model
+    if same_model_tiers(cfg) and gate_key in (gcfg.get("effort_noop_models") or []):
+        gate.mark_noop(["routing", "thinking_cap"], gate_key,
+                       "both tiers are this model and it ignores reasoning_effort (config "
+                       "gate.effort_noop_models): request left unchanged, no shadow checks")
     from wattnot.gateway.langfuse import LangfuseSink
     lf = LangfuseSink.from_config(cfg)
 
@@ -226,6 +264,11 @@ def build_app(cfg: dict, upstream=None, log: SavingsLog | None = None):
             else:
                 body = cap_thinking({**body, "reasoning_effort": eff} if eff else body, int(tc["max_tokens"]))
             info["thinking_low"] = bool(eff) and had != eff
+        ba = sv.get("brief_answers") or {}
+        if ba.get("enabled") and first and gate.allow("brief_answers", gate_key) and is_short_qa(
+                body, int(ba.get("max_prompt_tokens", 300))):
+            body = {**body, "messages": [{"role": "system", "content": ba["note"]}, *body["messages"]]}
+            info["brief"] = True
         if sv["vision"]["enabled"] and gate.allow("vision", gate_key):
             body, info["images_shrunk"] = shrink_images(body, int(sv["vision"]["max_side_px"]))
         resp = raw_up(body, headers)
@@ -317,6 +360,7 @@ def build_app(cfg: dict, upstream=None, log: SavingsLog | None = None):
                         (t for t in cfg["tiers"] if t["name"] == i.get("model_tier")), {}
                     ).get("body_extra", {}).get("reasoning_effort") == tc_eff) else []) + (
                 ["vision"] if i.get("images_shrunk") else []) + (
+                ["brief_answers"] if i.get("brief") else []) + (
                 ["context_saver"] if ctx_box["changed"] else [])
         if resp.status_code == 200 and sink and sink[-1].get("applied"):
             monitor.maybe_shadow(body, sink[-1], rec["receipt_id"])

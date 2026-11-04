@@ -32,6 +32,14 @@
             <pre id="snip"></pre><button data-copy="#snip">Copy</button></div></div>
         <div id="startGpu"><p><button id="gpuConnect" class="pri">Connect GPU</button> <span id="gpuState" class="small" role="status"></span></p>
           <small>Checks the rack photo, then attaches your GPU (or the recorded H100 if none is here).</small></div>
+        <section id="lever" class="panel"><h2>Server levers, one at a time <span class="tag">MEASURED</span></h2>
+      <p class="small">Tries one vLLM setting on your own GPU against stock, side by side, with the answer check. Traffic goes to your local vLLM (:8000), not a hosted API. Stock BF16 (64 seqs, KV auto, memory 0.90) is always put back, also on Stop or failure. Two server restarts, about 15 min.</p>
+      <div class="row"><label>Lever <select id="lvSel"><option value="fp8">FP8 weights</option><option value="kv_cache">FP8 KV cache</option><option value="batching">Batching (512 seqs)</option></select></label>
+        <span id="lvPlan" class="small"></span></div>
+      <p><button id="lvStart" class="pri">Start lever trial</button> <button id="lvStop">Stop and restore stock</button> <span id="lvState" class="small" role="status"></span></p>
+      <canvas id="lvGraph" width="720" height="160" aria-label="GPU power during the lever trial"></canvas>
+      <table id="lvArms" class="small"></table>
+      <p id="lvOut" class="small"></p></section>
         <details><summary>Run it yourself instead</summary>
         <div class="os"><button id="osPosix" class="on">Mac / Linux</button><button id="osPs">Windows PowerShell</button></div>
         <pre id="cmds"></pre><button id="copy">Copy</button>
@@ -74,4 +82,5 @@
   </section>
 </main>
 <script type="module" src="plug.js"></script>
+<script type="module" src="lever.js"></script>
 </body></html>

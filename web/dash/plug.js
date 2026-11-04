@@ -1,4 +1,5 @@
-import { SAVERS, MODES, UPSTREAMS, defaultChoice, applyPrefill, headline, path, fmtWh, fromQuery, nodeHeadline } from "./pluglib.js";
+import { SAVERS, MODES, UPSTREAMS, defaultChoice, applyPrefill, headline, path, fmtWh, fromQuery, nodeHeadline, trafficText } from "./pluglib.js";
+import { latestHelperEvents, getJSON, rackResultText } from "./plugsteps.js";
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 let C = JSON.parse(localStorage.getItem("wn-plug2") || "null") || defaultChoice();
@@ -81,7 +82,7 @@ $("#dl").onclick = () => { if (!last) return; const a = document.createElement("
 window.addEventListener("wn:prefill-deploy", (e) => { C = applyPrefill(C, e.detail); location.hash = "#setup"; save(); });
 
 async function drawLive() {
-  const f = await fetch("/api/dash/plug").then((r) => r.json()).catch(() => null);
+  const f = await getJSON("/api/dash/plug", 15000);
   if (!f) { $("#heroSub").textContent = "Server not reachable, retrying (last view kept)."; return; }
   const h = (f && !f.summary && nodeHeadline(f)) || headline(f);
   if (f && f.simulated_traffic) h.sub = `${h.sub || ""} · includes Simulated traffic`;
@@ -96,7 +97,7 @@ async function drawLive() {
   const p = f && f.power && f.power.length ? f.power.at(-1) : null;
   const plab = p ? (p.label === "MEASURED" ? "MEASURED, NVML" : "REPLAY of the recorded H100, SIMULATED where between recorded limits") : "";
   $("#power").innerHTML = p ? `<p class="small">GPU power now: <b>${p.power_w} W</b> (${plab})${p.cap_w ? `, limit ${p.cap_w} W` : ""}</p>` : "";
-  const ev = ((f && f.node && f.node.events) || []).filter((e) => !["arm_start", "arm_end", "restored"].includes(e.step));
+  const ev = latestHelperEvents((f && f.node && f.node.events) || []);
   $("#nodeSteps").innerHTML = ev.length ? ev.map((e) => `<li>${esc(stepText(e))}</li>`).join("") : `<li class="small">No GPU helper yet. Press "Add GPU helper" to start one.</li>`;
   $("#receipts").innerHTML = (f && f.receipts || []).slice(0, 20).map((r) => `<li data-id="${esc(r.receipt_id)}">${esc(r.receipt_id)} · ${fmtWh((r.baseline.joules - r.actual.joules) / 3600)} saved · ${esc(r.labels.joules)}${r.stepped_up ? " · stepped up" : ""}${r.guard_stopped ? " · loop stopped" : ""}</li>`).join("")
     || `<li class="small">No receipts yet. Each request through the gateway adds one here.</li>`;
@@ -136,7 +137,7 @@ async function pollNode() {
 function nodeResultText(res) {
   if (!res) return "";
   if (res.status === "error") return `The power check stopped: ${res.why}. The power limit was put back to stock.`;
-  if (res.status === "waiting_approval") return "Rack photo OK. Press Approve to start the power check.";
+  if (res.status === "waiting_approval") return rackResultText(res);
   if (res.status === "stopped") return `Not started: ${res.why || "rack check refused"}.`;
   return res.cap_w != null ? `Done: power limit ${res.cap_w} W (${res.label || "MEASURED"}).` : `Done (${res.status || "ok"}).`;
 }
@@ -156,19 +157,21 @@ $("#tStart").onclick = async () => {
   tErr = !r ? "Server not reachable." : r.ok ? "" : (await r.json()).detail;
   $("#tState").textContent = tErr || "Sending…";
 };
-let tErr = "";
+let tErr = "", tRunning = false;
+const RETRY = " · (status not answering, retrying)";
 $("#tStop").onclick = () => post("/api/dash/traffic/stop");
 async function drawTraffic() {
-  const t = await fetch("/api/dash/traffic/status").then((r) => r.json()).catch(() => null);
-  if (!t) return;
+  const t = await getJSON("/api/dash/traffic/status");
+  if (!t) { if (tRunning && !$("#tState").textContent.endsWith(RETRY)) $("#tState").textContent += RETRY; return; }
+  tRunning = !!t.running;
   if (tErr && !t.running) $("#tState").textContent = tErr;
-  else if (t.total) $("#tState").textContent = `${t.running ? "Sending" : "Done"}: ${t.done} of ${t.total} · spent $${Number(t.usd).toFixed(4)}${t.errors ? ` · ${t.errors} errors` : ""}${t.stopped ? ` · ${t.stopped}` : ""}${t.running && t.phase ? ` · ${t.phase}` : ""}${t.cap_rollback ? ` · ${t.cap_rollback}` : ""} (Simulated traffic)`;
+  else if (t.total) $("#tState").textContent = `${t.running ? `Sending: ${Math.min(t.done, t.total)} of ${t.total}` : trafficText(t)} · spent $${Number(t.usd).toFixed(4)}${t.errors ? ` · ${t.errors} errors` : ""}${t.stopped ? ` · ${t.stopped}` : ""}${t.running && t.phase ? ` · ${t.phase}` : ""}${t.cap_rollback ? ` · ${t.cap_rollback}` : ""} (Simulated traffic)`;
   const w = t.without_totals;
   $("#tAbOut").textContent = w && w.requests ? `Without WattNot (same requests): ${fmtWh(w.wh)}, $${w.usd.toFixed(4)} (${w.label}).` : "";
 }
 function route() { const live = location.hash === "#live"; $("#live").hidden = !live; $("#setup").hidden = live; if (live) drawLive(); }
 window.addEventListener("hashchange", route);
-drawSetup(); route(); tEstimate(); setInterval(() => { if (location.hash === "#live") { drawLive(); drawTraffic(); } }, 3000);
+drawSetup(); route(); tEstimate(); setInterval(() => { if (location.hash === "#live") drawLive(); if (location.hash === "#live" || tRunning) drawTraffic(); }, 3000);
 
 // inside the live graph's Go live drawer, "Test on my prompts" switches the drawer tab
 if (document.documentElement.classList.contains("embed")) {

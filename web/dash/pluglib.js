@@ -6,6 +6,7 @@ export const SAVERS = [
   { id: "thinking_cap", t: "Cap thinking", h: "Stops the model from thinking far longer than it needs." },
   { id: "vision", t: "Shrink big images", h: "Sends images at a size the model can still read." },
   { id: "voice", t: "Voice input", h: "Turns speech into text with Muse Voice." },
+  { id: "brief_answers", t: "Brief answers (opt-in)", h: "Asks for short answers on short questions. Off by default; switches itself off if answers stop matching stock.", off: true },
 ];
 export const MODES = [
   { v: "gateway", t: "Change one URL", h: "Your app talks to WattNot instead of the model. Works with any hosted model." },
@@ -16,7 +17,7 @@ export const UPSTREAMS = [
   { v: "meta", t: "Meta API (Muse Spark)" }, { v: "vllm", t: "My vLLM server" }, { v: "baseten", t: "Baseten" },
 ];
 export function defaultChoice() {
-  return { deployment: "both", upstream: "meta", port: 8780, savers: Object.fromEntries(SAVERS.map((s) => [s.id, true])),
+  return { deployment: "both", upstream: "meta", port: 8780, savers: Object.fromEntries(SAVERS.map((s) => [s.id, !s.off])),
     gpus: "all", cap_min_w: 300, cap_max_w: 375, sam_rack_check: true, approval: "manual", langfuse: false };
 }
 // Fold a voice-guide deploy prefill into a choice. Unknown (null) fields keep their value.
@@ -36,9 +37,27 @@ export function fmtWh(wh) {
   return `${(wh * 1000).toFixed(1)} mWh`;
 }
 // The headline: energy saved, with its label. Replay or empty feeds say what to do next.
+// time of day in the viewer's zone, with its short zone name
+export function clock(ts, tz) {
+  return new Date(ts * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: tz, timeZoneName: "short" });
+}
+export function trafficText(t) {
+  const n = Math.min(t.done, t.total);
+  if (t.running) return null;
+  return `Done: ${n} of ${t.total}${t.run_id ? ` · last run ${t.run_id}${t.finished_ts ? ` finished ${clock(t.finished_ts)}` : ""}` : ""}`;
+}
 export function headline(feed) {
   if (!feed || feed.source !== "live" || !feed.summary) {
     return { big: "Nothing plugged in yet", sub: "Do step 3 under Plug in, then send one request. Until then you see the recorded run, labelled REPLAY.", label: "REPLAY" };
+  }
+  const L = feed.measured && feed.measured.latest;
+  if (L) {   // the headline is the latest side-by-side run; running totals are labelled "All runs"
+    const e = L.energy_wh, A = feed.measured.all_runs || {}, ea = A.energy_wh || {};
+    const when = L.ts ? ` · ${clock(L.ts)}` : "";
+    const all = A.runs > 1 ? ` · All runs (${A.runs}): ${A.requests} requests, ${fmtWh(ea.baseline - ea.actual)} saved (${ea.saved_pct}%)` : "";
+    return { big: `${fmtWh(e.baseline - e.actual)} saved`, pct: e.saved_pct, label: e.label,
+      usd: L.spend_usd_stock != null && L.spend_usd != null ? L.spend_usd_stock - L.spend_usd : null, litres: null,
+      sub: `Latest run ${L.run_id} (${L.workload})${when}: ${L.requests} requests through WattNot${all}` };
   }
   const e = feed.summary.energy_wh, u = feed.summary.usd;
   const saved = e.baseline - e.actual;

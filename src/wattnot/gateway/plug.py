@@ -163,6 +163,7 @@ def measured(savings_log) -> dict | None:
                                       round(w["joules"] / max(1, w.get("requests") or 1), 1)],
                     "note": None if scored else "not scored: this workload has no answer key, so J per request",
                     "window": [w.get("t0"), w.get("t1")],
+                    "usd": [wo.get("usd"), w.get("usd")],
                     "alloc_j": [round(wo["joules"] / max(1, wo.get("requests") or 1), 3),
                                 round(w["joules"] / max(1, w.get("requests") or 1), 3)]})
     est = any(r.get("energy_label") == "ESTIMATE" for r in runs)
@@ -171,7 +172,22 @@ def measured(savings_log) -> dict | None:
     bj, aj = sum(p["without_j"] for p in per), sum(p["with_j"] for p in per)
     sc = [p for p in per if p["scored"]]
     c_wo = sum(p["correct"][0] or 0 for p in sc); c_w = sum(p["correct"][1] or 0 for p in sc)
-    return {"label": lab, "runs": per,
+    last = per[-1]
+    latest = {"run_id": last["run_id"], "workload": last["workload"], "requests": last["requests"],
+              "energy_wh": {"baseline": round(last["without_j"] / 3600, 4), "actual": round(last["with_j"] / 3600, 4),
+                            "saved_pct": last["saved_pct"], "label": lab},
+              "spend_usd": last["usd"][1], "spend_usd_stock": last["usd"][0],
+              "spend_label": "ESTIMATE (list price)",
+              "ts": last["window"][1],
+              "correct": ({"without": last["correct"][0], "with": last["correct"][1], "scored": last["requests"],
+                           "label": "harness-scored (same number / word match)"} if last["scored"] else None),
+              "j_per_correct": last["j_per_correct"][1] if last["scored"] else None,
+              "j_per_correct_stock": last["j_per_correct"][0] if last["scored"] else None}
+    all_runs = {"runs": len(per), "requests": sum(p["requests"] or 0 for p in per),
+                "energy_wh": {"baseline": round(bj / 3600, 4), "actual": round(aj / 3600, 4),
+                              "saved_pct": round(100 * (bj - aj) / bj, 2) if bj else None, "label": lab},
+                "spend_usd": round(sum(p["usd"][1] or 0 for p in per), 6), "spend_label": "ESTIMATE (list price)"}
+    return {"label": lab, "runs": per, "latest": latest, "all_runs": all_runs,
             "cap_note": "power cap not available on this provider; software savers only" if nocap else None,
             "energy_wh": {"baseline": round(bj / 3600, 4), "actual": round(aj / 3600, 4),
                           "saved_pct": round(100 * (bj - aj) / bj, 2) if bj else None, "label": lab},
@@ -260,7 +276,7 @@ def gate_by_run(savings_log, monitor: dict | None) -> list[dict]:
     events, keys = [], set()
     for e in disk + live:   # the gate's events since restart plus the ones saved on disk, once each
         k = (e.get("saver"), e.get("model"), e.get("ts"))
-        if e.get("event") == "saver_off" and k not in keys:
+        if e.get("event") in ("saver_off", "saver_noop") and k not in keys:
             keys.add(k); events.append(e)
     recs = [r for r in _read(savings_log) if r.get("status") == 200]
     out, seen_off = [], []
@@ -272,17 +288,25 @@ def gate_by_run(savings_log, monitor: dict | None) -> list[dict]:
         ps = [x for x in shadow if t0 <= (x.get("ts") or 0) <= t1 + 30]
         ev = [e for e in events if t0 <= (e.get("ts") or 0) <= t1 + 30]
         arm = sorted(x.get("ts") or 0 for x in recs if t0 <= (x.get("ts") or 0) <= t1)
-        off = []
+        off, noop = [], []
         for e in ev:
             n = sum(1 for ts in arm if ts <= e["ts"])
-            off.append({"saver": e.get("saver"), "why": e.get("why"), "after_request": n,
-                        "of": len(arm) or w.get("requests")})
+            (noop if e.get("event") == "saver_noop" else off).append(
+                {"saver": e.get("saver"), "why": e.get("why"), "after_request": n,
+                 "of": len(arm) or w.get("requests")})
         out.append({"run_id": r.get("run_id"), "workload": r.get("workload"),
                     "shadow_pairs": len(ps), "agreed": sum(bool(x.get("agree")) for x in ps),
                     "loop_breaks": sum(1 for x in ps if x.get("loop_break")),
                     "agreement": (round(sum(bool(x.get("agree")) for x in sc) / len(sc), 3)
                                   if (sc := [x for x in ps if x.get("agree") is not None]) else None),
-                    "switched_off": off, "carried_off": list(seen_off),
+                    "switched_off": off, "carried_off": list(seen_off), "no_effect": noop,
+                    # one-time gate setup, shown apart from the WattNot arm (not in its joules)
+                    "setup": ({"joules": round((w.get("setup") or {}).get("joules", 0)
+                                               + ((w.get("shadow_excluded") or {}).get("joules") or 0), 1),
+                               "requests": (w.get("setup") or {}).get("requests", 0),
+                               "shadow_calls": (w.get("shadow_excluded") or {}).get("calls", 0),
+                               "label": "MEASURED total (NVML); warm-up split ESTIMATE"}
+                              if (w.get("setup") or (w.get("shadow_excluded") or {}).get("calls")) else None),
                     "label": "MEASURED (shadow pairs in this run's WattNot arm)"})
         seen_off += [o["saver"] for o in off if o["saver"] not in seen_off]
     return out
@@ -312,6 +336,7 @@ def quality(savings_log, monitor: dict | None) -> dict:
                 "j_label": m["label"] + "; correct = harness-scored", "measured": True,
                 "spend_usd": round(sum((r.get("actual") or {}).get("usd", 0) for r in recs), 6),
                 "spend_label": "ESTIMATE (list price)",
+                "latest": m["latest"], "all_runs": m["all_runs"],
                 "spend_log": [{"receipt_id": r.get("receipt_id"), "ts": r.get("ts"), "usd": (r.get("actual") or {}).get("usd", 0)}
                               for r in recs[-20:]][::-1]}
     return {"requests": len(recs), "shadow_pairs": pairs, "agreement": agree,

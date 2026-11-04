@@ -134,6 +134,7 @@ class HarnessCapCheck:
         self.ask, self.gpu, self.set_cap, self.stock_w = ask, gpu, set_cap, int(stock_w)
         self.items, self.pairs, self.concurrency, self.p99_limit = proof_prompts(n), pairs, concurrency, p99_limit
         self.ref = None
+        self.progress = None   # optional callback(text): the UI shows which block is running
 
     def _read(self, name: str, scale: float):
         f = getattr(self.gpu, name, None)
@@ -149,6 +150,7 @@ class HarnessCapCheck:
         from concurrent.futures import ThreadPoolExecutor
         from wattnot.proof.stats import percentile
         self.set_cap(w)
+        self._note(f"block at {w} W")
         lim0 = self._read("nvmlDeviceGetPowerManagementLimit", 1000)
         e0 = self.gpu.nvmlDeviceGetTotalEnergyConsumption(None)
         t_start = time.perf_counter()
@@ -180,6 +182,14 @@ class HarnessCapCheck:
         return {"answers": [a for a, _ in out], "j_per_req": j / max(1, len(out)),
                 "p99_s": percentile(lat, 99), "cap_w": w, "joules": j, "seconds": dur,
                 **block_validity(w, lim0, lim1, samples, j, dur)}
+
+    def _note(self, what: str) -> None:
+        cb = getattr(self, "progress", None)
+        if cb:
+            try:
+                cb(what)
+            except Exception:  # noqa: BLE001 - progress text never breaks the check
+                pass
 
     def warmup(self) -> dict:
         """GPU warm-up (not measured), copied from the proof sweep's "standard" profile
@@ -221,7 +231,10 @@ class HarnessCapCheck:
                 order = [("stock", self.stock_w), ("cap", int(cap))]
                 if r % 2:
                     order = order[::-1]   # cap first on odd rounds, as the sweep does
-                got = {arm: self._block(w) for arm, w in order}
+                got = {}
+                for arm, w in order:
+                    self._note(f"pair {r + 1} of {self.pairs}, {arm} block at {w} W")
+                    got[arm] = self._block(w)
                 r += 1
                 bad = [f"{arm} block: {got[arm]['why']}" for arm in ("stock", "cap") if not got[arm]["valid"]]
                 if bad:
