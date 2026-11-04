@@ -1,0 +1,206 @@
+{
+ "source": "h100-logs-1104-final/gate-fix-rerun/wn-gw-1103/out/lever/lever-events.jsonl",
+ "date": "2026-11-04",
+ "gpu": "1x H100 (E2E)",
+ "model": "Muse Glimmer 30B",
+ "events": [
+  {
+   "step": "restore_verified",
+   "restarted": true,
+   "models_ok": true,
+   "args_stock": true,
+   "problems": [],
+   "verified": true,
+   "ts": 1793773297.5
+  },
+  {
+   "step": "applied",
+   "lever": "fp8",
+   "field": "quantization",
+   "value": "fp8",
+   "ts": 1793774055.0
+  },
+  {
+   "step": "answer_check",
+   "lever": "fp8",
+   "accepted": false,
+   "energy_change_pct": -45.3,
+   "p99_change_pct": -38.7,
+   "answers_same": "6/16",
+   "why_not": [
+    "10 of 16 answers changed"
+   ],
+   "label": "MEASURED (NVML energy, live re-ask)",
+   "ts": 1793774147.6
+  },
+  {
+   "step": "rolled_back",
+   "lever": "fp8",
+   "failed": [
+    "10 of 16 answers changed"
+   ],
+   "ts": 1793774289.6
+  },
+  {
+   "step": "restore_verified",
+   "restarted": false,
+   "models_ok": true,
+   "args_stock": true,
+   "problems": [],
+   "verified": true,
+   "ts": 1793774289.7
+  },
+  {
+   "step": "applied",
+   "lever": "kv_cache",
+   "field": "kv_cache_dtype",
+   "value": "fp8",
+   "ts": 1793774771.2
+  },
+  {
+   "step": "answer_check",
+   "lever": "kv_cache",
+   "accepted": false,
+   "energy_change_pct": -4.0,
+   "p99_change_pct": 1.9,
+   "answers_same": "6/16",
+   "why_not": [
+    "10 of 16 answers changed"
+   ],
+   "label": "MEASURED (NVML energy, live re-ask)",
+   "ts": 1793774928.4
+  },
+  {
+   "step": "rolled_back",
+   "lever": "kv_cache",
+   "failed": [
+    "10 of 16 answers changed"
+   ],
+   "ts": 1793775075.6
+  },
+  {
+   "step": "restore_verified",
+   "restarted": false,
+   "models_ok": true,
+   "args_stock": true,
+   "problems": [],
+   "verified": true,
+   "ts": 1793775075.7
+  },
+  {
+   "step": "applied",
+   "lever": "batching",
+   "field": "max_num_seqs",
+   "value": 512,
+   "ts": 1793775284.1
+  },
+  {
+   "step": "answer_check",
+   "lever": "batching",
+   "accepted": false,
+   "energy_change_pct": 0.6,
+   "p99_change_pct": -0.1,
+   "answers_same": "9/16",
+   "why_not": [
+    "7 of 16 answers changed",
+    "energy per answer did not go down"
+   ],
+   "label": "MEASURED (NVML energy, live re-ask)",
+   "ts": 1793775295.9
+  },
+  {
+   "step": "rolled_back",
+   "lever": "batching",
+   "failed": [
+    "7 of 16 answers changed",
+    "energy per answer did not go down"
+   ],
+   "ts": 1793775437.9
+  },
+  {
+   "step": "restore_verified",
+   "restarted": false,
+   "models_ok": true,
+   "args_stock": true,
+   "problems": [],
+   "verified": true,
+   "ts": 1793775438.0
+  },
+  {
+   "step": "applied",
+   "lever": "fp8",
+   "field": "quantization",
+   "value": "fp8",
+   "ts": 1793779037.7
+  },
+  {
+   "step": "answer_check",
+   "lever": "fp8",
+   "accepted": false,
+   "energy_change_pct": -42.5,
+   "p99_change_pct": -30.3,
+   "answers_same": "15/16",
+   "why_not": [
+    "1 of 16 answers changed"
+   ],
+   "label": "MEASURED (NVML energy, live re-ask)",
+   "ts": 1793779183.5
+  },
+  {
+   "step": "rolled_back",
+   "lever": "fp8",
+   "failed": [
+    "1 of 16 answers changed"
+   ],
+   "ts": 1793779330.7
+  },
+  {
+   "step": "restore_verified",
+   "restarted": false,
+   "models_ok": true,
+   "args_stock": true,
+   "problems": [],
+   "verified": true,
+   "ts": 1793779330.8
+  },
+  {
+   "step": "applied",
+   "lever": "kv_cache",
+   "field": "kv_cache_dtype",
+   "value": "fp8",
+   "ts": 1793779761.7
+  },
+  {
+   "step": "answer_check",
+   "lever": "kv_cache",
+   "accepted": false,
+   "energy_change_pct": -1.4,
+   "p99_change_pct": 43.6,
+   "answers_same": "15/16",
+   "why_not": [
+    "1 of 16 answers changed",
+    "slowest answer +43.6% (limit 10.0%)"
+   ],
+   "label": "MEASURED (NVML energy, live re-ask)",
+   "ts": 1793779998.7
+  },
+  {
+   "step": "rolled_back",
+   "lever": "kv_cache",
+   "failed": [
+    "1 of 16 answers changed",
+    "slowest answer +43.6% (limit 10.0%)"
+   ],
+   "ts": 1793780140.7
+  },
+  {
+   "step": "restore_verified",
+   "restarted": false,
+   "models_ok": true,
+   "args_stock": true,
+   "problems": [],
+   "verified": true,
+   "ts": 1793780140.8
+  }
+ ]
+}

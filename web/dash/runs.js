@@ -13,6 +13,7 @@
 
 import { replaySummary } from "./replaystats.js";
 let S_REPS = [];
+let S_LEVERS = null;
 const REPLAY_IDS = ["modal-r1", "modal-r2", "baseten-r1", "baseten-r2", "h100-max-1103"];
 const EM = "—"; // em dash for missing values
 
@@ -136,6 +137,7 @@ async function main() {
     // Recorded replays under /replays/ carry their own metered numbers; add them so the
     // totals are not blank when the API only has the old cloud fixtures.
     const reps = (await Promise.all(REPLAY_IDS.map((id) => replaySummary(id).catch(() => null)))).filter(Boolean);
+    S_LEVERS = await fetch("/replays/h100-max-1103/lever-takes-1104.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
     S_REPS = reps;
     const fx = runsList.map((r) => ({ ...r, name: r.name || r.id, fixture: true }));
     const realRuns = reps.map((x) => ({ id: `replay:${x.id}`, name: `${x.id}`, model: (x.model || "").replace("meta-models/", ""), date: x.date || "", label: x.energy_label || "REPLAY", replay: x.id }));
@@ -366,15 +368,21 @@ function renderDonut(story) {
   const h = S_REPS.find((x) => x.id === "h100-max-1103");
   if (h && isNum(h.j_per_req_stock) && isNum(h.j_per_req_cap)) {
     const saved = h.j_per_req_stock - h.j_per_req_cap;
-    const untested = [["Batch size (vLLM max_num_seqs)", "kv_batch"], ["KV cache settings", "kv_batch"], ["FP8 weights", "fp8"]];
+    const lt = S_LEVERS;
+    const takes = {}; // latest answer_check per lever (later take wins)
+    for (const e of (lt?.events || [])) if (e.step === "answer_check") takes[e.lever] = e;
+    const LN = { fp8: "FP8 weights", kv_cache: "KV cache in FP8", batching: "Batching (max_num_seqs 512)" };
+    const hm = (t) => new Date(t * 1000).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kolkata" });
+    const rows = Object.entries(LN).map(([k, n]) => { const t = takes[k]; if (!t) return `<tr><td>${esc(n)}</td><td><span class="emdash">${EM}</span></td><td>No take recorded</td></tr>`;
+      return `<tr><td>${esc(n)}</td><td><span class="v-num">${t.energy_change_pct > 0 ? "+" : ""}${fmt(t.energy_change_pct, 1)}% energy</span>${dot("MEASURED")} <small>p99 ${t.p99_change_pct > 0 ? "+" : ""}${fmt(t.p99_change_pct, 1)}%, ${esc(t.answers_same)} answers same</small><br><b class="r7miss">${t.accepted ? "Kept" : "Rolled back"}</b>: ${esc((t.why_not || []).join("; "))}</td><td>H100 one-lever take, ${esc(lt.date)} ${hm(t.ts)} IST (lever-takes-1104.json)</td></tr>`; }).join("");
     el.innerHTML = `
       <div class="lv-h100">
-        <p class="cap">Demo run <b>h100-max-1103</b> (Muse Glimmer 30B, one H100). Joules saved per request, per lever.</p>
-        <table class="lvtab"><thead><tr><th>Lever</th><th>J/request saved</th><th>Source</th></tr></thead><tbody>
-          <tr><td>Power cap: ${esc(h.cap_w)} W kept vs stock</td><td><span class="v-num">${fmt(saved, 1)} J</span>${dot(h.energy_label || "MEASURED")} <small>(${fmt(h.j_per_req_stock, 1)} → ${fmt(h.j_per_req_cap, 1)}, ${fmt(h.energy_saved_pct, 1)}% less)</small></td><td>proof-de155e, NVML</td></tr>
-          ${untested.map(([n]) => `<tr><td>${esc(n)}</td><td><span class="emdash">${EM}</span></td><td>Not tested in this run: the sweep changed only the power cap</td></tr>`).join("")}
+        <p class="cap">Muse Glimmer 30B on one H100. Each lever measured in its own H100 run, against its own stock baseline.</p>
+        <table class="lvtab"><thead><tr><th>Lever</th><th>Energy saved</th><th>Source</th></tr></thead><tbody>
+          <tr><td>Power cap: ${esc(h.cap_w)} W kept vs stock</td><td><span class="v-num">${fmt(saved, 1)} J/request</span>${dot(h.energy_label || "MEASURED")} <small>(${fmt(h.j_per_req_stock, 1)} → ${fmt(h.j_per_req_cap, 1)}, ${fmt(h.energy_saved_pct, 1)}% less)</small><br><b>Kept</b></td><td>h100-max-1103, proof-de155e, 2026-11-03, NVML</td></tr>
+          ${rows}
+          <tr class="lv-total"><td><b>Combined</b></td><td><span class="v-num">${fmt(saved, 1)} J/request</span>${dot("ESTIMATE")}</td><td>Sum of levers each measured in its own H100 run; not measured stacked together. Only the power cap counts: FP8, KV cache and batching were rolled back by the answer check, so they are shown but left out of the sum. Their one-lever takes recorded the energy change in %, not J/request.</td></tr>
         </tbody></table>
-        <p class="note">Total measured: <b>${fmt(saved, 1)} J/request</b>${dot(h.energy_label || "MEASURED")}, all from the power cap.</p>
       </div>`;
     return;
   }
