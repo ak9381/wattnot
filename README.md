@@ -278,7 +278,7 @@ both arms (Welch p = 0.027). Proof:
 | Modal round 2, r05 | Modal A100-80GB | −77.0% J/correct (2954.6 → 678.4) | 96% → 97% | MEASURED (NVML) | [modal-r2](replays/modal-r2/manifest.json) |
 | Baseten round 1, r02 | Baseten, Spark Open | 719.3 → 482.5 J/correct | 98% → 98% | ESTIMATE (no GPU meter) | [baseten-r1](replays/baseten-r1/manifest.json) |
 
-Earlier power-cap sweep on the H100 (RUN2, Oct 29) used an 8B comparison model, not a Meta model, so it is
+Earlier power-cap sweep on the H100 (RUN2) used an 8B comparison model, not a Meta model, so it is
 not a headline result: 350 W passed at −27.1% J/correct; 325 W was rolled back for failing p99
 (+10.9%, limit 10%) (MEASURED). Full run history with commits and costs:
 [`docs/RUN_HISTORY.md`](docs/RUN_HISTORY.md). Every replay is in [`replays/INDEX.md`](replays/INDEX.md).
