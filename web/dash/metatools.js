@@ -76,7 +76,6 @@ export function extractMetaToolsData(receipt, validation) {
     spark: { usd: 0.0125, label: "MOCK" },
     wonder: { usd: 0.0480, label: "MOCK" },
     glimmer: { usd: 0.0000, label: "MOCK" },
-    llama: { usd: 0.0000, label: "MOCK" },
     sam: { usd: 0.0000, label: "MOCK" }
   };
 

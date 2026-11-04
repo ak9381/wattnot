@@ -85,7 +85,7 @@ def build_config(h: dict, bt: dict, scenes: list[dict], water: dict, price: dict
     recs = {x["id"]: x for x in h.get("receipts", [])}
     data: dict = {"cap": {}, "topk": {}, "hosted": {}}
     power = {s["id"]: s["samples"] for s in scenes if s["id"].startswith("sweep-")}
-    for mid, key, scene in (("glimmer", "Muse-Glimmer", "sweep-muse-glimmer"), ("llama", "Llama-3.1", "sweep-llama-3.1-8b")):
+    for mid, key, scene in (("glimmer", "Muse-Glimmer", "sweep-muse-glimmer")):
         rows = _sweep(h.get("sweep", []), key)
         if rows:
             by_cap: dict[int, list[float]] = {}

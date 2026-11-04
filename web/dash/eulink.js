@@ -4,8 +4,13 @@
 import { WATER_L_PER_KWH, WATER_L_PER_KWH_UPPER } from "./r7.js";
 
 export const EU_DIR = "eu/";
-export const EU_RECEIPT = "eu/run2-receipt.json";
-export const reportHref = (rid, fmt = "html") => `${EU_DIR}eu_report_${rid}.${fmt}`;
+// The Oct 31 Glimmer rerun receipt (the older eu/run2-receipt.json served a non-Meta model; kept in the repo, not shown).
+export const EU_RECEIPT = "../receipts/rerun-1031/rcpt_20261031_rerun_cap325.json";
+const RERUN_ID = "rcpt_20261031_rerun_cap325";
+export const reportHref = (rid, fmt = "html") => (rid === RERUN_ID && fmt === "html" ? "../receipts/rerun-1031/eu_report.html" : `${EU_DIR}eu_report_${rid}.${fmt}`);
+// Receipts that have no CSV export on disk: the CSV button is hidden for them.
+const NO_CSV = new Set([RERUN_ID]);
+export const hasCsv = (rid) => !!rid && !NO_CSV.has(rid);
 export const EU_UPLOAD_URL = "/api/report/eu/upload";
 const DASH = "–";
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : null);
@@ -68,8 +73,8 @@ const val = (v, d, unit, l) => (v == null ? `${DASH}${dot(null)}` : `${fix(v, d)
 export function renderEuCardHTML(d) {
   const ok = !!d.receiptId;
   const big = d.jChangePct == null ? `${DASH}${dot(null)}` : `${d.jChangePct > 0 ? "+" : ""}${fix(d.jChangePct, 1)}%${dot(d.jLabel || d.label)}`;
-  const open = ok ? `<a class="eucard-btn" href="${reportHref(d.receiptId)}" target="_blank" rel="noopener">Open EU report</a>
-      <a class="eucard-btn eucard-btn2" href="${reportHref(d.receiptId, "csv")}" download>CSV</a>` : `<span class="eucard-btn eucard-off">Report pending${dot(null)}</span>`;
+  const open = ok ? `<a class="eucard-btn" href="${reportHref(d.receiptId)}" target="_blank" rel="noopener">Open EU report</a>${hasCsv(d.receiptId) ? `
+      <a class="eucard-btn eucard-btn2" href="${reportHref(d.receiptId, "csv")}" download>CSV</a>` : ""}` : `<span class="eucard-btn eucard-off">Report pending${dot(null)}</span>`;
   return `<section class="eucard" id="eu-report-card" aria-label="EU efficiency report">
     <button class="eucard-main" type="button" aria-haspopup="dialog" title="What is this and how was it worked out?">
       <span class="eucard-k">EU efficiency report</span>
@@ -150,8 +155,8 @@ export function renderEuLinkHTML(d) {
         ${d.sciGrid == null ? "" : `<div class="eulink-metric-box"><div class="eulink-metric-label">Carbon (SCI)</div><div class="eulink-metric-val">${val(d.sciPerCorrect, 5, "gCO2e/correct", "ESTIMATE")}</div><div class="eulink-metric-note">GSF SCI, E x I per correct answer; I = ${fix(d.sciGrid, 0)} g/kWh (${esc(d.sciGridSource)}); embodied M ${esc(d.sciEmbodied)}. Signed in the receipt and re-checked by the verifier. An intensity per answer, not a claim about any total footprint.</div></div>`}
         <div class="eulink-metric-box"><div class="eulink-metric-label">Billed Saving</div><div class="eulink-metric-val">${d.billedSavingPct == null ? `${DASH}${dot(null)}` : `${fix(d.billedSavingPct, 1)}%${dot(L)}`}</div></div>
       </div>
-      <div class="eulink-actions">${href ? `<a class="eulink-btn" href="${href}" target="_blank" rel="noopener"><span>View EU Report (HTML)</span></a>
-        <a class="eulink-btn eulink-btn-secondary" href="${reportHref(d.receiptId, "csv")}" download><span>Download CSV</span></a>` : `<span class="eulink-btn eulink-btn-secondary">Report pending</span>`}</div>
+      <div class="eulink-actions">${href ? `<a class="eulink-btn" href="${href}" target="_blank" rel="noopener"><span>View EU Report (HTML)</span></a>${hasCsv(d.receiptId) ? `
+        <a class="eulink-btn eulink-btn-secondary" href="${reportHref(d.receiptId, "csv")}" download><span>Download CSV</span></a>` : ""}` : `<span class="eulink-btn eulink-btn-secondary">Report pending</span>`}</div>
       <div class="eulink-disclaimer">Explicit note: ${d.disclaimer} Method: ${d.method}.</div>
     </div>`;
 }

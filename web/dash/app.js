@@ -385,9 +385,9 @@ if ($("metaChip")) $("metaChip").onclick = () => togglePop($("pop")?.hidden);
 // ---- start the product flow
 let product = null, bundle = null;
 // Append a final "Report" node to the architecture graph: the signed run
-// report page. It links to report.html for the latest run (prefer the RUN2
-// H100 run), and sits one column past the EU report, the end of the main row.
-const REPORT_RUN = "run2-llama-350w";
+// report page. It links to report.html for the latest run (the Oct 31
+// Glimmer rerun on the H100), and sits one column past the EU report, the end of the main row.
+const REPORT_RUN = "rerun-1031-glimmer-325w";
 function withReportNode(sb) {
   if (!sb || !Array.isArray(sb.nodes) || sb.nodes.some((n) => n.id === "report")) return sb;
   const last = sb.nodes.find((n) => n.id === "eu") || sb.nodes[sb.nodes.length - 1];
@@ -397,7 +397,7 @@ function withReportNode(sb) {
     desc: "The signed run report as one page: room scan, baseline, quality gate, change, kept-or-rolled-back and the receipt.",
     code: "web/dash/report.html", inputs: "a run id", outputs: "a shareable report page",
     href: `report.html?run=${REPORT_RUN}`,
-    stats: [{ k: "run", label: "Latest run", v: "RUN2 · 350 W", unit: "", tag: "REPLAY" }],
+    stats: [{ k: "run", label: "Latest run", v: "Oct 31 rerun · 325 W", unit: "", tag: "REPLAY" }],
     subs: [{ id: "open", title: "Open the report", desc: "Opens report.html for the latest run.", partner: "oss",
       inputs: "run id", outputs: "report page", code: "report.html?run=" + REPORT_RUN }],
     evidence: ["web/dash/report.html", "web/dash/report.js"],

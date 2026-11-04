@@ -128,7 +128,7 @@ function renderHomeClassic() {
   <button class="btn pri noprint" id="goCfg">Configure a run →</button></div>
   <div class="kpis">
     <div class="kpi glass kpi-headline" data-explain="dash.kpi.jpc" data-explain-value="−44.1%" data-explain-label="MEASURED" data-explain-source="receipts/rerun-1031/rcpt_20261031_rerun_cap325.json rerun.combined_cap_plus_prefix"><div class="v">${cnum("−44.1%", "MEASURED")}</div><div class="c"><b>energy per correct answer</b>, Muse Glimmer 30B on one H100: 325 W cap plus prefix caching vs stock (Oct 31 rerun, signed locally with the test key). The 325 W cap alone: −34.3% energy per request; 300 W rejected (p99 +18%, limit 10%). ${badge("MEASURED")}</div></div>
-    <div class="kpi glass"><div class="v">${cnum("+9.7%", "MEASURED")}</div><div class="c">slowest 1% (p99) at 325 W in the Oct 31 rerun, inside the 10% limit (earlier Llama run: +7.7% at 350 W) ${badge("MEASURED")}</div></div>
+    <div class="kpi glass"><div class="v">${cnum("+9.7%", "MEASURED")}</div><div class="c">slowest 1% (p99) at 325 W in the Oct 31 rerun, inside the 10% limit ${badge("MEASURED")}</div></div>
     <div class="kpi glass"><div class="v">${cnum("67%", "MEASURED")}</div><div class="c">fewer agent tokens when a harness's stop rule misses ${badge("MEASURED")}</div></div>
     ${(() => { const m = metaSpend(S.metaLive, led); return `<div class="kpi glass"><div class="v">${cnum(`$${num(m.usd)}`, m.label)}</div><div class="c">${m.note} ${badge(m.label)}</div></div>`; })()}
   </div>
@@ -191,7 +191,6 @@ const CARE_CARDS = [
 ];
 const MODEL_BLURB = {
   glimmer: "30B dense model · runs on one H100",
-  llama: "8B dense model · runs on one H100",
   qwen3: "30B mixture-of-experts · runs on one H100",
   granite: "3B mixture-of-experts · runs on one H100",
   spark_open: "Open model · runs hosted on Baseten",
@@ -398,12 +397,12 @@ async function startRun() {
 function run2BlockHtml(view, withToggle) {
   view = view || S.view || "both";
   const R = S.run?.results, rows = run2Rows(S.run2, R?.price, R?.water);
-  if (!rows.length) return `<h3>Without WattNot vs With WattNot</h3><p>Headline numbers are still loading.</p>`;
+  if (!rows.length) return S.run2?.hidden ? "" : `<h3>Without WattNot vs With WattNot</h3><p>Headline numbers are still loading.</p>`;
   // The model line reads the run data being shown, never a hard-coded name.
   const m = S.run2 || {};
   const where = [m.model, m.cap_w != null ? `at a ${m.cap_w} W cap` : null].filter(Boolean).join(" ");
   const shown = S.run?.results?.model;
-  const other = m.model && shown && m.model !== shown ? ` (the separate RUN2 recording, not the ${shown} run shown above)` : "";
+  const other = m.model && shown && m.model !== shown ? ` (a separate recording, not the ${shown} run shown above)` : "";
   const show = (side) => view === "both" || view === (side === "w" ? "with" : "without");
   const cell = (r, side) => (show(side) ? `<div class="cell ${r.win === side ? "win" : ""}"><span class="v num">${cnum(esc(side === "w" ? r.wattnot : r.stock), r.tag)}</span>${side === "w" && r.delta && view === "both" ? `<span class="d">${cnum(esc(r.delta), r.tag)}</span>` : ""}</div>` : `<div></div>`);
   return `<div class="r2head"><div><h3>Without WattNot vs With WattNot</h3><p>${esc(where)}${esc(other)}${where ? ", " : ""}replay ${badge("REPLAY")}. Energy, p99 and quality are measured; cost and water are estimates from measured joules.</p></div>
@@ -547,9 +546,9 @@ function mapTopics() {
   const e = row(by.energy), c = row(by.cost), w = row(by.water), p = row(by.p99), q = row(by.quality);
   return [
     { id: "power", color: "#B2A6C3", name: "Power", sub: "Energy per request",
-      kids: [leaf("pw-s", "bolt", "Without WattNot", e ? `700 W stock · <b>${esc(e.stock)}</b>/req ${badge(e.tag)}` : "700 W stock · not measured"),
-             leaf("pw-w", "bolt", "With WattNot", e ? `350 W cap · <b>${esc(e.wattnot)}</b>/req · <b>${esc(e.delta)}</b> ${badge(e.tag)}` : "350 W cap · not measured")],
-      detail: `<b>What went right.</b> RUN2 on Llama 3.1 8B at a 350 W cap: <b>−27.1%</b> joules per request ${badge("MEASURED")} (data/h100-run2/vm/steps/cap350.json). Earlier sweep on Muse Glimmer 30B at 400 W: <b>−21.0%</b> with p99 +3.7% ${badge("MEASURED")} (H100 run sweep.csv, NVML). Next on the H100: a thinking budget per tier and prefix caching <span class="rad-pending">pending</span>.` },
+      kids: [leaf("pw-s", "bolt", "Without WattNot", e ? `Stock · <b>${esc(e.stock)}</b>/req ${badge(e.tag)}` : "Stock · not measured"),
+             leaf("pw-w", "bolt", "With WattNot", e ? `Capped · <b>${esc(e.wattnot)}</b>/req · <b>${esc(e.delta)}</b> ${badge(e.tag)}` : "Capped · not measured")],
+      detail: `<b>What went right.</b> Sweep on Muse Glimmer 30B at 400 W: <b>−21.0%</b> with p99 +3.7% ${badge("MEASURED")} (H100 run sweep.csv, NVML). Next on the H100: a thinking budget per tier and prefix caching <span class="rad-pending">pending</span>.` },
     { id: "cost", color: "#C4B4D6", name: "Cost", sub: "Electricity per 1M requests",
       kids: [leaf("c-s", "coin", "Without WattNot", c ? `Stock: <b>${esc(c.stock)}</b>` : "Stock cost: not measured"),
              leaf("c-w", "coin", "With WattNot", c ? `Capped: <b>${esc(c.wattnot)}</b> (<b>${esc(c.delta)}</b>)` : "Capped cost: not measured")],
@@ -571,13 +570,13 @@ function mapTopics() {
              leaf("s-w", "shield", "With WattNot", `A person approves high-risk changes ${badge("MOCK")}`)],
       detail: `<b>Why choose WattNot.</b> It is a second layer, not a claim to beat everything. Every change is measured, gated, approved by a person, logged, undoable, and signed. If a cap fails a gate, it is rejected, as below.` },
     { id: "rejected", color: "#D48389", name: "Rejected options", sub: "What we refused, and why",
-      kids: [leaf("r-s", "x", "Without WattNot", `No gate: 325 W would just run slower at p99 <b>+10.9%</b>`),
-             leaf("r-w", "x", "With WattNot", `Gate rejects 325 W: p99 <b>+10.9%</b> is over the <b>10%</b> limit ${badge("MEASURED")}`)],
-      detail: `<b>325 W rejected:</b> p99 rose <b>+10.9%</b>, over the 10% limit ${badge("MEASURED")} (data/h100-run2/vm/steps/cap325.json). Rejections are the system working.` },
+      kids: [leaf("r-s", "x", "Without WattNot", `No gate: FP8 would just ship, saving <b>42.5%</b> energy with one answer changed`),
+             leaf("r-w", "x", "With WattNot", `Gate refuses FP8: only <b>15/16</b> answers matched stock ${badge("MEASURED")}`)],
+      detail: `<b>FP8 refused:</b> energy fell <b>42.5%</b> (30.18 to 17.37 Wh) but only 15 of 16 answers matched the stock model, which itself matched 16 of 16 ${badge("MEASURED")} (H100 run, Nov 4). Rejections are the system working.` },
     { id: "proof", color: "#F3F0F7", name: "Proof", sub: "Fingerprint, verifier, raw files",
       kids: [leaf("f-s", "doc", "Without WattNot", `A chart you cannot re-check`),
              leaf("f-w", "doc", "With WattNot", `Fingerprint plus verifier plus raw files ${badge("SAMPLE")}`)],
-      detail: `The fingerprint covers the headline numbers only, with sorted keys and no timestamps. The verifier re-checks sample receipts ${badge("SAMPLE")}. Raw data: data/h100-run2/vm/steps/cap350.json, data/h100-run2/vm/steps/cap325.json, verifier/samples/.` },
+      detail: `The fingerprint covers the headline numbers only, with sorted keys and no timestamps. The verifier re-checks sample receipts ${badge("SAMPLE")}. Raw data: receipts/rerun-1031/, verifier/samples/.` },
   ];
 }
 let mapWired = false;
@@ -969,7 +968,7 @@ async function renderReport() {
   const r2 = S.selHeadline || S.run2 || {};
   const runs = S.runs?.runs || [];
   const selId = S.selRunId || (runs[0] && runs[0].id) || "default";
-  const hubTitle = S.selRun?.run_name || `${r2.model || "Llama 3.1 8B Instruct"} · ${r2.cap_w || 350} W cap`;
+  const hubTitle = S.selRun?.run_name || (r2.model ? `${r2.model} · ${r2.cap_w ?? ""} W cap` : "No run selected");
   const mx = S.selRun?.kind === "matrix" ? S.selRun : null;
   const mb = mx?.phases?.baseline?.metrics, mw = mx?.phases?.wattnot?.metrics;
   const hubDetail = mx && mb && mw
@@ -1051,7 +1050,7 @@ const TREE_DESC = {
   quant: "Store experts in fewer bits; tiered keeps busy experts at higher precision.",
   waste: "Stop agent loops and wasted tokens that add no new information.",
   loopstop: "Stop an agent that calls the model again with nothing new.",
-  smallfirst: "Answer with a small model first (Llama 8B, Muse Glimmer, Muse Spark) and only escalate on a failed check.",
+  smallfirst: "Answer with a small model first (Muse Glimmer, Muse Spark) and only escalate on a failed check.",
   context: "Cut the tokens a request carries: reuse cached prefixes, compress memory, drop duplicates.",
   prefix: "Reuse a repeated prompt prefix instead of recomputing it. Own GPU only.",
   memcomp: "Summarise old turns so the context stays short.",

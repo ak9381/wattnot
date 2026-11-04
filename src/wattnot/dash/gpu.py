@@ -105,7 +105,9 @@ def sweep_scenes(main: Path) -> list[dict]:
     out = []
     for model, rs in by_model.items():
         short = model.split("/")[-1]
-        key = "muse-glimmer" if "Glimmer" in short else "llama-3.1-8b"
+        if "Glimmer" not in short:
+            continue  # only Meta models are shown (Llama does not count as one here)
+        key = "muse-glimmer"
         samples, t0 = [], 0.0
         base = next((_f(r["wh_per_1k_tok"]) for r in rs if r["gate"] == "baseline"), None)
         for r in rs:

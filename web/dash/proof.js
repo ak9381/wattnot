@@ -25,7 +25,7 @@ function traceHtml(t) {
       <p class="pf-meta">${esc(c.model)} · ${fmt(c.latency_s?.value, 2)} s ${badge("MEASURED")} · ${c.tokens?.input ?? "–"} in / ${c.tokens?.output ?? "–"} out tokens · $${fmt(c.usd?.value, 4)} ${badge("ESTIMATE")}</p>
       ${pass == null ? "" : `<p class="pf-gate">${pass ? "Gates passed" : `Gate failed: ${fail}`} ${pass ? "" : `<button class="pf-i" data-explain="1" aria-label="Why did this fail?">i</button>`}</p>`}</div></li>`;
   }).join("");
-  return `<p>Every call the Spark planner made in RUN2, in order: what it saw, what it chose, and what the gates said.</p><ol class="pf-trace">${rows}</ol>`;
+  return `<p>Every call the Spark planner made in a recorded H100 sweep, in order: what it saw, what it chose, and what the gates said.</p><ol class="pf-trace">${rows}</ol>`;
 }
 
 function explainHtml(x) {

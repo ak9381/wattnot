@@ -258,7 +258,7 @@ function detectCurrentSource(doc = document) {
   if (codeEl && codeEl.textContent.trim()) {
     return codeEl.textContent.trim();
   }
-  return "rcpt_llama_350w";
+  return "rcpt_20261031_rerun_cap325";
 }
 
 /**
@@ -498,7 +498,7 @@ export function matchExplainElement(query, root = document) {
         id: el.getAttribute("data-explain-id") || rawExplain || "",
         value: el.getAttribute("data-explain-value") || el.textContent.trim(),
         label: el.getAttribute("data-explain-label") || "MOCK",
-        source: el.getAttribute("data-explain-source") || "rcpt_llama_350w",
+        source: el.getAttribute("data-explain-source") || "rcpt_20261031_rerun_cap325",
         summary: el.getAttribute("data-explain-summary") || "",
         title: titleText,
       };
@@ -618,7 +618,7 @@ export function showExplainPopover(targetElement, data, doc = document) {
     </div>
     <div class="explain-popover-body">${summary}</div>
     <div class="explain-popover-meta">
-      <span>Source: ${data.source || "rcpt_llama_350w"}</span>
+      <span>Source: ${data.source || "rcpt_20261031_rerun_cap325"}</span>
       <span>[${label}]</span>
     </div>
   `;

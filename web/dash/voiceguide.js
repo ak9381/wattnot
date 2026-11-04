@@ -197,7 +197,7 @@ export function mountVoiceGuide(customMountEl = null) {
     panel.classList.add("active");
   }
 
-  // No API (e.g. GitHub Pages): answer from the signed RUN2 receipt and addenda, labelled REPLAY.
+  // No API (e.g. GitHub Pages): answer from the signed Oct 31 rerun receipt and the live-call addenda, labelled REPLAY.
   async function groundedAnswer(query) {
     const docs = await loadReceiptDocs();
     return answerFromReceipts(query, docs);
@@ -280,7 +280,7 @@ export function mountVoiceGuide(customMountEl = null) {
   });
 
   // Replay of one real Muse Voice Transcribe call (LIVE transcript of a synthetic TTS clip),
-  // saved as a signed addendum to the RUN2 receipt. The answer that follows keeps its own label.
+  // saved as a signed addendum next to the older H100 receipt. The answer that follows keeps its own label.
   // Served through /api/launch/file (same read-only file route realruns.js and report.js use):
   // a path relative to this module's own URL broke once voiceguide.js was no longer served from
   // the same directory as receipts/, and a 404's JSON body ({"detail":"Not Found"}) has no

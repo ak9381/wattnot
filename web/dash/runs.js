@@ -7,7 +7,7 @@
 // a metered value from an estimate. Values we cannot compute from the data show
 // the em dash "—" — never a zero, never a guess.
 //
-// Honesty note baked into the UI: only the on-prem H100 run (run2-llama-350w)
+// Honesty note baked into the UI: only the on-prem H100 runs
 // reports metered joules. The cloud runs record request counts but no GPU
 // energy, so they contribute "—" to the energy/water/cost totals.
 

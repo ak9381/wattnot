@@ -41,8 +41,11 @@ FALLBACK = {
 }
 
 
+# RUN2 served Llama 3.1 8B, which does not count as a Meta model for this hackathon.
+# It is hidden from every dashboard surface; the raw data under data/h100-run2 is kept.
+SHOW_RUN2 = False
 RUN2_ID = "run2-llama-350w"
-RUN2_NAME = "H100 RUN2 · Llama 3.1 8B @ 350 W"
+RUN2_NAME = "H100 RUN2 · 350 W"
 RUN2_DATE = "2026-10-27"
 
 #: A file in data/cloud counts as a run fixture only if it declares this format, so a stray
@@ -56,7 +59,14 @@ def _mean(xs: list[float]) -> float | None:
 
 
 def load(root: Path | str | None = None) -> dict:
-    """Headline RUN2 numbers. Reads SOURCE under ``root`` when it exists."""
+    """Headline RUN2 numbers, hidden from the dashboard (empty dict) unless SHOW_RUN2.
+    RUN2 served a non-Meta model; its data stays in the repo as evidence."""
+    if not SHOW_RUN2:
+        return {"hidden": True}
+    return _load(root)
+
+
+def _load(root: Path | str | None = None) -> dict:
     if root is not None:
         p = Path(root) / SOURCE
         if p.is_file():
@@ -112,7 +122,7 @@ def build_record(root: Path | str | None = None) -> dict:
     350 W capped arm, both read from ``data/h100-run2/vm/steps/cap350.json``.
     Phase numbers are MEASURED; the record as served is a REPLAY of them.
     """
-    head = load(root)
+    head = _load(root)
     step = None
     if root is not None:
         p = Path(root) / SOURCE
@@ -252,9 +262,10 @@ def matrix_ids(root: Path) -> list[str]:
 def list_runs(root: Path | str | None = None) -> list[dict]:
     """Run summaries by run name: id, name, model, date. RUN2 first, then cloud runs."""
     root = Path(root) if root is not None else Path(__file__).resolve().parents[3]
-    rec = build_record(root)
-    out = [{"id": rec["id"], "name": rec["run_name"],
-            "model": rec["model"], "date": rec["date"]}]
+    out = []
+    if SHOW_RUN2:
+        rec = build_record(root)
+        out.append({"id": rec["id"], "name": rec["run_name"], "model": rec["model"], "date": rec["date"]})
     for rid in matrix_ids(root):
         m = _matrix_record(root, rid)
         if m is not None:
@@ -286,6 +297,8 @@ def get_run(root: Path | str | None, run_id: str) -> dict | None:
     (Baseten/Modal) is attached as rec["hosted_ab"] when the report exists."""
     root = Path(root) if root is not None else Path(__file__).resolve().parents[3]
     if run_id == RUN2_ID:
+        if not SHOW_RUN2:
+            return None
         rec = build_record(root)
     elif run_id.startswith("matrix-"):
         rec = _matrix_record(root, run_id[len("matrix-"):])

@@ -101,7 +101,7 @@
 
     async function init() {
       try {
-        const res = await fetch('./sample-meta5-receipt.json');
+        const res = await fetch('../receipts/rerun-1031/rcpt_20261031_rerun_cap325.json');
         const receipt = await res.json();
         mountMetaTools(document.getElementById('metatools-mount'), receipt);
         mountHotspotCard(document.getElementById('hotspot-mount'), receipt);

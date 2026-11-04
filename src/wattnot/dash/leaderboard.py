@@ -17,7 +17,7 @@ SPEC = "wattnot.leaderboard/0.1"
 METRIC = "net joules per correct answer (J/correct)"
 SUBMISSION_SPEC = "wattnot.jpc-submission/0.1"
 # Published joules-per-token for a hosted frontier model (Muse Spark Open on H100-class GPUs):
-# RUN2 measured 0.1497 J/token on Llama 3.1 8B, scaled by active params (42B / 0.8B). ESTIMATE.
+# An earlier H100 bench measured 0.1497 J/token on an 8B dense model, scaled by active params (42B / 0.8B). ESTIMATE.
 J_PER_TOKEN = 7.86
 
 SUBMISSION_EXAMPLE = {
@@ -119,29 +119,17 @@ def validate_submission(obj: dict) -> list[str]:
 
 
 def rows(root: Path) -> list[dict]:
-    steps = root / "data/h100-run2/vm/steps"
+    # RUN2 rows (Llama 3.1 8B, not a Meta model here) are hidden; data/h100-run2 is kept as evidence.
     out = []
-    s350 = json.loads((steps / "cap350.json").read_text())
-    out.append(_row_from_step(s350, arm="stock", setup="Default vLLM (no cap)",
-                              note="public baseline: stock vLLM, stock 700 W limit"))
-    for cap in (500, 450, 400, 350, 325):
-        f = steps / f"cap{cap}.json"
-        if f.exists():
-            out.append(_row_from_step(json.loads(f.read_text()), arm="cap", setup=f"WattNot power cap {cap} W"))
     out += [
-        _pending("WattNot three-tier chain (Llama 3.1 8B -> Muse Glimmer 30B -> Muse Spark Open)",
-                 "Llama 3.1 8B + Muse Glimmer 30B + Muse Spark Open", "1x H100", "MEASURED",
-                 "long GPU run: per-tier escalation rate and small-model pass rate, net of judge/gate energy"),
-        _pending("WattNot cap + token trimmer, same workload", "Llama 3.1 8B Instruct", "1x H100", "MEASURED",
-                 "long GPU run; today only the stacked ESTIMATE from two separate workloads exists"),
         _pending("Muse Spark Open, fewer experts", "Muse Spark Open", "1x H100", "MEASURED", "long GPU run"),
     ]
     out += hosted_rows(root)
     best = min((r for r in out if r["status"] == "measured" and r["gate"] in ("passed",)),
                key=lambda r: r["j_per_correct"]["mean"], default=None)
-    base = out[0]["j_per_correct"]["mean"]
+    base = next((r["j_per_correct"]["mean"] for r in out if r.get("j_per_correct")), None)
     for r in out:
-        if r["j_per_correct"]:
+        if r["j_per_correct"] and base:
             r["vs_default_pct"] = round(100 * (r["j_per_correct"]["mean"] / base - 1), 2)
         r["best"] = r is best
     return out
@@ -164,8 +152,6 @@ def meta_models(ledger_path: Path | None = None, snapshot: Path | None = None) -
     elif snapshot and snapshot.exists():
         rows = json.loads(snapshot.read_text())["api"]
     local = [
-        {"model": "Llama 3.1 8B Instruct", "job": "the served model in RUN2; small model in small-first; judge fallback",
-         "calls": None, "usd": None, "label": "MEASURED", "source": "own H100, cost is GPU hours (not an API bill)"},
         {"model": "Muse Spark Open (Baseten)", "job": "big model when the small one fails a check; hosted planner; default quality judge",
          "calls": 1, "usd": 0.004, "label": "MEASURED", "source": "docs/runs/spark-open-planner-smoke.ledger.json"},
     ]
@@ -178,12 +164,8 @@ def trace_id(root: Path) -> str | None:
 
 
 def per_model_joules(root: Path) -> list[dict]:
-    s = json.loads((root / "data/h100-run2/vm/steps/cap350.json").read_text())
-    q = s["quality"]["checked"]
-    return [{"model": "Llama 3.1 8B Instruct (served)", "j_per_answer": round(statistics.mean(s["j_per_req_cap"]), 2),
-             "j_total": round(statistics.mean(s["j_per_req_cap"]) * q, 1), "label": "MEASURED",
-             "how": "NVML energy counter, 10 samples a second; j_total = J per request x 666 checked answers, 350 W cap"},
-            {"model": "muse-spark-1.3 (planner, 4 calls)", "j_per_answer": None, "j_total": None, "status": "not metered",
+    # The RUN2 served-model row (Llama 3.1 8B) is hidden; root is kept for the signature.
+    return [{"model": "muse-spark-1.3 (planner, 4 calls)", "j_per_answer": None, "j_total": None, "status": "not metered",
              "how": "hosted; the provider reports tokens, not joules"}]
 
 
