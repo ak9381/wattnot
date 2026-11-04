@@ -1,0 +1,3 @@
+spoken answer [live]: all 20 spoken answers correct | transcripts LIVE
+/app/src/wattnot/meter/arm_energy.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # noqa: PLC0415

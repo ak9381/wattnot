@@ -1,0 +1,17 @@
+{
+ "switches": 0,
+ "windows": {
+  "prefill": 0,
+  "decode": 0,
+  "idle": 0
+ },
+ "high_mhz": 1980,
+ "low_mhz": 1410,
+ "interval_s": 0.1,
+ "granularity": "per scheduler window of batch steps, not per request",
+ "prior_art": "DynamoLLM (phase-aware frequency scaling for LLM inference)",
+ "mock": true,
+ "metrics_url": "http://127.0.0.1:8000/metrics",
+ "metrics_errors": 20,
+ "load": null
+}

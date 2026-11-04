@@ -1,0 +1,67 @@
+{
+  "format": "wattnot.preflight/1",
+  "provider": "local",
+  "gpu": {
+    "present": false,
+    "reason": "no nvidia-smi on PATH (no NVIDIA driver or no GPU)"
+  },
+  "driver": null,
+  "cuda": null,
+  "power_cap": {
+    "allowed": false,
+    "reason": "no GPU"
+  },
+  "vllm": null,
+  "features": [
+    {
+      "id": "power_caps",
+      "title": "Hardware: GPU power caps",
+      "available": false,
+      "reason": "no GPU"
+    },
+    {
+      "id": "clock_tuning",
+      "title": "Hardware: prefill/decode clock tuning",
+      "available": false,
+      "reason": "no GPU"
+    },
+    {
+      "id": "power_readings",
+      "title": "Proof: GPU power readings",
+      "available": false,
+      "reason": "no nvidia-smi on PATH (no NVIDIA driver or no GPU)"
+    },
+    {
+      "id": "serving",
+      "title": "Serving: batching, KV cache, prefix cache, quantization",
+      "available": false,
+      "reason": "vLLM not installed here (use the sidecar or our image)"
+    },
+    {
+      "id": "routing",
+      "title": "Routing: cheapest backend that still passes",
+      "available": true,
+      "reason": "no GPU needed"
+    },
+    {
+      "id": "agent_waste",
+      "title": "Agents: waste saver proxy",
+      "available": true,
+      "reason": "no GPU needed"
+    },
+    {
+      "id": "musecode",
+      "title": "Code: Muse Code sandboxed PRs",
+      "available": true,
+      "reason": "no GPU needed; needs a Meta key to run"
+    },
+    {
+      "id": "receipts",
+      "title": "Proof: quality + p99 checks, signed receipts",
+      "available": true,
+      "reason": "no GPU needed"
+    }
+  ]
+}
+
+--- stderr ---

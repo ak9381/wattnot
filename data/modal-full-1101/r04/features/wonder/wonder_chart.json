@@ -1,0 +1,50 @@
+{
+  "spec": "wattnot.wonderchart/1",
+  "mode": "live",
+  "source": "wonder",
+  "suggestion": {
+    "action": "try",
+    "cap_w": 300,
+    "clock_profile": "base"
+  },
+  "reason": "No measured trials yet, so test the lowest cap to probe minimum joules per correct while checking quality retention.",
+  "trace_id": "wonder-191128983d7ec446",
+  "wonder_chart": {
+    "label": "SYNTHETIC",
+    "chart_sha256": "ec82ddb6ca9947a69a63e3532cc4888ade3691129ee088ad97b4185f35c8220a",
+    "source": "wonder",
+    "offline_fallback": false,
+    "model": "muse-wonder-1.0",
+    "suggestion": {
+      "action": "try",
+      "cap_w": 300,
+      "clock_profile": "base"
+    },
+    "reason": "No measured trials yet, so test the lowest cap to probe minimum joules per correct while checking quality retention.",
+    "trace_id": "wonder-191128983d7ec446",
+    "est_wh": {
+      "value": 0.5,
+      "label": "ESTIMATE"
+    },
+    "points": [
+      {
+        "setting": "0W/base",
+        "cap_w": 0,
+        "clock_profile": "base",
+        "joules_per_correct": 1.0,
+        "quality": 1.0,
+        "kept": false,
+        "label": "ESTIMATE"
+      },
+      {
+        "setting": "0W/base",
+        "cap_w": 0,
+        "clock_profile": "base",
+        "joules_per_correct": 1.0,
+        "quality": 1.0,
+        "kept": false,
+        "label": "ESTIMATE"
+      }
+    ]
+  }
+}

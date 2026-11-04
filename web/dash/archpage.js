@@ -355,7 +355,7 @@ export class ArchPage {
       return;
     }
     this.view.reset(); cap.textContent = "Following the run as it writes events…";
-    const es = (this.es = new EventSource(`/api/dash/arch/live?speed=${this.speed}${q}`)); let last = 0;
+    const es = (this.es = new EventSource(`/api/dash/arch/live?speed=${this.speed}${q.replace("?", "&")}`)); let last = 0;
     this.roomPay = {}; this.tagged = false; this.spark = []; this.meta = {}; $("#aspark", H)?.remove(); $("#ameta", H)?.remove(); { const ar = $("#aroom", H); if (ar) ar.hidden = true; }
     es.addEventListener("event", (m) => {
       let ev; try { ev = JSON.parse(m.data); } catch { return; }

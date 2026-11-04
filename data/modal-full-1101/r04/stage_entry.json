@@ -1,0 +1,83 @@
+{
+ "round": "r04",
+ "pr": "https://github.com/ak9381/wattnot-demo-deploy/pull/5",
+ "pr_review": "approved",
+ "clips": [
+  {
+   "file": "data/modal-full-1101/clips/modal-r04-graph-without.mp4",
+   "duration_s": 1437.7,
+   "frames": 14377,
+   "plays": true,
+   "bytes": 6559118
+  },
+  {
+   "file": "data/modal-full-1101/clips/modal-r04-graph-with.mp4",
+   "duration_s": 4248.7,
+   "frames": 42487,
+   "plays": true,
+   "bytes": 19173102
+  },
+  {
+   "file": "data/modal-full-1101/clips/modal-r04-matrix.mp4",
+   "duration_s": 18.2,
+   "frames": 182,
+   "plays": true,
+   "bytes": 272317
+  },
+  {
+   "file": "data/modal-full-1101/clips/modal-r04-pr-review.mp4",
+   "duration_s": 29.0,
+   "frames": 290,
+   "plays": true,
+   "bytes": 196834
+  }
+ ],
+ "rc": 0,
+ "pr_review_full": {
+  "pr": "https://github.com/ak9381/wattnot-demo-deploy/pull/5",
+  "title": "WattNot self-hosted vLLM: bf16, max_num_seqs 128, prefix cache false",
+  "state": "MERGED",
+  "checks": {
+   "repo": {
+    "ok": true,
+    "value": "ak9381/wattnot-demo-deploy"
+   },
+   "base_main": {
+    "ok": true,
+    "value": "main"
+   },
+   "files_allowed": {
+    "ok": true,
+    "value": [
+     "values.yaml"
+    ]
+   },
+   "no_secrets": {
+    "ok": true
+   },
+   "small": {
+    "ok": true,
+    "value": [
+     2,
+     2
+    ]
+   },
+   "test_launch_sh_parses": {
+    "ok": true,
+    "stderr": ""
+   },
+   "test_values_yaml_parses": {
+    "ok": true
+   },
+   "repo_tests": {
+    "ok": true,
+    "value": "the demo repo has no test suite; parse checks above stand in"
+   }
+  },
+  "decision": "approved",
+  "auto_approve": false,
+  "failed_checks": [],
+  "at": "2026-11-04T08:01:07.368441+00:00",
+  "note": "GitHub does not let the PR author approve their own PR; the review is recorded here"
+ }
+}

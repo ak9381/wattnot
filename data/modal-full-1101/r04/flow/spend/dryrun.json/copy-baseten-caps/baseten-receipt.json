@@ -1,0 +1,13 @@
+{
+ "provider": "baseten",
+ "stop_level": "soft",
+ "why": "baseten: committed $90.0775 >= soft $90.0",
+ "items_done": 1052,
+ "ledger_committed_usd": 90.0775,
+ "ledger_spent_usd": 90.0775,
+ "provider_reported_usd": 0.0,
+ "soft_usd": 90.0,
+ "hard_usd": 98.0,
+ "orphans_after_teardown": [],
+ "label": "ESTIMATE until reconciled"
+}
