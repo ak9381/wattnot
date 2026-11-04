@@ -112,7 +112,10 @@ def _seq(savings_log) -> dict | None:
                                                           "j_per_correct", "cap_w", "tokens", "label")}
     return {"without": arm("without"), "with": arm("with"), "energy_saved_pct": d.get("energy_saved_pct"),
             "agreement": d.get("agreement"), "no_worse": d.get("no_worse"),
-            "final_limit_w": d.get("final_limit_w"), "label": "MEASURED (NVML, arms run one after the other)"}
+            "final_limit_w": d.get("final_limit_w"),
+            "cap_note": "power cap not available on this provider" if d.get("cap_available") is False else None,
+            "label": ("ESTIMATE (tokens x J/token, arms run one after the other)" if d.get("energy_label") == "ESTIMATE"
+                      else "MEASURED (NVML, arms run one after the other)")}
 
 
 def seq_runs(savings_log) -> list[dict]:
@@ -132,6 +135,7 @@ def seq_runs(savings_log) -> list[dict]:
     return runs
 
 
+EST_SEQ = "ESTIMATE (tokens x J/token per arm, no GPU energy counter on this provider)"
 MEASURED_SEQ = "MEASURED (NVML energy counter per arm, arms run one after the other)"
 ALLOC = "MEASURED arm total ÷ requests in the arm (per-request allocation)"
 
@@ -159,12 +163,16 @@ def measured(savings_log) -> dict | None:
                     "window": [w.get("t0"), w.get("t1")],
                     "alloc_j": [round(wo["joules"] / max(1, wo.get("requests") or 1), 3),
                                 round(w["joules"] / max(1, w.get("requests") or 1), 3)]})
+    est = any(r.get("energy_label") == "ESTIMATE" for r in runs)
+    lab = EST_SEQ if est else MEASURED_SEQ
+    nocap = [r for r in runs if r.get("cap_available") is False]
     bj, aj = sum(p["without_j"] for p in per), sum(p["with_j"] for p in per)
     sc = [p for p in per if p["scored"]]
     c_wo = sum(p["correct"][0] or 0 for p in sc); c_w = sum(p["correct"][1] or 0 for p in sc)
-    return {"label": MEASURED_SEQ, "runs": per,
+    return {"label": lab, "runs": per,
+            "cap_note": "power cap not available on this provider; software savers only" if nocap else None,
             "energy_wh": {"baseline": round(bj / 3600, 4), "actual": round(aj / 3600, 4),
-                          "saved_pct": round(100 * (bj - aj) / bj, 2) if bj else None, "label": MEASURED_SEQ},
+                          "saved_pct": round(100 * (bj - aj) / bj, 2) if bj else None, "label": lab},
             "j_per_correct": round(sum(p["with_j"] for p in sc) / c_w, 1) if c_w else None,
             "j_per_correct_stock": round(sum(p["without_j"] for p in sc) / c_wo, 1) if c_wo else None,
             "correct": {"without": c_wo, "with": c_w, "scored": sum(p["requests"] or 0 for p in sc),
@@ -183,7 +191,10 @@ def eu_report(savings_log: str | Path | None, node_log: str | Path | None = None
     if m:
         e = m["energy_wh"]
         return {"spec": "wattnot.eu-inference-fields/1", "source": "live",
-                "basis": "NVML energy counter per arm (sequential side by side); not a facility meter",
+                "basis": ("token-based estimate per arm (sequential side by side); no GPU meter on this provider"
+                          if m["label"] == EST_SEQ else
+                          "NVML energy counter per arm (sequential side by side); not a facility meter"),
+                "power_cap": m.get("cap_note") or "applied where the answer check accepted it",
                 "requests": s.get("requests", 0),
                 "energy_kwh": {"value": round(e["actual"] / 1000, 6), "label": m["label"]},
                 "energy_saved_kwh": {"value": round((e["baseline"] - e["actual"]) / 1000, 6), "label": m["label"]},

@@ -1014,6 +1014,7 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
             text = ""
         a = (rec or {}).get("actual", {})
         return {"receipt_id": rid, "status": r.status_code, "usd": a.get("usd", 0), "text": text,
+                "joules": a.get("joules"),
                 "tokens": int(a.get("prompt_tokens") or 0) + int(a.get("completion_tokens") or 0)}
 
     def _direct(body: dict) -> dict:
@@ -1067,6 +1068,11 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
         try:
             g = _traffic.NvmlGpu()
         except Exception:  # noqa: BLE001 - no NVML: stays concurrent, energy ESTIMATE
+            if (c.get("node") or {}).get("meter") == "estimate":   # hosted API: sequential, ESTIMATE energy
+                traffic.gpu, traffic.answer_check = _traffic.EstimateMeter(), None
+            return
+        if not getattr(g, "can_cap", lambda: True)():   # hosted GPU (Modal): NVML energy MEASURED, savers only, no cap step
+            traffic.gpu, traffic.answer_check = g, None
             return
         from wattnot.node.answercheck import HarnessCapCheck, harness_asker
 
@@ -1091,6 +1097,8 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
         return _traffic.estimate(body.get("workload", "mixed"), int(body.get("n", 60)), bool(body.get("with_without")),
                                  calib=_traffic.load_calib(calib_path), self_hosted=own)
     app.state.traffic = traffic
+    if os.environ.get("WATTNOT_SEQ_MAX_USD"):   # hosted providers: hard $ stop across both arms
+        traffic.seq_max_usd = float(os.environ["WATTNOT_SEQ_MAX_USD"])
 
     @app.post("/api/dash/traffic/estimate")
     def traffic_estimate(body: dict = Body(default={})) -> dict:

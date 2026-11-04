@@ -65,6 +65,48 @@ class NvmlGpu:
     def set_w(self, w: int) -> None:
         self.n.nvmlDeviceSetPowerManagementLimit(self.h, int(w) * 1000)
 
+    def can_cap(self) -> bool:
+        """Can this process set the power limit? Hosted GPUs (Modal, Baseten) give no root, so
+        re-setting the current limit fails there. Probed once, never changes the limit."""
+        if not hasattr(self, "_can_cap"):
+            try:
+                self.set_w(self.limit_w())
+                self._can_cap = True
+            except Exception:  # noqa: BLE001 - NVML NoPermission / NotSupported
+                self._can_cap = False
+        return self._can_cap
+
+
+CAP_UNAVAILABLE = "power cap not available on this provider"
+
+
+class EstimateMeter:
+    """GPU-shaped meter for hosted APIs with no NVML (Baseten Model API): energy is the sum of
+    each request's token-based joules (ESTIMATE). No power cap."""
+    estimate = True
+    label = "ESTIMATE (tokens x J/token per model, no GPU counter on this provider)"
+
+    def __init__(self):
+        self.mj = 0.0
+
+    def add(self, joules) -> None:
+        self.mj += float(joules or 0) * 1000
+
+    def energy_mj(self) -> float:
+        return self.mj
+
+    def limit_w(self):
+        return None
+
+    def default_w(self):
+        return None
+
+    def set_w(self, w) -> None:
+        raise RuntimeError(CAP_UNAVAILABLE)
+
+    def can_cap(self) -> bool:
+        return False
+
 
 HARD = ["A train leaves at 9:40 and arrives at 13:05. It stopped 3 times for 7 minutes each. How many minutes was it moving? Number only.",
         "Smallest positive n with n mod 3 = 2, n mod 5 = 3, n mod 7 = 2? Number only.",
@@ -283,7 +325,8 @@ class TrafficRun:
         items = plan(workload, n)
         self._stop.clear()
         self.state.update(running=True, done=0, total=len(items), errors=0, usd=0.0, stopped=None, cap_rollback=None,
-                          workload=workload, mode=mode, with_without=bool(with_without), without={"done": 0, "usd": 0.0})
+                          workload=workload, mode=mode, with_without=bool(with_without), without={"done": 0, "usd": 0.0},
+                          seq_usd=0.0)
         target = self._run
         if with_without and self.direct and self.gpu is not None:
             target = self._run_sequential   # one GPU: arms one after the other, power measured per arm
@@ -311,14 +354,20 @@ class TrafficRun:
         if name == "with":   # shadow calls to stock run alone and are taken out of this window
             _mon.SHADOW_METER.update(read=g.energy_mj, sync=True, excluded_mj=0, calls=0)
         self.event(step="arm_start", arm=name, cap_w=g.limit_w())
-        self.state["phase"] = (f"without WattNot at {g.limit_w()} W" if name == "without"
-                               else f"with WattNot at {g.limit_w()} W")
+        at = f" at {g.limit_w()} W" if g.limit_w() else " (no power cap on this provider)"
+        self.state["phase"] = ("without WattNot" if name == "without" else "with WattNot") + at
         t0, e0 = time.time(), g.energy_mj()
         texts, toks, usd, per_j = [], 0, 0.0, []
         ctl = getattr(self, "_cap_ctl", None) if name == "with" else None
         for i, (kind, body) in enumerate(items):
             if self._stop.is_set():
-                self.state["stopped"] = "stopped by you"
+                self.state["stopped"] = self.state.get("stopped") or "stopped by you"
+                break
+            spent = float(self.state.get("seq_usd") or 0) + usd
+            cap = getattr(self, "seq_max_usd", None)   # opt-in: hosted runs bill per call
+            if cap is not None and spent >= cap:
+                self.state["stopped"] = f"hard stop: spend reached ${cap:.2f}"
+                self._stop.set()
                 break
             body = {"model": "muse-spark-1.3", **SAMPLING, **body}
             cls = req_class(body)
@@ -330,6 +379,8 @@ class TrafficRun:
             except Exception:  # noqa: BLE001
                 self.state["errors"] += 1
                 r = {}
+            if getattr(g, "estimate", False):
+                g.add(r.get("joules"))
             rj = (g.energy_mj() - ej - (_mon.SHADOW_METER["excluded_mj"] - sj)) / 1000
             # the gate shadow-checks every saver-on call while it is warming up: that is gate warm-up
             warm = name == "with" and _mon.SHADOW_METER["calls"] > sc
@@ -357,13 +408,15 @@ class TrafficRun:
                                             "run one at a time and taken out of this arm"} if name == "with" else None, "seconds": round(time.time() - t0, 1),
                "t0": round(t0, 3), "t1": round(time.time(), 3),
                "cap_w": g.limit_w(), "tokens": toks, "usd": round(usd, 6),
-               "label": "MEASURED (NVML energy counter over the arm's window)", "texts": texts,
+               "label": getattr(g, "label", None) or "MEASURED (NVML energy counter over the arm's window)",
+               "texts": texts,
                "per_request_j": per_j,
                "gate_warmup": {"requests": sum(1 for p in per_j if len(p) > 2),
                                "joules": round(sum(p[1] for p in per_j if len(p) > 2), 1),
                                "label": "gate warm-up: saver-on requests the per-model gate shadow-checked "
                                         "(MEASURED, counted in this arm, left out of the cap probe)"}
                if name == "with" else None}
+        self.state["seq_usd"] = round(float(self.state.get("seq_usd") or 0) + usd, 6)
         self.event(step="arm_end", arm=name, **{k: v for k, v in out.items() if k != "texts"})
         return out
 
@@ -373,11 +426,19 @@ class TrafficRun:
         res: dict = {"mode": "sequential", "stock_w": stock, "harness_cap_w": self.cap_w,
                      "workload": self.state.get("workload"),
                      "run_id": f"seq-{time.strftime('%Y%m%d-%H%M%S')}-{self.state.get('workload')}"}
+        cap_ok = bool(getattr(g, "can_cap", lambda: True)())
+        res["cap_available"] = cap_ok
         try:
-            g.set_w(stock)
+            if cap_ok:
+                g.set_w(stock)
             res["without"] = wo = self._arm("without", items, gap, lambda b, i: self.direct(b))
-            check = self.answer_check() if self.answer_check else None
-            if check is not None:
+            check = self.answer_check() if (self.answer_check and cap_ok) else None
+            if not cap_ok:
+                res["answer_check"] = {"accepted": False, "skipped": True, "why_not": [CAP_UNAVAILABLE],
+                                       "note": "software savers only; the power-cap step is skipped"}
+                self.state["cap_note"] = CAP_UNAVAILABLE
+                self.event(step="cap_unavailable", note=CAP_UNAVAILABLE)
+            elif check is not None:
                 self.state["phase"] = (f"answer check: {getattr(check, 'items', None) and len(check.items)} "
                                        f"proof-v1 prompts, stock vs {self.cap_w} W")
                 check.stock()                      # stock answers at stock power
@@ -396,7 +457,7 @@ class TrafficRun:
             else:
                 res["answer_check"] = {"accepted": False, "why_not": ["no live answer check: cap not applied"]}
             self._cap_ctl = CapController(self, wo.get("per_request_j") or [],
-                                          cap_on=g.limit_w() != stock, stock=stock)
+                                          cap_on=cap_ok and g.limit_w() != stock, stock=stock)
             res["with"] = w = self._arm("with", items, gap,
                                         lambda b, i: self.send(b, {"x-wattnot-run": f"sim-{i}", "x-wattnot-traffic": "simulated"}))
             res["cap_decision"] = self._cap_ctl.decisions
@@ -412,7 +473,7 @@ class TrafficRun:
             res["no_worse"] = (w.get("correct") or 0) >= (wo.get("correct") or 0)
             if wo["joules"]:
                 res["energy_saved_pct"] = round(100 * (wo["joules"] - w["joules"]) / wo["joules"], 2)
-                res["energy_label"] = "MEASURED"
+                res["energy_label"] = "ESTIMATE" if getattr(g, "estimate", False) else "MEASURED"
             self.state["without"]["done"] = wo["requests"]
             self.state["done"] = w["requests"]
         except Exception as e:  # noqa: BLE001
@@ -420,7 +481,8 @@ class TrafficRun:
             self.state["errors"] += 1
         finally:
             try:
-                g.set_w(stock)                     # always back to stock power
+                if cap_ok:
+                    g.set_w(stock)                 # always back to stock power
             finally:
                 res["final_limit_w"] = g.limit_w()
                 self.event(step="restored", cap_w=res["final_limit_w"])
