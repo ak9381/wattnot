@@ -53,6 +53,7 @@
       <h1 class="preview-title">WattNot Meta Tools v5</h1>
       <div class="preview-desc">Live glass card preview for Muse Wonder, Muse Code, SAM 3.1 Hotspots, EU Efficiency Reporting, and Voice Guide.</div>
     </div>
+    <div id="lineup-mount"></div>
     <div id="metatools-mount"></div>
     <div id="hotspot-mount"></div>
     <div id="eyetest-mount"></div>
@@ -94,6 +95,8 @@
   <script type="module" src="./explainmap.js"></script>
   <script type="module">
     import { mountMetaTools } from './metatools.js';
+    import { mountLineup } from './metatools-lineup.js';
+    mountLineup(document.getElementById('lineup-mount'), location.search);
     import { mountHotspotCard } from './hotspot.js';
     import { mountEyeTest } from './eyetest.js';
     import { mountHotspotSet } from './hotspotset.js';

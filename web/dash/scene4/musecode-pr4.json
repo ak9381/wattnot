@@ -1,0 +1,37 @@
+{
+  "section": "musecode_pr",
+  "label": "LIVE",
+  "pr_url": "https://github.com/ak9381/wattnot-demo-deploy/pull/4",
+  "repo": "ak9381/wattnot-demo-deploy (public demo fixture, nothing deployed)",
+  "branch": "wattnot-p2-375w-36151689",
+  "base_commit": "3f7b8f1",
+  "change": {
+    "power_cap_w": 375,
+    "label": "MEASURED (H100 pass 2 p2-sweep winner)"
+  },
+  "evidence": {
+    "energy_change_pct": -28.718861344972723,
+    "p99_change_pct": 6.716350151053905,
+    "quality_cap_pct": 93.919,
+    "quality_stock_pct": 94.144,
+    "checked": 444,
+    "label": "MEASURED",
+    "proof": "proof-de155e.json",
+    "run_id": "run_20261103_102948_de155e"
+  },
+  "patch_sha256": "3615168950bfffc98bb84274329537bddd62d445731c5b5b1402da85a847c094",
+  "receipt_sha256": "c41bf6d5623d00d112a92d6a1f312911c013998a5a55ff8f6bcd12970cd3606f",
+  "muse_code": {
+    "cli": "muse exec --json",
+    "model": "muse-spark-1.3-contributor",
+    "session_id": "01a1a1ff-2dba-7c90-a2e0-d6956c9ccea2",
+    "trace_id": "01a1a1ff-3513-72c2-8f52-f93cbd7a4ba5",
+    "usage": {
+      "input_tokens": 104564,
+      "output_tokens": 1601,
+      "total_tokens": 106165
+    },
+    "spend_usd_estimate": 0.011097,
+    "spend_note": "ESTIMATE from token counts"
+  }
+}

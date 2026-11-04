@@ -9,8 +9,8 @@ export const ROSTER = [
   { id: "voice", name: "Muse Voice", role: "spoken Ask and tune", match: /^muse-voice/ },
   { id: "code", name: "Muse Code", role: "sandboxed PR for the change", match: /^muse-code/ },
   { id: "open", name: "Spark Open", role: "routing on Baseten", match: /spark-open/ },
-  // Muse Image is blocked in India: never a live call here, only its pre-generated test sets.
-  { id: "image", name: "Muse Image", role: "vision quality gate images (any miss rejects a change); SAM hotspot test set", match: /^$/, static: "SYNTHETIC", note: "pre-generated set; blocked in India, no live call" },
+  // Muse Image made the eye-check test sets ahead of the run; no Muse Image call during this run.
+  { id: "image", name: "Muse Image", role: "vision quality gate images (any miss rejects a change); SAM hotspot test set", match: /^$/, static: "SYNTHETIC", note: "generated with Muse Image before the run (SYNTHETIC test set)" },
 ];
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 

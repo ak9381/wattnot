@@ -35,7 +35,7 @@
         <button class="wn-menu" id="wnMenu" aria-controls="wnSide" aria-expanded="false" aria-label="Open the page menu">Menu</button>
         <div class="wn-links" style="margin-left:auto">
           <a class="wn-link" data-top="configure" href="${prefix}plug.html#setup">Plug in</a>
-          <a class="wn-link" data-top="run" href="${prefix}plug.html#live">Live savings</a>
+          <a class="wn-link" data-top="run" href="${prefix}graph.html">Live savings</a>
           <a class="wn-link" data-top="results" href="${prefix}report.html">Results</a>
           <a class="wn-link" data-top="proof" href="${prefix}approvals.html">Proof</a>
           <a class="wn-link" data-top="costs" href="${prefix}costbudget.html">Costs</a>
@@ -52,7 +52,7 @@
     const G = [
       ["overview", "Start here", [["dashboard", "v2.html#pHome", "Home"], ["learn", "v2.html#pLearn", "How it works"]]],
       ["configure", "Plug in", [["plug", "plug.html#setup", "Plug in (3 steps)"], ["configure", "v2.html#pCfg", "Test run setup (advanced)"]]],
-      ["run", "Live savings", [["plugl", "plug.html#live", "Live savings"], ["graph", "graph.html", "Test run view (replay)"], ["runs", "runs.html", "Past runs"], ["matrix", "matrix.html", "All test rounds"], ["replay", "v2.html#pRun", "Replay a run"]]],
+      ["run", "Live savings", [["graph", "graph.html", "Live savings"], ["plugl", "plug.html#live", "Go live (plug in)"], ["runs", "runs.html", "Past runs"], ["matrix", "matrix.html", "All test rounds"], ["replay", "v2.html#pRun", "Replay a run"]]],
       ["results", "Results", [["reports", "report.html", "Report"], ["compare", "v2.html#pReport", "With vs without"]]],
       ["proof", "Proof", [["approvals", "approvals.html", "Approvals"], ["proofs", "v2.html#pProof", "Signed receipts"]]],
       ["costs", "Costs", [["costbudget", "costbudget.html", "Cost budget"], ["eu", "eu.html", "EU energy report"]]],
