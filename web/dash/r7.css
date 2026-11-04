@@ -185,3 +185,6 @@ body:not(.illus) [data-illus] { display: none !important; }
 .ov-legend{margin-top:8px}.ov-legend .r7legend{flex-direction:row;flex-wrap:wrap;gap:12px;font-size:12px}
 
 .r7info header{position:sticky;top:-18px;padding-top:4px;background:inherit;z-index:1}.r7info .r7ix{font-size:14px;padding:6px 12px}
+.bigchart{width:min(1200px,94vw);max-height:90vh;padding:18px 22px;border-radius:18px;border:1px solid rgba(255,255,255,.16);background:rgba(12,16,30,.97);color:#E4DFEB}
+.bigchart::backdrop{background:rgba(0,0,0,.6)}.bigchart header{display:flex;justify-content:space-between;align-items:center}.bigchart h3{margin:0}
+.bigchart-body svg{width:100%;height:auto;min-height:420px}

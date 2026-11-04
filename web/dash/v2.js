@@ -122,7 +122,26 @@ function renderHome() {
   if (rid && S.replaySum?.id !== rid && !S._replayLoading) { S._replayLoading = true; replaySummary(rid).then((x) => { S.replaySum = x; S._replayLoading = false; renderHome(); }); }
   $("#pHome").innerHTML = overviewHtml(S);
   $$("#pHome [data-go]").forEach((a) => (a.onclick = (e) => { e.preventDefault(); show(a.dataset.go); }));
-  $$("#pHome [data-pg]").forEach((b) => (b.onclick = () => openPowerGraph(S.radRecs?.[S.runs?.runs?.[0]?.id])));
+  // "Open bigger": the same chart, with the same run's data, in a large closable overlay.
+  $$("#pHome [data-pg]").forEach((b) => {
+    const sec = b.closest("section"), svg = sec?.querySelector("svg");
+    if (!svg) { b.remove(); return; }
+    b.onclick = () => {
+      let d = document.getElementById("bigChart");
+      if (!d) {
+        d = document.createElement("dialog"); d.id = "bigChart"; d.className = "bigchart glass";
+        d.innerHTML = `<header><h3></h3><button class="btn" aria-label="Close chart">✕ Close</button></header><div class="bigchart-body"></div>`;
+        document.body.appendChild(d);
+        d.querySelector("button").onclick = () => d.close();
+        d.addEventListener("click", (e) => { if (e.target === d) d.close(); });
+      }
+      d.querySelector("h3").textContent = sec.querySelector("h3")?.textContent.trim() || "Chart";
+      const body = d.querySelector(".bigchart-body"); body.innerHTML = "";
+      body.appendChild(svg.cloneNode(true));
+      sec.querySelectorAll(".r7note, .r7leg, .legend").forEach((n) => body.appendChild(n.cloneNode(true)));
+      d.showModal();
+    };
+  });
 }
 // The round 6 overview, kept for reference; no longer mounted.
 function renderHomeClassic() {
