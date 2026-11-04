@@ -162,11 +162,11 @@ tree is fonts and icons under `web/dash/vendor/`; all other dependencies are ins
 |---|---|---|---|
 | New work only | ✅ | Repo created Oct 26; first commit `043ce2c` at 22:09 IST, after kickoff ended at 12:24 PM ET (9:54 PM IST). | `git log --reverse`, [Eligibility](#eligibility-and-disclosures) |
 | Public repo, open licence | ✅ | Public on GitHub, MIT licence. | [`LICENSE`](LICENSE) |
-| Only Meta models at runtime | ✅ | Every runtime model is a Meta model; the table says where each runs. No Llama model is used. Some old Llama names in UI text and runbooks are being removed on `fix/no-llama-1105` (⏳ merge). | [Meta models used](#meta-models-used-and-where-each-runs) |
+| Only Meta models at runtime | ✅ | Every runtime model is a Meta model; the table says where each runs. No Llama model is used. | [Meta models used](#meta-models-used-and-where-each-runs) |
 | Open weights | ✅ | Open-weight Meta models we run: **Muse Glimmer 30B** (vLLM BF16 on our rented H100 80GB, and on Modal A100-80GB) and **Muse Spark Open** (Baseten, hosted). Why: WattNot tunes power caps, batching, KV cache and FP8, which only works on a server we control. Licences: each under Meta's own model licence for that release (see the model cards). SAM 3.1 is called through the hosted Meta Model API here, not self-hosted, and the Open Weight bonus counts only Glimmer and Spark Open, not SAM. | [Open weights: how, where, why](#open-weights-how-where-why) |
 | TTS disclosed | ✅ | Video voice-over is Runway TTS (ElevenLabs `eleven_v4`). Piper only pre-voices test clips offline, not in the runtime path. | [TTS disclosure](#demo-video-and-voice-tts-disclosure) |
 | Muse Image disclosed | ✅ | Vision gate and SAM hotspot images were pre-generated with Muse Image and labelled SYNTHETIC. No live call. | [Datasets](#public-datasets-and-our-own-sets) |
-| Built with Muse Spark Open | ✅ | Stated at the top of this README. App footer line is on `fix/footer-spark-open-1105` (⏳ merge). | top of README |
+| Built with Muse Spark Open | ✅ | Stated at the top of this README. The app footer says it too. | top of README |
 | Data rights | ✅ | Public sets are MIT / CC BY / CC BY-SA with attribution; our own sets are CC0. Only data we have rights to. | [`DATASET-LICENCES.md`](DATASET-LICENCES.md) |
 | Judges can run it | ✅ | `./start.sh` plays a keyless recorded replay. Live modes use your own key via `.env.example`; `.env` is gitignored. An old rehearsal key in early history (`856c06f`) is revoked. | [Keys](#keys), [`.env.example`](.env.example) |
 | Demo video | ⏳ | Plan: ≤ 3:00, mostly real screen footage, AI avatar and TTS labelled, replays labelled REPLAY, opens with a built-this-week line. Link not added yet. | Demo video link above (TBD) |
@@ -253,7 +253,7 @@ Full licence detail, links and attribution: [`DATASET-LICENCES.md`](DATASET-LICE
 | OpenAI Python SDK | Client for OpenAI-compatible endpoints (vLLM, Meta API) | Apache 2.0 |
 | NumPy, Pillow | Image maths, overlays and charts | BSD-3, MIT-CMU |
 | Piper | Made the spoken test clips offline (not in the runtime path) | MIT |
-| sigstore-python (optional) | Publishing receipts to the public Rekor log | Apache 2.0 |
+| sigstore-python (optional) | Optional receipt signing helper; not used for any claim here | Apache 2.0 |
 | Inter, JetBrains Mono, Lucide | Fonts and icons in `web/dash/vendor/` | OFL 1.1, OFL 1.1, ISC |
 
 ### Demo video and voice (TTS) disclosure
