@@ -7,7 +7,7 @@
 // plug.html lives inside the Live graph app (graph.html → ⚡ Go live). Opened on its own, go there.
 (function(){ var q = new URLSearchParams(location.search);
   if (q.get("embed") === "1" || window.top !== window.self) document.documentElement.classList.add("embed");
-  else if (q.get("standalone") !== "1") location.replace("graph.html" + location.search + "#golive"); })();
+  else if (q.get("standalone") !== "1" && location.hash !== "#setup") location.replace("graph.html" + location.search + "#golive"); })();
 </script>
 <script>if (!document.documentElement.classList.contains("embed")) document.write('<script src="chrome.js" defer><\/script>');</script><script type="module" src="voiceguide.js"></script>
 </head><body>

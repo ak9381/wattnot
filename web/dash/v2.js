@@ -817,7 +817,7 @@ function radialHtml(runs, featuredId, rec) {
   }
   const drop = runs.map((r) => `<button class="centre-opt${r.id === featuredId ? " now" : ""}" data-run="${esc(r.id)}" role="option" aria-selected="${r.id === featuredId}">${esc(r.name)}</button>`).join("")
     || `<span class="rad-miss">No runs listed.</span>`;
-  const feat = runs.find((r) => r.id === featuredId) || runs[0];
+  const feat = String(rec?.run_id || "").startsWith("replay:") ? { name: rec.run_name } : (runs.find((r) => r.id === featuredId) || runs[0]);
   return `<div class="bento"><div class="radial-bar noprint span6">`
     + `<span style="flex:1"></span><button class="btn" data-radial="open">Expand all</button><button class="btn" data-radial="close">Collapse all</button></div>`
     + `<div class="radial-wrap glass tile span6 low" id="radialWrap"><svg class="radial-wires" id="radialWires" aria-hidden="true"></svg>`
@@ -1006,9 +1006,21 @@ async function renderReport() {
       ${t.kids.map((k) => `<div class="leaf"><span class="leaf-ic" aria-hidden="true">${MAP_ICON[k.icon] || ""}</span><div><b>${esc(k.label)}</b><span>${k.text}</span></div></div>`).join("")}
       <div class="topic-detail">${t.detail}</div>
     </div></div>`;
-  const featRec = S.selRunId === BUNDLED_ID ? bundledRecord(S.run2) : (S.selRun || (S.radRecs && S.radRecs[selId]) || null);
-  const cst = compareState(runs, S.selRunId === BUNDLED_ID ? BUNDLED_ID : selId, featRec);
+  let featRec = S.selRunId === BUNDLED_ID ? bundledRecord(S.run2) : (S.selRun || (S.radRecs && S.radRecs[selId]) || null);
+  let cst = compareState(runs, S.selRunId === BUNDLED_ID ? BUNDLED_ID : selId, featRec);
   S.cmpState = cst; S.cmpRec = cst.kind === "ok" || cst.kind === "bundled" ? featRec : null;
+  // A replay picked in the sidebar wins: the compare view shows that run's own recorded numbers.
+  const rpId = selectedReplay(location.search, localStorage.getItem("wn.run"));
+  if (rpId) {
+    if (S.replaySum?.id !== rpId) S.replaySum = await replaySummary(rpId);
+    const rs = S.replaySum;
+    if (rs && rs.j_per_req_stock != null) {
+      const ev = (k) => (rs.series?.sets?.[k]?.pts || []).map((p) => ({ j_per_req: p.y }));
+      featRec = { run_id: `replay:${rpId}`, run_name: `${rpId} (REPLAY)`, label: "REPLAY", price_usd_per_kwh: rs.tariff ?? undefined,
+        phases: { baseline: { metrics: { j_per_req: rs.j_per_req_stock }, events: ev(0) }, wattnot: { metrics: { j_per_req: rs.j_per_req_cap }, events: ev(1) } } };
+      cst = { kind: "ok" }; S.cmpState = cst; S.cmpRec = featRec;
+    }
+  }
   const radOrEmpty = S.cmpRec ? `${cst.kind === "bundled" ? bundledBanner() : ""}${radialHtml(runs, selId, featRec)}` : emptyStateHtml(cst, !!bundledRecord(S.run2));
   const passedSavers = S.cmpRec ? passingSaverIds(featRec) : [];
   const liveBtn = passedSavers.length ? `<p class="noprint"><a class="btn pri" href="plug.html?from=test&passed=${encodeURIComponent(passedSavers.join(","))}#setup">Use these settings live</a> <span style="color:var(--mu);font-size:13px">Carries the savers that passed (${esc(passedSavers.join(", "))}) into Go live.</span></p>` : "";
@@ -1156,6 +1168,7 @@ function mountCompare() {
   const runSel = $("#cmpRunSel", top);
   if (runSel) {
     runSel.value = selId;
+    if (String(rec?.run_id || "").startsWith("replay:")) { runSel.insertAdjacentHTML("afterbegin", `<option value="${esc(rec.run_id)}">${esc(rec.run_name)}</option>`); runSel.value = rec.run_id; runSel.disabled = true; runSel.title = "Change the run in the sidebar picker"; }
     runSel.onchange = (e) => selectRun(e.target.value);
   }
 
@@ -1591,7 +1604,7 @@ const FEATURES = [
   ["eu", "€", "EU efficiency report", "One click to the yearly numbers EU data centers must file.", "EU Delegated Regulation 2024/1364 asks data centers of 500 kW or more for yearly energy, PUE, water and waste-heat figures. WattNot fills the energy and saving rows from its receipts and leaves the rest clearly marked for the operator.", "ESTIMATE"],
 ];
 function renderLearn() {
-  $("#pLearn").innerHTML = `<div class="intro"><div><h1>How it works, one feature at a time</h1><p>Each card is a feature we built. The first line says what it does. Open it for how, the numbers, and where they come from.</p></div></div>${archHTML(selectedReplay(location.search, localStorage.getItem("wn.run")))}${ctrl()}
+  $("#pLearn").innerHTML = `<div class="intro"><div><h1>How it works, one feature at a time</h1><p>Each card is a feature we built. The first line says what it does. Open it for how, the numbers, and where they come from.</p></div></div>${archHTML(selectedReplay(location.search, localStorage.getItem("wn.run")))}
   <div class="feat">${FEATURES.map(([id, ic, t, s, body, tag]) => `<div${tag === "PENDING" ? ' class="is-pending" title="Pending: not measured yet"' : ""}>${card(`f-${id}`, ic, t, s, `<p>${esc(body)} ${badge(tag)}</p>`)}</div>`).join("")}</div>`;
   wireArch($("#pLearn"));
 }
