@@ -48,7 +48,8 @@ def flags_present(argv: list[str], want: list[str]) -> list[str]:
 
 
 def try_lever(lever: str, *, model: str, stock: TrialParams, restart, running_argv, healthy,
-              check=None, log=None, value=None, wait_s: float = 900, sleep=time.sleep) -> dict:
+              check=None, log=None, value=None, wait_s: float = 900, sleep=time.sleep,
+              args_fn=server_args) -> dict:
     """restart(argv) relaunches vLLM; running_argv() -> argv of the live server process;
     healthy() -> True once /v1/models answers; check: an AnswerCheck whose .ref is the stock round."""
     log = log or (lambda **kw: None)
@@ -61,7 +62,7 @@ def try_lever(lever: str, *, model: str, stock: TrialParams, restart, running_ar
     if check is None:
         log(step="refused", lever=lever, why="no live answer check given: stays at stock")
         return {"lever": lever, "kept": False, "why": "no answer check"}
-    stock_argv, want = server_args(model, stock), server_args(model, trial)
+    stock_argv, want = args_fn(model, stock), args_fn(model, trial)
 
     def up(argv) -> bool:
         restart(argv)

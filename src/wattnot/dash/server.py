@@ -1130,6 +1130,8 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
         nt = node_job["thread"]
         if nt is not None and nt.is_alive():   # one GPU job at a time: the power check owns the GPU
             raise HTTPException(409, GPU_BUSY)
+        if app.state.lever_run.alive():
+            raise HTTPException(409, GPU_BUSY)
         if gw.app is None:
             raise HTTPException(409, "Start the gateway first (step 3).")
         est = _est(body)
@@ -1159,6 +1161,79 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
 
     node_job: dict = {"thread": None, "result": None}
 
+    # ------------------------------------------------ one server lever (FP8 / KV cache / batching)
+    from wattnot.node import leverrun as _lr
+
+    class _LeverGpu:
+        def __init__(self):
+            from wattnot.gateway.traffic import NvmlGpu
+            self.g = NvmlGpu()
+
+        def energy_mj(self):
+            return self.g.energy_mj()
+
+        def power_w(self):
+            return round(self.g.n.nvmlDeviceGetPowerUsage(self.g.h) / 1000, 1)
+
+    def _lever_busy():
+        nt = node_job["thread"]
+        if (nt is not None and nt.is_alive()) or traffic.state.get("running") or \
+                (traffic.thread is not None and traffic.thread.is_alive()):
+            return GPU_BUSY
+        return None
+
+    lever_run = app.state.lever_run if hasattr(app.state, "lever_run") else None
+    if lever_run is None:
+        try:
+            _lg = _LeverGpu()
+        except Exception:  # noqa: BLE001 - no NVML here: status/plan still work, start refuses
+            _lg = None
+        Path("out/lever").mkdir(parents=True, exist_ok=True)
+        lever_run = _lr.LeverRun(_lg, busy=_lever_busy, log_path="out/lever/lever-events.jsonl")
+        app.state.lever_run = lever_run
+
+    @app.get("/api/dash/lever/plan")
+    def lever_plan(lever: str = "fp8") -> dict:
+        try:
+            return lever_run.plan(lever)
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from e
+
+    @app.post("/api/dash/lever/start")
+    def lever_start(body: dict = Body(default={})) -> dict:
+        try:
+            return lever_run.start(str(body.get("lever", "")))
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from e
+        except RuntimeError as e:
+            raise HTTPException(409, str(e)) from e
+
+    @app.post("/api/dash/lever/stop")
+    def lever_stop() -> dict:
+        lever_run.stop()
+        return lever_run.status()
+
+    @app.get("/api/dash/lever/status")
+    def lever_status() -> dict:
+        st = lever_run.status()
+        st["server"] = {"models_ok": _lr.models_ok(timeout=3), "stock_problems": lever_run.stock_problems()}
+        return st
+
+    @app.post("/api/dash/lever/selfcheck")
+    def lever_selfcheck(body: dict = Body(default={})) -> dict:
+        """No trial: show the plan, and (restart=true) run the restore path once to prove it."""
+        why = _lever_busy() or ("a lever trial is running" if lever_run.alive() else None)
+        if why:
+            raise HTTPException(409, why)
+        out = {"plans": {k: lever_run.plan(k) for k in _lr.UI_LEVERS},
+               "before": {"models_ok": _lr.models_ok(timeout=3), "stock_problems": lever_run.stock_problems()}}
+        if body.get("restart"):
+            t0 = time.time()
+            lever_run.docker.restart(_lr.glimmer_args(_lr.MODEL, _lr.STOCK))
+            out["restore"] = lever_run.restore()
+            out["restore"]["seconds"] = round(time.time() - t0, 1)
+        return out
+
     @app.post("/api/dash/node/run")
     def node_run(body: dict = Body(default={})) -> dict:
         """Add the node agent: rack check, then (with approve) the cap sweep. One job at a time."""
@@ -1169,6 +1244,8 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
         if t is not None and t.is_alive():
             raise HTTPException(409, GPU_BUSY)
         if body.get("approve") and traffic.state.get("running"):   # traffic is using the GPU
+            raise HTTPException(409, GPU_BUSY)
+        if app.state.lever_run.alive():   # a server-lever trial owns the GPU and vLLM
             raise HTTPException(409, GPU_BUSY)
         ncfg = load_config(gateway) if gateway else load_config(None)
         if (ncfg.get("node") or {}).get("meter") in ("remote", "estimate"):

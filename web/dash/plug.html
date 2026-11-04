@@ -66,6 +66,14 @@
       <p><b id="tCost">Estimated cost: …</b> <small>Real API calls. A run stops itself at $1.</small></p>
       <p><button id="tStart" class="pri">Start</button> <button id="tStop">Stop</button> <span id="tState" class="small" role="status"></span></p>
       <p id="tAbOut" class="small"></p></section>
+    <section id="lever" class="panel"><h2>Server levers, one at a time <span class="tag">MEASURED</span></h2>
+      <p class="small">Tries one vLLM setting on your own GPU against stock, side by side, with the answer check. Traffic goes to your local vLLM (:8000), not a hosted API. Stock BF16 (64 seqs, KV auto, memory 0.90) is always put back, also on Stop or failure. Two server restarts, about 15 min.</p>
+      <div class="row"><label>Lever <select id="lvSel"><option value="fp8">FP8 weights</option><option value="kv_cache">FP8 KV cache</option><option value="batching">Batching (512 seqs)</option></select></label>
+        <span id="lvPlan" class="small"></span></div>
+      <p><button id="lvStart" class="pri">Start lever trial</button> <button id="lvStop">Stop and restore stock</button> <span id="lvState" class="small" role="status"></span></p>
+      <canvas id="lvGraph" width="720" height="160" aria-label="GPU power during the lever trial"></canvas>
+      <table id="lvArms" class="small"></table>
+      <p id="lvOut" class="small"></p></section>
     <h2>GPU helper</h2><p class="small">For data centers: checks the rack photo, then lowers the power limit step by step while checking answers.</p>
     <p><button id="addNode">Add GPU helper</button> <button id="approveNode">OK, start the power check</button> <span id="nodeMsg" class="small" role="status"></span></p>
     <ol id="nodeSteps"></ol>
@@ -74,4 +82,5 @@
   </section>
 </main>
 <script type="module" src="plug.js"></script>
+<script type="module" src="lever.js"></script>
 </body></html>
