@@ -7,8 +7,12 @@ prefix caching, reasoning effort), measures the joules on the GPU, and keeps the
 fixed quality gate passes. Every kept change becomes a signed, hash-chained receipt you can
 re-verify. Built on Meta models.
 
-**Built with Muse Spark Open**, a Meta open-weight model (it runs the hosted-API saver round on
-Baseten, alongside open-weight Muse Glimmer 30B as the served model being tuned).
+**Built on Meta open weights (submitted for Best Build on Meta Open Weight Models).** We run
+**Muse Glimmer 30B** ourselves on vLLM, on our own H100 and on a Modal A100, so WattNot can tune
+power caps, batching, KV cache and FP8 and meter every joule. **Built with Muse Spark Open**, which
+we deploy ourselves on Baseten for the hosted-API saver round. [How, where and why](#open-weights-how-where-why).
+
+**Architecture:** [diagram](docs/img/wattnot-architecture.png) · [full design doc (PDF)](docs/WattNot-Design.pdf)
 
 **Read the full project write-up:** [`docs/PROJECT-DESCRIPTION.md`](docs/PROJECT-DESCRIPTION.md)
 
