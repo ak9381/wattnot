@@ -24,17 +24,20 @@ _spec.loader.exec_module(gsa)
 
 # --- engine selection -----------------------------------------------------------------------
 
-def test_edge_tts_is_the_preferred_engine():
-    assert gsa.ENGINE_ORDER[0] == "edge-tts"
+def test_piper_is_preferred_then_edge_tts():
+    assert gsa.ENGINE_ORDER[:2] == ["piper", "edge-tts"]
+    assert gsa.PIPER_VOICE_NAME == "en_US-ljspeech-medium"
     assert gsa.EDGE_DEFAULT_VOICE == "en-US-AndrewNeural"
 
 
 def test_pick_engine_prefers_edge_then_falls_back(monkeypatch):
     # edge-tts available -> picked over the offline engines
     monkeypatch.setattr(gsa, "_engine_available", lambda n: True)
+    assert gsa.pick_engine() == "piper"
+    monkeypatch.setattr(gsa, "_engine_available", lambda n: n != "piper")
     assert gsa.pick_engine() == "edge-tts"
     # edge-tts unavailable -> next available in order
-    monkeypatch.setattr(gsa, "_engine_available", lambda n: n != "edge-tts")
+    monkeypatch.setattr(gsa, "_engine_available", lambda n: n not in ("piper", "edge-tts"))
     assert gsa.pick_engine() == "ffmpeg-flite"
     # a forced engine that is unavailable -> None (never silently substitute)
     monkeypatch.setattr(gsa, "_engine_available", lambda n: False)

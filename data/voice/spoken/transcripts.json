@@ -1,9 +1,9 @@
 {
   "spec": "wattnot.spokenanswer.transcripts/1",
   "label": "SYNTHETIC",
-  "source": "TTS-edge-tts",
-  "note": "Transcripts of the spoken takes. The audio was synthesized from the question text with edge-tts (free neural TTS, voice en-US-AndrewNeural, online, no API key), so each transcript IS the question text. SYNTHETIC - a machine voice, not a human. The gate feeds this text to the served model (Glimmer) to answer.",
-  "transcriber": "TTS-edge-tts",
+  "source": "TTS-piper",
+  "note": "Transcripts of the spoken takes. The audio was synthesized from the question text with piper (MIT, offline neural TTS, voice en_US-ljspeech-medium: model MIT, trained on public-domain LJ Speech), so each transcript IS the question text. SYNTHETIC - a machine voice, not a human. The gate feeds this text to the served model (Glimmer) to answer.",
+  "transcriber": "TTS-piper",
   "transcripts": {
     "q-gpus-clean": "How many GPUs are in the rack?",
     "q-gpus-datacenter": "How many GPUs are in the rack?",

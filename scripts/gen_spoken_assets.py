@@ -9,7 +9,7 @@ transcript of every take is exactly that text (no separate transcription step).
     python scripts/gen_spoken_assets.py --engine edge-tts   # neural voice (preferred)
     python scripts/gen_spoken_assets.py                       # auto-pick best engine
 
-The preferred engine is ``edge-tts`` - a FREE neural TTS (Microsoft Edge voices,
+The preferred engine is ``piper`` (MIT, offline, redistributable voice); before it was ``edge-tts`` - a FREE neural TTS (Microsoft Edge voices,
 no API key). The committed flite/espeak voices are robotic and the hosted ASR
 (Muse Voice Transcribe) garbled them ("How many many US are interacting?"); an
 edge-tts clip of the same text transcribed EXACTLY in a live test. edge-tts is
@@ -52,6 +52,26 @@ ASSETS = ROOT / "data" / "voice" / "spoken"
 
 EDGE_DEFAULT_VOICE = "en-US-AndrewNeural"
 
+# Piper (MIT, offline, CPU). Default voice en_US-ljspeech-medium: model MIT
+# (rhasspy/piper-voices), trained on LJ Speech (public domain), so the WAVs can be redistributed.
+# Get it: https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US/ljspeech/medium
+PIPER_DEFAULT_MODEL = os.environ.get("WATTNOT_PIPER_MODEL", "en_US-ljspeech-medium.onnx")
+PIPER_VOICE_NAME = "en_US-ljspeech-medium"
+
+
+def _piper_cli() -> str | None:
+    return os.environ.get("WATTNOT_PIPER") or shutil.which("piper")
+
+
+def _synthesize_piper(text: str, out: Path) -> None:
+    """Piper writes 22.05 kHz; ffmpeg converts to 16 kHz mono s16le like the other engines."""
+    with tempfile.NamedTemporaryFile(suffix=".wav") as raw:
+        subprocess.run([_piper_cli(), "-m", PIPER_DEFAULT_MODEL, "-f", raw.name],
+                       input=text.encode("utf-8"), check=True,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", raw.name, "-ar", "16000",
+                        "-ac", "1", "-c:a", "pcm_s16le", str(out)], check=True)
+
 # Offline engine -> argv builder: (text, out_wav) -> command, each writes a WAV directly.
 # edge-tts is handled separately (online, two-step: mp3 -> ffmpeg) and preferred over these.
 ENGINES = {
@@ -66,7 +86,7 @@ ENGINES = {
 }
 
 # Preferred first: a neural voice the hosted ASR transcribes cleanly.
-ENGINE_ORDER = ["edge-tts", "ffmpeg-flite", "espeak-ng", "espeak", "pico2wave", "flite"]
+ENGINE_ORDER = ["piper", "edge-tts", "ffmpeg-flite", "espeak-ng", "espeak", "pico2wave", "flite"]
 
 
 def _edge_cli() -> str | None:
@@ -83,6 +103,8 @@ def _ffmpeg_has_flite() -> bool:
 
 
 def _engine_available(name: str) -> bool:
+    if name == "piper":
+        return bool(_piper_cli()) and Path(PIPER_DEFAULT_MODEL).is_file() and bool(shutil.which("ffmpeg"))
     if name == "edge-tts":
         return _edge_cli() is not None and shutil.which("ffmpeg") is not None
     if name == "ffmpeg-flite":
@@ -117,6 +139,8 @@ def _synthesize_edge(text: str, out: Path, voice: str) -> None:
 
 
 def _synthesize(engine: str, text: str, out: Path, voice: str = EDGE_DEFAULT_VOICE) -> None:
+    if engine == "piper":
+        return _synthesize_piper(text, out)
     if engine == "edge-tts":
         _synthesize_edge(text, out, voice)
         return
@@ -190,7 +214,9 @@ def main(argv: list[str] | None = None) -> int:
     source = f"TTS-{engine}"
     voice_note = f", voice {a.voice}" if online else ""
     engine_desc = f"{engine} (free neural TTS{voice_note}, online, no API key)" if online \
-        else f"{engine} (offline TTS, no API)"
+        else (f"piper (MIT, offline neural TTS, voice {PIPER_VOICE_NAME}: model MIT, "
+              f"trained on public-domain LJ Speech)" if engine == "piper"
+              else f"{engine} (offline TTS, no API)")
     (ASSETS / "transcripts.json").write_text(json.dumps({
         "spec": "wattnot.spokenanswer.transcripts/1",
         "label": "SYNTHETIC",
