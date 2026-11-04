@@ -11,6 +11,8 @@
 // reports metered joules. The cloud runs record request counts but no GPU
 // energy, so they contribute "—" to the energy/water/cost totals.
 
+import { replaySummary } from "./replaystats.js";
+const REPLAY_IDS = ["modal-r1", "modal-r2", "baseten-r1", "baseten-r2", "h100-max-1103"];
 const EM = "—"; // em dash for missing values
 
 // ---- constants from story.json (shown with their own labels) ----
@@ -130,6 +132,15 @@ async function main() {
   }
 
   if (runsList.length) {
+    // Recorded replays under /replays/ carry their own metered numbers; add them so the
+    // totals are not blank when the API only has the old cloud fixtures.
+    const reps = await Promise.all(REPLAY_IDS.map((id) => replaySummary(id).catch(() => null)));
+    for (const x of reps) {
+      if (!x) continue;
+      const ok = isNum(x.j_per_req_stock) && isNum(x.j_per_req_cap) && isNum(x.requests);
+      details.push({ id: x.id, run_name: `${x.id} (replay)`, label: x.energy_label,
+        phases: ok ? { baseline: { metrics: { j_per_req: x.j_per_req_stock } }, wattnot: { metrics: { j_per_req: x.j_per_req_cap, requests: x.requests, label: x.energy_label } } } : null });
+    }
     renderKpis(runsList, details);
     renderTrend(runsList, details);
     renderTable(runsList, details);
@@ -190,9 +201,8 @@ function renderKpis(runsList, details) {
     <div class="formula">Σ over runs of (baseline J/req − WattNot J/req) × requests</div>
     <h4>Per-run contribution</h4>
     <ul class="rowlist">${contribList((r) => `${fmt(r.j, 0)} J`)}</ul>
-    <p class="note">Only the on-prem H100 run is metered for GPU energy, so it is the
-      one run that contributes measured joules. The cloud runs record request
-      counts but no GPU power, so they show ${EM}.</p>`;
+    <p class="note">Runs with a GPU power meter (H100 and Modal replays) contribute measured
+      joules. Hosted-API runs without a meter show ${EM}: no power reading was recorded.</p>`;
 
   sidePanels.k_water = `
     <h3>Water saved</h3>
@@ -235,7 +245,7 @@ function renderKpis(runsList, details) {
       <div class="big">${isNum(joules)
         ? `<span class="v-num">${esc(eng.text)}</span><span class="unit">${eng.unit}</span>${dot("MEASURED")}`
         : `<span class="emdash">${EM}</span>`}</div>
-      <div class="foot">${isNum(joules) ? "Measured GPU joules, H100 run" : "No metered run"}</div>
+      <div class="foot">${isNum(joules) ? `Measured joules from ${measuredRows.length} run(s): ${esc(measuredRows.map((r) => r.name).join(", "))}` : `No run has metered energy (${missedRows.length} without a power meter)`}</div>
     </div>
     <div class="kpi v-glass" data-side="k_water" data-explain="runs.total.water" data-explain-value="${esc(isNum(litres) ? fmt(litres, 3) + ' L' : EM)}" data-explain-label="ESTIMATE" data-explain-source="water_factor" role="button" tabindex="0">
       <span class="more">Details &rarr;</span>
@@ -243,7 +253,7 @@ function renderKpis(runsList, details) {
       <div class="big">${isNum(litres)
         ? `<span class="v-num">${fmt(litres, 3)}</span><span class="unit">L</span>`
         : `<span class="emdash">${EM}</span>`}</div>
-      <div class="foot">${isNum(litres) ? `From energy &times; ${WATER_L_PER_KWH} L/kWh (on-site, ESTIMATE); up to ${WATER_L_PER_KWH_UPPER} L/kWh incl. power-plant water` : "Needs metered energy"}</div>
+      <div class="foot">${isNum(litres) ? `From energy &times; ${WATER_L_PER_KWH} L/kWh (on-site, ESTIMATE); up to ${WATER_L_PER_KWH_UPPER} L/kWh incl. power-plant water` : "Needs metered energy: no run in this list has a GPU power meter"}</div>
     </div>
     <div class="kpi v-glass" data-side="k_cost" data-explain="runs.total.cost" data-explain-value="${esc(isNum(usd) ? '$' + fmt(usd, 4) : EM)}" data-explain-label="ESTIMATE" data-explain-source="usd_per_kwh" role="button" tabindex="0">
       <span class="more">Details &rarr;</span>

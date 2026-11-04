@@ -1,3 +1,5 @@
+import { archHTML, wireArch } from "./learnarch.js";
+import { replaySummary, selectedReplay, replayRuns } from "./replaystats.js";
 import { esc, badge, num, cnum, metaSpend, legendHtml, stageState, ledgerRows, run2Rows, verifySummary, phaseLabel, frameworkStackBadge, frameworkChip } from "./v2lib.js";
 import { openThermal } from "./thermal.js";
 import { renderProof, wireIllus } from "./proof.js";
@@ -115,6 +117,9 @@ const LEARN_INFO = {};
 // Round 7 overview: sidebar, KPI cards, trend, donut, gauge and table, all from run data.
 function renderHome() {
   wireR7();
+  const rid = selectedReplay(location.search, localStorage.getItem("wn.run"));
+  if (!S.replayRuns && !S._rrLoading) { S._rrLoading = true; replayRuns().then((x) => { S.replayRuns = x; renderHome(); }); }
+  if (rid && S.replaySum?.id !== rid && !S._replayLoading) { S._replayLoading = true; replaySummary(rid).then((x) => { S.replaySum = x; S._replayLoading = false; renderHome(); }); }
   $("#pHome").innerHTML = overviewHtml(S);
   $$("#pHome [data-go]").forEach((a) => (a.onclick = (e) => { e.preventDefault(); show(a.dataset.go); }));
   $$("#pHome [data-pg]").forEach((b) => (b.onclick = () => openPowerGraph(S.radRecs?.[S.runs?.runs?.[0]?.id])));
@@ -1567,8 +1572,9 @@ const FEATURES = [
   ["eu", "€", "EU efficiency report", "One click to the yearly numbers EU data centers must file.", "EU Delegated Regulation 2024/1364 asks data centers of 500 kW or more for yearly energy, PUE, water and waste-heat figures. WattNot fills the energy and saving rows from its receipts and leaves the rest clearly marked for the operator.", "ESTIMATE"],
 ];
 function renderLearn() {
-  $("#pLearn").innerHTML = `<div class="intro"><div><h1>How it works, one feature at a time</h1><p>Each card is a feature we built. The first line says what it does. Open it for how, the numbers, and where they come from.</p></div></div>${ctrl()}
+  $("#pLearn").innerHTML = `<div class="intro"><div><h1>How it works, one feature at a time</h1><p>Each card is a feature we built. The first line says what it does. Open it for how, the numbers, and where they come from.</p></div></div>${archHTML(selectedReplay(location.search, localStorage.getItem("wn.run")))}${ctrl()}
   <div class="feat">${FEATURES.map(([id, ic, t, s, body, tag]) => `<div${tag === "PENDING" ? ' class="is-pending" title="Pending: not measured yet"' : ""}>${card(`f-${id}`, ic, t, s, `<p>${esc(body)} ${badge(tag)}</p>`)}</div>`).join("")}</div>`;
+  wireArch($("#pLearn"));
 }
 
 // ---------- boot ----------
