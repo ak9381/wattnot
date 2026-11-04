@@ -21,6 +21,26 @@ we deploy ourselves on Baseten for the hosted-API saver round. [How, where and w
 
 ---
 
+## Contents
+
+- [Install and run](#install-and-run): [modes](#modes), [keys](#keys), [environment variables](#common-environment-variables)
+- [How to configure a run](#how-to-configure-a-run): Test mode and Plugin mode, step by step
+- [Eligibility and disclosures](#eligibility-and-disclosures)
+  - [Hackathon rules checklist](#hackathon-rules-checklist)
+  - [Meta models used, and where each runs](#meta-models-used-and-where-each-runs)
+  - [Open weights: how, where, why](#open-weights-how-where-why)
+  - [Public datasets and our own sets](#public-datasets-and-our-own-sets)
+  - [Third-party services and libraries](#third-party-services-and-libraries)
+  - [Demo video and voice (TTS) disclosure](#demo-video-and-voice-tts-disclosure)
+- [What it does, and why](#what-it-does-and-why)
+- [Results](#results)
+- [Architecture](#architecture)
+- [Roadmap](#roadmap)
+- [Repo map](#repo-map)
+- [Troubleshooting](#troubleshooting)
+- [Honest limits](#honest-limits)
+- [Team and licence](#team-and-licence)
+
 ## Install and run
 
 You need **Python 3.11+** and **git**. No GPU, no keys, no money spent for the default run.
