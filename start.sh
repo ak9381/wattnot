@@ -43,52 +43,53 @@ pick_python() {
       && { echo "$c"; return 0; }
   done; return 1
 }
-MISSING=()
+MISSING=""
 preflight() {
   say "1/5 Preflight: what this machine has"
   row CHECK STATUS DETAIL; row ----- ------ ------
-  local p; MISSING=()
+  local p; MISSING=""
   if p=$(pick_python); then row "Python >= 3.11" OK "$($p -V 2>&1) ($p)"; BASEPY=$p
-  else row "Python >= 3.11" MISSING "found: $(python3 -V 2>&1 || echo none)"; MISSING+=(python); BASEPY=""; fi
+  else row "Python >= 3.11" MISSING "found: $(python3 -V 2>&1 || echo none)"; MISSING="$MISSING python"; BASEPY=""; fi
   if [ -n "$BASEPY" ] && $BASEPY -c 'import venv, ensurepip' 2>/dev/null; then row "pip / venv" OK "ensurepip + venv present"
-  else row "pip / venv" MISSING "python venv module"; MISSING+=(venv); fi
-  if command -v git >/dev/null; then row git OK "$(git --version | cut -d' ' -f3)"; else row git MISSING ""; MISSING+=(git); fi
-  if command -v curl >/dev/null; then row curl OK ""; else row curl MISSING ""; MISSING+=(curl); fi
+  else row "pip / venv" MISSING "python venv module"; MISSING="$MISSING venv"; fi
+  if command -v git >/dev/null; then row git OK "$(git --version | cut -d' ' -f3)"; else row git MISSING ""; MISSING="$MISSING git"; fi
+  if command -v curl >/dev/null; then row curl OK ""; else row curl MISSING ""; MISSING="$MISSING curl"; fi
   local free; free=$(df -Pk . | awk 'NR==2{print int($4/1048576)}')
-  if [ "${free:-0}" -ge 2 ]; then row "free disk" OK "${free} GB (need 2)"; else row "free disk" LOW "${free} GB (need 2)"; MISSING+=(disk); fi
+  if [ "${free:-0}" -ge 2 ]; then row "free disk" OK "${free} GB (need 2)"; else row "free disk" LOW "${free} GB (need 2)"; MISSING="$MISSING disk"; fi
   PORT="${WATTNOT_PORT:-8765}"
   if (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null; then row "port $PORT" BUSY "another free port will be picked"
   else row "port $PORT" OK "free"; fi
   if [ -x "$PY" ] && $PY -c 'import wattnot' 2>/dev/null; then row "PyPI network" SKIP "already installed"
   elif command -v curl >/dev/null && curl -fsS -m 8 -o /dev/null https://pypi.org/simple/pip/; then row "PyPI network" OK "pypi.org reachable"
-  else row "PyPI network" FAIL "pypi.org not reachable (proxy/SSL?)"; MISSING+=(network); fi
+  else row "PyPI network" FAIL "pypi.org not reachable (proxy/SSL?)"; MISSING="$MISSING network"; fi
   row "Docker" "N/A" "not needed"
 }
 
 # ---------- 2) INSTALL ----------
 ask() { [ "$ASSUME_YES" = 1 ] && return 0; [ -t 0 ] || return 1; read -r -p "$1 [y/N] " a; [[ "$a" =~ ^[Yy]$ ]]; }
 install_system() {
-  local need=() m
-  for m in "${MISSING[@]}"; do case $m in python|venv|git|curl) need+=("$m");; esac; done
-  for m in "${MISSING[@]}"; do
+  local need="" m
+  for m in $MISSING; do case $m in python|venv|git|curl) need="$need $m";; esac; done
+  need=${need# }
+  for m in $MISSING; do
     [ "$m" = disk ] && fail E05 "less than 2 GB free disk here"
     [ "$m" = network ] && fail E06 "cannot reach pypi.org to download packages"
   done
-  [ ${#need[@]} -eq 0 ] && return 0
-  say "2/5 Install: missing ${need[*]}"
+  [ -z "$need" ] && return 0
+  say "2/5 Install: missing $need"
   case "$(uname -s)" in
     Darwin)
       command -v brew >/dev/null || { echo '  Install Homebrew first (one line), then re-run ./start.sh:'
         echo '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
         fail E02 "Homebrew is missing"; }
-      ask "  Run: brew install python@3.12 git ?" || fail E01 "missing ${need[*]}; install declined"
+      ask "  Run: brew install python@3.12 git ?" || fail E01 "missing $need; install declined"
       brew install python@3.12 git || fail E01 "brew install failed" ;;
     Linux)
       if command -v apt-get >/dev/null; then echo "  Run:  sudo apt-get update && sudo apt-get install -y python3.12 python3.12-venv git curl"
       elif command -v dnf >/dev/null; then echo "  Run:  sudo dnf install -y python3.12 git curl"
       else echo "  Install Python 3.11+, git and curl with your package manager."; fi
-      fail E01 "missing ${need[*]}; run the command above, then ./start.sh again" ;;
-    *) fail E01 "missing ${need[*]}" ;;
+      fail E01 "missing $need; run the command above, then ./start.sh again" ;;
+    *) fail E01 "missing $need" ;;
   esac
   preflight
 }
@@ -157,12 +158,12 @@ replay() {
 }
 
 # ---------- keys ----------
-KEYS=(META_API_KEY BASETEN_METRICS_KEY WATTNOT_MODAL_URL MODAL_PROXY_TOKEN_ID MODAL_PROXY_TOKEN_SECRET WATTNOT_VLLM_URL WATTNOT_MAX_SPEND)
+KEYS="META_API_KEY BASETEN_METRICS_KEY WATTNOT_MODAL_URL MODAL_PROXY_TOKEN_ID MODAL_PROXY_TOKEN_SECRET WATTNOT_VLLM_URL WATTNOT_MAX_SPEND"
 key_mode() { case $1 in META_API_KEY) echo live;; BASETEN_METRICS_KEY) echo baseten;; WATTNOT_MODAL_URL|MODAL_PROXY_TOKEN_*) echo modal;;
   WATTNOT_VLLM_URL) echo gpu;; WATTNOT_MAX_SPEND) echo "live (USD cap)";; esac; }
 key_table() {
   row KEY STATUS "NEEDED FOR"; row --- ------ ----------
-  for k in "${KEYS[@]}"; do if is_set "$k"; then s=set; else s="not set"; fi; row "$k" "$s" "$(key_mode "$k")"; done
+  for k in $KEYS; do if is_set "$k"; then s=set; else s="not set"; fi; row "$k" "$s" "$(key_mode "$k")"; done
   row "(none)" "-" "replay, check"
 }
 set_env_line() { # set_env_line KEY VALUE ; value never echoed
@@ -175,7 +176,7 @@ keys() {
   say "Keys (values are never shown)"; key_table
   [ -t 0 ] || { echo; echo "Not a terminal: edit .env by hand to add keys."; return 0; }
   echo; echo "Press Enter to skip a key and keep what is there. Input is hidden."
-  for k in "${KEYS[@]}"; do
+  for k in $KEYS; do
     read -r -s -p "  $k ($(key_mode "$k")): " v; echo
     [ -n "$v" ] && { set_env_line "$k" "$v"; export "$k=$v"; }
   done
@@ -184,9 +185,9 @@ keys() {
 }
 
 need() { # need MODE VAR...
-  local m=$1; shift; local miss=()
-  for k in "$@"; do is_set "$k" || miss+=("$k"); done
-  [ ${#miss[@]} -eq 0 ] || fail E11 "$m mode needs ${miss[*]} (run ./start.sh keys)" 2
+  local m=$1; shift; local miss=""
+  for k in "$@"; do is_set "$k" || miss="$miss $k"; done
+  miss=${miss# }; [ -z "$miss" ] || fail E11 "$m mode needs $miss (run ./start.sh keys)" 2
 }
 
 case "$MODE" in
