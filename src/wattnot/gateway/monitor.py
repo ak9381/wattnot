@@ -115,8 +115,16 @@ class Monitor:
                 "small_in": int(small["usage"].get("prompt_tokens") or 0),
                 "agree": agree_turn(small.get("text", ""), small.get("tool_calls"), text, msg.get("tool_calls")), "label": "MEASURED (shadow pair)"}
         if self.gate is not None:
+            n_ev = len(self.gate.events)
             self.gate.record_pair(self.gate_key, pair["small_in"] + pair["small_out"],
                                   pair["base_in"] + pair["base_out"], pair["agree"], small.get("applied"))
+            new_ev = self.gate.events[n_ev:]
+            if new_ev:   # keep gate decisions on disk so the dashboard still shows them after a restart
+                gp = self.path.with_name(self.path.name.replace(".shadow.jsonl", ".gate.jsonl"))
+                gp.parent.mkdir(parents=True, exist_ok=True)
+                with gp.open("a") as f:
+                    for e in new_ev:
+                        f.write(json.dumps(e) + "\n")
         with self._lock:
             self.pairs.append(pair)
             recent = self.pairs[-self.min_n:]

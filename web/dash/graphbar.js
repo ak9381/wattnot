@@ -248,12 +248,31 @@ function build() {
       x.stroke();
     });
   };
+  // Marching ants for gateway traffic: the dashboard's own traffic runs write no step-events file,
+  // so nothing lit the graph's nodes and every edge stayed a static dashed line. While requests are
+  // really flowing (a run is sending and new receipts keep arriving) every edge on the live graph
+  // (#amap, the same element in normal and full-screen view) marches; it stops when traffic stops.
+  let antN = -1, antTs = 0;
+  const liveAnts = (f, t) => {
+    const n = (f && f.source !== "replay" && f.series) ? f.series.length : 0, now = Date.now();
+    if (n !== antN) { if (antN >= 0 && n > antN) antTs = now; antN = n; }
+    const on = !!(t && t.running) || now - antTs < 6000;
+    document.querySelectorAll("#amap").forEach((m) => m.classList.toggle("wn-req-flow", on));
+  };
   const pollGw = async () => {
     try {
       fetch("/api/dash/plug/quality").then((r) => (r.ok ? r.json() : null)).then((q) => {
         if (!q || !q.requests) return;
-        $("#gwlQ", gwl).innerHTML = `Quality gate: ${q.shadow_pairs} shadow pairs, agreement ${q.agreement == null ? "n/a" : Math.round(q.agreement * 100) + "%"}`
-          + (q.gate_off.length ? ` · off: ${q.gate_off.map((g) => g.saver).join(", ")}` : " · all savers on")
+        const pc = (v) => (v == null ? "n/a" : Math.round(v * 100) + "%");
+        const runs = q.by_run || [];
+        $("#gwlQ", gwl).innerHTML = (runs.length
+          ? runs.map((r) => `Quality gate, ${r.workload}: ${r.agreed}/${r.shadow_pairs} shadow pairs agreed (${pc(r.agreement)})`
+              + (r.switched_off.length
+                ? ` · switched off after request ${r.switched_off[0].after_request} of ${r.switched_off[0].of}: ${r.switched_off.map((g) => g.saver).join(", ")} (${r.switched_off[0].why}); rest of the run used stock requests + the power cap`
+                : r.carried_off.length ? ` · still off from an earlier run: ${r.carried_off.join(", ")}` : " · all savers on")
+              + ' <span class="wnlab m">MEASURED</span>').join("<br>")
+          : `Quality gate: ${q.shadow_pairs} shadow pairs, agreement ${pc(q.agreement)}`
+            + (q.gate_off.length ? ` · off: ${q.gate_off.map((g) => g.saver).join(", ")}` : " · all savers on"))
           + (q.measured
             ? (q.j_per_correct != null ? `<br>J per correct answer: ${q.j_per_correct} J (stock ${q.j_per_correct_stock} J; ${q.correct.with}/${q.correct.scored} vs ${q.correct.without}/${q.correct.scored} correct, harness-scored) <span class="wnlab m">MEASURED</span>` : "")
               + (q.j_per_request || []).map((x) => `<br>${x.workload}: ${x.with} J per request (stock ${x.without} J), not scored <span class="wnlab m">MEASURED</span>`).join("")
@@ -263,6 +282,7 @@ function build() {
       const [f, t] = await Promise.all([fetch("/api/dash/plug?last=500").then((r) => r.json()),
         fetch("/api/dash/traffic/status").then((r) => (r.ok ? r.json() : null)).catch(() => null)]);
       if (f && f.source !== "replay") drawGwl(f, t); else if (!gl.classList.contains("open")) gwl.hidden = true;
+      liveAnts(f, t);
     } catch { /* not served here: no gateway, nothing to draw */ }
     setTimeout(pollGw, gl.classList.contains("open") ? 1500 : 5000);
   };

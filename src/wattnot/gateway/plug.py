@@ -234,6 +234,45 @@ def verify_receipt(savings_log, rid: str, key_path=None) -> dict | None:
     return out
 
 
+def gate_by_run(savings_log, monitor: dict | None) -> list[dict]:
+    """Shadow pairs and gate switch-offs split per sequential run (by the WattNot arm's time
+    window), so one run's gate trip is not shown as the whole gateway's quality. The gate itself
+    lives until the gateway restarts, so savers switched off in one run stay off for later runs:
+    that is reported as carried_off, not hidden."""
+    if not savings_log:
+        return []
+    shadow = _read(Path(savings_log).with_name(Path(savings_log).stem + ".shadow.jsonl"))
+    live = (((monitor or {}).get("gate") or {}).get("events") or [])
+    disk = _read(Path(savings_log).with_name(Path(savings_log).stem + ".gate.jsonl"))
+    events, keys = [], set()
+    for e in disk + live:   # the gate's events since restart plus the ones saved on disk, once each
+        k = (e.get("saver"), e.get("model"), e.get("ts"))
+        if e.get("event") == "saver_off" and k not in keys:
+            keys.add(k); events.append(e)
+    recs = [r for r in _read(savings_log) if r.get("status") == 200]
+    out, seen_off = [], []
+    for r in seq_runs(savings_log):
+        w = r.get("with") or {}
+        t0, t1 = w.get("t0"), w.get("t1")
+        if t0 is None or t1 is None:
+            continue
+        ps = [x for x in shadow if t0 <= (x.get("ts") or 0) <= t1 + 30]
+        ev = [e for e in events if t0 <= (e.get("ts") or 0) <= t1 + 30]
+        arm = sorted(x.get("ts") or 0 for x in recs if t0 <= (x.get("ts") or 0) <= t1)
+        off = []
+        for e in ev:
+            n = sum(1 for ts in arm if ts <= e["ts"])
+            off.append({"saver": e.get("saver"), "why": e.get("why"), "after_request": n,
+                        "of": len(arm) or w.get("requests")})
+        out.append({"run_id": r.get("run_id"), "workload": r.get("workload"),
+                    "shadow_pairs": len(ps), "agreed": sum(bool(x.get("agree")) for x in ps),
+                    "agreement": round(sum(bool(x.get("agree")) for x in ps) / len(ps), 3) if ps else None,
+                    "switched_off": off, "carried_off": list(seen_off),
+                    "label": "MEASURED (shadow pairs in this run's WattNot arm)"})
+        seen_off += [o["saver"] for o in off if o["saver"] not in seen_off]
+    return out
+
+
 def quality(savings_log, monitor: dict | None) -> dict:
     """Quality gate results + joules per correct answer, from the gateway's own records.
     'Correct' = the shadow pair agreed with stock (the gateway has no answer key): ESTIMATE."""
@@ -249,6 +288,7 @@ def quality(savings_log, monitor: dict | None) -> dict:
     if m:
         unscored = [p for p in m["runs"] if not p["scored"]]
         return {"requests": len(recs), "shadow_pairs": pairs, "agreement": agree,
+                "by_run": gate_by_run(savings_log, mon),
                 "gate_off": [{"saver": e.get("saver"), "why": e.get("why")} for e in ((mon.get("gate") or {}).get("off") or [])],
                 "j_per_correct": m["j_per_correct"], "j_per_correct_stock": m["j_per_correct_stock"],
                 "correct": m["correct"],

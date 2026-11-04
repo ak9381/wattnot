@@ -148,3 +148,10 @@ body.story.wn-graph-full #amap .pc-inner.wn-glide{ transition:transform 1.2s cub
 .wnlab{ font-size:10px; padding:1px 6px; border-radius:999px; margin-left:4px; } .wnlab.m{ background:rgba(127,209,138,.18); color:#7fd18a; }
 .wnlab.e{ background:rgba(255,200,90,.14); color:#ffc85a; }
 .gwlive-q{ margin-top:6px; line-height:1.5; color:var(--ink2,#cdd3dd); }
+
+/* ---- gateway traffic flowing (graphbar.js liveAnts): every edge marches, normal and full screen */
+body.story #amap.wn-req-flow .av-edges .e{ stroke:var(--wn-ant,#FFC940); stroke-width:3.2; opacity:1; stroke-dasharray:8 7;
+  animation:wnReqMarch .7s linear infinite; filter:drop-shadow(0 0 2px var(--wn-ant,#FFC940)) drop-shadow(0 0 8px var(--wn-ant2,#F5B700)); }
+#amap.wn-req-flow .av-edges .e{ stroke-dasharray:8 7; animation:wnReqMarch .7s linear infinite; }
+@keyframes wnReqMarch{ to{ stroke-dashoffset:-15; } }
+@media (prefers-reduced-motion:reduce){ #amap.wn-req-flow .av-edges .e{ animation-duration:2.4s; } }
