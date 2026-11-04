@@ -281,3 +281,8 @@ th .pdot,td .pdot{margin-left:0}
 /* run page canvas: fixed viewport so pan/zoom has room and controls never sit on cards */
 .rgraph.pc-view,.rgraph{height:min(64vh,640px);min-height:440px;overflow:hidden;position:relative}
 .bat{width:11px;height:18px;margin-right:4px}
+/* Replay controls floating on the Live graph canvas */
+.cv-ctl{position:fixed;left:16px;bottom:16px;z-index:50;display:flex;gap:6px;align-items:center;padding:6px 8px;border-radius:12px;background:rgba(14,12,24,.88);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(6px);box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.cv-ctl button{font:600 13px/1 inherit;color:#eee;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:7px 10px;cursor:pointer}
+.cv-ctl button[aria-pressed="true"],.cv-ctl button.on{background:#7c5cff;border-color:#7c5cff;color:#fff}
+.cv-seg{display:flex;gap:2px}.cv-run{font-size:12px;color:#bbb;margin-left:4px}

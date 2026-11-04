@@ -541,4 +541,33 @@ function wireReplay(bar, liveRun) {
   }));
   if (liveRun) { state = "playing"; show(); }
   window.__liveReplayState = () => state;
+  mountCanvasControls(bar);
+}
+
+// Floating Replay / Pause / speed bar on the graph canvas itself (bottom-left, always visible).
+// Its buttons drive the same toolbar controls, so both stay in step.
+function mountCanvasControls(bar) {
+  const host = document.querySelector("main#stage") || document.querySelector("main.page.on");
+  if (!host || document.getElementById("cvCtl")) return;
+  if (getComputedStyle(host).position === "static") host.style.position = "relative";
+  const run = new URLSearchParams(location.search).get("run") || localStorage.getItem("wn.run") || "";
+  const el = document.createElement("div"); el.id = "cvCtl"; el.className = "cv-ctl"; el.setAttribute("role", "group"); el.setAttribute("aria-label", "Replay controls");
+  el.innerHTML = `<button type="button" data-cv="play"></button><button type="button" data-cv="restart" title="Start again">↺</button>
+    <span class="cv-seg">${[1, 2, 4].map((n) => `<button type="button" data-cv-s="${n}">${n}×</button>`).join("")}</span>
+    <span class="cv-run">${esc(run.replace(/^replay:/, "") || "server events")} · REPLAY</span>`;
+  host.appendChild(el);
+  const place = () => { const r = host.getBoundingClientRect(); el.style.left = `${Math.max(8, r.left + 16)}px`; el.style.bottom = `${Math.max(16, innerHeight - Math.min(r.bottom, innerHeight) + 16)}px`; };
+  place(); addEventListener("resize", place); addEventListener("scroll", place, true);
+  const play = bar.querySelector("#gPlay"), cp = el.querySelector('[data-cv="play"]');
+  const sync = () => {
+    cp.textContent = play.textContent; cp.setAttribute("aria-pressed", play.getAttribute("aria-pressed"));
+    const on = bar.querySelector("#gSpeed button.on")?.dataset.s;
+    el.querySelectorAll("[data-cv-s]").forEach((b) => b.classList.toggle("on", b.dataset.cvS === on));
+  };
+  cp.onclick = () => { play.click(); sync(); };
+  el.querySelector('[data-cv="restart"]').onclick = () => { bar.querySelector("#gRestart").click(); sync(); };
+  el.querySelectorAll("[data-cv-s]").forEach((b) => (b.onclick = () => { bar.querySelector(`#gSpeed button[data-s="${b.dataset.cvS}"]`)?.click(); sync(); }));
+  new MutationObserver(sync).observe(play, { childList: true, characterData: true, subtree: true });
+  bar.querySelectorAll("#gSpeed button").forEach((b) => b.addEventListener("click", () => setTimeout(sync)));
+  sync();
 }
