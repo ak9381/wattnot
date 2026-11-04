@@ -1129,13 +1129,15 @@ const TREE_DESC = {
   sam: "SAM 3.1 outlines each rack; WattNot marks the rack it can cool. Heat is simulated from the measured power drop.",
 };
 const PEND_TIP = "Pending: fills in after the long H100 run.";
+const estChip = `<span class="est-chip" data-wn-keep aria-label="ESTIMATE" title="Derived, not metered"></span>`;
+const tagChip = (t) => (String(t).toUpperCase() === "ESTIMATE" ? estChip : badge(t));
 const treeVal = (v, branch) => {
   if (!v) return `<span class="rad-miss">–</span><span class="rad-pending">pending</span>`;
   if (v.why) return `<span class="rad-miss" title="${esc(v.why)}">${esc(v.short || "no data")}</span>`;
   if (v.gate) return v.pass ? `<span class="rad-pass">✓ pass</span> ${badge("MEASURED")}` : `<span class="rad-fail">✕ fail</span> ${badge("MEASURED")}`;
   const isCostOrWater = branch === "cost" || branch === "water";
   const showBadge = !!v.tag;
-  return `${cnum(esc(v.text), isCostOrWater && v.tag === "ESTIMATE" ? null : v.tag)}${showBadge ? ` ${badge(v.tag)}` : ""}`;
+  return `${cnum(esc(v.text), isCostOrWater && v.tag === "ESTIMATE" ? null : v.tag)}${showBadge ? ` ${tagChip(v.tag)}` : ""}`;
 };
 function branchDetailHtml(rec, id) {
   const sv = savedPct(rec, id);
@@ -1336,7 +1338,7 @@ function mountCompare() {
     c.setAttribute("data-explain-value", svVal);
     c.setAttribute("data-explain-label", svTag);
     c.setAttribute("data-explain-source", svSrc);
-    c.innerHTML = `<button class="rad-head" aria-expanded="${!S.cmpCollapsed && id === S.cmpActive}" aria-label="${name}: open its routes"><b><span>${name}</span>${id === "power" ? badge("MEASURED") : ""}</b><span class="rad-val">${branchSaved(id)}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power ${badge("ESTIMATE")}</small>`}</button><button class="ibtn rad-i" aria-label="${name} details">i</button>`;
+    c.innerHTML = `<button class="rad-head" aria-expanded="${!S.cmpCollapsed && id === S.cmpActive}" aria-label="${name}: open its routes"><b><span>${name}</span>${id === "power" ? badge("MEASURED") : ""}</b><span class="rad-val">${branchSaved(id)}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power ${estChip}</small>`}</button><button class="ibtn rad-i" aria-label="${name} details">i</button>`;
     $(".rad-head", c).onclick = () => {
       S.cmpCollapsed = false; S.cmpActive = id; S.cmpPath = [];
       renderTree();

@@ -194,3 +194,6 @@ body:not(.illus) [data-illus] { display: none !important; }
 .ov-grid svg{display:block;width:100%;height:auto;max-height:300px}
 .ov-gauge svg{max-height:190px;max-width:280px;margin:0 auto}
 .ov-donut svg{max-height:220px}
+
+.est-chip{display:inline-block;font:600 9px/1.4 ui-monospace,monospace;letter-spacing:.04em;padding:1px 5px;border-radius:5px;color:#F0C674;background:rgba(240,198,116,.14);border:1px solid rgba(240,198,116,.45);vertical-align:middle}
+.est-chip::after{content:"ESTIMATE"}

@@ -159,6 +159,8 @@
         targetNav = "matrix";
       } else if (path.includes("costbudget.html")) {
         targetNav = "costbudget";
+      } else if (path.includes("plug.html")) {
+        targetNav = "plug";
       } else if (path.includes("eu.html")) {
         targetNav = "eu";
       } else if (path.includes("metatools.html")) {
