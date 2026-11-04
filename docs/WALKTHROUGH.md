@@ -321,7 +321,7 @@ Drop screenshots in `ui-review/` at the repo root. Name them `NN-page-issue.png`
 | 6 | Compare | 300 W shown rejected | [ ] |
 | 7 | Learn / Proof | receipt id, grade ESTIMATE, SCI block | [ ] |
 | 8 | Runs list | opens, rows readable | [ ] |
-| 9 | RUN2 report | loads, −27.1% MEASURED | [ ] |
+| 9 | RUN2 report | loads (early 8B comparison run, not a Meta model, not a headline) | [ ] |
 | 10 | Live graph | architecture renders, events animate | [ ] |
 | 11 | Meta models strip | all 8 models, Muse Image SYNTHETIC, honest "no call" | [ ] |
 | 12 | Spark 4-call trace | probe, proposal, gate, receipt in order, MOCK label in mock mode | [ ] |

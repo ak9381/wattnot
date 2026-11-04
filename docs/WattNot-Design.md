@@ -257,7 +257,7 @@ All MEASURED on Muse Glimmer 30B unless noted. Proof files are linked from the R
 - **FP8 refused, H100 (Nov 4):** FP8 cut energy 42.5% but matched only 15 of 16 answers, so the gate
   refused it and rolled back to BF16. KV-cache mode saved 1.4% but pushed p99 +43.6%, also refused.
   (`replays/h100-max-1103/lever-takes-1104.json`)
-- **Power-cap sweep, H100 (RUN2):** 350 W passed at −27.1% J/correct; 325 W rolled back for p99
+- **Power-cap sweep, H100 (RUN2, early 8B comparison model, not a Meta model, not a headline):** 350 W passed at −27.1% J/correct; 325 W rolled back for p99
   +10.9% (limit 10%).
 - **Modal A100, r05:** −77.0% J/correct (2954.6 → 678.4), accuracy 96% → 97% (MEASURED, NVML).
   (`replays/modal-r2/receipt.json`)
