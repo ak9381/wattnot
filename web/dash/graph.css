@@ -105,7 +105,10 @@ body.story.wn-graph-full #stage{ z-index:1000 !important; transform:none !import
 body.story{ --wn-ant:#FFC940; --wn-ant2:#F5B700; }
 body.story .av-edges .e{ stroke:var(--ln2,#3B3A54); stroke-width:1.8; opacity:1; }
 body.story .av-edges .e.flow{ stroke:var(--wn-ant); stroke-width:3.2; opacity:1; stroke-dasharray:8 7;
+  animation:wnReqMarch .7s linear infinite;
   filter:drop-shadow(0 0 2px var(--wn-ant)) drop-shadow(0 0 8px var(--wn-ant2)); }
+body.story .av-edges .e.flow.halt{ animation-play-state:paused; }
+@media (prefers-reduced-motion:reduce){ body.story .av-edges .e.flow{ animation-duration:2.4s; } }
 body.story .av-edges .e.done{ stroke:var(--wn-ant2); stroke-width:2.2; opacity:.8;
   filter:drop-shadow(0 0 3px rgba(245,183,0,.5)); }
 

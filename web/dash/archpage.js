@@ -357,7 +357,7 @@ export class ArchPage {
     this.view.reset(); cap.textContent = "Following the run as it writes events…";
     const es = (this.es = new EventSource(`/api/dash/arch/live?speed=${this.speed}${q.replace("?", "&")}`)); let last = 0;
     this.roomPay = {}; this.tagged = false; this.spark = []; this.meta = {}; $("#aspark", H)?.remove(); $("#ameta", H)?.remove(); { const ar = $("#aroom", H); if (ar) ar.hidden = true; }
-    this.livePaused = false; this._liveQ = [];
+    this.livePaused = false; this._liveQ = []; this._stepAt = -1e9;
     const onEvent = (m) => {
       let ev; try { ev = JSON.parse(m.data); } catch { return; }
       const d = ev.data || {};
@@ -371,7 +371,11 @@ export class ArchPage {
       if (ev.type === "run.finished") { this.view.finish(this.view.cur); this.view.cur = null; return; }
       const r = this.route(ev); if (!r) return;
       const now = performance.now();
-      if (!d.node && (ev.type === "telemetry.sample" || ev.type === "step.progress") && now - last < 500) return; last = now;
+      if (!d.node && (ev.type === "telemetry.sample" || ev.type === "step.progress") && now - last < 500) return;
+      // a gateway step keeps the map for a moment, so its edges get their turn before telemetry takes over again
+      if (ev.type === "telemetry.sample" && now - this._stepAt < 3000) return;
+      if (ev.type.startsWith("gateway.")) this._stepAt = now;
+      last = now;
       const tag = d.label && this.d.labels.includes(d.label) ? d.label : null;
       if (ev.type === "step.finished") return this.stepDone(r, ev, tag);
       this.view.activate({ node: r[0], sub: r[1], text: ev.type === "step.started" ? d.label || livePhrase(ev) : livePhrase(ev), tag: ev.type === "step.started" ? null : tag, ok: !(ev.type === "gate.result" && d.passed === false) });

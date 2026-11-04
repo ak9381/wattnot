@@ -355,4 +355,10 @@ EVENT_MAP = {
     "receipt.signed": ["receipts", "sign"], "recommendations": ["eu", "fields"],
     "step.started": ["workload", "send"], "step.progress": ["workload", "time"],
     "pareto.updated": ["optimizer", "study"],
+    # gateway (Plug in) runs write these instead of step events, so replays light each step on its turn
+    "gateway.gpu_found": ["e2e_rig", "probe"], "gateway.rack_check": ["e2e_rig", "setup"],
+    "gateway.waiting_approval": ["proposals", "decide"],
+    "gateway.arm_start": ["workload", "send"], "gateway.arm_end": ["workload", "time"],
+    "gateway.gpu_warmup": ["apply", "serve"], "gateway.quality_check": ["gates", "decide"],
+    "gateway.cap_kept": ["apply", "keep"], "gateway.restored": ["flex", "restore"],
 }
