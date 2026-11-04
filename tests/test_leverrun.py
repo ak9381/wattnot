@@ -188,3 +188,10 @@ def test_dash_lever_routes(tmp_path, monkeypatch):
     r = c.post("/api/dash/lever/start", json={"lever": "fp8"})
     assert r.status_code == 409 and "Another GPU job" in r.json()["detail"]
     assert "lever.js" in c.get("/plug.html").text
+
+
+def test_lever_panel_is_in_the_setup_view_the_go_live_drawer_shows():
+    from pathlib import Path
+    h = (Path(__file__).resolve().parents[1] / "web" / "dash" / "plug.html").read_text()
+    setup = h[h.index('<section id="setup"'):h.index('<section id="live"')]
+    assert 'id="lever"' in setup and 'id="lvStart"' in setup and h.count('id="lever"') == 1
