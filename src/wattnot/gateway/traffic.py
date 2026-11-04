@@ -227,8 +227,12 @@ def cap_decision(stock_j: list[float], cap_j: list[float]) -> dict:
     mean = st.mean(d) if d else float("nan")
     ci = _T975.get(n - 1, 2.0) * st.stdev(d) / math.sqrt(n) if n >= 2 else float("inf")
     cv = 100 * st.stdev(stock_j) / st.mean(stock_j) if len(stock_j) >= 2 and st.mean(stock_j) else float("nan")
-    keep = energy_clearly_down(d, mean, ci, cv)
-    return {"keep_cap": bool(keep), "pairs": n, "mean_pct": round(mean, 2) if d else None,
+    down = energy_clearly_down(d, mean, ci, cv)
+    # the answer check already proved this cap (energy, quality, p99); a 4-request probe can only
+    # overturn it when the cap is CLEARLY worse here: the 95% CI on the change sits above zero
+    worse = n >= 2 and math.isfinite(ci) and mean - ci > 0
+    verdict = "saving" if down else "worse" if worse else "inconclusive"
+    return {"keep_cap": not worse, "verdict": verdict, "pairs": n, "mean_pct": round(mean, 2) if d else None,
             "ci95_half_pct": round(ci, 2) if math.isfinite(ci) else None,
             "stock_j_per_req": round(st.mean(a for a, _ in pairs), 1) if pairs else None,
             "cap_j_per_req": round(st.mean(b for _, b in pairs), 1) if pairs else None,
@@ -529,9 +533,14 @@ class CapController:
                          [j for k, j in self.seen[cls] if k < len(self.stock_j)])
         self.decisions[cls] = d
         if d["keep_cap"]:
+            d["message"] = (f"probe inconclusive, keeping checked cap for {cls} traffic (MEASURED)"
+                            if d["verdict"] == "inconclusive" else
+                            f"cap kept for {cls} traffic: energy per request down (MEASURED)")
             self.run.event(step="cap_kept", workload_class=cls, cap_w=self.run.cap_w, **d)
+            if d["verdict"] == "inconclusive":
+                self.run.state["cap_rollback"] = d["message"]
         else:
-            d["message"] = f"cap rolled back for {cls} traffic: no energy saving (MEASURED)"
+            d["message"] = f"cap rolled back for {cls} traffic: energy per request clearly up (MEASURED)"
             self.run.event(step="rolled_back", to_cap_w=self.stock, workload_class=cls,
                            failed=[d["message"]], **{k: v for k, v in d.items() if k != "message"})
             self.run.state["cap_rollback"] = d["message"]

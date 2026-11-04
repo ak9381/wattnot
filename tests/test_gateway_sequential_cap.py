@@ -87,7 +87,7 @@ def test_cap_rolled_back_for_agent_when_measured_energy_not_down(tmp_path):
     g, r, ev, run = _agent_run(tmp_path)
     d = r["cap_decision"]["agent"]
     assert d["keep_cap"] is False and d["pairs"] == tr.CAP_PROBE_N
-    assert d["message"] == "cap rolled back for agent traffic: no energy saving (MEASURED)"
+    assert d["message"] == "cap rolled back for agent traffic: energy per request clearly up (MEASURED)"
     assert any(e["step"] == "rolled_back" and e.get("workload_class") == "agent" for e in ev)
     # probe at the cap (4 x 550 J), rest back at stock (16 x 500 J): no worse than probe cost
     assert r["with"]["joules"] == 4 * 550 + 16 * 500
@@ -125,3 +125,20 @@ def test_probe_skips_gate_warmup_requests(tmp_path):
     r = json.loads((tmp_path / "sequential.json").read_text())
     assert r["cap_decision"]["agent"]["keep_cap"] is True
     assert r["with"]["gate_warmup"]["requests"] == 3 and r["with"]["gate_warmup"]["joules"] == 3000
+
+
+
+def test_probe_inconclusive_keeps_checked_cap():
+    d = tr.cap_decision([1200, 1200, 1200, 1200], [900, 1500, 1000, 1400])
+    assert d["verdict"] == "inconclusive" and d["keep_cap"] is True
+
+
+def test_probe_rolls_back_only_when_clearly_worse():
+    assert tr.cap_decision([500] * 4, [560, 555, 565, 550])["keep_cap"] is False
+    assert tr.cap_decision([500] * 4, [400, 410, 405, 395])["verdict"] == "saving"
+
+
+def test_take4_probe_numbers_keep_the_cap():
+    # take 4: mean -10.4% +/- 25.1% over 4 text pairs was rolled back; now inconclusive = keep
+    d = tr.cap_decision([1205, 1205, 1205, 1205], [1300, 820, 1150, 1036])
+    assert d["keep_cap"] is True

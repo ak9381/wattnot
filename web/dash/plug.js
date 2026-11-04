@@ -113,6 +113,8 @@ function stepText(e) {
     case "quality_check": return `${e.cap_w} W: ${e.accepted ? "answers OK" : "refused"}${e.energy_change_pct != null ? `, energy ${e.energy_change_pct}%` : ""}${e.p99_change_pct != null ? `, slowest answers +${e.p99_change_pct}%` : ""}${e.accepted ? "" : ` (${(e.why_not || []).join("; ")})`} (${e.check_label || e.label || "MEASURED"})`;
     case "stock_answers": return `Asked ${e.n} sample questions at stock power: ${e.joules_per_answer != null ? `${Math.round(e.joules_per_answer)} J per answer` : "stock and capped answers are asked in interleaved pairs"} (${e.label})`;
     case "rolled_back": return `Rolled back to ${e.to_cap_w} W${(e.failed || []).length ? ` (${e.failed.join("; ")})` : ""}`;
+    case "gpu_warmup": return `GPU warm-up (not measured)${e.seconds != null ? `: ${Math.round(e.seconds)} s at ${e.cap_w} W` : ""}`;
+    case "cap_kept": return e.message || `Kept ${e.cap_w} W for ${e.workload_class} traffic`;
     case "kept": return `Kept ${e.cap_w} W (${e.label})${e.note ? `: ${e.note}` : ""}`;
     default: return e.note ? `${e.step}: ${e.note}` : e.step;
   }

@@ -142,6 +142,9 @@ def _sweep(cfg, node, gpu, sim, glabel, ev, sample, stock, samples_per_step, p99
         if sim:
             st = step_at(gpu.steps, cap, p99_limit)
         elif answer_check is not None:   # real GPU: re-ask the sample at this cap, compare with stock
+            if hasattr(answer_check, "warmup") and not getattr(answer_check, "warm", None):
+                ev("gpu_warmup", **answer_check.warmup())   # same check as sequential mode
+                gpu.nvmlDeviceSetPowerManagementLimit(None, cap * 1000)
             st = {"cap_w": cap, **answer_check.at(cap)}
         else:
             st = {"cap_w": cap, "accepted": None, "label": "MEASURED power only",
