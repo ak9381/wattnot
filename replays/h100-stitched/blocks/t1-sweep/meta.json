@@ -1,0 +1,13 @@
+{
+ "block": "t1-sweep",
+ "label": "MEASURED",
+ "started": 1793681114.35739,
+ "ended": 1793685363.5447285,
+ "byte_range": [
+  0,
+  482119
+ ],
+ "events": 1302,
+ "replay": "replays/h100-max-1103/blocks/t1-sweep/timeline.jsonl",
+ "screen": null
+}

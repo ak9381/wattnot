@@ -196,7 +196,7 @@ export function verifySummary(v) {
 export function metaSpend(live, led = {}) {
   if (live?.available && live.total_usd != null) {
     return { usd: live.total_usd, calls: live.calls, label: "MEASURED", live: true,
-      note: `Meta API spend so far, live from the spend ledger, ${num(live.calls, 0)} calls · cap $${num(live.cap_usd, 0)}` };
+      note: `All WattNot work so far, not only this run: live spend ledger (~/.wattnot/meta_spend.json, every Meta API call logged with its price), ${num(live.calls, 0)} calls · cap $${num(live.cap_usd, 0)}` };
   }
   if (led.total_usd == null) return { usd: null, calls: null, label: "REPLAY", live: false, note: "" };
   return { usd: led.total_usd, calls: led.calls, label: "REPLAY", live: false,

@@ -1,0 +1,1 @@
+{"schema_version":"wattnot.event/1","run_id":"sidecar-20261103_092432","seq":1,"ts":"2026-11-03T09:24:32.235Z","type":"step.started","step_id":"p1-phase","parent_step_id":null,"data":{"node":"workload","sub":"p1-phase","kind":"workload.p1-phase","partners":["oss"],"label":"p1-phase","inputs":"","narration":{"text":"p1-phase","source":"template"}}}

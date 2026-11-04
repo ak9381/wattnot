@@ -1,10 +1,27 @@
+import { RUN_NAMES, RUN_CFG } from "./runset.js";
 // Shared eligibility: one check (POST /api/launch/eligibility) for the configuration saved on the
 // Configure screen. Every page greys what this configuration cannot run, with the reason on hover,
 // and gets a replay toggle between the without-WattNot and with-WattNot arms.
 const KEY = "wn.config", ARM = "wn.arm";
 export const DEFAULT = { provider: "baseten" };
+// The selected recorded run decides the provider, so the bar never shows another run's setup.
+export const REPLAY_PROVIDER = (id) => (!id ? null : id.startsWith("modal") ? "modal_a100" : id.startsWith("baseten") ? "baseten" : id.startsWith("h100") ? "e2e_h100" : null);
+function replayId() {
+  const v = new URLSearchParams(location.search).get("run") || localStorage.getItem("wn.run") || "";
+  return v.startsWith("replay:") ? v.slice(7) : null;
+}
+// The run picker can settle on a run after this page rendered (no ?run= and nothing saved yet):
+// reload once so the bar, EU card and numbers all follow that run instead of the defaults.
+if (globalThis.addEventListener && !globalThis.__WN_TEST__) {
+  const first = globalThis.location ? replayId() : null;
+  addEventListener("wn:run", (e) => {
+    const id = e.detail?.id || "", now = id.startsWith("replay:") ? id.slice(7) : null;
+    if (now !== first && !sessionStorage.getItem("wn.runReloaded")) { sessionStorage.setItem("wn.runReloaded", "1"); location.reload(); }
+    else sessionStorage.removeItem("wn.runReloaded");
+  });
+}
 export function loadConfig() {
-  const q = new URLSearchParams(location.search).get("provider");
+  const q = new URLSearchParams(location.search).get("provider") || REPLAY_PROVIDER(replayId());
   try { const c = JSON.parse(localStorage.getItem(KEY) || "null"); return q ? { ...(c || {}), provider: q } : c || { ...DEFAULT }; }
   catch { return { ...DEFAULT }; }
 }
@@ -59,11 +76,14 @@ export async function fetchElig(config, f = fetch) {
 function bar(elig, arm) {
   const el = document.createElement("div");
   el.className = "wn-elig"; el.setAttribute("role", "region"); el.setAttribute("aria-label", "Run configuration");
-  el.innerHTML = `<span>Configuration <b>${esc(elig.provider_label)}</b> · main model <b>${esc(elig.model)}</b> · energy ${lab(elig.energy_label)}</span>
+  const rid = replayId();
+  const rc = rid ? RUN_CFG[String(rid).replace(/^replay:/, "")] : null;
+  el.innerHTML = rc
+    ? `<span>Run <b>${esc(RUN_NAMES[rid] || rid)}</b> ${lab("REPLAY")} · Configuration <b>${esc(rc.provider)}</b>${rc.model ? ` · main model <b>${esc(rc.model)}</b>` : ""}${rc.energy ? ` · energy ${lab(rc.energy)}` : ""}</span>
+    <span>Settings from this run's own record</span>
+    <a href="v2.html#pCfg">Configure a new run</a>`
+    : `<span>${rid ? `Run <b>${esc(RUN_NAMES[rid] || rid)}</b> ${lab("REPLAY")} · ` : ""}Configuration <b>${esc(elig.provider_label)}</b> · main model <b>${esc(elig.model)}</b> · energy ${lab(elig.energy_label)}</span>
     <span><b>${elig.counts.eligible}</b> eligible · <b>${elig.counts.ineligible}</b> ineligible of ${elig.counts.total} features</span>
-    <span class="seg" role="group" aria-label="Replay arm">
-      <button data-arm="without_wattnot" aria-pressed="${arm === "without_wattnot"}">Without WattNot</button>
-      <button data-arm="with_wattnot" aria-pressed="${arm === "with_wattnot"}">With WattNot</button></span>
     <a href="v2.html#pCfg">Change configuration</a>`;
   el.querySelectorAll("[data-arm]").forEach((b) => b.addEventListener("click", () => {
     el.querySelectorAll("[data-arm]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));

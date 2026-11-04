@@ -1,0 +1,268 @@
+{
+ "mode": "sequential",
+ "stock_w": null,
+ "harness_cap_w": 375,
+ "workload": "voice",
+ "run_id": "seq-20261104-140616-voice",
+ "cap_available": false,
+ "without": {
+  "requests": 20,
+  "joules": 0.0,
+  "shadow_excluded": null,
+  "seconds": 22.1,
+  "t0": 1793781376.659,
+  "t1": 1793781398.722,
+  "cap_w": null,
+  "tokens": 0,
+  "usd": 0.0,
+  "label": "ESTIMATE (tokens x J/token per model, no GPU counter on this provider)",
+  "texts": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  "per_request_j": [
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ]
+  ],
+  "gate_warmup": null,
+  "correct": null,
+  "scored": 0,
+  "j_per_correct": null
+ },
+ "answer_check": {
+  "accepted": false,
+  "skipped": true,
+  "why_not": [
+   "power cap not available on this provider"
+  ],
+  "note": "software savers only; the power-cap step is skipped"
+ },
+ "with": {
+  "requests": 20,
+  "joules": 0.0,
+  "shadow_excluded": {
+   "calls": 0,
+   "joules": 0.0,
+   "label": "MEASURED NVML energy of the gateway's shadow calls to stock, run one at a time and taken out of this arm"
+  },
+  "seconds": 21.3,
+  "t0": 1793781398.723,
+  "t1": 1793781420.035,
+  "cap_w": null,
+  "tokens": 0,
+  "usd": 0.0,
+  "label": "ESTIMATE (tokens x J/token per model, no GPU counter on this provider)",
+  "texts": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  "per_request_j": [
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ],
+   [
+    "text",
+    0.0
+   ]
+  ],
+  "gate_warmup": {
+   "requests": 0,
+   "joules": 0,
+   "label": "gate warm-up: saver-on requests the per-model gate shadow-checked (MEASURED, counted in this arm, left out of the cap probe)"
+  },
+  "correct": null,
+  "scored": 0,
+  "j_per_correct": null
+ },
+ "cap_decision": {},
+ "agreement": 1.0,
+ "no_worse": true,
+ "final_limit_w": null
+}

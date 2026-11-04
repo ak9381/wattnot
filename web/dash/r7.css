@@ -32,7 +32,7 @@ nav.tabs button.on{background:rgba(142,122,158,.14);border-color:rgba(142,122,15
 /* info button + panel (right to left) */
 .ibtn{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:rgba(142,122,158,.12);color:#F3F0F7;font:600 12px/1 "Space Grotesk",sans-serif;cursor:pointer;vertical-align:middle;margin-left:8px;padding:0}
 .ibtn:hover,.ibtn:focus-visible{border-color:var(--r7-blue);outline:none;box-shadow:0 0 0 3px rgba(142,122,158,.25)}
-.r7info{position:fixed;top:0;right:0;height:100vh;width:min(460px,92vw);z-index:90;transform:translateX(105%);transition:transform .28s ease;overflow:auto;padding:18px 22px;border-radius:18px 0 0 18px;background:rgba(10,16,30,.92)!important}
+.r7info{position:fixed;top:0;right:0;height:100vh;width:min(460px,92vw);z-index:1000;transform:translateX(105%);transition:transform .28s ease;overflow:auto;padding:18px 22px;border-radius:18px 0 0 18px;background:rgba(10,16,30,.92)!important}
 .r7info.on{transform:none}
 .r7info header{display:flex;align-items:center;gap:8px;margin-bottom:10px}.r7info .sp{flex:1}
 .r7info h2{font-size:22px;margin:4px 0 10px;color:#F3F0F7}.r7info h3{font-size:15px;margin:14px 0 4px;color:#F3F0F7}.r7info p,.r7info li{color:#E4DFEB;font-size:14px;line-height:1.55}
@@ -183,3 +183,17 @@ body:not(.illus) [data-illus] { display: none !important; }
 .ov{grid-template-columns:1fr}
 .ov-jump{margin:6px 0 0;font-size:13px;color:#CBC4D6}.ov-jump a{color:#C9B8E0;text-decoration:none;border-bottom:1px dotted rgba(201,184,224,.5)}.ov-jump a:hover{color:#fff}
 .ov-legend{margin-top:8px}.ov-legend .r7legend{flex-direction:row;flex-wrap:wrap;gap:12px;font-size:12px}
+
+.r7info header{position:sticky;top:-18px;padding-top:4px;background:inherit;z-index:1}.r7info .r7ix{font-size:14px;padding:6px 12px}
+.bigchart{width:min(1200px,94vw);max-height:90vh;padding:18px 22px;border-radius:18px;border:1px solid rgba(255,255,255,.16);background:rgba(12,16,30,.97);color:#E4DFEB}
+.bigchart::backdrop{background:rgba(0,0,0,.6)}.bigchart header{display:flex;justify-content:space-between;align-items:center}.bigchart h3{margin:0}
+.bigchart-body svg{width:100%;height:auto;min-height:420px}
+/* Home grid: cards size to their content; charts have a fixed max height so nothing can grow without end. */
+.ov-grid{align-items:start}
+.ov-grid>section{min-height:0;overflow:hidden}
+.ov-grid svg{display:block;width:100%;height:auto;max-height:300px}
+.ov-gauge svg{max-height:190px;max-width:280px;margin:0 auto}
+.ov-donut svg{max-height:220px}
+
+.est-chip{display:inline-block;font:600 9px/1.4 ui-monospace,monospace;letter-spacing:.04em;padding:1px 5px;border-radius:5px;color:#F0C674;background:rgba(240,198,116,.14);border:1px solid rgba(240,198,116,.45);vertical-align:middle}
+.est-chip::after{content:"ESTIMATE"}

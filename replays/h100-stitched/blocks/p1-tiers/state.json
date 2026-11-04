@@ -1,0 +1,179 @@
+{
+ "events": 0,
+ "types": {},
+ "first_ts": null,
+ "last_ts": null,
+ "steps": {},
+ "result": {
+  "rc": 0,
+  "attempt": 1,
+  "wall_s": 2115.7,
+  "capture": false,
+  "copied": true,
+  "tiers": {
+   "cap_w": 350,
+   "label": "MEASURED",
+   "reasoning": {
+    "reasoning_tokens": 162040,
+    "completion_tokens": 205669,
+    "share": 0.7879,
+    "label": "ESTIMATE"
+   },
+   "assumptions": {
+    "wue_l_per_kwh": 0.36,
+    "tariff_usd_per_kwh": 0.12,
+    "gpu_usd_per_h": 5.13,
+    "note": "Wh is GPU-only NVML energy; mL and $ are ESTIMATES"
+   },
+   "truncation": {
+    "items": 0,
+    "checked": 320,
+    "pct": 0.0,
+    "note": "answers cut off by the token cap (finish=length); reported, not silently counted as quality misses"
+   },
+   "tiers": [
+    {
+     "tier": "easy",
+     "label": "MEASURED",
+     "stock": {
+      "n": 40,
+      "pass_pct": 100.0,
+      "wh_per_task": 0.054062048611111115,
+      "ml_per_task": 0.0194623375,
+      "usd_energy_per_1k": 0.006487445833333333,
+      "usd_gpu_time_per_1k": 0.6038946443024747,
+      "p99_s": 2.6177441009995164
+     },
+     "cap": {
+      "n": 40,
+      "pass_pct": 100.0,
+      "wh_per_task": 0.043040347222222226,
+      "ml_per_task": 0.015494525,
+      "usd_energy_per_1k": 0.005164841666666667,
+      "usd_gpu_time_per_1k": 0.6332639087662164,
+      "p99_s": 2.7805013480001435
+     },
+     "energy_change_pct": -20.38713232673105,
+     "pass_drop_pts": 0.0,
+     "p99_change_pct": 6.217462086476777,
+     "truncated": 0,
+     "truncation_pct": 0.0,
+     "reasoning": {
+      "reasoning_tokens": 6268,
+      "completion_tokens": 7056,
+      "share": 0.8883,
+      "label": "ESTIMATE"
+     },
+     "gate": "pass",
+     "why_not": []
+    },
+    {
+     "tier": "medium",
+     "label": "MEASURED",
+     "stock": {
+      "n": 40,
+      "pass_pct": 100.0,
+      "wh_per_task": 0.14462947222222222,
+      "ml_per_task": 0.05206661,
+      "usd_energy_per_1k": 0.017355536666666668,
+      "usd_gpu_time_per_1k": 1.5766974023306966,
+      "p99_s": 9.138331006000044
+     },
+     "cap": {
+      "n": 40,
+      "pass_pct": 100.0,
+      "wh_per_task": 0.11286406944444445,
+      "ml_per_task": 0.040631065,
+      "usd_energy_per_1k": 0.013543688333333333,
+      "usd_gpu_time_per_1k": 1.6651264549538132,
+      "p99_s": 9.617745911999918
+     },
+     "energy_change_pct": -21.963298551605337,
+     "pass_drop_pts": 0.0,
+     "p99_change_pct": 5.246197644680417,
+     "truncated": 0,
+     "truncation_pct": 0.0,
+     "reasoning": {
+      "reasoning_tokens": 15429,
+      "completion_tokens": 22453,
+      "share": 0.6872,
+      "label": "ESTIMATE"
+     },
+     "gate": "pass",
+     "why_not": []
+    },
+    {
+     "tier": "hard",
+     "label": "MEASURED",
+     "stock": {
+      "n": 40,
+      "pass_pct": 100.0,
+      "wh_per_task": 0.3243417222222222,
+      "ml_per_task": 0.11676302,
+      "usd_energy_per_1k": 0.03892100666666666,
+      "usd_gpu_time_per_1k": 3.5619741603581008,
+      "p99_s": 14.655980673999693
+     },
+     "cap": {
+      "n": 40,
+      "pass_pct": 100.0,
+      "wh_per_task": 0.25355075000000005,
+      "ml_per_task": 0.09127827000000001,
+      "usd_energy_per_1k": 0.030426090000000003,
+      "usd_gpu_time_per_1k": 3.738451114121305,
+      "p99_s": 14.705338101500274
+     },
+     "energy_change_pct": -21.826045609303335,
+     "pass_drop_pts": 0.0,
+     "p99_change_pct": 0.3367732845618754,
+     "truncated": 0,
+     "truncation_pct": 0.0,
+     "reasoning": {
+      "reasoning_tokens": 26911,
+      "completion_tokens": 32840,
+      "share": 0.8195,
+      "label": "ESTIMATE"
+     },
+     "gate": "pass",
+     "why_not": []
+    },
+    {
+     "tier": "complex",
+     "label": "MEASURED",
+     "stock": {
+      "n": 40,
+      "pass_pct": 100.0,
+      "wh_per_task": 2.78795625,
+      "ml_per_task": 1.0036642500000001,
+      "usd_energy_per_1k": 0.33455475,
+      "usd_gpu_time_per_1k": 30.342545441874332,
+      "p99_s": 51.39789511300023
+     },
+     "cap": {
+      "n": 40,
+      "pass_pct": 100.0,
+      "wh_per_task": 2.173932423611111,
+      "ml_per_task": 0.7826156724999999,
+      "usd_energy_per_1k": 0.26087189083333323,
+      "usd_gpu_time_per_1k": 32.02988265929253,
+      "p99_s": 54.38343380350216
+     },
+     "energy_change_pct": -22.02415573733947,
+     "pass_drop_pts": 0.0,
+     "p99_change_pct": 5.8086789039475395,
+     "truncated": 0,
+     "truncation_pct": 0.0,
+     "reasoning": {
+      "reasoning_tokens": 113432,
+      "completion_tokens": 143320,
+      "share": 0.7915,
+      "label": "ESTIMATE"
+     },
+     "gate": "pass",
+     "why_not": []
+    }
+   ],
+   "model": "meta-models/Muse-Glimmer-30B"
+  }
+ }
+}

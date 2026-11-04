@@ -357,7 +357,8 @@ export class ArchPage {
     this.view.reset(); cap.textContent = "Following the run as it writes events…";
     const es = (this.es = new EventSource(`/api/dash/arch/live?speed=${this.speed}${q.replace("?", "&")}`)); let last = 0;
     this.roomPay = {}; this.tagged = false; this.spark = []; this.meta = {}; $("#aspark", H)?.remove(); $("#ameta", H)?.remove(); { const ar = $("#aroom", H); if (ar) ar.hidden = true; }
-    es.addEventListener("event", (m) => {
+    this.livePaused = false; this._liveQ = [];
+    const onEvent = (m) => {
       let ev; try { ev = JSON.parse(m.data); } catch { return; }
       const d = ev.data || {};
       window.dispatchEvent(new CustomEvent("wn:archevent", { detail: ev })); // let the toolbar badges follow the real events
@@ -374,7 +375,9 @@ export class ArchPage {
       const tag = d.label && this.d.labels.includes(d.label) ? d.label : null;
       if (ev.type === "step.finished") return this.stepDone(r, ev, tag);
       this.view.activate({ node: r[0], sub: r[1], text: ev.type === "step.started" ? d.label || livePhrase(ev) : livePhrase(ev), tag: ev.type === "step.started" ? null : tag, ok: !(ev.type === "gate.result" && d.passed === false) });
-    });
+    };
+    this._liveHandle = onEvent;
+    es.addEventListener("event", (m) => { if (this.livePaused) this._liveQ.push(m); else onEvent(m); });
     es.onerror = () => { cap.innerHTML += ` <span class="muted">(connection lost, retrying)</span>`; };
   }
   // Where an event lights the map: the step's own [data.node, data.sub] when it names a node on this map,
@@ -444,7 +447,15 @@ export class ArchPage {
       box.hidden = false;
     } catch { /* no clips: nothing to show */ }
   }
-  stopLive() { this.es?.close(); this.es = null; }
+  stopLive() { this.es?.close(); this.es = null; this.livePaused = false; this._liveQ = []; clearInterval(this._drain); }
+  // Live graph toolbar: pause/resume the replay of the selected run's recorded events.
+  setLivePaused(on) {
+    this.livePaused = !!on; clearInterval(this._drain);
+    if (!on && this._liveQ.length) {
+      const gap = 250 / Math.max(0.1, this.speed);
+      this._drain = setInterval(() => { if (this.livePaused) return clearInterval(this._drain); const m = this._liveQ.shift(); if (!m) return clearInterval(this._drain); this._liveHandle?.(m); }, gap);
+    }
+  }
   fitOnce() {
     if (this._fitted) return;
     const r = this.host.querySelector("#amap")?.getBoundingClientRect();

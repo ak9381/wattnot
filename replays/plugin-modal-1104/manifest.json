@@ -1,0 +1,62 @@
+{
+ "title": "Plugin run, Modal A100 (Nov 4): full-stage round r04 through the WattNot plug-in",
+ "provider": "modal",
+ "gpu": "A100",
+ "model": "meta-models/Muse-Glimmer-30B",
+ "date": "2026-11-04",
+ "kind": "round",
+ "receipt_signed": true,
+ "source": "/workspace/wn-modaltake/data/modal-full-1101/r04",
+ "gaps": [
+  "Run from the dashboard as a full-stage round (r04), not as separate gateway takes; the 6:33 AM gateway attempt wrote no results (NVML cap refused).",
+  "LangChain block held quality but used +19,946 J; FP8 was rejected (+39.5% J/correct)."
+ ],
+ "spec": "wattnot.replay-manifest/1",
+ "name": "plugin-modal-1104",
+ "replay": "plugin-modal-1104",
+ "label": "REPLAY",
+ "live_calls": false,
+ "events": 1937,
+ "files": [
+  {
+   "file": "receipt.json",
+   "source": "/workspace/wn-modaltake/data/modal-full-1101/r04/features/receipt.json",
+   "sha256": "cff331ca07813eeb3bdc2af9b5a71b92bec5f718f67cd67cb65350beb211baf1"
+  },
+  {
+   "file": "receipt.sigstore.json",
+   "source": "/workspace/wn-modaltake/data/modal-full-1101/r04/features/receipt.sigstore.json",
+   "sha256": "77737f390444079af2a70383211e0f3ddc9748d71a8ceb120cfc89a59561da51"
+  },
+  {
+   "file": "energy-receipt.json",
+   "source": "/workspace/wn-modaltake/data/modal-full-1101/r04/sweep/rcpt_20261101_modal_full_r04.json",
+   "sha256": "66fd2db59e516aca09b7f891e6a28c8b54385bfd93767135b0ca800a7ab40091"
+  },
+  {
+   "file": "energy-receipt.sigstore.json",
+   "source": "/workspace/wn-modaltake/data/modal-full-1101/r04/sweep/rcpt_20261101_modal_full_r04.sigstore.json",
+   "sha256": "b75f6939663f2f53dc6c315e4ad04b44a351eb845ebb511eb57a720fbb948ed0"
+  },
+  {
+   "file": "eu_report.html",
+   "source": "/workspace/wn-modaltake/data/modal-full-1101/r04/features/eu_report.html",
+   "sha256": "91e461d48bc8b3c90646605615d43ed4c15e4a1ea4fd974eedeaae8f18c39d5a"
+  },
+  {
+   "file": "round.json",
+   "source": "/workspace/wn-modaltake/data/modal-full-1101/r04/round.json",
+   "sha256": "e4aa060b81c3721ddf5b76a5d72b6317808a29a17f305b984ba69cc9ec27ea66"
+  },
+  {
+   "file": "stage_entry.json",
+   "source": "/workspace/wn-modaltake/data/modal-full-1101/r04/stage_entry.json",
+   "sha256": "568f294bf8652495e0c47a31509ad947a1531a25dcc08d590f7d5c971423a827"
+  },
+  {
+   "file": "blocks/langchain/langchain_pass.json",
+   "source": "/workspace/wn-modaltake/data/modal-full-1101/r04/langchain/langchain_pass.json",
+   "sha256": "4ee4642c24aa48b6e92b17f3e0e6bca262b2c851778c30e5b8a053ba8d4d7b6b"
+  }
+ ]
+}

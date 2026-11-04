@@ -1,0 +1,272 @@
+{
+ "mode": "sequential",
+ "stock_w": null,
+ "harness_cap_w": 375,
+ "workload": "text",
+ "run_id": "seq-20261104-140109-text",
+ "cap_available": false,
+ "without": {
+  "requests": 20,
+  "joules": 89706.2,
+  "shadow_excluded": null,
+  "seconds": 43.6,
+  "t0": 1793781069.161,
+  "t1": 1793781112.808,
+  "cap_w": null,
+  "tokens": 11413,
+  "usd": 0.1793,
+  "label": "ESTIMATE (tokens x J/token per model, no GPU counter on this provider)",
+  "texts": [
+   "17 + 26 = **43**",
+   "The capital of Kenya is **Nairobi**.",
+   "12 * 11 = **132**",
+   "No",
+   "There are **210 minutes** in 3.5 hours.\n\nCalculation: 3.5 \u00d7 60 = 210",
+   "15% of 240 is **36**.\n\nCalculation: 0.15 \u00d7 240 = 36",
+   "The largest planet in our Solar System is **Jupiter**.",
+   "5 km = **5,000 metres**\n\n*1 km = 1,000 metres, so 5 \u00d7 1,000 = 5,000*",
+   "The square root of 196 is **14**, since 14 \u00d7 14 = 196.",
+   "2 to the power 10 is **1024**.\n\nThat's $2^{10} = 2 \\times 2 \\times 2 \\times 2 \\times 2 \\times 2 \\times 2 \\times 2 \\times 2 \\times 2 = 1024$.",
+   "17 + 26 = **43**",
+   "The capital of Kenya is **Nairobi**.",
+   "12 * 11 = **132**",
+   "",
+   "There are **210 minutes** in 3.5 hours.\n\n1 hour = 60 minutes, so 3.5 \u00d7 60 = 210.",
+   "15% of 240 is **36**.\n\nCalculation: 0.15 \u00d7 240 = 36",
+   "The largest planet in our Solar System is **Jupiter**.",
+   "5 km = **5,000 metres**\n\n1 km = 1,000 metres, so 5 \u00d7 1,000 = 5,000",
+   "The square root of 196 is **14**, since 14 \u00d7 14 = 196.",
+   "2 to the power of 10 is **1024**.\n\nThat's $2^{10} = 2 \\times 2 \\times 2 \\times 2 \\times 2 \\times 2 \\times 2 \\times 2 \\times 2 \\times 2 = 1024$."
+  ],
+  "per_request_j": [
+   [
+    "text",
+    2413.02
+   ],
+   [
+    "text",
+    2743.14
+   ],
+   [
+    "text",
+    2609.52
+   ],
+   [
+    "text",
+    2695.98
+   ],
+   [
+    "text",
+    4024.32
+   ],
+   [
+    "text",
+    4008.6
+   ],
+   [
+    "text",
+    7773.54
+   ],
+   [
+    "text",
+    3725.64
+   ],
+   [
+    "text",
+    3254.04
+   ],
+   [
+    "text",
+    5439.12
+   ],
+   [
+    "text",
+    2861.04
+   ],
+   [
+    "text",
+    2806.02
+   ],
+   [
+    "text",
+    4660.98
+   ],
+   [
+    "text",
+    13291.26
+   ],
+   [
+    "text",
+    3419.1
+   ],
+   [
+    "text",
+    2845.32
+   ],
+   [
+    "text",
+    7584.9
+   ],
+   [
+    "text",
+    5486.28
+   ],
+   [
+    "text",
+    4047.9
+   ],
+   [
+    "text",
+    4016.46
+   ]
+  ],
+  "gate_warmup": null,
+  "correct": 17,
+  "scored": 20,
+  "j_per_correct": 5276.8
+ },
+ "answer_check": {
+  "accepted": false,
+  "skipped": true,
+  "why_not": [
+   "power cap not available on this provider"
+  ],
+  "note": "software savers only; the power-cap step is skipped"
+ },
+ "with": {
+  "requests": 20,
+  "joules": 68649.2,
+  "shadow_excluded": {
+   "calls": 2,
+   "joules": 0.0,
+   "label": "MEASURED NVML energy of the gateway's shadow calls to stock, run one at a time and taken out of this arm"
+  },
+  "seconds": 45.3,
+  "t0": 1793781112.808,
+  "t1": 1793781158.074,
+  "cap_w": null,
+  "tokens": 8734,
+  "usd": 0.12572,
+  "label": "ESTIMATE (tokens x J/token per model, no GPU counter on this provider)",
+  "texts": [
+   "17 + 26 = **43**",
+   "The capital of Kenya is **Nairobi**.",
+   "12 * 11 = **132**",
+   "No",
+   "There are **210 minutes** in 3.5 hours.\n\nCalculation: 3.5 \u00d7 60 = 210",
+   "15% of 240 is **36**.\n\nCalculation: 0.15 \u00d7 240 = 36",
+   "The largest planet in our Solar System is **Jupiter**.",
+   "5 km = **5,000 metres**\n\n1 km = 1,000 metres, so 5 \u00d7 1,000 = 5,000",
+   "The square root of 196 is **14**, since 14 \u00d7 14 = 196.",
+   "2 to the power 10 is **1024**.",
+   "17 + 26 = **43**",
+   "The capital of Kenya is **Nairobi**.",
+   "12 * 11 = **132**",
+   "No",
+   "There are **210 minutes** in 3.5 hours.\n\nCalculation: 3.5 \u00d7 60 = 210",
+   "15% of 240 is **36**.\n\nCalculation: 0.15 \u00d7 240 = 36",
+   "The largest planet in our Solar System is **Jupiter**.",
+   "5 km = **5,000 metres**\n\n*1 km = 1,000 metres, so 5 \u00d7 1,000 = 5,000*",
+   "The square root of 196 is **14**.\n\nSince 14 \u00d7 14 = 196.",
+   "2 to the power 10 is **1024**.\n\nThat is 2 \u00d7 2 \u00d7 2 \u00d7 2 \u00d7 2 \u00d7 2 \u00d7 2 \u00d7 2 \u00d7 2 \u00d7 2 = 1024"
+  ],
+  "per_request_j": [
+   [
+    "text",
+    4008.6,
+    "gate warm-up"
+   ],
+   [
+    "text",
+    1438.38,
+    "gate warm-up"
+   ],
+   [
+    "text",
+    3607.74
+   ],
+   [
+    "text",
+    3780.66
+   ],
+   [
+    "text",
+    3230.46
+   ],
+   [
+    "text",
+    3269.76
+   ],
+   [
+    "text",
+    4503.78
+   ],
+   [
+    "text",
+    3851.4
+   ],
+   [
+    "text",
+    3175.44
+   ],
+   [
+    "text",
+    4362.3
+   ],
+   [
+    "text",
+    2782.44
+   ],
+   [
+    "text",
+    1414.8
+   ],
+   [
+    "text",
+    2813.88
+   ],
+   [
+    "text",
+    2947.5
+   ],
+   [
+    "text",
+    3906.42
+   ],
+   [
+    "text",
+    3914.28
+   ],
+   [
+    "text",
+    5046.12
+   ],
+   [
+    "text",
+    3458.4
+   ],
+   [
+    "text",
+    3285.48
+   ],
+   [
+    "text",
+    3851.4
+   ]
+  ],
+  "gate_warmup": {
+   "requests": 2,
+   "joules": 5447.0,
+   "label": "gate warm-up: saver-on requests the per-model gate shadow-checked (MEASURED, counted in this arm, left out of the cap probe)"
+  },
+  "correct": 18,
+  "scored": 20,
+  "j_per_correct": 3813.8
+ },
+ "cap_decision": {},
+ "agreement": 0.95,
+ "no_worse": true,
+ "energy_saved_pct": 23.47,
+ "energy_label": "ESTIMATE",
+ "final_limit_w": null
+}

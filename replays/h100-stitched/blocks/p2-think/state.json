@@ -1,0 +1,22 @@
+{
+ "events": 1,
+ "types": {
+  "step.started": 1
+ },
+ "first_ts": "2026-11-03T12:00:11.187Z",
+ "last_ts": "2026-11-03T12:00:11.187Z",
+ "steps": {
+  "p2-think": {
+   "type": "step.started",
+   "ts": "2026-11-03T12:00:11.187Z",
+   "status": null
+  }
+ },
+ "result": {
+  "rc": 0,
+  "attempt": 1,
+  "wall_s": 576.2,
+  "capture": false,
+  "copied": true
+ }
+}

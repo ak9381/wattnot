@@ -59,7 +59,8 @@ const params = new URLSearchParams(location.search);
 // RUN2 (Llama 3.1 8B, not a Meta model here) is hidden: an old stored id falls back to the Glimmer rerun.
 const RUN_PICK = params.get("run") || localStorage.getItem("wn.run") || "";
 const RUN_ID = !RUN_PICK || /llama|^run2/i.test(RUN_PICK) ? "rerun-1031-glimmer-325w" : RUN_PICK;
-const IS_REAL = RUN_ID.includes(":");
+const IS_RECORDED = RUN_ID.startsWith("replay:");
+const IS_REAL = RUN_ID.includes(":") && !IS_RECORDED;
 
 let STATE = { run: null, bundle: null, receipt: null };
 
@@ -93,7 +94,41 @@ async function loadReal() {
       : `<p class="sub">This run has no round file yet${meta.source ? ` (config: <a href="${fileUrl(meta.source)}">${esc(meta.source)}</a>)` : ""}.</p>`}`;
 }
 
+// A recorded run from replays/ (header pick "replay:<id>"): its own signed receipt and EU report, as recorded.
+async function loadRecorded() {
+  const id = RUN_ID.slice(7);
+  let v = null; try { v = await getJSON(`/api/dash/run/receipt?run=${encodeURIComponent(RUN_ID)}`); } catch { v = null; }
+  const eu = `/replays/${encodeURIComponent(id)}/eu_report.html`;
+  let hasEu = false; try { hasEu = (await fetch(eu, { method: "HEAD" })).ok; } catch { hasEu = false; }
+  const { replaySummary, runName } = await import("./replaystats.js");
+  const rs0 = await replaySummary(id).catch(() => null);
+  const tk = rs0?.takes ? await import("./takes.js") : null;
+  $("#lede").innerHTML = `<h1>${esc(runName(id))}</h1><p>REPLAY of a recorded run (<code>replays/${esc(id)}</code>). Numbers below are copied from its recorded files with the labels they were written with.</p>
+    ${tk ? `${tk.takesTable(rs0)}<p class="sub">Sources: ${tk.takesSources(id, rs0.takes)}</p>` : v ? `<pre class="rcpt-json">${esc(JSON.stringify(v, null, 2))}</pre>` : `<p>No signed receipt in this run's folder.</p>`}
+    <p>${hasEu ? `<a href="eu.html?run=replay:${encodeURIComponent(id)}">Open its EU energy report</a> · ` : ""}<a href="#rp-inline" id="rpPlayLink">Play it back</a> · <a href="graph.html">Live graph</a></p><div id="rp-inline" class="rp-inline" hidden></div>`;
+  const go = (e) => { e?.preventDefault(); import("./replaypick.js").then((m) => m.playInline(id, $("#rp-inline"))); };
+  $("#rpPlayLink").onclick = go;
+  if (location.hash === "#rp-inline") go();
+  // Headline card: the run's own recorded headline, with the label it was recorded with.
+  const rs = rs0;
+  const card = $("#heroCard"); if (!card) return;
+  const pc = (x) => (x == null ? null : `${x > 0 ? "+" : ""}${Number(x).toFixed(1)}%`);
+  const jpc = rs && rs.j_per_correct_stock && rs.j_per_correct_cap ? (rs.j_per_correct_cap / rs.j_per_correct_stock - 1) * 100 : null;
+  const cells = rs ? [
+    ["Energy per correct answer", jpc != null ? `${Number(rs.j_per_correct_stock).toFixed(1)} → ${Number(rs.j_per_correct_cap).toFixed(1)} J (${pc(jpc)})` : null, rs.energy_label],
+    ["Energy per request", jpc == null && rs.j_per_req_stock != null ? `${Number(rs.j_per_req_stock).toFixed(1)} → ${Number(rs.j_per_req_cap).toFixed(1)} J` : null, rs.energy_label],
+    ["Energy saved", rs.energy_saved_pct != null ? `${Number(rs.energy_saved_pct).toFixed(1)}%` : null, rs.energy_saved_label || rs.energy_label],
+    ["Answer quality", rs.quality_stock_pct != null ? `${Number(rs.quality_stock_pct).toFixed(1)}% → ${Number(rs.quality_cap_pct).toFixed(1)}%` : null, rs.quality_label],
+    ["Slowest 1% (p99)", pc(rs.p99_change_pct), rs.p99_label],
+  ].filter((c) => c[1]) : [];
+  if (!cells.length) { card.remove(); return; }
+  const norm = (l) => (String(l || "").toUpperCase().match(/MEASURED|ESTIMATE|SIMULATED|MOCK|REPLAY/) || ["REPLAY"])[0];
+  $("#heroRunBadge").innerHTML = `${chip("REPLAY")} <span class="muted">${esc(runName(id))}${rs.headline_take ? ` · headline take ${esc(rs.headline_take)}` : ""}</span>`;
+  $("#heroGrid").innerHTML = cells.map(([k, v, l]) => `<div class="hero-cell"><div class="hero-k">${esc(k)}</div><div class="hero-val">${esc(v)} ${chip(norm(l))}</div></div>`).join("");
+}
+
 async function load() {
+  if (IS_RECORDED) return loadRecorded();
   if (IS_REAL) return loadReal();
   try {
     STATE.run = await getJSON(`/api/dash/v2/runs/${encodeURIComponent(RUN_ID)}`);

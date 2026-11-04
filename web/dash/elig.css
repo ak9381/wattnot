@@ -85,3 +85,11 @@ aside.side #sideX{position:sticky;top:0;float:right;margin:-6px -6px 6px 8px}
 #pCfg .cfg-step{align-items:start}
 #pCfg .step-side{max-height:calc(100vh - var(--wn-drawer-top,76px) - 190px);overflow-y:auto;overscroll-behavior:contain;position:sticky;top:var(--wn-drawer-top,76px)}
 #wnRunPickBox[hidden]{display:none!important}
+/* The side panel run picker: full width so every run name reads in full. */
+#wnSideRun .wn-runpick{display:flex;flex-direction:column;align-items:stretch;margin-left:0;width:100%}
+#wnSideRun .wn-runpick select{max-width:none;width:100%;font-size:12.5px;border-radius:10px;padding:6px 8px}
+/* header bar: show the label word next to its dot so "energy" never reads as cut off */
+.wn-elig .wn-dot[data-wnq]{width:auto!important;min-width:0;height:auto!important;background:transparent!important;border-radius:0!important;overflow:visible;line-height:1!important;vertical-align:baseline}
+.wn-elig .wn-dot[data-wnq]::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle;background:var(--wn-dc,#9AA0AE)}
+.wn-elig .wn-dot[data-wnq]::after{content:attr(data-wnq);font:600 10.5px/1 var(--v-num,monospace);letter-spacing:.06em;color:var(--wn-dc,#9AA0AE);vertical-align:middle}
+.wn-elig .wn-dot-measured{--wn-dc:#2DD4A7}.wn-elig .wn-dot-estimate{--wn-dc:#F5C451}.wn-elig .wn-dot-simulated{--wn-dc:#5B9FE8}.wn-elig .wn-dot-replay{--wn-dc:#A78BFA}.wn-elig .wn-dot-mock{--wn-dc:#FB7185}

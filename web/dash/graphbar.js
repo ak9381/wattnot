@@ -81,6 +81,11 @@ function build() {
       <button type="button" data-pc="pc-follow" class="on" title="Follow the active step">Follow</button>
       <button type="button" id="gFull" title="Full screen (Esc closes)" aria-label="Open the graph full screen" aria-pressed="false">⛶ Full screen</button>
     </div>
+    <div class="gbar-grp" role="group" aria-label="Replay the selected run">
+      <button type="button" id="gPlay" class="on" title="Replay the selected run's recorded events on this canvas" aria-pressed="false">▶ Replay</button>
+      <button type="button" id="gRestart" title="Start the replay again from the first event">↺ Restart</button>
+      <span class="seg" id="gSpeed" role="group" aria-label="Replay speed"><button type="button" data-s="1">1×</button><button type="button" data-s="2" class="on">2×</button><button type="button" data-s="4">4×</button><button type="button" data-s="8">8×</button></span>
+    </div>
     <div class="gbar-grp seg" role="group" aria-label="Replay arm">
       <button type="button" data-arm="off" aria-pressed="${arm === "off"}">Without WattNot</button>
       <button type="button" data-arm="on" aria-pressed="${arm === "on"}">With WattNot</button>
@@ -91,6 +96,7 @@ function build() {
     <button type="button" id="gFeat" class="gbar-badge" aria-expanded="false" aria-controls="infodrawer">WattNot features</button>
     <button type="button" id="gLegend" class="gbar-legend" aria-expanded="false" aria-controls="legdrawer">Legend</button>`;
   document.body.appendChild(bar);
+  wireReplay(bar, liveRun);
 
   // ---- the right-side legend drawer (below the header, above the footer)
   const dr = document.createElement("aside");
@@ -512,3 +518,56 @@ if (document.readyState === "loading") document.addEventListener("DOMContentLoad
 else boot();
 addEventListener("resize", layout);
 addEventListener("load", () => { layout(); setTimeout(layout, 400); });
+
+// ---- Replay / Restart / speed on the Live graph: replays the run picked in the header
+// (or the server's own events file) on this canvas, from its recorded events.
+function wireReplay(bar, liveRun) {
+  const play = bar.querySelector("#gPlay"), rs = bar.querySelector("#gRestart");
+  const ap = () => window.__archPage;
+  let state = "idle"; // idle | playing | paused
+  const show = () => { play.textContent = state === "playing" ? "❚❚ Pause" : state === "paused" ? "▶ Resume" : "▶ Replay"; play.setAttribute("aria-pressed", String(state === "playing")); };
+  const begin = () => { const a = ap(); if (!a) return; a.stopLive(); a.replay = "live"; a.liveW = null; a.renderMeter(0); a.startLive(); state = "playing"; show(); };
+  play.addEventListener("click", () => {
+    const a = ap(); if (!a) return;
+    if (state === "idle") return begin();
+    if (state === "playing") { a.setLivePaused(true); state = "paused"; } else { a.setLivePaused(false); state = "playing"; }
+    show();
+  });
+  rs.addEventListener("click", begin);
+  bar.querySelectorAll("#gSpeed button").forEach((b) => b.addEventListener("click", () => {
+    bar.querySelectorAll("#gSpeed button").forEach((x) => x.classList.toggle("on", x === b));
+    const a = ap(); if (!a) return; a.speed = +b.dataset.s;
+    if (state === "playing") begin(); // the server paces the stream, so a new speed restarts it
+  }));
+  if (liveRun) { state = "playing"; show(); }
+  window.__liveReplayState = () => state;
+  mountCanvasControls(bar);
+}
+
+// Floating Replay / Pause / speed bar on the graph canvas itself (bottom-left, always visible).
+// Its buttons drive the same toolbar controls, so both stay in step.
+function mountCanvasControls(bar) {
+  const host = document.querySelector("main#stage") || document.querySelector("main.page.on");
+  if (!host || document.getElementById("cvCtl")) return;
+  if (getComputedStyle(host).position === "static") host.style.position = "relative";
+  const run = new URLSearchParams(location.search).get("run") || localStorage.getItem("wn.run") || "";
+  const el = document.createElement("div"); el.id = "cvCtl"; el.className = "cv-ctl"; el.setAttribute("role", "group"); el.setAttribute("aria-label", "Replay controls");
+  el.innerHTML = `<button type="button" data-cv="play"></button><button type="button" data-cv="restart" title="Start again">↺</button>
+    <span class="cv-seg">${[1, 2, 4].map((n) => `<button type="button" data-cv-s="${n}">${n}×</button>`).join("")}</span>
+    <span class="cv-run">${esc(run.replace(/^replay:/, "") || "server events")} · REPLAY</span>`;
+  host.appendChild(el);
+  const place = () => { const r = host.getBoundingClientRect(); el.style.left = `${Math.max(8, r.left + 16)}px`; el.style.bottom = `${Math.max(16, innerHeight - Math.min(r.bottom, innerHeight) + 16)}px`; };
+  place(); addEventListener("resize", place); addEventListener("scroll", place, true);
+  const play = bar.querySelector("#gPlay"), cp = el.querySelector('[data-cv="play"]');
+  const sync = () => {
+    cp.textContent = play.textContent; cp.setAttribute("aria-pressed", play.getAttribute("aria-pressed"));
+    const on = bar.querySelector("#gSpeed button.on")?.dataset.s;
+    el.querySelectorAll("[data-cv-s]").forEach((b) => b.classList.toggle("on", b.dataset.cvS === on));
+  };
+  cp.onclick = () => { play.click(); sync(); };
+  el.querySelector('[data-cv="restart"]').onclick = () => { bar.querySelector("#gRestart").click(); sync(); };
+  el.querySelectorAll("[data-cv-s]").forEach((b) => (b.onclick = () => { bar.querySelector(`#gSpeed button[data-s="${b.dataset.cvS}"]`)?.click(); sync(); }));
+  new MutationObserver(sync).observe(play, { childList: true, characterData: true, subtree: true });
+  bar.querySelectorAll("#gSpeed button").forEach((b) => b.addEventListener("click", () => setTimeout(sync)));
+  sync();
+}

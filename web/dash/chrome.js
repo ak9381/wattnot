@@ -35,7 +35,7 @@
         <button class="wn-menu" id="wnMenu" aria-controls="wnSide" aria-expanded="false" aria-label="Open the page menu">Menu</button>
         <div class="wn-links" style="margin-left:auto">
           <a class="wn-link" data-top="configure" href="${prefix}plug.html#setup">Plug in</a>
-          <a class="wn-link" data-top="run" href="${prefix}plug.html#live">Live savings</a>
+          <a class="wn-link" data-top="run" href="${prefix}graph.html">Live savings</a>
           <a class="wn-link" data-top="results" href="${prefix}report.html">Results</a>
           <a class="wn-link" data-top="proof" href="${prefix}approvals.html">Proof</a>
           <a class="wn-link" data-top="costs" href="${prefix}costbudget.html">Costs</a>
@@ -46,13 +46,14 @@
     `;
 
     document.body.prepend(nav);
+    mountLegendButton(nav);
     // Left sidebar: every route, grouped. The current group is open; its page sections are filled in by sidenav.js.
     const side = document.createElement("aside");
     side.className = "wn-side"; side.id = "wnSide"; side.setAttribute("aria-label", "All pages");
     const G = [
       ["overview", "Start here", [["dashboard", "v2.html#pHome", "Home"], ["learn", "v2.html#pLearn", "How it works"]]],
       ["configure", "Plug in", [["plug", "plug.html#setup", "Plug in (3 steps)"], ["configure", "v2.html#pCfg", "Test run setup (advanced)"]]],
-      ["run", "Live savings", [["plugl", "plug.html#live", "Live savings"], ["graph", "graph.html", "Test run view (replay)"], ["runs", "runs.html", "Past runs"], ["matrix", "matrix.html", "All test rounds"], ["replay", "v2.html#pRun", "Replay a run"]]],
+      ["run", "Live savings", [["graph", "graph.html", "Live savings"], ["plugl", "plug.html#setup", "Go live (plug in)"], ["runs", "runs.html", "Past runs"]]],
       ["results", "Results", [["reports", "report.html", "Report"], ["compare", "v2.html#pReport", "With vs without"]]],
       ["proof", "Proof", [["approvals", "approvals.html", "Approvals"], ["proofs", "v2.html#pProof", "Signed receipts"]]],
       ["costs", "Costs", [["costbudget", "costbudget.html", "Cost budget"], ["eu", "eu.html", "EU energy report"]]],
@@ -60,7 +61,7 @@
     ];
     const LBL = {};
     side.innerHTML = `<div class="wn-side-run" id="wnSideRun"></div>` + G.map(([g, name, items]) => `<details class="wn-grp" data-group="${g}"><summary>${name}</summary><ul>${items.map(([k, h, t]) =>
-      `<li><a class="wn-link" data-nav="${k}" href="${prefix}${h}">${LBL[k] || t}</a><ul class="wn-secs" data-secs-for="${k}"></ul></li>`).join("")}</ul></details>`).join("");
+      `<li><a class="wn-link" data-nav="${k}" href="${prefix}${h}">${LBL[k] || t}</a></li>`).join("")}</ul></details>`).join("");
     document.body.insertBefore(side, nav.nextSibling);
     document.body.classList.add("wn-has-side");
     const scrim = document.createElement("div"); scrim.className = "wn-side-scrim"; scrim.hidden = true; document.body.appendChild(scrim);
@@ -158,6 +159,8 @@
         targetNav = "matrix";
       } else if (path.includes("costbudget.html")) {
         targetNav = "costbudget";
+      } else if (path.includes("plug.html")) {
+        targetNav = "plug";
       } else if (path.includes("eu.html")) {
         targetNav = "eu";
       } else if (path.includes("metatools.html")) {
@@ -257,3 +260,36 @@
   set();
   window.__wnDrawerBounds = set;
 })();
+
+// One "Legend" button at the top right replaces the inline label rows on every page.
+// Collapsed by default; closes on X, Esc, a click outside, or the button again.
+function mountLegendButton(nav) {
+  const st = document.createElement("style");
+  st.textContent = `.wn-shared-legend,.r7legend,.ov-legend,.eu-legend,.lab-legend{display:none!important}
+.wn-legbtn{margin-left:10px;font:inherit;font-size:12px;padding:5px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:inherit;cursor:pointer}
+.wn-legpop{position:fixed;top:56px;right:16px;z-index:1100;width:290px;padding:12px 14px;border-radius:14px;background:rgba(14,18,32,.97);border:1px solid rgba(255,255,255,.16);box-shadow:0 12px 40px rgba(0,0,0,.45);font-size:12.5px;color:#E4DFEB}
+.wn-legpop[hidden]{display:none}.wn-legpop header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:600}
+.wn-legpop button{font:inherit;background:none;border:1px solid rgba(255,255,255,.2);border-radius:8px;color:inherit;cursor:pointer;padding:2px 8px}
+.wn-legpop li{display:flex;gap:8px;align-items:flex-start;margin:5px 0;list-style:none}.wn-legpop ul{margin:0;padding:0}
+.wn-legpop i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-top:4px;flex:none}`;
+  document.head.appendChild(st);
+  if (/graph\.html$/.test(location.pathname)) return; // the Live graph toolbar has its own Legend button
+  const rows = [["MEASURED", "#2DD4A7", "Read from a meter or a real run."], ["MEASURED-derived", "#2DD4A7", "Measured time priced at a published list rate."],
+    ["ESTIMATE", "#F5C451", "Measured numbers plus a stated assumption."], ["SIMULATED", "#5B9FE8", "From a model or simulator, not measured."],
+    ["MOCK", "#FB7185", "Sample data that shows the layout only."], ["REPLAY", "#A78BFA", "Replayed from saved, signed records."],
+    ["pending", "transparent;border:1.5px dashed #9AA0AE", "Not measured yet; shown dimmed, never hidden."],
+    ["with WattNot", "#7FA88A", "Chart line or bar for the run with WattNot."], ["without WattNot", "#E07A7A", "Chart line or bar for the stock run."]];
+  const btn = document.createElement("button");
+  btn.className = "wn-legbtn"; btn.id = "wnLegBtn"; btn.type = "button"; btn.textContent = "Legend";
+  btn.setAttribute("aria-expanded", "false"); btn.setAttribute("aria-controls", "wnLegPop");
+  const pop = document.createElement("div");
+  pop.className = "wn-legpop"; pop.id = "wnLegPop"; pop.hidden = true; pop.setAttribute("role", "dialog"); pop.setAttribute("aria-label", "Legend");
+  pop.innerHTML = `<header><span>Legend</span><button type="button" aria-label="Close legend">✕</button></header><ul>${rows.map(([l, c, t]) => `<li><i style="background:${c}"></i><span><b>${l}</b>: ${t}</span></li>`).join("")}</ul>`;
+  const set = (open) => { pop.hidden = !open; btn.setAttribute("aria-expanded", String(open)); };
+  btn.onclick = (e) => { e.stopPropagation(); set(pop.hidden); };
+  pop.querySelector("button").onclick = () => set(false);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") set(false); });
+  document.addEventListener("click", (e) => { if (!pop.hidden && !pop.contains(e.target) && e.target !== btn) set(false); });
+  (nav.querySelector(".wn-nav-inner") || nav).appendChild(btn);
+  document.body.appendChild(pop);
+}

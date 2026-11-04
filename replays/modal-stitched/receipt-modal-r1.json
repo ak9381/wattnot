@@ -1,0 +1,618 @@
+{
+  "kind": "modal-own-gpu-e2e",
+  "approvals": {
+    "status": "ok",
+    "held_change": {
+      "kind": "vllm_config",
+      "change": {
+        "vllm_prefix_caching": true,
+        "quantization": "bf16",
+        "max_num_seqs": 64,
+        "router": "cheapest-first",
+        "thinking_budget": "per-tier, two-phase enforcer",
+        "saving_pct": 63.56,
+        "labels": {
+          "saving_pct": "MEASURED",
+          "energy": "MEASURED"
+        }
+      }
+    },
+    "risk": "high",
+    "reasons": [
+      "no new config to review"
+    ],
+    "evidence": {
+      "accuracy_without": 0.9583,
+      "accuracy_with": 0.9896,
+      "p99_without": 101.831,
+      "p99_with": 84.3911,
+      "spark_agreement": 0.9612,
+      "j_per_correct_without": 2254.7,
+      "j_per_correct_with": 821.6,
+      "eye_check": false,
+      "hearing_check": false
+    },
+    "review": {
+      "decision": "approved",
+      "auto_approve": false,
+      "checks": {
+        "accuracy_vs_baseline": {
+          "ok": true,
+          "drop_pts": -3.13,
+          "rule": "accuracy may drop at most 2 points"
+        },
+        "p99": {
+          "ok": true,
+          "rule": "with-arm item p99 within +10% of without",
+          "without_s": 101.831,
+          "with_s": 84.3911
+        },
+        "joule_slo": {
+          "ok": true,
+          "rule": "J/correct with <= without",
+          "without": 2254.7,
+          "with": 821.6
+        },
+        "spark_agreement": {
+          "ok": true,
+          "value": 0.9612,
+          "rule": "Spark agrees with the fixed checks on >= 90% of answers"
+        },
+        "fp8_gate": {
+          "ok": true,
+          "rule": "FP8 only if its own gate kept it"
+        },
+        "receipt_hash": {
+          "ok": true,
+          "rule": "receipt re-seals"
+        },
+        "no_fatal": {
+          "ok": true,
+          "value": null
+        }
+      },
+      "failed_checks": [],
+      "skipped_checks": [],
+      "at": "2026-11-02T02:15:04.906768+00:00",
+      "by": "runner verification (rules above), recorded as evidence"
+    },
+    "decision": "approved"
+  },
+  "musecode_pr": {
+    "status": "ok",
+    "repo": "ak9381/wattnot-demo-deploy",
+    "started_utc": "2026-11-02T02:15:48.581731+00:00",
+    "steps": [
+      {
+        "step": "muse exec",
+        "rc": 0,
+        "trace": {
+          "session_id": "01a19a0a-a5bd-73c2-b82b-a6996f80dc72",
+          "trace_id": "01a19a0a-aa3d-7c03-a48f-1e82b54211d9",
+          "input_tokens": 76081,
+          "output_tokens": 507,
+          "total_tokens": 76588,
+          "usage": {
+            "input_tokens": 76081,
+            "output_tokens": 507,
+            "total_tokens": 76588
+          }
+        },
+        "latency_s": 19.3
+      },
+      {
+        "step": "gh pr create",
+        "rc": 0,
+        "url": "https://github.com/ak9381/wattnot-demo-deploy/pull/2",
+        "err": null
+      },
+      {
+        "step": "gh pr merge",
+        "rc": 0,
+        "err": null
+      }
+    ],
+    "review_checks": [
+      {
+        "check": "only values.yaml changed",
+        "ok": true,
+        "detail": [
+          "values.yaml"
+        ]
+      },
+      {
+        "check": "values.yaml parses and hosted block matches the approved change",
+        "ok": true,
+        "detail": {
+          "quantization": "bf16",
+          "maxNumSeqs": 64,
+          "prefixCaching": true,
+          "router": "cheapest-first",
+          "receiptSha256": "9eb74d573731fc615ae7693b3bf06f6e0f45bdb4d2b69389f8ce1b4ad294297e"
+        }
+      },
+      {
+        "check": "no other values changed",
+        "ok": true,
+        "detail": null
+      },
+      {
+        "check": "launch.sh syntax (bash -n)",
+        "ok": true,
+        "detail": null
+      },
+      {
+        "check": "repo tests/CI",
+        "ok": true,
+        "detail": "repo has no tests or CI workflows; checks above stand in"
+      },
+      {
+        "check": "change was approved after evidence review",
+        "ok": true,
+        "detail": null
+      }
+    ],
+    "pr_url": "https://github.com/ak9381/wattnot-demo-deploy/pull/2",
+    "decision": "merged",
+    "clean": true,
+    "files": [
+      "values.yaml"
+    ],
+    "ended_utc": "2026-11-02T02:16:23.688968+00:00",
+    "reviewer": "Akash K Raju (delegated reviewer)",
+    "auto_approve": false
+  },
+  "feature_stages": {
+    "eye_check": "ok",
+    "hearing_check": "ok",
+    "sam_hotspot": "ok",
+    "wonder_chart": "ok",
+    "spark_trace": "ok",
+    "approvals": "ok",
+    "musecode_pr": "ok",
+    "code_mode": "ok"
+  },
+  "round": "r04c",
+  "model": "meta-models/Muse-Glimmer-30B",
+  "features": [
+    {
+      "id": "effort_routing",
+      "name": "Reasoning-effort + cheapest-first routing (low, step up on a failed check)",
+      "status": "ON",
+      "reason": "hosted API (per-token, no GPU access)"
+    },
+    {
+      "id": "thinking_budget",
+      "name": "Thinking-budget enforcer (max_tokens per effort)",
+      "status": "ON",
+      "reason": "hosted API (per-token, no GPU access)"
+    },
+    {
+      "id": "router",
+      "name": "Backend/effort router",
+      "status": "ON",
+      "reason": "thinking off first, per-tier thinking budget on a failed check; one backend"
+    },
+    {
+      "id": "context_saver",
+      "name": "Agent saver: tool-output dedup + memory compression",
+      "status": "ON",
+      "reason": "hosted API (per-token, no GPU access)"
+    },
+    {
+      "id": "waste_guard",
+      "name": "Agent-waste proxy (repeat/no-op/cycle/overspend detectors)",
+      "status": "FAILED",
+      "reason": "langchain GPU block exited rc=5 (see langchain/block.log)"
+    },
+    {
+      "id": "code_mode",
+      "name": "Code Mode with locked sandbox + network boundary",
+      "status": "ON",
+      "reason": "runs on the box over recorded traces"
+    },
+    {
+      "id": "prefix_cache_provider",
+      "name": "Prefix caching (provider side, reported cached tokens)",
+      "status": "ON",
+      "reason": "our own vLLM; cached_tokens MEASURED from usage"
+    },
+    {
+      "id": "concurrency_batching",
+      "name": "Concurrency batching (client side)",
+      "status": "ON",
+      "reason": "server-side batching via the kept --max-num-seqs"
+    },
+    {
+      "id": "gates",
+      "name": "Noise gate, fixed answer gate, LLM judge, reasoning-leak strip",
+      "status": "ON",
+      "reason": "hosted API (per-token, no GPU access)"
+    },
+    {
+      "id": "spark_grades",
+      "name": "Muse Spark grades every answer",
+      "status": "ON",
+      "reason": "Meta API"
+    },
+    {
+      "id": "joule_slo",
+      "name": "Joule-SLO + user p99 limit",
+      "status": "ON",
+      "reason": "Joule-SLO + p99 limit on MEASURED energy"
+    },
+    {
+      "id": "eye_check",
+      "name": "Eye check: vision gate on the SYNTHETIC Muse Image set",
+      "status": "ON",
+      "reason": "Meta API"
+    },
+    {
+      "id": "sam_hotspot",
+      "name": "SAM 3.1 hotspot audit",
+      "status": "ON",
+      "reason": "Meta API"
+    },
+    {
+      "id": "hearing_check",
+      "name": "Hearing check: Muse Voice Transcribe on spoken answers",
+      "status": "FAILED",
+      "reason": "spoken GPU block exited rc=1 (see spoken/block.log)"
+    },
+    {
+      "id": "wonder_planner",
+      "name": "Muse Wonder planner + Wonderchart",
+      "status": "ON",
+      "reason": "Meta API"
+    },
+    {
+      "id": "spark_trace",
+      "name": "Spark 4-call trace (probe, proposal, gate, receipt)",
+      "status": "ON",
+      "reason": "Meta API"
+    },
+    {
+      "id": "approvals",
+      "name": "Approve-before-apply with risk classifier, undo",
+      "status": "ON",
+      "reason": "local"
+    },
+    {
+      "id": "musecode_pr",
+      "name": "Muse Code PR flow (ak9381/wattnot-demo-deploy only)",
+      "status": "ON",
+      "reason": "patch always built; PR opened only with --open-pr at stage time"
+    },
+    {
+      "id": "receipt",
+      "name": "Signed receipt + SCI carbon/water + joules per good answer",
+      "status": "ON",
+      "reason": "local signing key"
+    },
+    {
+      "id": "eu_report",
+      "name": "EU report",
+      "status": "ON",
+      "reason": "local"
+    },
+    {
+      "id": "label_lint",
+      "name": "Label-honesty lint",
+      "status": "ON",
+      "reason": "local"
+    },
+    {
+      "id": "spend_guard",
+      "name": "Spend guards (Baseten hard cap, Meta soft cap, ledger)",
+      "status": "ON",
+      "reason": "Modal $40 stage cap + container timeout, Meta soft cap, ledger"
+    },
+    {
+      "id": "power_caps",
+      "name": "Power-cap sweep + J/correct gate",
+      "status": "OFF",
+      "reason": "Modal refuses NVML power-limit writes (probed each round, recorded)"
+    },
+    {
+      "id": "fp8",
+      "name": "FP8 quantization keep/reject gate",
+      "status": "ON",
+      "reason": "restart vLLM with --quantization fp8; kept only if accuracy holds (-2 pts) and J/correct drops, with the eye and hearing checks re-run on the candidate"
+    },
+    {
+      "id": "kv_batch",
+      "name": "Batch-size + KV-cache sweep",
+      "status": "ON",
+      "reason": "sweep client concurrency x --max-num-seqs on a 24-item slice, keep the lowest MEASURED J/correct inside the quality gate"
+    },
+    {
+      "id": "vllm_prefix",
+      "name": "vLLM prefix-cache control",
+      "status": "ON",
+      "reason": "--enable-prefix-caching in the with-WattNot server, off in the stock server"
+    },
+    {
+      "id": "clock_sidecar",
+      "name": "Phase-aware clock sidecar, marginal-joule knee",
+      "status": "OFF",
+      "reason": "needs GPU clock writes, which Modal also refuses"
+    },
+    {
+      "id": "moe",
+      "name": "MoE top-k / per-expert pinning",
+      "status": "OFF",
+      "reason": "Glimmer 30B is served here; MoE top-k needs Spark Open self-served (8x B200)"
+    },
+    {
+      "id": "measured_energy",
+      "name": "MEASURED GPU energy (NVML)",
+      "status": "ON",
+      "reason": "NVML total-energy counter brackets each arm and each chunk of items"
+    },
+    {
+      "id": "flex",
+      "name": "Flex grid-event load shedding",
+      "status": "OFF",
+      "reason": "simulator only"
+    },
+    {
+      "id": "rekor",
+      "name": "Rekor publish",
+      "status": "OFF",
+      "reason": "only after the long run, with Akash's yes"
+    },
+    {
+      "id": "own_gpu_serving",
+      "name": "Own-GPU vLLM serving + E2E rig",
+      "status": "ON",
+      "reason": "Glimmer 30B on our own vLLM, one A100 on Modal"
+    }
+  ],
+  "results": {
+    "accuracy_without": 0.9583,
+    "accuracy_with": 0.9896,
+    "j_per_correct_without": 2254.7,
+    "j_per_correct_with": 821.6,
+    "energy_saved_pct": {
+      "value": 62.37,
+      "label": "MEASURED"
+    },
+    "j_per_correct_saved_pct": {
+      "value": 63.56,
+      "label": "MEASURED"
+    },
+    "per_arm": {
+      "without_wattnot": {
+        "tag": "without",
+        "arm": "without_wattnot",
+        "answers": 192,
+        "correct": 184,
+        "accuracy": 0.9583,
+        "per_set": {
+          "ours": {
+            "correct": 91,
+            "answers": 92
+          },
+          "gsm8k": {
+            "correct": 57,
+            "answers": 60
+          },
+          "humaneval": {
+            "correct": 36,
+            "answers": 40
+          }
+        },
+        "calls": 299,
+        "errors": 0,
+        "truncated": 0,
+        "tokens": {
+          "prompt": 63272,
+          "cached": 0,
+          "completion": 110251,
+          "label": "MEASURED",
+          "note": null
+        },
+        "energy_j": {
+          "value": 414873.2,
+          "label": "MEASURED",
+          "method": "NVML total-energy counter across the whole arm"
+        },
+        "energy_wh": {
+          "value": 115.2425,
+          "label": "MEASURED"
+        },
+        "wall_s": {
+          "value": 1282.5,
+          "label": "MEASURED"
+        },
+        "avg_w": {
+          "value": 323.5,
+          "label": "MEASURED"
+        },
+        "j_per_correct": {
+          "value": 2254.7,
+          "label": "MEASURED"
+        },
+        "item_latency_s": {
+          "p50": 12.9756,
+          "p99": 101.831,
+          "label": "MEASURED"
+        },
+        "stepped_up": 0,
+        "concurrency": 4,
+        "partial": false,
+        "item_errors": 0,
+        "wh_per_item_samples": {
+          "values": [
+            0.080881,
+            0.07928,
+            0.078397,
+            0.155411,
+            0.23862,
+            0.31852,
+            0.27398,
+            0.264418,
+            0.341318,
+            0.428119,
+            1.934586,
+            1.446868,
+            0.589719,
+            1.053932,
+            0.501684,
+            0.251039,
+            0.817597,
+            0.531875,
+            0.525514,
+            0.784182,
+            0.514667,
+            0.870156,
+            0.585426,
+            1.738493
+          ],
+          "label": "MEASURED",
+          "method": "NVML counter per chunk of 8 items / items in chunk"
+        }
+      },
+      "with_wattnot": {
+        "tag": "with",
+        "arm": "with_wattnot",
+        "answers": 192,
+        "correct": 190,
+        "accuracy": 0.9896,
+        "per_set": {
+          "ours": {
+            "correct": 92,
+            "answers": 92
+          },
+          "gsm8k": {
+            "correct": 60,
+            "answers": 60
+          },
+          "humaneval": {
+            "correct": 38,
+            "answers": 40
+          }
+        },
+        "calls": 301,
+        "errors": 0,
+        "truncated": 2,
+        "tokens": {
+          "prompt": 3542,
+          "cached": 0,
+          "completion": 87906,
+          "label": "MEASURED",
+          "note": "prompt/cached tokens are not returned on the two-phase thinking-budget path; those calls count 0 here"
+        },
+        "energy_j": {
+          "value": 156097.4,
+          "label": "MEASURED",
+          "method": "NVML total-energy counter across the whole arm"
+        },
+        "energy_wh": {
+          "value": 43.3604,
+          "label": "MEASURED"
+        },
+        "wall_s": {
+          "value": 469.5,
+          "label": "MEASURED"
+        },
+        "avg_w": {
+          "value": 332.5,
+          "label": "MEASURED"
+        },
+        "j_per_correct": {
+          "value": 821.6,
+          "label": "MEASURED"
+        },
+        "item_latency_s": {
+          "p50": 13.0066,
+          "p99": 84.3911,
+          "label": "MEASURED"
+        },
+        "stepped_up": 4,
+        "concurrency": 16,
+        "partial": false,
+        "item_errors": 0,
+        "wh_per_item_samples": {
+          "values": [
+            0.039277,
+            0.081533,
+            0.547201,
+            0.084494,
+            0.124356,
+            0.478151
+          ],
+          "label": "MEASURED",
+          "method": "NVML counter per chunk of 32 items / items in chunk"
+        },
+        "request_levers": {
+          "calls": 301,
+          "tokens_saved_est": 1703,
+          "guard_stops": 0,
+          "guard_flags": 0,
+          "tool_calling": 0,
+          "tools_skipped": 0
+        }
+      }
+    }
+  },
+  "spend": {
+    "limit": 0,
+    "sets": [
+      "ours",
+      "gsm8k",
+      "humaneval"
+    ],
+    "modal_usd": {
+      "value": 4.4646,
+      "label": "ESTIMATE",
+      "method": "wall minutes incl. image and container start x list price"
+    },
+    "stage_total_usd": {
+      "value": 16.7056,
+      "label": "ESTIMATE"
+    },
+    "teardown": {
+      "stopped": [
+        "ap-YxfTOGLK2rLk0ZYono2eDz"
+      ],
+      "still_running": [],
+      "verified_empty": true,
+      "checked_at": "2026-11-02T02:10:57.572487+00:00"
+    },
+    "modal_metered_usd": {
+      "value": 4.8681,
+      "label": "MEASURED",
+      "source": "modal billing summary: ephemeral_apps delta (may lag)"
+    },
+    "meta_usd": {
+      "value": 0.3796,
+      "label": "MEASURED",
+      "source": "Meta spend ledger"
+    },
+    "flow_rc": 0
+  },
+  "provider_usage": null,
+  "labels": {
+    "energy": "MEASURED",
+    "tokens": "MEASURED"
+  },
+  "integrity": {
+    "signer": "offline:cc61d7cb91526c69",
+    "sha256": "3ec9c6f6a429c0012e230fd0587fc5b23332d786f0ba8881272b4eacfa0c573e",
+    "rekor": null
+  },
+  "sha256": "42821eaed7239e32233ffc949a26ab442069fece3057812edc597635f1243885",
+  "sci": {
+    "grid": {
+      "gco2e_per_kwh": 727.0,
+      "label": "ESTIMATE",
+      "region": "IN (India national grid)",
+      "year": "FY 2023-24",
+      "source": "CEA CO2 Baseline Database for the Indian Power Sector v20.0 (Dec 2024), weighted average emission factor 0.727 tCO2/MWh; CO2 only (CH4, N2O not included)",
+      "url": "https://cea.nic.in/cdm-co2-baseline-database/?lang=en"
+    },
+    "label": "ESTIMATE",
+    "gco2_per_arm": null
+  }
+}

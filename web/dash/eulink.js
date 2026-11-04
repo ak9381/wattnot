@@ -166,14 +166,60 @@ export function mountEuLink(el, receipt) {
   el.innerHTML = renderEuLinkHTML(extractEuLinkData(receipt));
 }
 
-export async function loadEuReceipt(url = EU_RECEIPT) {
+// With a recorded run selected, the card uses that run's own energy receipt; a run without one
+// gets a card that says why instead of borrowing another run's receipt.
+export function selectedReplayId(search = globalThis.location?.search, stored = globalThis.localStorage?.getItem("wn.run")) {
+  const v = new URLSearchParams(search || "").get("run") || stored || "";
+  return v.startsWith("replay:") ? v.slice(7) : null;
+}
+export async function loadEuReceipt(url) {
+  if (url == null) {
+    const rid = selectedReplayId();
+    if (rid) {
+      try { const r = await fetch(`/replays/${rid}/energy-receipt.json`); if (r.ok) return { ...(await r.json()), __replay: rid }; } catch {}
+      // Proof-only runs (H100 sweep): the EU export built from the signed proof by src/wattnot/report/eu.py.
+      try { const r = await fetch(`/replays/${rid}/eu_report.csv`); if (r.ok) return { __replay: rid, __csv: parseEuCsv(await r.text()) }; } catch {}
+      return { __replay: rid, __none: true };
+    }
+    url = EU_RECEIPT;
+  }
   try { const r = await fetch(url); return r.ok ? await r.json() : null; } catch { return null; }
+}
+
+export function parseEuCsv(text) {
+  const out = {};
+  for (const line of text.split(/\r?\n/).slice(1)) {
+    const cells = []; let cur = "", q = false;
+    for (const ch of line) { if (ch === '"') q = !q; else if (ch === "," && !q) { cells.push(cur); cur = ""; } else cur += ch; }
+    cells.push(cur);
+    if (cells[1]) out[cells[1]] = { id: cells[0], value: cells[2] === "" ? null : Number(cells[2]), unit: cells[3], label: cells[4], source: cells[5] };
+  }
+  return out;
+}
+export function renderProofEuCard(rid, f) {
+  const v = (k, d = 2) => (f[k]?.value != null ? Number(f[k].value.toFixed(d)) : DASH);
+  const b = f.energy_per_request_baseline?.value, c = f.energy_per_request?.value;
+  const pct = b && c ? ((c / b - 1) * 100).toFixed(1) : null;
+  return `<section class="eucard" id="eu-report-card" aria-label="EU efficiency report">
+    <div class="eucard-main"><span class="eucard-k">EU efficiency report · ${esc(rid)}</span>
+      <span class="eucard-big">${pct != null ? `${pct}%` : DASH}${dot("MEASURED")}</span>
+      <span class="eucard-l">energy per request · signed proof ${esc(f.energy_per_request?.id || "")} · 375 W kept vs stock 700 W</span>
+      <span class="eucard-l">${v("energy_per_request_baseline", 4)} → ${v("energy_per_request", 4)} Wh/request${dot("MEASURED")} · ${v("joules_per_correct_answer", 1)} J/correct${dot("MEASURED")} · billed saving ${v("energy_saving_billed", 1)}% (95% CI lower bound)${dot("MEASURED")} · water ${v("water_per_request", 4)} mL/request${dot("ESTIMATE")}</span></div>
+    <div class="eucard-acts"><a class="eucard-btn" href="/replays/${esc(rid)}/eu_report.html" target="_blank" rel="noopener">Open EU report</a><a class="eucard-btn eucard-btn2" href="/replays/${esc(rid)}/eu_report.csv" download>CSV</a><a class="eucard-btn eucard-btn2" href="eu.html">EU Compliance tab</a></div>
+  </section>`;
 }
 
 export async function mountEuCard(el, receipt) {
   if (!el) return;
   const rc = receipt ?? (await loadEuReceipt());
+  if (rc?.__csv) { el.innerHTML = renderProofEuCard(rc.__replay, rc.__csv); return; }
+  if (rc?.__none) {
+    const why = rc.__replay.startsWith("h100") ? "this run has signed sweep proofs but no energy receipt; open its proof on the Proof page" : "hosted API: no GPU power meter, so no energy receipt was written for this run";
+    el.innerHTML = `<section class="eucard" id="eu-report-card" aria-label="EU efficiency report"><div class="eucard-main"><span class="eucard-k">EU efficiency report · ${esc(rc.__replay)}</span><p class="eucard-l">No EU report for this run: ${esc(why)}.</p></div><div class="eucard-acts">${rc.__replay.startsWith("baseten") ? `<a class="eucard-btn" href="/replays/${esc(rc.__replay)}/eu_report.html" target="_blank" rel="noopener">Open EU report (ESTIMATE energy)</a>` : ""}<a class="eucard-btn eucard-btn2" href="eu.html">EU Compliance tab</a></div></section>`;
+    return;
+  }
   el.innerHTML = renderEuCardHTML(extractEuLinkData(rc));
+  if (rc?.__replay) { const a = el.querySelector('a.eucard-btn[target="_blank"]'); if (a) a.href = `/replays/${rc.__replay}/eu_report.html`; el.querySelectorAll('a[download]').forEach((x) => x.remove()); }
   wireEuCard(el);
 }
 

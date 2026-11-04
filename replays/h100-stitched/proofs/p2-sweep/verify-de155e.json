@@ -1,0 +1,13 @@
+{
+ "label": "MEASURED",
+ "receipt": "proof-de155e",
+ "checked_at": "2026-11-04T21:52:51+05:30",
+ "sha256_recomputed": "441948703084e9b71f3f79f03eecf1b8fe4001ea1649802ba755a2b009f702fc",
+ "sha256_in_bundle": "441948703084e9b71f3f79f03eecf1b8fe4001ea1649802ba755a2b009f702fc",
+ "hash_match": true,
+ "signature_ok": true,
+ "message": "offline:02a1f19ddc27b506",
+ "key_id": "02a1f19ddc27b506",
+ "rekor": null,
+ "how": "wattnot.receipt.sign.verify_offline_bundle (Ed25519 over the canonical sha256)"
+}

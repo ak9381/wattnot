@@ -1,3 +1,6 @@
+import { RUN_NAMES } from "./runset.js";
+import { archHTML, wireArch } from "./learnarch.js";
+import { replaySummary, selectedReplay, replayRuns } from "./replaystats.js";
 import { esc, badge, num, cnum, metaSpend, legendHtml, stageState, ledgerRows, run2Rows, verifySummary, phaseLabel, frameworkStackBadge, frameworkChip } from "./v2lib.js";
 import { openThermal } from "./thermal.js";
 import { renderProof, wireIllus } from "./proof.js";
@@ -115,9 +118,31 @@ const LEARN_INFO = {};
 // Round 7 overview: sidebar, KPI cards, trend, donut, gauge and table, all from run data.
 function renderHome() {
   wireR7();
+  const rid = selectedReplay(location.search, localStorage.getItem("wn.run"));
+  if (!S.replayRuns && !S._rrLoading) { S._rrLoading = true; replayRuns().then((x) => { S.replayRuns = x; renderHome(); }); }
+  if (rid && S._replayTried !== rid && !S._replayLoading) { S._replayLoading = true; S._replayTried = rid; replaySummary(rid).then((x) => { S.replaySum = x; S._replayLoading = false; renderHome(); }); }
   $("#pHome").innerHTML = overviewHtml(S);
   $$("#pHome [data-go]").forEach((a) => (a.onclick = (e) => { e.preventDefault(); show(a.dataset.go); }));
-  $$("#pHome [data-pg]").forEach((b) => (b.onclick = () => openPowerGraph(S.radRecs?.[S.runs?.runs?.[0]?.id])));
+  // "Open bigger": the same chart, with the same run's data, in a large closable overlay.
+  $$("#pHome [data-pg]").forEach((b) => {
+    const sec = b.closest("section"), svg = sec?.querySelector("svg");
+    if (!svg) { b.remove(); return; }
+    b.onclick = () => {
+      let d = document.getElementById("bigChart");
+      if (!d) {
+        d = document.createElement("dialog"); d.id = "bigChart"; d.className = "bigchart glass";
+        d.innerHTML = `<header><h3></h3><button class="btn" aria-label="Close chart">✕ Close</button></header><div class="bigchart-body"></div>`;
+        document.body.appendChild(d);
+        d.querySelector("button").onclick = () => d.close();
+        d.addEventListener("click", (e) => { if (e.target === d) d.close(); });
+      }
+      d.querySelector("h3").textContent = sec.querySelector("h3")?.textContent.trim() || "Chart";
+      const body = d.querySelector(".bigchart-body"); body.innerHTML = "";
+      body.appendChild(svg.cloneNode(true));
+      sec.querySelectorAll(".r7note, .r7leg, .legend").forEach((n) => body.appendChild(n.cloneNode(true)));
+      d.showModal();
+    };
+  });
 }
 // The round 6 overview, kept for reference; no longer mounted.
 function renderHomeClassic() {
@@ -793,7 +818,7 @@ function radialHtml(runs, featuredId, rec) {
   }
   const drop = runs.map((r) => `<button class="centre-opt${r.id === featuredId ? " now" : ""}" data-run="${esc(r.id)}" role="option" aria-selected="${r.id === featuredId}">${esc(r.name)}</button>`).join("")
     || `<span class="rad-miss">No runs listed.</span>`;
-  const feat = runs.find((r) => r.id === featuredId) || runs[0];
+  const feat = String(rec?.run_id || "").startsWith("replay:") ? { name: rec.run_name } : (runs.find((r) => r.id === featuredId) || runs[0]);
   return `<div class="bento"><div class="radial-bar noprint span6">`
     + `<span style="flex:1"></span><button class="btn" data-radial="open">Expand all</button><button class="btn" data-radial="close">Collapse all</button></div>`
     + `<div class="radial-wrap glass tile span6 low" id="radialWrap"><svg class="radial-wires" id="radialWires" aria-hidden="true"></svg>`
@@ -949,6 +974,37 @@ function passingSaverIds(rec) {
   return [...out];
 }
 
+// Compare-tree values for a recorded replay, each from its own recorded file and label.
+async function replayTree(rpId, rs) {
+  const J = (u) => fetch(u).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const num = (x, d) => Number(x).toFixed(d);
+  const pc = (x) => `${x > 0 ? "+" : ""}${num(x, 1)}%`;
+  const T = {};
+  const plug = rpId.startsWith("plugin-");
+  const isH = /h100/.test(rpId);
+  const MOD = plug ? "plugin-modal-1104" : "modal-r2", BT = plug ? "plugin-baseten-1104" : "baseten-r1";
+  const [img, lv, md, bt] = await Promise.all([
+    isH ? J("/receipts/h100-1104/rcpt_20261104-013308-images.json") : null,
+    isH ? J("/replays/h100-max-1103/lever-takes-1104.json") : null,
+    replaySummary(MOD).catch(() => null), replaySummary(BT).catch(() => null)]);
+  if (img && plug) T.sam = { text: `${pc(img.joules.change_pct.j_per_answer)} energy`, tag: "MEASURED", note: "Nov 4 H100 take on the SAM 3.1 image test set, power cap 700 to 375 W (rcpt_20261104-013308-images)" };
+  // Agent-waste saver: only a real saver on/off result counts (not a power-cap take on agent traffic).
+  const lc = await J(plug ? "/replays/plugin-modal-1104/blocks/langchain/langchain_pass.json" : "/replays/modal-r2/blocks/r05-langchain-20261102T140740Z/langchain/langchain_pass.json");
+  const off = lc?.arms?.saver_off, on = lc?.arms?.saver_on;
+  if (off?.j_per_correct && on?.j_per_correct) T.waste = { text: `${pc((on.j_per_correct / off.j_per_correct - 1) * 100)} J/correct (Modal)`, tag: lc.label || "MEASURED", note: `Modal ${plug ? "plugin run r04 (Nov 4)" : "test run r05 (Nov 2)"}, LangChain agent, saver off vs on: ${off.correct}/${off.n} → ${on.correct}/${on.n} correct (langchain_pass.json)` };
+  else T.waste = { why: "Agent-waste saver not measured in this run", short: "not measured" };
+  if (isH && rs.quality_stock_pct != null) {
+    const rolled = Object.values((lv?.events || []).filter((e) => e.step === "answer_check").reduce((a, e) => ((a[e.lever] = e), a), {})).filter((e) => !e.accepted).map((e) => e.lever);
+    T.gate = { gate: true, pass: true, note: `quality ${num(rs.quality_stock_pct, 1)}% to ${num(rs.quality_cap_pct, 1)}%, p99 ${rs.p99_change_pct == null ? "not recorded" : pc(rs.p99_change_pct)}; rolled back: ${plug ? "" : "350, 325, 300 W caps, "}${rolled.join(", ")}` };
+  }
+  const w = [];
+  const one = (n, x) => { if (x?.energy_saved_pct != null) w.push(`${n} ${num(x.energy_saved_pct, 1)}% ${x.energy_saved_label || x.energy_label || ""}`.trim()); };
+  one("H100", isH ? rs : null); if (!isH && rs) one(rpId.includes("modal") ? "Modal" : "Baseten", rs);
+  if (!rpId.includes("modal")) one("Modal", md); if (!rpId.includes("baseten")) one("Baseten", bt);
+  T.where = { text: w.join(" · "), tag: "MEASURED", note: `energy saved per ${plug ? "plugin run (gateway runs: headline take)" : "test run"}; each value keeps its own label (Baseten is ESTIMATE, no GPU counter)` };
+  return T;
+}
+
 async function renderReport() {
   if (S.radPan) { try { S.radPan.destroy(); } catch {} S.radPan = null; }
   if (!S.run) { $("#pReport").innerHTML = `<p>Loading the default replay…</p>`; await startQuiet(); }
@@ -982,9 +1038,22 @@ async function renderReport() {
       ${t.kids.map((k) => `<div class="leaf"><span class="leaf-ic" aria-hidden="true">${MAP_ICON[k.icon] || ""}</span><div><b>${esc(k.label)}</b><span>${k.text}</span></div></div>`).join("")}
       <div class="topic-detail">${t.detail}</div>
     </div></div>`;
-  const featRec = S.selRunId === BUNDLED_ID ? bundledRecord(S.run2) : (S.selRun || (S.radRecs && S.radRecs[selId]) || null);
-  const cst = compareState(runs, S.selRunId === BUNDLED_ID ? BUNDLED_ID : selId, featRec);
+  let featRec = S.selRunId === BUNDLED_ID ? bundledRecord(S.run2) : (S.selRun || (S.radRecs && S.radRecs[selId]) || null);
+  let cst = compareState(runs, S.selRunId === BUNDLED_ID ? BUNDLED_ID : selId, featRec);
   S.cmpState = cst; S.cmpRec = cst.kind === "ok" || cst.kind === "bundled" ? featRec : null;
+  // A replay picked in the sidebar wins: the compare view shows that run's own recorded numbers.
+  const rpId = selectedReplay(location.search, localStorage.getItem("wn.run"));
+  if (rpId) {
+    if (S.replaySum?.id !== rpId) S.replaySum = await replaySummary(rpId);
+    const rs = S.replaySum;
+    if (rs && rs.j_per_req_stock != null) {
+      const ev = (k) => (rs.series?.sets?.[k]?.pts || []).map((p) => ({ j_per_req: p.y }));
+      featRec = { run_id: `replay:${rpId}`, run_name: RUN_NAMES[rpId] || rpId, label: "REPLAY", price_usd_per_kwh: rs.tariff ?? undefined,
+        phases: { baseline: { metrics: { j_per_req: rs.j_per_req_stock }, events: ev(0) }, wattnot: { metrics: { j_per_req: rs.j_per_req_cap }, events: ev(1) } } };
+      featRec.tree = await replayTree(rpId, rs);
+      cst = { kind: "ok" }; S.cmpState = cst; S.cmpRec = featRec;
+    }
+  }
   const radOrEmpty = S.cmpRec ? `${cst.kind === "bundled" ? bundledBanner() : ""}${radialHtml(runs, selId, featRec)}` : emptyStateHtml(cst, !!bundledRecord(S.run2));
   const passedSavers = S.cmpRec ? passingSaverIds(featRec) : [];
   const liveBtn = passedSavers.length ? `<p class="noprint"><a class="btn pri" href="plug.html?from=test&passed=${encodeURIComponent(passedSavers.join(","))}#setup">Use these settings live</a> <span style="color:var(--mu);font-size:13px">Carries the savers that passed (${esc(passedSavers.join(", "))}) into Go live.</span></p>` : "";
@@ -1066,12 +1135,15 @@ const TREE_DESC = {
   sam: "SAM 3.1 outlines each rack; WattNot marks the rack it can cool. Heat is simulated from the measured power drop.",
 };
 const PEND_TIP = "Pending: fills in after the long H100 run.";
+const estChip = `<span class="est-chip" data-wn-keep aria-label="ESTIMATE" title="Derived, not metered"></span>`;
+const tagChip = (t) => (String(t).toUpperCase() === "ESTIMATE" ? estChip : badge(t));
 const treeVal = (v, branch) => {
   if (!v) return `<span class="rad-miss">–</span><span class="rad-pending">pending</span>`;
+  if (v.why) return `<span class="rad-miss" title="${esc(v.why)}">${esc(v.short || "no data")}</span>`;
   if (v.gate) return v.pass ? `<span class="rad-pass">✓ pass</span> ${badge("MEASURED")}` : `<span class="rad-fail">✕ fail</span> ${badge("MEASURED")}`;
   const isCostOrWater = branch === "cost" || branch === "water";
-  const showBadge = v.tag && (!isCostOrWater || v.tag !== "ESTIMATE");
-  return `${cnum(esc(v.text), isCostOrWater && v.tag === "ESTIMATE" ? null : v.tag)}${showBadge ? ` ${badge(v.tag)}` : ""}`;
+  const showBadge = !!v.tag;
+  return `${cnum(esc(v.text), isCostOrWater && v.tag === "ESTIMATE" ? null : v.tag)}${showBadge ? ` ${tagChip(v.tag)}` : ""}`;
 };
 function branchDetailHtml(rec, id) {
   const sv = savedPct(rec, id);
@@ -1132,6 +1204,7 @@ function mountCompare() {
   const runSel = $("#cmpRunSel", top);
   if (runSel) {
     runSel.value = selId;
+    if (String(rec?.run_id || "").startsWith("replay:")) { runSel.insertAdjacentHTML("afterbegin", `<option value="${esc(rec.run_id)}">${esc(rec.run_name)}</option>`); runSel.value = rec.run_id; runSel.disabled = true; runSel.title = "Change the run in the sidebar picker"; }
     runSel.onchange = (e) => selectRun(e.target.value);
   }
 
@@ -1271,7 +1344,7 @@ function mountCompare() {
     c.setAttribute("data-explain-value", svVal);
     c.setAttribute("data-explain-label", svTag);
     c.setAttribute("data-explain-source", svSrc);
-    c.innerHTML = `<button class="rad-head" aria-expanded="${!S.cmpCollapsed && id === S.cmpActive}" aria-label="${name}: open its routes"><b><span>${name}</span>${id === "power" ? badge("MEASURED") : ""}</b><span class="rad-val">${branchSaved(id)}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power</small>`}</button><button class="ibtn rad-i" aria-label="${name} details">i</button>`;
+    c.innerHTML = `<button class="rad-head" aria-expanded="${!S.cmpCollapsed && id === S.cmpActive}" aria-label="${name}: open its routes"><b><span>${name}</span>${id === "power" ? badge("MEASURED") : ""}</b><span class="rad-val">${branchSaved(id)}</span>${id === "power" ? "" : `<small class="rad-sub rad-derived" title="${esc(DERIVED_HINT)}">derived from power ${estChip}</small>`}</button><button class="ibtn rad-i" aria-label="${name} details">i</button>`;
     $(".rad-head", c).onclick = () => {
       S.cmpCollapsed = false; S.cmpActive = id; S.cmpPath = [];
       renderTree();
@@ -1567,8 +1640,9 @@ const FEATURES = [
   ["eu", "€", "EU efficiency report", "One click to the yearly numbers EU data centers must file.", "EU Delegated Regulation 2024/1364 asks data centers of 500 kW or more for yearly energy, PUE, water and waste-heat figures. WattNot fills the energy and saving rows from its receipts and leaves the rest clearly marked for the operator.", "ESTIMATE"],
 ];
 function renderLearn() {
-  $("#pLearn").innerHTML = `<div class="intro"><div><h1>How it works, one feature at a time</h1><p>Each card is a feature we built. The first line says what it does. Open it for how, the numbers, and where they come from.</p></div></div>${ctrl()}
+  $("#pLearn").innerHTML = `<div class="intro"><div><h1>How it works, one feature at a time</h1><p>Each card is a feature we built. The first line says what it does. Open it for how, the numbers, and where they come from.</p></div></div>${archHTML(selectedReplay(location.search, localStorage.getItem("wn.run")))}
   <div class="feat">${FEATURES.map(([id, ic, t, s, body, tag]) => `<div${tag === "PENDING" ? ' class="is-pending" title="Pending: not measured yet"' : ""}>${card(`f-${id}`, ic, t, s, `<p>${esc(body)} ${badge(tag)}</p>`)}</div>`).join("")}</div>`;
+  wireArch($("#pLearn"));
 }
 
 // ---------- boot ----------

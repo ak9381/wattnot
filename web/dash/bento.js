@@ -58,6 +58,7 @@ function quietInline(root) {
 }
 
 function legend() {
+  if (location.hash === "#pProof") { document.querySelectorAll(".wn-legend").forEach((e) => e.remove()); return; } // Proof page: the Legend button only
   if (document.querySelector(".wn-legend") || document.body.classList.contains("is-landing")) return;
   if ([...document.querySelectorAll(".r7legend")].some((e) => e.textContent.trim())) return; // v2 already shows a dot legend
   const own = document.querySelector("#legend, .legend");

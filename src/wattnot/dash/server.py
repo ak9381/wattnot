@@ -235,6 +235,9 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         when that round has none recorded."""
         if not run:
             return None
+        if run.startswith("replay:"):  # a recorded run under replays/<id>/ (the Replay picker)
+            from wattnot.dash.replays import events_path as _rp
+            return _rp(ROOT, run[7:])
         from wattnot.dash.launch import events_path_for
         p = events_path_for(run)
         return p if p is not None and p.is_file() else None
@@ -250,7 +253,8 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
                 "replay_only": replay_only, "meta_calls": not replay_only,
                 "gpu_attached": False if replay_only else gpu_attached,
                 "auth_required": bool(token), "story": story_path.is_file(),
-                "events": ev is not None, "events_name": ev.name if ev is not None else None}
+                "events": ev is not None, "events_name": ev.name if ev is not None else None,
+                "replay_id": (ev.parent.name if ev is not None and ev.parent.parent.name == "replays" else None)}
 
     @app.get("/api/dash/story")
     def story_bundle():
@@ -514,12 +518,14 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         return Response(frameworks_path.read_bytes(), media_type="application/json")
 
     @app.get("/api/dash/run/receipt")
-    def run_receipt():
-        """Trimmed view of the run's signed receipt, when one sits next to --events FILE."""
-        if events is None:
+    def run_receipt(run: str | None = None):
+        """Trimmed view of the run's signed receipt, when one sits next to --events FILE
+        (or next to a picked recorded run, ?run=replay:<id>)."""
+        ev = _run_events(run) if run and run.startswith("replay:") else events
+        if ev is None:
             raise HTTPException(404, "no events file is being followed (start with --events FILE)")
         try:
-            return receiptview.view_any(receiptview.load_any(receiptview.find_receipt(events)))
+            return receiptview.view_any(receiptview.load_any(receiptview.find_receipt(ev)))
         except FileNotFoundError:
             raise HTTPException(404, "no signed receipt in this run folder yet") from None
         except (ValueError, OSError) as e:
@@ -654,6 +660,22 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
         from wattnot.dash import judgepath
         f = ROOT / "data/judge/judge-path.json"
         return json.loads(f.read_text()) if f.exists() else judgepath.build(ROOT)
+
+    @app.get("/api/dash/replays")
+    def replay_list() -> dict:
+        """The recorded runs under replays/, read from disk, for the Replay picker. No keys, no GPU."""
+        from wattnot.dash.replays import list_replays
+        return {"label": "REPLAY", "live_calls": False, "replays": list_replays(ROOT)}
+
+    @app.get("/api/dash/replays/{rid}/events")
+    def replay_events(rid: str) -> dict:
+        """Every event of one recorded run, as recorded (each keeps its own label)."""
+        from wattnot.dash.replays import list_replays, load_events
+        evs = load_events(ROOT, rid)
+        if evs is None:
+            raise HTTPException(404, "no such recorded run")
+        meta = next((r for r in list_replays(ROOT) if r["id"] == rid), None)
+        return {"label": "REPLAY", "run": meta, "events": evs}
 
     @app.get("/api/dash/v2/runs")
     def v2_runs() -> dict:
@@ -834,6 +856,12 @@ def create_app(*, bundle: Path | None = None, capture: Path | None = None,
     fonts = ROOT / "web" / "run" / "vendor"
     if fonts.is_dir():  # the same self-hosted fonts the run page uses
         app.mount("/run/vendor", StaticFiles(directory=str(fonts)), name="fonts")
+    rp_dir = ROOT / "replays"  # recorded runs: receipts and EU reports as recorded (read-only)
+    if rp_dir.is_dir():
+        app.mount("/replays", StaticFiles(directory=str(rp_dir)), name="replays")
+    rc_dir = ROOT / "receipts"  # signed receipts the report/EU/Meta-tools pages read as ../receipts/...
+    if rc_dir.is_dir():
+        app.mount("/receipts", StaticFiles(directory=str(rc_dir)), name="receipts")
     room_dir = WEB.parent / "room"  # the SAM room scan module: node.js and the saved scan folders
     if room_dir.is_dir():
         app.mount("/room", StaticFiles(directory=str(room_dir), html=True), name="room")

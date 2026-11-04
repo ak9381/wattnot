@@ -1,0 +1,22 @@
+{
+ "events": 2,
+ "types": {
+  "step.started": 2
+ },
+ "first_ts": "2026-11-03T15:55:38.259Z",
+ "last_ts": "2026-11-03T15:55:39.488Z",
+ "steps": {
+  "h1-holdout": {
+   "type": "step.started",
+   "ts": "2026-11-03T15:55:39.488Z",
+   "status": null
+  }
+ },
+ "result": {
+  "rc": 0,
+  "attempt": 1,
+  "wall_s": 892.6,
+  "capture": false,
+  "copied": true
+ }
+}

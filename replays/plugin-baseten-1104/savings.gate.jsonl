@@ -1,0 +1,5 @@
+{"ts": 1793781119.966, "event": "saver_off", "saver": "routing", "model": "meta-models/muse-spark-open", "why": "answers differ from stock", "wattnot_tokens": 1087, "stock_tokens": 1222, "agreement": 0.667, "pairs": 3}
+{"ts": 1793781119.966, "event": "saver_off", "saver": "thinking_cap", "model": "meta-models/muse-spark-open", "why": "answers differ from stock", "wattnot_tokens": 1087, "stock_tokens": 1222, "agreement": 0.667, "pairs": 3}
+{"ts": 1793781193.03, "event": "saver_off", "saver": "agent_waste", "model": "meta-models/muse-spark-open", "why": "WattNot's request used more tokens than stock", "wattnot_tokens": 2784, "stock_tokens": 1934, "agreement": 0.0, "pairs": 2}
+{"ts": 1793781649.084, "event": "saver_off", "saver": "routing", "model": "meta-models/muse-spark-open", "why": "answers differ from stock", "wattnot_tokens": 1593, "stock_tokens": 2086, "agreement": 0.0, "pairs": 3}
+{"ts": 1793781649.084, "event": "saver_off", "saver": "thinking_cap", "model": "meta-models/muse-spark-open", "why": "answers differ from stock", "wattnot_tokens": 1593, "stock_tokens": 2086, "agreement": 0.0, "pairs": 3}

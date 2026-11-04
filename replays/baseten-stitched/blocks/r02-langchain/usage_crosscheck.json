@@ -1,0 +1,1 @@
+{"window_utc":["2026-11-02T13:28:00Z","2026-11-02T13:39:00Z"],"baseten_usage":{"request_count":105,"input_tokens":92489,"cached_input_tokens":68608,"output_tokens":29831},"ours":{"calls":105,"prompt_tokens":92489,"cached_tokens":68608,"completion_tokens":29831,"usd":0.166919},"match":true,"label":"MEASURED"}

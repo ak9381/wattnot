@@ -11,6 +11,10 @@
 // reports metered joules. The cloud runs record request counts but no GPU
 // energy, so they contribute "—" to the energy/water/cost totals.
 
+import { replaySummary } from "./replaystats.js";
+let S_REPS = [];
+let S_LEVERS = null;
+import { REPLAY_IDS } from "./runset.js";
 const EM = "—"; // em dash for missing values
 
 // ---- constants from story.json (shown with their own labels) ----
@@ -130,6 +134,22 @@ async function main() {
   }
 
   if (runsList.length) {
+    // Recorded replays under /replays/ carry their own metered numbers; add them so the
+    // totals are not blank when the API only has the old cloud fixtures.
+    const reps = (await Promise.all(REPLAY_IDS.map((id) => replaySummary(id).catch(() => null)))).filter(Boolean);
+    S_LEVERS = await fetch("/replays/h100-max-1103/lever-takes-1104.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    S_REPS = reps;
+    const fx = runsList.map((r) => ({ ...r, name: r.name || r.id, fixture: true }));
+    const realRuns = reps.map((x) => ({ id: `replay:${x.id}`, name: `${x.id}`, model: (x.model || "").replace("meta-models/", ""), date: x.date || "", label: x.energy_label || "REPLAY", replay: x.id }));
+    const realDetails = reps.map((x) => {
+      const ok = isNum(x.j_per_req_stock) && isNum(x.j_per_req_cap) && isNum(x.requests);
+      const saved = x.energy_saved_pct != null ? -Math.abs(x.energy_saved_pct) : (isNum(x.j_per_correct_stock) ? (x.j_per_correct_cap / x.j_per_correct_stock - 1) * 100 : null);
+      return { id: x.id, run_name: x.id, model: (x.model || "").replace("meta-models/", ""), date: x.date, label: x.energy_label,
+        phases: { baseline: { metrics: ok ? { j_per_req: x.j_per_req_stock } : {} },
+          wattnot: { metrics: { j_per_req: ok ? x.j_per_req_cap : null, requests: ok ? x.requests : null, saved_pct: saved, p99_change_pct: x.p99_change_pct, quality_pct: x.quality_cap_pct, label: x.energy_label } } } };
+    });
+    runsList = [...realRuns, ...fx];
+    details = [...realDetails, ...details];
     renderKpis(runsList, details);
     renderTrend(runsList, details);
     renderTable(runsList, details);
@@ -190,9 +210,8 @@ function renderKpis(runsList, details) {
     <div class="formula">Σ over runs of (baseline J/req − WattNot J/req) × requests</div>
     <h4>Per-run contribution</h4>
     <ul class="rowlist">${contribList((r) => `${fmt(r.j, 0)} J`)}</ul>
-    <p class="note">Only the on-prem H100 run is metered for GPU energy, so it is the
-      one run that contributes measured joules. The cloud runs record request
-      counts but no GPU power, so they show ${EM}.</p>`;
+    <p class="note">Runs with a GPU power meter (H100 and Modal replays) contribute measured
+      joules. Hosted-API runs without a meter show ${EM}: no power reading was recorded.</p>`;
 
   sidePanels.k_water = `
     <h3>Water saved</h3>
@@ -235,7 +254,7 @@ function renderKpis(runsList, details) {
       <div class="big">${isNum(joules)
         ? `<span class="v-num">${esc(eng.text)}</span><span class="unit">${eng.unit}</span>${dot("MEASURED")}`
         : `<span class="emdash">${EM}</span>`}</div>
-      <div class="foot">${isNum(joules) ? "Measured GPU joules, H100 run" : "No metered run"}</div>
+      <div class="foot">${isNum(joules) ? `Measured joules from ${measuredRows.length} run(s): ${esc(measuredRows.map((r) => r.name).join(", "))}` : `No run has metered energy (${missedRows.length} without a power meter)`}</div>
     </div>
     <div class="kpi v-glass" data-side="k_water" data-explain="runs.total.water" data-explain-value="${esc(isNum(litres) ? fmt(litres, 3) + ' L' : EM)}" data-explain-label="ESTIMATE" data-explain-source="water_factor" role="button" tabindex="0">
       <span class="more">Details &rarr;</span>
@@ -243,7 +262,7 @@ function renderKpis(runsList, details) {
       <div class="big">${isNum(litres)
         ? `<span class="v-num">${fmt(litres, 3)}</span><span class="unit">L</span>`
         : `<span class="emdash">${EM}</span>`}</div>
-      <div class="foot">${isNum(litres) ? `From energy &times; ${WATER_L_PER_KWH} L/kWh (on-site, ESTIMATE); up to ${WATER_L_PER_KWH_UPPER} L/kWh incl. power-plant water` : "Needs metered energy"}</div>
+      <div class="foot">${isNum(litres) ? `From energy &times; ${WATER_L_PER_KWH} L/kWh (on-site, ESTIMATE); up to ${WATER_L_PER_KWH_UPPER} L/kWh incl. power-plant water` : "Needs metered energy: no run in this list has a GPU power meter"}</div>
     </div>
     <div class="kpi v-glass" data-side="k_cost" data-explain="runs.total.cost" data-explain-value="${esc(isNum(usd) ? '$' + fmt(usd, 4) : EM)}" data-explain-label="ESTIMATE" data-explain-source="usd_per_kwh" role="button" tabindex="0">
       <span class="more">Details &rarr;</span>
@@ -256,8 +275,8 @@ function renderKpis(runsList, details) {
     <div class="kpi v-glass" data-side="k_runs" data-explain="runs.total.runs" data-explain-value="${esc(String(runsList.length))}" data-explain-label="MEASURED" data-explain-source="runs_count" role="button" tabindex="0">
       <span class="more">Details &rarr;</span>
       <div class="name">Runs</div>
-      <div class="big"><span class="v-num">${fmt(runsList.length, 0)}</span>${dot("MEASURED")}</div>
-      <div class="foot">Recorded in this replay</div>
+      <div class="big"><span class="v-num">${fmt(runsList.filter((r) => !r.fixture).length, 0)}</span>${dot("MEASURED")}</div>
+      <div class="foot">Recorded runs (${esc(runsList.filter((r) => !r.fixture).map((r) => r.name).join(", "))})${runsList.some((r) => r.fixture) ? ` · plus ${runsList.filter((r) => r.fixture).length} old demo fixtures listed last` : ""}</div>
     </div>`;
 
   // keyboard activation for the tiles
@@ -345,7 +364,29 @@ function renderTrend(runsList, details) {
 // ---------- donut: energy saved by lever (inline SVG) ----------
 function renderDonut(story) {
   const el = $("#donut");
-  const levers = Array.isArray(story.levers) ? story.levers : [];
+  // Demo run h100-max-1103: only its real steps. The older RUN1 sweep.csv slice (10.56 J/req) is dropped.
+  const h = S_REPS.find((x) => x.id === "h100-max-1103") || S_REPS.find((x) => x.id === "h100-stitched");
+  if (h && isNum(h.j_per_req_stock) && isNum(h.j_per_req_cap)) {
+    const saved = h.j_per_req_stock - h.j_per_req_cap;
+    const lt = S_LEVERS;
+    const takes = {}; // latest answer_check per lever (later take wins)
+    for (const e of (lt?.events || [])) if (e.step === "answer_check") takes[e.lever] = e;
+    const LN = { fp8: "FP8 weights", kv_cache: "KV cache in FP8", batching: "Batching (max_num_seqs 512)" };
+    const hm = (t) => new Date(t * 1000).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kolkata" });
+    const rows = Object.entries(LN).map(([k, n]) => { const t = takes[k]; if (!t) return `<tr><td>${esc(n)}</td><td><span class="emdash">${EM}</span></td><td>No take recorded</td></tr>`;
+      return `<tr><td>${esc(n)}</td><td><span class="v-num">${t.energy_change_pct > 0 ? "+" : ""}${fmt(t.energy_change_pct, 1)}% energy</span>${dot("MEASURED")} <small>p99 ${t.p99_change_pct > 0 ? "+" : ""}${fmt(t.p99_change_pct, 1)}%, ${esc(t.answers_same)} answers same</small><br><b class="r7miss">${t.accepted ? "Kept" : "Rolled back"}</b>: ${esc((t.why_not || []).join("; "))}</td><td>H100 one-lever take, ${esc(lt.date)} ${hm(t.ts)} IST (lever-takes-1104.json)</td></tr>`; }).join("");
+    el.innerHTML = `
+      <div class="lv-h100">
+        <p class="cap">Muse Glimmer 30B on one H100. Each lever measured in its own H100 run, against its own stock baseline.</p>
+        <table class="lvtab"><thead><tr><th>Lever</th><th>Energy saved</th><th>Source</th></tr></thead><tbody>
+          <tr><td>Power cap: ${esc(h.cap_w)} W kept vs stock</td><td><span class="v-num">${fmt(saved, 1)} J/request</span>${dot(h.energy_label || "MEASURED")} <small>(${fmt(h.j_per_req_stock, 1)} → ${fmt(h.j_per_req_cap, 1)}, ${fmt(h.energy_saved_pct, 1)}% less)</small><br><b>Kept</b></td><td>h100-max-1103, proof-de155e, 2026-11-03, NVML</td></tr>
+          ${rows}
+          <tr class="lv-total"><td><b>Combined</b></td><td><span class="v-num">${fmt(saved, 1)} J/request</span>${dot("ESTIMATE")}</td><td>Sum of levers each measured in its own H100 run; not measured stacked together. Only the power cap counts: FP8, KV cache and batching were rolled back by the answer check, so they are shown but left out of the sum. Their one-lever takes recorded the energy change in %, not J/request.</td></tr>
+        </tbody></table>
+      </div>`;
+    return;
+  }
+  const levers = (Array.isArray(story.levers) ? story.levers : []).filter((lv) => lv.id !== "cap");
 
   // Measured energy slices: levers with wh_before & wh_after -> J/req saved.
   const sliced = [];
@@ -473,12 +514,12 @@ function renderTable(runsList, details) {
       ? `<span class="v-num">${fmt(w.quality_pct, 1)}%</span>${dot(w.label || "MEASURED")}`
       : `<span class="emdash">${EM}</span>`;
 
-    const reportHref = `report.html?run=${encodeURIComponent(r.id)}`;
+    const reportHref = r.replay ? `report.html?run=replay:${encodeURIComponent(r.replay)}` : `report.html?run=${encodeURIComponent(r.id)}`;
 
     // Framework detection: from receipt, run detail, or fallback to 'framework: none recorded'
     const fw = d?.receipt?.framework || d?.receipt?.frameworks?.[0] || d?.framework || r.framework;
-    const isReal = label === "MEASURED" && fw;
-    const fwName = fw ? (fw === "plain" ? "plain API" : fw) : "framework: none recorded";
+    const isReal = (label === "MEASURED" && fw) || !!r.replay;
+    const fwName = r.replay ? "recorded replay" : fw ? (fw === "plain" ? "plain API" : fw) : "old demo fixture";
     const fwTag = isReal ? "MEASURED" : "MOCK";
 
     // side-panel body for the run (opened by clicking name/model cells)

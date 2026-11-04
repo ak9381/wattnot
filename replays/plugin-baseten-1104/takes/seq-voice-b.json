@@ -1,0 +1,273 @@
+{
+ "mode": "sequential",
+ "stock_w": null,
+ "harness_cap_w": 375,
+ "workload": "voice",
+ "run_id": "seq-20261104-140910-voice",
+ "cap_available": false,
+ "without": {
+  "requests": 20,
+  "joules": 114614.5,
+  "shadow_excluded": null,
+  "seconds": 79.7,
+  "t0": 1793781550.417,
+  "t1": 1793781630.1,
+  "cap_w": null,
+  "tokens": 14582,
+  "usd": 0.24132,
+  "label": "ESTIMATE (tokens x J/token per model, no GPU counter on this provider)",
+  "texts": [
+   "The San Francisco Bay Area has the San Andreas Fault.",
+   " I don't have enough context to determine which bay has the fault \u2014 please provide more details about the system you're referring to.",
+   " Could you clarify which device or system you're asking about so I can tell you its power cap in watts?",
+   " Could you clarify which device or component's power cap you're asking about?",
+   "I don't have access to your live coolant temperature, but a typical warmed-up engine runs around 85-105\u00b0C.",
+   " I don't have access to your vehicle's live data, so I can't provide the current coolant temperature \u2014 please check your dashboard gauge or OBD-II scanner.",
+   "I can't view images, so I can't count how many fans are spinning \u2014 if you describe the image I can help.",
+   "I can't see an image, so I can't count spinning fans \u2014 please upload the image and I'll help in one line.",
+   "I don't have visibility into your specific rack, so I can't determine how many GPUs are in it without more details.",
+   "I don't have access to information about your specific rack and its GPU count.",
+   " I don't have context for which status light you mean \u2014 could you specify the device?",
+   " I don't have context for which device's status light you mean \u2014 please specify the device/model.",
+   "I can't see your power meter \u2014 please share a photo or the displayed value and I'll read it in watts.",
+   "No power meter image was provided, so I can't read the watts \u2014 please upload a photo of the meter.",
+   " I don't have access to your rack ID; please provide the system, datacenter, or context you're referring to so I can help you locate it.",
+   " I don't have access to your rack ID without additional context about the system or platform you're referring to.",
+   "I don't have access to real-time server data, so I can't tell how many servers are currently online.",
+   "I don't have access to real-time data to determine how many servers are online.",
+   " I don't have access to your system's real-time fan speed, but you can check it in Task Manager, BIOS, or with a tool like HWMonitor or SpeedFan.",
+   "I don't have access to your system's live fan speed, but you can check it in Task Manager, HWMonitor/HWInfo, or your BIOS/UEFI settings."
+  ],
+  "per_request_j": [
+   [
+    "text",
+    5509.86
+   ],
+   [
+    "text",
+    6264.42
+   ],
+   [
+    "text",
+    6272.28
+   ],
+   [
+    "text",
+    5195.46
+   ],
+   [
+    "text",
+    5533.44
+   ],
+   [
+    "text",
+    4480.2
+   ],
+   [
+    "text",
+    6885.36
+   ],
+   [
+    "text",
+    6067.92
+   ],
+   [
+    "text",
+    5250.48
+   ],
+   [
+    "text",
+    4818.18
+   ],
+   [
+    "text",
+    6264.42
+   ],
+   [
+    "text",
+    4731.72
+   ],
+   [
+    "text",
+    6295.86
+   ],
+   [
+    "text",
+    5997.18
+   ],
+   [
+    "text",
+    5784.96
+   ],
+   [
+    "text",
+    5211.18
+   ],
+   [
+    "text",
+    8245.14
+   ],
+   [
+    "text",
+    4747.44
+   ],
+   [
+    "text",
+    4778.88
+   ],
+   [
+    "text",
+    6280.14
+   ]
+  ],
+  "gate_warmup": null,
+  "correct": null,
+  "scored": 0,
+  "j_per_correct": null
+ },
+ "answer_check": {
+  "accepted": false,
+  "skipped": true,
+  "why_not": [
+   "power cap not available on this provider"
+  ],
+  "note": "software savers only; the power-cap step is skipped"
+ },
+ "with": {
+  "requests": 20,
+  "joules": 116076.5,
+  "shadow_excluded": {
+   "calls": 3,
+   "joules": 0.0,
+   "label": "MEASURED NVML energy of the gateway's shadow calls to stock, run one at a time and taken out of this arm"
+  },
+  "seconds": 78.7,
+  "t0": 1793781630.101,
+  "t1": 1793781708.774,
+  "cap_w": null,
+  "tokens": 14768,
+  "usd": 0.239952,
+  "label": "ESTIMATE (tokens x J/token per model, no GPU counter on this provider)",
+  "texts": [
+   "San Francisco Bay has the San Andreas Fault.",
+   " I don't have enough context to determine which bay you're referring to \u2014 please provide more details.",
+   "I need more context to answer \u2014 please specify which device, component, or system you're asking about.",
+   "A power cap is the maximum allowed power draw for a device/system, measured in watts (W), and varies by device/configuration.",
+   " I don't have access to your live coolant temperature, but a normal fully-warmed engine coolant temperature is typically 85-105\u00b0C (around 90\u00b0C).",
+   " I don't have access to your vehicle's live data, so I can't provide the coolant temperature \u2014 please check your dashboard gauge or OBD-II scanner for the current reading in \u00b0C.",
+   "No image was provided so I can't see or count any spinning fans.",
+   "I don't have access to any image or video, so I can't see or count how many fans are spinning \u2014 please describe or share more details!",
+   " I don't have information about which specific rack you're referring to, so I can't determine the GPU count.",
+   " I don't have access to information about the GPUs in the rack.",
+   " I don't have context for which device/status light you mean \u2014 could you specify the device?",
+   "I don't have visibility into your status light \u2014 please tell me which device you're referring to and what you see.",
+   "I can't see your power meter \u2014 please share a photo or type the displayed numbers and I can help read it in watts.",
+   "I don't have access to a power meter image or reading, so please provide the meter value or upload a photo.",
+   "I don't have access to your rack ID \u2014 please check your server/hosting dashboard or the physical label on the rack and provide more context if you need help locating it.",
+   "I don't have access to your rack ID \u2014 please clarify which system, datacenter, or platform you're referring to.",
+   "I don't have access to real-time data, so I can't determine how many servers are online.",
+   "I don't have access to real-time information about how many servers are online.",
+   "I don't have access to your system's live fan speed, so please check it in Task Manager, BIOS, or an app like HWMonitor/SpeedFan.",
+   "I don't have access to your system's real-time hardware sensors to determine fan speed percent."
+  ],
+  "per_request_j": [
+   [
+    "text",
+    4928.22,
+    "gate warm-up"
+   ],
+   [
+    "text",
+    4008.6,
+    "gate warm-up"
+   ],
+   [
+    "text",
+    3584.16,
+    "gate warm-up"
+   ],
+   [
+    "text",
+    4566.66
+   ],
+   [
+    "text",
+    6201.54
+   ],
+   [
+    "text",
+    6830.34
+   ],
+   [
+    "text",
+    6531.66
+   ],
+   [
+    "text",
+    6303.72
+   ],
+   [
+    "text",
+    4480.2
+   ],
+   [
+    "text",
+    6201.54
+   ],
+   [
+    "text",
+    5753.52
+   ],
+   [
+    "text",
+    5022.54
+   ],
+   [
+    "text",
+    11860.74
+   ],
+   [
+    "text",
+    9817.14
+   ],
+   [
+    "text",
+    4959.66
+   ],
+   [
+    "text",
+    5195.46
+   ],
+   [
+    "text",
+    4378.02
+   ],
+   [
+    "text",
+    4338.72
+   ],
+   [
+    "text",
+    5156.16
+   ],
+   [
+    "text",
+    5957.88
+   ]
+  ],
+  "gate_warmup": {
+   "requests": 3,
+   "joules": 12521.0,
+   "label": "gate warm-up: saver-on requests the per-model gate shadow-checked (MEASURED, counted in this arm, left out of the cap probe)"
+  },
+  "correct": null,
+  "scored": 0,
+  "j_per_correct": null
+ },
+ "cap_decision": {},
+ "agreement": 0.2,
+ "no_worse": true,
+ "energy_saved_pct": -1.28,
+ "energy_label": "ESTIMATE",
+ "final_limit_w": null
+}

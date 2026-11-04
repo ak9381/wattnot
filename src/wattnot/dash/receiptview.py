@@ -103,6 +103,12 @@ def find_receipt(events_file: Path) -> Path:
                         if not f.name.endswith(".sigstore.json"))
         if proofs:
             return proofs[-1]
+        # a stitched replay (replays/h100-max-1103) keeps one signed proof per block in proofs/<block>/
+        nested = sorted((f for f in level.glob("proofs/*/proof-*.json")
+                         if not f.name.endswith(".sigstore.json")),
+                        key=lambda f: (f.stat().st_mtime, f.as_posix()))
+        if nested:
+            return nested[-1]
     raise FileNotFoundError(f"no receipt next to {events_file}")
 
 

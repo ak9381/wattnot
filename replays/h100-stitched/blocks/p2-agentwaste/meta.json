@@ -1,0 +1,13 @@
+{
+ "block": "p2-agentwaste",
+ "label": "MEASURED",
+ "started": 1793717200.450774,
+ "ended": 1793719573.933993,
+ "byte_range": [
+  494301,
+  495037
+ ],
+ "events": 2,
+ "replay": "replays/h100-max-1103/blocks/p2-agentwaste/timeline.jsonl",
+ "screen": null
+}

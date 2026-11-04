@@ -1,3 +1,4 @@
+import { takesTable } from "./takes.js";
 // Round 7 views for the new dashboard: Overview, the Power/Cost/Water
 // comparison cards, the "Where should this model run?" head-to-head, and the
 // info-panel texts. Numbers come only from the run record; anything the
@@ -259,6 +260,7 @@ export function hostLeverValue(rec, host, lever, branch) {
 // under all three, and hosted items are cost-MEASURED, power/water-ESTIMATE.
 export function treeValue(rec, branch, node) {
   const id = node?.id;
+  if (rec?.tree && rec.tree[id]) { const t = rec.tree[id]; return t.gate || t.why || branch === "power" ? t : { ...t, tag: "ESTIMATE" }; }
   if (node?.kind === "gate") {
     if (node.host) { const h = hostAB(rec, node.host); return h == null ? null : { gate: true, pass: !!h.gate_passed }; }
     const g = gateStatus(rec, id); return g == null ? null : { gate: true, pass: g.pass };
@@ -358,12 +360,14 @@ export function openPowerGraph(rec, c) {
 
 // ---------- Meta tools really used (checked against the repo) ----------
 export const META_TOOLS = [
-  { id: "spark", name: "Muse Spark", role: "Plans the next cap to try in the sweep" },
-  { id: "wonder", name: "Muse Wonder", role: "Supervisor: reviewed a measured H100 sweep live once; local gates still decide" },
-  { id: "spark_open", name: "Muse Spark Open on Baseten", role: "The hosted open model: cap-planner call and prompt-cache A/B" },
+  { id: "glimmer", name: "Muse Glimmer 30B", role: "Main model on our own vLLM; power caps are tuned on it" },
+  { id: "spark_open", name: "Muse Spark Open", role: "Main model, hosted on Baseten and Modal endpoints" },
+  { id: "spark", name: "Muse Spark", role: "Planner and grader: plans each change" },
+  { id: "wonder", name: "Muse Wonder", role: "Supervisor: Pareto cap-sweep planner; local gates still decide" },
+  { id: "image", name: "Muse Image", role: "Builds the eye-check test set for image models (SYNTHETIC inputs)" },
+  { id: "voice", name: "Muse Voice Transcribe", role: "Hearing check and voice Ask" },
   { id: "sam", name: "SAM 3.1", role: "Outlines each rack in the room photo" },
-  { id: "glimmer", name: "Muse Glimmer 30B", role: "Open weights swept on the H100 in RUN1" },
-  { id: "code", name: "Muse Code task set", role: "Coding prompts used as a test workload" },
+  { id: "code", name: "Muse Code", role: "Applies the kept change as a pull request" },
 ];
 export const metaTags = (ids) => META_TOOLS.filter((t) => !ids || ids.includes(t.id)).map((t) => `<button class="mtag" data-info="meta-${t.id}"><b>Meta · ${esc(t.name)}</b><span>${esc(t.role)}</span></button>`).join("");
 export const metaTile = () => `<section class="glass ov-meta"><h3>Built with Meta</h3><div class="mtags">${metaTags()}</div></section>`;
@@ -377,12 +381,14 @@ registerInfo({
   "meta-wonder": { title: "Muse Wonder", html: `<p>Meta's Muse Wonder (muse-wonder-1.0) was called LIVE once as a supervisor over a recorded H100 sweep (inputs are a REPLAY of measured steps). It only proposes a next trial; WattNot's local p99 and quality gates decide whether any cap is kept. The decision and the response ids are in a signed addendum.</p>` },
   "meta-sam": { title: "SAM 3.1", html: `<p>Meta's Segment Anything 3.1 turns a photo of a server room into one outline per rack, from the prompt "server rack".</p><p>WattNot uses the outlines to put savings in a place: which rack is hot, which one it can cap.</p>` },
   "meta-glimmer": { title: "Muse Glimmer 30B", html: `<p>Meta's open-weights 30B model. RUN1 swept caps from 700 W down on it; 400 W used 21% less energy per answer with p99 +3.7%.</p>` },
-  "meta-code": { title: "Muse Code task set", html: `<p>A fixed set of coding prompts written with Muse Spark. It is one of the workloads WattNot can replay to check that a cap does not hurt coding answers.</p>` },
+  "meta-code": { title: "Muse Code", html: `<p>Meta's Muse Code opens the kept change as a pull request on the demo deploy repo (for example ak9381/wattnot-demo-deploy#4: the 375 W cap from the H100 sweep), with the receipt hash in the PR.</p>` },
+  "meta-image": { title: "Muse Image", html: `<p>Meta's Muse Image generated the eye-check test images (labelled SYNTHETIC). WattNot asks the image model about each one before and after a change; any miss rejects the change.</p>` },
+  "meta-voice": { title: "Muse Voice Transcribe", html: `<p>Meta's Muse Voice Transcribe turns the spoken test questions into text for the hearing check, and powers voice Ask in the dashboard.</p>` },
 });
 
 // ---------- overview ----------
 export function overviewHtml(S) {
-  const r = S.run2 || {}, led = S.story?.ledger || {}, runs = S.runs?.runs || [];
+  const r = S.replaySum || S.run2 || {}, led = S.story?.ledger || {}, runs = S.runs?.runs || [];
   const rec = S.radRecs?.[runs[0]?.id];
   const saved = r.saved_pct != null ? `${fmt(-r.saved_pct, 1)}%` : null;
   const kpi = (label, v, tag, sub, key) => `<div class="ov-kpi glass"><span class="lvl">${label}${key ? infoBtn(key, label) : ""}</span><b>${v == null ? `<span class="r7miss">${PENDING}</span>` : n(esc(v), tag)}</b><small>${esc(sub)}</small></div>`;
@@ -390,26 +396,30 @@ export function overviewHtml(S) {
   return `<div class="ov">
   <div class="ov-main">
     <div class="ov-hd"><div><h1>Less power per AI answer, with proof</h1><p class="lead">WattNot tries a safer GPU setting, checks the answers, and keeps it only if nothing got worse. ${infoBtn("what", "what WattNot does")}</p>
-      <p class="ov-jump">On this page: ${[["pCfg", "Configure"], ["pRun", "Run"], ["pReport", "Compare"], ["pProof", "Proof"], ["pLearn", "How it works"]].map(([p, t]) => `<a href="#${p}">${t}</a>`).join(" · ")}</p>
       <div class="ov-legend">${legend()}</div></div><button class="btn pri" data-go="pCfg">Configure a run →</button></div>
     <div class="ov-kpis">
       ${(() => { // Headline: joules per correct answer (energy per answer / fixed-check pass rate), MEASURED.
         const js = r.j_per_req_stock, jc = r.j_per_req_cap, qs = r.quality_stock_pct, qc = r.quality_cap_pct;
         const ok = js != null && jc != null && qs && qc;
-        const pct = ok ? ((jc / (qc / 100)) / (js / (qs / 100)) - 1) * 100 : null;
-        return kpi("Joules per correct answer", pct != null ? `${fmt(pct, 1)}%` : saved, "MEASURED",
-          ok ? `${fmt(js / (qs / 100), 2)} → ${fmt(jc / (qc / 100), 2)} J · ${r.cap_w} W cap vs ${r.stock_w} W. Cost and water are ESTIMATES from these joules` : "", "calc-power");
+        const cs = r.j_per_correct_stock ?? (ok ? js / (qs / 100) : null), cc = r.j_per_correct_cap ?? (ok ? jc / (qc / 100) : null);
+        const pct = cs != null && cc != null ? (cc / cs - 1) * 100 : null;
+        const where = r.setting || `${r.cap_w} W cap vs ${r.stock_w} W`;
+        if (pct == null && js != null && jc != null) return kpi("Energy per request", `${fmt((jc / js - 1) * 100, 1)}%`, r.energy_label || "MEASURED",
+          `${fmt(js, 1)} → ${fmt(jc, 1)} J · ${where}. ${r.quality_why ? esc(r.quality_why) : "No graded answers, so no J per correct answer"}`, "calc-power");
+        return kpi("Joules per correct answer", pct != null ? `${fmt(pct, 1)}%` : saved, r.energy_label || "MEASURED",
+          pct != null ? `${fmt(cs, 1)} → ${fmt(cc, 1)} J · ${where}${r.title ? ` · ${r.id}` : ""}. Cost and water are ESTIMATES from these joules` : "", "calc-power");
       })()}
-      ${kpi("Slowest 1% (p99)", r.p99_change_pct != null ? `${r.p99_change_pct > 0 ? "+" : ""}${fmt(r.p99_change_pct, 1)}%` : null, "MEASURED", "limit +10%", "p99")}
-      ${kpi("Quality: fixed-check pass rate", r.quality_cap_pct != null ? `${fmt(r.quality_cap_pct, 1)}%` : null, "MEASURED", r.quality_stock_pct != null ? `uncapped ${fmt(r.quality_stock_pct, 1)}% · share of fixed checks passed · quality gate: drop ≤ 1.0 pt (held); latency gate p99 ≤ +10% decides the cap` : "", "quality")}
+      ${kpi("Slowest 1% (p99)", r.p99_change_pct != null ? `${r.p99_change_pct > 0 ? "+" : ""}${fmt(r.p99_change_pct, 1)}%` : r.p99_why ? "Not recorded" : null, r.p99_label || "MEASURED", r.p99_stock_s != null ? `${fmt(r.p99_stock_s, 1)} s → ${fmt(r.p99_cap_s, 1)} s · limit +10%` : "limit +10%", "p99")}
+      ${kpi("Quality: fixed-check pass rate", r.quality_cap_pct != null ? `${fmt(r.quality_cap_pct, 1)}%` : r.quality_why ? "Not graded" : null, r.quality_label || "MEASURED", r.quality_stock_pct != null ? `${r.setting ? "without WattNot" : "uncapped"} ${fmt(r.quality_stock_pct, 1)}% · share of fixed checks passed · quality gate: drop ≤ 1.0 pt (held); latency gate p99 ≤ +10% decides the cap` : "", "quality")}
       ${(() => { const m = metaSpend(S.metaLive, led); return kpi("Meta API spend", m.usd != null ? `$${fmt(m.usd)}` : null, m.label, m.note, null); })()}
     </div>
     ${metaTile()}
+    ${takesTable(r)}
     <div class="ov-grid">
-      <section class="glass ov-trend"><h3>Energy per answer, by repeat ${infoBtn("calc-power", "energy")}</h3>${rec ? lineChart(series(rec, (j) => j), { unit: "J", yLabel: "J per answer", w: 620, h: 220, y0: 0, xticks: [1, 2, 3].map((x) => ({ x, label: `#${x}` })) }) : `<p class="r7miss">${PENDING}</p>`}<button class="btn" data-pg="1">Open bigger</button></section>
-      <section class="glass ov-donut"><h3>Where the energy went</h3>${cut != null ? donut([{ name: "Still used", v: used, color: "#8E7A9E" }, { name: "Saved by WattNot", v: cut, color: "#7FA88A" }], { center: saved || "", centerSub: "saved", aria: "energy used vs saved" }) : `<p class="r7miss">${PENDING}</p>`}</section>
-      <section class="glass ov-gauge"><h3>Speed budget used</h3>${r.p99_change_pct != null ? gauge(r.p99_change_pct, 15, { text: `+${fmt(r.p99_change_pct, 1)}%`, sub: "p99 change · limit 10%", limit: 10, cls: r.p99_change_pct > 10 ? "warn" : "", aria: "p99 change against the 10% limit" }) : `<p class="r7miss">${PENDING}</p>`}<p class="r7note">Red tick: the 10% limit.</p></section>
-      <section class="glass ov-table"><h3>Recorded runs</h3><table><thead><tr><th>Run</th><th>Model</th><th>Date</th></tr></thead><tbody>${runs.map((x) => `<tr><td>${esc(x.name)}</td><td>${esc(x.model)}</td><td>${esc(x.date)}</td></tr>`).join("") || `<tr><td colspan="3" class="r7miss">${PENDING}</td></tr>`}</tbody></table></section>
+      <section class="glass ov-trend"><h3>Energy per answer, by repeat ${infoBtn("calc-power", "energy")}</h3>${S.replaySum?.series ? lineChart(S.replaySum.series.sets, { unit: "J", yLabel: "J per answer", w: 620, h: 220, y0: 0, xticks: S.replaySum.series.sets[0].pts.map((p) => ({ x: p.x, label: p.label })) }) + `<p class="r7note">${n(esc(S.replaySum.id), S.replaySum.series.label)} One point per ${esc(S.replaySum.series.unit)}. ${esc(S.replaySum.series.note)}</p>` : S.replaySum ? `<p class="r7note">${esc(S.replaySum.series_why || "no per-repeat energy in this run")}</p>` : rec ? lineChart(series(rec, (j) => j), { unit: "J", yLabel: "J per answer", w: 620, h: 220, y0: 0, xticks: [1, 2, 3].map((x) => ({ x, label: `#${x}` })) }) : `<p class="r7miss">${PENDING}</p>`}<button class="btn" data-pg="1">Open bigger</button></section>
+      <section class="glass ov-donut"><h3>Where the energy went</h3>${cut != null ? donut([{ name: "Still used", v: used, color: "#8E7A9E" }, { name: "Saved by WattNot", v: cut, color: "#7FA88A" }], { center: saved || "", centerSub: "saved", aria: "energy used vs saved" }) + (S.replaySum ? `<p class="r7note">J per answer: ${fmt(r.j_per_req_stock, 1)} without → ${fmt(used, 1)} with WattNot (${esc(r.energy_label || "MEASURED")}), ${esc(r.id)}</p>` : "") : S.replaySum ? `<p class="r7note">${esc(S.replaySum.water_why || "no metered energy in this run")}</p>` : `<p class="r7miss">${PENDING}</p>`}</section>
+      <section class="glass ov-table"><h3>Recorded runs</h3><table><thead><tr><th>Run</th><th>Model</th><th>Date</th></tr></thead><tbody>${(S.replayRuns || []).map((x) => `<tr${x.id === S.replaySum?.id ? ' class="on"' : ""}><td><a href="?run=replay:${esc(x.id)}#pHome" title="${esc(x.title || "")}">${esc(x.name)}</a> ${n(esc(x.label), x.label)}</td><td>${esc(x.model)}</td><td>${esc(x.date)}</td></tr>`).join("")}${S.replayRuns?.length && runs.length ? `<tr><td colspan="3" class="r7note">Older demo fixtures (MOCK/SYNTHETIC):</td></tr>` : ""}${runs.map((x) => `<tr class="fx"><td>${esc(x.name)}</td><td>${esc(x.model)}</td><td>${esc(x.date)}</td></tr>`).join("") || `<tr><td colspan="3" class="r7miss">${PENDING}</td></tr>`}</tbody></table></section>
+      <section class="glass ov-gauge"><h3>Speed budget used</h3>${r.p99_change_pct != null ? gauge(Math.max(0, r.p99_change_pct), 15, { text: `${r.p99_change_pct > 0 ? "+" : ""}${fmt(r.p99_change_pct, 1)}%`, sub: "p99 change · limit 10%", limit: 10, cls: r.p99_change_pct > 10 ? "warn" : "", aria: "p99 change against the 10% limit" }) : `<p class="r7miss">${PENDING}</p>`}<p class="r7note">Red tick: the 10% limit.</p></section>
     </div></div></div>`;
 }
 
@@ -453,3 +463,4 @@ export function emptyStateHtml(st, hasBundled) {
     + (hasBundled ? `<button class="btn sm" data-bundled>Show the bundled RUN2 sample</button><p class="r7miss">The bundled sample is H100 RUN2 data that ships with WattNot, not your run.</p>` : "") + `</section>`;
 }
 export const bundledBanner = () => `<p class="cmp-bundled" id="cmpBundled" role="note"><b>Bundled sample</b>: H100 RUN2 data that ships with WattNot, not one of your runs.</p>`;
+

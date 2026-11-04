@@ -85,25 +85,73 @@ function receiptHtml(r) {
     <p class="pf-meta">${esc(r.per_model_joules[0]?.how || "")}. Hosted planner calls report tokens, not joules, so their energy is not in the net figure yet.</p>`;
 }
 
+// Step-through of how the H100 run's receipt is proven, like the How it works diagram.
+// Every value is read from the recorded proof files of the H100 run (proof-de155e).
+const PF = "/replays/h100-stitched/proofs/p2-sweep/";
+function flowSteps(r, sig, ver) {
+  const st = r.steps.find((x) => x.cap_w === r.best_cap_w) || r.steps[0];
+  const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+  const js = avg(st.j_per_req_stock), jc = avg(st.j_per_req_cap), q = st.quality;
+  const jcs = js / (q.stock_pct / 100), jcc = jc / (q.cap_pct / 100);
+  const short = (h) => `${h.slice(0, 12)}…${h.slice(-6)}`;
+  return [
+    ["Prompts run without and with", `${r.workload.prompts} prompts (${esc(r.workload.name)}), ${esc(r.method.design)}: stock 700 W vs a ${st.cap_w} W cap on ${esc(r.hardware.gpu)}, model ${esc(r.model)}.`, "MEASURED"],
+    ["NVML energy measured", `${fmt(js, 1)} → ${fmt(jc, 1)} J per request (${fmt(st.energy_change_pct.mean, 1)}%). Mean power ${fmt(st.mean_w.stock, 0)} → ${fmt(st.mean_w.cap, 0)} W. Method: ${esc(r.method.energy)}.`, "MEASURED"],
+    ["Answers checked", `${q.checked} answers checked: pass rate ${fmt(q.stock_pct, 1)}% → ${fmt(q.cap_pct, 1)}%, ${q.passed ? "gate passed" : "gate failed"}. p99 ${st.p99_change_pct.mean > 0 ? "+" : ""}${fmt(st.p99_change_pct.mean, 1)}% (limit +10%).`, "MEASURED"],
+    ["Joules per correct answer", `${fmt(jcs, 1)} → ${fmt(jcc, 1)} J per correct answer (${fmt((jcc / jcs - 1) * 100, 1)}%). J per request divided by the pass rate.`, "MEASURED"],
+    ["Receipt hashed and signed", `Canonical sha256 <code>${esc(short(sig.sha256))}</code>, signed with Ed25519, key id <code>${esc(sig.key_id)}</code> (offline key). Receipt ${esc(r.receipt_id)}, created ${esc(r.created)}.`, "MEASURED"],
+    ["Signature verified", ver ? `Hash recomputed ${ver.hash_match ? "matches ✓" : "does not match ✗"}, signature ${ver.signature_ok ? "valid ✓" : "invalid ✗"} (${esc(ver.message)}). Checked ${esc(ver.checked_at)} with ${esc(ver.how)}.` : "No verification record saved for this receipt.", ver ? "MEASURED" : ""],
+    ["Public transparency log (Rekor)", sig.rekor ? `Logged in Rekor: ${esc(JSON.stringify(sig.rekor))}` : "Not logged. This receipt is signed offline; publishing to the public Rekor log is a one-time owner step that has not been done.", ""],
+  ];
+}
+function flowHtml(steps) {
+  return `<div class="pf-flow" data-i="0"><ol class="pf-fl-blocks">${steps.map(([t], i) => `<li><button class="pf-fl-b${i ? "" : " on"}" data-i="${i}"><span class="pf-fl-n">${i + 1}</span>${esc(t)}</button></li>`).join("")}</ol>
+    <div class="pf-fl-body" aria-live="polite"></div>
+    <div class="pf-fl-nav"><button class="btn" data-step="-1">← Prev</button><span class="pf-fl-pos"></span><button class="btn" data-step="1">Next →</button></div></div>`;
+}
+function wireFlow(root, steps) {
+  const f = root.querySelector(".pf-flow"); if (!f) return;
+  const show = (i) => {
+    i = Math.max(0, Math.min(steps.length - 1, i)); f.dataset.i = i;
+    f.querySelectorAll(".pf-fl-b").forEach((b, k) => { b.classList.toggle("on", k === i); b.classList.toggle("done", k < i); });
+    const [t, body, lab] = steps[i];
+    f.querySelector(".pf-fl-body").innerHTML = `<h4>${i + 1}. ${esc(t)} ${lab ? badge(lab) : ""}</h4><p>${body}</p><p class="pf-meta">Source: H100 run, proof-de155e (2026-11-03).</p>`;
+    f.querySelector(".pf-fl-pos").textContent = `${i + 1} of ${steps.length}`;
+  };
+  f.querySelectorAll(".pf-fl-b").forEach((b) => (b.onclick = () => show(+b.dataset.i)));
+  f.querySelectorAll("[data-step]").forEach((b) => (b.onclick = () => show(+f.dataset.i + +b.dataset.step)));
+  show(0);
+}
+const FLOW_CSS = `.pf-flow{margin:0 0 18px;padding:16px;border-radius:14px;background:var(--v-bg2,#1F1A2F);border:1px solid var(--v-line,rgba(255,255,255,.14))}
+.pf-fl-blocks{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.pf-fl-b{display:flex;gap:8px;align-items:center;font:600 13px/1.3 var(--v-body,inherit);color:var(--v-mut,#CBC4D6);background:var(--v-surf-17,#171724);border:1px solid var(--v-line,rgba(255,255,255,.14));border-radius:10px;padding:8px 12px;cursor:pointer;opacity:.6}
+.pf-fl-b.done{opacity:.85}.pf-fl-b.on{opacity:1;color:var(--v-cream,#fff);border-color:var(--v-peach,#B2A6C3);box-shadow:0 0 12px rgba(178,166,195,.45)}
+.pf-fl-n{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--v-violet,#3B3A54);font-size:11px}
+.pf-fl-body{margin:14px 0 8px;min-height:90px}.pf-fl-nav{display:flex;gap:10px;align-items:center}.pf-fl-pos{color:var(--v-mut,#aaa);font-size:13px}`;
+const noLlama = (x) => !/llama/i.test(JSON.stringify(x ?? ""));
+
 export async function renderProof(el) {
   if (el.dataset.done) return;
-  const d = await fetch("/api/dash/v2/judge-path").then((r) => (r.ok ? r.json() : null)).catch(() => null);
-  if (!d) { el.innerHTML = `<p>The proof bundle is not available.</p>`; return; }
+  const J = (u) => fetch(u).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const [d, pr, sig, ver] = await Promise.all([J("/api/dash/v2/judge-path"), J(PF + "proof-de155e.json"), J(PF + "proof-de155e.sigstore.json"), J(PF + "verify-de155e.json")]);
+  if (!d && !pr) { el.innerHTML = `<p>The proof bundle is not available.</p>`; return; }
   el.dataset.done = "1";
-  const r = d.run2;
-  const resultSum = r ? `${fmt(r.j_per_correct.change_pct)}% J per correct answer at ${r.cap_w} W` : "";
+  if (!document.getElementById("pf-flow-css")) { const c = document.createElement("style"); c.id = "pf-flow-css"; c.textContent = FLOW_CSS; document.head.append(c); }
+  const steps = pr && sig ? flowSteps(pr, sig, ver) : null;
+  const st = pr ? (pr.steps.find((x) => x.cap_w === pr.best_cap_w) || pr.steps[0]) : null;
+  const result = st ? `<p class="pf-big"><b>${fmt(st.energy_change_pct.mean, 1)}%</b> energy per request at a ${st.cap_w} W cap on the H100 run, pass rate ${fmt(st.quality.stock_pct, 1)}% → ${fmt(st.quality.cap_pct, 1)}% on ${st.quality.checked} checked answers ${badge("MEASURED")}</p><p class="pf-meta">Model ${esc(pr.model)} · receipt ${esc(pr.receipt_id)} · 2026-11-03.</p>` : "<p>No H100 proof receipt found.</p>";
+  const health = d?.health ? { ...d.health, entries: (d.health.entries || []).filter(noLlama) } : null;
+  const meta = (d?.leaderboard?.meta_models || []).filter(noLlama);
   el.innerHTML = `<div class="pf">
-    <div class="ctrl noprint"><button class="btn" data-all="open">Expand all</button><button class="btn" data-all="close">Collapse all</button><span style="color:var(--mu);font-size:13px">Each proof below opens on click. Start with the result.</span></div>
-    ${sec("The result, per correct answer", r ? `<p class="pf-big"><b>${fmt(r.j_per_correct.change_pct)}%</b> joules per correct answer at a ${r.cap_w} W cap (${fmt(r.j_per_correct.stock, 2)} → ${fmt(r.j_per_correct.cap, 2)} J), pass rate unchanged at ${fmt(r.pass_pct.cap)}% on ${r.checked} checked answers ${badge(r.label)}</p><p class="pf-meta">${esc(r.era)} · quality judged by ${esc(r.judge)}. Meta-judge results (${esc(d.meta_judge.judge)}) are reported separately: ${esc(d.meta_judge.note)}.</p>` : "", "pf-wide", { open: true, sum: resultSum })}
-    ${sec("Leaderboard: joules per correct answer", lbHtml(d.leaderboard), "pf-wide")}
-    ${sec("What Spark decided, step by step", traceHtml(d.trace), "pf-wide")}
-    ${sec("Small model first", escHtml(d.escalation))}
-    ${sec("Stack: fewer tokens and cheaper tokens", stackHtml(d.stack))}
-    ${sec("Endpoint health and fallbacks", healthHtml(d.health))}
-    ${sec("Verify it yourself", verifyHtml(d.verify))}
-    ${sec("This run's receipt", receiptHtml(d.receipt))}
-    ${sec("Meta models used", metaHtml(d.leaderboard?.meta_models))}
+    ${steps ? `<div class="pf-wide" style="grid-column:1/-1"><h3 style="margin:0 0 10px">How this receipt is proven, step by step</h3>${flowHtml(steps)}</div>` : ""}
+    <div class="ctrl noprint" style="grid-column:1/-1"><button class="btn" data-all="open">Expand all</button><button class="btn" data-all="close">Collapse all</button><span style="color:var(--mu);font-size:13px">Each proof below opens on click. Start with the result.</span></div>
+    ${sec("The result, H100 run", result, "", { open: true, sum: st ? `${fmt(st.energy_change_pct.mean, 1)}% energy at ${st.cap_w} W` : "" })}
+    ${d?.trace && noLlama(d.trace) ? sec("What Spark decided, step by step", traceHtml(d.trace), "pf-wide") : ""}
+    ${d?.verify ? sec("Verify it yourself", verifyHtml(d.verify)) : ""}
+    ${health ? sec("Endpoint health and fallbacks", healthHtml(health)) : ""}
+    ${meta.length ? sec("Meta models used", metaHtml(meta)) : ""}
   </div>`;
+  if (steps) wireFlow(el, steps);
   el.querySelectorAll("[data-explain]").forEach((b) => (b.onclick = () => {
     document.querySelector("#sideBody").innerHTML = `<h2>Why the gate failed</h2>${explainHtml(d.explain)}`;
     document.querySelector("#side").classList.add("on"); document.querySelector("#side").setAttribute("aria-hidden", "false"); document.querySelector("#scrim").hidden = false;

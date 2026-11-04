@@ -1,0 +1,12 @@
+{
+ "format": "wattnot.block-receipt/1",
+ "block": "p2-phase",
+ "label": "MEASURED",
+ "files": {
+  "meta.json": "e8f0598f2a0d3ac0db092f0d582ea1f9860e993099f380030c5a34d3103b63b0",
+  "state.json": "81f47ec1a7e2090fcaa60e18cf2751683aac0c0d6275e53d431acb75eba8c874",
+  "timeline.jsonl": "147d5bb5ce8f173c32d62be3e3d82a389a1c5c558e77de0ddda89107b2376a96"
+ },
+ "prev": "f1fcf32e62ac315e58706cbd4543a00c0d65503af2bb72526859df5e4f29a624",
+ "sha256": "89a21a908bb829ff1e9caf5ff1cc323ca8aefff9bde461756ef12dd219490979"
+}

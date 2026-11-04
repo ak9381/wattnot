@@ -437,6 +437,7 @@ async function boot() {
   }
   bundle = withReportNode(withContextNode(sb)); healthData = health;
   archPage = new ArchPage(stage, bundle, { openDrawer, health: healthData });
+  window.__archPage = archPage; // the Live graph toolbar Replay / Restart / speed drive it
   archPage.setMode("all");
   archPage.show();
   if (params.get("filter") === "meta") archPage.setFilter("meta");

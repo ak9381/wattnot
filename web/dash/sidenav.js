@@ -3,7 +3,7 @@
 // first heading. Tiny strips (legends, the configuration bar) stay visible above every block.
 // matrix.html and metatools.html render a single dense mount (no <main>), so the one-part-at-a-time
 // pager would hide their whole body — skip them like graph.html and show the page in full.
-const SKIP = /v2\.html#p(?:Cfg|Run|Report)$|graph\.html|matrix\.html|metatools\.html|index\.html|\/dash\/$/;
+const SKIP = /v2\.html(?:#p(?:Home|Cfg|Run|Report))?$|graph\.html|matrix\.html|metatools\.html|index\.html|\/dash\/$/;
 const vis = (e) => e.offsetParent !== null && !e.matches("script, style, nav, aside, footer, .wn-side-scrim");
 const clean = (t) => (t || "").replace(/\s+/g, " ").trim().slice(0, 44);
 
@@ -38,7 +38,10 @@ function blocks(root, max) {
 let built = "";
 function build() {
   const a = document.querySelector("#wnSide a.wn-link.on"); if (!a) return;
-  const host = a.parentElement.querySelector(".wn-secs"); if (!host) return;
+  const host = a.parentElement.querySelector(".wn-secs") || { set innerHTML(v) {} };
+  // Every page opens in full: no auto-generated part links and no "Show the whole page" link.
+  document.querySelectorAll(".wn-sec-hidden").forEach((e) => e.classList.remove("wn-sec-hidden"));
+  host.innerHTML = ""; built = "full"; return;
   if (SKIP.test(location.pathname + location.hash)) { host.innerHTML = ""; return; }
   const all = new URL(location.href).searchParams.get("all") === "1";
   document.querySelectorAll(".wn-sec-hidden").forEach((e) => e.classList.remove("wn-sec-hidden"));
