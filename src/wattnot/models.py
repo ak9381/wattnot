@@ -4,7 +4,7 @@ Default: Muse Glimmer 30B (Meta open weights, Apache 2.0). It fits one H100 80GB
 in BF16 (about 60 GB of weights, about 72 GB to serve) and in FP8 (about 33-40 GB).
 Muse Spark Open (816B MoE) needs at least 700 GB of VRAM even in NVFP4, so it does
 not fit one H100; WattNot still uses Muse Spark through the Meta Model API to plan.
-Llama 3.1 8B Instruct stays as the comparison model.
+A small 8B instruct model stays as the comparison baseline.
 Sources: huggingface.co/meta-models/Muse-Glimmer-30B, dev.meta.ai/docs/muse-glimmer/deploy,
 recipes.vllm.ai/meta-models/Muse-Glimmer-30B, huggingface.co/meta-models/Muse-Spark-Open-816B-A42B.
 """
@@ -49,7 +49,7 @@ MUSE_SPARK_OPEN = ServedModel(
 MODELS = {m.key: m for m in (MUSE_GLIMMER, LLAMA_31_8B, MUSE_SPARK_OPEN)}
 DEFAULT = MUSE_GLIMMER
 # What the runbook serves, in order. Models that don't fit the box's VRAM are skipped
-# and recorded, so one plan works on 1x H100 (Glimmer + Llama) and 8x H200 (Spark Open).
+# and recorded, so one plan works on 1x H100 (Glimmer + the 8B baseline) and 8x H200 (Spark Open).
 RUN_ORDER = (MUSE_GLIMMER, MUSE_SPARK_OPEN, LLAMA_31_8B)
 
 

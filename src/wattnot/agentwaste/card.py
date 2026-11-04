@@ -287,7 +287,7 @@ def card(results: dict) -> dict:
         "Three arms: a loop with no stop action, the same loop with the saver, "
         "and a standard harness that already stops by itself.",
         "Energy and dollars are ESTIMATE: they use RUN2's measured joules per token "
-        "for Llama 3.1 8B as a stand-in rate.",
+        "as a stand-in rate.",
         "Tokens, calls, time and success are MEASURED on Muse Spark.",
     ]
     return {"partner": dict(PARTNER), "headline": headline, "rows": rows, "success": success,
