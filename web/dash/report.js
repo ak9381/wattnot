@@ -42,10 +42,6 @@ const RECEIPTS = {
     json: "../receipts/rerun-1031/rcpt_20261031_rerun_cap325.json",
     sig: "../receipts/rerun-1031/rcpt_20261031_rerun_cap325.sigstore.json",
   },
-  "run2-llama-350w": {
-    json: "../receipts/run2/rcpt_20261027_run2_cap350.json",
-    sig: "../receipts/run2/rcpt_20261027_run2_cap350.sigstore.json",
-  },
 };
 // Water factor ESTIMATE: headline 0.36 L/kWh (on-site cooling, LBNL 2024);
 // upper 1.8 L/kWh including power-plant (electricity) water.
@@ -60,7 +56,9 @@ function contextSaver() {
 const CONTEXT_PARTS = [["prefix", "Prefix cache hit rate"], ["memcomp", "Memory compression"], ["dupcut", "Tool-output dedup"]];
 
 const params = new URLSearchParams(location.search);
-const RUN_ID = params.get("run") || localStorage.getItem("wn.run") || "run2-llama-350w";
+// RUN2 (Llama 3.1 8B, not a Meta model here) is hidden: an old stored id falls back to the Glimmer rerun.
+const RUN_PICK = params.get("run") || localStorage.getItem("wn.run") || "";
+const RUN_ID = !RUN_PICK || /llama|^run2/i.test(RUN_PICK) ? "rerun-1031-glimmer-325w" : RUN_PICK;
 const IS_REAL = RUN_ID.includes(":");
 
 let STATE = { run: null, bundle: null, receipt: null };
@@ -305,7 +303,7 @@ function receiptStep(X) {
         </dl>
         <p>The receipt is signed offline with the repository's public <b>test</b> key and is <b>not</b> logged to the public Rekor transparency log, so the grade stops at ESTIMATE: the check proves the numbers were not edited after signing, not who signed them.</p>
         <p>Verify it yourself:</p>
-        <pre>python wattnot_verify.py --trust keys/trusted-keys.json run2/</pre>
+        <pre>python wattnot_verify.py --trust keys/trusted-keys.json rerun-1031/</pre>
         <a class="dl" href="${esc(rc.json)}" download>⬇ Download receipt JSON</a>
         <p style="margin-top:8px"><a href="${esc(rc.sig)}" download>Signature bundle (.sigstore.json)</a></p>`;
     },

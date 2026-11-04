@@ -116,7 +116,7 @@ def test_stepper_model_cards_have_their_own_short_description():
     import pathlib
     js = pathlib.Path(__file__).resolve().parent.parent.joinpath("web/dash/v2.js").read_text()
     assert "MODEL_BLURB" in js
-    assert "30B dense model" in js and "8B dense model" in js
+    assert "30B dense model" in js and "8B dense model" not in js
     assert "mixture-of-experts" in js and "hosted on Baseten" in js
     # step 2 no longer repeats one shared description for every card
     assert "d: MODEL_BLURB[c.v]" in js
@@ -129,7 +129,16 @@ def test_verify_accepts_real_and_rejects_forged():
     assert by["forged-edited"]["sha256"] is False
 
 
-def test_run2_endpoint_reports_measured_llama_350w():
+def test_run2_is_hidden_from_the_dashboard_by_default():
+    # RUN2 served Llama 3.1 8B, which does not count as a Meta model: hidden, data kept.
+    assert run2.SHOW_RUN2 is False
+    assert _c().get("/api/dash/v2/run2").json() == {"hidden": True}
+    assert run2.RUN2_ID not in [r["id"] for r in _c().get("/api/dash/v2/runs").json()["runs"]]
+    assert _c().get(f"/api/dash/v2/runs/{run2.RUN2_ID}").status_code == 404
+
+
+def test_run2_endpoint_reports_measured_llama_350w(monkeypatch):
+    monkeypatch.setattr(run2, "SHOW_RUN2", True)
     r = _c().get("/api/dash/v2/run2")
     assert r.status_code == 200
     d = r.json()
@@ -142,7 +151,8 @@ def test_run2_endpoint_reports_measured_llama_350w():
     assert "cap350" in d["source"]
 
 
-def test_run2_loader_falls_back_when_data_file_missing():
+def test_run2_loader_falls_back_when_data_file_missing(monkeypatch):
+    monkeypatch.setattr(run2, "SHOW_RUN2", True)
     d = run2.load("/nonexistent-root")
     assert d["from_file"] is False
     assert d["saved_pct"] == pytest.approx(-27.1, abs=0.05)
@@ -237,7 +247,8 @@ def test_run_record_holds_both_phases():
     assert all(e["label"] == "MEASURED" and e["raw_sha256"] for e in base["events"] + tuned["events"])
 
 
-def test_runs_endpoints_list_by_name_and_return_records():
+def test_runs_endpoints_list_by_name_and_return_records(monkeypatch):
+    monkeypatch.setattr(run2, "SHOW_RUN2", True)
     c = _c()
     got = c.get("/api/dash/v2/runs").json()["runs"]
     assert got and all(set(r) >= {"id", "name", "model", "date"} for r in got)
@@ -247,7 +258,8 @@ def test_runs_endpoints_list_by_name_and_return_records():
     assert c.get("/api/dash/v2/runs/no-such-run").status_code == 404
 
 
-def test_runs_discovered_from_disk_so_a_new_run_appears(tmp_path):
+def test_runs_discovered_from_disk_so_a_new_run_appears(tmp_path, monkeypatch):
+    monkeypatch.setattr(run2, "SHOW_RUN2", True)
     import json
 
     cloud = tmp_path / "data" / "cloud"
@@ -431,7 +443,8 @@ def test_bento_shells_with_overlap_and_single_column():
         assert token in js, token
 
 
-def test_radial_saved_block_reads_phases_and_never_splits():
+def test_radial_saved_block_reads_phases_and_never_splits(monkeypatch):
+    monkeypatch.setattr(run2, "SHOW_RUN2", True)
     c = _c()
     rec = c.get("/api/dash/v2/runs/run2-llama-350w").json()
     b, w = rec["phases"]["baseline"], rec["phases"]["wattnot"]

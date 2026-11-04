@@ -65,13 +65,13 @@ export function ledgerRows(events) {
   return out;
 }
 
-// Headline RUN2 before/after rows (Llama 3.1 8B, 350 W cap vs 700 W stock).
+// Headline RUN2 before/after rows (350 W cap vs 700 W stock). Hidden when the API sends {hidden: true}.
 // `r` is the /api/dash/v2/run2 payload (measured joules, p99, quality);
 // `price`/`water` are the bundle's {usd_per_kwh} / {factor_l_per_kwh}.
 // Energy, p99 and quality are MEASURED; cost and water are ESTIMATES
 // derived from measured joules. Shape matches reportRows.
 export function run2Rows(r, price, water) {
-  if (!r) return [];
+  if (!r || r.hidden) return [];
   const rows = [];
   if (r.j_per_req_stock != null && r.j_per_req_cap != null) {
     rows.push({
@@ -79,7 +79,7 @@ export function run2Rows(r, price, water) {
       stock: `${num(r.j_per_req_stock)} J`, wattnot: `${num(r.j_per_req_cap)} J`,
       delta: `${num(r.saved_pct, 1)}%`, tag: "MEASURED",
       win: r.saved_pct < 0 ? "w" : "tie",
-      note: `Llama 3.1 8B at a ${r.cap_w} W cap, RUN2 (${r.source})`,
+      note: `${r.model || ""} at a ${r.cap_w} W cap (${r.source})`,
     });
   }
   const kwh = (j) => (j * 1e6) / 3.6e6;

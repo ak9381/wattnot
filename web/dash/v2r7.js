@@ -368,8 +368,8 @@ export const META_TOOLS = [
 export const metaTags = (ids) => META_TOOLS.filter((t) => !ids || ids.includes(t.id)).map((t) => `<button class="mtag" data-info="meta-${t.id}"><b>Meta · ${esc(t.name)}</b><span>${esc(t.role)}</span></button>`).join("");
 export const metaTile = () => `<section class="glass ov-meta"><h3>Built with Meta</h3><div class="mtags">${metaTags()}</div></section>`;
 export const metaInRun = (rec) => {
-  const llama = /llama/i.test(rec?.model || "");
-  return `<div class="mrun"><span class="lvl">Meta models in this run</span><div class="mtags sm">${metaTags(llama ? ["spark", "sam"] : ["spark_open", "spark"])}</div></div>`;
+  const glimmer = /glimmer/i.test(rec?.model || "");
+  return `<div class="mrun"><span class="lvl">Meta models in this run</span><div class="mtags sm">${metaTags(glimmer ? ["glimmer", "spark"] : ["spark_open", "spark"])}</div></div>`;
 };
 registerInfo({
   "meta-spark": { title: "Muse Spark", html: `<p>Meta's Muse Spark API is WattNot's planner. It reads the last measurements and proposes the next power cap to try, or says stop.</p><p>Every call is logged with its cost in the ledger. It only proposes; the gates and a person decide.</p>` },

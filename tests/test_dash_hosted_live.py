@@ -13,7 +13,8 @@ def test_live_hosted_ab_is_attached_to_run_records(tmp_path):
     assert h["source"] == "reports/hosted-ab/live-20261028.json"
 
 
-def test_repo_record_carries_the_live_report():
+def test_repo_record_carries_the_live_report(monkeypatch):
+    monkeypatch.setattr(run2, "SHOW_RUN2", True)
     rec = run2.get_run(None, run2.RUN2_ID)
     assert rec["hosted_ab"]["mode"] == "LIVE"
     assert rec["hosted_ab"]["hosts"]["baseten"]["status"] == "ran"

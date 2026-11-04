@@ -22,6 +22,9 @@ def _load(p: Path):
 
 
 def run2_block(root: Path) -> dict | None:
+    from wattnot.dash import run2 as _r2
+    if not _r2.SHOW_RUN2:
+        return None  # RUN2 served Llama 3.1 8B (not a Meta model here); hidden, data kept
     d = _load(root / "data/h100-run2/vm/steps/cap350.json")
     if not d:
         return None
