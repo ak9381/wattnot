@@ -3,8 +3,14 @@
 // and gets a replay toggle between the without-WattNot and with-WattNot arms.
 const KEY = "wn.config", ARM = "wn.arm";
 export const DEFAULT = { provider: "baseten" };
+// The selected recorded run decides the provider, so the bar never shows another run's setup.
+export const REPLAY_PROVIDER = (id) => (!id ? null : id.startsWith("modal") ? "modal_a100" : id.startsWith("baseten") ? "baseten" : id.startsWith("h100") ? "e2e_h100" : null);
+function replayId() {
+  const v = new URLSearchParams(location.search).get("run") || localStorage.getItem("wn.run") || "";
+  return v.startsWith("replay:") ? v.slice(7) : null;
+}
 export function loadConfig() {
-  const q = new URLSearchParams(location.search).get("provider");
+  const q = new URLSearchParams(location.search).get("provider") || REPLAY_PROVIDER(replayId());
   try { const c = JSON.parse(localStorage.getItem(KEY) || "null"); return q ? { ...(c || {}), provider: q } : c || { ...DEFAULT }; }
   catch { return { ...DEFAULT }; }
 }
@@ -59,7 +65,8 @@ export async function fetchElig(config, f = fetch) {
 function bar(elig, arm) {
   const el = document.createElement("div");
   el.className = "wn-elig"; el.setAttribute("role", "region"); el.setAttribute("aria-label", "Run configuration");
-  el.innerHTML = `<span>Configuration <b>${esc(elig.provider_label)}</b> · main model <b>${esc(elig.model)}</b> · energy ${lab(elig.energy_label)}</span>
+  const rid = replayId();
+  el.innerHTML = `<span>${rid ? `Run <b>${esc(rid)}</b> ${lab("REPLAY")} · ` : ""}Configuration <b>${esc(elig.provider_label)}</b> · main model <b>${esc(elig.model)}</b> · energy ${lab(elig.energy_label)}</span>
     <span><b>${elig.counts.eligible}</b> eligible · <b>${elig.counts.ineligible}</b> ineligible of ${elig.counts.total} features</span>
     <span class="seg" role="group" aria-label="Replay arm">
       <button data-arm="without_wattnot" aria-pressed="${arm === "without_wattnot"}">Without WattNot</button>

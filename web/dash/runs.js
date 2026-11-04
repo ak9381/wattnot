@@ -12,6 +12,7 @@
 // energy, so they contribute "—" to the energy/water/cost totals.
 
 import { replaySummary } from "./replaystats.js";
+let S_REPS = [];
 const REPLAY_IDS = ["modal-r1", "modal-r2", "baseten-r1", "baseten-r2", "h100-max-1103"];
 const EM = "—"; // em dash for missing values
 
@@ -134,13 +135,19 @@ async function main() {
   if (runsList.length) {
     // Recorded replays under /replays/ carry their own metered numbers; add them so the
     // totals are not blank when the API only has the old cloud fixtures.
-    const reps = await Promise.all(REPLAY_IDS.map((id) => replaySummary(id).catch(() => null)));
-    for (const x of reps) {
-      if (!x) continue;
+    const reps = (await Promise.all(REPLAY_IDS.map((id) => replaySummary(id).catch(() => null)))).filter(Boolean);
+    S_REPS = reps;
+    const fx = runsList.map((r) => ({ ...r, name: r.name || r.id, fixture: true }));
+    const realRuns = reps.map((x) => ({ id: `replay:${x.id}`, name: `${x.id}`, model: (x.model || "").replace("meta-models/", ""), date: x.date || "", label: x.energy_label || "REPLAY", replay: x.id }));
+    const realDetails = reps.map((x) => {
       const ok = isNum(x.j_per_req_stock) && isNum(x.j_per_req_cap) && isNum(x.requests);
-      details.push({ id: x.id, run_name: `${x.id} (replay)`, label: x.energy_label,
-        phases: ok ? { baseline: { metrics: { j_per_req: x.j_per_req_stock } }, wattnot: { metrics: { j_per_req: x.j_per_req_cap, requests: x.requests, label: x.energy_label } } } : null });
-    }
+      const saved = x.energy_saved_pct != null ? -Math.abs(x.energy_saved_pct) : (isNum(x.j_per_correct_stock) ? (x.j_per_correct_cap / x.j_per_correct_stock - 1) * 100 : null);
+      return { id: x.id, run_name: x.id, model: (x.model || "").replace("meta-models/", ""), date: x.date, label: x.energy_label,
+        phases: { baseline: { metrics: ok ? { j_per_req: x.j_per_req_stock } : {} },
+          wattnot: { metrics: { j_per_req: ok ? x.j_per_req_cap : null, requests: ok ? x.requests : null, saved_pct: saved, p99_change_pct: x.p99_change_pct, quality_pct: x.quality_cap_pct, label: x.energy_label } } } };
+    });
+    runsList = [...realRuns, ...fx];
+    details = [...realDetails, ...details];
     renderKpis(runsList, details);
     renderTrend(runsList, details);
     renderTable(runsList, details);
@@ -266,8 +273,8 @@ function renderKpis(runsList, details) {
     <div class="kpi v-glass" data-side="k_runs" data-explain="runs.total.runs" data-explain-value="${esc(String(runsList.length))}" data-explain-label="MEASURED" data-explain-source="runs_count" role="button" tabindex="0">
       <span class="more">Details &rarr;</span>
       <div class="name">Runs</div>
-      <div class="big"><span class="v-num">${fmt(runsList.length, 0)}</span>${dot("MEASURED")}</div>
-      <div class="foot">Recorded in this replay</div>
+      <div class="big"><span class="v-num">${fmt(runsList.filter((r) => !r.fixture).length, 0)}</span>${dot("MEASURED")}</div>
+      <div class="foot">Recorded runs (${esc(runsList.filter((r) => !r.fixture).map((r) => r.name).join(", "))})${runsList.some((r) => r.fixture) ? ` · plus ${runsList.filter((r) => r.fixture).length} old demo fixtures listed last` : ""}</div>
     </div>`;
 
   // keyboard activation for the tiles
@@ -355,7 +362,23 @@ function renderTrend(runsList, details) {
 // ---------- donut: energy saved by lever (inline SVG) ----------
 function renderDonut(story) {
   const el = $("#donut");
-  const levers = Array.isArray(story.levers) ? story.levers : [];
+  // Demo run h100-max-1103: only its real steps. The older RUN1 sweep.csv slice (10.56 J/req) is dropped.
+  const h = S_REPS.find((x) => x.id === "h100-max-1103");
+  if (h && isNum(h.j_per_req_stock) && isNum(h.j_per_req_cap)) {
+    const saved = h.j_per_req_stock - h.j_per_req_cap;
+    const untested = [["Batch size (vLLM max_num_seqs)", "kv_batch"], ["KV cache settings", "kv_batch"], ["FP8 weights", "fp8"]];
+    el.innerHTML = `
+      <div class="lv-h100">
+        <p class="cap">Demo run <b>h100-max-1103</b> (Muse Glimmer 30B, one H100). Joules saved per request, per lever.</p>
+        <table class="lvtab"><thead><tr><th>Lever</th><th>J/request saved</th><th>Source</th></tr></thead><tbody>
+          <tr><td>Power cap: ${esc(h.cap_w)} W kept vs stock</td><td><span class="v-num">${fmt(saved, 1)} J</span>${dot(h.energy_label || "MEASURED")} <small>(${fmt(h.j_per_req_stock, 1)} → ${fmt(h.j_per_req_cap, 1)}, ${fmt(h.energy_saved_pct, 1)}% less)</small></td><td>proof-de155e, NVML</td></tr>
+          ${untested.map(([n]) => `<tr><td>${esc(n)}</td><td><span class="emdash">${EM}</span></td><td>Not tested in this run: the sweep changed only the power cap</td></tr>`).join("")}
+        </tbody></table>
+        <p class="note">Total measured: <b>${fmt(saved, 1)} J/request</b>${dot(h.energy_label || "MEASURED")}, all from the power cap.</p>
+      </div>`;
+    return;
+  }
+  const levers = (Array.isArray(story.levers) ? story.levers : []).filter((lv) => lv.id !== "cap");
 
   // Measured energy slices: levers with wh_before & wh_after -> J/req saved.
   const sliced = [];
@@ -483,12 +506,12 @@ function renderTable(runsList, details) {
       ? `<span class="v-num">${fmt(w.quality_pct, 1)}%</span>${dot(w.label || "MEASURED")}`
       : `<span class="emdash">${EM}</span>`;
 
-    const reportHref = `report.html?run=${encodeURIComponent(r.id)}`;
+    const reportHref = r.replay ? `report.html?run=replay:${encodeURIComponent(r.replay)}` : `report.html?run=${encodeURIComponent(r.id)}`;
 
     // Framework detection: from receipt, run detail, or fallback to 'framework: none recorded'
     const fw = d?.receipt?.framework || d?.receipt?.frameworks?.[0] || d?.framework || r.framework;
-    const isReal = label === "MEASURED" && fw;
-    const fwName = fw ? (fw === "plain" ? "plain API" : fw) : "framework: none recorded";
+    const isReal = (label === "MEASURED" && fw) || !!r.replay;
+    const fwName = r.replay ? "recorded replay" : fw ? (fw === "plain" ? "plain API" : fw) : "old demo fixture";
     const fwTag = isReal ? "MEASURED" : "MOCK";
 
     // side-panel body for the run (opened by clicking name/model cells)

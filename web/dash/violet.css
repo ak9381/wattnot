@@ -103,3 +103,4 @@
 .v-status.pass { color: var(--v-pass); }
 .v-status.reject { color: var(--v-reject); }
 .wn-mic-slot { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; min-width: 32px; min-height: 32px; flex: 0 0 32px; vertical-align: middle; }
+.lvtab{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0}.lvtab th,.lvtab td{text-align:left;padding:7px 6px;border-bottom:1px solid rgba(255,255,255,.08);vertical-align:top}.lvtab small{opacity:.7}
