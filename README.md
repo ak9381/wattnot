@@ -16,7 +16,7 @@ we deploy ourselves on Baseten for the hosted-API saver round. [How, where and w
 
 **Read the full project write-up:** [`docs/PROJECT-DESCRIPTION.md`](docs/PROJECT-DESCRIPTION.md)
 
-**Demo video (3 min, YouTube):** _pending, link coming_ (`YOUTUBE_LINK_TBD`)  
+**Demo video (3 min, YouTube):** [Watch the WattNot demo](https://youtu.be/goFBtBJHQS8)  
 **X post:** _pending, link coming_ (`X_POST_LINK_TBD`)
 
 ---
@@ -190,7 +190,7 @@ tree is fonts and icons under `web/dash/vendor/`; all other dependencies are ins
 | Built with Muse Spark Open | ✅ | Stated at the top of this README. The app footer says it too. | top of README |
 | Data rights | ✅ | Public sets are MIT / CC BY / CC BY-SA with attribution; our own sets are CC0. Only data we have rights to. | [`DATASET-LICENCES.md`](DATASET-LICENCES.md) |
 | Judges can run it | ✅ | `./start.sh` plays a keyless recorded replay. Live modes use your own key via `.env.example`; `.env` is gitignored. An old rehearsal key in early history (`856c06f`) is revoked. | [Keys](#keys), [`.env.example`](.env.example) |
-| Demo video | ⏳ | Plan: ≤ 3:00, mostly real screen footage, AI avatar and TTS labelled, replays labelled REPLAY, opens with a built-this-week line. Link not added yet. | Demo video link above (TBD) |
+| Demo video | ✅ | 3:00, mostly real screen footage, AI avatar and TTS labelled, replays labelled REPLAY. | [YouTube](https://youtu.be/goFBtBJHQS8) |
 | Most Viral bonus | ⏳ | Demo posted on X, link in submission form. Pending. | X post link above (TBD) |
 | Not a banned category | ✅ | An energy and serving-efficiency agent for LLM inference. Not health, RAG, education, hiring, nutrition, sports, personality or political. | [What it does](#what-it-does-and-why) |
 | Team, track, problem | ✅ | Solo (Akash K Raju), Indie track, Push the Frontier (energy). | [Team and licence](#team-and-licence) |
