@@ -46,6 +46,44 @@ def _agree(a: str, b: str) -> bool:
     return (a or "").strip().lower()[:40] == (b or "").strip().lower()[:40]
 
 
+def arm_agreement(w: dict, wo: dict) -> float:
+    """Share of requests where the WattNot arm answered like stock. Agent turns that answer with
+    tool calls (empty text) compare tool name plus canonical arguments, not empty strings (an
+    empty-vs-empty text compare scored every agent turn as agreeing)."""
+    tw, two = w.get("tool_calls") or [], wo.get("tool_calls") or []
+    n = len(w.get("texts") or [])
+    ok = 0
+    for i, (a, b) in enumerate(zip(w.get("texts") or [], wo.get("texts") or [])):
+        ta = [tuple(x) for x in (tw[i] if i < len(tw) else None) or []]
+        tb = [tuple(x) for x in (two[i] if i < len(two) else None) or []]
+        if ta or tb:
+            ok += ta == tb
+        else:
+            ok += bool((a or "").strip() or (b or "").strip()) and _agree(a, b)
+    return round(ok / max(1, n), 3)
+
+
+def setup_split(per_j: list) -> dict | None:
+    """One-time gate setup cost, shown on its own line instead of being charged to the WattNot arm.
+
+    While the per-model gate warms up, each saver-on request waits for its shadow call to stock
+    (run alone so its energy can be taken out). Those requests still read about 2.5x a steady
+    request (take 5 agent: about 1,030 J vs 405 J, MEASURED), because the GPU sits through the
+    hand-off. The request itself is still charged to the arm at the arm's steady median J per
+    request; only the excess above that is the one-time setup line."""
+    warm = [p for p in per_j if len(p) > 2]
+    steady = sorted(p[1] for p in per_j if len(p) <= 2)
+    if not warm or len(steady) < 3:
+        return None
+    med = steady[len(steady) // 2] if len(steady) % 2 else (steady[len(steady) // 2 - 1] + steady[len(steady) // 2]) / 2
+    excess = sum(max(0.0, p[1] - med) for p in warm)
+    return {"requests": len(warm), "joules": round(excess, 1), "steady_j_per_request": round(med, 1),
+            "label": "one-time gate setup (shadow-check warm-up), shown apart from the WattNot arm: "
+                     "total MEASURED by NVML; the split is an ESTIMATE (warm-up requests charged at the "
+                     "arm's steady median J/request, the excess is setup)",
+            "note": "paid once per model and saver mix; the gate keeps its decisions across restarts"}
+
+
 class NvmlGpu:
     """GPU 0 through pynvml: energy counter (mJ) and power limit (mW)."""
     def __init__(self):
@@ -288,6 +326,12 @@ def req_class(body: dict) -> str:
     return "agent" if body.get("tools") or any(m.get("role") == "tool" or m.get("tool_calls") for m in msgs) else "text"
 
 
+def item_class(kind: str, body: dict) -> str:
+    """Per-request label: images and voice keep their own kind (voice used to show as text, and a
+    voice run could not be told from an images run on the card); the rest by request shape."""
+    return kind if kind in ("images", "voice") else req_class(body)
+
+
 def cap_decision(stock_j: list[float], cap_j: list[float]) -> dict:
     """Keep the cap for a class only if MEASURED energy per request is clearly down (same rule as
     the harness: energy_clearly_down over paired requests, same prompt at stock vs at the cap)."""
@@ -378,6 +422,18 @@ class TrafficRun:
         self.calib_path.parent.mkdir(parents=True, exist_ok=True)
         self.calib_path.write_text(json.dumps(c))
 
+    def _voice_body(self, body: dict) -> dict:
+        """A voice item: the WAV transcribed by Muse Voice, then asked as a one-line question."""
+        if "messages" in body:
+            return body
+        text = None
+        if body.get("wav") and self.transcribe:
+            try:
+                text = self.transcribe(Path(body["wav"]).read_bytes())
+            except Exception:  # noqa: BLE001
+                text = None
+        return {"messages": [{"role": "user", "content": (text or "What is 6 times 7?") + " Answer in one line."}]}
+
     def _arm(self, name, items, gap, call) -> dict:
         """One arm, alone on the GPU: NVML energy counter read before and after (MEASURED)."""
         g = self.gpu
@@ -388,7 +444,7 @@ class TrafficRun:
         at = f" at {g.limit_w()} W" if g.limit_w() else " (no power cap on this provider)"
         self.state["phase"] = ("without WattNot" if name == "without" else "with WattNot") + at
         t0, e0 = time.time(), g.energy_mj()
-        texts, toks, usd, per_j = [], 0, 0.0, []
+        texts, toks, usd, per_j, tools = [], 0, 0.0, [], []
         ctl = getattr(self, "_cap_ctl", None) if name == "with" else None
         for i, (kind, body) in enumerate(items):
             if self._stop.is_set():
@@ -400,8 +456,10 @@ class TrafficRun:
                 self.state["stopped"] = f"hard stop: spend reached ${cap:.2f}"
                 self._stop.set()
                 break
+            if kind == "voice":   # side by side used to send the raw {"wav": ...} item upstream
+                body = self._voice_body(body)
             body = {"model": "muse-spark-1.3", **SAMPLING, **body}
-            cls = req_class(body)
+            cls = item_class(kind, body)
             if ctl is not None:
                 ctl.before(cls)
             ej, sj, sc = g.energy_mj(), _mon.SHADOW_METER["excluded_mj"], _mon.SHADOW_METER["calls"]
@@ -419,6 +477,7 @@ class TrafficRun:
             if ctl is not None:
                 ctl.after(cls, i, rj, warmup=warm)
             texts.append(str(r.get("text") or ""))
+            tools.append(_mon.tool_key(r.get("tool_calls")) or None)
             toks += int(r.get("tokens") or 0)
             usd += float(r.get("usd") or 0)
             self.state[name + "_done"] = i + 1
@@ -433,6 +492,9 @@ class TrafficRun:
         if name == "with":
             _mon.SHADOW_METER.update(read=None, sync=False, excluded_mj=0, calls=0)
             j -= sh_j
+        setup = setup_split(per_j) if name == "with" else None
+        if setup:
+            j -= setup["joules"]
         out = {"requests": len(texts), "joules": round(j, 1),
                "shadow_excluded": {"calls": sh_n, "joules": round(sh_j, 1),
                                    "label": "MEASURED NVML energy of the gateway's shadow calls to stock, "
@@ -441,12 +503,15 @@ class TrafficRun:
                "cap_w": g.limit_w(), "tokens": toks, "usd": round(usd, 6),
                "label": getattr(g, "label", None) or "MEASURED (NVML energy counter over the arm's window)",
                "texts": texts,
+               "tool_calls": tools,   # (name, canonical args) per request, for agent agreement
                "per_request_j": per_j,
                "gate_warmup": {"requests": sum(1 for p in per_j if len(p) > 2),
                                "joules": round(sum(p[1] for p in per_j if len(p) > 2), 1),
                                "label": "gate warm-up: saver-on requests the per-model gate shadow-checked "
                                         "(MEASURED, counted in this arm, left out of the cap probe)"}
-               if name == "with" else None}
+               if name == "with" else None,
+               "setup": setup,
+               "joules_incl_setup": round(j + setup["joules"], 1) if setup else None}
         self.state["seq_usd"] = round(float(self.state.get("seq_usd") or 0) + usd, 6)
         self.event(step="arm_end", arm=name, **{k: v for k, v in out.items() if k != "texts"})
         return out
@@ -500,7 +565,7 @@ class TrafficRun:
                 arm["correct"] = sum(scored) if scored else None
                 arm["scored"] = len(scored)
                 arm["j_per_correct"] = round(arm["joules"] / arm["correct"], 1) if arm.get("correct") else None
-            res["agreement"] = round(sum(_agree(a, b) for a, b in zip(w["texts"], wo["texts"])) / max(1, len(w["texts"])), 3)
+            res["agreement"] = arm_agreement(w, wo)
             res["no_worse"] = (w.get("correct") or 0) >= (wo.get("correct") or 0)
             if wo["joules"]:
                 res["energy_saved_pct"] = round(100 * (wo["joules"] - w["joules"]) / wo["joules"], 2)
@@ -537,13 +602,7 @@ class TrafficRun:
                     self.state["stopped"] = f"hard stop: spend reached ${self.max_usd:.2f}"
                     break
                 if kind == "voice":
-                    text = None
-                    if body.get("wav") and self.transcribe:
-                        try:
-                            text = self.transcribe(Path(body["wav"]).read_bytes())
-                        except Exception:  # noqa: BLE001
-                            text = None
-                    body = {"messages": [{"role": "user", "content": (text or "What is 6 times 7?") + " Answer in one line."}]}
+                    body = self._voice_body(body)
                 if kind == "langchain":
                     try:
                         if not self.base_url:

@@ -45,6 +45,14 @@ def tool_key(calls) -> list:
     return sorted(out)
 
 
+def prompt_key(body: dict) -> str:
+    """Hash of what the user asked (messages + tools, not model or effort), so repeats of one
+    prompt count as one gate pair."""
+    import hashlib
+    k = json.dumps({"m": body.get("messages"), "t": body.get("tools")}, sort_keys=True, default=str)
+    return hashlib.sha256(k.encode()).hexdigest()[:16]
+
+
 def loop_break(body: dict, wn_text: str, wn_tools, stock_tools) -> bool:
     """True when WattNot's turn ended a loop (a text answer, no tool call) while stock's turn only
     repeated calls already made in this conversation (same tool, same canonical args). Such a pair
@@ -135,7 +143,9 @@ class Monitor:
             n_ev = len(self.gate.events)
             self.gate.record_pair(self.gate_key, pair["small_in"] + pair["small_out"],
                                   pair["base_in"] + pair["base_out"], pair["agree"], small.get("applied"),
-                                  small_in=pair["small_in"], base_in=pair["base_in"])
+                                  small_in=pair["small_in"], base_in=pair["base_in"],
+                                  prompt_key=prompt_key(body), small_out=pair["small_out"],
+                                  base_out=pair["base_out"])
             new_ev = self.gate.events[n_ev:]
             if new_ev:   # keep gate decisions on disk so the dashboard still shows them after a restart
                 gp = self.path.with_name(self.path.name.replace(".shadow.jsonl", ".gate.jsonl"))

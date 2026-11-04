@@ -1009,11 +1009,13 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
         rid = r.headers.get("x-wattnot-receipt")
         rec = _plug.receipt(logs[0], rid) if rid else None
         try:
-            text = str(r.json()["choices"][0]["message"].get("content") or "")
-        except (ValueError, KeyError, IndexError, TypeError):
-            text = ""
+            msg = r.json()["choices"][0]["message"]
+            text, tools = str(msg.get("content") or ""), msg.get("tool_calls")
+        except (ValueError, KeyError, IndexError, TypeError, AttributeError):
+            text, tools = "", None
         a = (rec or {}).get("actual", {})
         return {"receipt_id": rid, "status": r.status_code, "usd": a.get("usd", 0), "text": text,
+                "tool_calls": tools,
                 "joules": a.get("joules"),
                 "tokens": int(a.get("prompt_tokens") or 0) + int(a.get("completion_tokens") or 0)}
 
@@ -1030,10 +1032,12 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
         u = resp.get("usage") or {}
         pin, pout = int(u.get("prompt_tokens") or 0), int(u.get("completion_tokens") or 0)
         try:
-            text = str(resp["choices"][0]["message"].get("content") or "")
+            msg = resp["choices"][0]["message"]
+            text, tools = str(msg.get("content") or ""), msg.get("tool_calls")
         except (KeyError, IndexError, TypeError, AttributeError):
-            text = ""
+            text, tools = "", None
         return {"model": base["model"], "prompt_tokens": pin, "completion_tokens": pout, "text": text,
+                "tool_calls": tools,
                 "tokens": pin + pout,
                 "usd": round(_usd(base["model"], pin, pout), 7),
                 "joules": round(_jpt(c, base["model"]) * (pin + pout), 2), "joules_label": "ESTIMATE"}

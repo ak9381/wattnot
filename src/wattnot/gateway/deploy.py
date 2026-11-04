@@ -10,7 +10,8 @@ UPSTREAMS = {
     "baseten": {"base_url": "https://inference.baseten.co/v1", "key_env": "BASETEN_API_KEY"},
 }
 MODES = ("gateway", "gpu", "both")
-SAVERS = ("agent_waste", "routing", "context_saver", "thinking_cap", "vision", "voice")
+SAVERS = ("agent_waste", "routing", "context_saver", "thinking_cap", "vision", "voice", "brief_answers")
+OFF_BY_DEFAULT = ("brief_answers",)   # opt-in savers: off unless the choice turns them on
 APPROVAL = ("manual", "auto-low-risk", "watch-only")
 
 
@@ -36,7 +37,7 @@ def to_config(choice: dict) -> dict:
         bad = set(on) - set(SAVERS)
         if bad:
             raise ValueError(f"unknown savers: {sorted(bad)}")
-        cfg["savers"] = {s: {"enabled": bool(on.get(s, True))} for s in SAVERS}
+        cfg["savers"] = {s: {"enabled": bool(on.get(s, s not in OFF_BY_DEFAULT))} for s in SAVERS}
         cfg["integrations"] = {"langfuse": {"enabled": bool(choice.get("langfuse", False))}}
     if mode in ("gpu", "both"):
         lo, hi = int(choice.get("cap_min_w", 300)), int(choice.get("cap_max_w", 375))

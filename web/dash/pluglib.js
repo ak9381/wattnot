@@ -6,6 +6,7 @@ export const SAVERS = [
   { id: "thinking_cap", t: "Cap thinking", h: "Stops the model from thinking far longer than it needs." },
   { id: "vision", t: "Shrink big images", h: "Sends images at a size the model can still read." },
   { id: "voice", t: "Voice input", h: "Turns speech into text with Muse Voice." },
+  { id: "brief_answers", t: "Brief answers (opt-in)", h: "Asks for short answers on short questions. Off by default; switches itself off if answers stop matching stock.", off: true },
 ];
 export const MODES = [
   { v: "gateway", t: "Change one URL", h: "Your app talks to WattNot instead of the model. Works with any hosted model." },
@@ -16,7 +17,7 @@ export const UPSTREAMS = [
   { v: "meta", t: "Meta API (Muse Spark)" }, { v: "vllm", t: "My vLLM server" }, { v: "baseten", t: "Baseten" },
 ];
 export function defaultChoice() {
-  return { deployment: "both", upstream: "meta", port: 8780, savers: Object.fromEntries(SAVERS.map((s) => [s.id, true])),
+  return { deployment: "both", upstream: "meta", port: 8780, savers: Object.fromEntries(SAVERS.map((s) => [s.id, !s.off])),
     gpus: "all", cap_min_w: 300, cap_max_w: 375, sam_rack_check: true, approval: "manual", langfuse: false };
 }
 // Fold a voice-guide deploy prefill into a choice. Unknown (null) fields keep their value.
