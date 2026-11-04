@@ -373,19 +373,15 @@ def node_stats(repo: Path, h: dict, lg: dict, bt: dict) -> dict[str, list[dict]]
         st("flex", "flex events took", stages.get("flex", {}).get("seconds"), "s", "MEASURED", "summary.json stages"),
         missing("usd", "rental cost", "E2E billing", "not readable through the API"),
     ]
-    mg, ll = "Muse-Glimmer", "Llama-3.1"
+    mg = "Muse-Glimmer"
     def delta(model):
         a, b = sweep_row(h, model, 700), sweep_row(h, model, 400)
         return (a, b, r((float(b["wh_per_req"]) / float(a["wh_per_req"]) - 1) * 100, 1)) if a and b else (None, None, None)
     ga, gb, gd = delta(mg)
-    la, lb, ld = delta(ll)
     S["models"] = [
         st("mg", "Glimmer 30B energy per request, 700 W to 400 W",
            f'{float(ga["wh_per_req"])*1000:.2f} to {float(gb["wh_per_req"])*1000:.2f} mWh' if ga else None, "", "MEASURED", sweep_src),
         st("mgd", "Glimmer 30B change", gd, "%", "MEASURED", sweep_src, "quality check pending"),
-        st("ll", "Llama 3.1 8B energy per request, 700 W to 400 W",
-           f'{float(la["wh_per_req"])*1000:.2f} to {float(lb["wh_per_req"])*1000:.2f} mWh' if la else None, "", "MEASURED", sweep_src),
-        st("lld", "Llama 3.1 8B change", ld, "%", "MEASURED", sweep_src, "quality check pending"),
     ]
     rr = h.get("rerun", {}).get("adaptive_topk", {})
     qs = h.get("qwen", {}).get("summary", {})
@@ -427,9 +423,7 @@ META_PRODUCTS = {
                    "nodes": [("agent", "*"), ("gates", "judge"), ("effort_router", "order")]},
     "Muse Spark Open": {"does": "The open-weight Muse Spark that Baseten hosts. Every hosted call goes to it.",
                         "nodes": [("effort_router", "ref"), ("effort_router", "try"), ("baseten_model", "*"), ("cache", "*")]},
-    "Llama 3.1 8B": {"does": "One of the two models swept from 700 W to 400 W on the H100.",
-                     "nodes": [("models", "*"), ("e2e_rig", "sweep")]},
-    "Muse Glimmer 30B": {"does": "The other model swept on the H100. The recorded load ran on it.",
+    "Muse Glimmer 30B": {"does": "The model swept from 700 W to 400 W on the H100. The recorded load ran on it.",
                          "nodes": [("models", "*"), ("e2e_rig", "sweep")]},
     "Muse Code": {"does": "A set of coding tasks written by Muse Spark; Muse Spark was run on it at three effort levels.",
                   "nodes": [("workload", "load")]},
@@ -455,7 +449,6 @@ def meta_block(S: dict, lg: dict, bt: dict, h: dict) -> list[dict]:
             st("usd", "spent on Baseten", r(bt.get("usd"), 3), "$", "MEASURED", "per-call usage x list price"),
             st("save", "cost saved by the effort router", S["effort_router"][0]["v"], "%", "MEASURED", "cloud receipt"),
         ],
-        "Llama 3.1 8B": S["models"][2:4],
         "Muse Glimmer 30B": S["models"][0:2],
         "Muse Code": [
             st("calls", "Muse Spark calls on the Muse Code set", (cs.get("calls") or 0) or None, "", "MEASURED", "ledger purposes coding-set:*"),
@@ -476,7 +469,6 @@ def story(h: dict, bt: dict, S: dict) -> dict:
     plan = sumy.get("plan", {})
     mg = "Muse-Glimmer"
     a, b = sweep_row(h, mg, 700), sweep_row(h, mg, 400)
-    la, lb = sweep_row(h, "Llama-3.1", 700), sweep_row(h, "Llama-3.1", 400)
     if not (a and b):
         return {}
     tok_per_req = float(a["wh_per_req"]) / float(a["wh_per_1k_tok"]) * 1000
@@ -499,8 +491,6 @@ def story(h: dict, bt: dict, S: dict) -> dict:
         "p99_change_pct": r((float(b["p99_s"]) / float(a["p99_s"]) - 1) * 100, 1),
         "quality": {"state": "pending", "text": "measured, quality check pending",
                     "why": "The fixed answer check failed at every lower cap, but the baseline itself passes only about 6% of its checks, so the check cannot tell good from bad yet."},
-        "llama": {"saved_pct": r((1 - float(lb["wh_per_req"]) / float(la["wh_per_req"])) * 100, 1),
-                  "p99_change_pct": r((float(lb["p99_s"]) / float(la["p99_s"]) - 1) * 100, 1)},
         "src": "H100 run sweep.csv (NVML)",
     })
     qr = h.get("qwen_rcpt", {})
@@ -670,7 +660,7 @@ def build(*, repo: Path = ROOT, e2e: Path | None = None, ledger: Path | None = N
     bt = baseten(repo)
     S = node_stats(repo, h, lg, bt)
     products = {"agent": "Muse Spark", "effort_router": "Muse Spark Open", "baseten_model": "Muse Spark Open",
-                "cache": "Muse Spark Open", "models": "Llama 3.1 8B and Muse Glimmer 30B", "sam": "SAM 3.1",
+                "cache": "Muse Spark Open", "models": "Muse Glimmer 30B", "sam": "SAM 3.1",
                 "workload": "Muse Code"}
     nodes = []
     meta_subs = {"agent": "*", "baseten_model": "*", "cache": "*", "models": "*", "spark_open": "*",

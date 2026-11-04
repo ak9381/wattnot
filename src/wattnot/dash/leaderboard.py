@@ -17,7 +17,7 @@ SPEC = "wattnot.leaderboard/0.1"
 METRIC = "net joules per correct answer (J/correct)"
 SUBMISSION_SPEC = "wattnot.jpc-submission/0.1"
 # Published joules-per-token for a hosted frontier model (Muse Spark Open on H100-class GPUs):
-# RUN2 measured 0.1497 J/token on Llama 3.1 8B, scaled by active params (42B / 0.8B). ESTIMATE.
+# An earlier H100 bench measured 0.1497 J/token on an 8B dense model, scaled by active params (42B / 0.8B). ESTIMATE.
 J_PER_TOKEN = 7.86
 
 SUBMISSION_EXAMPLE = {
