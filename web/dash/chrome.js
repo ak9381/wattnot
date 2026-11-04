@@ -53,7 +53,7 @@
     const G = [
       ["overview", "Start here", [["dashboard", "v2.html#pHome", "Home"], ["learn", "v2.html#pLearn", "How it works"]]],
       ["configure", "Plug in", [["plug", "plug.html#setup", "Plug in (3 steps)"], ["configure", "v2.html#pCfg", "Test run setup (advanced)"]]],
-      ["run", "Live savings", [["graph", "graph.html", "Live savings"], ["plugl", "plug.html#setup", "Go live (plug in)"], ["runs", "runs.html", "Past runs"], ["matrix", "matrix.html", "All test rounds"], ["replay", "v2.html#pRun", "Replay a run"]]],
+      ["run", "Live savings", [["graph", "graph.html", "Live savings"], ["plugl", "plug.html#setup", "Go live (plug in)"], ["runs", "runs.html", "Past runs"]]],
       ["results", "Results", [["reports", "report.html", "Report"], ["compare", "v2.html#pReport", "With vs without"]]],
       ["proof", "Proof", [["approvals", "approvals.html", "Approvals"], ["proofs", "v2.html#pProof", "Signed receipts"]]],
       ["costs", "Costs", [["costbudget", "costbudget.html", "Cost budget"], ["eu", "eu.html", "EU energy report"]]],

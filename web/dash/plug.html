@@ -9,11 +9,10 @@
   if (q.get("embed") === "1" || window.top !== window.self) document.documentElement.classList.add("embed");
   else if (q.get("standalone") !== "1" && location.hash !== "#setup") location.replace("graph.html" + location.search + "#golive"); })();
 </script>
-<script>if (!document.documentElement.classList.contains("embed")) document.write('<script src="chrome.js" defer><\/script>');</script><script type="module" src="voiceguide.js"></script>
+<script>if (!document.documentElement.classList.contains("embed")) { document.documentElement.classList.add("dark"); document.addEventListener("DOMContentLoaded", function(){ var s = document.createElement("script"); s.src = "chrome.js"; document.head.appendChild(s); }); }</script><script type="module" src="voiceguide.js"></script>
 </head><body>
 <span id="wn-mic-slot" class="wn-mic-slot" aria-live="polite"></span>
 <main class="plug">
-  <nav class="tabs"><a href="#setup" id="tSetup">Plug in</a><a href="#live" id="tLive">Live savings</a></nav>
   <section id="setup">
     <div class="cards two"><a class="card" href="v2.html#pCfg" id="testCard"><b>Test on my prompts</b><small>Run your prompts with and without WattNot and get receipts that prove the savings.</small></a>
       <a class="card on" href="#setup"><b>Go live</b><small>Put WattNot in front of your app or your GPUs. Same settings file.</small></a></div>
@@ -60,7 +59,7 @@
     </details>
   </section>
   <section id="live" hidden>
-    <div class="hero"><div class="big" id="big">Loading…</div><span class="tag" id="bigLabel"></span>
+    <div class="lv-hero"><div class="big" id="big">Loading…</div><span class="tag" id="bigLabel"></span>
       <div class="pair"><span id="usd"></span><span id="litres"></span></div><p id="heroSub" class="small"></p></div>
     <svg id="graph" viewBox="0 0 600 180" role="img" aria-label="Energy over time, with and without WattNot"></svg>
     <p class="small legend"><span class="k a"></span> with WattNot <span class="k b"></span> without (estimate)</p>
