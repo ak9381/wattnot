@@ -400,6 +400,8 @@ class TrafficRun:
                 self.state["stopped"] = f"hard stop: spend reached ${cap:.2f}"
                 self._stop.set()
                 break
+            if kind == "voice":
+                body = self._voice_body(body)
             body = {"model": "muse-spark-1.3", **SAMPLING, **body}
             cls = req_class(body)
             if ctl is not None:
@@ -527,6 +529,23 @@ class TrafficRun:
                 self.state["phase"] = "done"
                 self.state["running"] = False
 
+    def _voice_body(self, body: dict) -> dict:
+        """A voice item is a wav path: transcribe it, then send the words as a chat message.
+        Both arms of a side-by-side run send the same transcript, so cache it per wav."""
+        if "messages" in body:
+            return body
+        wav = body.get("wav")
+        cache = self.__dict__.setdefault("_voice_text", {})
+        if wav not in cache:
+            text = None
+            if wav and self.transcribe:
+                try:
+                    text = self.transcribe(Path(wav).read_bytes())
+                except Exception:  # noqa: BLE001
+                    text = None
+            cache[wav] = text
+        return {"messages": [{"role": "user", "content": (cache[wav] or "What is 6 times 7?") + " Answer in one line."}]}
+
     def _run(self, items, gap, with_without) -> None:  # noqa: D401
         try:
             for i, (kind, body) in enumerate(items):
@@ -537,13 +556,7 @@ class TrafficRun:
                     self.state["stopped"] = f"hard stop: spend reached ${self.max_usd:.2f}"
                     break
                 if kind == "voice":
-                    text = None
-                    if body.get("wav") and self.transcribe:
-                        try:
-                            text = self.transcribe(Path(body["wav"]).read_bytes())
-                        except Exception:  # noqa: BLE001
-                            text = None
-                    body = {"messages": [{"role": "user", "content": (text or "What is 6 times 7?") + " Answer in one line."}]}
+                    body = self._voice_body(body)
                 if kind == "langchain":
                     try:
                         if not self.base_url:
