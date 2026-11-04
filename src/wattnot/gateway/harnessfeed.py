@@ -27,7 +27,8 @@ def export(savings_log, out_dir, *, round_id: str = "gw", model: str | None = No
     shadow = _read(log.with_name(log.stem + ".shadow.jsonl"))
     out = Path(out_dir); out.mkdir(parents=True, exist_ok=True)
     jl = "MEASURED" if recs and all(r["labels"]["joules"].startswith("MEASURED") for r in recs) else "ESTIMATE"
-    agree = (sum(p["agree"] for p in shadow) / len(shadow)) if shadow else None
+    scored = [p for p in shadow if p.get("agree") is not None]   # loop breaks are not scored
+    agree = (sum(bool(p["agree"]) for p in scored) / len(scored)) if scored else None
 
     def arm(rows, j, usd):
         jj = sum(j(x) for x in rows)

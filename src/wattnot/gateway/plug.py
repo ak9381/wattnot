@@ -53,7 +53,9 @@ def feed(savings_log: str | Path | None, node_log: str | Path | None = None, las
         from wattnot.gateway.savings import _jpt
         jpt = recs[-1]["baseline"].get("j_per_token") or 7.86
         oh_wh = sum((p["base_in"] + p["base_out"]) * jpt for p in shadow) / 3600
-        s["monitor"] = {"pairs": len(shadow), "agreement": round(sum(p["agree"] for p in shadow) / len(shadow), 3),
+        s["monitor"] = {"pairs": len(shadow), "agreement": (round(sum(bool(p["agree"]) for p in sc) / len(sc), 3)
+                                      if (sc := [p for p in shadow if p.get("agree") is not None]) else None),
+                        "loop_breaks": sum(1 for p in shadow if p.get("loop_break")),
                         "overhead_wh": round(oh_wh, 4), "label": "ESTIMATE",
                         "net_saved_wh": round(s["energy_wh"]["baseline"] - s["energy_wh"]["actual"] - oh_wh, 4)}
         _ = _jpt
@@ -277,7 +279,9 @@ def gate_by_run(savings_log, monitor: dict | None) -> list[dict]:
                         "of": len(arm) or w.get("requests")})
         out.append({"run_id": r.get("run_id"), "workload": r.get("workload"),
                     "shadow_pairs": len(ps), "agreed": sum(bool(x.get("agree")) for x in ps),
-                    "agreement": round(sum(bool(x.get("agree")) for x in ps) / len(ps), 3) if ps else None,
+                    "loop_breaks": sum(1 for x in ps if x.get("loop_break")),
+                    "agreement": (round(sum(bool(x.get("agree")) for x in sc) / len(sc), 3)
+                                  if (sc := [x for x in ps if x.get("agree") is not None]) else None),
                     "switched_off": off, "carried_off": list(seen_off),
                     "label": "MEASURED (shadow pairs in this run's WattNot arm)"})
         seen_off += [o["saver"] for o in off if o["saver"] not in seen_off]

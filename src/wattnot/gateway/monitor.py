@@ -45,6 +45,19 @@ def tool_key(calls) -> list:
     return sorted(out)
 
 
+def loop_break(body: dict, wn_text: str, wn_tools, stock_tools) -> bool:
+    """True when WattNot's turn ended a loop (a text answer, no tool call) while stock's turn only
+    repeated calls already made in this conversation (same tool, same canonical args). Such a pair
+    has no 'same answer' to compare: stock is paying for a call whose result it already has."""
+    if wn_tools or not (wn_text or "").strip() or not stock_tools:
+        return False
+    made = set()
+    for m in body.get("messages") or []:
+        if isinstance(m, dict) and m.get("role") == "assistant":
+            made.update(tool_key(m.get("tool_calls")))
+    return all(k in made for k in tool_key(stock_tools))
+
+
 def agree_turn(a_text: str, a_tools, b_text: str, b_tools) -> bool:
     """agree() for text answers; for agent turns that answer with tool calls (empty text), the
     same tools with the same arguments count as agreeing. Text-only compare used to call every
@@ -113,11 +126,16 @@ class Monitor:
                 "base_out": int(u.get("completion_tokens") or 0),
                 "base_in": int(u.get("prompt_tokens") or 0),
                 "small_in": int(small["usage"].get("prompt_tokens") or 0),
-                "agree": agree_turn(small.get("text", ""), small.get("tool_calls"), text, msg.get("tool_calls")), "label": "MEASURED (shadow pair)"}
+                "agree": agree_turn(small.get("text", ""), small.get("tool_calls"), text, msg.get("tool_calls")),
+                "label": "MEASURED (shadow pair)"}
+        if loop_break(body, small.get("text", ""), small.get("tool_calls"), msg.get("tool_calls")):
+            # not scored for agreement (None); tokens still count against the saver
+            pair["agree"], pair["loop_break"] = None, True
         if self.gate is not None:
             n_ev = len(self.gate.events)
             self.gate.record_pair(self.gate_key, pair["small_in"] + pair["small_out"],
-                                  pair["base_in"] + pair["base_out"], pair["agree"], small.get("applied"))
+                                  pair["base_in"] + pair["base_out"], pair["agree"], small.get("applied"),
+                                  small_in=pair["small_in"], base_in=pair["base_in"])
             new_ev = self.gate.events[n_ev:]
             if new_ev:   # keep gate decisions on disk so the dashboard still shows them after a restart
                 gp = self.path.with_name(self.path.name.replace(".shadow.jsonl", ".gate.jsonl"))
@@ -127,7 +145,7 @@ class Monitor:
                         f.write(json.dumps(e) + "\n")
         with self._lock:
             self.pairs.append(pair)
-            recent = self.pairs[-self.min_n:]
+            recent = [p for p in self.pairs if p["agree"] is not None][-self.min_n:]
             if (not self.rolled_back and len(recent) >= self.min_n
                     and sum(p["agree"] for p in recent) / len(recent) < self.min_agree):
                 self.rolled_back = True
@@ -139,10 +157,11 @@ class Monitor:
 
     def status(self) -> dict:
         with self._lock:
-            n = len(self.pairs)
-            ag = sum(p["agree"] for p in self.pairs)
-            recent = self.pairs[-self.min_n:]
-        return {"shadow_rate": self.rate, "pairs": n,
+            scored = [p for p in self.pairs if p["agree"] is not None]
+            n, total = len(scored), len(self.pairs)
+            ag = sum(p["agree"] for p in scored)
+            recent = scored[-self.min_n:]
+        return {"shadow_rate": self.rate, "pairs": total, "scored_pairs": n,
                 "agreement": round(ag / n, 3) if n else None,
                 "recent_agreement": round(sum(p["agree"] for p in recent) / len(recent), 3) if recent else None,
                 "completion_ratio": self.ratio(), "rolled_back": self.rolled_back, "events": list(self.events),

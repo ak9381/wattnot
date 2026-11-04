@@ -52,7 +52,8 @@ def run(tmp, n=60):
 def test_wattnot_arm_never_costs_more_than_direct_on_glimmer_agents(tmp_path):
     per_req, gate = run(tmp_path, 60)
     off = {e["saver"] for e in gate["off"]}
-    assert {"routing", "agent_waste", "thinking_cap"} <= off, gate   # every saver that lost to stock switched itself off
+    assert {"routing", "thinking_cap"} <= off, gate   # the effort lever lost to stock and switched itself off
+    assert "agent_waste" not in off, gate             # the lean nudge makes looping requests shorter, so it stays on
     window = 12                                                   # calibration: 3 shadow pairs + 10 done-tool calls
     w_steady = sum(a for a, _ in per_req[window:]); d_steady = sum(b for _, b in per_req[window:])
     assert w_steady <= d_steady, (w_steady, d_steady)              # tokens, and energy = tokens x J/token

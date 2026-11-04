@@ -19,6 +19,37 @@ import threading
 import time
 
 
+# Savers that change the prompt the model reads (extra tools, notes, rewritten history) and
+# savers that change how much the model thinks / which tier answers. routing's small tier and the
+# thinking cap are one lever on a single served model (both set reasoning_effort), so judged together.
+PROMPT_SAVERS = ("agent_waste", "context_saver", "vision")
+EFFORT_SAVERS = ("routing", "thinking_cap")
+
+
+def blame(applied: list[str], pairs: list[dict]) -> tuple[list[str], str]:
+    """Which of the applied savers to switch off for a losing set of pairs.
+
+    * WattNot's prompt longer than stock's: a prompt saver added text (e.g. the done tool), so
+      only the prompt savers that grow prompts (agent_waste) are blamed; vision/context_saver only
+      shrink, so they are blamed only when nothing else could have grown the prompt.
+    * otherwise (same prompt, more output or a different answer): the effort lever is blamed.
+    * one saver applied, or no split known: that saver / all of them, as before."""
+    if len(applied) <= 1:
+        return list(applied), "only saver applied"
+    known = [p for p in pairs if p.get("small_in") is not None and p.get("base_in") is not None]
+    if known:
+        d_in = sum(p["small_in"] for p in known) - sum(p["base_in"] for p in known)
+        if d_in > 0:
+            grow = [sv for sv in applied if sv == "agent_waste"] or [
+                sv for sv in applied if sv in PROMPT_SAVERS]
+            if grow:
+                return grow, f"prompt +{d_in} tokens vs stock over {len(known)} pairs"
+        eff = [sv for sv in applied if sv in EFFORT_SAVERS]
+        if eff:
+            return eff, f"prompt not longer (diff {d_in:+d}); output or answer differs"
+    return list(applied), "no prompt/output split logged"
+
+
 class SaverGate:
     def __init__(self, min_pairs: int = 3, min_agreement: float = 0.8, done_window: int = 10,
                  tolerance: float = 1.0):
@@ -52,14 +83,18 @@ class SaverGate:
         with self._lock:
             return len(self.pairs.get(self._key(model, applied), [])) < self.min_pairs
 
-    def record_pair(self, model: str | None, small_total: int, base_total: int, agree: bool,
-                    applied: list[str] | None = None) -> None:
-        """One shadow pair: WattNot's request vs the same request at stock. A losing pair counts
-        against every saver that changed that request (routing, and the agent guard if it nudged)."""
+    def record_pair(self, model: str | None, small_total: int, base_total: int, agree: bool | None,
+                    applied: list[str] | None = None, small_in: int | None = None,
+                    base_in: int | None = None) -> None:
+        """One shadow pair: WattNot's request vs the same request at stock. A losing pair switches
+        off only the saver(s) most likely responsible (see ``blame``); the next mix of savers is
+        then calibrated on its own pairs (``warming``), so a second culprit is still caught."""
         m = str(model)
         with self._lock:
             ps = self.pairs.setdefault(self._key(m, applied), [])
-            ps.append({"small": int(small_total), "base": int(base_total), "agree": bool(agree)})
+            ps.append({"small": int(small_total), "base": int(base_total), "agree": None if agree is None else bool(agree),
+                       "small_in": None if small_in is None else int(small_in),
+                       "base_in": None if base_in is None else int(base_in)})
             if all(not self.allow(sv, m) for sv in (applied or ["routing"])):
                 return
             # one pair at 1.5x stock or worse is already a clear loss: stop paying for more calibration
@@ -68,13 +103,17 @@ class SaverGate:
                 return
             recent = ps[-max(self.min_pairs, 10):]
             sm, bs = sum(p["small"] for p in recent), sum(p["base"] for p in recent)
-            ag = sum(p["agree"] for p in recent) / len(recent)
+            scored = [p for p in recent if p["agree"] is not None]   # loop breaks: tokens only
+            ag = sum(p["agree"] for p in scored) / len(scored) if scored else 1.0
             why = ("WattNot's request used more tokens than stock" if sm > bs * self.tol
                    else "answers differ from stock" if ag < self.min_agree else None)
             if why:
-                for sv in (applied or ["routing"]):
+                live = [sv for sv in (applied or ["routing"]) if self.allow(sv, m)]
+                culprits, detail = blame(live, recent)
+                for sv in culprits:
                     self._switch_off(sv, m, why, wattnot_tokens=sm, stock_tokens=bs,
-                                     agreement=round(ag, 3), pairs=len(recent))
+                                     agreement=round(ag, 3), pairs=len(recent), blamed=detail,
+                                     kept_on=[x for x in live if x not in culprits])
 
     def record_agent_call(self, model: str | None, done_injected: bool, guard_stopped: bool) -> None:
         if not done_injected and not guard_stopped:

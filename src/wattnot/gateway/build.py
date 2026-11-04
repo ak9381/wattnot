@@ -246,6 +246,11 @@ def build_app(cfg: dict, upstream=None, log: SavingsLog | None = None):
     else:   # off: limits so loose nothing ever trips, and no injected done tool
         wcfg = WasteConfig(max_steps=10**6, max_total_tokens=10**12, repeat_limit=10**6, noop_limit=10**6,
                            reasoning_hard_cap=10**9, reasoning_floor=10**9, inject_done=False, max_nudges=0)
+    if aw["enabled"] and aw.get("lean_nudge", True):
+        # gateway: a healthy agent call is forwarded byte-identical (no done tool); a looping one
+        # gets its repeated tool turns removed plus a one-line note, so it is never longer than stock
+        import dataclasses as _dc
+        wcfg = _dc.replace(wcfg, lean_nudge=True)
     ro = sv["routing"]
     tiers = cfg["tiers"] if ro["enabled"] else [t for t in cfg["tiers"] if t["name"] == cfg["baseline"]["tier"]]
     saver = ContextSaver(min_tokens=int(sv["context_saver"]["min_tokens"])) if sv["context_saver"]["enabled"] else None
@@ -297,8 +302,12 @@ def build_app(cfg: dict, upstream=None, log: SavingsLog | None = None):
         tc_eff = sv["thinking_cap"]["enabled"] and sv["thinking_cap"].get("reasoning_effort")
         if isinstance(body.get("tools"), list) and body["tools"]:
             n_in = len(body.get("messages") or [])
-            changed = any(i.get("done_injected") or i.get("n_messages", n_in) > n_in for i in sink)
-            gate.record_agent_call(gate_key, changed, bool(rec.get("guard_stopped")))
+            # done tool added, a nudge appended, or (lean nudge) repeated tool turns removed
+            changed = any(i.get("done_injected") or i.get("n_messages", n_in) != n_in for i in sink)
+            # a nudged call the model answered in text (no more tool calls) ended the loop too
+            ended = bool(rec.get("guard_stopped")) or (changed and bool(sink) and not sink[-1].get("tool_calls")
+                                                       and bool((sink[-1].get("text") or "").strip()))
+            gate.record_agent_call(gate_key, changed, ended)
         for i in sink:
             i["applied"] = (["agent_waste"] if changed else []) + (
                 ["routing"] if i.get("model_tier") != base_tier["name"] else []) + (

@@ -18,6 +18,11 @@ class WasteConfig:
     max_nudges: int = 1
     inject_done: bool = True
     done_tool: str = "done"
+    # Lean nudge (gateway mode): on a detected loop, drop the repeated tool turns that returned the
+    # same result, add a one-line note, and add NO done tool, so the nudged request is never longer
+    # than stock. The full nudge (note + done tool) cost +51 prompt tokens per agent call on the
+    # 4 Nov H100 Agent 60 run (745 vs 694, MEASURED).
+    lean_nudge: bool = False
     # Second-layer detectors, off (0) by default so the first benchmark stays reproducible.
     error_limit: int = 0       # a tool that fails this many times in a row
     empty_limit: int = 0       # a tool that comes back empty this many times in a row
