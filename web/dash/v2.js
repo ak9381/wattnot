@@ -980,14 +980,17 @@ async function replayTree(rpId, rs) {
   const pc = (x) => `${x > 0 ? "+" : ""}${num(x, 1)}%`;
   const T = {};
   const isH = rpId.startsWith("h100");
-  const [img, agent, lv, md, bt] = await Promise.all([
+  const [img, , lv, md, bt] = await Promise.all([
     isH ? J("/receipts/h100-1104/rcpt_20261104-013308-images.json") : null,
     isH ? J("/receipts/h100-1104/rcpt_20261104-034921-agent.json") : null,
     isH ? J("/replays/h100-max-1103/lever-takes-1104.json") : null,
     replaySummary("modal-stitched").catch(() => null), replaySummary("baseten-stitched").catch(() => null)]);
   if (img) T.sam = { text: `${pc(img.joules.change_pct.j_per_answer)} energy`, tag: "MEASURED", note: "Nov 4 H100 take on the SAM 3.1 image test set, power cap 700 to 375 W (rcpt_20261104-013308-images)" };
-  if (agent) T.waste = { text: `${pc(agent.joules.change_pct.j_per_answer)} energy (lost)`, tag: "MEASURED", note: "Nov 4 H100 agent take, power cap 700 to 375 W, used more energy per answer (rcpt_20261104-034921-agent). The h100-max-1103 agent-waste block failed and recorded no numbers." };
-  else T.waste = { why: "No agent-waste numbers recorded for this run", short: "not recorded" };
+  // Agent-waste saver: only a real saver on/off result counts (not a power-cap take on agent traffic).
+  const lc = await J("/replays/modal-stitched/blocks/r05-langchain-20261102T140740Z/langchain/langchain_pass.json");
+  const off = lc?.arms?.saver_off, on = lc?.arms?.saver_on;
+  if (off?.j_per_correct && on?.j_per_correct) T.waste = { text: `${pc((on.j_per_correct / off.j_per_correct - 1) * 100)} J/correct (Modal)`, tag: lc.label || "MEASURED", note: `Modal run, LangChain agent, saver off vs on: ${off.correct}/${off.n} → ${on.correct}/${on.n} correct, ${num(off.j_per_correct, 0)} → ${num(on.j_per_correct, 0)} J per correct answer. Not measured on the H100: its agent-waste block failed with no numbers.` };
+  else T.waste = { why: "Agent-waste saver not measured in any round", short: "not measured" };
   if (isH && rs.quality_stock_pct != null) {
     const rolled = Object.values((lv?.events || []).filter((e) => e.step === "answer_check").reduce((a, e) => ((a[e.lever] = e), a), {})).filter((e) => !e.accepted).map((e) => e.lever);
     T.gate = { gate: true, pass: true, note: `quality ${num(rs.quality_stock_pct, 1)}% to ${num(rs.quality_cap_pct, 1)}%, p99 ${rs.p99_change_pct == null ? "n/a" : pc(rs.p99_change_pct)}; rolled back: 350, 325, 300 W caps, ${rolled.join(", ")}` };
@@ -1042,7 +1045,7 @@ async function renderReport() {
     const rs = S.replaySum;
     if (rs && rs.j_per_req_stock != null) {
       const ev = (k) => (rs.series?.sets?.[k]?.pts || []).map((p) => ({ j_per_req: p.y }));
-      featRec = { run_id: `replay:${rpId}`, run_name: `${rpId} (REPLAY)`, label: "REPLAY", price_usd_per_kwh: rs.tariff ?? undefined,
+      featRec = { run_id: `replay:${rpId}`, run_name: ({ "h100-stitched": "H100 run", "modal-stitched": "Modal run", "baseten-stitched": "Baseten run" })[rpId] || rpId, label: "REPLAY", price_usd_per_kwh: rs.tariff ?? undefined,
         phases: { baseline: { metrics: { j_per_req: rs.j_per_req_stock }, events: ev(0) }, wattnot: { metrics: { j_per_req: rs.j_per_req_cap }, events: ev(1) } } };
       featRec.tree = await replayTree(rpId, rs);
       cst = { kind: "ok" }; S.cmpState = cst; S.cmpRec = featRec;

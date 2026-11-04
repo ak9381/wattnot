@@ -48,14 +48,16 @@ async function list() {
   // The recorded runs under replays/ come first: they are the ones with full data (graph, receipt, EU report).
   const ST = ["h100-stitched", "modal-stitched", "baseten-stitched"]; // stitched runs first, h100 stitched is the default
   const rank = (id) => (ST.includes(id) ? ST.indexOf(id) : 9);
-  const recorded = (c.replays || []).slice().sort((x, y) => rank(x.id) - rank(y.id)).map((r) => ({ id: `replay:${r.id}`, name: `${r.id}${ST.includes(r.id) ? " · stitched" : ""} (${r.platform})`, stage: "recorded", date: r.date, label: r.measured ? "MEASURED" : "REPLAY", kind: "recorded" }));
-  const replays = (b.runs || []).map((r) => ({ id: r.id, name: r.name, stage: "replay", date: r.date, label: "REPLAY", kind: "replay" }));
+  const NM = { "h100-stitched": "H100 run", "modal-stitched": "Modal run", "baseten-stitched": "Baseten run" };
+  const recorded = (c.replays || []).filter((r) => NM[r.id]).slice().sort((x, y) => rank(x.id) - rank(y.id)).map((r) => ({ id: `replay:${r.id}`, name: NM[r.id], stage: "recorded", date: r.date, label: r.measured ? "MEASURED" : "REPLAY", kind: "recorded" }));
+  const replays = [].map((r) => ({ id: r.id, name: r.name, stage: "replay", date: r.date, label: "REPLAY", kind: "replay" }));
   // With nothing asked for, start on the recorded run this server was started with (./start.sh,
   // ./run-local.sh replay <id>), not the newest dashboard launch job, which may hold no data.
   const served = h.replay_id ? `replay:${h.replay_id}` : null;
   const stitched = recorded.find((r) => r.id === "replay:h100-stitched")?.id;
   const latest = stitched || (served && recorded.some((r) => r.id === served) ? served : null) || (h.replay_only ? recorded[0]?.id : null) || a.latest || recorded[0]?.id || replays[0]?.id || null;
-  return { runs: [...recorded, ...(a.runs || []), ...replays], latest };
+  // One run per provider: only the three stitched recorded runs are listed.
+  return { runs: recorded.length ? recorded : [...(a.runs || []), ...replays], latest };
 }
 
 export function setRun(id, { reload = true } = {}) {

@@ -1,4 +1,5 @@
 // "Replay a run": pick a recorded run (read from replays/ on disk by /api/dash/replays) and play
+const NM = { "h100-stitched": "H100 run", "modal-stitched": "Modal run", "baseten-stitched": "Baseten run" };
 // it back through a live power graph. No keys, no GPU, no network call beyond this server.
 // Every number keeps the label it was recorded with.
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -47,14 +48,14 @@ export async function mount(host) {
   if (!host) return;
   const st = document.createElement("style"); st.textContent = STYLE; document.head.append(st);
   let list = [], health = {};
-  try { [list, health] = await Promise.all([fetch("/api/dash/replays").then((r) => r.json()).then((j) => j.replays || []), fetch("/api/dash/health").then((r) => r.json()).catch(() => ({}))]); }
+  try { [list, health] = await Promise.all([fetch("/api/dash/replays").then((r) => r.json()).then((j) => (j.replays || []).filter((r) => NM[r.id]).map((r) => ({ ...r, name: NM[r.id] }))), fetch("/api/dash/health").then((r) => r.json()).catch(() => ({}))]); }
   catch { host.innerHTML = `<p class="muted">The recorded runs need the local server (./start.sh).</p>`; return; }
   const liveActive = health.mode === "live" && !health.replay_only;
   if (!liveActive) document.body.classList.add("wn-replay-first"); // no live run: the picker is the first screen
   host.innerHTML = `<h2>Replay a run</h2>
     <p class="muted">Recorded runs, read from <code>replays/</code> on this machine. No keys, no GPU, no live calls. Every number keeps the label it was recorded with.</p>
     <div class="rp-list">${list.map((r) => `<button class="rp-card" data-id="${esc(r.id)}">
-      <b>${esc(r.id)}</b><span class="rp-pf">${esc(r.platform)}${r.gpu && r.platform !== "H100" ? " · " + esc(r.gpu) : ""}</span><span class="muted">${esc(r.date || "")}</span>
+      <b>${esc(r.name || r.id)}</b><span class="rp-pf">${esc(r.platform)}${r.gpu && r.platform !== "H100" ? " · " + esc(r.gpu) : ""}</span><span class="muted">${esc(r.date || "")}</span>
       <div class="t">${esc(r.title)}</div>
       <span class="rp-lab">${r.measured ? "MEASURED" : esc(Object.keys(r.labels)[0] || "UNLABELLED")}</span>
       <span class="muted"> ${r.events} events · ${r.power_samples ? r.power_samples + " power samples" : "no GPU power meter (hosted API)"}</span></button>`).join("") || `<p class="muted">No recorded runs found under replays/.</p>`}</div>
@@ -71,7 +72,7 @@ async function play(run, el) {
   const { events } = await fetch(`/api/dash/replays/${encodeURIComponent(run.id)}/events`).then((r) => r.json());
   const tl = timeline(events);
   const lab = run.measured ? "MEASURED" : Object.keys(run.labels)[0] || "UNLABELLED";
-  el.innerHTML = `<div class="rp-banner" role="status">REPLAY of ${esc(lab)} run ${esc(run.id)} <span class="muted">· ${esc(run.platform)} · recorded ${esc(run.date || "")}</span></div>
+  el.innerHTML = `<div class="rp-banner" role="status">REPLAY of ${esc(lab)} run ${esc(NM[run.id] || run.id)} <span class="muted">· ${esc(run.platform)} · recorded ${esc(run.date || "")}</span></div>
     <div class="rp-ctl"><button id="rp-pp">Pause</button><button id="rp-re">Restart</button><span class="muted">Speed</span><button data-s="1" class="on">Real speed</button><button data-s="4">4x</button><span class="muted" id="rp-clock"></span></div>
     <svg class="rp-graph" viewBox="0 0 1000 220" preserveAspectRatio="none"><polyline id="rp-line" fill="none" stroke="#8cc8ff" stroke-width="2" points=""/><text id="rp-w" x="12" y="24" fill="#F2F5FA" font-size="16"></text></svg>
     <div class="rp-now" id="rp-now"></div><div class="rp-log" id="rp-log"></div>

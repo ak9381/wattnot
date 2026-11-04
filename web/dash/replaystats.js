@@ -78,7 +78,11 @@ export async function replaySummary(id, fetcher = fetch) {
   return S;
 }
 
-export const REPLAY_IDS = ["h100-stitched", "modal-stitched", "baseten-stitched", "modal-r1", "modal-r2", "h100-max-1103", "baseten-r1", "baseten-r2"];
+// One run per provider in the UI: the stitched runs (best valid take per block, each block source-tagged).
+// The original rounds stay on disk under replays/ but are not listed.
+export const RUN_NAMES = { "h100-stitched": "H100 run", "modal-stitched": "Modal run", "baseten-stitched": "Baseten run" };
+export const REPLAY_IDS = Object.keys(RUN_NAMES);
+export const runName = (id) => RUN_NAMES[String(id).replace(/^replay:/, "")] || id;
 export async function replayRuns(fetcher = fetch) {
   const out = await Promise.all(REPLAY_IDS.map((id) => replaySummary(id, fetcher).catch(() => null)));
   return out.filter(Boolean).map((x) => ({ id: x.id, name: x.id, model: (x.model || "").replace("meta-models/", ""), date: x.date || "", label: x.label, title: x.title }));
