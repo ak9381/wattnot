@@ -813,6 +813,12 @@ def process_voice_query(
         # "why was 325 watts rejected" (and similar "why was <N> W rejected") is
         # answered from the Wonder addendum's gate trials instead of a refusal.
         cap_w = _parse_cap_w(text)
+        # Cap questions need a power-cap sweep. Newer side-by-side receipts (e.g. Nov 4 H100) carry
+        # none, so when the latest receipt has no sweep, use the newest signed one that does.
+        if (matched is not None and not isinstance(matched.get("rerun"), Mapping)
+                and (cap_w is not None or re.search(r"\b(?:power )?caps?\b", t_low))
+                and not run_tok and matched.get("receipt_id", "").lower() not in t_low):
+            matched = next((r for r in receipts if isinstance(r.get("rerun"), Mapping)), matched)
         asks_gate = any(k in t_low for k in ("reject", "fail", "why not", "blocked", "declin"))
         gate_text = (
             _cap_gate_answer(matched, receipts, cap_w)

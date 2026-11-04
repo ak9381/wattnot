@@ -2,10 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { defaultChoice, applyPrefill, headline, path, fmtWh } from "../../web/dash/pluglib.js";
 
-test("defaults: gateway on Meta API, every saver on, langfuse off", () => {
+test("defaults: gateway on Meta API, every saver on except opt-in brief answers, langfuse off", () => {
   const c = defaultChoice();
   assert.equal(c.deployment, "both"); assert.equal(c.upstream, "meta"); assert.equal(c.langfuse, false);
-  assert.ok(Object.values(c.savers).every(Boolean));
+  const { brief_answers, ...rest } = c.savers;
+  assert.equal(brief_answers, false);
+  assert.ok(Object.values(rest).every(Boolean));
 });
 test("voice prefill fills known fields and leaves nulls alone", () => {
   const c = applyPrefill(defaultChoice(), { deployment: "both", upstream: null, savers_off: ["vision"], cap_min_w: 280, cap_max_w: 350, langfuse: true });

@@ -435,7 +435,8 @@ def test_ask_uses_the_signed_rerun_receipt_as_latest():
     assert "-44.1% energy per correct answer" in t
     assert "p99 limit +10%" in t
     nav = vg.process_voice_query(query_text="open the latest report", root_dir=root, mock=True)
-    assert nav.get("target_receipt_id") == "rcpt_20261031_rerun_cap325"
+    # "latest report" opens the newest signed receipt; since the Nov 4 H100 receipts landed that is a Nov 4 run.
+    assert str(nav.get("target_receipt_id", "")).startswith("rcpt_20261104-")
 
 
 def test_rerun_gate_answers_from_the_rerun_sweep():
