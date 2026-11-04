@@ -16,15 +16,15 @@ Because nobody wants to be the person who made the model worse. If you lower a p
 
 And even when a team does save energy, they can't prove it. The savings claim lives in a slide deck. Finance doesn't trust it, auditors can't check it, and regulators now want real numbers.
 
-That last part matters more every month. Under the EU Energy Efficiency Directive, larger data centers have to report their energy and water use every year, and the CSRD sustainability rules are pushing similar reporting into company accounts. Today that reporting is mostly spreadsheets, estimates and vendor PDFs. Operators are stuck between three demands at once. They have to cut waste, they can't risk quality, and they have to prove the result to someone who doesn't trust them.
+That last part matters more every month. Under the EU Energy Efficiency Directive, data centers of 500 kW or more have to report their energy and water use every year, and the CSRD sustainability rules are pushing similar reporting into company accounts. Today that reporting is mostly spreadsheets, estimates and vendor PDFs. Operators are stuck between three demands at once. They have to cut waste, they can't risk quality, and they have to prove the result to someone who doesn't trust them.
 
 ## Why today's tools don't solve it
 
 The tools that exist each solve one slice of the problem, and none of them talk to each other.
 
 - **Facility and DCIM tools** watch racks, temperatures and power distribution. They can tell you a rack is running hot. They have no idea which model is running on it, or whether its answers are any good.
-- **GPU power tools** like Neuralwatt, plus the cap and clock settings built into the drivers, can cut watts. But they don't measure what that does to answer quality. Saving power is easy if you don't care whether the answers are still right.
-- **Energy dashboards and carbon trackers** like Pebble estimate emissions and show charts. They report on the waste, but they don't remove it, and their numbers usually come from estimates, not measurements.
+- **GPU power tools**, plus the cap and clock settings built into the drivers, can cut watts. But they don't measure what that does to answer quality. Saving power is easy if you don't care whether the answers are still right.
+- **Energy dashboards and carbon trackers** estimate emissions and show charts. They report on the waste, but they don't remove it, and their numbers usually come from estimates, not measurements.
 - **Model serving tools** like vLLM have great knobs for batching, caching and precision. But they're tuned for speed and cost per token, not energy, and they don't tell you which setting is safe for your workload.
 
 So the rack team, the GPU team, the ML team and the sustainability team each see one piece. Nobody sees the whole chain from the server room, to the GPU, to the model, to the actual answer a user gets. Without that full chain, you can't safely make the changes that matter.
@@ -33,23 +33,23 @@ So the rack team, the GPU team, the ML team and the sustainability team each see
 
 WattNot is one agent that connects that whole chain and closes the loop.
 
-1. **It looks at the room.** Snap a photo of your server room and SAM 3.1 segments the racks. Hotspots and the rack-to-GPU mapping are photo-based today (the heat layer is SIMULATED and the advice is advisory only), so it is a hint for which GPUs to look at first, not a measurement.
+1. **It looks at the room.** Snap a photo of a rack and SAM 3.1 segments it and counts the servers in it. It does not map hotspots or link racks to GPUs; it is a photo-based hint, not a measurement.
 2. **It reads the GPUs.** WattNot pulls live telemetry through NVIDIA's management library: power draw, power cap, utilization, memory and temperature. It knows exactly what each GPU is doing right now.
-3. **It tries one change at a time.** An AI operator proposes a single, specific change. It might lower the power cap from 700 W to 375 W, change the batch size, adjust the KV cache, turn on prefix caching or switch to FP8. Changing one thing at a time means we always know what caused what.
+3. **It tries one change at a time.** The AI operator (Muse Spark) or a scripted sweep proposes a single, specific change. It might lower the power cap from 700 W to 375 W, change the batch size, adjust the KV cache, turn on prefix caching or switch to FP8. Changing one thing at a time means we always know what caused what.
 4. **It checks quality on your real prompts.** Before anything is kept, WattNot runs your actual workload through the changed setup and checks three things: answer quality, p99 latency, and a statistical noise test (Welch's t-test) to make sure the saving is real and not luck.
 5. **It refuses and rolls back bad changes, automatically.** If quality drops, latency breaks the limit, or the saving is just noise, the change is refused and rolled back. A fixed rule makes this call, not the AI, so the model can never talk its way past a failed gate.
 6. **It proves what it kept.** Every kept change turns into a receipt that records the before and after numbers, the workload, the gate results and the hardware. Receipts are hash-chained and signed with Ed25519. Run `wattnot verify` and it re-checks everything. Edit even one number and verification fails.
-7. **It reports and ships.** The receipts feed a one-click EU efficiency report covering energy and water. Muse Code then drafts the winning settings as a sandboxed pull request for review, so the change goes through your normal code review like any other change.
+7. **It reports and ships.** The receipts feed a one-click EU-style efficiency report covering energy and water (water is an ESTIMATE). Muse Code then drafts the winning settings as a sandboxed pull request for review, so the change goes through your normal code review like any other change.
 
 ## Real results, not estimates
 
 We tested WattNot on a real H100 GPU running Meta's open-weights Muse Glimmer 30B on vLLM, with live traffic going through the WattNot gateway.
 
-- **Headline: 12.9% less energy per correct answer** (1249.4 J to 1088.5 J per correct answer, MEASURED). That's a power cap of 375 W against the stock 700 W.
+- **Headline: 12.9% less energy per answer** (1,124.5 J to 979.6 J per answer, MEASURED). That's a power cap of 375 W against the stock 700 W.
 - **Quality held:** 54 of 60 correct answers in both the baseline and the tuned setup.
 - **Statistically real:** Welch p = 0.027, so it's not a lucky run.
 - **A sealed GSM8K holdout** on the H100 (Nov 3) showed 26.65% less energy per request at 375 W plus low reasoning effort, with accuracy unchanged at 92.0% in both arms (MEASURED). We lead with the more conservative live-traffic number.
-- **The safety net works.** When WattNot tried FP8 on the H100, the quality gate failed and the change was refused and rolled back on its own. We show that in the demo on purpose, because a tool that only ever says "yes" isn't one you can trust.
+- **The safety net works.** When a scripted one-lever sweep tried FP8 on the H100, the quality gate failed and the change was refused and rolled back automatically. We show that in the demo on purpose, because a tool that only ever says "yes" isn't one you can trust.
 
 The key metric is joules per correct answer, not joules per token. Joules per token rewards a model that gets faster by getting worse. Joules per correct answer only goes down when you save energy *and* keep the answers right.
 
@@ -71,7 +71,7 @@ Both modes produce the same signed receipts and the same reports.
 - **A savings frontier chart.** This chart plots energy against quality so you can see the best trade-off for your workload.
 - **Water per inference.** An ESTIMATE of cooling water, derived from the measured energy with stated L/kWh assumptions.
 - **The rack hotspot map** from your room photo (photo-based; heat layer SIMULATED).
-- **A one-click EU efficiency report** built from signed, measured receipts.
+- **A one-click EU-style efficiency report** built from signed receipts.
 - **Spoken Q&A.** Ask "what did we save this week and why?" out loud and get an answer grounded in the receipts.
 - **A draft pull request for the winning change**, for your normal review.
 - **Replay for anyone.** Judges, auditors or a new teammate can replay every recorded run with no API keys at all, or try it live.
@@ -89,7 +89,7 @@ We haven't found another tool that does all four of these together:
 
 Compliance is what turns this from a nice-to-have into a budget line.
 
-Reporting is now mandatory for larger data centers in the EU, and investors and customers everywhere are asking for the same kind of numbers. Right now that reporting is expensive, manual and mostly estimated. WattNot's receipts are already the measured, signed evidence a report needs. So instead of a separate compliance project, the report comes free with the savings, generated in one click from numbers anyone can verify.
+Reporting is now mandatory in the EU for data centers of 500 kW or more, and investors and customers everywhere are asking for the same kind of numbers. Right now that reporting is expensive, manual and mostly estimated. WattNot's receipts are already the measured, signed evidence a report needs. So instead of a separate compliance project, the report comes free with the savings, generated in one click from numbers anyone can verify.
 
 That gives an operator two reasons to say yes. It saves money on power and water, and it removes a reporting headache they'd have to pay for anyway. A full CSRD add-on is on our roadmap.
 
@@ -97,7 +97,7 @@ That gives an operator two reasons to say yes. It saves money on power and water
 
 Impact is why we built this.
 
-When power is the bottleneck, efficiency *is* capacity. A 12.9% cut in energy per correct answer means about 13% more correct answers from the same power budget. That needs no new GPUs, no new substation, no years-long wait for the grid, and less cooling water.
+When power is the bottleneck, efficiency *is* capacity. A 12.9% cut in energy per answer means roughly 15% more answers from the same power budget. That needs no new GPUs, no new substation, no years-long wait for the grid, and less cooling water.
 
 Spread that across a fleet and the numbers get big. Operators can serve more users on the hardware they already have, push back expensive expansions, and lower the cost of every answer. Cheaper inference makes AI more affordable for everyone downstream, including startups, schools, hospitals and developers in countries where power is expensive or unreliable. That last point matters to us. We built this from Bengaluru, where grid power and water are both real constraints.
 
@@ -114,7 +114,7 @@ WattNot is a full system, not a wrapper around a model call.
 - **Levers.** These are the GPU power cap, vLLM batch size and max sequences, KV cache settings, prefix caching and FP8 quantization. The agent changes one lever per trial so every effect is easy to attribute.
 - **The quality gate.** Each trial runs a fixed, held-out prompt set from public datasets. Answers are scored for correctness, and p99 latency has a hard limit. A Welch t-test checks that the energy difference is real. A sealed holdout set that the agent never sees during tuning guards against overfitting to the test.
 - **Decision rule.** The AI proposes and explains, but a fixed, deterministic rule decides. Nothing ships unless it passes every gate.
-- **Receipts.** Each kept change produces a JSON receipt with inputs, outputs, gate results and hardware details. Receipts are hash-chained so you can't delete or reorder them, and signed with Ed25519. `wattnot verify` recomputes the chain and checks the signatures. Publishing receipts to the public Rekor transparency log is supported as an option (sigstore) but has not been done for the submitted runs yet.
+- **Receipts.** Each kept change produces a JSON receipt with inputs, outputs, gate results and hardware details. Receipts are hash-chained so you can't delete or reorder them, and signed with Ed25519. `wattnot verify` recomputes the chain and checks the signatures. Receipts are signed offline; they are not published to any public transparency log.
 - **Planner and frontier.** The agent tracks the energy-versus-quality frontier and picks the next trial most likely to move it, instead of brute-forcing every combination.
 - **Multimodal checks.** Synthetic test images (pre-generated with Muse Image, labelled SYNTHETIC) exercise image workloads, voice requests exercise speech, and room photos feed rack segmentation, so the system isn't limited to text.
 - **Replays.** Every run's event log is saved, so the live graph can replay any run step by step, offline, with no keys.
@@ -123,7 +123,7 @@ WattNot is a full system, not a wrapper around a model call.
 
 ## Use of Meta's models
 
-WattNot runs on Meta from end to end, and each of the 8 Meta tools has a job. Muse Glimmer 30B, which is open weights and self-hosted on our H100, is the model we serve and tune. Muse Spark Open is the second open-weights model. Muse Spark is the operator, and Muse Wonder, SAM 3.1, Muse Code and Muse Voice each do a specific job at runtime. Muse Image was used ahead of time to make the synthetic test images; no run calls it live. The full breakdown, and why open weights make WattNot possible, is in the README sections "Meta models used" and "Open weights: how, where, why".
+WattNot runs on Meta from end to end, and each of the 8 Meta tools has a job. Muse Glimmer 30B, which is open weights and self-hosted on our H100, is the model we serve and tune. Muse Spark Open, the second open-weights model, does effort routing on Baseten (energy there is an ESTIMATE, since there is no GPU meter). Muse Spark is the operator, and Muse Wonder, SAM 3.1, Muse Code and Muse Voice each do a specific job at runtime. Muse Image was used ahead of time to make the synthetic test images; no run calls it live. The full breakdown, and why open weights make WattNot possible, is in the README sections "Meta models used" and "Open weights: how, where, why".
 
 ## Business model
 
