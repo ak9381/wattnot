@@ -137,6 +137,13 @@ def _shrink_data_uri(url: str, max_side: int) -> str:
     return f"data:image/{fmt.lower()};base64," + base64.b64encode(buf.getvalue()).decode()
 
 
+def upstream_headers(cfg: dict) -> dict:
+    """Extra auth headers from env vars, e.g. a Modal proxy token:
+    upstream.headers_env: {Modal-Key: MODAL_PROXY_TOKEN_ID, Modal-Secret: MODAL_PROXY_TOKEN_SECRET}."""
+    return {k: os.environ[v].strip() for k, v in (cfg["upstream"].get("headers_env") or {}).items()
+            if os.environ.get(v, "").strip()}
+
+
 def http_upstream(cfg: dict):
     """POST to the configured upstream with the gateway's own key (the caller's key is ignored)."""
     base = cfg["upstream"]["base_url"].rstrip("/")
@@ -157,6 +164,7 @@ def http_upstream(cfg: dict):
         h = {"Content-Type": "application/json"}
         if key:
             h["Authorization"] = f"Bearer {key}"
+        h.update(upstream_headers(cfg))
         req = urllib.request.Request(base + "/chat/completions", data=json.dumps(body).encode(), headers=h)
         with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310
             return json.loads(r.read().decode())

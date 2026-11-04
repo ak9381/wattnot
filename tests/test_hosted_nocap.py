@@ -77,3 +77,24 @@ def test_seq_hard_stop_on_spend(tmp_path):
     run.thread.join(5)
     r = json.loads((tmp_path / "sequential.json").read_text())
     assert r["without"]["requests"] == 5 and run.state["stopped"].startswith("hard stop")
+
+
+def test_upstream_headers_from_env(monkeypatch):
+    from wattnot.gateway.build import upstream_headers
+    monkeypatch.setenv("MK", "k1")
+    cfg = {"upstream": {"headers_env": {"Modal-Key": "MK", "Modal-Secret": "MISSING_X"}}}
+    assert upstream_headers(cfg) == {"Modal-Key": "k1"}
+
+
+def test_remote_nvml_gpu_reads_counter_and_never_caps(monkeypatch):
+    import io
+    import urllib.request
+    seen = {}
+
+    def fake(req, timeout=0):
+        seen["h"] = dict(req.header_items())
+        return io.BytesIO(json.dumps({"energy_mj": 12345}).encode())
+    monkeypatch.setattr(urllib.request, "urlopen", fake)
+    g = tr.RemoteNvmlGpu("http://x/wattnot/nvml", {"Modal-Key": "k"})
+    assert g.energy_mj() == 12345 and g.can_cap() is False and g.limit_w() is None
+    assert seen["h"].get("Modal-key") == "k"

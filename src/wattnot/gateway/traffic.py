@@ -80,6 +80,37 @@ class NvmlGpu:
 CAP_UNAVAILABLE = "power cap not available on this provider"
 
 
+class RemoteNvmlGpu:
+    """NVML of a hosted GPU container (Modal), read over HTTP from its /wattnot/nvml route.
+    Energy counter MEASURED inside the container; the power limit cannot be set (no root)."""
+    label = "MEASURED (NVML energy counter in the Modal container, read over HTTP per arm)"
+
+    def __init__(self, url: str, headers: dict | None = None, timeout: float = 15):
+        self.url, self.headers, self.timeout = url, dict(headers or {}), timeout
+        self._get()   # fail fast if the endpoint is down
+
+    def _get(self) -> dict:
+        import urllib.request
+        req = urllib.request.Request(self.url, headers=self.headers)
+        with urllib.request.urlopen(req, timeout=self.timeout) as r:  # noqa: S310
+            return json.loads(r.read().decode())
+
+    def energy_mj(self) -> int:
+        return int(self._get()["energy_mj"])
+
+    def limit_w(self):
+        return None      # the cap is not ours to set; shown as "no power cap on this provider"
+
+    def default_w(self):
+        return None
+
+    def set_w(self, w) -> None:
+        raise RuntimeError(CAP_UNAVAILABLE)
+
+    def can_cap(self) -> bool:
+        return False
+
+
 class EstimateMeter:
     """GPU-shaped meter for hosted APIs with no NVML (Baseten Model API): energy is the sum of
     each request's token-based joules (ESTIMATE). No power cap."""

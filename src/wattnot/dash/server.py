@@ -1065,6 +1065,20 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
         c = gw.cfg or cfg
         if traffic.gpu is not None or not (c.get("node") or {}).get("enabled") or os.environ.get("WATTNOT_NO_NVML"):
             return
+        meter = (c.get("node") or {}).get("meter")
+        if meter == "remote":   # hosted GPU (Modal): its own NVML over HTTP, MEASURED; no cap step
+            from wattnot.gateway.build import upstream_headers
+            url = (c.get("node") or {}).get("meter_url") or \
+                c["upstream"]["base_url"].rstrip("/").removesuffix("/v1") + "/wattnot/nvml"
+            try:
+                traffic.gpu, traffic.answer_check = _traffic.RemoteNvmlGpu(url, upstream_headers(c),
+                                                                         timeout=float((c.get("node") or {}).get("meter_timeout_s", 900))), None
+            except Exception:  # noqa: BLE001 - endpoint down: stays concurrent, ESTIMATE
+                pass
+            return
+        if meter == "estimate":   # hosted API with no GPU access (Baseten): sequential, ESTIMATE energy
+            traffic.gpu, traffic.answer_check = _traffic.EstimateMeter(), None
+            return
         try:
             g = _traffic.NvmlGpu()
         except Exception:  # noqa: BLE001 - no NVML: stays concurrent, energy ESTIMATE
@@ -1153,6 +1167,9 @@ def _mount_plug(app: FastAPI, gateway: Path | None) -> None:
         if body.get("approve") and traffic.state.get("running"):   # traffic is using the GPU
             raise HTTPException(409, GPU_BUSY)
         ncfg = load_config(gateway) if gateway else load_config(None)
+        if (ncfg.get("node") or {}).get("meter") in ("remote", "estimate"):
+            raise HTTPException(409, "Power cap not available on this provider (no root on the GPU). "
+                                     "The software savers still run; use Simulate traffic.")
         ov = os.environ.get("WATTNOT_PLUG_OVERLAY")
         if ov:
             from wattnot.gateway.build import _merge

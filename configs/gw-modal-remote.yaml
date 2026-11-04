@@ -1,0 +1,17 @@
+# Dashboard on the box, gateway in front of our vLLM (Muse Glimmer 30B) on a Modal A100-80GB.
+# Energy per arm: the container's NVML counter over HTTP (MEASURED). No power cap on Modal (no root).
+# Needs MODAL_PROXY_TOKEN_ID / MODAL_PROXY_TOKEN_SECRET in the env (~/.config/wattnot/modal.env).
+deployment: gateway
+port: 8780
+upstream:
+  base_url: "https://akashkraju218--wattnot-glimmer-endpoint-glimmer-web.us-east.modal.run/v1"
+  key_env: VLLM_API_KEY
+  timeout_s: 900
+  headers_env: {Modal-Key: MODAL_PROXY_TOKEN_ID, Modal-Secret: MODAL_PROXY_TOKEN_SECRET}
+tiers:
+  - {name: small, model: meta-models/Muse-Glimmer-30B, body_extra: {reasoning_effort: low}}
+  - {name: big,   model: meta-models/Muse-Glimmer-30B, body_extra: {}}
+baseline: {tier: big}
+energy: {source: estimate, j_per_token: {default: 7.86}}
+node: {enabled: true, meter: remote, meter_timeout_s: 900}
+savings_log: out/hosted/modal-ui/savings.jsonl

@@ -8,4 +8,4 @@ tiers:
 baseline: {tier: big}
 energy: {source: estimate, j_per_token: {default: 7.86}}
 node: {enabled: true, meter: estimate}
-savings_log: out/hosted/baseten/savings.jsonl
+savings_log: out/hosted/baseten-ui/savings.jsonl
