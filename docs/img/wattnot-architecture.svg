@@ -1,0 +1,185 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="1000" viewBox="0 0 1360 1000" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 Z" fill="#4a5a6a"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1360" height="1000" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="40" y="48" font-size="30" font-weight="bold" fill="#1b2733">WattNot architecture</text>
+  <text x="40" y="74" font-size="15" fill="#5b6b7b">One change at a time. Measure it. Keep it only if quality holds. Sign a receipt.</text>
+
+  <!-- legend -->
+  <g font-size="13" fill="#5b6b7b">
+    <rect x="1010" y="34" width="14" height="14" rx="2" fill="#2d6cdf"/>
+    <text x="1030" y="46">MEASURED (GPU meter)</text>
+    <rect x="1010" y="56" width="14" height="14" rx="2" fill="#e0a500"/>
+    <text x="1030" y="68">ESTIMATE (computed)</text>
+  </g>
+
+  <!-- ============ LAYER 1: app ============ -->
+  <rect x="40" y="100" width="1280" height="86" rx="8" fill="#eef2f6" stroke="#c3ccd6"/>
+  <text x="60" y="128" font-size="17" font-weight="bold" fill="#1b2733">Your app or agent</text>
+  <text x="60" y="152" font-size="14" fill="#4a5a6a">Change one line, the base URL. Works with the OpenAI SDK, LangChain and CrewAI.</text>
+  <text x="60" y="173" font-size="13" fill="#7a8795">client.chat.completions.create(model="muse-spark-1.3", ...) &#8594; http://127.0.0.1:8780/v1</text>
+
+  <line x1="680" y1="186" x2="680" y2="214" stroke="#4a5a6a" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+  <!-- ============ LAYER 2: gateway ============ -->
+  <rect x="40" y="216" width="1280" height="150" rx="8" fill="#f4f6f8" stroke="#c3ccd6"/>
+  <text x="60" y="244" font-size="17" font-weight="bold" fill="#1b2733">WattNot gateway &#183; OpenAI-compatible &#183; :8780</text>
+  <text x="60" y="265" font-size="13.5" fill="#4a5a6a">Per-request savers (switched on in wattnot.yaml). Every request gets a savings record and a receipt id.</text>
+
+  <g font-size="13" fill="#1b2733">
+    <rect x="60"  y="282" width="196" height="64" rx="6" fill="#ffffff" stroke="#c3ccd6"/>
+    <text x="72" y="304" font-weight="bold">Agent-waste guard</text>
+    <text x="72" y="324" font-size="11.5" fill="#5b6b7b">repeat / no-op / cycle /</text>
+    <text x="72" y="339" font-size="11.5" fill="#5b6b7b">overspend detectors</text>
+
+    <rect x="266" y="282" width="196" height="64" rx="6" fill="#ffffff" stroke="#c3ccd6"/>
+    <text x="278" y="304" font-weight="bold">Cheapest-first route</text>
+    <text x="278" y="324" font-size="11.5" fill="#5b6b7b">low effort first, step up</text>
+    <text x="278" y="339" font-size="11.5" fill="#5b6b7b">only if the answer is shaky</text>
+
+    <rect x="472" y="282" width="196" height="64" rx="6" fill="#ffffff" stroke="#c3ccd6"/>
+    <text x="484" y="304" font-weight="bold">Context saver</text>
+    <text x="484" y="324" font-size="11.5" fill="#5b6b7b">summarise old turns,</text>
+    <text x="484" y="339" font-size="11.5" fill="#5b6b7b">dedupe tool output</text>
+
+    <rect x="678" y="282" width="196" height="64" rx="6" fill="#ffffff" stroke="#c3ccd6"/>
+    <text x="690" y="304" font-weight="bold">Thinking cap</text>
+    <text x="690" y="324" font-size="11.5" fill="#5b6b7b">reasoning + answer</text>
+    <text x="690" y="339" font-size="11.5" fill="#5b6b7b">token ceiling</text>
+
+    <rect x="884" y="282" width="196" height="64" rx="6" fill="#ffffff" stroke="#c3ccd6"/>
+    <text x="896" y="304" font-weight="bold">Image downscale</text>
+    <text x="896" y="324" font-size="11.5" fill="#5b6b7b">cap the longest side</text>
+    <text x="896" y="339" font-size="11.5" fill="#5b6b7b">before the vision call</text>
+
+    <rect x="1090" y="282" width="196" height="64" rx="6" fill="#ffffff" stroke="#c3ccd6"/>
+    <text x="1102" y="304" font-weight="bold">Voice route</text>
+    <text x="1102" y="324" font-size="11.5" fill="#5b6b7b">Muse Voice Transcribe</text>
+    <text x="1102" y="339" font-size="11.5" fill="#5b6b7b">speech &#8594; text</text>
+  </g>
+
+  <line x1="300" y1="366" x2="300" y2="408" stroke="#4a5a6a" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="312" y="392" font-size="12.5" fill="#5b6b7b">forwards to a served model</text>
+  <line x1="1050" y1="366" x2="1050" y2="408" stroke="#4a5a6a" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="760" y="392" font-size="12.5" fill="#5b6b7b" text-anchor="end">GPU owner path runs the operator loop &#8594;</text>
+
+  <!-- ============ LAYER 3 left: operator loop ============ -->
+  <rect x="40" y="410" width="700" height="300" rx="8" fill="#f4f6f8" stroke="#c3ccd6"/>
+  <text x="60" y="438" font-size="17" font-weight="bold" fill="#1b2733">Operator loop (GPU you control)</text>
+  <text x="60" y="459" font-size="13" fill="#4a5a6a">Muse Spark picks each step; a fixed rule, not the model, decides keep or roll back.</text>
+
+  <g font-size="13.5" fill="#1b2733">
+    <rect x="60" y="474" width="150" height="48" rx="6" fill="#ffffff" stroke="#c3ccd6"/>
+    <text x="135" y="503" text-anchor="middle">Probe telemetry</text>
+
+    <rect x="248" y="474" width="196" height="48" rx="6" fill="#ffffff" stroke="#c3ccd6"/>
+    <text x="346" y="497" text-anchor="middle">Propose one change</text>
+    <text x="346" y="514" text-anchor="middle" font-size="11" fill="#5b6b7b">power cap / FP8 / KV / batch</text>
+
+    <rect x="482" y="474" width="150" height="48" rx="6" fill="#ffffff" stroke="#c3ccd6"/>
+    <text x="557" y="497" text-anchor="middle">Apply + measure</text>
+    <text x="557" y="514" text-anchor="middle" font-size="11" fill="#2d6cdf">NVML joules</text>
+  </g>
+  <line x1="210" y1="498" x2="246" y2="498" stroke="#4a5a6a" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="444" y1="498" x2="480" y2="498" stroke="#4a5a6a" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+  <!-- quality gate -->
+  <rect x="60" y="546" width="572" height="86" rx="6" fill="#ffffff" stroke="#c3ccd6"/>
+  <text x="76" y="570" font-size="14" font-weight="bold" fill="#1b2733">Quality gate &#8212; all three must pass</text>
+  <g font-size="12.5" fill="#4a5a6a">
+    <rect x="76"  y="582" width="170" height="40" rx="5" fill="#eef2f6" stroke="#d3dae2"/>
+    <text x="161" y="599" text-anchor="middle" fill="#1b2733">Pass rate</text>
+    <text x="161" y="615" text-anchor="middle">drop &#8804; 1 point</text>
+    <rect x="256" y="582" width="170" height="40" rx="5" fill="#eef2f6" stroke="#d3dae2"/>
+    <text x="341" y="599" text-anchor="middle" fill="#1b2733">p99 latency</text>
+    <text x="341" y="615" text-anchor="middle">&#8804; +10%</text>
+    <rect x="436" y="582" width="180" height="40" rx="5" fill="#eef2f6" stroke="#d3dae2"/>
+    <text x="526" y="599" text-anchor="middle" fill="#1b2733">Welch noise test</text>
+    <text x="526" y="615" text-anchor="middle">saving beats jitter</text>
+  </g>
+  <line x1="557" y1="522" x2="557" y2="544" stroke="#4a5a6a" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+  <!-- keep / rollback -->
+  <rect x="648" y="546" width="78" height="40" rx="6" fill="#e7f3ec" stroke="#2e9e6b"/>
+  <text x="687" y="571" font-size="13" text-anchor="middle" fill="#2e7d54" font-weight="bold">keep</text>
+  <rect x="648" y="592" width="78" height="40" rx="6" fill="#fbeceb" stroke="#c0453b"/>
+  <text x="687" y="617" font-size="12.5" text-anchor="middle" fill="#a3382f" font-weight="bold">roll back</text>
+  <line x1="632" y1="589" x2="646" y2="575" stroke="#2e9e6b" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="632" y1="595" x2="646" y2="609" stroke="#c0453b" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="60" y="660" font-size="12.5" fill="#5b6b7b">On keep or roll back the stock power limit is always restored on exit, Ctrl-C or error.</text>
+  <text x="60" y="690" font-size="13.5" fill="#1b2733" font-weight="bold">Each kept change &#8594; a hash-chained, signed receipt (below).</text>
+
+  <!-- ============ LAYER 3 right: where the model runs ============ -->
+  <rect x="760" y="410" width="560" height="300" rx="8" fill="#f4f6f8" stroke="#c3ccd6"/>
+  <text x="780" y="438" font-size="17" font-weight="bold" fill="#1b2733">Where the model runs</text>
+  <text x="780" y="459" font-size="13" fill="#4a5a6a">One profile per provider (src/wattnot/providers.py). Every served model is a Meta model.</text>
+
+  <g font-size="13">
+    <rect x="780" y="472" width="258" height="72" rx="6" fill="#ffffff" stroke="#2d6cdf"/>
+    <text x="794" y="493" font-weight="bold" fill="#1b2733">Own NVIDIA H100 &#183; vLLM</text>
+    <text x="794" y="512" font-size="12" fill="#4a5a6a">Muse Glimmer 30B (BF16, open weights)</text>
+    <text x="794" y="530" font-size="12" fill="#2d6cdf">power caps via NVML &#183; energy MEASURED</text>
+
+    <rect x="1050" y="472" width="258" height="72" rx="6" fill="#ffffff" stroke="#2d6cdf"/>
+    <text x="1064" y="493" font-weight="bold" fill="#1b2733">Modal &#183; A100-80GB &#183; vLLM</text>
+    <text x="1064" y="512" font-size="12" fill="#4a5a6a">Muse Glimmer 30B (open weights)</text>
+    <text x="1064" y="530" font-size="12" fill="#2d6cdf">no power cap &#183; energy MEASURED</text>
+
+    <rect x="780" y="556" width="258" height="72" rx="6" fill="#ffffff" stroke="#e0a500"/>
+    <text x="794" y="577" font-weight="bold" fill="#1b2733">Baseten &#183; hosted API</text>
+    <text x="794" y="596" font-size="12" fill="#4a5a6a">Muse Spark Open (open weights)</text>
+    <text x="794" y="614" font-size="12" fill="#b07d00">request levers only &#183; energy ESTIMATE</text>
+
+    <rect x="1050" y="556" width="258" height="72" rx="6" fill="#ffffff" stroke="#c3ccd6"/>
+    <text x="1064" y="577" font-weight="bold" fill="#1b2733">Meta Model API &#183; hosted</text>
+    <text x="1064" y="595" font-size="12" fill="#4a5a6a">Muse Spark, Wonder,</text>
+    <text x="1064" y="613" font-size="12" fill="#4a5a6a">SAM 3.1, Voice Transcribe</text>
+  </g>
+  <text x="780" y="662" font-size="12.5" fill="#5b6b7b">Hosted APIs own the GPU, so WattNot uses request-level savers there, not power caps.</text>
+  <text x="780" y="684" font-size="13.5" font-weight="bold" fill="#1b2733">Every served model is a Meta model.</text>
+
+  <!-- ============ LAYER 4: proof ============ -->
+  <rect x="40" y="734" width="1280" height="230" rx="8" fill="#eef2f6" stroke="#c3ccd6"/>
+  <text x="60" y="762" font-size="17" font-weight="bold" fill="#1b2733">Proof and provenance</text>
+
+  <g font-size="13">
+    <rect x="60" y="780" width="290" height="150" rx="6" fill="#ffffff" stroke="#c3ccd6"/>
+    <text x="75" y="803" font-weight="bold" fill="#1b2733">Signed receipt</text>
+    <text x="75" y="824" font-size="12" fill="#4a5a6a">before/after Wh and $ per request,</text>
+    <text x="75" y="842" font-size="12" fill="#4a5a6a">gate verdict, Muse Spark trace id.</text>
+    <text x="75" y="864" font-size="12" fill="#4a5a6a">Ed25519, signed offline.</text>
+    <text x="75" y="886" font-size="12" fill="#4a5a6a">Each links to the previous hash</text>
+    <text x="75" y="904" font-size="12" fill="#4a5a6a">(a tamper-evident chain).</text>
+
+    <rect x="378" y="780" width="290" height="150" rx="6" fill="#ffffff" stroke="#c3ccd6"/>
+    <text x="393" y="803" font-weight="bold" fill="#1b2733">wattnot verify</text>
+    <text x="393" y="824" font-size="12" fill="#4a5a6a">re-checks hash, signature,</text>
+    <text x="393" y="842" font-size="12" fill="#4a5a6a">labels and the chain.</text>
+    <text x="393" y="864" font-size="12" fill="#4a5a6a">Re-derives the grade from the</text>
+    <text x="393" y="882" font-size="12" fill="#4a5a6a">content; never trusts the claim.</text>
+    <text x="393" y="904" font-size="12" fill="#4a5a6a">Change one number &#8594; it fails.</text>
+
+    <rect x="696" y="780" width="290" height="150" rx="6" fill="#ffffff" stroke="#c3ccd6"/>
+    <text x="711" y="803" font-weight="bold" fill="#1b2733">EU efficiency report</text>
+    <text x="711" y="824" font-size="12" fill="#4a5a6a">built from a signed receipt.</text>
+    <text x="711" y="842" font-size="12" fill="#4a5a6a">IT energy, energy/request,</text>
+    <text x="711" y="860" font-size="12" fill="#4a5a6a">verified saving, J/correct answer.</text>
+    <text x="711" y="882" font-size="12" fill="#4a5a6a">Framed to Delegated</text>
+    <text x="711" y="900" font-size="12" fill="#4a5a6a">Regulation (EU) 2024/1364.</text>
+
+    <rect x="1014" y="780" width="272" height="150" rx="6" fill="#ffffff" stroke="#c3ccd6"/>
+    <text x="1029" y="803" font-weight="bold" fill="#1b2733">Every number labelled</text>
+    <text x="1029" y="826" font-size="12" fill="#4a5a6a">MEASURED &#183; ESTIMATE &#183;</text>
+    <text x="1029" y="844" font-size="12" fill="#4a5a6a">SIMULATED &#183; MOCK &#183; REPLAY</text>
+    <text x="1029" y="868" font-size="12" fill="#4a5a6a">Keyless replay opens the</text>
+    <text x="1029" y="886" font-size="12" fill="#4a5a6a">recorded runs so a judge</text>
+    <text x="1029" y="904" font-size="12" fill="#4a5a6a">can re-verify everything.</text>
+  </g>
+  <line x1="687" y1="710" x2="687" y2="732" stroke="#4a5a6a" stroke-width="1.6" marker-end="url(#arrow)"/>
+</svg>

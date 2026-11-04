@@ -2,6 +2,14 @@
 
 One command. No GPU, no keys, no money spent. Docker is not needed.
 
+**Adding your own key (optional):**
+
+1. Copy `.env.example` to `.env` (`cp .env.example .env`; PowerShell: `Copy-Item .env.example .env`).
+2. Paste your Meta API key into `META_API_KEY`. Modal and Baseten keys are optional.
+3. Never commit `.env`. It is already gitignored.
+4. No key? Just run `./start.sh`. It plays the keyless recorded replay.
+
+
 ```bash
 git clone https://github.com/ak9381/wattnot.git && cd wattnot
 ./start.sh            # macOS / Linux  (or: make start)

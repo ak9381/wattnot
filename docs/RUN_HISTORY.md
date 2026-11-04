@@ -131,6 +131,7 @@ Every failure in between has a named cause and a commit.
 - **Cost:** Modal $5.78 ESTIMATE, $6.02 MEASURED; Meta $0.39.
 - **Original verdict:** **rejected** (accuracy and p99). LangChain block failed.
 - **Key numbers (MEASURED):** J/correct 2,437.5 -> 1,855.5 (-23.9%); accuracy 0.974 -> 0.943 (-3.13 pts); p99 77.6 s -> 498.7 s; complex agent tasks 12/12 (r04c) -> 4/12; LangChain saver arm 5/20 vs 19/20; FP8 rejected (22/24, accuracy drop 4.16 pts).
+- **FP8 note (superseded):** the FP8 number above (22/24, -4.16 pts, MEASURED) is from this earlier Modal A100 run. It is **superseded by the Nov 4 H100 refusal**, which is the FP8 story of record: on the H100, one-lever FP8 cut energy -42.5% but matched only 15/16 answers, so the gate refused it and rolled back to BF16 (MEASURED, `replays/h100-max-1103/`). This entry keeps its original Modal number unedited for history.
 - **What failed and why:** the context saver summarised away key facts in long multi-step agent chats, so agents looped and answered wrong. That caused both the accuracy drop and the huge p99.
 - **Fix:**
   - [458215f](https://github.com/ak9381/wattnot/commit/458215f) pins the task in the saver, adds a per-call chunk store and finalises done-only replies.
