@@ -43,7 +43,7 @@ The hackathon asks that the README and demo say how, where and why each open-wei
 
 **Muse Glimmer 30B, on Modal A100-80GB.**
 - How: the same vLLM setup on Modal's hosted GPU. Round r04 (Nov 4) ran text, agents, images and voice through WattNot: 74.4% less energy, accuracy 96.4% to 97.9%, image 10/10, voice 20/20 (MEASURED). Most of that saving comes from routing easy prompts to cheaper settings, not from the same settings using less power.
-- Earlier FP8 test (Nov 2, Modal A100-80GB): FP8 kept eye and hearing accuracy but lost 4.16 points on the full round (MEASURED), so the gate rejected it.
+- Earlier FP8 round (Nov 2, Modal A100-80GB, round r04e with FP8 on): it saved 23.9% energy per correct answer, but was rejected because accuracy fell from 0.974 to 0.943 and p99 rose from 77.6 s to 498.7 s (MEASURED). Most of that came from 8 agent tasks that looped, so it isn't clean evidence about FP8. Today's H100 one-lever test above is the clean FP8 result.
 - Proof: [`round.json`](https://github.com/ak9381/wattnot/tree/data/modal-text-1104/data/modal-full-1101/r04/round.json), [`events.jsonl`](https://github.com/ak9381/wattnot/tree/data/modal-text-1104/data/modal-full-1101/r04/events.jsonl) and [`flow.log`](https://github.com/ak9381/wattnot/tree/data/modal-text-1104/data/modal-full-1101/r04/flow.log) for r04, on branch `data/modal-text-1104`.
 
 **Muse Spark Open, on Baseten (hosted API, our own deployment).**
@@ -154,7 +154,7 @@ When doctor finds no GPU, an untested GPU or no permission, the power-cap featur
 
 | Model | Where it runs | What it does in WattNot |
 |---|---|---|
-| Muse Glimmer 30B (open weights) | vLLM on a rented NVIDIA H100 80GB, BF16. FP8 was also tried on Modal A100-80GB: it kept accuracy on eye and hearing but was rejected on the full round (accuracy -4.16 pts, MEASURED), so the H100 stays BF16 | The model being served. Every power cap, thinking budget, saver and agentwaste arm is measured on its answers |
+| Muse Glimmer 30B (open weights) | vLLM on a rented NVIDIA H100 80GB, BF16. FP8 on its own was tested on the H100 on Nov 4 (-42.5% energy, 15/16 answers, refused, MEASURED), so it stays BF16. A Nov 2 Modal round with FP8 on (r04e) was also rejected, but mainly from looping agent tasks, so it isn't clean evidence about FP8 | The model being served. Every power cap, thinking budget, saver and agentwaste arm is measured on its answers |
 | Muse Spark (Meta Model API) | Hosted | Cheapest-first effort routing with step-up, answer grading for the quality gate, and the judge `savers` mode |
 | Muse Spark Open (open weights) | Baseten, hosted | The hosted-API round: effort routing and the LangChain saver |
 | Muse Wonder (Meta Model API) | Hosted | Plans which cap and clock to try next |
