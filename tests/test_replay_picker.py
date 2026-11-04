@@ -52,3 +52,15 @@ def test_landing_page_mounts_picker():
     assert 'id="wn-replay"' in html and "replaypick.js" in html
     js = (ROOT / "web/dash/replaypick.js").read_text()
     assert "/api/dash/replays" in js and "REPLAY of" in js
+
+
+def test_h100_replay_receipt_and_receipts_mount():
+    c = TestClient(create_app(events=ROOT / "replays/h100-max-1103/events.jsonl", replay_only=True))
+    assert c.get("/api/dash/run/receipt").status_code == 200
+    assert c.get("/receipts/rerun-1031/rcpt_20261031_rerun_cap325.json").status_code == 200
+
+
+def test_health_names_served_replay_and_receipt_by_run():
+    c = TestClient(create_app(events=ROOT / "replays/modal-r1/events.jsonl", replay_only=True))
+    assert c.get("/api/dash/health").json()["replay_id"] == "modal-r1"
+    assert c.get("/api/dash/run/receipt", params={"run": "replay:baseten-r1"}).status_code == 200

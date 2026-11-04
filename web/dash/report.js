@@ -59,7 +59,8 @@ const params = new URLSearchParams(location.search);
 // RUN2 (Llama 3.1 8B, not a Meta model here) is hidden: an old stored id falls back to the Glimmer rerun.
 const RUN_PICK = params.get("run") || localStorage.getItem("wn.run") || "";
 const RUN_ID = !RUN_PICK || /llama|^run2/i.test(RUN_PICK) ? "rerun-1031-glimmer-325w" : RUN_PICK;
-const IS_REAL = RUN_ID.includes(":");
+const IS_RECORDED = RUN_ID.startsWith("replay:");
+const IS_REAL = RUN_ID.includes(":") && !IS_RECORDED;
 
 let STATE = { run: null, bundle: null, receipt: null };
 
@@ -93,7 +94,19 @@ async function loadReal() {
       : `<p class="sub">This run has no round file yet${meta.source ? ` (config: <a href="${fileUrl(meta.source)}">${esc(meta.source)}</a>)` : ""}.</p>`}`;
 }
 
+// A recorded run from replays/ (header pick "replay:<id>"): its own signed receipt and EU report, as recorded.
+async function loadRecorded() {
+  const id = RUN_ID.slice(7);
+  let v = null; try { v = await getJSON(`/api/dash/run/receipt?run=${encodeURIComponent(RUN_ID)}`); } catch { v = null; }
+  const eu = `/replays/${encodeURIComponent(id)}/eu_report.html`;
+  let hasEu = false; try { hasEu = (await fetch(eu, { method: "HEAD" })).ok; } catch { hasEu = false; }
+  $("#lede").innerHTML = `<h1>Recorded run ${esc(id)}</h1><p>REPLAY of a recorded run. Numbers below are copied from its signed receipt with the labels it was written with.</p>
+    ${v ? `<pre class="rcpt-json">${esc(JSON.stringify(v, null, 2))}</pre>` : `<p>No signed receipt in this run's folder.</p>`}
+    <p>${hasEu ? `<a href="${eu}" target="_blank" rel="noopener">Open its EU energy report</a> · ` : ""}<a href="index.html?replay=${encodeURIComponent(id)}#wn-replay">Play it back</a> · <a href="graph.html">Live graph</a></p>`;
+}
+
 async function load() {
+  if (IS_RECORDED) return loadRecorded();
   if (IS_REAL) return loadReal();
   try {
     STATE.run = await getJSON(`/api/dash/v2/runs/${encodeURIComponent(RUN_ID)}`);
